@@ -3547,7 +3547,44 @@ def test_number():
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
 
-    # raw to small for code raises error
+    # raw too small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+
+    # tests with wrong size raw for code large
+    num = (256 ** 5 - 1)
+    assert num == 1099511627775
+    numh = f"{num:x}"
+    assert numh == 'ffffffffff'
+    raw = b'\xff\xff\xff\xff\xff'
+    code = NumDex.Tall
+    nqb64 = 'RP______'  # '0HD_____'  # '0H_____w'
+    nqb2 = b'D\xff\xff\xff\xff\xff' # b'\xd0p\xff\xff\xff\xff'
+
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    # raw too small for code raises error
     raw2bad = b'\xff'
     assert raw != raw2bad
     assert len(raw2bad) < len(raw)
@@ -3627,6 +3664,66 @@ def test_number():
     with pytest.raises(RawMaterialError):
         number = Number(raw=raw2bad, code=code)
 
+
+    # tests with wrong size raw for code huge
+    num = (256 ** 17 - 1)
+    assert num == 87112285931760246646623899502532662132735
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Vast
+    nqb64 = 'UP______________________' #'TP__________________'
+    nqb2 =  b'P\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffxff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+
+    # test using num to initialize Number
+    num = 0
+    numh = f"{num:x}"
+    assert numh == '0'
+    code = NumDex.Short
+    raw = b'\x00\x00'
+    nqb64 = 'MAAA'
+    nqb2 = b'0\x00\x00'
+    assert hex(int.from_bytes(nqb2, 'big')) == '0x300000'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert not number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
     num = 1
     numh = f"{num:x}"
     assert numh == '1'
@@ -3647,6 +3744,29 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
+
+
+    num = 65536
+    numh = f"{num:x}"
+    assert numh == '10000'  # hex
+    code = NumDex.Tall
+    raw = b'\x00\x00\x01\x00\x00'
+    nqb64 = 'RAAAAQAA'
+    nqb2 = b'D\x00\x00\x01\x00\x00'
+    assert hex(int.from_bytes(nqb2, 'big')) == '0x440000010000'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
 
     """ Done Test """
