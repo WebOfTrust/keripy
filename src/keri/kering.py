@@ -10,6 +10,8 @@ from collections import namedtuple
 FALSEY = (False, 0, None, "?0", "no", "false", "False", "off")
 TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
 
+MaxON = int("f"*32, 16)  # 256 ** 16 - 1 maximum ordinal number, sequence or first seen etc
+
 # Serialization Kinds
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')

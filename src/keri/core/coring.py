@@ -25,6 +25,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
+from ..kering import MaxON
+
 from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
@@ -1593,8 +1595,6 @@ class Number(Matter):
                     if numh is None or numh == '':
                         num = 0
                     else:
-                        #if len(numh) > 32:
-                            #raise InvalidValueError(f"Hex numh={numh} str too long.")
                         num = int(numh, 16)
 
                 else:  # handle case where num is hex str'
@@ -1602,8 +1602,6 @@ class Number(Matter):
                         if num == '':
                             num = 0
                         else:
-                            #if len(num) > 32:
-                                #raise InvalidValueError(f"Hex num={num} str too long.")
                             num = int(num, 16)
             except ValueError as ex:
                 raise InvalidValueError(f"Invalid whole number={num} .") from ex
@@ -1647,6 +1645,44 @@ class Number(Matter):
 
         if self.code not in NumDex:
             raise ValidationError(f"Invalid code = {self.code} for Number.")
+
+
+    def validate(self, inceptive=None):
+        """
+        Returns:
+            self (Number):
+
+        Raises:
+            ValidationError: when .num is invalid ordinal such as
+               sequence number or first seen number etc.
+
+        Parameters:
+           inceptive(bool): raise ValidationError whan .num invalid
+                            None means exception when .num < 0
+                            True means exception when .num != 0
+                            False means exception when .num < 1
+
+        """
+        num = self.num
+
+        if num > MaxON:  # too big for ordinal 256 ** 16 - 1
+            raise ValidationError(f"Excessive num = {num} non-ordinal.")
+
+        if inceptive is not None:
+            if inceptive:
+                if num != 0:
+                    raise ValidationError(f"Nonzero num = {num} non-inceptive"
+                                          f" ordinal.")
+            else:
+                if num < 1:
+                    raise ValidationError(f"Non-positive num = {num} not "
+                                          f"non-inceptive ordinal.")
+        else:
+            if num < 0:
+                raise ValidationError(f"Negative num = {num} non-ordinal.")
+
+        return self
+
 
 
     @property
@@ -1698,8 +1734,7 @@ class Number(Matter):
     def inceptive(self):
         """
         Returns True if .num == 0 False otherwise.
-        Because valid number .num must be non-negative, positive False means
-        that .num is zero.
+        Valid number .num must be non-negative,
         """
         return True if self.num == 0 else False
 
