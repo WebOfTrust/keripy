@@ -41,7 +41,7 @@ from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError, DeserializeError)
+                         InvalidValueError, DeserializeError, ValidationError)
 from keri.kering import Version, Versionage, VersionError
 from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       RPY_LABELS)
@@ -3702,6 +3702,20 @@ def test_number():
         number = Number(raw=raw2bad, code=code)
 
 
+    # test with negative num
+    num = -1
+    numh = f"{num:x}"
+    assert numh == '-1'
+    code = NumDex.Short
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=num)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(numh=numh)
+
+
+
     # test using num to initialize Number
     num = 0
     numh = f"{num:x}"
@@ -3723,6 +3737,11 @@ def test_number():
     assert not number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
+    # test validate()
+    assert number.validate() == number  # default inceptive = None
+    assert number.validate(inceptive=True) == number  # inceptive = True
+    with pytest.raises(ValidationError):
+        number.validate(inceptive=False) # inceptive = False
 
     num = 1
     numh = f"{num:x}"
@@ -3744,6 +3763,11 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
+    # test validate
+    assert number.validate() == number  # default inceptive = None
+    with pytest.raises(ValidationError):
+        number.validate(inceptive=True)  # inceptive = True
+    assert number.validate(inceptive=False) == number  # inceptive = False
 
 
     num = 65536
@@ -3766,8 +3790,40 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
+    # test validate
+    assert number.validate() == number  # default inceptive = None
+    with pytest.raises(ValidationError):
+        number.validate(inceptive=True)  # inceptive = True
+    assert number.validate(inceptive=False) == number  # inceptive = False
 
+    # too big for ordinal
+    num = num = (256 ** 16)
+    numh = f"{num:x}"
+    assert numh == '100000000000000000000000000000000'  # hex
+    code = NumDex.Vast
+    raw =b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    nqb64 = 'UAEAAAAAAAAAAAAAAAAAAAAA'
+    nqb2 = b'P\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    assert hex(int.from_bytes(nqb2, 'big')) == '0x500100000000000000000000000000000000'
 
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+    # test validate
+    with pytest.raises(ValidationError): # too big
+        number.validate() # default inceptive = None
+    with pytest.raises(ValidationError): # too big
+        number.validate(inceptive=True)  # inceptive = True
+    with pytest.raises(ValidationError): # too big
+        number.validate(inceptive=False)  # inceptive = False
 
     """ Done Test """
 
