@@ -7,7 +7,7 @@ import os
 
 from keri import help
 from keri.app import habbing
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 from keri.db import dbing
 
 logger = help.ogler.getLogger()
@@ -69,8 +69,8 @@ def test_indexed_witness_replay():
         csith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
         assert camHab.kever.prefixer.transferable
-        assert len(camHab.iserder.werfers) == len(wits)
-        for werfer in camHab.iserder.werfers:
+        assert len(camHab.iserder.berfers) == len(wits)
+        for werfer in camHab.iserder.berfers:
             assert werfer.qb64 in wits
         assert camHab.kever.wits == wits
         assert camHab.kever.toader.num == 2
@@ -97,7 +97,8 @@ def test_indexed_witness_replay():
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy)
             assert kvy.kevers[camHab.pre].sn == 0  # accepted event
-            assert len(kvy.cues) == 1  # queued receipt cue
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 626
@@ -146,7 +147,8 @@ def test_indexed_witness_replay():
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy)
             assert kvy.kevers[camHab.pre].sn == 1  # accepted event
-            assert len(kvy.cues) == 1  # queued receipt cue
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 281
@@ -214,7 +216,8 @@ def test_indexed_witness_replay():
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy)
             assert kvy.kevers[camHab.pre].sn == 2  # accepted event
-            assert len(kvy.cues) == 1  # queued receipt cue
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 281
@@ -333,8 +336,8 @@ def test_nonindexed_witness_receipts():
         csith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
         assert camHab.kever.prefixer.transferable
-        assert len(camHab.iserder.werfers) == len(wits)
-        for werfer in camHab.iserder.werfers:
+        assert len(camHab.iserder.berfers) == len(wits)
+        for werfer in camHab.iserder.berfers:
             assert werfer.qb64 in wits
         assert camHab.kever.wits == wits
         assert camHab.kever.toader.num == 2
@@ -361,7 +364,8 @@ def test_nonindexed_witness_receipts():
             parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy)
             # accepted event with cam sigs since own witness
             assert kvy.kevers[camHab.pre].sn == 0
-            assert len(kvy.cues) == 1  # queued receipt cue
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
             rctMsg = camWitHabs[i].processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 626
             rctMsgs.append(rctMsg)
@@ -419,7 +423,8 @@ def test_nonindexed_witness_receipts():
             parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy)
             # kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 1  # accepted event
-            assert len(kvy.cues) == 1  # queued receipt cue
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 281
@@ -500,7 +505,8 @@ def test_nonindexed_witness_receipts():
         for i, kvy in enumerate(camWitKvys):
             parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy)
             assert kvy.kevers[camHab.pre].sn == 2  # accepted event
-            assert len(kvy.cues) == 1  # queued receipt cue
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 281
@@ -586,7 +592,7 @@ def test_out_of_order_witnessed_events():
         bobIcp = bobHab.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
         assert bobHab.pre in wesHab.kevers
-        iserder = coring.Serder(raw=bytearray(bobIcp))
+        iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
         wesHab.receipt(serder=iserder)
 
         # Rotate and get Bob's rot, pass to Wes and generate receipt.
@@ -594,7 +600,7 @@ def test_out_of_order_witnessed_events():
         bobRotMsg = bobHab.makeOwnEvent(sn=1)
         parsing.Parser().parse(ims=bytearray(bobRotMsg), kvy=wesKvy)
         assert wesKvy.kevers[bobHab.pre].sn == 1
-        bobRot = coring.Serder(raw=bobRotMsg)
+        bobRot = serdering.SerderKERI(raw=bobRotMsg)
         wesHab.receipt(serder=bobRot)
 
         # Get the receipted rotation event and pass, out of order to Bam

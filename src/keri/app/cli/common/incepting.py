@@ -10,12 +10,12 @@ def addInceptingArgs(parser):
     """
     Add command line arguments for each of the properties in InceptOptions
     """
-    parser.add_argument('--transferable', '-tf', type=bool, default=None,
+    parser.add_argument('--transferable', '-tf', action="store_true",
                         help='Whether the prefix is transferable or non-transferable')
     parser.add_argument('--wits',         '-w', default=[], required=False, action="append", metavar="<prefix>",
                         help='New set of witnesses, replaces all existing witnesses.  Can appear multiple times')
     parser.add_argument('--toad',         '-t', default=None, required=False, type=int,
-                        help='int or str hex of witness threshold (threshold of acceptable duplicity)',)
+                        help='int or str hex of witness threshold (threshold of accountable duplicity)',)
     parser.add_argument('--icount',       '-ic', default=None, required=False,
                         help='incepting key count for number of keys used for inception')
     parser.add_argument('--isith',        '-s', default=None, required=False,

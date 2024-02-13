@@ -9,6 +9,7 @@ from hio.base import doing
 
 from keri.app import habbing, forwarding, connecting
 from keri.app.cli.common import existing
+from keri.app.habbing import GroupHab
 from keri.peer import exchanging
 
 parser = argparse.ArgumentParser(description='Respond to a list of challenge words by signing and sending an EXN '
@@ -75,7 +76,7 @@ class RespondDoer(doing.DoDoer):
         self.recp = recp
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.org = connecting.Organizer(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.respondDo)]
@@ -106,11 +107,11 @@ class RespondDoer(doing.DoDoer):
         recp = recp[0]['id']
 
         payload = dict(i=hab.pre, words=self.words)
-        exn = exchanging.exchange(route="/challenge/response", payload=payload)
-        ims = hab.endorse(serder=exn, last=True, pipelined=False)
+        exn, _ = exchanging.exchange(route="/challenge/response", payload=payload, sender=hab.pre)
+        ims = hab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
 
-        senderHab = hab.mhab if hab.group else hab
+        senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
         self.postman.send(src=senderHab.pre, dest=recp, topic="challenge", serder=exn, attachment=ims)
         while not self.postman.cues:
             yield self.tock

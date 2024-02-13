@@ -22,25 +22,20 @@ ked = json.loads(raw[:size].decode("utf-8"))
 raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 """
-import os
-import stat
-import json
 import math
-
-from typing import Union
-from dataclasses import dataclass, asdict, field
 from collections import namedtuple, deque
+from dataclasses import dataclass, asdict, field
 
+import pysodium
 from hio.base import doing
 
 from .. import kering
-from ..help import helping
 from ..core import coring
 from ..db import dbing, subing, koming
+from ..help import helping
 
-
-Algoage = namedtuple("Algoage", 'randy salty')
-Algos = Algoage(randy='randy', salty='salty')  # randy is rerandomize, salty is use salt
+Algoage = namedtuple("Algoage", 'randy salty group extern')
+Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
 
 
 @dataclass()
@@ -194,7 +189,7 @@ class Keeper(dbing.LMDBer):
             }
         sits (koming.Komer): named sub DB whose values are serialized dicts of
             PreSit instance
-            Key is identifer prefix (fully qualified qb64)
+            Key is identifier prefix (fully qualified qb64)
             Value is  serialized parameter dict of public key situation
                 {
                   old: { pubs: ridx:, kidx,  dt:},
@@ -217,7 +212,7 @@ class Keeper(dbing.LMDBer):
     TailDirPath = "keri/ks"
     AltTailDirPath = ".keri/ks"
     TempPrefix = "keri_ks_"
-    MaxNamedDBs = 8
+    MaxNamedDBs = 10
 
     def __init__(self, headDirPath=None, perm=None, reopen=False, **kwa):
         """
@@ -270,9 +265,21 @@ class Keeper(dbing.LMDBer):
 
         self.gbls = subing.Suber(db=self, subkey='gbls.')
         self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
+        self.prxs = subing.CesrSuber(db=self,
+                                     subkey='prxs.',
+                                     klas=coring.Cipher)
+        self.nxts = subing.CesrSuber(db=self,
+                                     subkey='nxts.',
+                                     klas=coring.Cipher)
+        self.smids = subing.CatCesrIoSetSuber(db=self,
+                                              subkey='smids.',
+                                              klas=(coring.Prefixer, coring.Seqner))
+        self.rmids = subing.CatCesrIoSetSuber(db=self,
+                                              subkey='rmids.',
+                                              klas=(coring.Prefixer, coring.Seqner))
         self.pres = subing.CesrSuber(db=self,
-                                       subkey='pres.',
-                                       klas=coring.Prefixer)
+                                     subkey='pres.',
+                                     klas=coring.Prefixer)
         self.prms = koming.Komer(db=self,
                                  subkey='prms.',
                                  schema=PrePrm,)  # New Prefix Parameters
@@ -964,7 +971,7 @@ class Manager:
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable. This makes the identifier non-transferable in effect
-            even when the identifer prefix is transferable.
+            even when the identifier prefix is transferable.
 
         """
         # get root defaults to initialize key sequence
@@ -1004,14 +1011,15 @@ class Manager:
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
-
         # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
                     algo=algo,
-                    salt=(creator.salt if not self.encrypter
-                          else self.encrypter.encrypt(ser=creator.salt).qb64),
                     stem=creator.stem,
                     tier=creator.tier)
+
+        if creator.salt:
+            pp.salt = (creator.salt if not self.encrypter
+                       else self.encrypter.encrypt(ser=creator.salt).qb64)
 
         dt = helping.nowIso8601()
         ps = PreSit(
@@ -1142,7 +1150,7 @@ class Manager:
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable. This makes the identifier non-transferable in effect
-            even when the identifer prefix is transferable.
+            even when the identifier prefix is transferable.
 
         """
         # Secret to decrypt here
@@ -1385,6 +1393,56 @@ class Manager:
                 cigars.append(signer.sign(ser))  # assigns .verfer to cigar
             return cigars
 
+    def decrypt(self, ser, pubs=None, verfers=None):
+        """
+        Returns list of signatures of ser if indexed as Sigers else as Cigars with
+        .verfer assigned.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            pubs (list[str] | None): of qb64 public keys to lookup private keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+            verfers (list[Verfer] | None): Verfer instances of public keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+                If not pubs then gets public key from verfer.qb64
+
+        Returns:
+            bytes: decrypted data
+
+        """
+        signers = []
+        if pubs:
+            for pub in pubs:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(pub, decrypter=self.decrypter))
+                        is None):
+                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+                signers.append(signer)
+
+        else:
+            for verfer in verfers:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(verfer.qb64,
+                                                decrypter=self.decrypter))
+                        is None):
+                    raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
+                signers.append(signer)
+
+        plain = ser
+        for signer in signers:
+            sigkey = signer.raw + signer.verfer.raw  # sigkey is raw seed + raw verkey
+            prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)  # raw private encrypt key
+            pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
+            plain = pysodium.crypto_box_seal_open(plain, pubkey, prikey)  # qb64b
+
+        if plain == ser:
+            raise ValueError("unable to decrypt data")
+
+        return plain
 
     def ingest(self, secrecies, iridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,

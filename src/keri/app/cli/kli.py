@@ -25,9 +25,13 @@ def main():
         directing.runController(doers=doers, expire=0.0)
 
     except Exception as ex:
-        # print(f"ERR: {ex}")
-        # return -1
-        raise ex
+        import os
+        if os.getenv('DEBUG_KLI'):
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"ERR: {ex}")
+        return -1
 
 
 if __name__ == "__main__":

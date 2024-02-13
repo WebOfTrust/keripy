@@ -12,6 +12,11 @@ import hashlib
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, utils
+from cryptography.hazmat.primitives import hashes
+from cryptography import utils as cryptographyUtils
+from cryptography import exceptions
 
 
 def test_pysodium():
@@ -46,9 +51,9 @@ def test_pysodium():
     sigseed = pysodium.crypto_pwhash(outlen=32,
                                     passwd="",
                                     salt=salt,
-                                    opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-                                    memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
-                                    alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+                                    opslimit=2,  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                                    memlimit=67108864,  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                                    alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
 
     assert len(sigseed) == 32
     #  seed = (b'\xa9p\x89\x7f+\x0e\xc4\x9c\xf2\x01r\xafTI\xc0\xfa\xac\xd5\x99\xf8O\x8f=\x843\xa2\xb6e\x9fO\xff\xd0')
@@ -469,6 +474,125 @@ def test_sha3():
     """
     Done Test
     """
+
+
+def test_secp256r1():
+    """
+    test secp256r1 
+
+    https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ec/
+    """
+
+    # create keypair without seed
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    assert isinstance(private_key.curve, ec.SECP256R1)
+    assert private_key.key_size == 256     # for the secp256r1 curve, the private key is 256-bit integer (32 bytes)
+    
+    public_key = private_key.public_key()
+    assert isinstance(public_key.curve, ec.SECP256R1)
+    assert public_key.key_size == 256
+    
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    signature = private_key.sign(ser, ec.ECDSA(hashes.SHA256()))
+    try:
+        public_key.verify(signature, ser, ec.ECDSA(hashes.SHA256()))
+    except Exception as exc:
+        assert False, f"signature verification, raised an exception {exc}"
+
+    # compress public key to bytes
+    verkey = public_key.public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint) # compressed public key is 257-bit integer (~ 33 bytes)
+    assert len(verkey) == 33
+
+    # convert back to public key and verify
+    public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), verkey)
+    try:
+        public_key.verify(signature, ser, ec.ECDSA(hashes.SHA256()))
+    except Exception as exc:
+        assert False, f"signature verification, raised an exception {exc}"
+
+    # decode Ecdsa-Sig-Value signature to tuple (r, s)
+    # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/utils/#cryptography.hazmat.primitives.asymmetric.utils.decode_dss_signature
+    (r, s) = utils.decode_dss_signature(signature)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    # encode signature to encoded Ecdsa-Sig-Value from raw r and s values 
+    # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/utils/#cryptography.hazmat.primitives.asymmetric.utils.encode_dss_signature
+    r = int.from_bytes(sig[:32], "big")
+    s = int.from_bytes(sig[32:], "big")
+    der = utils.encode_dss_signature(r, s)
+    #  verify der    
+    try:
+        public_key.verify(der, ser, ec.ECDSA(hashes.SHA256()))
+    except Exception as exc:
+        assert False, f"signature verification, raised an exception {exc}"
+    
+    with pytest.raises(exceptions.InvalidSignature):
+        public_key.verify(b'XYZ', ser, ec.ECDSA(hashes.SHA256()))
+
+    """
+    Done Test
+    """
+
+
+def test_secp256k1():
+    """
+    test secp256k1 
+
+    https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ec/
+    """
+
+    # create keypair without seed
+    private_key = ec.generate_private_key(ec.SECP256K1())
+    assert isinstance(private_key.curve, ec.SECP256K1)
+    assert private_key.key_size == 256     # for the secp256k1 curve, the private key is 256-bit integer (32 bytes)
+    
+    public_key = private_key.public_key()
+    assert isinstance(public_key.curve, ec.SECP256K1)
+    assert public_key.key_size == 256
+    
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    signature = private_key.sign(ser, ec.ECDSA(hashes.SHA256()))
+    try:
+        public_key.verify(signature, ser, ec.ECDSA(hashes.SHA256()))
+    except Exception as exc:
+        assert False, f"signature verification, raised an exception {exc}"
+
+    # compress public key to bytes
+    verkey = public_key.public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint) # compressed public key is 257-bit integer (~ 33 bytes)
+    assert len(verkey) == 33
+
+    # convert back to public key and verify
+    public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), verkey)
+    try:
+        public_key.verify(signature, ser, ec.ECDSA(hashes.SHA256()))
+    except Exception as exc:
+        assert False, f"signature verification, raised an exception {exc}"
+
+    # decode Ecdsa-Sig-Value signature to tuple (r, s)
+    # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/utils/#cryptography.hazmat.primitives.asymmetric.utils.decode_dss_signature
+    (r, s) = utils.decode_dss_signature(signature)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    # encode signature to encoded Ecdsa-Sig-Value from raw r and s values 
+    # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/utils/#cryptography.hazmat.primitives.asymmetric.utils.encode_dss_signature
+    r = int.from_bytes(sig[:32], "big")
+    s = int.from_bytes(sig[32:], "big")
+    der = utils.encode_dss_signature(r, s)
+    #  verify der    
+    try:
+        public_key.verify(der, ser, ec.ECDSA(hashes.SHA256()))
+    except Exception as exc:
+        assert False, f"signature verification, raised an exception {exc}"
+    
+    with pytest.raises(exceptions.InvalidSignature):
+        public_key.verify(b'XYZ', ser, ec.ECDSA(hashes.SHA256()))
+
+    """
+    Done Test
+    """
+
 
 
 if __name__ == "__main__":

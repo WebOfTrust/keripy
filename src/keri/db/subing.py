@@ -43,7 +43,7 @@ from collections.abc import Iterable, Iterator
 
 from .. import help
 from ..help.helping import nonStringIterable
-from ..core import coring, scheming
+from ..core import coring, scheming, serdering
 from . import dbing
 
 logger = help.ogler.getLogger()
@@ -204,7 +204,7 @@ class Suber(SuberBase):
         super(Suber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
-    def put(self, keys: Union[str, Iterable], val: Union[bytes, str]):
+    def put(self, keys: Union[str, Iterable], val: Union[bytes, str, any]):
         """
         Puts val at key made from keys. Does not overwrite
 
@@ -1041,21 +1041,28 @@ class CryptSignerSuber(SignerSuber):
 
 class SerderSuber(Suber):
     """
-    Sub class of Suber where data is serialized Serder instance
-    Automatically serializes and deserializes using Serder methods
+    Sub class of Suber where data is serialized Serder Subclass instance
+    given by .klas
+    Automatically serializes and deserializes using .klas Serder methods
 
     """
 
-    def __init__(self, *pa, **kwa):
+    def __init__(self, *pa,
+                 klas: Type[serdering.Serder] = serdering.SerderKERI,
+                 **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+
+        Parameters:
+            klas (Type[serdering.Serder]): Class reference to subclass of Serder
         """
         super(SerderSuber, self).__init__(*pa, **kwa)
+        self.klas = klas
 
 
-    def put(self, keys: Union[str, Iterable], val: coring.Serder):
+    def put(self, keys: Union[str, Iterable], val: serdering.SerderKERI):
         """
         Puts val at key made from keys. Does not overwrite
 
@@ -1072,7 +1079,7 @@ class SerderSuber(Suber):
                                val=val.raw))
 
 
-    def pin(self, keys: Union[str, Iterable], val: coring.Serder):
+    def pin(self, keys: Union[str, Iterable], val: serdering.SerderKERI):
         """
         Pins (sets) val at key made from keys. Overwrites.
 
@@ -1107,7 +1114,7 @@ class SerderSuber(Suber):
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return coring.Serder(raw=bytes(val)) if val is not None else None
+        return self.klas(raw=bytes(val)) if val is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -1139,7 +1146,7 @@ class SerderSuber(Suber):
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield self._tokeys(iokey), coring.Serder(raw=bytes(val))
+            yield self._tokeys(iokey), self.klas(raw=bytes(val))
 
 
 class SchemerSuber(Suber):

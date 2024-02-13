@@ -12,9 +12,9 @@ import jsonschema
 import msgpack
 
 from . import coring
-from .coring import MtrDex, Serials, Saider, Ids
+from .coring import MtrDex, Serials, Saider, Saids
 from .. import help, kering
-from ..kering import ValidationError, DeserializationError
+from ..kering import ValidationError, DeserializeError
 
 logger = help.ogler.getLogger()
 
@@ -86,7 +86,7 @@ class CacheResolver:
 class JSONSchema:
     """ JSON Schema support class
     """
-    id_ = Ids.dollar  # ID Field Label
+    id_ = Saids.dollar  # ID Field Label
 
     def __init__(self, resolver=None):
         """ Initialize instance
@@ -126,21 +126,21 @@ class JSONSchema:
             try:
                 sed = json.loads(raw.decode("utf-8"))
             except Exception as ex:
-                raise DeserializationError("Error deserializing JSON: {} {}"
+                raise DeserializeError("Error deserializing JSON: {} {}"
                                            "".format(raw.decode("utf-8"), ex))
 
         elif kind == Serials.mgpk:
             try:
                 sed = msgpack.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing MGPK: {} {}"
+                raise DeserializeError("Error deserializing MGPK: {} {}"
                                            "".format(raw, ex))
 
         elif kind == Serials.cbor:
             try:
                 sed = cbor.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing CBOR: {} {}"
+                raise DeserializeError("Error deserializing CBOR: {} {}"
                                            "".format(raw, ex))
         else:
             raise ValueError("Invalid serialization kind = {}".format(kind))
@@ -385,7 +385,7 @@ class Schemer:
         self._raw = raw
         self._sed = sed
         self._kind = kind
-        self._saider = Saider(raw=self._raw, code=self._code, label=Ids.dollar)
+        self._saider = Saider(raw=self._raw, code=self._code, label=Saids.dollar)
 
     @property
     def saider(self):

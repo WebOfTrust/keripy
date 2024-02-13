@@ -3,15 +3,126 @@
 Generic Constants and Classes
 """
 import sys
+import re
 from collections import namedtuple
 
 
-FALSY = (False, 0, "?0", "no", "false", "False", "off")
+FALSEY = (False, 0, None, "?0", "no", "false", "False", "off")
 TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
 
-Versionage = namedtuple("Versionage", "major minor")
+# Serialization Kinds
+Serialage = namedtuple("Serialage", 'json mgpk cbor')
+Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
+# Protocol Types
+Protocolage = namedtuple("Protocolage", "keri crel acdc")
+Protos = Protocolage(keri="KERI", crel="CREL", acdc="ACDC", )
+
+Versionage = namedtuple("Versionage", "major minor")
 Version = Versionage(major=1, minor=0)  # KERI Protocol Version
+Vrsn_1_0 = Versionage(major=1, minor=0)  # KERI Protocol Version Specific
+Vrsn_1_1 = Versionage(major=1, minor=1)  # KERI Protocol Version Specific
+
+VERRAWSIZE = 6  # hex characters in raw serialization size in version string
+# "{:0{}x}".format(300, 6)  # make num char in hex a variable
+# '00012c'
+VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
+VERFULLSIZE = 17  # number of characters in full version string
+
+VEREX = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
+Rever = re.compile(VEREX)  # compile is faster
+
+
+def versify(proto=Protos.keri, version=Version, kind=Serials.json, size=0):
+    """
+    Returns version string
+    """
+    if proto not in Protos:
+        raise ValueError("Invalid message identifier = {}".format(proto))
+    #version = version if version else Version
+    if kind not in Serials:
+        raise ValueError("Invalid serialization kind = {}".format(kind))
+
+    return VERFMT.format(proto, version[0], version[1], kind, size, VERRAWSIZE)
+
+
+def deversify(vs, version=None):
+    """
+    Returns:  tuple(proto, kind, version, size) Where:
+        proto (str): value is protocol type identifier one of Protos (Protocolage)
+                   acdc='ACDC', keri='KERI'
+        kind (str): value is serialization kind, one of Serials
+                   json='JSON', mgpk='MGPK', cbor='CBOR'
+        vrsn (tuple):  version tuple of type Versionage
+        size  (int): raw size in bytes
+
+    Parameters:
+      vs (str): version string to extract from
+      version (Versionage | None): supported version. None means do not check
+            for supported version.
+
+    Uses regex match to extract:
+        protocol type
+        protocol version tuple
+        serialization kind
+        serialization size
+    """
+    match = Rever.match(vs.encode("utf-8"))  # match takes bytes
+    if match:
+        proto, major, minor, kind, size = match.group("proto",
+                                                      "major",
+                                                      "minor",
+                                                      "kind",
+                                                      "size")
+        proto = proto.decode("utf-8")
+        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
+        kind = kind.decode("utf-8")
+
+        if proto not in Protos:
+            raise ValueError("Invalid message identifier = {}".format(proto))
+        if version is not None and vrsn != version:
+            raise ValueError(f"Expected version = {version}, got "
+                               f"{vrsn.major}.{vrsn.minor}.")
+        if kind not in Serials:
+            raise ValueError("Invalid serialization kind = {}".format(kind))
+        size = int(size, 16)
+        return proto, vrsn, kind, size
+
+    raise ValueError("Invalid version string = {}".format(vs))
+
+"""
+ilk is short for packet or message type for a given protocol
+    icp = incept, inception
+    rot = rotate, rotation
+    ixn = interact, interaction
+    dip = delcept, delegated inception
+    drt = deltate, delegated rotation
+    rct = receipt
+    ksn = state, key state notice
+    qry = query
+    rpy = reply
+    exn = exchange
+    exp = expose, sealed data exposition
+    vcp = vdr incept, verifiable data registry inception
+    vrt = vdr rotate, verifiable data registry rotation
+    iss = vc issue, verifiable credential issuance
+    rev = vc revoke, verifiable credential revocation
+    bis = backed vc issue, registry-backed transaction event log credential issuance
+    brv = backed vc revoke, registry-backed transaction event log credential revocation
+"""
+
+# KERI protocol packet (message) types
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy exn '
+                               'pro bar vcp vrt iss rev bis brv '))
+
+Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
+              rct='rct',
+              qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
+              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
+
+# note ksn is not actual standalone message but is embedded in exn msg when sent
+# over the wire. But keep ilk for legacy reasons.
+
 
 SEPARATOR = "\r\n\r\n"
 SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
@@ -20,9 +131,38 @@ SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror peer mailbox')
+Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror peer mailbox agent')
 Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
-               watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox")
+               watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox", agent="agent")
+
+
+ICP_LABELS = ["v", "t", "d", "i", "s", "kt", "k", "nt", "n",
+              "bt", "b", "c", "a"]
+DIP_LABELS = ["v", "d", "i", "s", "t", "kt", "k", "nt", "n",
+              "bt", "b", "c", "a", "di"]
+ROT_LABELS = ["v", "d", "i", "s", "t", "p", "kt", "k", "nt", "n",
+              "bt", "br", "ba", "a"]
+DRT_LABELS = ["v", "d", "i", "s", "t", "p", "kt", "k", "nt", "n",
+              "bt", "br", "ba", "a"]
+IXN_LABELS = ["v", "d", "i", "s", "t", "p", "a"]
+
+#KSN_LABELS = ["v", "d", "i", "s", "p", "d", "f", "dt", "et", "kt", "k", "nt", "n",
+              #"bt", "b", "c", "ee", "di"]
+
+RPY_LABELS = ["v", "d", "t", "d", "dt", "r", "a"]
+
+VCP_LABELS = ["v", "d", "i", "s", "t", "bt", "b", "c"]
+VRT_LABELS = ["v", "d", "i", "s", "t", "p", "bt", "b", "ba", "br"]
+
+ISS_LABELS = ["v", "i", "s", "t", "ri", "dt"]
+BIS_LABELS = ["v", "i", "s", "t", "ra", "dt"]
+
+REV_LABELS = ["v", "i", "s", "t", "p", "dt"]
+BRV_LABELS = ["v", "i", "s", "t", "ra", "p", "dt"]
+
+TSN_LABELS = ["v", "i", "s", "d", "ii", "a", "et", "bt", "b", "c", "br", "ba"]
+CRED_TSN_LABELS = ["v", "i", "s", "d", "ri", "a", "ra"]
+
 
 class KeriError(Exception):
     """
@@ -188,6 +328,15 @@ class InvalidVarRawSizeError(InvalidSizeError):
         raise InvalidRawSizeError("error message")
     """
 
+# Errors serializing messages
+
+class SerializeError(KeriError):
+    """
+    Message creation and serialization errors
+
+    Usage:
+        raise MessageError("error message")
+    """
 
 
 
@@ -197,6 +346,13 @@ class ValidationError(KeriError):
     Validation related errors
     Usage:
         raise ValidationError("error message")
+    """
+
+class MissingFieldError(ValidationError):
+    """
+    Missing a required element or field of message
+    Usage:
+        raise MissingElementError("error message")
     """
 
 
@@ -393,12 +549,20 @@ class VersionError(ExtractionError):
         raise VersionError("error message")
     """
 
-
-class DeserializationError(ExtractionError):
+class ProtocolError(ExtractionError):
     """
-    Error deserializing message
+    Bad or Unsupported Protocol type
+
     Usage:
-        raise DeserializationError("error message")
+        raise ProtocolError("error message")
+    """
+
+class KindError(ExtractionError):
+    """
+    Bad or Unsupported Serialization Kind
+
+    Usage:
+        raise KindError("error message")
     """
 
 
@@ -408,12 +572,36 @@ class ConversionError(ExtractionError):
 
     Usage:
         raise ConversionError("error message")
+
+    """
+
+class DeserializeError(ExtractionError):
+    """
+    Error deserializing message
+    Usage:
+        raise DeserializeError("error message")
+    """
+
+
+class FieldError(DeserializeError):
+    """
+    Deserialized field error
+    Usage:
+        raise FieldError("error message")
+
+    """
+
+class ElementError(DeserializeError):
+    """
+    Deserialized element error
+    Usage:
+        raise ElementError("error message")
     """
 
 
 class DerivationCodeError(ExtractionError):
     """
-    Derivation Code cryppto material conversion errors
+    Derivation Code crypto material conversion errors
     Usage:
         raise DerivationCodeError("error message")
     """
@@ -441,6 +629,9 @@ class UnexpectedOpCodeError(DerivationCodeError):
     Usage:
         raise DerivationCodeError("error message")
     """
+
+
+
 
 # Other errors
 

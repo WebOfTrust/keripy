@@ -12,7 +12,7 @@ from hio.base import doing
 import keri
 from hio.core import http
 from keri.app import habbing, oobiing, notifying
-from keri.core import coring
+from keri.core import coring, parsing, serdering
 from keri.db import basing
 from keri.end import ending
 from keri.help import helping
@@ -26,26 +26,17 @@ def test_oobi_share(mockHelpingNowUTC):
     oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
            "/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil"
     with habbing.openHab(name="test", temp=True) as (hby, hab):
-        exc = exchanging.Exchanger(db=hby.db, handlers=[])
+        exc = exchanging.Exchanger(hby=hby, handlers=[])
         notifier = notifying.Notifier(hby=hby)
 
         oobiing.loadHandlers(hby=hby, exc=exc, notifier=notifier)
 
         assert "/oobis" in exc.routes
-
         handler = exc.routes["/oobis"]
-        msg = dict(
-            pre=hab.kever.prefixer,
-            payload=dict(
-                oobi=oobi
-            ))
-        handler.msgs.append(msg)
 
-        limit = 1.0
-        tock = 0.25
-        doist = doing.Doist(limit=limit, tock=tock)
-        doist.do(doers=[handler])
-        assert doist.tyme == limit
+        exn, _ = oobiing.oobiRequestExn(hab, hab.pre, oobi)
+
+        handler.handle(serder=exn)
 
         obr = hby.db.oobis.get(keys=(oobi,))
         assert obr is not None
@@ -62,57 +53,23 @@ def test_oobi_share(mockHelpingNowUTC):
                               'r': '/oobi',
                               'src': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
 
-        msg = dict(
-            pre=hab.kever.prefixer,
-            payload=dict(
-            ))
-        handler.msgs.append(msg)
-
-        limit = 1.0
-        tock = 0.25
-        doist = doing.Doist(limit=limit, tock=tock)
-        doist.do(doers=[handler])
-        assert doist.tyme == limit
-        assert len(notifier.signaler.signals) == 0
-
         exn, atc = oobiing.oobiRequestExn(hab=hab, dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
                                           oobi="http://127.0.0.1/oobi")
         assert exn.ked == {'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
                                  'oobi': 'http://127.0.0.1/oobi'},
-                           'd': 'EHuKAScxCSm3v8ooWR2wIilGul_ZUwHAXt63Y5bhfvmt',
+                           'd': 'EMAhEMPbBU2B-Ha-yLxMEZk49KHYkzZgMv9aZS8gDl1m',
                            'dt': '2021-01-01T00:00:00.000000+00:00',
+                           'e': {},
+                           'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                           'p': '',
                            'q': {},
                            'r': '/oobis',
                            't': 'exn',
-                           'v': 'KERI10JSON0000ed_'}
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACS1e3y_nIO'
-                       b'l5UQAtrq2O9w-CaYTNTSDNjBK5k01nUFkV4yiHo-HE40nVsjrb9uKQYAHTaRVTUo'
-                       b'nj3KashCBTMP')
-
-
-def test_oobi_share_endpoint():
-    with openMultiSig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)):
-        app = falcon.App()
-        oobiEnd = oobiing.OobiResource(hby=hby1)
-        app.add_route("/oobi/groups/{alias}/share", oobiEnd, suffix="share")
-        client = testing.TestClient(app)
-
-        body = dict(oobis=[
-            "http://127.0.0.1:3333/oobi",
-            "http://127.0.0.1:5555/oobi",
-            "http://127.0.0.1:7777/oobi"
-        ])
-        raw = json.dumps(body).encode("utf-8")
-
-        result = client.simulate_post(path="/oobi/groups/test_1/share", body=raw)
-        assert result.status == falcon.HTTP_400
-        result = client.simulate_post(path="/oobi/groups/fake/share", body=raw)
-        assert result.status == falcon.HTTP_404
-        result = client.simulate_post(path="/oobi/groups/test_group1/share", body=raw)
-        assert result.status == falcon.HTTP_200
-
-        # Assert that a message has been send to each participant for each OOBI
-        assert len(oobiEnd.postman.evts) == 6
+                           'v': 'KERI10JSON00012e_'}
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACsgmsu'
+                       b'VJoY5a7vicZQ7pT_MZqCe-0psgReRxyoBfFaAPxZ7Vss2eteFuvwDWBeyKc1B-yc'
+                       b'p-2QZzIZJ94_9hIP')
 
 
 def test_oobiery():
@@ -198,7 +155,7 @@ class MOOBIEnd:
         }
 
         rpy = (self.hab.reply(route="/oobi/controller", data=a))
-        ser = coring.Serder(raw=rpy)
+        ser = serdering.SerderKERI(raw=rpy)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = ser.raw
@@ -216,11 +173,11 @@ def test_authenticator(mockHelpingNowUTC):
         hby.db.woobi.pin(keys=(url,), val=obr)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        endDoers = oobiing.loadEnds(app, hby=hby)
+        oobiing.loadEnds(app, hby=hby)
 
         limit = 2.0
         tock = 0.03125
-        doers = endDoers + authn.doers
+        doers = authn.doers
         doist = doing.Doist(limit=limit, tock=tock)
         doist.do(doers=doers)
 

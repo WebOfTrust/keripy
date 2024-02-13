@@ -11,17 +11,20 @@ from hio.base import doing
 
 from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
 from keri.app.cli.common import existing, incepting, config
+from keri.core import coring
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
+parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
+                    dest="endpoint", action='store_true')
+parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
 
@@ -38,12 +41,12 @@ class InceptOptions:
     """ Options loaded from file parameter.
 
     """
-    transferable: bool
-    wits: list
-    icount: int
-    isith:  int | str | list
-    ncount: int
-    nsith:  int | str | list = '0'
+    transferable: bool | None
+    wits: list | None
+    icount: int | None
+    isith: int | str | list | None
+    ncount: int | None
+    nsith: int | str | list | None = '0'
     toad: int = 0
     delpre: str = None
     estOnly: bool = False
@@ -63,10 +66,13 @@ def handler(args):
     bran = args.bran
     alias = args.alias
     config_dir = args.config
+    endpoint = args.endpoint
+    proxy = args.proxy
 
     kwa = mergeArgsWithFile(args).__dict__
 
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config_dir, **kwa)
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, endpoint=endpoint, proxy=proxy,
+                         cnfg=config_dir, **kwa)
 
     doers = [icpDoer]
     return doers
@@ -92,8 +98,7 @@ def mergeArgsWithFile(args):
 
     incept_opts = config.loadFileOptions(args.file, InceptOptions) if args.file != '' else emptyOptions()
 
-    if args.transferable is not None:
-        incept_opts.transferable = args.transferable
+    incept_opts.transferable = True if args.transferable else incept_opts.transferable
     if len(args.wits) > 0:
         incept_opts.wits = args.wits
     if args.icount is not None:
@@ -120,23 +125,23 @@ class InceptDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, config=None, **kwa):
+    def __init__(self, name, base, alias, bran, endpoint, proxy=None, cnfg=None, **kwa):
 
         cf = None
         if config is not None:
             cf = configing.Configer(name=name,
                                     base="",
-                                    headDirPath=config,
+                                    headDirPath=cnfg,
                                     temp=False,
                                     reopen=True,
                                     clear=False)
-
+        self.endpoint = endpoint
+        self.proxy = proxy
         hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.swain = delegating.Boatswain(hby=hby)
-        self.postman = forwarding.Postman(hby=hby)
+        self.swain = delegating.Sealer(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
-        self.witDoer = None
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
@@ -159,20 +164,24 @@ class InceptDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.makeHab(name=self.alias, **self.inits)
-        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
-        self.extend([self.witDoer])
+        witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        receiptor = agenting.Receiptor(hby=self.hby)
+        self.extend([witDoer, receiptor])
 
         if hab.kever.delegator:
-            self.swain.msgs.append(dict(alias=self.alias, pre=hab.pre, sn=0))
+            self.swain.delegation(pre=hab.pre, sn=0, proxy=self.hby.habByName(self.proxy))
             print("Waiting for delegation approval...")
-            while not self.swain.cues:
+            while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock
 
-        if hab.kever.wits:
+        elif hab.kever.wits:
             print("Waiting for witness receipts...")
-            self.witDoer.msgs.append(dict(pre=hab.pre))
-            while not self.witDoer.cues:
-                _ = yield self.tock
+            if self.endpoint:
+                yield from receiptor.receipt(hab.pre, sn=0)
+            else:
+                witDoer.msgs.append(dict(pre=hab.pre))
+                while not witDoer.cues:
+                    _ = yield self.tock
 
         if hab.kever.delegator:
             yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
@@ -182,7 +191,7 @@ class InceptDoer(doing.DoDoer):
             print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
         print()
 
-        toRemove = [self.hbyDoer, self.witDoer, self.mbx, self.swain, self.postman]
+        toRemove = [self.hbyDoer, witDoer, self.mbx, self.swain, self.postman, receiptor]
         self.remove(toRemove)
 
         return

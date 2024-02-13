@@ -4,7 +4,7 @@ import pytest
 
 from keri import help
 from keri.app import habbing
-from keri.core import parsing, eventing, coring
+from keri.core import parsing, eventing, coring, serdering
 from keri.core.coring import CtrDex, Counter
 from keri.core.coring import Salter
 from keri.core.eventing import Kever, Kevery
@@ -59,7 +59,7 @@ def test_kevery():
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
@@ -77,7 +77,7 @@ def test_kevery():
         # Event 2 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
         event_digs.append(serder.said)
@@ -94,7 +94,7 @@ def test_kevery():
 
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=3)
         event_digs.append(serder.said)
         # create sig counter
@@ -110,7 +110,7 @@ def test_kevery():
 
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=4)
         event_digs.append(serder.said)
         # create sig counter
@@ -127,7 +127,7 @@ def test_kevery():
         # Event 5 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
         event_digs.append(serder.said)
@@ -144,7 +144,7 @@ def test_kevery():
 
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=6)
         event_digs.append(serder.said)
         # create sig counter
@@ -162,7 +162,7 @@ def test_kevery():
         # nxt digest is empty
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         sn=7)
         event_digs.append(serder.said)
         # create sig counter
@@ -178,7 +178,7 @@ def test_kevery():
 
         # Event 8 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=8)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -195,7 +195,7 @@ def test_kevery():
         # Event 8 Rotation override interaction
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
@@ -371,7 +371,7 @@ def test_stale_event_receipts():
             kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
             parsing.Parser().parse(ims=bytearray(bobIcp), kvy=kvy)
             assert bobHab.pre in witHab.kevers
-            iserder = coring.Serder(raw=bytearray(bobIcp))
+            iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
             msg = witHab.receipt(serder=iserder)
             parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
 
@@ -385,7 +385,7 @@ def test_stale_event_receipts():
         for witHab in [wesHab, wanHab]:
             kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
             parsing.Parser().parse(ims=bytearray(rot0), kvy=kvy)
-            iserder = coring.Serder(raw=bytearray(rot0))
+            iserder = serdering.SerderKERI(raw=bytearray(rot0))
             msg = witHab.receipt(serder=iserder)
             parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
 
@@ -393,7 +393,7 @@ def test_stale_event_receipts():
         assert bamKvy.kevers[bobHab.pre].sn == 1
 
         # Validate that bam has 2 receipts in DB for event 1
-        ser = coring.Serder(raw=rot0)
+        ser = serdering.SerderKERI(raw=rot0)
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
         wigs = bamHby.db.getWigs(dgkey)
         assert len(wigs) == 2
@@ -405,7 +405,7 @@ def test_stale_event_receipts():
         for witHab in [wesHab, wanHab]:
             kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
             parsing.Parser().parse(ims=bytearray(rot1), kvy=kvy)
-            iserder = coring.Serder(raw=bytearray(rot1))
+            iserder = serdering.SerderKERI(raw=bytearray(rot1))
             msg = witHab.receipt(serder=iserder)
             parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
 
@@ -416,7 +416,7 @@ def test_stale_event_receipts():
         # Pass receipts from Wil for event 1 to Bam
         kvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
         parsing.Parser().parse(ims=bytearray(rot0), kvy=kvy)
-        iserder = coring.Serder(raw=bytearray(rot0))
+        iserder = serdering.SerderKERI(raw=bytearray(rot0))
         msg = wilHab.receipt(serder=iserder)
         parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
 

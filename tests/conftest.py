@@ -141,6 +141,35 @@ class DbSeed:
 
     @staticmethod
     def seedSchema(db):
+        # EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz
+        sad = {'$id': '',
+               '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Optional Issuee',
+               'description': 'A credential with an optional issuee',
+               'credentialType': 'UntargetedAttestation',
+               'properties': {'v': {'type': 'string'}, 'd': {'type': 'string'}, 'i': {'type': 'string'},
+                              'ri': {'description': 'credential status registry', 'type': 'string'},
+                              's': {'description': 'schema SAID', 'type': 'string'}, 'a': {'properties': {
+                                                                                               'd': {'type': 'string'},
+                                                                                               'i': {'type': 'string'},
+                                                                                               'dt': {
+                                                                                                   'format':
+                                                                                                       'date-time',
+                                                                                                   'type': 'string'},
+                                                                                               'claim': {
+                                                                                                   'type': 'string'}},
+                                                                                           'additionalProperties':
+                                                                                               False,
+                                                                                           'required': ['dt',
+                                                                                                        'claim'],
+                                                                                           'type': 'object'},
+                              'e': {'description': 'edges block', 'type': 'object'},
+                              'r': {'type': 'object', 'description': 'rules block'}}, 'additionalProperties': False,
+               'required': ['i', 'ri', 's', 'd', 'e', 'r'], 'type': 'object'}
+
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
+        schemer = scheming.Schemer(sed=sad)
+        db.schema.pin(schemer.said, schemer)
+
         # OLD: "E1MCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk"
         sad = {'$id': '',
                '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Legal Entity vLEI Credential',
@@ -170,7 +199,7 @@ class DbSeed:
                               'r': {'type': 'object', 'description': 'rules block'}}, 'additionalProperties': False,
                'required': ['i', 'ri', 's', 'd', 'e', 'r'], 'type': 'object'}
 
-        _, sad = coring.Saider.saidify(sad, label=coring.Ids.dollar)
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
         # NEW: "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5
         db.schema.pin(schemer.said, schemer)
@@ -201,7 +230,7 @@ class DbSeed:
                                                                                                         'LEI'],
                                                                                            'type': 'object'},
                               'e': {'type': 'object'}}, 'additionalProperties': False, 'required': ['d', 'i', 'ri']}
-        _, sad = coring.Saider.saidify(sad, label=coring.Ids.dollar)
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
         # NEW: EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC
         db.schema.pin(schemer.said, schemer)
@@ -242,7 +271,7 @@ class DbSeed:
                               'r': {'type': 'array', 'items': {'type': 'object'}, 'description': 'rules block',
                                     'minItems': 0}}, 'additionalProperties': False,
                'required': ['i', 'ri', 's', 'd', 'e', 'r'], 'type': 'object'}
-        _, sad = coring.Saider.saidify(sad, label=coring.Ids.dollar)
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
         # NEW: ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0
         db.schema.pin(schemer.said, schemer)
@@ -280,7 +309,7 @@ class DbSeed:
                               'e': {'type': 'object'}}, 'additionalProperties': False,
                'required': ['i', 'ri', 's', 'd'], 'type': 'object'}
 
-        _, sad = coring.Saider.saidify(sad, label=coring.Ids.dollar)
+        _, sad = coring.Saider.saidify(sad, label=coring.Saids.dollar)
         schemer = scheming.Schemer(sed=sad)
         # NEW: EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs
         db.schema.pin(schemer.said, schemer)

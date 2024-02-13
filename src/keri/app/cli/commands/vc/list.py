@@ -121,8 +121,9 @@ class ListDoer(doing.DoDoer):
             for said in saids:
                 print(said.qb64)
         else:
-            print(f"Current {'issued' if self.issued else 'received'} credentials for {self.hab.name} ({self.hab.pre}):\n")
-            creds = self.rgy.reger.cloneCreds(saids)
+            print(f"Current {'issued' if self.issued else 'received'}"
+                  f" credentials for {self.hab.name} ({self.hab.pre}):\n")
+            creds = self.rgy.reger.cloneCreds(saids, self.hab.db)
             for idx, cred in enumerate(creds):
                 sad = cred['sad']
                 status = cred["status"]

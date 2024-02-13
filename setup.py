@@ -31,7 +31,7 @@ from os.path import splitext
 from setuptools import find_packages, setup
 setup(
     name='keri',
-    version='1.0.0',  # also change in src/keri/__init__.py
+    version='1.1.0',  # also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -81,12 +81,13 @@ setup(
                         'multicommand>=1.0.0',
                         'jsonschema>=4.17.0',
                         'falcon>=3.1.0',
-                        'daemonocle>=1.2.3',
                         'hjson>=3.0.2',
                         'PyYaml>=6.0',
                         'apispec>=6.0.0',
                         'mnemonic>=0.20',
-                        'PrettyTable>=3.5.0'
+                        'PrettyTable>=3.5.0',
+                        'http_sfv>=0.9.8',
+                        'cryptography>=39.0.2'
     ],
     extras_require={
     },

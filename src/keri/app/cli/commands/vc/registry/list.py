@@ -15,7 +15,7 @@ from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List credential registry names and identfiers')
+parser = argparse.ArgumentParser(description='List credential registry names and identifiers')
 parser.set_defaults(handler=lambda args: list_registries(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
@@ -50,6 +50,5 @@ def registries(tymth, tock=0.0, **opts):
                 print(registry.name, ":", registry.regk, ":", registry.hab.pre)
 
     except ConfigurationError as e:
-        print(e)
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1

@@ -110,8 +110,8 @@ def test_reply(mockHelpingNowUTC):
         #assert tamHab.ks == tamKS
         #assert tamHab.db == tamDB
         assert tamHab.kever.prefixer.transferable
-        assert len(tamHab.iserder.werfers) == len(wits)
-        for werfer in tamHab.iserder.werfers:
+        assert len(tamHab.iserder.berfers) == len(wits)
+        for werfer in tamHab.iserder.berfers:
             assert werfer.qb64 in wits
         assert tamHab.kever.wits == wits
         assert tamHab.kever.toader.num == 2
@@ -179,7 +179,7 @@ def test_reply(mockHelpingNowUTC):
                     )
 
         serderR = eventing.reply(route=route, data=data, )
-        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+        assert serderR.stamp == help.helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EFlkeg-NociMRXHSGBSqARxV5y7zuT5z-ZpL'
                             b'ZAkcoMkk","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
@@ -245,7 +245,7 @@ def test_reply(mockHelpingNowUTC):
 
         # stale datetime
         serderR = eventing.reply(route=route, data=data, )
-        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+        assert serderR.stamp == help.helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EM_AD-vVfhW-paUryMAZJKasyBuz_GoYIU_k'
                             b'fp7hmqHY","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/cut","a":{"'

@@ -11,7 +11,7 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.common import existing
-from keri.core import eventing, coring
+from keri.core import serdering
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
@@ -28,7 +28,6 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)  # passcode => bran
 
 parser.add_argument("--said", "-s", help="SAID of the credential to export.", required=True)
-parser.add_argument("--signatures", help="export signatures as attachments to the credential", action="store_true")
 parser.add_argument("--tels", help="export the transaction event logs for the credential and any chained credentials",
                     action="store_true")
 parser.add_argument("--kels", help="export the key event logs for the issuer's of the credentials", action="store_true")
@@ -42,21 +41,18 @@ def export_credentials(args):
     """ Command line list credential registries handler
 
     """
-
-    sigs = args.signatures
     tels = args.tels
     kels = args.kels
-    chains = args.chains
+    chains = args.chains if args.chains is not None else {}
 
     if args.full:
-        sigs = tels = kels = chains = True
+        tels = kels = chains = True
 
     ed = ExportDoer(name=args.name,
                     alias=args.alias,
                     base=args.base,
                     bran=args.bran,
                     said=args.said,
-                    sigs=sigs,
                     tels=tels,
                     kels=kels,
                     chains=chains,
@@ -66,9 +62,8 @@ def export_credentials(args):
 
 class ExportDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, sigs, tels, kels, chains, files):
+    def __init__(self, name, alias, base, bran, said, tels, kels, chains, files):
         self.said = said
-        self.sigs = sigs
         self.tels = tels
         self.kels = kels
         self.chains = chains
@@ -101,19 +96,19 @@ class ExportDoer(doing.DoDoer):
         self.outputCred(said=self.said)
 
     def outputCred(self, said):
-        creder, sadsigers, sadcigars = self.rgy.reger.cloneCred(said=said)
+        creder, *_ = self.rgy.reger.cloneCred(said=said)
 
         if self.kels:
             issr = creder.issuer
             self.outputKEL(issr)
 
         if self.tels:
-            if creder.status is not None:
-                self.outputTEL(creder.status)
+            if creder.regi is not None:
+                self.outputTEL(creder.regi)
                 self.outputTEL(creder.said)
 
         if self.chains:
-            chains = creder.chains
+            chains = creder.edge if creder.edge is not None else {}
             saids = []
             for key, source in chains.items():
                 if key == 'd':
@@ -130,15 +125,9 @@ class ExportDoer(doing.DoDoer):
         if self.files:
             f = open(f"{creder.said}-acdc.cesr", 'w')
             f.write(creder.raw.decode("utf-8"))
-            if self.sigs:
-                f.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
             f.close()
         else:
             sys.stdout.write(creder.raw.decode("utf-8"))
-            if self.sigs:
-                sys.stdout.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode(
-                    "utf-8"))
-
             sys.stdout.flush()
 
     def outputTEL(self, regk):
@@ -150,7 +139,7 @@ class ExportDoer(doing.DoDoer):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
-                serder = coring.Serder(raw=msg)
+                serder = serdering.SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 sys.stdout.write(serder.raw.decode("utf-8"))
                 sys.stdout.write(atc.decode("utf-8"))
@@ -167,7 +156,7 @@ class ExportDoer(doing.DoDoer):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
-                serder = coring.Serder(raw=msg)
+                serder = serdering.SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 sys.stdout.write(serder.raw.decode("utf-8"))
                 sys.stdout.write(atc.decode("utf-8"))

@@ -20,128 +20,70 @@ import pysodium
 import blake3
 import hashlib
 
+from cryptography import exceptions
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, utils
+
 from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
                       ConversionError, InvalidValueError, InvalidTypeError,
                       ValidationError, VersionError, DerivationError,
                       EmptyListError,
-                      ShortageError, UnexpectedCodeError, DeserializationError,
+                      ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
-from ..kering import Versionage, Version
+from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE,
+                      versify, deversify, Rever)
+from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
+from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
+                      RPY_LABELS)
+from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
+                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
+
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable
 
-"""
-ilk is short for message type
-icp = incept, inception
-rot = rotate, rotation
-ixn = interact, interaction
-dip = delcept, delegated inception
-drt = deltate, delegated rotation
-rct = receipt
-ksn = state, key state notice
-qry = query
-rpy = reply
-exn = exchange
-exp = expose, sealed data exposition
-vcp = vdr incept, verifiable data registry inception
-vrt = vdr rotate, verifiable data registry rotation
-iss = vc issue, verifiable credential issuance
-rev = vc revoke, verifiable credential revocation
-bis = backed vc issue, registry-backed transaction event log credential issuance
-brv = backed vc revoke, registry-backed transaction event log credential revocation
-"""
 
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn '
-                               'pro bar vcp vrt iss rev bis brv '))
-
-Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
-              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
-
-Serialage = namedtuple("Serialage", 'json mgpk cbor')
-
-Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
-
-Identage = namedtuple("Identage", "keri acdc")
-
-Idents = Identage(keri="KERI", acdc="ACDC")
-
-VERRAWSIZE = 6  # hex characters in raw serialization size in version string
-# "{:0{}x}".format(300, 6)  # make num char in hex a variable
-# '00012c'
-VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
-VERFULLSIZE = 17  # number of characters in full versions string
+Labels = Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS, dip=DIP_LABELS,
+                drt=DRT_LABELS, rct=[], qry=[], rpy=RPY_LABELS,
+                exn=[], pro=[], bar=[],
+                vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS, rev=REV_LABELS,
+                bis=BIS_LABELS, brv=BRV_LABELS)
 
 
-def versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
-    """
-    Return version string
-    """
-    if ident not in Idents:
-        raise ValueError("Invalid message identifier = {}".format(ident))
-    if kind not in Serials:
-        raise ValueError("Invalid serialization kind = {}".format(kind))
-    version = version if version else Version
-    return VERFMT.format(ident, version[0], version[1], kind, size, VERRAWSIZE)
+DSS_SIG_MODE = "fips-186-3"
+ECDSA_256r1_SEEDBYTES = 32
+ECDSA_256k1_SEEDBYTES = 32
 
 
 Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
                      mgpk=versify(kind=Serials.mgpk, size=0),
                      cbor=versify(kind=Serials.cbor, size=0))
 
-VEREX = b'(?P<ident>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
-Rever = re.compile(VEREX)  # compile is faster
-MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
+# SAID field labels
+Saidage = namedtuple("Saidage", "dollar at id_ i d")
 
+Saids = Saidage(dollar="$id", at="@id", id_="id", i="i", d="d")
 
-def deversify(vs):
+def sizeify(ked, kind=None, version=Version):
     """
-    Returns tuple(ident, kind, version, size)
-      Where:
-        ident is event type identifier one of Idents
-                   acdc='ACDC', keri='KERI'
-        kind is serialization kind, one of Serials
-                   json='JSON', mgpk='MGPK', cbor='CBOR'
-        version is version tuple of type Version
-        size is int of raw size
+    Compute serialized size of ked and update version field
+    Returns tuple of associated values extracted and or changed by sizeify
+
+    Returns tuple of (raw, proto, kind, ked, version) where:
+        raw (str): serialized event as bytes of kind
+        proto (str): protocol type as value of Protocolage
+        kind (str): serialzation kind as value of Serialage
+        ked (dict): key event dict
+        version (Versionage): instance
 
     Parameters:
-      vs is version string str
+        ked (dict): key event dict
+        kind (str): value of Serials is serialization type
+            if not provided use that given in ked["v"]
+        version (Versionage): instance supported protocol version for message
 
-    Uses regex match to extract:
-        event type identifier
-        serialization kind
-        keri version
-        serialization size
-    """
-    match = Rever.match(vs.encode("utf-8"))  # match takes bytes
-    if match:
-        ident, major, minor, kind, size = match.group("ident", "major", "minor", "kind", "size")
-        version = Versionage(major=int(major, 16), minor=int(minor, 16))
-        ident = ident.decode("utf-8")
-        kind = kind.decode("utf-8")
-
-        if ident not in Idents:
-            raise ValueError("Invalid message identifier = {}".format(ident))
-        if kind not in Serials:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
-        size = int(size, 16)
-        return ident, kind, version, size
-
-    raise ValueError("Invalid version string = {}".format(vs))
-
-
-def sizeify(ked, kind=None):
-    """
-    ked is key event dict
-    kind is serialization if given else use one given in ked
-    Returns tuple of (raw, kind, ked, version) where:
-        raw is serialized event as bytes of kind
-        kind is serialzation kind
-        ked is key event dict
-        version is Versionage instance
 
     Assumes only supports Version
     """
@@ -149,10 +91,10 @@ def sizeify(ked, kind=None):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    ident, knd, version, size = deversify(ked["v"])  # extract kind and version
-    if version != Version:
-        raise ValueError("Unsupported version = {}.{}".format(version.major,
-                                                              version.minor))
+    proto, vrsn, knd, size = deversify(ked["v"])  # extract kind and version
+    if vrsn != version:
+        raise ValueError("Unsupported version = {}.{}".format(vrsn.major,
+                                                              vrsn.minor))
 
     if not kind:
         kind = knd
@@ -169,14 +111,14 @@ def sizeify(ked, kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = versify(ident=ident, version=version, kind=kind, size=size)
+    vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
         raise ValueError("Malformed version string size = {}".format(vs))
     ked["v"] = vs  # update ked
 
-    return raw, ident, kind, ked, version
+    return raw, proto, kind, ked, vrsn
 
 
 # Base64 utilities
@@ -294,6 +236,7 @@ def nabSextets(b, l):
     i <<= p  # pad with empty bits
     return (i.to_bytes(n, 'big'))
 
+MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 def sniff(raw):
     """
@@ -311,15 +254,15 @@ def sniff(raw):
     if not match or match.start() > 12:
         raise VersionError("Invalid version string in raw = {}".format(raw))
 
-    ident, major, minor, kind, size = match.group("ident", "major", "minor", "kind", "size")
+    proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
     version = Versionage(major=int(major, 16), minor=int(minor, 16))
     kind = kind.decode("utf-8")
-    ident = ident.decode("utf-8")
+    proto = proto.decode("utf-8")
     if kind not in Serials:
-        raise DeserializationError("Invalid serialization kind = {}".format(kind))
+        raise DeserializeError("Invalid serialization kind = {}".format(kind))
     size = int(size, 16)
 
-    return ident, kind, version, size
+    return proto, kind, version, size
 
 
 def dumps(ked, kind=Serials.json):
@@ -364,25 +307,25 @@ def loads(raw, size=None, kind=Serials.json):
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
-            raise DeserializationError("Error deserializing JSON: {}"
+            raise DeserializeError("Error deserializing JSON: {}"
                                        "".format(raw[:size].decode("utf-8")))
 
     elif kind == Serials.mgpk:
         try:
             ked = msgpack.loads(raw[:size])
         except Exception as ex:
-            raise DeserializationError("Error deserializing MGPK: {}"
+            raise DeserializeError("Error deserializing MGPK: {}"
                                        "".format(raw[:size]))
 
     elif kind == Serials.cbor:
         try:
             ked = cbor.loads(raw[:size])
         except Exception as ex:
-            raise DeserializationError("Error deserializing CBOR: {}"
+            raise DeserializeError("Error deserializing CBOR: {}"
                                        "".format(raw[:size]))
 
     else:
-        raise DeserializationError("Invalid deserialization kind: {}"
+        raise DeserializeError("Invalid deserialization kind: {}"
                                    "".format(kind))
 
     return ked
@@ -410,9 +353,9 @@ def generateSigners(salt=None, count=8, transferable=True):
         seed = pysodium.crypto_pwhash(outlen=32,
                                       passwd=path,
                                       salt=salt,
-                                      opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-                                      memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
-                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+                                      opslimit=2,  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                                      memlimit=67108864,  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
 
         signers.append(Signer(raw=seed, transferable=transferable))
 
@@ -478,7 +421,16 @@ class MatterCodex:
     Short:                str = 'M'  # Short 2 byte b2 number
     Big:                  str = 'N'  # Big 8 byte b2 number
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
-    X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    ECDSA_256r1_Seed:     str = "Q"  # ECDSA secp256r1 256 bit random Seed for private key
+    Tall:                 str = 'R'  # Tall 5 byte b2 number
+    Large:                str = 'S'  # Large 11 byte b2 number
+    Great:                str = 'T'  # Great 14 byte b2 number
+    Vast:                 str = 'U'  # Vast 17 byte b2 number
+    Label1:               str = 'V'  # Label1 as one char (bytes) field map label lead size 1
+    Label2:               str = 'W'  # Label2 as two char (bytes) field map label lead size 0
+    Tag3:                 str = 'X'  # Tag3 3 B64 encoded chars for field tag or packet type, semver, trait like 'DND'
+    Tag7:                 str = 'Y'  # Tag7 7 B64 encoded chars for field tag or packet kind and version KERIVVV
     Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -487,28 +439,56 @@ class MatterCodex:
     SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     Long:                 str = '0H'  # Long 4 byte b2 number
+    ECDSA_256r1_Sig:      str = '0I'  # ECDSA secp256r1 signature.
+    Tag1:                 str = '0J'  # Tag1 1 B64 encoded char with pre pad for field tag
+    Tag2:                 str = '0K'  # Tag2 2 B64 encoded chars for field tag or version VV or trait like 'EO'
+    Tag5:                 str = '0L'  # Tag5 5 B64 encoded chars with pre pad for field tag
+    Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for field tag or protocol kind version like KERIVV (KERI 1.1) or KKKVVV
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
+    ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tern:                 str = '1AAF'  # 3 byte b2 number or 4 char B64 str.
+    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for field tag or message kind
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
+    ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+    ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
+    Null:                 str = '1AAK'  # Null None or empty value
+    Yes:                  str = '1AAL'  # Yes Truthy Boolean value
+    No:                   str = '1AAM'  # No Falsey Boolean value
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
-    StrB64_L0:            str = '4A'  # String Base64 Only Lead Size 0
-    StrB64_L1:            str = '5A'  # String Base64 Only Lead Size 1
-    StrB64_L2:            str = '6A'  # String Base64 Only Lead Size 2
-    StrB64_Big_L0:        str = '7AAA'  # String Base64 Only Big Lead Size 0
-    StrB64_Big_L1:        str = '8AAA'  # String Base64 Only Big Lead Size 1
-    StrB64_Big_L2:        str = '9AAA'  # String Base64 Only Big Lead Size 2
-    Bytes_L0:               str = '4B'  # Byte String Leader Size 0
-    Bytes_L1:               str = '5B'  # Byte String Leader Size 1
-    Bytes_L2:               str = '6B'  # ByteString Leader Size 2
-    Bytes_Big_L0:           str = '7AAB'  # Byte String Big Leader Size 0
-    Bytes_Big_L1:           str = '8AAB'  # Byte String Big Leader Size 1
-    Bytes_Big_L2:           str = '9AAB'  # Byte String Big Leader Size 2
+    StrB64_L0:            str = '4A'  # String Base64 only lead size 0
+    StrB64_L1:            str = '5A'  # String Base64 only lead size 1
+    StrB64_L2:            str = '6A'  # String Base64 only lead size 2
+    StrB64_Big_L0:        str = '7AAA'  # String Base64 only big lead size 0
+    StrB64_Big_L1:        str = '8AAA'  # String Base64 only big lead size 1
+    StrB64_Big_L2:        str = '9AAA'  # String Base64 only big lead size 2
+    Bytes_L0:             str = '4B'  # Byte String lead size 0
+    Bytes_L1:             str = '5B'  # Byte String lead size 1
+    Bytes_L2:             str = '6B'  # Byte String lead size 2
+    Bytes_Big_L0:         str = '7AAB'  # Byte String big lead size 0
+    Bytes_Big_L1:         str = '8AAB'  # Byte String big lead size 1
+    Bytes_Big_L2:         str = '9AAB'  # Byte String big lead size 2
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+    X25519_Cipher_QB2_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_QB2_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_QB2_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_QB2_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_QB2_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_QB2_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
 
 
     def __iter__(self):
@@ -570,6 +550,7 @@ class NonTransCodex:
     Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
     ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -577,7 +558,7 @@ class NonTransCodex:
 
 NonTransDex = NonTransCodex()  # Make instance
 
-
+# When add new to DigCodes update Saider.Digests and Serder.Digests class attr
 @dataclass(frozen=True)
 class DigCodex:
     """
@@ -625,16 +606,18 @@ class NumCodex:
 NumDex = NumCodex()  # Make instance
 
 
+
+
 @dataclass(frozen=True)
 class BextCodex:
     """
-    BextCodex is codex all variable sized Base64 Text (Bext) derivation codes.
+    BextCodex is codex of all variable sized Base64 Text (Bext) derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    StrB64_L0: str = '4A'  # String Base64 Only Leader Size 0
-    StrB64_L1: str = '5A'  # String Base64 Only Leader Size 1
-    StrB64_L2: str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1:     str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2:     str = '6A'  # String Base64 Only Leader Size 2
     StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
     StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
     StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
@@ -644,6 +627,137 @@ class BextCodex:
 
 
 BexDex = BextCodex()  # Make instance
+
+
+
+@dataclass(frozen=True)
+class TextCodex:
+    """
+    TextCodex is codex of all variable sized byte string (Text) derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Bytes_L0:     str = '4B'  # Byte String lead size 0
+    Bytes_L1:     str = '5B'  # Byte String lead size 1
+    Bytes_L2:     str = '6B'  # Byte String lead size 2
+    Bytes_Big_L0: str = '7AAB'  # Byte String big lead size 0
+    Bytes_Big_L1: str = '8AAB'  # Byte String big lead size 1
+    Bytes_Big_L2: str = '9AAB'  # Byte String big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+TexDex = TextCodex()  # Make instance
+
+@dataclass(frozen=True)
+class CipherX25519VarCodex:
+    """
+    CipherX25519VarCodex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is B2.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_L0:     str = '4D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
+    X25519_Cipher_L1:     str = '5D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
+    X25519_Cipher_L2:     str = '6D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXVarDex = CipherX25519VarCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519FixQB64Codex:
+    """
+    CipherX25519FixQB64Codex is codex all fixed sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is B64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXFixQB64Dex = CipherX25519FixQB64Codex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519VarQB64Codex:
+    """
+    CipherX25519VarQB64Codex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is QB64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXVarQB64Dex = CipherX25519VarQB64Codex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519AllQB64Codex:
+    """
+    CipherX25519AllQB64Codex is codex all both fixed and variable sized cipher bytes
+    derivation codes for sealed box encryped ciphertext. Plaintext is B64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXAllQB64Dex = CipherX25519AllQB64Codex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519QB2VarCodex:
+    """
+    CipherX25519QB2VarCodex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is B2.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXVarQB2Dex = CipherX25519QB2VarCodex()  # Make instance
+
+
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -680,6 +794,7 @@ class Matter:
         qb2  (bytes): binary with derivation code + crypto material
         transferable (bool): True means transferable derivation code False otherwise
         digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
 
     Hidden:
         _code (str): value for .code property
@@ -726,6 +841,15 @@ class Matter:
         'N': Sizage(hs=1, ss=0, fs=12, ls=0),
         'O': Sizage(hs=1, ss=0, fs=44, ls=0),
         'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+        'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'R': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'S': Sizage(hs=1, ss=0, fs=16, ls=0),
+        'T': Sizage(hs=1, ss=0, fs=20, ls=0),
+        'U': Sizage(hs=1, ss=0, fs=24, ls=0),
+        'V': Sizage(hs=1, ss=0, fs=4, ls=1),
+        'W': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -734,6 +858,11 @@ class Matter:
         '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -742,6 +871,11 @@ class Matter:
         '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+        '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -756,7 +890,26 @@ class Matter:
         '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4C': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5C': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4D': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5D': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6D': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAD': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAD': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAD': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4E': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5E': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6E': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAE': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
+
 
     # Bards table maps first code char. converted to binary sextext of hard size,
     # hs. Used for ._bexfil.
@@ -985,6 +1138,17 @@ class Matter:
         """
         return (self.code in DigDex)
 
+
+    @property
+    def prefixive(self):
+        """
+        Property prefixive:
+        Returns True if identifier has prefix derivation code,
+                False otherwise
+        """
+        return (self.code in PreDex)
+
+
     def _infil(self):
         """
         Returns bytes of fully qualified base64 characters
@@ -1121,8 +1285,8 @@ class Matter:
 
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs unless
-        # fs is None
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs >= hs + ss
+        # unless fs is None
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError(f"Need {fs - len(qb64b)} more chars.")
@@ -1212,7 +1376,8 @@ class Matter:
 
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and
+        # (fs >= hs + ss if fs is not None else True)
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
@@ -1478,14 +1643,43 @@ class Number(Matter):
         """
         return f"{self.num:x}"
 
+
+    @property
+    def sn(self):
+        """Sequence number, sn property getter to mimic Seqner interface
+        Returns:
+            sn (int): alias for num
+        """
+        return self.num
+
+
+    @property
+    def snh(self):
+        """Sequence number hex str, snh property getter to mimic Seqner interface
+        Returns:
+            snh (hex str): alias for numh
+        """
+        return self.numh
+
+
+
     @property
     def positive(self):
         """
-        Returns True if .num is positive False otherwise.
-        Because valid number .num must be non-negative, positive False means
+        Returns True if .num is strictly positive non-zero False otherwise.
+        Because valid number .num must be non-negative, positive False also means
         that .num is zero.
         """
         return True if self.num > 0 else False
+
+    @property
+    def inceptive(self):
+        """
+        Returns True if .num == 0 False otherwise.
+        Because valid number .num must be non-negative, positive False means
+        that .num is zero.
+        """
+        return True if self.num == 0 else False
 
 
 class Dater(Matter):
@@ -1837,7 +2031,6 @@ class Pather(Bexter):
         """
         return Pather(path=root.path + self.path)
 
-
     def strip(self, root):
         """ Returns a new Pather with root stipped off the front if it exists
 
@@ -1898,7 +2091,7 @@ class Pather(Bexter):
         Returns:
             bytes: Value at the end of the path
         """
-        val = self.resolve(sad=serder.ked)
+        val = self.resolve(sad=serder.sad)
         if isinstance(val, str):
             saider = Saider(qb64=val)
             return saider.qb64b
@@ -1962,7 +2155,7 @@ class Pather(Bexter):
 
                 keys = list(val)
                 if i >= len(keys):
-                    raise Exception(f"invalid dict pointer index {i} for keys {keys}")
+                    raise KeyError(f"invalid dict pointer index {i} for keys {keys}")
 
                 cur = val[list(val)[i]]
             elif idx == "":
@@ -1973,12 +2166,12 @@ class Pather(Bexter):
         elif isinstance(val, list):
             i = int(idx)
             if i >= len(val):
-                raise Exception(f"invalid array pointer index {i} for array {val}")
+                raise KeyError(f"invalid array pointer index {i} for array {val}")
 
             cur = val[i]
 
         else:
-            raise ValueError("invalid traversal type")
+            raise KeyError("invalid traversal type")
 
         return self._resolve(cur, ptr)
 
@@ -2009,6 +2202,10 @@ class Verfer(Matter):
 
         if self.code in [MtrDex.Ed25519N, MtrDex.Ed25519]:
             self._verify = self._ed25519
+        elif self.code in [MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256r1]:
+            self._verify = self._secp256r1
+        elif self.code in [MtrDex.ECDSA_256k1N, MtrDex.ECDSA_256k1]:
+            self._verify = self._secp256k1
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
@@ -2028,7 +2225,7 @@ class Verfer(Matter):
     def _ed25519(sig, ser, key):
         """
         Returns True if verified False otherwise
-        Verifiy ed25519 sig on ser using key
+        Verify Ed25519 sig on ser using key
 
         Parameters:
             sig is bytes signature
@@ -2041,6 +2238,48 @@ class Verfer(Matter):
             return False
 
         return True
+
+    @staticmethod
+    def _secp256r1(sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verify secp256r1 sig on ser using key
+
+        Parameters:
+            sig is bytes signature
+            ser is bytes serialization
+            key is bytes public key
+        """
+        verkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), key)
+        r = int.from_bytes(sig[:32], "big")
+        s = int.from_bytes(sig[32:], "big")
+        der = utils.encode_dss_signature(r, s)
+        try:
+            verkey.verify(der, ser, ec.ECDSA(hashes.SHA256()))
+            return True
+        except exceptions.InvalidSignature:
+            return False
+
+    @staticmethod
+    def _secp256k1(sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verify secp256k1 sig on ser using key
+
+        Parameters:
+            sig is bytes signature
+            ser is bytes serialization
+            key is bytes public key
+        """
+        verkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), key)
+        r = int.from_bytes(sig[:32], "big")
+        s = int.from_bytes(sig[32:], "big")
+        der = utils.encode_dss_signature(r, s)
+        try:
+            verkey.verify(der, ser, ec.ECDSA(hashes.SHA256()))
+            return True
+        except exceptions.InvalidSignature:
+            return False
 
 
 class Cigar(Matter):
@@ -2172,6 +2411,13 @@ class Signer(Matter):
             if code == MtrDex.Ed25519_Seed:
                 raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
                 super(Signer, self).__init__(raw=raw, code=code, **kwa)
+            elif code == MtrDex.ECDSA_256r1_Seed:
+                raw = pysodium.randombytes(ECDSA_256r1_SEEDBYTES)
+                super(Signer, self).__init__(raw=bytes(raw), code=code, **kwa)
+            elif code == MtrDex.ECDSA_256k1_Seed:
+                raw = pysodium.randombytes(ECDSA_256k1_SEEDBYTES)
+                super(Signer, self).__init__(raw=bytes(raw), code=code, **kwa)
+
             else:
                 raise ValueError("Unsupported signer code = {}.".format(code))
 
@@ -2181,6 +2427,22 @@ class Signer(Matter):
             verfer = Verfer(raw=verkey,
                             code=MtrDex.Ed25519 if transferable
                             else MtrDex.Ed25519N)
+        elif self.code == MtrDex.ECDSA_256r1_Seed:
+            self._sign = self._secp256r1
+            d = int.from_bytes(self.raw, byteorder="big")
+            sigkey = ec.derive_private_key(d, ec.SECP256R1())
+            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+            verfer = Verfer(raw=verkey,
+                            code=MtrDex.ECDSA_256r1 if transferable
+                            else MtrDex.ECDSA_256r1N)
+        elif self.code == MtrDex.ECDSA_256k1_Seed:
+            self._sign = self._secp256k1
+            d = int.from_bytes(self.raw, byteorder="big")
+            sigkey = ec.derive_private_key(d, ec.SECP256K1())
+            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+            verfer = Verfer(raw=verkey,
+                            code=MtrDex.ECDSA_256k1 if transferable
+                            else MtrDex.ECDSA_256k1N)
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
@@ -2275,6 +2537,169 @@ class Signer(Matter):
                          ondex=ondex,
                          verfer=verfer,)
 
+    @staticmethod
+    def _secp256r1(ser, seed, verfer, index, only=False, ondex=None, **kwa):
+        """
+        Returns signature as either Cigar or Siger instance as appropriate for
+        Ed25519 digital signatures given index and ondex values
+
+        The seed's code determins the crypto key-pair algorithm and signing suite
+        The signature type, Cigar or Siger, and when indexed the Siger code
+        may be completely determined by the seed and index values (index, ondex)
+        by assuming that the index values are intentional.
+        Without the seed code its more difficult for Siger to
+        determine when for the Indexer code value should be changed from the
+        than the provided value with respect to provided but incompatible index
+        values versus error conditions.
+
+        Parameters:
+            ser (bytes): serialization to be signed
+            seed (bytes):  raw binary seed (private key)
+            verfer (Verfer): instance. verfer.raw is public key
+            index (int |None): main index offset into list such as current signing
+                None means return non-indexed Cigar
+                Not None means return indexed Siger with Indexer code derived
+                    from index, conly, and ondex values
+            only (bool): True means main index only list, ondex ignored
+                          False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next
+        """
+        # compute raw signature sig using seed on serialization ser
+        d = int.from_bytes(seed, byteorder="big")
+        sigkey = ec.derive_private_key(d, ec.SECP256R1())
+        der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+        (r, s) = utils.decode_dss_signature(der)
+        sig = bytearray(r.to_bytes(32, "big"))
+        sig.extend(s.to_bytes(32, "big"))
+
+        if index is None:  # Must be Cigar i.e. non-indexed signature
+            return Cigar(raw=sig, code=MtrDex.ECDSA_256r1_Sig, verfer=verfer)
+        else:  # Must be Siger i.e. indexed signature
+            # should add Indexer class method to get ms main index size for given code
+            if only:  # only main index ondex not used
+                ondex = None
+                if index <= 63: # (64 ** ms - 1) where ms is main index size
+                    code = IdrDex.ECDSA_256r1_Crt_Sig  # use small current only
+                else:
+                    code = IdrDex.ECDSA_256r1_Big_Crt_Sig  # use big current only
+            else:  # both
+                if ondex == None:
+                    ondex = index  # enable default to be same
+                if ondex == index and index <= 63:  # both same and small
+                    code = IdrDex.ECDSA_256r1_Sig  # use  small both same
+                else:  # otherwise big or both not same so use big both
+                    code = IdrDex.ECDSA_256r1_Big_Sig  # use use big both
+
+            return Siger(raw=sig,
+                         code=code,
+                         index=index,
+                         ondex=ondex,
+                         verfer=verfer,)
+
+    @staticmethod
+    def _secp256k1(ser, seed, verfer, index, only=False, ondex=None, **kwa):
+        """
+        Returns signature as either Cigar or Siger instance as appropriate for
+        secp256k1 digital signatures given index and ondex values
+
+        The seed's code determins the crypto key-pair algorithm and signing suite
+        The signature type, Cigar or Siger, and when indexed the Siger code
+        may be completely determined by the seed and index values (index, ondex)
+        by assuming that the index values are intentional.
+        Without the seed code its more difficult for Siger to
+        determine when for the Indexer code value should be changed from the
+        than the provided value with respect to provided but incompatible index
+        values versus error conditions.
+
+        Parameters:
+            ser (bytes): serialization to be signed
+            seed (bytes):  raw binary seed (private key)
+            verfer (Verfer): instance. verfer.raw is public key
+            index (int |None): main index offset into list such as current signing
+                None means return non-indexed Cigar
+                Not None means return indexed Siger with Indexer code derived
+                    from index, conly, and ondex values
+            only (bool): True means main index only list, ondex ignored
+                          False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next
+        """
+        # compute raw signature sig using seed on serialization ser
+        d = int.from_bytes(seed, byteorder="big")
+        sigkey = ec.derive_private_key(d, ec.SECP256K1())
+        der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+        (r, s) = utils.decode_dss_signature(der)
+        sig = bytearray(r.to_bytes(32, "big"))
+        sig.extend(s.to_bytes(32, "big"))
+
+        if index is None:  # Must be Cigar i.e. non-indexed signature
+            return Cigar(raw=sig, code=MtrDex.ECDSA_256k1_Sig, verfer=verfer)
+        else:  # Must be Siger i.e. indexed signature
+            # should add Indexer class method to get ms main index size for given code
+            if only:  # only main index ondex not used
+                ondex = None
+                if index <= 63: # (64 ** ms - 1) where ms is main index size
+                    code = IdrDex.ECDSA_256k1_Crt_Sig  # use small current only
+                else:
+                    code = IdrDex.ECDSA_256k1_Big_Crt_Sig  # use big current only
+            else:  # both
+                if ondex == None:
+                    ondex = index  # enable default to be same
+                if ondex == index and index <= 63:  # both same and small
+                    code = IdrDex.ECDSA_256k1_Sig  # use  small both same
+                else:  # otherwise big or both not same so use big both
+                    code = IdrDex.ECDSA_256k1_Big_Sig  # use use big both
+
+            return Siger(raw=sig,
+                         code=code,
+                         index=index,
+                         ondex=ondex,
+                         verfer=verfer,)
+
+    # def derive_index_code(code, index, only=False, ondex=None, **kwa):
+    #     # should add Indexer class method to get ms main index size for given code
+    #     if only:  # only main index ondex not used
+    #         ondex = None
+    #         if index <= 63: # (64 ** ms - 1) where ms is main index size,  use small current only
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Crt_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+    #         else:    # use big current only
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Big_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Big_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Big_Crt_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+    #     else:  # both
+    #         if ondex == None:
+    #             ondex = index  # enable default to be same
+    #         if ondex == index and index <= 63:  # both same and small so use small both same
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+    #         else:  # otherwise big or both not same so use big both
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Big_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Big_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Big_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+
+    #     return (indxSigCode, ondex)
 
 class Salter(Matter):
     """
@@ -2353,18 +2778,18 @@ class Salter(Matter):
         tier = tier if tier is not None else self.tier
 
         if temp:
-            opslimit = pysodium.crypto_pwhash_OPSLIMIT_MIN
-            memlimit = pysodium.crypto_pwhash_MEMLIMIT_MIN
+            opslimit = 1  # pysodium.crypto_pwhash_OPSLIMIT_MIN
+            memlimit = 8192  # pysodium.crypto_pwhash_MEMLIMIT_MIN
         else:
             if tier == Tiers.low:
-                opslimit = pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
-                memlimit = pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
+                opslimit = 2  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
+                memlimit = 67108864  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
             elif tier == Tiers.med:
-                opslimit = pysodium.crypto_pwhash_OPSLIMIT_MODERATE
-                memlimit = pysodium.crypto_pwhash_MEMLIMIT_MODERATE
+                opslimit = 3  # pysodium.crypto_pwhash_OPSLIMIT_MODERATE
+                memlimit = 268435456  # pysodium.crypto_pwhash_MEMLIMIT_MODERATE
             elif tier == Tiers.high:
-                opslimit = pysodium.crypto_pwhash_OPSLIMIT_SENSITIVE
-                memlimit = pysodium.crypto_pwhash_MEMLIMIT_SENSITIVE
+                opslimit = 4  # pysodium.crypto_pwhash_OPSLIMIT_SENSITIVE
+                memlimit = 1073741824  # pysodium.crypto_pwhash_MEMLIMIT_SENSITIVE
             else:
                 raise ValueError("Unsupported security tier = {}.".format(tier))
 
@@ -2374,7 +2799,7 @@ class Salter(Matter):
                                       salt=self.raw,
                                       opslimit=opslimit,
                                       memlimit=memlimit,
-                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
         return (seed)
 
     def signer(self, *, code=MtrDex.Ed25519_Seed, transferable=True, path="",
@@ -2874,6 +3299,36 @@ class Diger(Matter):
 
 
 
+@dataclass(frozen=True)
+class PreCodex:
+    """
+    PreCodex is codex all identifier prefix derivation codes.
+    This is needed to verify valid inception events.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N:      str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    Ed25519:       str = 'D'  # Ed25519 verification key basic derivation
+    Blake3_256:    str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:   str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:   str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:      str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:      str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    Blake3_512:    str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512:   str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512:      str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512:      str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+    ECDSA_256k1N:  str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:   str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
+    ECDSA_256r1N:  str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+    ECDSA_256r1:   str = "1AAJ"  # ECDSA secp256r1 verification or encryption key, basic derivation
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+PreDex = PreCodex()  # Make instance
+
 
 class Prefixer(Matter):
     """
@@ -2942,23 +3397,23 @@ class Prefixer(Matter):
             if allows is not None and code not in allows:
                 raise ValueError("Unallowed code={} for prefixer.".format(code))
 
-            if code == MtrDex.Ed25519N:
-                self._derive = self._derive_ed25519N
-            elif code == MtrDex.Ed25519:
-                self._derive = self._derive_ed25519
+            if code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
+                self._derive = self._derive_non_transferable
+            elif code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
+                self._derive = self._derive_transferable
             elif code == MtrDex.Blake3_256:
                 self._derive = self._derive_blake3_256
             else:
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
 
             # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self._derive(ked=ked)
+            raw, code = self.derive(ked=ked)
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
-        if self.code == MtrDex.Ed25519N:
-            self._verify = self._verify_ed25519N
-        elif self.code == MtrDex.Ed25519:
-            self._verify = self._verify_ed25519
+        if self.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
+            self._verify = self._verify_non_transferable
+        elif self.code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
+            self._verify = self._verify_transferable
         elif self.code == MtrDex.Blake3_256:
             self._verify = self._verify_blake3_256
         else:
@@ -2974,8 +3429,16 @@ class Prefixer(Matter):
             seed is only used for sig derivation it is the secret key/secret
 
         """
-        if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
+        ilk = ked["t"]
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
+            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
+
+        labels = getattr(Labels, ilk)
+        for k in labels:
+            if k not in ked:
+                raise ValidationError("Missing element = {} from {} event for "
+                                      "evt = {}.".format(k, ilk, ked))
+
         return (self._derive(ked=ked))
 
     def verify(self, ked, prefixed=False):
@@ -2987,11 +3450,19 @@ class Prefixer(Matter):
         Parameters:
             ked is inception key event dict
         """
-        if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
+        ilk = ked["t"]
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
+            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
+
+        labels = getattr(Labels, ilk)
+        for k in labels:
+            if k not in ked:
+                raise ValidationError("Missing element = {} from {} event for "
+                                      "evt = {}.".format(k, ilk, ked))
+
         return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
 
-    def _derive_ed25519N(self, ked):
+    def _derive_non_transferable(self, ked):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
             as derived from inception key event dict ked keys[0]
@@ -3007,22 +3478,22 @@ class Prefixer(Matter):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [MtrDex.Ed25519N]:
+        if verfer.code not in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
             raise DerivationError("Mismatch derivation code = {}."
                                   "".format(verfer.code))
 
         try:
-            if verfer.code == MtrDex.Ed25519N and ked["n"]:
+            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and ked["n"]:
                 raise DerivationError("Non-empty nxt = {} for non-transferable"
                                       " code = {}".format(ked["n"],
                                                           verfer.code))
 
-            if verfer.code == MtrDex.Ed25519N and "b" in ked and ked["b"]:
+            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "b" in ked and ked["b"]:
                 raise DerivationError("Non-empty b = {} for non-transferable"
                                       " code = {}".format(ked["b"],
                                                           verfer.code))
 
-            if verfer.code == MtrDex.Ed25519N and "a" in ked and ked["a"]:
+            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "a" in ked and ked["a"]:
                 raise DerivationError("Non-empty a = {} for non-transferable"
                                       " code = {}".format(ked["a"],
                                                           verfer.code))
@@ -3032,7 +3503,7 @@ class Prefixer(Matter):
 
         return (verfer.raw, verfer.code)
 
-    def _verify_ed25519N(self, ked, pre, prefixed=False):
+    def _verify_non_transferable(self, ked, pre, prefixed=False):
         """
         Returns True if verified  False otherwise
         Verify derivation of fully qualified Base64 pre from inception iked dict
@@ -3060,7 +3531,7 @@ class Prefixer(Matter):
 
         return True
 
-    def _derive_ed25519(self, ked):
+    def _derive_transferable(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
             as derived from inception key event dict ked keys[0]
@@ -3076,13 +3547,13 @@ class Prefixer(Matter):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [MtrDex.Ed25519]:
+        if verfer.code not in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
             raise DerivationError("Mismatch derivation code = {}"
                                   "".format(verfer.code))
 
         return (verfer.raw, verfer.code)
 
-    def _verify_ed25519(self, ked, pre, prefixed=False):
+    def _verify_transferable(self, ked, pre, prefixed=False):
         """
         Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
@@ -3108,6 +3579,7 @@ class Prefixer(Matter):
 
         return True
 
+
     def _derive_blake3_256(self, ked):
         """
         Returns tuple (raw, code) of pre (qb64) as blake3 digest
@@ -3115,15 +3587,17 @@ class Prefixer(Matter):
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp):
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
-        ked["d"] = ked["i"]
-        raw, ident, kind, ked, version = sizeify(ked=ked)
-        dig = blake3.blake3(raw).digest()  # digest with dummy 'i'
-        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
+        ked["d"] = ked["i"]  # must be same dummy
+        #raw, proto, kind, ked, version = sizeify(ked=ked)
+        raw, _, _, _, _ = sizeify(ked=ked)
+        dig = blake3.blake3(raw).digest()  # digest with dummy 'i' and 'd'
+        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i' and 'd'
+
 
     def _verify_blake3_256(self, ked, pre, prefixed=False):
         """
@@ -3144,17 +3618,17 @@ class Prefixer(Matter):
             if prefixed and ked["i"] != pre:  # incoming 'i' must match pre
                 return False
 
+            if ked["i"] != ked["d"]:  # when digestive then SAID must match pre
+                return False
+
         except Exception as ex:
             return False
 
         return True
 
 
-Idage = namedtuple("Idage", "dollar at id_ i d")
 
-Ids = Idage(dollar="$id", at="@id", id_="id", i="i", d="d")
-
-# digest klas, digest size (not default), digest length
+# digest algorithm  klas, digest size (not default), digest length
 # size and length are needed for some digest types as function parameters
 Digestage = namedtuple("Digestage", "klas size length")
 
@@ -3203,7 +3677,7 @@ class Saider(Matter):
     }
 
     def __init__(self, raw=None, *, code=None, sad=None,
-                 kind=None, label=Ids.d, ignore=None, **kwa):
+                 kind=None, label=Saids.d, ignore=None, **kwa):
         """
         See Matter.__init__ for inherited parameters
 
@@ -3212,7 +3686,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label, one of Ids
+            label (str): Saidage value as said field label
             ignore (list): fields to ignore when generating SAID
 
         """
@@ -3234,8 +3708,13 @@ class Saider(Matter):
             if code not in DigDex:  # need valid code
                 raise ValueError("Unsupported digest code = {}.".format(code))
 
-            # re-derive said raw bytes from sad and code, so code overrides label
-            raw, sad = self.derive(sad=dict(sad), code=code, kind=kind, label=label, ignore=ignore)
+            # make copy of sad to derive said raw bytes and new sad
+            # need new sad because sets sad[label] and sad['v'] fields
+            raw, sad = self.derive(sad=dict(sad),
+                                   code=code,
+                                   kind=kind,
+                                   label=label,
+                                   ignore=ignore)
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
 
         if not self.digestive:
@@ -3261,7 +3740,7 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            _, knd, _, _ = deversify(sad['v'])
+            _, _, knd, _ = deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd
@@ -3274,7 +3753,7 @@ class Saider(Matter):
                 *,
                 code: str = MtrDex.Blake3_256,
                 kind: str = None,
-                label: str = Ids.d,
+                label: str = Saids.d,
                 ignore: list = None, **kwa):
         """
         Derives said from sad and injects it into copy of sad and said and
@@ -3292,7 +3771,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject said
+            label (str): Saidage value as said field label in which to inject said
             ignore (list): fields to ignore when generating SAID
 
         """
@@ -3303,11 +3782,12 @@ class Saider(Matter):
         sad[label] = saider.qb64
         return saider, sad
 
+
     @classmethod
     def _derive(clas, sad: dict, *,
                 code: str = MtrDex.Blake3_256,
                 kind: str = None,
-                label: str = Ids.d,
+                label: str = Saids.d,
                 ignore: list = None):
         """
         Derives raw said from sad with .Dummy filled sad[label]
@@ -3321,7 +3801,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject dummy
+            label (str): Saidage value as said field label in which to inject dummy
             ignore (list): fields to ignore when generating SAID
 
         """
@@ -3332,7 +3812,7 @@ class Saider(Matter):
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Sizes[code].fs
         if 'v' in sad:  # if versioned then need to set size in version string
-            raw, ident, kind, sad, version = sizeify(ked=sad, kind=kind)
+            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
 
         ser = dict(sad)
         if ignore:
@@ -3352,6 +3832,7 @@ class Saider(Matter):
             dkwa.update(length=length)
         return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
 
+
     def derive(self, sad, code=None, **kwa):
         """
         Returns:
@@ -3364,13 +3845,14 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject dummy
+            label (str): Saidage value of said field labelin which to inject dummy
         """
         code = code if code is not None else self.code
         return self._derive(sad=sad, code=code, **kwa)
 
+
     def verify(self, sad, *, prefixed=False, versioned=True, code=None,
-               kind=None, label=Ids.d, ignore=None, **kwa):
+               kind=None, label=Saids.d, ignore=None, **kwa):
         """
         Returns:
             result (bool): True means derivation from sad with dummy label
@@ -3392,7 +3874,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject dummy
+            label (str): Saidage value of said field label in which to inject dummy
             ignore (list): fields to ignore when generating SAID
         """
         try:
@@ -3442,12 +3924,16 @@ class IndexerCodex:
     Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
     ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list.
+    ECDSA_256r1_Sig: str = "E"  # ECDSA secp256r1 sig appears same in both lists if any.
+    ECDSA_256r1_Crt_Sig: str = "F"  # ECDSA secp256r1 sig appears in current list.
     Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
     Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
     Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
     Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
     ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Sig: str = "2E"  # ECDSA secp256r1 sig appears in both lists.
+    ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
     TBD0: str = '0z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
@@ -3471,12 +3957,16 @@ class IndexedSigCodex:
     Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
     ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list.
+    ECDSA_256r1_Sig: str = "E"  # ECDSA secp256r1 sig appears same in both lists if any.
+    ECDSA_256r1_Crt_Sig: str = "F"  # ECDSA secp256r1 sig appears in current list.
     Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
     Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
     Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
     Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
     ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Sig: str = "2E"  # ECDSA secp256r1 sig appears in both lists.
+    ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
 
@@ -3495,9 +3985,11 @@ class IndexedCurrentSigCodex:
     """
     Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Crt_Sig: str = "F"  # ECDSA secp256r1 sig appears in current list.
     Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
     Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
 
     def __iter__(self):
@@ -3516,9 +4008,11 @@ class IndexedBothSigCodex:
     """
     Ed25519_Sig: str = 'A'  # Ed25519 sig appears same in both lists if any.
     ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
+    ECDSA_256r1_Sig: str = "E"  # ECDSA secp256r1 sig appears same in both lists if any.
     Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
     Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both listsy.
     ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
+    ECDSA_256r1_Big_Sig: str = "2E"  # ECDSA secp256r1 sig appears in both lists.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
 
     def __iter__(self):
@@ -3536,10 +4030,10 @@ IdxBthSigDex = IndexedBothSigCodex()  # Make instance
 Xizage = namedtuple("Xizage", "hs ss os fs ls")
 
 class Indexer:
-    """
-    Indexer is fully qualified cryptographic material primitive base class for
-    indexed primitives. Indexed codes are a mix of indexed and variable length
-    because code table has two char codes for compact variable length.
+    """ Indexer is fully qualified cryptographic material primitive base class for
+    indexed primitives. In special cases some codes in the Index code table
+    may be of variable length (i.e. not indexed) when the full size table entry
+    is None. In that case the index is used instread as the length.
 
     Sub classes are derivation code and key event element context specific.
 
@@ -3583,12 +4077,16 @@ class Indexer:
         'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'C': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'E': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'F': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '2A': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2B': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2C': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2D': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2E': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2F': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
@@ -4186,16 +4684,19 @@ CtrDex = CounterCodex()
 
 @dataclass(frozen=True)
 class ProtocolGenusCodex:
-    """ProtocolGenusCodex is codex of protocol genera.
+    """ProtocolGenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    KERI: str = '--AAA'  # KERI ACDC Protocol Stack
+    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
 
 
     def __iter__(self):
-        return iter(astuple(self))
+        return iter(astuple(self))  # enables inclusion test with "in"
+        # duplicate values above just result in multiple entries in tuple so
+        # in inclusion still works
 
 ProDex = ProtocolGenusCodex()  # Make instance
 
@@ -4604,6 +5105,10 @@ class Sadder:
     """
     Sadder is self addressed data (SAD) serializer-deserializer class
 
+    Instance creation of a Sadder does not verifiy it .said property it merely
+    extracts it. In order to ensure Sadder instance has a verified .said then
+    must call .saider.verify(sad=self.ked)
+
     Has the following public properties:
 
     Properties:
@@ -4612,7 +5117,8 @@ class Sadder:
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
         version (Versionage): protocol version (Major, Minor)
-        ident (Identage): protocol identifier such as KERI, ACDC
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
+        label (str): Saidage value as said field label
         saider (Saider): of SAID of this SAD .ked['d'] if present
         said (str): SAID of .saider qb64
         saidb (bytes): SAID of .saider  qb64b
@@ -4625,7 +5131,7 @@ class Sadder:
           supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
         ._version is Versionage instance of event version
-        ._ident (Identage):  protocol type identifier
+        ._proto (str):  Protocolage value as protocol type identifier
         ._saider (Saider): instance for this Sadder's SAID
 
     Note:
@@ -4633,32 +5139,37 @@ class Sadder:
 
     """
 
-    def __init__(self, raw=b'', ked=None, kind=None, sad=None, code=MtrDex.Blake3_256):
+    def __init__(self, raw=b'', ked=None, sad=None, kind=None, saidify=False,
+                 code=MtrDex.Blake3_256):
         """
-        Deserialize if raw provided
-        Serialize if ked provided but not raw
+        Deserialize if raw provided does not verify assumes embedded said is valid
+        Serialize if ked provided but not raw verifies if verify is True?
         When serializing if kind provided then use kind instead of field in ked
 
         Parameters:
-          raw is bytes of serialized event plus any attached signatures
+          raw (bytes): serialized event
           ked is key event dict or None
             if None its deserialized from raw
           kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
             if kind is None then its extracted from ked or raw
-          code is .diger default digest code
+          saidify (bool): True means compute said for ked
+          code is .diger default digest code for computing said .saider
 
         """
         self._code = code  # need default code for .saider
         if raw:  # deserialize raw using property setter
             self.raw = raw  # raw property setter does the deserialization
         elif ked:  # serialize ked using property setter
+            #ToDo  when pass in ked and saidify True then compute said
             self._kind = kind
             self.ked = ked  # ked property setter does the serialization
         elif sad:
-            self._clone(sad=sad)  # create saider of sad
+            # ToDo do we need this or should we be using ked above with saidify flag
+            self._clone(sad=sad)  # copy fields from sad
         else:
             raise ValueError("Improper initialization need sad, raw or ked.")
+
 
     def _clone(self, sad):
         """ copy hidden attributes from sad """
@@ -4667,7 +5178,7 @@ class Sadder:
         self._kind = sad.kind
         self._size = sad.size
         self._version = sad.version
-        self._ident = sad.ident
+        self._proto = sad.proto
         self._saider = sad.saider
 
 
@@ -4685,7 +5196,7 @@ class Sadder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
-        ident, kind, version, size = sniff(raw)
+        proto, kind, version, size = sniff(raw)
         if version != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
                                "".format(version.major, version.minor, Version))
@@ -4694,26 +5205,35 @@ class Sadder:
 
         ked = loads(raw=raw, size=size, kind=kind)
 
-        return ked, ident, kind, version, size
+        return ked, proto, kind, version, size
 
 
     def _exhale(self, ked, kind=None):
         """
-        ked is key event dict
-        kind is serialization if given else use one given in ked
-        Returns tuple of (raw, kind, ked, version) where:
-            raw is serialized event as bytes of kind
-            kind is serialzation kind
-            ked is key event dict
-            version is Versionage instance
+        Returns sizeify(ked, kind)
+
+        From sizeify
+        Returns tuple of (raw, proto, kind, ked, version) where:
+            raw (str): serialized event as bytes of kind
+            proto (str): protocol type as value of Protocolage
+            kind (str): serialzation kind as value of Serialage
+            ked (dict): key event dict or sad dict
+            version (Versionage): instance
+
+        Parameters:
+            ked (dict): key event dict or sad dict
+            kind (str): value of Serials serialization kind.
+                When not provided use
 
         Assumes only supports Version
         """
         return sizeify(ked=ked, kind=kind)
 
+
     def compare(self, said=None):
         """
         Returns True  if said and either .saider.qb64 or .saider.qb64b match
+        via string equality ==
 
         Convenience method to allow comparison of own .saider digest self.raw
         with some other purported said of self.raw
@@ -4741,10 +5261,10 @@ class Sadder:
     @raw.setter
     def raw(self, raw):
         """ raw property setter """
-        ked, ident, kind, version, size = self._inhale(raw=raw)
+        ked, proto, kind, version, size = self._inhale(raw=raw)
         self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
         self._ked = ked
-        self._ident = ident
+        self._proto = proto
         self._kind = kind
         self._version = version
         self._size = size
@@ -4758,11 +5278,11 @@ class Sadder:
     @ked.setter
     def ked(self, ked):
         """ ked property setter  assumes ._kind """
-        raw, ident, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
+        raw, proto, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
-        self._ident = ident
+        self._proto = proto
         self._kind = kind
         self._size = size
         self._version = version
@@ -4776,10 +5296,10 @@ class Sadder:
     @kind.setter
     def kind(self, kind):
         """ kind property setter Assumes ._ked. Serialization kind. """
-        raw, ident, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
+        raw, proto, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
-        self._ident = ident
+        self._proto = proto
         self._ked = ked
         self._kind = kind
         self._size = size
@@ -4805,14 +5325,14 @@ class Sadder:
 
 
     @property
-    def ident(self):
-        """ ident property getter
-        protocol identifer type instance of Identage such as KERI ACDC
+    def proto(self):
+        """ proto property getter
+        protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
 
         Returns:
-            (Identage):
+            (str): Protocolage value as protocol type
         """
-        return self._ident
+        return self._proto
 
 
     @property
@@ -4838,214 +5358,6 @@ class Sadder:
         said (self-addressing identifier) property getter
         """
         return self.saider.qb64b
-
-    def pretty(self, *, size=1024):
-        """
-        Returns str JSON of .ked with pretty formatting
-
-        ToDo: add default size limit on pretty when used for syslog UDP MCU
-        like 1024 for ogler.logger
-        """
-        return json.dumps(self.ked, indent=1)[:size if size is not None else None]
-
-
-class Serder(Sadder):
-    """
-    Serder is versioned protocol key event message serializer-deserializer class
-
-    Only supports current version VERSION
-
-    Has the following public properties:
-
-    Inherited Properties:
-        raw (bytes): of serialized event only
-        ked (dict): self addressed data dict
-        kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
-        size (int): number of bytes in serialization
-        version (Versionage): protocol version (Major, Minor)
-        ident (Identage): protocol identifier such as KERI, ACDC
-        saider (Saider): of SAID of this SAD .ked['d'] if present
-        said (str): SAID of .saider qb64
-        saidb (bytes): SAID of .saider  qb64b
-        pretty (str): Pretty JSON of this SAD
-
-    Properties:
-        .diger is Diger instance of digest of .raw
-        .dig  is qb64 digest from .diger
-        .digb is qb64b digest from .diger
-        .verfers is list of Verfers converted from .ked["k"]
-        .werfers is list of Verfers converted from .ked["b"]
-        .tholder is Tholder instance from .ked["kt'] else None
-        .ntholder is Tholder instance from .ked["nt'] else None
-        sner (Number): instance converted from sequence number .ked["s"] hex str
-        sn (int): sequence number converted from .ked["s"]
-        fner (Number): instance converted from first seen ordinal number
-            .ked["f"] hex str if any otherwise None
-        fn (int): first seen ordinal number converted from .ked["f"] if any
-            otherwise None
-        .pre is qb64 str of identifier prefix from .ked["i"]
-        .preb is qb64b bytes of identifier prefix from .ked["i"]
-
-    Hidden Attributes:
-          ._raw is bytes of serialized event only
-          ._ked is key event dict
-          ._kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ._version is Versionage instance of event version
-          ._size is int of number of bytes in serialed event only
-          ._code is default code for .diger
-          ._diger is Diger instance of digest of .raw
-
-    Note:
-        loads and jumps of json use str whereas cbor and msgpack use bytes
-
-    """
-
-    def __init__(self, raw=b'', ked=None, kind=None, sad=None, code=MtrDex.Blake3_256):
-        """
-        Deserialize if raw provided
-        Serialize if ked provided but not raw
-        When serializing if kind provided then use kind instead of field in ked
-
-        Parameters:
-          raw is bytes of serialized event plus any attached signatures
-          ked is key event dict or None
-            if None its deserialized from raw
-          sad (Sadder) is clonable base class
-          kind is serialization kind string value or None (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-            if kind is None then its extracted from ked or raw
-          code is .diger default digest code
-
-        """
-        super(Serder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
-
-        if self._ident != Idents.keri:
-            raise ValueError("Invalid ident {}, must be KERI".format(self._ident))
-
-
-    @property
-    def verfers(self):
-        """
-        Returns list of Verfer instances as converted from .ked['k'].
-        One for each key.
-        verfers property getter
-        """
-        if "k" in self.ked:  # establishment event
-            keys = self.ked["k"]
-        else:  # non-establishment event
-            keys = []
-
-        return [Verfer(qb64=key) for key in keys]
-
-    @property
-    def digers(self):
-        """
-        Returns list of Diger instances as converted from .ked['n'].
-        One for each next key digests.
-        digers property getter
-        """
-        if "n" in self.ked:  # establishment event
-            digs = self.ked["n"]
-        else:  # non-establishment event
-            digs = []
-
-        return [Diger(qb64=dig) for dig in digs]
-
-    @property
-    def werfers(self):
-        """
-        Returns list of Verfer instances as converted from .ked['b'].
-        One for each backer (witness).
-        werfers property getter
-        """
-        if "b" in self.ked:  # inception establishment event
-            wits = self.ked["b"]
-        else:  # non-establishment event
-            wits = []
-
-        return [Verfer(qb64=wit) for wit in wits]
-
-    @property
-    def tholder(self):
-        """
-        Returns Tholder instance as converted from .ked['kt'] or None if missing.
-
-        """
-        return Tholder(sith=self.ked["kt"]) if "kt" in self.ked else None
-
-    @property
-    def ntholder(self):
-        """
-        Returns Tholder instance as converted from .ked['nt'] or None if missing.
-
-        """
-        return Tholder(sith=self.ked["nt"]) if "nt" in self.ked else None
-
-    @property
-    def sner(self):
-        """
-        sner (Number of sequence number) property getter
-        Returns:
-            (Number): of .ked["s"] hex number str converted
-        """
-        return Number(num=self.ked["s"])  # auto converts hex num str to int
-
-
-    @property
-    def sn(self):
-        """
-        sn (sequence number) property getter
-        Returns:
-            sn (int): of .sner.num from .ked["s"]
-        """
-        return (self.sner.num)
-
-
-    @property
-    def fner(self):
-        """
-        fner (Number of first seen ordinal) property getter
-        Returns:
-            (Number): of .ked["f"] hex number str converted
-        """
-        # auto converts hex num str to int
-        return Number(num=self.ked["f"])  if "f" in self.ked else None
-
-
-    @property
-    def fn(self):
-        """
-        fn (first seen ordinal number) property getter
-        Returns:
-            fn (int): of .fner.num from .ked["f"]
-        """
-        return (self.fner.num)
-
-
-    @property
-    def pre(self):
-        """
-        Returns str qb64  of .ked["i"] (identifier prefix)
-        pre (identifier prefix) property getter
-        """
-        return self.ked["i"]
-
-
-    @property
-    def preb(self):
-        """
-        Returns bytes qb64b  of .ked["i"] (identifier prefix)
-        preb (identifier prefix) property getter
-        """
-        return self.pre.encode("utf-8")
-
-
-    @property
-    def est(self):  # establishative
-        """ Returns True if Serder represents an establishment event """
-        return self.ked["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
-
 
     def pretty(self, *, size=1024):
         """
@@ -5167,6 +5479,9 @@ class Tholder:
             self._processLimen(limen=limen, **kwa)  # kwa for strip
 
         elif sith is not None:
+            if isinstance(sith, str) and not sith:  # empty str
+                raise EmptyMaterialError("Empty threshold expression.")
+
             self._processSith(sith=sith)
 
         else:
@@ -5473,151 +5788,6 @@ class Tholder:
         return False
 
 
-    #@staticmethod
-    #def exposeds(digers, sigers):
-        #"""Returns list of ondices (indices) into digers (key digests) as
-        #exposed by sigers. Uses dual index feature of siger. Assumes that each
-        #siger.verfer is from the correct key given by siger.index.
-        #Assumes that digers comes from the list of prior next digests.
-
-        #A key given by siger.verfer (at siger.index in the current key list)
-        #may expose a prior next key hidden by the diger at siger.ondex in digers.
-
-        #Each returned ondex must be properly exposed by a siger in sigers
-        #such that the siger's indexed key given by siger.verfer matches the
-        #siger's ondexed digest from digers.
-
-        #The ondexed digest's code is used to compute the digest of the corresponding
-        #indexed key verfer to verify that they match. This supports crypto agility
-        #for different digest codes, i.e. all digests in digers do not have to
-        #use the same algorithm.
-
-        #Only ondices from properly matching key and digest are returned.
-
-        #Used to extract the indices from the list of prior next digests (digers)
-        #exposed by the signatures (sigers) on a rotation event of the newly
-        #current keys given by each .verfer at .index from sigers. Only checks
-        #keys and digests that correspond to provided signatures not all keys and
-        #digests defined by the rotation event.
-
-        #Parameters:
-            #digers (list): of Diger instance prior next digests
-            #sigers (list): of Siger instances  of indexed signature with .verfer
-        #"""
-        #odxs = []
-        #for siger in sigers:
-            #try:
-                #diger = digers[siger.ondex]
-            #except TypeError as ex:  # ondex may be None
-                #continue
-            #except IndexError as ex:
-                #raise ValidationError(f'Invalid ondex={siger.ondex} '
-                                      #f'to expose digest.') from ex
-
-            #kdig = Diger(ser=siger.verfer.qb64b, code=diger.code).qb64
-            #if kdig == diger.qb64:
-                #odxs.append(siger.ondex)
-
-        #return odxs
-
-
-
-    #def satisfies(self, tholder, indices, digers=None,  digs=None):
-        #"""Given prior next digest list in .digers the provided tholder,
-        #and indices with either provided digers or digs together constitute a
-        #satisfycing subset of the prior next threshold. Each index indicates
-        #which index offset into .digers is the corresponding diger or dig.
-
-        #Returns:
-            #(bool): True if satisfycing, False otherwise
-
-        #Parameters:
-            #tholder (Tholder): instance of prior next threshold
-            #indices (list): of int offsets into .digers
-            #digers (list | None): of instances of Diger of prior next key digests
-            #digs (list | None): of digests qb64 of prior next keys
-
-        #"""
-        #if digers is None:
-            #if digs is None:
-                #raise EmptyListError(f"Need digers, digs, verfers, or keys.")
-            #digers = [Diger(qb64=dig) for dig in digs]
-
-        #return False
-
-
-
-    #@staticmethod
-    #def _digest(keys):
-        #"""
-        #Returns digs of keys using default digest Blake3
-
-        #Parameters:
-            #keys (list): public keys qb64 or qb64b
-        #"""
-        #digs = [Diger(ser=key.encode("utf-8")
-                      #if hasattr(key, 'encode') else key).qb64 for key in keys]
-
-        #return digs
-
-    #@staticmethod
-    #def includes(keys, digs):
-        #"""
-        #Returns True if list of Blake3 digests of keys are included as an ordered
-        #(potentially non-contiguous) subset  of digs.
-        #Each dugest of an element in the provided list keys must appear
-        #in digs in the same order but not all elements in digs must appear as
-        #a digest of of an element of keys, i.e returns True if the list of
-        #digests of keys is an ordered subset of digs
-
-        #Parameters:
-            #keys (list): public keys qb64
-            #digs (list): digests qb64  (prior next digs)
-        #"""
-        #kdigs = [Diger(ser=key.encode("utf-8")
-                      #if hasattr(key, 'encode') else key).qb64 for key in keys]
-
-        #if len(kdigs) == len(digs):
-            #return kdigs == digs
-
-        #elif len(kdigs) < len(digs):
-            #pdigs = list(digs)  # make copy
-            #finds = []
-            #for kdig in kdigs:
-                #while pdigs:
-                    #pdig = pdigs.pop(0)
-                    #if kdig == pdig:
-                        #finds.append(kdig)
-                        #break
-
-                #if not pdigs:
-                    #break
-
-            #return kdigs == finds
-
-        #else:
-            #return False
-
-    #@staticmethod
-    #def matches(sigers, digs):
-        #"""Returns list of indices from list of sigers for each matching
-        #Blake3 digest of each siger.verfer qb64 public key to an element of digs
-
-        #Parameters:
-            #sigers (list): of indexed signatures
-            #digs (list): digests qb64  (prior next digs)
-        #"""
-        #idxs = []
-        #for siger in sigers:
-            #idig = Diger(ser=siger.verfer.qb64b).qb64  # default Blake3
-            #try:
-                #idxs.append(digs.index(idig))
-            #except ValueError as ex:
-                #raise ValidationError(f'indices into verfer unable to locate "'
-                                      #f'"{idig} in {digs}') from ex
-
-        #return idxs
-
 
 class Dicter:
     """ Dicter class is base class for objects that can be stored in a Suber
@@ -5628,7 +5798,7 @@ class Dicter:
 
     """
 
-    def __init__(self, raw=b'', pad=None, sad=None, label=Ids.i):
+    def __init__(self, raw=b'', pad=None, sad=None, label=Saids.i):
         """ Create Dicter from either pad dict or raw bytes
 
         Parameters:

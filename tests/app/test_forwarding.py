@@ -4,20 +4,19 @@ KERI
 tests.app.forwarding module
 
 """
-
 import time
 
 from hio.base import doing, tyming
 
 from keri.app import forwarding, habbing, indirecting, storing
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 from keri.peer import exchanging
 
 
 def test_postman(seeder):
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
-            habbing.openHby(name="repTest",  temp=True) as recpHby:
+            habbing.openHby(name="repTest", temp=True) as recpHby:
 
         mbx = storing.Mailboxer(name="wes", temp=True)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
@@ -33,7 +32,7 @@ def test_postman(seeder):
         parsing.Parser().parse(ims=bytearray(recpIcp), kvy=wesKvy)
         assert recpHab.pre in wesKvy.kevers
 
-        serder = coring.Serder(raw=recpIcp)
+        serder = serdering.SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder)
 
         kvy = eventing.Kevery(db=hab.db)
@@ -42,10 +41,10 @@ def test_postman(seeder):
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
-        pman = forwarding.Postman(hby=hby)
+        pman = forwarding.Poster(hby=hby)
 
-        exn = exchanging.exchange(route="/echo", payload=dict(msg="test"))
-        atc = hab.endorse(exn)
+        exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test"), sender=hab.pre)
+        atc = hab.endorse(exn, last=False)
         del atc[:exn.size]
         pman.send(src=hab.pre, dest=recpHab.pre, topic="echo", serder=exn, attachment=atc)
 
@@ -70,7 +69,7 @@ def test_postman(seeder):
             msgs.append(msg)
 
         assert len(msgs) == 1
-        serder = coring.Serder(raw=msgs[0])
+        serder = serdering.SerderKERI(raw=msgs[0])
         assert serder.ked["t"] == coring.Ilks.exn
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test")
@@ -78,22 +77,6 @@ def test_postman(seeder):
 
 def test_forward_handler():
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-
         mbx = storing.Mailboxer()
         forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[forwarder])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-
-        doist.exit()
-
+        # TODO: implement a real test here

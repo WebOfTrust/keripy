@@ -11,19 +11,24 @@ from base64 import urlsafe_b64encode as encodeB64
 from fractions import Fraction
 from builtins import OverflowError
 from math import ceil
+from collections import namedtuple
 
 import blake3
 import cbor2 as cbor
 import msgpack
 import pysodium
 import pytest
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, utils
+from cryptography.hazmat.primitives import hashes
+from cryptography import exceptions
 
 from keri.core import coring
 from keri.core import eventing
-from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
-from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
-from keri.core.coring import Serder, Tholder
-from keri.core.coring import Serialage, Serials, Vstrings
+from keri.core.coring import (Ilkage, Ilks, Labels, Saids, Protos, Protocolage,
+                              Sadder, Tholder, Seqner,
+                              NumDex, Number, Siger, Dater, Bexter)
+from keri.core.coring import Serialage, Serials, Tiers, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
                               CtrDex, Counter, sniff, ProDex)
@@ -36,8 +41,49 @@ from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError)
-from keri.kering import Version, Versionage
+                         InvalidValueError, DeserializeError)
+from keri.kering import Version, Versionage, VersionError
+from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
+                      RPY_LABELS)
+from keri.kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
+                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
+
+
+
+def test_protos():
+    """
+    Test protocols namedtuple instance Protos
+    """
+
+    assert isinstance(Protos, Protocolage)
+
+    assert Protos.keri == 'KERI'
+    assert Protos.crel == 'CREL'
+    assert Protos.acdc == 'ACDC'
+
+    assert 'KERI' in Protos
+    assert 'CREL' in Protos
+    assert 'ACDC' in Protos
+
+    """End Test"""
+
+def test_prodex():
+    """
+    Test genera in ProDex as instance of ProtocolGenusCodex
+
+    """
+
+    assert dataclasses.asdict(ProDex) == {
+        'KERI': '--AAA', # KERI and ACDC Protocol Stacks share the same tables
+        'ACDC': '--AAA',
+        }
+
+    assert '--AAA' in ProDex
+    assert ProDex.KERI == "--AAA"
+    assert ProDex.ACDC == "--AAA"
+    assert ProDex.KERI == ProDex.ACDC
+
+    """End Test"""
 
 
 def test_ilks():
@@ -45,7 +91,7 @@ def test_ilks():
     Test Ilkage namedtuple instance Ilks
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
-                          rct='rct', ksn='ksn', qry='qry', rpy='rpy',
+                          rct='rct', qry='qry', rpy='rpy',
                           exn='exn', pro='pro', bar='bar',
                           vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
@@ -67,8 +113,6 @@ def test_ilks():
     assert Ilks.drt == 'drt'
     assert 'rct' in Ilks
     assert Ilks.rct == 'rct'
-    assert 'ksn' in Ilks
-    assert Ilks.ksn == 'ksn'
     assert 'qry' in Ilks
     assert Ilks.qry == 'qry'
     assert 'rpy' in Ilks
@@ -97,6 +141,45 @@ def test_ilks():
     assert Ilks.brv == 'brv'
 
     """End Test """
+
+def test_labels():
+    """
+    Test Ilkage namedtuple instance Labels
+    """
+    assert Labels == Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS,
+                            dip=DIP_LABELS, drt=DRT_LABELS,
+                            rct=[], qry=[], rpy=RPY_LABELS,
+                            exn=[], pro=[], bar=[],
+                            vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS,
+                            rev=REV_LABELS, bis=BIS_LABELS, brv=BRV_LABELS)
+
+    assert isinstance(Labels, Ilkage)
+
+    for fld in Labels._fields:
+        assert isinstance(getattr(Labels, fld), list)
+
+    assert Labels.icp == ICP_LABELS
+    assert Labels.rot == ROT_LABELS
+    assert Labels.ixn == IXN_LABELS
+    assert Labels.dip == DIP_LABELS
+    assert Labels.drt == DRT_LABELS
+    assert Labels.rct == []
+    assert Labels.qry == []
+    assert Labels.rpy == RPY_LABELS
+    assert Labels.exn == []
+    assert Labels.pro == []
+    assert Labels.bar == []
+
+    assert Labels.vcp == VCP_LABELS
+    assert Labels.vrt == VRT_LABELS
+    assert Labels.iss == ISS_LABELS
+    assert Labels.rev == REV_LABELS
+    assert Labels.bis == BIS_LABELS
+    assert Labels.brv == BRV_LABELS
+
+    """End Test """
+
+
 
 
 def test_b64_conversions():
@@ -280,6 +363,15 @@ def test_matter():
         'Big': 'N',
         'X25519_Private': 'O',
         'X25519_Cipher_Seed': 'P',
+        'ECDSA_256r1_Seed': 'Q',
+        'Tall': 'R',
+        'Large': 'S',
+        'Great': 'T',
+        'Vast': 'U',
+        'Label1': 'V',
+        'Label2': 'W',
+        'Tag3': 'X',
+        'Tag7': 'Y',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -288,14 +380,24 @@ def test_matter():
         'SHA3_512': '0F',
         'SHA2_512': '0G',
         'Long': '0H',
+        'ECDSA_256r1_Sig': '0I',
+        'Tag1': '0J',
+        'Tag2': '0K',
+        'Tag5': '0L',
+        'Tag6': '0M',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Tern': '1AAF',
+        'Tag4': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
+        'ECDSA_256r1N': '1AAI',
+        'ECDSA_256r1': '1AAJ',
+        'Null': '1AAK',
+        'Yes': '1AAL',
+        'No': '1AAM',
         'TBD1': '2AAA',
         'TBD2': '3AAA',
         'StrB64_L0': '4A',
@@ -310,7 +412,26 @@ def test_matter():
         'Bytes_Big_L0': '7AAB',
         'Bytes_Big_L1': '8AAB',
         'Bytes_Big_L2': '9AAB',
+        'X25519_Cipher_L0': '4C',
+        'X25519_Cipher_L1': '5C',
+        'X25519_Cipher_L2': '6C',
+        'X25519_Cipher_Big_L0': '7AAC',
+        'X25519_Cipher_Big_L1': '8AAC',
+        'X25519_Cipher_Big_L2': '9AAC',
+        'X25519_Cipher_QB64_L0': '4D',
+        'X25519_Cipher_QB64_L1': '5D',
+        'X25519_Cipher_QB64_L2': '6D',
+        'X25519_Cipher_QB64_Big_L0': '7AAD',
+        'X25519_Cipher_QB64_Big_L1': '8AAD',
+        'X25519_Cipher_QB64_Big_L2': '9AAD',
+        'X25519_Cipher_QB2_L0': '4D',
+        'X25519_Cipher_QB2_L1': '5D',
+        'X25519_Cipher_QB2_L2': '6D',
+        'X25519_Cipher_QB2_Big_L0': '7AAD',
+        'X25519_Cipher_QB2_Big_L1': '8AAD',
+        'X25519_Cipher_QB2_Big_L2': '9AAD'
     }
+
 
     assert Matter.Codex == MtrDex
 
@@ -344,6 +465,15 @@ def test_matter():
         'N': Sizage(hs=1, ss=0, fs=12, ls=0),
         'O': Sizage(hs=1, ss=0, fs=44, ls=0),
         'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+        'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'R': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'S': Sizage(hs=1, ss=0, fs=16, ls=0),
+        'T': Sizage(hs=1, ss=0, fs=20, ls=0),
+        'U': Sizage(hs=1, ss=0, fs=24, ls=0),
+        'V': Sizage(hs=1, ss=0, fs=4, ls=1),
+        'W': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -352,6 +482,11 @@ def test_matter():
         '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -360,6 +495,11 @@ def test_matter():
         '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+        '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -374,6 +514,24 @@ def test_matter():
         '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4C': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5C': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4D': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5D': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6D': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAD': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAD': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAD': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4E': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5E': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6E': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAE': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2)
     }
 
     assert Matter.Sizes['A'].hs == 1  # hard size
@@ -389,9 +547,10 @@ def test_matter():
     #  if fs is not None else not (hs + ss) % 4
     for val in Matter.Sizes.values():
         if val.fs is not None:
-            assert val.ss == 0 and not val.fs % 4 and val.hs > 0 and val.fs > val.hs
+            assert val.ss == 0 and not val.fs % 4 and val.hs > 0 and val.fs >= (val.hs + val.ss)
         else:
             assert not (val.hs + val.ss) % 4
+
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
@@ -436,6 +595,8 @@ def test_matter():
     assert matter.raw == verkey
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
+
     # test round trip
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -536,6 +697,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
 
     # test nongreedy prefixb on full identifier
     both = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
@@ -546,6 +708,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
 
     # Test ._bexfil
     matter = Matter(qb64=prefix)  #
@@ -579,6 +742,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
 
     ims = bytearray(prefixb)  # strip from ims qb64b
     matter = Matter(qb64b=ims, strip=True)
@@ -590,6 +754,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert not ims  # stripped
 
     ims = bytearray(prebin)
@@ -602,6 +767,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert not ims  # stripped
 
     # test strip with extra q64b
@@ -616,6 +782,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert ims == extra  # stripped not include extra
 
     # test strip with extra qb2
@@ -630,6 +797,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert ims == extra  # stripped not include extra
 
     # test fix sized with leader 1
@@ -651,6 +819,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -699,6 +868,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test with bad pad or lead
     badqb64 = '2AAA_2Fi'  # '2AAA' + encodeB64(b'\xffab').decode("utf-8")
@@ -731,6 +901,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -766,6 +937,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test with bad pad or lead
     badqb64 = '3AAA__96'  # '3AAA' + encodeB64(b'\xff\xffz').decode("utf-8")
@@ -798,6 +970,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable is True
     assert matter.digestive is False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -844,6 +1017,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test strip
     matter = Matter(qb2=bytearray(qb2), strip=True)
@@ -883,6 +1057,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 1 with code replacement
     code2 = MtrDex.Bytes_L2  # use leader 0 code but with lead size 1 raw
@@ -904,6 +1079,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
@@ -920,6 +1096,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 2
     code = MtrDex.Bytes_L2
@@ -940,6 +1117,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -977,6 +1155,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test with bad lead 2
     # 4 bytes with lead 2 = two triplets = b'\xff\xffabcd'
@@ -1011,6 +1190,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 2 with code replacement
     code1 = MtrDex.Bytes_L1  # use leader 1 code but with lead size 2 raw
@@ -1032,6 +1212,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
@@ -1048,6 +1229,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 0
     code = MtrDex.Bytes_L0
@@ -1068,6 +1250,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -1103,6 +1286,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 0 with code replacement
     code1 = MtrDex.Bytes_L1  # use leader 1 code but with lead size 0 raw
@@ -1124,6 +1308,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 0 with code replacement
     code1 = MtrDex.Bytes_L2  # use leader 2 code but with lead size 0 raw
@@ -1145,6 +1330,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
@@ -1161,6 +1347,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # text big code substitution for size bigger than 4095  4k
     code0 = MtrDex.Bytes_L0
@@ -1238,6 +1425,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qsig64b)
     assert matter.raw == sig
@@ -1247,6 +1435,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qsig64)
     assert matter.raw == sig
@@ -1256,6 +1445,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qsigB2)
     assert matter.raw == sig
@@ -1265,6 +1455,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test short
     val = int("F77F", 16)
@@ -1296,6 +1487,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
@@ -1307,6 +1499,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
@@ -1318,6 +1511,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
@@ -1329,6 +1523,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test long
     val = int("F7F33F7F", 16)
@@ -1360,6 +1555,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
@@ -1371,6 +1567,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
@@ -1382,6 +1579,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
@@ -1393,30 +1591,35 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
-    # test Tern as number
-    val = int("F89CFF", 16)
-    assert val == 16293119
-    raw = val.to_bytes(3, 'big')
-    assert raw == b'\xf8\x9c\xff'
-    cs = len(MtrDex.Tern)
+    # test Tag4
+    #val = int("F89CFF", 16)
+    #assert val == 16293119
+    #raw = val.to_bytes(3, 'big')
+    #assert raw == b'\xf8\x9c\xff'
+    raw = b'hio'
+    cs = len(MtrDex.Tag4)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
-    assert txt == b'-Jz_'
-    qb64b = MtrDex.Tern.encode("utf-8") + txt[ps:]
-    assert qb64b == b'1AAF-Jz_'
+    #assert txt == b'-Jz_'
+    assert txt == b'aGlv'
+    qb64b = MtrDex.Tag4.encode("utf-8") + txt[ps:]
+    #assert qb64b == b'1AAF-Jz_'
+    assert qb64b == b'1AAFaGlv'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
-    assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
+    assert qb2 == b'\xd4\x00\x05hio'
+    #assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
     bs = ceil((cs * 3) / 4)
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tern)
+    matter = Matter(raw=raw, code=MtrDex.Tag4)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1424,10 +1627,11 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1435,10 +1639,11 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1446,10 +1651,11 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1457,19 +1663,20 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
-    # test Tern as chars
+    # test Tag4 as chars
     txt = b'icp_'
     raw = decodeB64(txt)
     assert raw == b'\x89\xca\x7f'
     val = int.from_bytes(raw, 'big')
     assert val == 9030271
-    cs = len(MtrDex.Tern)
+    cs = len(MtrDex.Tag4)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
-    qb64b = MtrDex.Tern.encode("utf-8") + txt
+    qb64b = MtrDex.Tag4.encode("utf-8") + txt
     assert qb64b == b'1AAFicp_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
@@ -1478,18 +1685,19 @@ def test_matter():
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tern)
+    matter = Matter(raw=raw, code=MtrDex.Tag4)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1497,19 +1705,21 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1517,6 +1727,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     """ Done Test """
 
@@ -1532,12 +1743,16 @@ def test_indexer():
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
         'ECDSA_256k1_Crt_Sig': 'D',
+        'ECDSA_256r1_Sig': 'E',
+        'ECDSA_256r1_Crt_Sig': 'F',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
         'Ed25519_Big_Sig': '2A',
         'Ed25519_Big_Crt_Sig': '2B',
         'ECDSA_256k1_Big_Sig': '2C',
         'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'ECDSA_256r1_Big_Sig': '2E',
+        'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Sig': '3A',
         'Ed448_Big_Crt_Sig': '3B',
         'TBD0': '0z',
@@ -1549,12 +1764,16 @@ def test_indexer():
     assert IdrDex.Ed25519_Crt_Sig == 'B'
     assert IdrDex.ECDSA_256k1_Sig == 'C'
     assert IdrDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdrDex.ECDSA_256r1_Sig == 'E'
+    assert IdrDex.ECDSA_256r1_Crt_Sig == 'F'
     assert IdrDex.Ed448_Sig == '0A'
     assert IdrDex.Ed448_Crt_Sig == '0B'
     assert IdrDex.Ed25519_Big_Sig == '2A'
     assert IdrDex.Ed25519_Big_Crt_Sig == '2B'
     assert IdrDex.ECDSA_256k1_Big_Sig == '2C'
     assert IdrDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdrDex.ECDSA_256r1_Big_Sig == '2E'
+    assert IdrDex.ECDSA_256r1_Big_Crt_Sig == '2F'
     assert IdrDex.Ed448_Big_Sig == '3A'
     assert IdrDex.Ed448_Big_Crt_Sig == '3B'
     assert IdrDex.TBD0 == '0z'
@@ -1566,12 +1785,16 @@ def test_indexer():
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
         'ECDSA_256k1_Crt_Sig': 'D',
+        'ECDSA_256r1_Sig': 'E',
+        'ECDSA_256r1_Crt_Sig': 'F',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
         'Ed25519_Big_Sig': '2A',
         'Ed25519_Big_Crt_Sig': '2B',
         'ECDSA_256k1_Big_Sig': '2C',
         'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'ECDSA_256r1_Big_Sig': '2E',
+        'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Sig': '3A',
         'Ed448_Big_Crt_Sig': '3B',
     }
@@ -1580,12 +1803,16 @@ def test_indexer():
     assert IdxSigDex.Ed25519_Crt_Sig == 'B'
     assert IdxSigDex.ECDSA_256k1_Sig == 'C'
     assert IdxSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxSigDex.ECDSA_256r1_Sig == 'E'
+    assert IdxSigDex.ECDSA_256r1_Crt_Sig == 'F'
     assert IdxSigDex.Ed448_Sig == '0A'
     assert IdxSigDex.Ed448_Crt_Sig == '0B'
     assert IdxSigDex.Ed25519_Big_Sig == '2A'
     assert IdxSigDex.Ed25519_Big_Crt_Sig == '2B'
     assert IdxSigDex.ECDSA_256k1_Big_Sig == '2C'
     assert IdxSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxSigDex.ECDSA_256r1_Big_Sig == '2E'
+    assert IdxSigDex.ECDSA_256r1_Big_Crt_Sig == '2F'
     assert IdxSigDex.Ed448_Big_Sig == '3A'
     assert IdxSigDex.Ed448_Big_Crt_Sig == '3B'
 
@@ -1593,34 +1820,42 @@ def test_indexer():
     assert dataclasses.asdict(IdxCrtSigDex) == {
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Crt_Sig': 'D',
+        'ECDSA_256r1_Crt_Sig': 'F',
         'Ed448_Crt_Sig': '0B',
         'Ed25519_Big_Crt_Sig': '2B',
         'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Crt_Sig': '3B',
     }
 
     assert IdxCrtSigDex.Ed25519_Crt_Sig == 'B'
     assert IdxCrtSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxCrtSigDex.ECDSA_256r1_Crt_Sig == 'F'
     assert IdxCrtSigDex.Ed448_Crt_Sig == '0B'
     assert IdxCrtSigDex.Ed25519_Big_Crt_Sig == '2B'
     assert IdxCrtSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxCrtSigDex.ECDSA_256r1_Big_Crt_Sig == '2F'
     assert IdxCrtSigDex.Ed448_Big_Crt_Sig == '3B'
 
 
     assert dataclasses.asdict(IdxBthSigDex) == {
         'Ed25519_Sig': 'A',
         'ECDSA_256k1_Sig': 'C',
+        'ECDSA_256r1_Sig': 'E',
         'Ed448_Sig': '0A',
         'Ed25519_Big_Sig': '2A',
         'ECDSA_256k1_Big_Sig': '2C',
+        'ECDSA_256r1_Big_Sig': '2E',
         'Ed448_Big_Sig': '3A',
     }
 
     assert IdxBthSigDex.Ed25519_Sig == 'A'
     assert IdxBthSigDex.ECDSA_256k1_Sig == 'C'
+    assert IdxBthSigDex.ECDSA_256r1_Sig == 'E'
     assert IdxBthSigDex.Ed448_Sig == '0A'
     assert IdxBthSigDex.Ed25519_Big_Sig == '2A'
     assert IdxBthSigDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdxBthSigDex.ECDSA_256r1_Big_Sig == '2E'
     assert IdxBthSigDex.Ed448_Big_Sig == '3A'
 
 
@@ -1641,12 +1876,16 @@ def test_indexer():
         'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'C': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'E': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'F': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '2A': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2B': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2C': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2D': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2E': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2F': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
@@ -2572,15 +2811,7 @@ def test_counter():
 
     """ Done Test """
 
-def test_prodex():
-    """
-    Test ProtocolGenusCodex
-    """
-    assert dataclasses.asdict(ProDex) == {
-        'KERI': '--AAA',
-    }
 
-    """ Done Test """
 
 
 def test_seqner():
@@ -2757,7 +2988,10 @@ def test_number():
     assert number.qb2 == b'0\x00\x00'
     assert number.num == 0
     assert number.numh == '0'
+    assert number.sn == 0
+    assert number.snh == '0'
     assert not number.positive
+    assert number.inceptive
     assert hex(int.from_bytes(number.qb2, 'big')) == '0x300000'
 
     # test num as empty string defaults to 0
@@ -2788,12 +3022,17 @@ def test_number():
     with pytest.raises(InvalidValueError):
         number = Number(num=" :")
 
-    # test hex number string too long > 32 characters
-    #with pytest.raises(InvalidValueError):
-        #number = Number(numh="0"*33)
+    num = (256 ** 18 - 1)  # too big to represent
+    assert num == 22300745198530623141535718272648361505980415
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffffffff'
+    assert len(numh) == 18 * 2
 
-    #with pytest.raises(InvalidValueError):
-        #number = Number(num="0"*33)
+    with pytest.raises(InvalidValueError):
+        number = Number(num=num)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(numh=numh)
 
 
     num = (256 ** 2 - 1)
@@ -3572,7 +3811,7 @@ def test_pather():
     assert pather.bext == text
     assert pather.qb64 == "4AADA-0-field1-0"
     assert pather.raw == b"\x03\xed>~'\xa5w_\xb4"
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         pather.resolve(sad)
     assert pather.path == ["0", "field1", "0"]
 
@@ -3643,6 +3882,99 @@ def test_verfer():
 
     with pytest.raises(ValueError):
         verfer = Verfer(raw=verkey, code=MtrDex.Blake3_256)
+
+    # secp256r1
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256R1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    assert verfer.raw == verkey
+    assert verfer.code == MtrDex.ECDSA_256r1
+
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    result = verfer.verify(der, b'ABC')
+    assert result == False
+
+    # secp256r1N
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256R1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verferN = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    assert verferN.raw == verkey
+    assert verferN.code == MtrDex.ECDSA_256r1N
+
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verferN.verify(sig, ser)
+    assert result == True
+
+    result = verferN.verify(der, b'ABC')
+    assert result == False
+
+    # secp256k1
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256K1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256k1)
+    assert verfer.raw == verkey
+    assert verfer.code == MtrDex.ECDSA_256k1
+
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    result = verfer.verify(der, b'ABC')
+    assert result == False
+
+    # secp256k1N
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256K1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256k1N)
+    assert verfer.raw == verkey
+    assert verfer.code == MtrDex.ECDSA_256k1N
+
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    result = verfer.verify(der, b'ABC')
+    assert result == False
+
     """ Done Test """
 
 
@@ -3827,13 +4159,207 @@ def test_signer():
     with pytest.raises(ValueError):  # use invalid code not SEED type code
         signer = Signer(raw=seed, code=MtrDex.Ed25519N)
 
+    # Test Secp256r1, default seed
+    signer = Signer(code=MtrDex.ECDSA_256r1_Seed)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.ECDSA_256r1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result is True
+
+    # Test non-default seed
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    # Test hardcoded seed
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR\xc9\xbd\x04\x9d\x85)~\x93')
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.qb64 == "QJ97qKeoQzmWJvqxmeuqIMQbRxHErlNBUsm9BJ2FKX6T"
+    assert signer.verfer.qb64 == "1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"
+
+    # Test vectors from CERSide
+    seed = (b'\x35\x86\xc9\xa0\x4d\x33\x67\x85\xd5\xe4\x6a\xda\x62\xf0\x54\xc5\xa5\xf4\x32\x3f\x46\xcb\x92\x23\x07'
+            b'\xe0\xe2\x79\xb7\xe5\xf5\x0a')
+    verkey = (b"\x03\x16\x99\xbc\xa0\x51\x8f\xa6\x6c\xb3\x5d\x6b\x0a\x92\xf6\x84\x96\x28\x7b\xb6\x64\xe8\xe8\x57\x69"
+              b"\x15\xb8\xea\x9a\x02\x06\x2a\xff")
+    sig = (b'\x8c\xfa\xb4\x40\x01\xd2\xab\x4a\xbc\xc5\x96\x8b\xa2\x65\x76\xcd\x51\x9d\x3b\x40\xc3\x35\x21\x73\x9a\x1b'
+           b'\xe8\x2f\xe1\x30\x28\xe1\x07\x90\x08\xa6\x42\xd7\x3f\x36\x8c\x96\x32\xff\x01\x64\x03\x18\x08\x85\xb8\xa4'
+           b'\x97\x76\xbe\x9c\xe4\xd7\xc5\xe7\x05\xda\x51\x23')
+
+    signerqb64 = "QDWGyaBNM2eF1eRq2mLwVMWl9DI_RsuSIwfg4nm35fUK"
+    verferqb64 = "1AAJAxaZvKBRj6Zss11rCpL2hJYoe7Zk6OhXaRW46poCBir_"
+    cigarqb64 = "0ICM-rRAAdKrSrzFlouiZXbNUZ07QMM1IXOaG-gv4TAo4QeQCKZC1z82jJYy_wFkAxgIhbikl3a-nOTXxecF2lEj"
+
+    ser = b'abc'
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)
+    cigar = signer.sign(ser)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.qb64 == signerqb64
+
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.verfer.raw == verkey
+    assert signer.verfer.qb64 == verferqb64
+
+    assert cigar.code == MtrDex.ECDSA_256r1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    assert signer.verfer.verify(cigar.raw, ser)
+    assert signer.verfer.verify(sig, ser)
+
+    cigar = Cigar(raw=sig, code=MtrDex.ECDSA_256r1_Sig)
+    assert cigar.qb64 == cigarqb64
+
+
+    # Test Secp256k1, default seed
+    signer = Signer(code=MtrDex.ECDSA_256k1_Seed)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    # create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result is True
+
+    index = 0
+    siger = signer.sign(ser, index=index)
+    assert siger.code == IdrDex.ECDSA_256k1_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    # Non transferable
+    signer = Signer(code=MtrDex.ECDSA_256k1_Seed, transferable=False)  # ECDSA_256k1N verifier
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.ECDSA_256k1N
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result == True
+
+    siger = signer.sign(ser, index=0)
+    assert siger.code == IdrDex.ECDSA_256k1_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    # Test non-default seed
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result == True
+
+    index = 1
+    siger = signer.sign(ser, index=index)
+    assert siger.code == IdrDex.ECDSA_256k1_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    # different both so Big
+    ondex = 3
+    siger = signer.sign(ser, index=index, ondex=ondex)
+    assert siger.code == IdrDex.ECDSA_256k1_Big_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == ondex
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # Test hardcoded seed from CERSide
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR\xc9\xbd\x04\x9d\x85)~\x93')
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.qb64 == "JJ97qKeoQzmWJvqxmeuqIMQbRxHErlNBUsm9BJ2FKX6T"
+    assert signer.verfer.qb64 == "1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"
+
+    # Test vectors from CERSide
+    seed = (b'\x7f\x98\x0a\x3b\xe4\x45\xd7\x8c\xc9\x79\xa1\xee\x26\x20\x9c\x17\x71\x16\xab\xa6\xd6\xf1\x6a\x01\xe7\xb3\xce\xfe\xe2\x6c\x06\x08')
+    verkey = (b"\x02\xdb\x98\x33\x85\xa8\x0e\xbb\x7c\x15\x5d\xdd\xc6\x47\x6a\x24\x07\x9a\x7c\x96\x5f\x05\x0f\x62\xde\x2d\x47\x56\x9b\x54\x29\x16\x79")
+    sig = (b'\x5f\x80\xc0\x5a\xe4\x71\x32\x5d\xf7\xcb\xdb\x1b\xc2\xf4\x11\xc3\x05\xaf\xf4\xbe\x3b\x7e\xac\x3e\x8c\x15'
+           b'\x3a\x9f\xa5\x0a\x3d\x69\x75\x45\x93\x34\xc8\x96\x2b\xfe\x79\x8d\xd1\x4e\x9c\x1f\x6c\xa7\xc8\x12\xd6'
+           b'\x7a\x6c\xc5\x74\x9f\xef\x8d\xa7\x25\xa2\x95\x47\xcc')
+
+    signerqb64 = "JH-YCjvkRdeMyXmh7iYgnBdxFqum1vFqAeezzv7ibAYI"
+    verferqb64 = "1AABAtuYM4WoDrt8FV3dxkdqJAeafJZfBQ9i3i1HVptUKRZ5"
+    cigarqb64 = "0CBfgMBa5HEyXffL2xvC9BHDBa_0vjt-rD6MFTqfpQo9aXVFkzTIliv-eY3RTpwfbKfIEtZ6bMV0n--NpyWilUfM"
+
+    ser = b'abc'
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)
+    cigar = signer.sign(ser)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.qb64 == signerqb64
+
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.verfer.raw == verkey
+    assert signer.verfer.qb64 == verferqb64
+
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    assert signer.verfer.verify(cigar.raw, ser)
+    assert signer.verfer.verify(sig, ser)
+
+    cigar = Cigar(raw=sig, code=MtrDex.ECDSA_256k1_Sig)
+    assert cigar.qb64 == cigarqb64
 
 
     # test with only and ondex parameters
 
-
     """ Done Test """
-
 
 def test_cipher():
     """
@@ -4122,6 +4648,12 @@ def test_salter():
     with pytest.raises(ShortageError):
         salter = Salter(qb64='')
 
+    salter = Salter(raw=raw)
+    assert salter.stretch(temp=True) == b'\xd4@\xeb\xa6x\x86\xdf\x93\xd6C\xdc\xb8\xa6\x9b\x02\xafh\xc1m(L\xd6\xf6\x86YU>$[\xf9\xef\xc0'
+    assert salter.stretch(tier=Tiers.low) == b'\xf8e\x80\xbaX\x08\xb9\xba\xc6\x1e\x84\r\x1d\xac\xa7\\\x82Wc@`\x13\xfd\x024t\x8ct\xd3\x01\x19\xe9'
+    assert salter.stretch(tier=Tiers.med) == b',\xf3\x8c\xbb\xe9)\nSQ\xec\xad\x8c9?\xaf\xb8\xb0\xb3\xcdB\xda\xd8\xb6\xf7\r\xf6D}Z\xb9Y\x16'
+    assert salter.stretch(tier=Tiers.high) == b'(\xcd\xc4\xb85\xcd\xe8:\xfc\x00\x8b\xfd\xa6\tj.y\x98\x0b\x04\x1c\xe3hBc!I\xe49K\x16-'
+
     """ Done Test """
 
 
@@ -4319,11 +4851,37 @@ def test_prefixer():
     assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
     assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
 
-    ked = dict(k=[prefixer.qb64], n="", t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="",
+               n=[],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[prefixer.qb64], n="ABC", t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="1",
+               n=["ABCD"],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     assert prefixer.verify(ked=ked) == False
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4332,7 +4890,20 @@ def test_prefixer():
     assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
     assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
 
-    ked = dict(k=[prefixer.qb64], t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="1",
+               n=["ABCD"],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4343,55 +4914,89 @@ def test_prefixer():
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # Test basic derivation from ked
-    ked = dict(k=[verfer.qb64], n="", t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[verfer.qb64],  # list of qb64
+               nt="",
+               n=0,  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519)
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[verfer.qb64], n="", t="icp")  # ked without prefix
-    with pytest.raises(EmptyMaterialError):  # no code and no pre in ked
-        prefixer = Prefixer(ked=ked)
-
-    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)  # verfer code not match pre code
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=preN)
-    with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked)
+    badked = dict(ked)
+    del badked["i"]
+    with pytest.raises(EmptyMaterialError):  # no pre
+        prefixer = Prefixer(ked=badked)
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=pre)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    with pytest.raises(DerivationError):  # verfer code not match pre code
+        prefixer = Prefixer(ked=badked)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
     with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code not match code
+        prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519N)  # verfer code not match code
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=pre)
-    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code match code but not pre code
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
+    prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519N)  # verfer code match code but not pre code
     assert prefixer.qb64 == verfer.qb64
-    assert prefixer.verify(ked=ked) == True
-    assert prefixer.verify(ked=ked, prefixed=True) == False
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == False
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=preN)
-    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code match code and pre code
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519N)  # verfer code match code and pre code
     assert prefixer.qb64 == verfer.qb64
-    assert prefixer.verify(ked=ked) == True
-    assert prefixer.verify(ked=ked, prefixed=True) == True
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=preN)
-    prefixer = Prefixer(ked=ked)  # verfer code match pre code
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked)  # verfer code match pre code
     assert prefixer.qb64 == verfer.qb64
-    assert prefixer.verify(ked=ked) == True
-    assert prefixer.verify(ked=ked, prefixed=True) == True
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp")
-    with pytest.raises(EmptyMaterialError):
-        prefixer = Prefixer(ked=ked)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    del badked["i"]
+    with pytest.raises(EmptyMaterialError):  # missing pre
+        prefixer = Prefixer(ked=badked)
 
-    ked = dict(k=[verfer.qb64], n="ABCD", t="icp")
-    with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    with pytest.raises(ShortageError):  # empty pre
+        prefixer = Prefixer(ked=badked)
+
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["n"] = "ABCD"
+    with pytest.raises(DerivationError):  # wrong code for transferable
+        prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519)
 
     # Test digest derivation from inception ked
     vs = versify(version=Version, kind=Serials.json, size=0)
@@ -4405,40 +5010,44 @@ def test_prefixer():
     cnfg = []
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               nt=0,
+               n=[],
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ELEjyRTtmfyp4VpTBTkv_b6KONMS1V8-EW-aGJ5P_QMo'
-    #'EREh4RHCZHUy5nPrY131A4h4RuDAOynRQdQY0PLJybEQ'
+    assert prefixer.qb64 == 'EEZn82xRQYFjfkPJ5ECrDNHJ6xSt_hjxybbt_WMpinEF'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # test with next digs
     ndigs = [Diger(ser=nxtfer.qb64b).qb64]
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EHZUmVPq9cXFvGwWP4ohwA27XlsWHBxxu4xFiXp8UOol'
-    #'EDve7ZqtIsIMrx6UVZRTcnLgEnYGGV2is_JI_Ps3hEnE'
+    assert prefixer.qb64 == 'EHB9-i6jOH6DbK_40vlGF0X78Mg__c3MSzu9AE9ZRrsC'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4465,39 +5074,47 @@ def test_prefixer():
     keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
     sith = [["1/2", "1/2", "1"]]
     ndigs = [Diger(ser=signers[3].verfer.qb64b).qb64]  # default limen/sith
+
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer1 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer1.qb64 == 'EBfPkd-A2CQfJmfpmtc1V-yuleSeCcyWBIrTAygUgQ_T'
+    assert prefixer1.qb64 == 'EOnpRzJpF1LNdCXl7aQ76BxF7qT94PChM7WGKARhZeKj'
     assert prefixer1.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # now test with different sith but same weights in two clauses
     sith = [["1/2", "1/2"], ["1"]]
+
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer2 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer2.qb64 == 'EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb'
+    assert prefixer2.qb64 == 'ECBv9o83MnNYRTdXhwTeR5zgwt8jTr5NIuJ8P00BKySW'
     assert prefixer2.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
     assert prefixer2.qb64 != prefixer1.qb64  # semantic diff -> syntactic diff
@@ -4509,20 +5126,23 @@ def test_prefixer():
                 d='EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb')
 
     ked = dict(v=vs,  # version string
+               t=Ilks.dip,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=Ilks.dip,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
-               da=seal
+               a=[seal],  # list of seal dicts
+               di='EBfPkd-A2CQfJmfpmtc1V-yuleSeCcyWBIrTAygUgQ_T',
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg'
+    assert prefixer.qb64 == 'EEGithHj9A85F9hz1fxlF80U7wvpFoAPj6U4q4YWMehp'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4533,9 +5153,119 @@ def test_prefixer():
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256,
                         allows=[MtrDex.Blake3_256, MtrDex.Ed25519])
-    assert prefixer.qb64 == 'EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg'
+    assert prefixer.qb64 == 'EEGithHj9A85F9hz1fxlF80U7wvpFoAPj6U4q4YWMehp'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    #  Secp256r1
+
+    preN = '1AAIA-KzxCX8SZSl-fpU3vc3z_MBuH06YShJFuiMdAmo37TM'
+    # 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    pre = '1AAJA-KzxCX8SZSl-fpU3vc3z_MBuH06YShJFuiMdAmo37TM'
+
+    # sigkey = ec.generate_private_key(ec.SECP256R1())
+    # verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+    verkey = b'\x03\xe2\xb3\xc4%\xfcI\x94\xa5\xf9\xfaT\xde\xf77\xcf\xf3\x01\xb8}:a(I\x16\xe8\x8ct\t\xa8\xdf\xb4\xcc'
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    assert verfer.qb64 == '1AAJA-KzxCX8SZSl-fpU3vc3z_MBuH06YShJFuiMdAmo37TM'
+
+    nxtkeyqb64 = [coring.Diger(ser=verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxtkeyqb64 == ['EPrVv1ppjxrtV48cS9Tm49n5xojMlZfhEzExg6Ye_ORN']
+
+    prefixer = Prefixer(raw=verkey, code=MtrDex.ECDSA_256r1)  # default code is None
+    assert prefixer.code == MtrDex.ECDSA_256r1
+    assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
+    assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
+
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="1",
+               n=["ABCD"],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    prefixer = Prefixer(raw=verfer.raw, code=MtrDex.ECDSA_256r1N)
+    assert prefixer.code == MtrDex.ECDSA_256r1N
+    assert prefixer.verify(ked=ked) == False
+    assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    # Test basic derivation from ked
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[verfer.qb64],  # list of qb64
+               nt="",
+               n=0,  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
+    prefixer = Prefixer(ked=ked, code=MtrDex.ECDSA_256r1)
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    badked = dict(ked)
+    del badked["i"]
+    with pytest.raises(EmptyMaterialError):  # no pre
+        prefixer = Prefixer(ked=badked)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    with pytest.raises(DerivationError):  # verfer code not match pre code
+        prefixer = Prefixer(ked=badked)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
+    with pytest.raises(DerivationError):
+        prefixer = Prefixer(ked=badked, code=MtrDex.ECDSA_256r1N)  # verfer code not match code
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
+    prefixer = Prefixer(ked=badked, code=MtrDex.ECDSA_256r1N)  # verfer code match code but not pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == False
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked, code=MtrDex.ECDSA_256r1N)  # verfer code match code and pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked)  # verfer code match pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
 
     """ Done Test """
 
@@ -4606,7 +5336,7 @@ def test_saider():
 
     code = MtrDex.Blake3_256
     kind = Serials.json
-    label = Ids.dollar
+    label = Saids.dollar
 
     # Test with valid said qb64
     said0 = 'EBG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA'
@@ -4722,11 +5452,11 @@ def test_saider():
     assert saider.verify(sad2, prefixed=True, label=label)  # kind default
 
     # test with default id field label Ids.d == 'd' and contains 'v' field
-    label = Ids.d
+    label = Saids.d
     code = MtrDex.Blake3_256  # back to default code
 
     # Load from vaccuous dict
-    label = Ids.d
+    label = Saids.d
     vs = versify(version=Version, kind=kind, size=0)  # vaccuous size == 0
     assert vs == 'KERI10JSON000000_'
     sad4 = dict(
@@ -4975,8 +5705,8 @@ def test_versify():
     vs = versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Idents.keri
+    proto, version, kind, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 0
@@ -4984,17 +5714,17 @@ def test_versify():
     vs = versify(kind=Serials.json, size=65)
     assert vs == "KERI10JSON000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Idents.keri
+    proto, version, kind, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 65
 
-    vs = versify(ident=Idents.acdc, kind=Serials.json, size=86)
+    vs = versify(proto=Protos.acdc, kind=Serials.json, size=86)
     assert vs == "ACDC10JSON000056_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Idents.acdc
+    proto, version, kind, size = deversify(vs)
+    assert proto == Protos.acdc
     assert kind == Serials.json
     assert version == Version
     assert size == 86
@@ -5002,8 +5732,8 @@ def test_versify():
     vs = versify(kind=Serials.mgpk, size=0)
     assert vs == "KERI10MGPK000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Idents.keri
+    proto, version, kind, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 0
@@ -5011,8 +5741,8 @@ def test_versify():
     vs = versify(kind=Serials.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Idents.keri
+    proto, version, kind, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 65
@@ -5020,8 +5750,8 @@ def test_versify():
     vs = versify(kind=Serials.cbor, size=0)
     assert vs == "KERI10CBOR000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Idents.keri
+    proto, version, kind, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.cbor
     assert version == Version
     assert size == 0
@@ -5029,425 +5759,13 @@ def test_versify():
     vs = versify(kind=Serials.cbor, size=65)
     assert vs == "KERI10CBOR000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Idents.keri
+    proto, version, kind, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.cbor
     assert version == Version
     assert size == 65
     """End Test"""
 
-
-def test_serder():
-    """
-    Test the support functionality for Serder key event serialization deserialization
-    """
-    with pytest.raises(ValueError):
-        serder = Serder()
-
-    e1 = dict(v=Vstrings.json,
-              d="",
-              i="ABCDEFG",
-              s="0001",
-              t="rot")
-    _, e1 = coring.Saider.saidify(sad=e1)
-
-    serder = Serder(ked=e1)
-    assert serder.ked == e1
-    assert serder.kind == Serials.json
-    assert serder.version == Versionage(major=1, minor=0)
-    assert serder.said == 'EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F'
-    #'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
-    assert serder.saidb == b'EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F'
-    assert serder.size == 111
-    assert serder.verfers == []
-    assert serder.raw == (b'{"v":"KERI10JSON00006f_","d":"EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F",'
-                          b'"i":"ABCDEFG","s":"0001","t":"rot"}')
-    assert serder.sn == 1
-    assert serder.pre == "ABCDEFG"
-    assert serder.preb == b"ABCDEFG"
-
-    e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert e1s == ((b'{"v":"KERI10JSON00006f_","d":"EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F",'
-                    b'"i":"ABCDEFG","s":"0001","t":"rot"}'))
-    vs = versify(kind=Serials.json, size=len(e1s))  # use real length
-    assert vs == 'KERI10JSON00006f_'
-    e1["v"] = vs  # has real length
-    pretty = serder.pretty()
-    assert pretty == ('{\n'
-                      ' "v": "KERI10JSON00006f_",\n'
-                      ' "d": "EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F",\n'
-                      ' "i": "ABCDEFG",\n'
-                      ' "s": "0001",\n'
-                      ' "t": "rot"\n'
-                      '}')
-
-    e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    with pytest.raises(ShortageError):  # test too short
-        ident1, kind1, vers1, size1 = sniff(e1s[:VERFULLSIZE])
-
-    ident1, kind1, vers1, size1 = sniff(e1s[:MINSNIFFSIZE])
-    assert ident1 == Idents.keri
-    assert kind1 == Serials.json
-    assert size1 == 111
-
-    ident1, kind1, vers1, size1 = sniff(e1s)
-    assert ident1 == Idents.keri
-    assert kind1 == Serials.json
-    assert size1 == 111
-    e1ss = e1s + b'extra attached at the end.'
-    ked1, idnt1, knd1, vrs1, siz1 = serder._inhale(e1ss)
-    assert ked1 == e1
-    assert idnt1 == Idents.keri
-    assert knd1 == kind1
-    assert vrs1 == vers1
-    assert siz1 == size1
-
-    with pytest.raises(ShortageError):  # test too short
-        ked1, knd1, vrs1, siz1 = serder._inhale(e1ss[:size1 - 1])
-
-    raw1, idnt1, knd1, ked1, ver1 = serder._exhale(ked=e1)
-    assert raw1 == e1s
-    assert idnt1 == Idents.keri
-    assert knd1 == kind1
-    assert ked1 == e1
-    assert vrs1 == vers1
-
-    e2 = dict(e1)
-    e2["v"] = Vstrings.mgpk
-    e2s = msgpack.dumps(e2)
-    assert e2s == (b'\x85\xa1v\xb1KERI10MGPK000000_\xa1d\xd9,EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH'
-                   b'3NZxrsk8F\xa1i\xa7ABCDEFG\xa1s\xa40001\xa1t\xa3rot')
-    vs = versify(kind=Serials.mgpk, size=len(e2s))  # use real length
-    assert vs == 'KERI10MGPK00005c_'
-    e2["v"] = vs  # has real length
-    _, e2 = coring.Saider.saidify(sad=e2)
-    e2s = msgpack.dumps(e2)
-
-    with pytest.raises(ShortageError):  # test too short
-        ident2, kind2, vers2, size2 = sniff(e2s[:VERFULLSIZE])
-
-    ident2, kind2, vers2, size2 = sniff(e2s[:MINSNIFFSIZE])
-    assert ident2 == Idents.keri
-    assert kind2 == Serials.mgpk
-    assert size2 == 92
-
-    ident2, kind2, vers2, size2 = sniff(e2s)
-    assert ident1 == Idents.keri
-    assert kind2 == Serials.mgpk
-    assert size2 == 92
-    e2ss = e2s + b'extra attached  at the end.'
-    ked2, idnt2, knd2, vrs2, siz2 = serder._inhale(e2ss)
-    assert ked2 == e2
-    assert idnt2 == Idents.keri
-    assert knd2 == kind2
-    assert vrs2 == vers2
-    assert siz2 == size2
-
-    with pytest.raises(ShortageError):  # test too short
-        ked2, knd2, vrs2, siz2 = serder._inhale(e2ss[:size2 - 1])
-
-    raw2, idnt2, knd2, ked2, ver2 = serder._exhale(ked=e2)
-    assert raw2 == e2s
-    assert idnt2 == Idents.keri
-    assert knd2 == kind2
-    assert ked2 == e2
-    assert vrs2 == vers2
-
-    e3 = dict(e1)
-    e3["v"] = Vstrings.cbor
-    e3s = cbor.dumps(e3)
-    assert e3s == (b'\xa5avqKERI10CBOR000000_adx,EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8Faig'
-                   b'ABCDEFGasd0001atcrot')
-    vs = versify(kind=Serials.cbor, size=len(e3s))  # use real length
-    assert vs == 'KERI10CBOR00005c_'
-    e3["v"] = vs  # has real length
-    _, e3 = coring.Saider.saidify(sad=e3)
-    e3s = cbor.dumps(e3)
-
-    with pytest.raises(ShortageError):  # test too short
-        ident3, kind3, vers3, size3 = sniff(e3s[:VERFULLSIZE])
-
-    ident3, kind3, vers3, size3 = sniff(e3s[:MINSNIFFSIZE])
-    assert ident1 == Idents.keri
-    assert kind3 == Serials.cbor
-    assert size3 == 92
-
-    ident3, kind3, vers3, size3 = sniff(e3s)
-    assert ident3 == Idents.keri
-    assert kind3 == Serials.cbor
-    assert size3 == 92
-    e3ss = e3s + b'extra attached  at the end.'
-    ked3, idnt3, knd3, vrs3, siz3 = serder._inhale(e3ss)
-    assert ked3 == e3
-    assert idnt3 == Idents.keri
-    assert knd3 == kind3
-    assert vrs3 == vers3
-    assert siz3 == size3
-
-    with pytest.raises(ShortageError):  # test too short
-        ked3, knd3, vrs3, siz3 = serder._inhale(e3ss[:size3 - 1])
-
-    raw3, idnt3, knd3, ked3, ver3 = serder._exhale(ked=e3)
-    assert raw3 == e3s
-    assert idnt3 == Idents.keri
-    assert knd3 == kind3
-    assert ked3 == e3
-    assert vrs3 == vers3
-
-    e4 = dict(v=versify(ident=Idents.acdc, kind=Serials.json, size=0),
-              d="",
-              i="ABCDEFG",
-              s="0001",
-              t="rot")
-    _, e4 = coring.Saider.saidify(sad=e4)
-    print()
-    print(e4)
-    e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert e4s == (b'{"v":"ACDC10JSON00006f_","d":"EMFw6MEBmwWU28-7wK4SJ2kasSzVgLKkAM7iwoqJJ07Z",'
-                   b'"i":"ABCDEFG","s":"0001","t":"rot"}')
-    vs = versify(ident=Idents.acdc, kind=Serials.json, size=len(e4s))  # use real length
-    assert vs == 'ACDC10JSON00006f_'
-    e4["v"] = vs  # has real length
-    serder = Sadder(ked=e4)
-    pretty = serder.pretty()
-    assert pretty == ('{\n'
-                      ' "v": "ACDC10JSON00006f_",\n'
-                      ' "d": "EMFw6MEBmwWU28-7wK4SJ2kasSzVgLKkAM7iwoqJJ07Z",\n'
-                      ' "i": "ABCDEFG",\n'
-                      ' "s": "0001",\n'
-                      ' "t": "rot"\n'
-                      '}')
-
-    e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    with pytest.raises(ShortageError):  # test too short
-        ident4, kind4, vers4, size4 = sniff(e4s[:VERFULLSIZE])
-
-    ident4, kind4, vers4, size4 = sniff(e4s[:MINSNIFFSIZE])
-    assert ident4 == Idents.acdc
-    assert kind4 == Serials.json
-    assert size4 == 111
-
-    ident4, kind4, vers4, size4 = sniff(e4s)
-    assert ident4 == Idents.acdc
-    assert kind4 == Serials.json
-    assert size4 == 111
-
-    evt1 = Serder(raw=e1ss)
-    assert evt1.kind == kind1
-    assert evt1.raw == e1s
-    assert evt1.ked == ked1
-    assert evt1.size == size1
-    assert evt1.raw == e1ss[:size1]
-    assert evt1.version == vers1
-    assert evt1.sn == 1
-
-    # test digest properties .diger and .dig
-    assert evt1.saider.qb64 == evt1.said
-    assert evt1.saider.code == MtrDex.Blake3_256
-    assert len(evt1.saider.raw) == 32
-    assert len(evt1.said) == 44
-    assert len(evt1.said) == Matter.Sizes[MtrDex.Blake3_256].fs
-    assert evt1.said == 'EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F'
-    assert evt1.saider.verify(evt1.ked)
-
-    evt1 = Serder(ked=ked1)
-    assert evt1.kind == kind1
-    assert evt1.raw == e1s
-    assert evt1.ked == ked1
-    assert evt1.size == size1
-    assert evt1.raw == e1ss[:size1]
-    assert evt1.version == vers1
-    assert evt1.saider.code == MtrDex.Blake3_256
-
-    evt2 = Serder(raw=e2ss)
-    assert evt2.kind == kind2
-    assert evt2.raw == e2s
-    assert evt2.ked == ked2
-    assert evt2.version == vers2
-
-    evt2 = Serder(ked=ked2)
-    assert evt2.kind == kind2
-    assert evt2.raw == e2s
-    assert evt2.ked == ked2
-    assert evt2.size == size2
-    assert evt2.raw == e2ss[:size2]
-    assert evt2.version == vers2
-
-    evt3 = Serder(raw=e3ss)
-    assert evt3.kind == kind3
-    assert evt3.raw == e3s
-    assert evt3.ked == ked3
-    assert evt3.version == vers3
-
-    evt3 = Serder(ked=ked3)
-    assert evt3.kind == kind3
-    assert evt3.raw == e3s
-    assert evt3.ked == ked3
-    assert evt3.size == size3
-    assert evt3.raw == e3ss[:size3]
-    assert evt3.version == vers3
-
-    #  round trip
-    evt2 = Serder(ked=evt1.ked)
-    assert evt2.kind == evt1.kind
-    assert evt2.raw == evt1.raw
-    assert evt2.ked == evt1.ked
-    assert evt2.size == evt1.size
-    assert evt2.version == vers2
-
-    # Test change in kind by Serder
-    ked1["v"] = Vstrings.mgpk
-    _, ked1 = coring.Saider.saidify(sad=ked1)
-    evt1 = Serder(ked=ked1, kind=Serials.mgpk)  # ked is json but kind mgpk
-    assert evt1.kind == kind2
-    assert evt1.raw == e2s
-    assert evt1.ked == ked2
-    assert evt1.size == size2
-    assert evt1.raw == e2ss[:size2]
-    assert evt1.version == vers1
-    assert evt1.said == 'EMvr339cs3EH-WcXfLDGOi-rRjNQxK46PqvBcgdAgg8p'
-    assert evt1.saider.verify(evt1.ked)
-
-    #  round trip
-    evt2 = Serder(raw=evt1.raw)
-    assert evt2.kind == evt1.kind
-    assert evt2.raw == evt1.raw
-    assert evt2.ked == evt1.ked
-    assert evt2.size == evt1.size
-    assert evt2.version == vers2
-
-    ked1["v"] = Vstrings.cbor
-    _, ked1 = coring.Saider.saidify(sad=ked1)
-    evt1 = Serder(ked=ked1, kind=Serials.cbor)  # ked is json but kind mgpk
-    assert evt1.kind == kind3
-    assert evt1.raw == e3s
-    assert evt1.ked == ked3
-    assert evt1.size == size3
-    assert evt1.raw == e3ss[:size3]
-    assert evt1.version == vers1
-
-    #  round trip
-    evt2 = Serder(raw=evt1.raw)
-    assert evt2.kind == evt1.kind
-    assert evt2.raw == evt1.raw
-    assert evt2.ked == evt1.ked
-    assert evt2.size == evt1.size
-    assert evt2.version == vers2
-
-    # use kind setter property
-    assert evt2.kind == Serials.cbor
-    evt2.kind = Serials.json
-    assert evt2.kind == Serials.json
-    ident, knd, version, size = deversify(evt2.ked["v"])
-    assert ident == Idents.keri
-    assert knd == Serials.json
-
-    #  Test diger code
-    ked = {'v': "KERI10JSON00006a_",
-           'd': 'HAg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA',
-           'i': 'ABCDEFG', 's': 1,
-           't': 'rot'}
-    raw = (
-        b'{"v":"KERI10JSON00006a_","d":"HAg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA","i":"ABCDEFG","s":1,"t":"rot"}')
-    srdr = Serder(raw=raw, code=MtrDex.SHA3_256)
-    assert srdr.kind == 'JSON'
-    assert srdr.raw == raw
-    assert srdr.ked == ked
-    assert srdr.saider.code == MtrDex.SHA3_256
-
-    #  Test compare
-    ked = {'v': "KERI10JSON00006a_",
-           'd': 'EADZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE',
-           'i': 'ABCDEFG', 's': 1,
-           't': 'rot'}
-    raw = (
-        b'{"v":"KERI10JSON00006a_","d":"EADZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE","i":"ABCDEFG","s":1,"t":"rot"}')
-    srdr = Serder(raw=raw)
-    assert srdr.kind == 'JSON'
-    assert srdr.raw == raw
-    assert srdr.ked == ked
-    assert srdr.saider.code == MtrDex.Blake3_256
-
-    # need tests will fully populated serder for icp rot dip drt
-    #aids = generatePublics(salt=None, count=3, transferable=False)
-    aids = ['BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI',
-            'BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4',
-            'BEejlxZytU7gjUwtgkmNKmBWiFPKSsXjk_uxzoun8dtK']
-
-
-    pre0 = aids[0]
-    wit0 = aids[1]
-    wit1 = aids[2]
-    srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
-    assert srdr.raw == (b'{"v":"KERI10JSON00015a_","t":"icp","d":"EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQK'
-                        b'VXvg7oqd","i":"BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI","s":"0","kt":"1'
-                        b'","k":["BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI"],"nt":"0","n":[],"bt":'
-                        b'"2","b":["BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4","BEejlxZytU7gjUwtgkm'
-                        b'NKmBWiFPKSsXjk_uxzoun8dtK"],"c":[],"a":[]}')
-    # test for serder.verfers and serder.werfers
-    assert srdr.pre == pre0
-    assert srdr.sn == 0
-    assert [verfer.qb64 for verfer in srdr.verfers] == [pre0]
-    assert [werfer.qb64 for werfer in srdr.werfers] == [wit0, wit1]
-
-    # test .said and .saidb properties
-    ked = {
-        "v": "KERI10JSON00011c_",
-        "t": "rep",
-        "d": "EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd",
-        "dt": "2020-08-22T17:50:12.988921+00:00",
-        "r": "logs/processor",
-        "a":
-            {
-                "d": "EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd",
-                "i": "BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI",
-                "name": "John Jones",
-                "role": "Founder",
-            }
-    }
-    srdr = Serder(ked=ked)
-    assert srdr.said == 'EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd'
-    assert srdr.saidb == b'EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd'
-
-    # test tholder
-    ked = dict(v="KERI10JSON000000_",  # version string
-               t="icp",
-               d="",
-               i="BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI",  # qb64 prefix
-               s="0",  # hex string no leading zeros lowercase
-               kt="1",  # hex string no leading zeros lowercase
-               k=["BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4"],  # list of qb64
-               n="",  # hash qual Base64
-               bt="0",  # hex string no leading zeros lowercase
-               b=[],  # list of qb64 may be empty
-               c=[],  # list of config ordered mappings may be empty
-               a=[],  # list of seal dicts
-               )
-    _, ked = coring.Saider.saidify(sad=ked)
-
-    srdr = Serder(ked=ked)
-    assert srdr.tholder.sith == "1"
-    assert srdr.tholder.thold == 1
-    assert srdr.sn == 0
-    assert srdr.sner.num == srdr.sn
-
-    # test validation in Serder.sn property
-    ked["s"] = "-1"
-    srdr = Serder(ked=ked)
-    with pytest.raises(InvalidValueError):
-        sn = srdr.sn
-
-    #ked["s"] = "0" * 33
-    #srdr = Serder(ked=ked)
-    #with pytest.raises(InvalidValueError):
-        #sn = srdr.sn
-
-    ked["s"] = "15.34"
-    srdr = Serder(ked=ked)
-    with pytest.raises(InvalidValueError):
-        sn = srdr.sn
-
-    """Done Test """
 
 
 def test_tholder():
@@ -5818,106 +6136,6 @@ def test_tholder():
     assert not tholder.satisfy(indices=[])
 
 
-
-    #raw = b"raw salt to test"
-
-    ##  create signers with verfers for keys
-    #signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
-
-    #keys = [signer.verfer.qb64 for signer in signers]
-    #assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
-                    #'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
-                    #'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
-
-    #digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
-    #digs = [diger.qb64 for diger in digers]
-    #assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
-                    #'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
-                    #'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
-
-    #assert tholder.includes(keys, digs)
-
-    #bdigs = list(digs)
-    #del bdigs[0]
-    #assert not tholder.includes(keys, bdigs)
-
-    #bkeys = list(keys)
-    #del bkeys[1]
-    #assert tholder.includes(bkeys, digs)
-
-    #bkeys.append(keys[1])
-    #assert not tholder.includes(bkeys, digs)
-
-    #signer = Signer()
-    ## create something to sign and verify
-    #ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-    #index = 0
-    #siger = signer.sign(ser, index=index)
-    #digs = [Diger(ser=siger.verfer.qb64b).qb64]
-    #sigers = [siger]
-
-    #assert tholder.matches(sigers, digs) == [0]
-
-    #raw = b"raw salt to test"
-    ##  create signers with verfers
-    #signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
-
-    ## create something to sign
-    #ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-
-    ## test different index and ondex
-    #sigers = []
-    #digers = []
-    #for i, signer in enumerate(signers):
-        #o = len(signers) - 1 - i
-        #siger = signer.sign(ser=ser, index=i, ondex=o)
-        #diger = Diger(ser=siger.verfer.qb64b)
-        #sigers.append(siger)
-        #digers.append(diger)
-
-    #digers.reverse()
-
-    #ondices = tholder.exposeds(digers=digers, sigers=sigers)
-    #assert ondices ==[2, 1, 0]
-
-    ## test partial mix
-    #siger0 = signers[0].sign(ser=ser, index=0)  # both same
-    #assert siger0.code == IdxSigDex.Ed25519_Sig  # both same
-    #diger0 = Diger(ser=siger0.verfer.qb64b)
-
-    #siger1 = signers[1].sign(ser=ser, index=1, only=True)  # current only
-    #assert siger1.code == IdxSigDex.Ed25519_Crt_Sig  # current only
-
-    #siger2 = signers[2].sign(ser=ser, index=2, ondex=1)  # both different
-    #assert siger2.code == IdxSigDex.Ed25519_Big_Sig  # both different
-    #diger1 = Diger(ser=siger2.verfer.qb64b)
-
-    #sigers = [siger0, siger1, siger2]
-    #digers = [diger0, diger1]
-
-    #ondices = tholder.exposeds(digers=digers, sigers=sigers)
-    #assert ondices ==[0, 1]
-
-
-    ## test Bad digest
-    #siger0 = signers[0].sign(ser=ser, index=0)  # both same
-    #assert siger0.code == IdxSigDex.Ed25519_Sig  # both same
-    #diger0 = Diger(ser=b"Bad Digest")  # bad digest
-
-    #siger1 = signers[1].sign(ser=ser, index=1, only=True)  # current only
-    #assert siger1.code == IdxSigDex.Ed25519_Crt_Sig  # current only
-
-    #siger2 = signers[2].sign(ser=ser, index=2, ondex=1)  # both different
-    #assert siger2.code == IdxSigDex.Ed25519_Big_Sig  # both different
-    #diger1 = Diger(ser=siger2.verfer.qb64b, code=DigDex.Blake2b_256)
-
-    #sigers = [siger0, siger1, siger2]
-    #digers = [diger0, diger1]
-
-    #ondices = tholder.exposeds(digers=digers, sigers=sigers)
-    #assert ondices ==[1]
-
-
     """ Done Test """
 
 
@@ -5930,4 +6148,10 @@ if __name__ == "__main__":
     #test_siger()
     #test_signer()
     #test_nexter()
-    test_tholder()
+    #test_tholder()
+    #test_ilks()
+    #test_labels()
+    #test_prefixer()
+    #test_genera()
+    test_prodex()
+

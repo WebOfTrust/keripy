@@ -127,32 +127,24 @@ def escrows(tymth, tock=0.0, **opts):
             if (not escrow) or escrow == "missing-registry-escrow":
                 creds = list()
                 for (said,), dater in reger.mre.getItemIter():
-                    creder, sadsigers, sadcigars = reger.cloneCred(said)
-                    creds.append(creder.crd)
+                    creder, *_ = reger.cloneCred(said)
+                    creds.append(creder.sad)
 
                 escrows["missing-registry-escrow"] = creds
-
-            if (not escrow) or escrow == "missing-issuer-escrow":
-                creds = list()
-                for (said,), dater in reger.mie.getItemIter():
-                    creder, sadsigers, sadcigars = reger.cloneCred(said)
-                    creds.append(creder.crd)
-
-                escrows["missing-issuer-escrow"] = creds
 
             if (not escrow) or escrow == "broken-chain-escrow":
                 creds = list()
                 for (said,), dater in reger.mce.getItemIter():
-                    creder, sadsigers, sadcigars = reger.cloneCred(said)
-                    creds.append(creder.crd)
+                    creder, *_ = reger.cloneCred(said)
+                    creds.append(creder.sad)
 
                 escrows["broken-chain-escrow"] = creds
 
             if (not escrow) or escrow == "missing-schema-escrow":
                 creds = list()
                 for (said,), dater in reger.mse.getItemIter():
-                    creder, sadsigers, sadcigars = reger.cloneCred(said)
-                    creds.append(creder.crd)
+                    creder, *_ = reger.cloneCred(said)
+                    creds.append(creder.sad)
 
                 escrows["missing-schema-escrow"] = creds
 
@@ -163,6 +155,5 @@ def escrows(tymth, tock=0.0, **opts):
                     pass
 
     except ConfigurationError as e:
-        print(e)
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1

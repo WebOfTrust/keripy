@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from keri.core.coring import MtrDex, dumps, Saider, Ids
+from keri.core.coring import MtrDex, dumps, Saider, Saids
 from keri.core.scheming import Schemer, JSONSchema, CacheResolver
 from keri.db import basing
 from keri.kering import ValidationError
@@ -40,7 +40,7 @@ def test_json_schema():
     }
 
     # generate serialized saidified schema ssad
-    saider, ssad = Saider.saidify(ssad, label=Ids.dollar)
+    saider, ssad = Saider.saidify(ssad, label=Saids.dollar)
     assert saider.qb64 == 'EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw'
     sser = dumps(ssad)
     assert sser == (b'{"$id":"EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw","$schema":"http://json'
@@ -211,7 +211,7 @@ def test_resolution():
     }
 
     # generate serialized saidified schema refsad
-    saider, refsad = Saider.saidify(refsad, label=Ids.dollar)
+    saider, refsad = Saider.saidify(refsad, label=Saids.dollar)
     refsaid = saider.qb64
     assert refsaid == 'EL3Luusa97P8dZOCI8KEN2ShG35HVS8S6-z1vuu52F-C'
     ref = dumps(refsad)
@@ -246,7 +246,7 @@ def test_resolution():
     ssad["properties"]["xy"]["$ref"] = f"did:keri:{refsaid}"
 
     # generate serialized saidified schema ssad
-    saider, ssad = Saider.saidify(ssad, label=Ids.dollar)
+    saider, ssad = Saider.saidify(ssad, label=Saids.dollar)
     said = saider.qb64
     assert said == 'EKcRFuOiLUMEgTljL8FWPOpDosH2Cz38HhgdmRKpUHTe'
     sser = dumps(ssad)

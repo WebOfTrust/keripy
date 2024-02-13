@@ -13,7 +13,7 @@ from hio.base import doing
 
 from keri.app import indirecting
 from keri.app.cli.common import displaying, existing
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.help import helping
 
 logger = help.ogler.getLogger()
@@ -84,7 +84,7 @@ class KeverDoer(doing.DoDoer):
 
                 cloner = self.hby.db.clonePreIter(pre=self.prefix, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    srdr = coring.Serder(raw=msg)
+                    srdr = serdering.SerderKERI(raw=msg)
                     print(srdr.pretty())
                     print()
 

@@ -76,7 +76,7 @@ class VerifyDoer(doing.DoDoer):
             alias = existing.aliasInput(self.hby)
 
         self.hab = self.hby.habByName(alias)
-        self.exc = exchanging.Exchanger(db=self.hby.db, handlers=[])
+        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         self.org = connecting.Organizer(hby=self.hby)
         signaler = signaling.Signaler()
 
@@ -84,7 +84,7 @@ class VerifyDoer(doing.DoDoer):
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
 
-        doers = [self.mbd, self.exc, doing.doify(self.verifyDo)]
+        doers = [self.mbd, doing.doify(self.verifyDo)]
 
         super(VerifyDoer, self).__init__(doers=doers)
 

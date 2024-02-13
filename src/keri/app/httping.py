@@ -16,7 +16,7 @@ from hio.help import Hict
 
 from keri import help
 from keri import kering
-from keri.core import coring, parsing
+from keri.core import coring, parsing, serdering
 from keri.end import ending
 from keri.help import helping
 
@@ -24,6 +24,7 @@ logger = help.ogler.getLogger()
 
 CESR_CONTENT_TYPE = "application/cesr+json"
 CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
+CESR_DESTINATION_HEADER = "CESR-DESTINATION"
 
 
 class SignatureValidationComponent(object):
@@ -112,19 +113,21 @@ def parseCesrHttpRequest(req):
     return cr
 
 
-def createCESRRequest(msg, client, path=None):
+def createCESRRequest(msg, client, dest, path=None):
     """
     Turns a KERI message into a CESR http request against the provided hio http Client
 
     Parameters
        msg:  KERI message parsable as Serder.raw
+       dest (str): qb64 identifier prefix of destination controller
        client: hio http Client that will send the message as a CESR request
+       path (str): path to post to
 
     """
     path = path if path is not None else "/"
 
     try:
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
     except kering.ShortageError as ex:  # need more bytes
         raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
     else:  # extracted successfully
@@ -137,7 +140,8 @@ def createCESRRequest(msg, client, path=None):
         ("Content-Type", CESR_CONTENT_TYPE),
         ("Content-Length", len(body)),
         ("connection", "close"),
-        (CESR_ATTACHMENT_HEADER, attachments)
+        (CESR_ATTACHMENT_HEADER, attachments),
+        (CESR_DESTINATION_HEADER, dest)
     ])
 
     client.request(
@@ -148,13 +152,14 @@ def createCESRRequest(msg, client, path=None):
     )
 
 
-def streamCESRRequests(client, ims, path=None):
+def streamCESRRequests(client, ims, dest, path=None):
     """
     Turns a stream of KERI messages into CESR http requests against the provided hio http Client
 
     Parameters
-       ims (bytearray):  stream of KERI messages parsable as Serder.raw
        client (Client): hio http Client that will send the message as a CESR request
+       ims (bytearray):  stream of KERI messages parsable as Serder.raw
+       dest (str): qb64 identifier prefix of destination controller
        path (str): path to post to
 
     Returns
@@ -173,7 +178,7 @@ def streamCESRRequests(client, ims, path=None):
     cnt = 0
     while ims:  # extract and deserialize message from ims
         try:
-            serder = coring.Serder(raw=ims)
+            serder = coring.Sadder(raw=ims)
         except kering.ShortageError as ex:  # need more bytes
             raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
         else:  # extracted successfully
@@ -189,7 +194,8 @@ def streamCESRRequests(client, ims, path=None):
         headers = Hict([
             ("Content-Type", CESR_CONTENT_TYPE),
             ("Content-Length", len(body)),
-            (CESR_ATTACHMENT_HEADER, attachment)
+            (CESR_ATTACHMENT_HEADER, attachment),
+            (CESR_DESTINATION_HEADER, dest)
         ])
 
         client.request(
@@ -212,18 +218,24 @@ class Clienter(doing.DoDoer):
         doers = [doing.doify(self.clientDo)]
         super(Clienter, self).__init__(doers=doers)
 
-    def request(self, method, url):
+    def request(self, method, url, body=None, headers=None):
         purl = parse.urlparse(url)
 
-        client = http.clienting.Client(scheme=purl.scheme,
-                                       hostname=purl.hostname,
-                                       port=purl.port,
-                                       portOptional=True)
+        try:
+            client = http.clienting.Client(scheme=purl.scheme,
+                                           hostname=purl.hostname,
+                                           port=purl.port,
+                                           portOptional=True)
+        except Exception as e:
+            print(f"error establishing client connection={e}")
+            return None
 
         client.request(
             method=method,
-            path=purl.path,
-            qargs=parse.parse_qs(purl.query),
+            path=f"{purl.path}?{purl.query}",
+            qargs=None,
+            headers=headers,
+            body=body
         )
 
         clientDoer = http.clienting.ClientDoer(client=client)

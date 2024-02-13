@@ -14,16 +14,17 @@ import traceback
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
-from hio.core import http
+from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
 import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
+from .habbing import GroupHab
 from .. import help, kering
-from ..core import eventing, parsing, routing
+from ..core import eventing, parsing, routing, coring, serdering
 from ..core.coring import Ilks
-from ..db import basing
+from ..db import basing, dbing
 from ..end import ending
 from ..help import helping
 from ..peer import exchanging
@@ -33,7 +34,8 @@ from ..vdr.eventing import Tevery
 logger = help.ogler.getLogger()
 
 
-def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
+def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
+                 keypath=None, certpath=None, cafilepath=None):
     """
     Setup witness controller and doers
 
@@ -51,14 +53,14 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
     forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-    exchanger = exchanging.Exchanger(db=hby.db, handlers=[forwarder])
+    exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
     clienter = httping.Clienter()
     oobiery = keri.app.oobiing.Oobiery(hby=hby, clienter=clienter)
 
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby, default=hab.pre)
-    oobiRes = oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
-    rep = storing.Respondant(hby=hby, mbx=mbx)
+    oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
+    rep = storing.Respondant(hby=hby, mbx=mbx, aids=aids)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = eventing.Kevery(db=hby.db,
@@ -82,26 +84,56 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
 
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
     app.add_route("/", httpEnd)
+    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
+    app.add_route("/receipts", receiptEnd)
 
-    server = http.Server(port=httpPort, app=app)
+    server = createHttpServer(httpPort, app, keypath, certpath, cafilepath)
+    if not server.reopen():
+        raise RuntimeError(f"cannot create http server on port {httpPort}")
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
     regDoer = basing.BaserDoer(baser=verfer.reger)
 
-    server = serving.Server(host="", port=tcpPort)
-    serverDoer = serving.ServerDoer(server=server)
+    if tcpPort is not None:
+        server = serving.Server(host="", port=tcpPort)
+        if not server.reopen():
+            raise RuntimeError(f"cannot create tcp server on port {tcpPort}")
+        serverDoer = serving.ServerDoer(server=server)
 
-    directant = directing.Directant(hab=hab, server=server, verifier=verfer)
+        directant = directing.Directant(hab=hab, server=server, verifier=verfer)
+        doers.extend([directant, serverDoer])
 
-    witStart = WitnessStart(hab=hab, parser=parser, cues=cues,
+    witStart = WitnessStart(hab=hab, parser=parser, cues=receiptEnd.outbound,
                             kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,
                             responses=rep.cues, queries=httpEnd.qrycues)
 
-    doers.extend(oobiRes)
-    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, witStart, *oobiery.doers])
-
+    doers.extend([regDoer, httpServerDoer, rep, witStart, receiptEnd, *oobiery.doers])
     return doers
+
+
+def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
+    """
+    Create an HTTP or HTTPS server depending on whether TLS key material is present
+    Parameters:
+        port (int)         : port to listen on for all HTTP(s) server instances
+        app (falcon.App)   : application instance to pass to the http.Server instance
+        keypath (string)   : the file path to the TLS private key
+        certpath (string)  : the file path to the TLS signed certificate (public key)
+        cafilepath (string): the file path to the TLS CA certificate chain file
+    Returns:
+        hio.core.http.Server
+    """
+    if keypath is not None and certpath is not None and cafilepath is not None:
+        servant = tcp.ServerTls(certify=False,
+                                keypath=keypath,
+                                certpath=certpath,
+                                cafilepath=cafilepath,
+                                port=port)
+        server = http.Server(port=port, app=app, servant=servant)
+    else:
+        server = http.Server(port=port, app=app)
+    return server
 
 
 class WitnessStart(doing.DoDoer):
@@ -121,8 +153,7 @@ class WitnessStart(doing.DoDoer):
         self.responses = responses if responses is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        doers = [doing.doify(self.start), doing.doify(self.msgDo),
-                 doing.doify(self.exchangerDo), doing.doify(self.escrowDo), doing.doify(self.cueDo)]
+        doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.cueDo)]
         super().__init__(doers=doers, **opts)
 
     def start(self, tymth=None, tock=0.0):
@@ -215,7 +246,7 @@ class WitnessStart(doing.DoDoer):
 
         while True:
             while self.cues:
-                cue = self.cues.popleft()
+                cue = self.cues.pull() # self.cues.popleft()
                 cueKin = cue["kin"]
                 if cueKin == "stream":
                     self.queries.append(cue)
@@ -223,30 +254,6 @@ class WitnessStart(doing.DoDoer):
                     self.responses.append(cue)
                 yield self.tock
             yield self.tock
-
-    def exchangerDo(self, tymth=None, tock=0.0):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            .exc responses and pass them on to the HTTPRespondant
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            for rep in self.exc.processResponseIter():
-                self.replies.append(rep)
-                yield  # throttle just do one cue at a time
-            yield
-
 
 class Indirector(doing.DoDoer):
     """
@@ -464,9 +471,7 @@ class MailboxDirector(doing.DoDoer):
         .doers is list of Doers or Doer like generator functions
 
     Attributes:
-        hab (Habitat: local controller's context
-        client (serving.Client): hio TCP client instance.
-            Assumes operated by another doer.
+        hby (Habitat: local controller's context
 
     Properties:
         tyme (float): relative cycle time of associated Tymist, obtained
@@ -552,9 +557,6 @@ class MailboxDirector(doing.DoDoer):
         else:
             self.tvy = None
 
-        if self.exchanger is not None:
-            doers.extend([doing.doify(self.exchangerDo)])
-
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
                                      kvy=self.kvy,
@@ -626,6 +628,11 @@ class MailboxDirector(doing.DoDoer):
 
         self.prefixes.add(hab.pre)
 
+    def addPoller(self, hab, witness):
+        poller = Poller(hab=hab, topics=self.topics, witness=witness)
+        self.pollers.append(poller)
+        self.extend([poller])
+
     def processPollIter(self):
         """
         Iterate through cues and yields one or more responses for each cue.
@@ -694,42 +701,13 @@ class MailboxDirector(doing.DoDoer):
         while True:
             self.kvy.processEscrows()
             self.rvy.processEscrowReply()
+            if self.exchanger is not None:
+                self.exchanger.processEscrow()
             if self.tvy is not None:
                 self.tvy.processEscrows()
             if self.verifier is not None:
                 self.verifier.processEscrows()
 
-            yield
-
-    def exchangerDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            self.exchanger.processEscrow()
-            yield
-
-            for rep in self.exchanger.processResponseIter():
-                self.rep.reps.append(rep)
-                yield  # throttle just do one cue at a time
             yield
 
     @property
@@ -805,12 +783,12 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
-            if self.hab.group:
+            if isinstance(self.hab, GroupHab):
                 msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
             else:
                 msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
 
-            httping.createCESRRequest(msg, client)
+            httping.createCESRRequest(msg, client, dest=self.witness)
 
             while client.requests:
                 yield self.tock
@@ -911,27 +889,69 @@ class HttpEnd:
         rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
-        serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
-        msg = bytearray(serder.raw)
+        sadder = coring.Sadder(ked=cr.payload, kind=eventing.Serials.json)
+        msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
         self.rxbs.extend(msg)
 
-        ilk = serder.ked["t"]
-        if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
+        if sadder.proto in ("ACDC",):
             rep.set_header('Content-Type', "application/json")
             rep.status = falcon.HTTP_204
-        elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-            rep.set_header('Content-Type', "application/json")
-            rep.status = falcon.HTTP_204
-        elif ilk in (Ilks.qry,):
-            if serder.ked["r"] in ("mbx",):
-                rep.set_header('Content-Type', "text/event-stream")
-                rep.status = falcon.HTTP_200
-                rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
-            else:
+        else:
+            ilk = sadder.ked["t"]
+            if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
+            elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
+                rep.set_header('Content-Type', "application/json")
+                rep.status = falcon.HTTP_204
+            elif ilk in (Ilks.qry,):
+                if sadder.ked["r"] in ("mbx",):
+                    rep.set_header('Content-Type', "text/event-stream")
+                    rep.status = falcon.HTTP_200
+                    rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=sadder.said)
+                else:
+                    rep.set_header('Content-Type', "application/json")
+                    rep.status = falcon.HTTP_204
+
+    def on_put(self, req, rep):
+        """
+        Handles PUT for KERI mbx event messages.
+
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
+        ---
+        summary:  Accept KERI events with attachment headers and parse
+        description:  Accept KERI events with attachment headers and parse.
+        tags:
+           - Events
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 description: KERI event message
+        responses:
+           200:
+              description: Mailbox query response for server sent events
+           204:
+              description: KEL or EXN event accepted.
+        """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
+
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('connection', "close")
+
+        self.rxbs.extend(req.bounded_stream.read())
+
+        rep.set_header('Content-Type', "application/json")
+        rep.status = falcon.HTTP_204
 
 
 class QryRpyMailboxIterable:
@@ -949,7 +969,7 @@ class QryRpyMailboxIterable:
     def __next__(self):
         if self.iter is None:
             if self.cues:
-                cue = self.cues.popleft()
+                cue = self.cues.pull() # self.cues.popleft()
                 serder = cue["serder"]
                 if serder.said == self.said:
                     kin = cue["kin"]
@@ -999,3 +1019,162 @@ class MailboxIterable:
             return data
 
         raise StopIteration
+
+
+class ReceiptEnd(doing.DoDoer):
+    """ Endpoint class for Witnessing receipting functionality
+
+     Most times a witness will be able to return its receipt for an event inband.  This API
+     will provide that functionality.  When an event needs to be escrowed, this POST API
+     will return a 202 and also provides a generic GET API for retrieving a receipt for any
+     event.
+
+     """
+
+    def __init__(self, hab, inbound=None, outbound=None, aids=None):
+        self.hab = hab
+        self.inbound = inbound if inbound is not None else decking.Deck()
+        self.outbound = outbound if outbound is not None else decking.Deck()
+        self.aids = aids
+        self.receipts = set()
+        self.psr = parsing.Parser(framed=True,
+                                  kvy=self.hab.kvy)
+
+        super(ReceiptEnd, self).__init__(doers=[doing.doify(self.interceptDo)])
+
+    def on_post(self, req, rep):
+        """  Receipt POST endpoint handler
+
+        Parameters:
+            req (Request): Falcon HTTP request object
+            rep (Response): Falcon HTTP response object
+
+        """
+
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
+
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('connection', "close")
+
+        cr = httping.parseCesrHttpRequest(req=req)
+        serder = serdering.SerderKERI(sad=cr.payload, kind=eventing.Serials.json)
+
+        pre = serder.ked["i"]
+        if self.aids is not None and pre not in self.aids:
+            raise falcon.HTTPBadRequest(description=f"invalid AID={pre} for witnessing receipting")
+
+        ilk = serder.ked["t"]
+        if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
+            raise falcon.HTTPBadRequest(description=f"invalid event type ({ilk})for receipting")
+
+        msg = bytearray(serder.raw)
+        msg.extend(cr.attachments.encode("utf-8"))
+
+        self.psr.parseOne(ims=msg)
+
+        if pre in self.hab.kevers:
+            kever = self.hab.kevers[pre]
+            wits = kever.wits
+
+            if self.hab.pre not in wits:
+                raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
+                                                        f"{serder.sn}: wits={wits}")
+
+            rct = self.hab.receipt(serder)
+
+            self.psr.parseOne(bytes(rct))
+
+            rep.set_header('Content-Type', "application/json+cesr")
+            rep.status = falcon.HTTP_200
+            rep.data = rct
+        else:
+            rep.status = falcon.HTTP_202
+
+    def on_get(self, req, rep):
+        """  Receipt GET endpoint handler
+
+        Parameters:
+            req (Request): Falcon HTTP request object
+            rep (Response): Falcon HTTP response object
+
+        """
+        pre = req.get_param("pre")
+        sn = req.get_param_as_int("sn")
+        said = req.get_param("said")
+
+        if pre is None:
+            raise falcon.HTTPBadRequest(description="query param 'pre' is required")
+
+        preb = pre.encode("utf-8")
+
+        if sn is None and said is None:
+            raise falcon.HTTPBadRequest(description="either 'sn' or 'said' query param is required")
+
+        if sn is not None:
+            said = self.hab.db.getKeLast(key=dbing.snKey(pre=preb,
+                                                         sn=sn))
+
+        if said is None:
+            raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({said}) not found")
+
+        said = bytes(said)
+        dgkey = dbing.dgKey(preb, said)  # get message
+        if not (raw := self.hab.db.getEvt(key=dgkey)):
+            raise falcon.HTTPNotFound(description="Missing event for dig={}.".format(said))
+
+        serder = serdering.SerderKERI(raw=bytes(raw))
+        if serder.sn > 0:
+            wits = [wit.qb64 for wit in self.hab.kvy.fetchWitnessState(pre, serder.sn)]
+        else:
+            wits = serder.ked["b"]
+
+        if self.hab.pre not in wits:
+            raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
+                                                    f"{serder.sn}, {wits}")
+        rserder = eventing.receipt(pre=pre,
+                                   sn=sn,
+                                   said=said.decode("utf-8"))
+        rct = bytearray(rserder.raw)
+        if wigs := self.hab.db.getWigs(key=dgkey):
+            rct.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
+                                      count=len(wigs)).qb64b)
+            for wig in wigs:
+                rct.extend(wig)
+
+        rep.set_header('Content-Type', "application/json+cesr")
+        rep.status = falcon.HTTP_200
+        rep.data = rct
+
+    def interceptDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            Kevery and Tevery cues deque
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.inbound:  # iteratively process each cue in cues
+                cue = self.inbound.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+
+                if cueKin in ("receipt",):  # cue to receipt a received event from other pre
+                    serder = cue["serder"]  # Serder of received event for other pre
+                    if serder.saidb in self.receipts:
+                        self.receipts.remove(serder.saidb)
+                    else:
+                        self.outbound.append(cue)
+
+                else:
+                    self.outbound.append(cue)
+
+                yield self.tock
+
+            yield self.tock

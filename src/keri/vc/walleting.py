@@ -45,8 +45,8 @@ class Wallet:
 
         creds = []
         for saider in saiders:
-            creder, sadsigers, sadcigars = self.reger.cloneCred(said=saider.qb64)
-            creds.append((creder, sadsigers, sadcigars))
+            creder, prefixer, seqner, saider = self.reger.cloneCred(said=saider.qb64)
+            creds.append((creder, prefixer, seqner, saider))
 
         return creds
 
@@ -68,7 +68,7 @@ class WalletDoer(doing.DoDoer):
         self.verifier = verifier
 
         doers = [doing.doify(self.escrowDo)]
-        self.witq = agenting.WitnessInquisitor(hby=hby, klas=agenting.TCPWitnesser)
+        self.witq = agenting.WitnessInquisitor(hby=hby, klas=agenting.TCPMessenger)
 
         super(WalletDoer, self).__init__(doers=doers, **kwa)
 

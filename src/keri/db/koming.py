@@ -281,6 +281,26 @@ class Komer(KomerBase):
         return (self.deserializer(self.db.getVal(db=self.sdb,
                                   key=self._tokey(keys))))
 
+    def getDict(self, keys: Union[str, Iterable]):
+        """
+        Gets dictified val at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (dict):
+            None if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (val := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use val here
+        """
+        val = self.get(keys)
+        return helping.dictify(val) if val is not None else None
+
 
     def rem(self, keys: Union[str, Iterable]):
         """

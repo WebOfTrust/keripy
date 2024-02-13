@@ -16,10 +16,11 @@ from hio.help import decking
 from keri.core import coring
 
 from . import httping
+from .habbing import GroupHab
 from .. import help
 from .. import kering
 from ..app import forwarding, connecting
-from ..core import routing, eventing, parsing, scheming
+from ..core import routing, eventing, parsing, scheming, serdering
 from ..db import basing
 from ..end import ending
 from ..end.ending import OOBI_RE, DOOBI_RE
@@ -35,9 +36,7 @@ Result = Resultage(resolved='resolved', failed='failed')
 def loadEnds(app, *, hby, prefix=""):
     oobiEnd = OobiResource(hby=hby)
     app.add_route(prefix + "/oobi", oobiEnd)
-    app.add_route(prefix + "/oobi/groups/{alias}/share", oobiEnd, suffix="share")
-
-    return [oobiEnd]
+    return []
 
 
 def loadHandlers(hby, exc, notifier):
@@ -53,7 +52,7 @@ def loadHandlers(hby, exc, notifier):
     exc.addHandler(oobireq)
 
 
-class OobiResource(doing.DoDoer):
+class OobiResource:
     """
     Resource for managing OOBIs
 
@@ -67,11 +66,6 @@ class OobiResource(doing.DoDoer):
 
         """
         self.hby = hby
-
-        self.postman = forwarding.Postman(hby=self.hby)
-        doers = [self.postman]
-
-        super(OobiResource, self).__init__(doers=doers)
 
     def on_get_alias(self, req, rep, alias=None):
         """ OOBI GET endpoint
@@ -121,24 +115,27 @@ class OobiResource(doing.DoDoer):
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
                 if not urls:
                     rep.status = falcon.HTTP_404
                     rep.text = f"unable to query witness {wit}, no http endpoint"
                     return
 
-                up = urlparse(urls[kering.Schemes.http])
-                oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+                url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+                up = urlparse(url)
+                oobis.append(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=kering.Schemes.https)
             if not urls:
                 rep.status = falcon.HTTP_404
                 rep.text = f"unable to query controller {hab.pre}, no http endpoint"
                 return
-            up = urlparse(urls[kering.Schemes.http])
-            oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+            up = urlparse(url)
+            oobis.append(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
             res["oobis"] = oobis
         else:
             rep.status = falcon.HTTP_404
@@ -157,8 +154,8 @@ class OobiResource(doing.DoDoer):
 
         ---
         summary: Resolve OOBI and assign an alias for the remote identifier
-        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact
-                     data for resolved identifier
+        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact data
+                      for resolved identifier
         tags:
            - OOBIs
         requestBody:
@@ -206,133 +203,55 @@ class OobiResource(doing.DoDoer):
 
         rep.status = falcon.HTTP_202
 
-    def on_post_share(self, req, rep, alias):
-        """ Share OOBI endpoint.
 
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias: human readable name of the local identifier context for resolving this OOBI
-
-        ---
-        summary: Share OOBI and alias for remote identifier with other aids
-        description: Send all other participants in a group AID a copy of the OOBI with suggested alias
-        tags:
-           - OOBIs
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for AID to use to sign exn message
-        requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                    description: OOBI
-                    properties:
-                        oobis:
-                            type: array
-                            items:
-                                type: string
-                                description:  URL OOBI
-        responses:
-           202:
-              description: OOBI resolution to key state successful
-
-        """
-        body = req.get_media()
-        hab = self.hby.habByName(alias)
-        if hab is None:
-            rep.status = falcon.HTTP_404
-            rep.text = f"Unknown identifier {alias}"
-            return
-
-        if not hab.group:
-            rep.status = falcon.HTTP_400
-            rep.text = f"Identifer for {alias} is not a group hab, not supported"
-            return
-
-        oobis = body["oobis"]
-        smids, rmids = hab.members()
-        both = list(set(smids + (rmids or [])))
-        for mid in both:  # hab.smids
-            if mid == hab.mhab.pre:
-                continue
-
-            for oobi in oobis:
-                exn, atc = oobiRequestExn(hab.mhab, mid, oobi)
-                self.postman.send(src=hab.mhab.pre, dest=mid, topic="oobi", serder=exn, attachment=atc)
-
-        rep.status = falcon.HTTP_200
-        return
-
-
-class OobiRequestHandler(doing.Doer):
+class OobiRequestHandler:
     """
     Handler for oobi notification EXN messages
 
     """
     resource = "/oobis"
 
-    def __init__(self, hby, notifier, **kwa):
+    def __init__(self, hby, notifier):
         """
 
         Parameters:
-            mbx (Mailboxer) of format str names accepted for offers
-            oobiery (Oobiery) OOBI loader
+            hby (Habery) database environment of the controller
+            notifier (Notifier) notifier to convert OOBI request exn messages to controller notifications
 
         """
         self.hby = hby
         self.notifier = notifier
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
 
-        super(OobiRequestHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages processing new contacts via OOBIs
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of OOBI request messages
 
         Parameters:
+            serder (Serder): Serder of the exn OOBI request message
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
         """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+        src = serder.pre
+        pay = serder.ked['a']
+        if "oobi" not in pay:
+            print(f"invalid oobi message, missing oobi.  evt={serder.ked}")
+            return
+        oobi = pay["oobi"]
 
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                prefixer = msg["pre"]
-                pay = msg["payload"]
-                if "oobi" not in pay:
-                    print(f"invalid oobi message, missing oobi.  evt=: {msg}")
-                    continue
-                oobi = pay["oobi"]
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        self.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
-                src = prefixer.qb64
-                obr = basing.OobiRecord(date=helping.nowIso8601())
-                self.hby.db.oobis.pin(keys=(oobi,), val=obr)
+        data = dict(
+            r="/oobi",
+            src=src,
+            oobi=oobi
+        )
 
-                data = dict(
-                    r="/oobi",
-                    src=src,
-                    oobi=oobi
-                )
+        purl = parse.urlparse(oobi)
+        params = parse.parse_qs(purl.query)
+        if "name" in params:
+            data["oobialias"] = params["name"][0]
 
-                purl = parse.urlparse(oobi)
-                params = parse.parse_qs(purl.query)
-                if "name" in params:
-                    data["oobialias"] = params["name"][0]
-
-                self.notifier.add(attrs=data)
-
-                yield
-            yield
+        self.notifier.add(attrs=data)
 
 
 def oobiRequestExn(hab, dest, oobi):
@@ -342,9 +261,9 @@ def oobiRequestExn(hab, dest, oobi):
     )
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
-                              payload=data)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    exn, _ = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
+                                 payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 
     return exn, ims
@@ -461,7 +380,7 @@ class Oobiery:
                     self.request(url, obr)
 
             except ValueError as ex:
-                print("error requesting invalid OOBI URL {}", url)
+                print(f"error requesting invalid OOBI URL {ex}", url)
 
     def processClients(self):
         """ Process Client responses by parsing the messages and removing the client/doer
@@ -536,7 +455,13 @@ class Oobiery:
                     except (kering.ValidationError, ValueError):
                         pass
 
-                    serder = eventing.Serder(raw=bytearray(response["body"]))
+                    try:
+                        serder = serdering.SerderKERI(raw=bytearray(response["body"]))
+                    except ValueError:
+                        obr.state = Result.failed
+                        self.hby.db.coobi.rem(keys=(url,))
+                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        continue
                     if not serder.ked['t'] == coring.Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
@@ -593,6 +518,11 @@ class Oobiery:
 
     def request(self, url, obr):
         client = self.clienter.request("GET", url=url)
+        if client is None:
+            self.hby.db.oobis.rem(keys=(url,))
+            print(f"error getting client for {url}, aborting OOBI")
+            return
+
         self.clients[url] = client
         self.hby.db.oobis.rem(keys=(url,))
         self.hby.db.coobi.pin(keys=(url,), val=obr)

@@ -26,7 +26,7 @@ def notice(attrs, dt=None, read=False):
         Notice:  Notice instance
 
     """
-    dt = dt if dt is not None else datetime.datetime.now().isoformat()
+    dt = dt if dt is not None else helping.nowIso8601()
 
     if hasattr(dt, "isoformat"):
         dt = dt.isoformat()
@@ -188,6 +188,15 @@ class DicterSuber(subing.Suber):
         for key, val in self.db.getAllItemIter(db=self.sdb, key=self._tokey(keys), split=False):
             yield self._tokeys(key), self.klas(raw=bytes(val))
 
+    def cntAll(self):
+        """
+        Return count over the all the items in subdb
+
+        Returns:
+            count of all items
+        """
+        return self.db.cnt(db=self.sdb)
+
 
 class Noter(dbing.LMDBer):
     """
@@ -305,44 +314,42 @@ class Noter(dbing.LMDBer):
         self.ncigs.rem(keys=(rid,))
         return self.notes.rem(keys=(dt, rid))
 
-    def getNoteIter(self, start="", limit=25):
+    def getNoteCnt(self):
         """
-        Returns iterator of tuples (note, cigar) of notices for controller of agent with attached signatures.
+        Return count over the all Notes
 
-        Parameters:
-            start (Optiona(str,datetime)): date/time to start iteration
-            limit (int): number of items to return
+        Returns:
+            int: count of all items
 
         """
-        if hasattr(start, "isoformat"):
-            start = start.isoformat()
+        return self.notes.cntAll()
 
-        res = 0
-        for ((_, _), note) in self.notes.getItemIter(keys=(start,)):
-            cig = self.ncigs.get(keys=(note.rid,))
-            yield note, cig
-            res += 1
-            if res == limit:
-                break
-
-    def getNotes(self, start="", limit=25):
+    def getNotes(self, start=0, end=25):
         """
         Returns list of tuples (note, cigar) of notes for controller of agent
 
         Parameters:
-            start (Optiona(str,datetime)): date/time to start iteration
-            limit (int): number of items to return
+            start (int): number of item to start
+            end (int): number of last item to return
 
         """
         if hasattr(start, "isoformat"):
             start = start.isoformat()
 
         notes = []
+        it = self.notes.getItemIter(keys=())
 
-        for ((_, _), note) in self.notes.getItemIter(keys=(start,)):
+        # Run off the items before start
+        for _ in range(start):
+            try:
+                next(it)
+            except StopIteration:
+                break
+
+        for ((_, _), note) in it:
             cig = self.ncigs.get(keys=(note.rid,))
             notes.append((note, cig))
-            if len(notes) == limit:
+            if (not end == -1) and len(notes) == (end - start) + 1:
                 break
 
         return notes
@@ -462,39 +469,28 @@ class Notifier:
 
         return False
 
-    def getNoteIter(self, start=None, limit=25):
+    def getNoteCnt(self):
         """
-        Returns iterator of notices that have verified signatures over the data stored
+        Return count over the all Notes
+
+        Returns:
+            int: count of all items
+
+        """
+        return self.noter.getNoteCnt()
+
+    def getNotes(self, start=0, end=24):
+        """
+        Returns list of tuples (note, cigar) of notes for controller of agent
 
         Parameters:
-            start (Optiona(str,datetime)): date/time to start iteration
-            limit (int): number of items to return
+            start (int): number of item to start
+            end (int): number of last item to return
 
         """
-
-        for note, cig in self.noter.getNoteIter(start=start, limit=limit):
-            if not self.hby.signator.verify(ser=note.raw, cigar=cig):
-                raise kering.ValidationError("note stored without valid signature")
-
-            yield note
-
-    def getNotes(self, start="", limit=25):
-        """
-
-        Returns list of notices that have verified signatures over the data stored
-
-        Parameters:
-            start (Optiona(str,datetime)): date/time to start iteration
-            limit (int): number of items to return
-
-
-        """
-        if hasattr(start, "isoformat"):
-            start = start.isoformat()
-
+        notesigs = self.noter.getNotes(start, end)
         notes = []
-
-        for note, cig in self.noter.getNoteIter(start=start, limit=limit):
+        for note, cig in notesigs:
             if not self.hby.signator.verify(ser=note.raw, cigar=cig):
                 raise kering.ValidationError("note stored without valid signature")
 

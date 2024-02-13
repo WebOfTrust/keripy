@@ -10,10 +10,12 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, indirecting, agenting, grouping, forwarding
+from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
 from keri.app.cli.common import existing
-from keri.core import coring
+from keri.app.habbing import GroupHab
+from keri.core import coring, serdering
 from keri.db import dbing
+from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -56,9 +58,17 @@ class ConfirmDoer(doing.DoDoer):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         self.counselor = grouping.Counselor(hby=hby)
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'])
+        self.notifier = notifying.Notifier(hby=hby)
+        self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
+
+        exc = exchanging.Exchanger(hby=hby, handlers=[])
+        delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
+        grouping.loadHandlers(exc=exc, mux=self.mux)
+
+        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
+                                               exc=exc)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
@@ -91,12 +101,12 @@ class ConfirmDoer(doing.DoDoer):
                 eraw = self.hby.db.getEvt(dgkey)
                 if eraw is None:
                     continue
-                eserder = coring.Serder(raw=bytes(eraw))  # escrowed event
+                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
-                ilk = eserder.ked["t"]
+                ilk = eserder.sad["t"]
                 if ilk in (coring.Ilks.dip,):
                     typ = "inception"
-                    delpre = eserder.ked["di"]
+                    delpre = eserder.sad["di"]
 
                 elif ilk in (coring.Ilks.drt,):
                     typ = "rotation"
@@ -118,9 +128,8 @@ class ConfirmDoer(doing.DoDoer):
                     if not approve:
                         continue
 
-                    if hab.group:
-                        smids, rmids = hab.members()
-                        aids = smids
+                    if isinstance(hab, GroupHab):
+                        aids = hab.smids
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
                         if self.interact:
@@ -128,14 +137,10 @@ class ConfirmDoer(doing.DoDoer):
                         else:
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
-                            # self.counselor.rotate(ghab=hab, mids=self.aids, isith=self.isith, toad=self.toad,
-                            #                       cuts=list(self.cuts), adds=list(self.adds),
-                            #                       data=self.data)
 
-                        serder = coring.Serder(raw=msg)
-
-                        exn, atc = grouping.multisigInteractExn(hab, serder.sner.num, aids, [anchor])
-                        others = list(oset(smids + (rmids or [])))
+                        serder = serdering.SerderKERI(raw=msg)
+                        exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
+                        others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -145,8 +150,7 @@ class ConfirmDoer(doing.DoDoer):
                         prefixer = coring.Prefixer(qb64=hab.pre)
                         seqner = coring.Seqner(sn=serder.sn)
                         saider = coring.Saider(qb64b=serder.saidb)
-                        self.counselor.start(smids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner,
-                                             saider=saider)
+                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=seqner, saider=saider)
 
                         while True:
                             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
@@ -183,7 +187,7 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
                         # wait for confirmation of fully commited event
-                        wits = [werfer.qb64 for werfer in eserder.werfers]
+                        wits = [werfer.qb64 for werfer in eserder.berfers]
                         self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits)
 
                         while eserder.pre not in self.hby.kevers:

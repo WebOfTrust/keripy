@@ -22,13 +22,38 @@ function isSuccess() {
 }
 
 # Test scripts
+printf "\n************************************\n"
+printf "Running demo-script.sh"
+printf "\n************************************\n"
 "${script_dir}/basic/demo-script.sh"
 isSuccess
+
+printf "\n************************************\n"
+printf "Running demo-witness-script.sh"
+printf "\n************************************\n"
 "${script_dir}/basic/demo-witness-script.sh"
 isSuccess
+
+printf "\n************************************\n"
+printf "Running demo-witness-async-script.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/demo-witness-async-script.sh"
+isSuccess
+
+printf "\n************************************\n"
+printf "Running multisig.sh"
+printf "\n************************************\n"
 "${script_dir}/basic/multisig.sh"
 isSuccess
+
+printf "\n************************************\n"
+printf "Running multisig-delegate-delegator.sh"
+printf "\n************************************\n"
 "${script_dir}/basic/multisig-delegate-delegator.sh"
 isSuccess
+
+printf "\n************************************\n"
+printf "Running challenge.sh"
+printf "\n************************************\n"
 "${script_dir}/basic/challenge.sh"
 isSuccess

@@ -5,21 +5,26 @@ tests.db.dbing module
 """
 import json
 import os
+from dataclasses import dataclass, asdict
 
 import lmdb
 import pytest
 from hio.base import doing
+
+from tests.app import openMultiSig
+from keri.kering import Versionage
 from keri.app import habbing
-from keri.core import coring, eventing
+from keri.core import coring, eventing, serdering
 from keri.core.coring import MtrDex
 from keri.core.coring import Serials, versify
-from keri.core.coring import Signer, Salter
+from keri.core.coring import Salter
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
 from keri.db import dbing
-from keri.db.basing import openDB, Baser
+from keri.db.basing import openDB, Baser, KeyStateRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
+from keri.help.helping import datify, dictify
 
 
 def test_baser():
@@ -1710,11 +1715,11 @@ def test_clean_baser():
         assert natHab.kever.serder.said == natsaid
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
-        serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+        serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
         assert serder.said == natHab.kever.serder.said
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
-        assert state.sn == 6
-        assert state.ked["f"] == '6'
+        assert state.s == '6'
+        assert state.f == '6'
         assert natHab.db.env.stat()['entries'] <= 96 #68
 
         # test reopenDB with reuse  (because temp)
@@ -1722,7 +1727,7 @@ def test_clean_baser():
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.saidb
-            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] <= 96 #68
 
@@ -1736,9 +1741,11 @@ def test_clean_baser():
                                       dig=natHab.kever.serder.said,
                                       sn=natHab.kever.sn+1,
                                       isith='2',
-                                      ndigs=[diger.qb64 for diger in natHab.kever.digers])
+                                      ndigs=[diger.qb64 for diger in natHab.kever.ndigers])
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
-            natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())
+            natHab.db.states.pin(keys=natHab.pre,
+                                 val=datify(KeyStateRecord,
+                                            natHab.kever.state()))
 
             assert fn == 7
             # verify garbage event in database
@@ -1772,7 +1779,7 @@ def test_clean_baser():
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.saidb
-            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] >= 18
 
@@ -1780,8 +1787,8 @@ def test_clean_baser():
             assert not natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
             state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
-            assert state.sn == 6
-            assert state.ked["f"] == '6'
+            assert state.s == '6'
+            assert state.f == '6'
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
@@ -1869,7 +1876,7 @@ def test_fetchkeldel():
         for val in vals2:
             assert db.addKe(key, val) == True
 
-        vals = [bytes(val) for val in db.getKelEstIter(preb)]
+        vals = [bytes(val) for val in db.getKelLastIter(preb)]
         lastvals = [vals0[-1], vals1[-1], vals2[-1]]
         assert vals == lastvals
 
@@ -1939,7 +1946,7 @@ def test_usebaser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
                         isith=sith,
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=key).qb64 for key in nxtkeys],
                         sn=1)
 
@@ -1951,7 +1958,7 @@ def test_usebaser():
 
         # Event 2 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=2)
 
         # sign serialization  (keys don't change for signing)
@@ -1962,6 +1969,105 @@ def test_usebaser():
     assert not os.path.exists(db.path)
 
     """ End Test """
+
+
+def test_rawrecord():
+    """
+    Test RawRecord dataclass
+    """
+    @dataclass
+    class TestRecord(basing.RawRecord):
+        x: str = ""
+        y: int = 0
+
+    record = TestRecord()
+
+    assert isinstance(record, TestRecord)
+    assert isinstance(record, basing.RawRecord)
+
+    assert "x" in record
+    assert "y" in record
+
+    assert record.x == ''
+    assert record.y == 0
+
+    record = TestRecord(x="hi", y=3)
+
+    assert record.x == 'hi'
+    assert record.y == 3
+
+    assert record._asdict() == {'x': 'hi', 'y': 3}
+    assert record._asjson() == b'{"x":"hi","y":3}'
+    assert record._ascbor() == b'\xa2axbhiay\x03'
+    assert record._asmgpk() == b'\x82\xa1x\xa2hi\xa1y\x03'
+
+    """End Test"""
+
+
+
+def test_keystaterecord():
+    """
+    Test KeyStateRecord dataclass
+    """
+    seer = basing.StateEERecord()
+    assert seer.s == '0'
+    assert seer.d == ''
+    assert seer._asdict() == {'s': '0', 'd': '', 'br': [], 'ba': []}
+
+    ksr = basing.KeyStateRecord()
+
+    assert isinstance(ksr, basing.KeyStateRecord)
+    assert ksr.i == ''
+
+    ksn = asdict(ksr)  # key state notice dict
+    assert ksn == {'vn': [],
+                    'i': '',
+                    's': '0',
+                    'p': '',
+                    'd': '',
+                    'f': '0',
+                    'dt': '',
+                    'et': '',
+                    'kt': '0',
+                    'k': [],
+                    'nt': '0',
+                    'n': [],
+                    'bt': '0',
+                    'b': [],
+                    'c': [],
+                    'ee': {'s': '0', 'd': '', 'br': [], 'ba': []},
+                    'di': ''}
+
+    assert ksr._asdict() == ksn
+    assert ksr._asjson() == (b'{"vn":[],"i":"","s":"0","p":"","d":"","f":"0","dt":"","et":"","kt":"0","k":['
+                        b'],"nt":"0","n":[],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"","br":[],"ba":['
+                        b']},"di":""}')
+
+    assert ksr._ascbor() == (b'\xb1bvn\x80ai`asa0ap`ad`afa0bdt`bet`bkta0ak\x80bnta0an\x80bbta0ab\x80ac'
+                             b'\x80bee\xa4asa0ad`bbr\x80bba\x80bdi`')
+
+    assert ksr._asmgpk() == (b'\xde\x00\x11\xa2vn\x90\xa1i\xa0\xa1s\xa10\xa1p\xa0\xa1d\xa0\xa1f\xa10'
+                            b'\xa2dt\xa0\xa2et\xa0\xa2kt\xa10\xa1k\x90\xa2nt\xa10\xa1n\x90\xa2bt\xa1'
+                            b'0\xa1b\x90\xa1c\x90\xa2ee\x84\xa1s\xa10\xa1d\xa0\xa2br\x90\xa2ba\x90\xa2d'
+                            b'i\xa0')
+
+
+    assert str(ksr) == repr(ksr) == ("KeyStateRecord(vn=[], i='', s='0', p='', d='', f='0', dt='', et='', kt='0', "
+                                     "k=[], nt='0', n=[], bt='0', b=[], c=[], ee=StateEERecord(s='0', d='', br=[], "
+                                     "ba=[]), di='')")
+
+    dksn = dictify(ksr)
+    assert dksn == ksn
+
+    dksr = datify(basing.KeyStateRecord, ksn)
+    assert dksr == ksr
+
+    nksr = basing.KeyStateRecord._fromdict(ksn)
+    assert nksr == ksr
+    assert nksr._asdict() == ksn
+
+
+    """End Test"""
 
 
 def test_dbdict():
@@ -2028,21 +2134,24 @@ def test_dbdict():
         dgkey = eventing.dgKey(pre=pre, dig=serder.said)
         db.putEvt(key=dgkey, val=serder.raw)
         assert db.getEvt(key=dgkey) is not None
+
         db.states.pin(keys=pre, val=state)  # put state in database
-        assert db.states.get(keys=pre) is not None
+        dbstate = db.states.get(keys=pre)
+        assert dbstate is not None
+        assert dbstate == state
 
         kever = eventing.Kever(state=state, db=db)
-        assert kever.state().ked == state.ked
+        assert kever.state() == state
 
         dkever = dbd[pre]  # read through cache works here
         dstate = dkever.state()
-        assert  dstate.ked == state.ked
+        assert  dstate == state
 
         del dbd[pre]  # not in dbd memory
         assert pre in dbd  #  read through cache works
         dkever = dbd[pre]
         dstate = dkever.state()
-        assert  dstate.ked == state.ked
+        assert  dstate == state
 
         db.states.rem(keys=pre)
         assert pre in dbd  # still in memory
@@ -2051,6 +2160,8 @@ def test_dbdict():
 
 
     assert not os.path.exists(db.path)
+
+
 
 
 
@@ -2114,9 +2225,51 @@ def test_baserdoer():
     doist.do(doers=doers)
     assert doist.tyme == limit
     for doer in doers:
-        assert doer.baser.opened == False
-        assert doer.baser.env == None
+        assert doer.baser.opened is False
+        assert doer.baser.env is None
         assert not os.path.exists(doer.baser.path)
+
+    """End Test"""
+
+
+def test_group_members():
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+        keys = hby1.db.signingMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby2.db.signingMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby3.db.signingMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby1.db.rotationMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby2.db.rotationMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby3.db.rotationMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
 
     """End Test"""
 

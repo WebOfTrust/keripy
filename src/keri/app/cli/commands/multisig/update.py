@@ -13,6 +13,7 @@ from keri import kering
 from keri.app import agenting, indirecting, habbing
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
+from keri.app.habbing import GroupHab
 
 logger = help.ogler.getLogger()
 
@@ -51,7 +52,7 @@ class UpdateDoer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         hab = self.hby.habByName(alias)
 
-        if not hab.group:
+        if not isinstance(hab, GroupHab):
             raise kering.ConfigurationError("only group habs can be updated from witnesses.")
 
         self.hab = hab
@@ -61,7 +62,7 @@ class UpdateDoer(doing.DoDoer):
         self.said = said
         self.cues = help.decking.Deck()
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt"])
+        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.witq])
 
@@ -90,7 +91,7 @@ class UpdateDoer(doing.DoDoer):
             self.hab.db.ksns.rem((saider.qb64,))
             self.hab.db.ksns.rem((saider.qb64,))
 
-        witer = agenting.witnesser(self.hab, self.wit)
+        witer = agenting.messenger(self.hab, self.wit)
         self.extend([witer])
 
         msg = self.hab.query(pre=self.hab.pre, src=self.wit, route="ksn")

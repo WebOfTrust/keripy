@@ -27,10 +27,16 @@ class Broker:
         # all ksn  kdts (key state datetime serializations) maps said to date-time
         self.daterdb = subing.CesrSuber(db=self.db, subkey=subkey + '-dts.', klas=coring.Dater)
 
-        # all key state messages. Maps key state said to serialization. ksns are
+        # all reply messages that holdkey state messages.
+        # Maps replay messages that hold key state said to serialization. ksns are
         # versioned sads ( with version string) so use Serder to deserialize and
         # use  .kdts, .ksgs, and .kcgs for datetimes and signatures
         self.serderdb = subing.SerderSuber(db=self.db, subkey=subkey + '-sns.')
+
+        # RegStateRecords used as basis for registry state notices in replies
+        #self.rsrdb = koming.Komer(db=self.db,
+                                   #schema=viring.RegStateRecord,
+                                   #subkey=subkey + '-sns.')
 
         # all key state ksgs (ksn indexed signature serializations) maps ksn quadkeys
         # given by quadruple (saider.qb64, subkeyer.qb64, seqner.q64, diger.qb64)
@@ -165,7 +171,7 @@ class Broker:
 
         return self.escrowdb.put(keys=(typ, pre, aid), vals=[saider])  # overwrite
 
-    def updateState(self, aid, serder, saider, dater):
+    def updateReply(self, aid, serder, saider, dater):
         """
         Update Reply SAD in database given by by serder and associated databases
         for attached cig couple or sig quadruple.
@@ -183,7 +189,7 @@ class Broker:
         self.daterdb.put(keys=keys, val=dater)  # first one idempotent
         self.serderdb.pin(keys=keys, val=serder)  # first one idempotent
         # Add source of ksn to the key...  (source AID, ksn AID)
-        self.saiderdb.pin(keys=(serder.pre, aid), val=saider)  # overwrite
+        self.saiderdb.pin(keys=(serder.sad["a"]["i"], aid), val=saider)  # overwrite
 
     def removeState(self, saider):
         if saider:

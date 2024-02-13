@@ -16,7 +16,9 @@ from hio.base import doing
 from keri import help, kering
 from keri.app import indirecting, grouping, habbing, forwarding
 from keri.app.cli.common import existing, displaying
-from keri.core import coring
+from keri.app.notifying import Notifier
+from keri.core import coring, serdering
+from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -87,9 +89,14 @@ class GroupMultisigIncept(doing.DoDoer):
         if "delpre" in self.inits:
             topics.append('/delegate')
 
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics)
+        notifier = Notifier(self.hby)
+        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        grouping.loadHandlers(exc, mux)
+
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics, exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)
@@ -131,14 +138,15 @@ class GroupMultisigIncept(doing.DoDoer):
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
 
-            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
-            serder = coring.Serder(raw=evt)
+            icp = ghab.makeOwnInception(allowPartiallySigned=True)
 
             # Create a notification EXN message to send to the other agents
             exn, ims = grouping.multisigInceptExn(ghab.mhab,
-                                                  aids=ghab.smids,
-                                                  ked=serder.ked)
+                                                  smids=ghab.smids,
+                                                  rmids=ghab.rmids,
+                                                  icp=icp)
             others = list(oset(smids + (rmids or [])))
+
             others.remove(ghab.mhab.pre)
 
             for recpt in others:  # this goes to other participants only as a signaling mechanism
@@ -153,7 +161,7 @@ class GroupMultisigIncept(doing.DoDoer):
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 mid=hab.pre, smids=smids, rmids=rmids)
+                                 ghab=ghab)
 
         else:
             prefixer = coring.Prefixer(ghab.pre)

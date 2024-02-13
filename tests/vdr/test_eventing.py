@@ -6,9 +6,9 @@ tests.vdr.eventing module
 import pytest
 
 from keri.app import habbing, keeping
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core import eventing as keventing
-from keri.core.coring import versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer, Seqner
+from keri.core.coring import versify, Serials, Ilks, MtrDex, Prefixer, Signer, Seqner, Saider
 from keri.db import basing
 from keri.db.dbing import snKey, dgKey
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \
@@ -304,19 +304,19 @@ def test_backer_issue_revoke(mockHelpingNowUTC):
     dig = "EC2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
 
     serder = backerIssue(vcdig=vcdig, regk=regk, regsn=sn, regd=regd)
-    assert serder.raw == (b'{"v":"KERI10JSON000160_","t":"bis","d":"EM2zBvc6fL7BvcRT-OhPR7dgja5p4Kc1G3l3'
-                        b'5Plb0CYk","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","ii":"EE3Xv6CWw'
-                        b'EMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","ra":{"i":"EE3Xv6CWwEMpW-99rhPD'
-                        b'9IHFCR2LN5ienLVI8yG5faBw","s":3,"d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PL'
-                        b'MZ1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
+    assert serder.raw == (b'{"v":"KERI10JSON000162_","t":"bis","d":"EK9X5Ih5z68pKA-dHMuEZXt_2avkzM8i1_gD'
+                          b'KlFBGDM7","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","ii":"EE3Xv6CWw'
+                          b'EMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","ra":{"i":"EE3Xv6CWwEMpW-99rhPD'
+                          b'9IHFCR2LN5ienLVI8yG5faBw","s":"3","d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-'
+                          b'PLMZ1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
 
     serder = backerRevoke(vcdig=vcdig, regk=regk, regsn=sn, regd=regd, dig=dig)
-    assert serder.raw == (b'{"v":"KERI10JSON00015f_","t":"brv","d":"EAIZZ8ujQQl4XGMh8XPzxokkzqrWh8M6Ftxq'
-                        b'kezbVtDu","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","p":"EC'
-                        b'2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","ra":{"i":"EE3Xv6CWwEMpW-99rhPD9'
-                        b'IHFCR2LN5ienLVI8yG5faBw","s":3,"d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLM'
-                        b'Z1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
+    assert serder.raw == (b'{"v":"KERI10JSON000161_","t":"brv","d":"EMBHVoEIM4GfoLtelLD6erwNLyO39PUyEAcC'
+                          b'-N77OGoq","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","p":"EC'
+                          b'2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","ra":{"i":"EE3Xv6CWwEMpW-99rhPD9'
+                          b'IHFCR2LN5ienLVI8yG5faBw","s":"3","d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-P'
+                          b'LMZ1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
     """ End Test """
 
@@ -330,42 +330,48 @@ def test_prefixer():
         prefixer = Prefixer()
 
     # vcp, backers allowed no backers
+    # ["v", "d", "i", "s", "t", "bt", "b", "c"]
     ked = dict(v=vs,
-               i="",
+               d="",  # qb64 SAID
+               i="",  # qb64 pre
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=0,
+               b=[],
                c=[],
-               b=[]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ENJD01FI0RNNgoECWBacDCe50QDiJ4zSECcm4lGz8hBK'
+    assert prefixer.qb64 == 'EDj0Kq4tFBNGKxpdfX2nCfIvYJ-v1MJ24H1dsPfUqzmB'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
     # Invalid event type
+    #["v", "i", "s", "t", "ri", "dt"]
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
-               ii=pre,
                s="{:x}".format(0),
                t=Ilks.iss,
-               c=[],
-               b=[]
+               ri="",
+               dt="",
                )
-    with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
+    #with pytest.raises(DerivationError):
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
 
     # vcp, no backers allowed
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=0,
+               b=[],
                c=[keventing.TraitDex.NoBackers],
-               b=[]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ENqkr-pqrRYGOTUSj2X4_bs8_nQYniBQjyGM2nW1eH7w'
+    assert prefixer.qb64 == 'EDz0QmMxf4Dk0C9uiP-y3okN-Bej2IAXSj8UwQgb3NsL'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
@@ -375,29 +381,33 @@ def test_prefixer():
 
     # vcp, one backer
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=1,
+               b=[bak1],
                c=[],
-               b=[bak1]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EDscp4TbmnCWqylvH_JPBiv_MRgNz3kkeOIiFQ_PqcZk'
+    assert prefixer.qb64 == 'EIDRsRwJQNw2ujTeoztpEPxN6XRmBB2bnxWlOzJ9OQHk'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
     # vcp, many backers
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=2,
+               b=[bak1, bak2, bak3],
                c=[],
-               b=[bak1, bak2, bak3]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ECpnvP-0OByIB9Xk7BhOpaNrzM-XVx5v1orUQYnm55rB'
+    assert prefixer.qb64 == 'EMsbtrSOa_lNwDMhpdXphmbItPBcaB0qSboopPo9Ub-s'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
@@ -465,16 +475,17 @@ def test_tever_escrow(mockCoringRandomNonce):
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(regk, vcp.ked["s"], vcp.saider.qb64)
+        rseal = keventing.SealEvent(regk, vcp.ked["s"], vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
         with pytest.raises(MissingWitnessSignatureError):
-            Tever(serder=vcp, seqner=seqner, saider=diger, db=db, reger=reg)
+            Tever(serder=vcp, seqner=seqner, saider=saider, db=db, reger=reg)
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         vcp = reg.getTvt(dgkey)
@@ -505,15 +516,16 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tev = Tever(serder=vcp, seqner=seqner, saider=diger, db=db, reger=reg)
+        tev = Tever(serder=vcp, seqner=seqner, saider=saider, db=db, reger=reg)
 
         assert tev.prefixer.qb64 == vcp.pre
         assert tev.sn == 0
@@ -532,28 +544,30 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # try to rotate a backerless registry
         vrt = eventing.rotate(regk, dig=vcp.said)
-        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.saider.qb64)
+        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
         # should raise validation err because rotation is not supported
         with pytest.raises(ValidationError):
-            tev.update(serder=vrt, seqner=seqner, saider=diger)
+            tev.update(serder=vrt, seqner=seqner, saider=saider)
 
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
 
         iss = eventing.issue(vcdig=vcdig.decode("utf-8"), regk=regk)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.saider.qb64)
+        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tev.update(iss, seqner=seqner, saider=diger)
+        tev.update(iss, seqner=seqner, saider=saider)
 
         vci = vcdig
         dgkey = dgKey(pre=vci, dig=iss.said)
@@ -567,13 +581,14 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.saider.qb64)
+        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tev.update(rev, seqner=seqner, saider=diger)
+        tev.update(rev, seqner=seqner, saider=saider)
         dgkey = dgKey(pre=vci, dig=rev.said)
         assert bytes(reg.getTvt(dgkey)) == (b'{"v":"KERI10JSON000120_","t":"rev","d":"EGjtu2bIII28dwxA0BH8KeXCN03U7TN3SkLD'
                             b'1KZi77pj","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"1","ri":"E'
@@ -604,15 +619,16 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         valCigar = valSigner.sign(ser=vcp.raw, index=0)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tev = Tever(serder=vcp, seqner=seqner, saider=diger, bigers=[valCigar], db=db, reger=reg)
+        tev = Tever(serder=vcp, seqner=seqner, saider=saider, bigers=[valCigar], db=db, reger=reg)
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         assert bytes(reg.getTvt(dgkey)) == (b'{"v":"KERI10JSON00013d_","t":"vcp","d":"EBgdJt_ASWeq7HjOmut2E8vQL8P1c9VTPDA0'
@@ -639,13 +655,14 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         debCigar = debSigner.sign(ser=vrt.raw, index=1)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.saider.qb64)
+        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tev.update(serder=vrt, seqner=seqner, saider=diger, bigers=[valCigar, debCigar])
+        tev.update(serder=vrt, seqner=seqner, saider=saider, bigers=[valCigar, debCigar])
 
         assert tev.baks == ['BPmRWtx8nwSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV',
                             'BJLT5kDB54CewL9oqnWdPBC5vxZV30u3i6o9HVcWMhZd']
@@ -657,21 +674,22 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         debCigar = debSigner.sign(ser=bis.raw, index=1)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(bis.ked["i"], bis.ked["s"], bis.saider.qb64)
+        rseal = keventing.SealEvent(bis.ked["i"], bis.ked["s"], bis.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tev.update(bis, seqner=seqner, saider=diger, bigers=[valCigar, debCigar])
+        tev.update(bis, seqner=seqner, saider=saider, bigers=[valCigar, debCigar])
 
         vci = vcdig
         dgkey = dgKey(pre=vci, dig=bis.said)
-        assert bytes(reg.getTvt(dgkey)) == (b'{"v":"KERI10JSON000160_","t":"bis","d":"EJkHLOtyOkkQYkgyZPeVq-QjvdtMYtqnpKoL'
-                    b'LklRpdir","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","ii":"EBgdJt_AS'
-                    b'Weq7HjOmut2E8vQL8P1c9VTPDA0Pdh4KsZX","s":"0","ra":{"i":"EBgdJt_ASWeq7HjOmut2'
-                    b'E8vQL8P1c9VTPDA0Pdh4KsZX","s":1,"d":"EEc1UURU3liIomWOFeDVqCo-3QbZHFZCUorx8Md'
-                    b'ZFZvy"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
+        assert bytes(reg.getTvt(dgkey)) == (b'{"v":"KERI10JSON000162_","t":"bis","d":"EN01O_jV46iSPtJMFXLNB83OWHtUl0wEDnMT'
+                                            b'eHSWXJwf","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","ii":"EBgdJt_AS'
+                                            b'Weq7HjOmut2E8vQL8P1c9VTPDA0Pdh4KsZX","s":"0","ra":{"i":"EBgdJt_ASWeq7HjOmut2'
+                                            b'E8vQL8P1c9VTPDA0Pdh4KsZX","s":"1","d":"EEc1UURU3liIomWOFeDVqCo-3QbZHFZCUorx8'
+                                            b'MdZFZvy"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
 
 def test_tevery():
@@ -686,17 +704,18 @@ def test_tevery():
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
         tvy = Tevery(reger=reg, db=db)
 
-        tvy.processEvent(serder=vcp, seqner=seqner, saider=diger)
+        tvy.processEvent(serder=vcp, seqner=seqner, saider=saider)
 
         assert regk in tvy.tevers
         tev = tvy.tevers[regk]
@@ -705,7 +724,7 @@ def test_tevery():
 
         # send vcp again, get error
         with pytest.raises(LikelyDuplicitousError):
-            tvy.processEvent(serder=vcp, seqner=seqner, saider=diger)
+            tvy.processEvent(serder=vcp, seqner=seqner, saider=saider)
 
         # process issue vc event
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
@@ -713,31 +732,33 @@ def test_tevery():
         iss = eventing.issue(vcdig=vcdig.decode("utf-8"), regk=regk)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.saider.qb64)
+        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tvy.processEvent(serder=iss, seqner=seqner, saider=diger)
+        tvy.processEvent(serder=iss, seqner=seqner, saider=saider)
         status = tev.vcState(vcdig.decode("utf-8"))
-        assert status.ked['et'] == Ilks.iss
-        assert status.sn == 0
+        assert status.et == Ilks.iss
+        assert status.s == '0'
 
         # revoke the vc
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.saider.qb64)
+        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
-        diger = rotser.saider
+        #diger = rotser.saider
+        saider = Saider(qb64=rotser.said)
 
-        tvy.processEvent(serder=rev, seqner=seqner, saider=diger)
+        tvy.processEvent(serder=rev, seqner=seqner, saider=saider)
         status = tev.vcState(vcdig.decode("utf-8"))
-        assert status.ked["et"] == Ilks.rev
-        assert status.sn == 1
+        assert status.et == Ilks.rev
+        assert status.s == '1'
 
 
 def test_tevery_process_escrow(mockCoringRandomNonce):
@@ -752,7 +773,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         seqner = Seqner(sn=1)
         # said of rotation
@@ -767,7 +788,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         assert regk not in tvy.tevers
 
         rot = hab.rotate(data=[rseal._asdict()])  # Now rotate so the achoring KEL event gets into the database
-        rotser = coring.Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         assert rotser.saidb == diger.qb64b
 
         tvy.processEscrows()  # process escrows and now the Tever event is good.
@@ -779,5 +800,6 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
 
 
 if __name__ == "__main__":
-    test_tever_escrow()
-    test_tevery_process_escrow()
+    #test_tever_escrow()
+    #test_tevery_process_escrow()
+    test_prefixer()

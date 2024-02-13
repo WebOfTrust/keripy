@@ -4,7 +4,18 @@ KERI
 keri.app.signing module
 
 """
-from keri.core import coring, eventing
+from ..app.habbing import GroupHab
+from ..core import coring, eventing
+
+
+def serialize(creder, prefixer, seqner, saider):
+    craw = bytearray(creder.raw)
+    craw.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+    craw.extend(prefixer.qb64b)
+    craw.extend(seqner.qb64b)
+    craw.extend(saider.qb64b)
+
+    return bytes(craw)
 
 
 def ratify(hab, serder, paths=None, pipelined=False):
@@ -109,7 +120,7 @@ def transSeal(hab):
     """
     # create SealEvent or SealLast for endorser's est evt whose keys are
     # used to sign
-    if not hab.group:  # not a group use own kever
+    if not isinstance(hab, GroupHab):  # not a group use own kever
         indices = None  # use default order
     else:  # group so use gid kever
         smids, _ = hab.members()
@@ -127,7 +138,7 @@ class SadPathSigGroup:
     """ Transposable group of signatures
 
     Supports transposing groups of signatures from transferable or non-transferable
-    identfiers
+    identifiers
 
     """
 

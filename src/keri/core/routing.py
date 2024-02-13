@@ -9,7 +9,7 @@ import re
 
 from hio.help import decking
 
-from . import eventing, coring
+from . import eventing, coring, serdering
 from .. import help, kering
 from ..db import dbing
 from ..help import helping
@@ -338,7 +338,7 @@ class Revery:
             # retrieve last event itself of signer given sdig
             sraw = self.db.getEvt(key=dbing.dgKey(pre=spre, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = coring.Serder(raw=bytes(sraw))
+            sserder = serdering.SerderKERI(raw=bytes(sraw))
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
                 raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
                                              f"{seqner.sn} for reply = {serder.ked}.")
@@ -400,8 +400,6 @@ class Revery:
             sigers (list): of indexed sigs from trans endorser's key from est evt
 
         """
-        # if sigers is None:
-        # sigers = []
         keys = (saider.qb64,)
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent
@@ -490,7 +488,7 @@ class Revery:
                         logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
                     self.removeReply(saider)  # remove escrow reply artifacts
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
@@ -498,12 +496,12 @@ class Revery:
                         logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow only
+                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
                     logger.info("Kevery unescrow succeeded for reply=\n%s\n",
                                 serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                self.db.rpes.rem(keys=(route,), val=saider)  # remove escrow only
                 self.removeReply(saider)  # remove escrow reply artifacts
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])

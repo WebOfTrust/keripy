@@ -13,7 +13,9 @@ from hio.base import doing
 from keri import kering
 from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, displaying, config
-from keri.core import coring
+from keri.app.notifying import Notifier
+from keri.core import coring, serdering
+from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -26,7 +28,7 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=None, action="store", required=True)
+parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=True)
 parser.add_argument("--aids", "-g", help="List of other participant qb64 identifiers to include in interaction event",
                     action="append", required=False, default=None)
 
@@ -68,14 +70,19 @@ class GroupMultisigInteract(doing.DoDoer):
         self.base = base
         self.bran = bran
         self.alias = alias
-        self.aids=aids
+        self.aids = aids
         self.data = data
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
-        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])
+        notifier = Notifier(self.hby)
+        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        grouping.loadHandlers(exc, mux)
+
+        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
 
         doers = [self.hbyDoer, self.postman, mbd, self.counselor]
@@ -93,9 +100,6 @@ class GroupMultisigInteract(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        ToDo: NRR
-        confirm only needs ghab.smids or do we need to add self.rmids to
-
         """
         # enter context
         self.wind(tymth)
@@ -106,26 +110,22 @@ class GroupMultisigInteract(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
-        smids, rmids = ghab.members()
-        aids = self.aids if self.aids is not None else smids
+        aids = self.aids if self.aids is not None else ghab.smids
 
-        rmids = None  # need to fix
         ixn = ghab.interact(data=self.data)
+        serder = serdering.SerderKERI(raw=ixn)
 
-        serder = coring.Serder(raw=ixn)
-        exn, atc = grouping.multisigInteractExn(ghab, serder.sner.num, aids, self.data)
-        others = list(aids)
-
+        exn, ims = grouping.multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
-            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                             mid=ghab.mhab.pre, smids=aids, rmids=rmids)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=ghab)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

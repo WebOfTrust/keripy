@@ -9,7 +9,7 @@ import pytest
 from falcon.testing import helpers
 
 from keri.app import habbing, httping
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.vdr import credentialing, verifying
 
 
@@ -77,12 +77,12 @@ def test_create_cesr_request(mockHelpingNowUTC):
                            route="tels")
         client = MockClient()
 
-        httping.createCESRRequest(msg, client, path="/qry/tels")
+        httping.createCESRRequest(msg, client, dest=wit, path="/qry/tels")
 
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        serder = coring.Serder(raw=args['body'])
+        serder = serdering.SerderKERI(raw=args['body'])
         assert serder.ked["t"] == coring.Ilks.qry
         assert serder.ked["r"] == "tels"
 
@@ -94,7 +94,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
         client = MockClient()
 
-        httping.createCESRRequest(msg, client, path="/qry/mbx")
+        httping.createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
 
         args = client.args.pop()
         assert args["method"] == "POST"
@@ -107,9 +107,10 @@ def test_create_cesr_request(mockHelpingNowUTC):
         headers = args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
         assert headers["Content-Length"] == 260
-        assert headers["CESR-ATTACHMENT"] == bytearray(b'-VAj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAB6P97k'
-                                                       b'Z3al3V3z3VstRtHRPeOrotuqZZUgBl2yHzgpGyOjAXYGinVqWLAMhdmQ089FTSAz'
-                                                       b'qSTBmJzI8RvIezsJ')
+        assert headers["CESR-ATTACHMENT"] == bytearray(
+            b'-VAj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAB6P97k'
+            b'Z3al3V3z3VstRtHRPeOrotuqZZUgBl2yHzgpGyOjAXYGinVqWLAMhdmQ089FTSAz'
+            b'qSTBmJzI8RvIezsJ')
 
 
 def test_stream_cesr_request(mockHelpingNowUTC):
@@ -124,12 +125,12 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                            route="tels")
         client = MockClient()
 
-        httping.streamCESRRequests(client, msg, path="/qry/tels")
+        httping.streamCESRRequests(client, msg, dest=wit, path="/qry/tels")
 
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        serder = coring.Serder(raw=args['body'])
+        serder = serdering.SerderKERI(raw=args['body'])
         assert serder.ked["t"] == coring.Ilks.qry
         assert serder.ked["r"] == "tels"
 
@@ -141,7 +142,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
         client = MockClient()
 
-        httping.streamCESRRequests(client, msg, path="/qry/mbx")
+        httping.streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
 
         args = client.args.pop()
         assert args["method"] == "POST"
@@ -162,16 +163,16 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         msgs.extend(hab.makeOwnEvent(sn=0))
 
         client = MockClient()
-        httping.streamCESRRequests(client, msgs)
+        httping.streamCESRRequests(client, msgs, dest=wit)
         assert len(client.args) == 2
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/"
 
         assert args["body"] == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2'
-                            b'QV8dDjI3","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":"0","kt":"1'
-                            b'","k":["DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I"],"nt":"1","n":["EJhRr1'
-                            b'0e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N"],"bt":"0","b":[],"c":[],"a":[]}')
+                                b'QV8dDjI3","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":"0","kt":"1'
+                                b'","k":["DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I"],"nt":"1","n":["EJhRr1'
+                                b'0e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N"],"bt":"0","b":[],"c":[],"a":[]}')
         headers = args["headers"]
         assert headers['Content-Length'] == 299
         assert headers['Content-Type'] == 'application/cesr+json'
@@ -183,9 +184,9 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         assert args["path"] == "/"
 
         assert args["body"] == (b'{"v":"KERI10JSON000105_","t":"qry","d":"EHtaQHsKzezkQUEYjMjEv6nIf4AhhR9Zy6Av'
-                            b'cfyGCXkI","dt":"2021-01-01T00:00:00.000000+00:00","r":"logs","rr":"","q":{"s'
-                            b'":0,"i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","src":"BGKVzj4ve0VSd8'
-                            b'z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
+                                b'cfyGCXkI","dt":"2021-01-01T00:00:00.000000+00:00","r":"logs","rr":"","q":{"s'
+                                b'":0,"i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","src":"BGKVzj4ve0VSd8'
+                                b'z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
         headers = args["headers"]
         assert headers['Content-Length'] == 261
         assert headers['Content-Type'] == 'application/cesr+json'

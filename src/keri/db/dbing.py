@@ -417,7 +417,11 @@ class LMDBer(filing.Filer):
             val is bytes of value to be written
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.put(key, val, overwrite=False))
+            try:
+                return (txn.put(key, val, overwrite=False))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def setVal(self, db, key, val):
@@ -432,7 +436,11 @@ class LMDBer(filing.Filer):
             val is bytes of value to be written
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.put(key, val))
+            try:
+                return (txn.put(key, val))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def getVal(self, db, key):
@@ -446,7 +454,11 @@ class LMDBer(filing.Filer):
 
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
-            return( txn.get(key))
+            try:
+                return(txn.get(key))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def delVal(self, db, key):
@@ -459,7 +471,11 @@ class LMDBer(filing.Filer):
             key is bytes of key within sub db's keyspace
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.delete(key))
+            try:
+                return (txn.delete(key))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def cnt(self, db):
@@ -1108,7 +1124,11 @@ class LMDBer(filing.Filer):
             iokey (bytes): actual key with ordinal key suffix
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return txn.delete(iokey)
+            try:
+                return txn.delete(iokey)
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{iokey}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     # For subdbs that support duplicates at each key (dupsort==True)
@@ -1130,8 +1150,12 @@ class LMDBer(filing.Filer):
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             result = True
-            for val in vals:
-                result = result and txn.put(key, val, dupdata=True)
+            try:
+                for val in vals:
+                    result = result and txn.put(key, val, dupdata=True)
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return result
 
 
@@ -1158,7 +1182,11 @@ class LMDBer(filing.Filer):
         result = False
         if val not in dups:
             with self.env.begin(db=db, write=True, buffers=True) as txn:
-                result = txn.put(key, val, dupdata=True)
+                try:
+                    result = txn.put(key, val, dupdata=True)
+                except lmdb.BadValsizeError as ex:
+                    raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                                   " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
         return result
 
 
@@ -1177,8 +1205,12 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
-            if cursor.set_key(key):  # moves to first_dup
-                vals = [val for val in cursor.iternext_dup()]
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    vals = [val for val in cursor.iternext_dup()]
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return vals
 
 
@@ -1196,9 +1228,13 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             val = None
-            if cursor.set_key(key):  # move to first_dup
-                if cursor.last_dup(): # move to last_dup
-                    val = cursor.value()
+            try:
+                if cursor.set_key(key):  # move to first_dup
+                    if cursor.last_dup(): # move to last_dup
+                        val = cursor.value()
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return val
 
 
@@ -1216,9 +1252,13 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
-            if cursor.set_key(key):  # moves to first_dup
-                for val in cursor.iternext_dup():
-                    yield val
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    for val in cursor.iternext_dup():
+                        yield val
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def cntVals(self, db, key):
@@ -1232,8 +1272,12 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             count = 0
-            if cursor.set_key(key):  # moves to first_dup
-                count = cursor.count()
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    count = cursor.count()
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return count
 
 
@@ -1263,6 +1307,7 @@ class LMDBer(filing.Filer):
 
             return count
 
+
     def delVals(self, db, key, val=b''):
         """
         Deletes all values at key in db if val=b'' else deletes the dup
@@ -1275,7 +1320,11 @@ class LMDBer(filing.Filer):
             val is bytes of dup val at key to delete
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.delete(key, val))
+            try:
+                return (txn.delete(key, val))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     # For subdbs that support insertion order preserving duplicates at each key.
@@ -1309,9 +1358,13 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             idx = 0
             cursor = txn.cursor()
-            if cursor.set_key(key): # move to key if any
-                if cursor.last_dup(): # move to last dup
-                    idx = 1 + int(bytes(cursor.value()[:32]), 16)  # get last index as int
+            try:
+                if cursor.set_key(key): # move to key if any
+                    if cursor.last_dup(): # move to last dup
+                        idx = 1 + int(bytes(cursor.value()[:32]), 16)  # get last index as int
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
             for val in vals:
                 if val not in dups:
@@ -1330,6 +1383,12 @@ class LMDBer(filing.Filer):
         Actual value written include prepended proem ordinal
         Assumes DB opened with dupsort=True
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
@@ -1345,6 +1404,12 @@ class LMDBer(filing.Filer):
         Removes prepended proem ordinal from each val  before returning
         Assumes DB opened with dupsort=True
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
@@ -1353,10 +1418,14 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
-            if cursor.set_key(key):  # moves to first_dup
-                # slice off prepended ordering proem
-                vals = [val[33:] for val in cursor.iternext_dup()]
-            return vals
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    # slice off prepended ordering proem
+                    vals = [val[33:] for val in cursor.iternext_dup()]
+                return vals
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def getIoValsIter(self, db, key):
@@ -1366,6 +1435,12 @@ class LMDBer(filing.Filer):
         Removes prepended proem ordinal from each val before returning
         Assumes DB opened with dupsort=True
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
@@ -1374,9 +1449,13 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
-            if cursor.set_key(key):  # moves to first_dup
-                for val in cursor.iternext_dup():
-                    yield val[33:]  # slice off prepended ordering proem
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    for val in cursor.iternext_dup():
+                        yield val[33:]  # slice off prepended ordering proem
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def getIoValLast(self, db, key):
@@ -1394,10 +1473,14 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             val = None
-            if cursor.set_key(key):  # move to first_dup
-                if cursor.last_dup(): # move to last_dup
-                    val = cursor.value()[33:]  # slice off prepended ordering proem
-            return val
+            try:
+                if cursor.set_key(key):  # move to first_dup
+                    if cursor.last_dup(): # move to last_dup
+                        val = cursor.value()[33:]  # slice off prepended ordering proem
+                return val
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def getIoItemsNext(self, db, key=b"", skip=True):
@@ -1479,12 +1562,16 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             count = 0
-            if cursor.set_key(key):  # moves to first_dup
-                count = cursor.count()
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    count = cursor.count()
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return count
 
 
-    def delIoVals(self,db, key):
+    def delIoVals(self, db, key):
         """
         Deletes all values at key in db if key present.
         Returns True If key exists
@@ -1495,7 +1582,11 @@ class LMDBer(filing.Filer):
         """
 
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.delete(key))
+            try:
+                return (txn.delete(key))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def delIoVal(self, db, key, val):
@@ -1529,18 +1620,23 @@ class LMDBer(filing.Filer):
 
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             cursor = txn.cursor()
-            if cursor.set_key(key):  # move to first_dup
-                for proval in cursor.iternext_dup():  #  value with proem
-                    if val == proval[33:]:  #  strip of proem
-                        return cursor.delete()
+            try:
+                if cursor.set_key(key):  # move to first_dup
+                    for proval in cursor.iternext_dup():  #  value with proem
+                        if val == proval[33:]:  #  strip of proem
+                            return cursor.delete()
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
         return False
 
 
-    def getIoValsAllPreIter(self, db, pre):
+    def getIoValsAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers in increasing order without gaps
-        starting with zero. Stops if gap or different pre.
+        with same prefix across all ordinal numbers in increasing order
+        without gaps between ordinal numbers
+        starting with on, default 0. Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -1549,25 +1645,34 @@ class LMDBer(filing.Filer):
 
         Duplicates are retrieved in insertion order.
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
+            pre (bytes | str): of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            on (int): ordinal number to begin iteration at
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=on)
             while cursor.set_key(key):  # moves to first_dup
                 for val in cursor.iternext_dup():
                     # slice off prepended ordering prefix
                     yield val[33:]
                 key = snKey(pre, cnt:=cnt+1)
 
-    def getIoValsAllPreBackIter(self, db, pre, fn):
+
+    def getIoValsAllPreBackIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all sequence numbers in decreasing order without gaps
-        starting with fn as first sequence number.
+        between ordinals at a given pre.
+        Starting with on (default = 0) as begining ordinal number or sequence number.
         Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
@@ -1577,15 +1682,21 @@ class LMDBer(filing.Filer):
 
         Duplicates are retrieved in insertion order.
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=True
             pre is bytes of identifier prefix prepended to sn in key
                 within sub db's keyspace
-            fn is first
+            on (int): is ordinal number to begin iteration
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt := fn)
+            key = snKey(pre, cnt := on)
             # set_key returns True if exact key else false
             while cursor.set_key(key):  # moves to first_dup if valid key
                 for val in cursor.iternext_dup():
@@ -1594,11 +1705,11 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt-1)
 
 
-    def getIoValLastAllPreIter(self, db, pre):
+    def getIoValLastAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of last only of dup vals of each key in insertion order
         for all entries with same prefix across all sequence numbers in increasing order
-        without gaps starting with zero. Stops if gap or different pre.
+        without gaps starting with on (default = 0). Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -1607,26 +1718,38 @@ class LMDBer(filing.Filer):
 
         Duplicates are retrieved in insertion order.
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
 
         Parameters:
             db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            on (int): ordinal number to being iteration
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=on)
             while cursor.set_key(key):  # moves to first_dup
                 if cursor.last_dup(): # move to last_dup
                     yield cursor.value()[33:]  # slice off prepended ordering prefix
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoValsAnyPreIter(self, db, pre):
+    def getIoValsAnyPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for any entries
-        with same prefix across all sequence numbers in order including gaps.
+        with same prefix across all ordinal numbers in order including gaps
+        between ordinals at a given pre. Staring with on (default = 0).
         Stops when pre is different.
+
+        Duplicates that may be deleted such as duplicitous event logs need
+        to be able to iterate across gaps in ordinal number.
+
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -1644,18 +1767,17 @@ class LMDBer(filing.Filer):
             db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            on (int): beginning ordinal number to start iteration
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=on)
             while cursor.set_range(key):  #  moves to first dup of key >= key
                 key = cursor.key()  # actual key
                 front, back = bytes(key).split(sep=b'.', maxsplit=1)
-                if front != pre:
+                if front != pre:  # set range may skip pre if none
                     break
                 for val in cursor.iternext_dup():
                     yield val[33:]  # slice off prepended ordering prefix
                 cnt = int(back, 16)
                 key = snKey(pre, cnt:=cnt+1)
-
-

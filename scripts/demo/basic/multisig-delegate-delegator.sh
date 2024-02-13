@@ -52,11 +52,13 @@ PID_LIST+=" $pid"
 # Wait for 3 seconds to allow the delegation request to complete and then launch the approval in parallel
 sleep 3
 
+echo "Waiting to approve the delegation request for delegator1/delegator with confirm"
 kli delegate confirm --name delegator1 --alias delegator --interact --auto &
 #kli multisig interact --name delegator1 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json &
 pid=$!
 PID_LIST+=" $pid"
 
+echo "Waiting to approve the delegation request for delegator2/delegator with confirm"
 kli delegate confirm --name delegator2 --alias delegator --interact --auto &
 #kli multisig interact --name delegator2 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json &
 pid=$!

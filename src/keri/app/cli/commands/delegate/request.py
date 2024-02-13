@@ -12,7 +12,8 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating
 from keri.app.cli.common import existing
-from keri.core import coring
+from keri.app.habbing import GroupHab
+from keri.core import coring, serdering
 from keri.db import dbing
 
 logger = help.ogler.getLogger()
@@ -50,7 +51,7 @@ class RequestDoer(doing.DoDoer):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         self.counselor = grouping.Counselor(hby=hby)
         doers = [self.hbyDoer, self.postman]
         self.toRemove = list(doers)
@@ -85,20 +86,18 @@ class RequestDoer(doing.DoDoer):
 
         (seqner, saider) = esc[0]
         evt = hab.makeOwnEvent(sn=seqner.sn)
-        srdr = coring.Serder(raw=evt)
-        del evt[:srdr.size]
         delpre = hab.kever.delegator  # get the delegator identifier
 
-        if hab.group:
+        if isinstance(hab, GroupHab):
             phab = hab.mhab
-            smids, _ = hab.members()
         else:
             phab = self.hby.habByName(f"{self.alias}-proxy")
-            smids = []
 
-        exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, ked=srdr.ked, aids=smids)
+        exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, evt=bytes(evt), aids=hab.smids)
 
         # delegate AID ICP and exn of delegation request EXN
+        srdr = serdering.SerderKERI(raw=evt) # coring.Serder(raw=evt)
+        del evt[:srdr.size]
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
         self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
 

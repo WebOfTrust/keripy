@@ -13,11 +13,21 @@ kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/
 
 kli vc registry incept --name issuer --alias issuer --registry-name vLEI
 
-kli vc issue --name issuer --alias issuer --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json
-sleep 2
-kli vc list --name holder --alias holder --poll
-SAID=`kli vc list --name holder --alias holder --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao`
+kli vc create --name issuer --alias issuer --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json
+SAID=$(kli vc list --name issuer --alias issuer --issued --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao)
 
-kli vc revoke --name issuer --alias issuer --registry-name vLEI --said ${SAID}
+kli ipex grant --name issuer --alias issuer --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k
+
+echo "Checking holder for grant messages..."
+GRANT=$(kli ipex list --name holder --alias holder --poll --said)
+
+echo "Admitting credential from grant ${GRANT}"
+kli ipex admit --name holder --alias holder --said "${GRANT}"
+
+kli vc list --name holder --alias holder
+
+exit 0
+
+kli vc revoke --name issuer --alias issuer --registry-name vLEI --said "${SAID}"
 sleep 2
 kli vc list --name holder --alias holder --poll

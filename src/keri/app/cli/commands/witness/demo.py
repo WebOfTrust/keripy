@@ -7,18 +7,20 @@ Witness command line interface
 """
 
 import argparse
+import logging
 
 from hio.base import doing
 
 from keri.app import habbing, indirecting, configing
 from keri.core.coring import Salter
+from keri import help
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
 parser.set_defaults(handler=lambda args: demo(args))
 
 
-# help.ogler.level = logging.INFO
-# logger = help.ogler.getLogger()
+help.ogler.level = logging.INFO
+logger = help.ogler.getLogger()
 
 
 def demo(_):

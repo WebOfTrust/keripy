@@ -96,6 +96,8 @@ def test_kom_happy_path():
         actual = mydb.get(keys=keys)
         assert actual == sue
 
+        assert mydb.getDict(keys=keys) == asdict(actual)
+
         result = mydb.pin(keys=keys, val=kip)
         assert result
         actual = mydb.get(keys=keys)
@@ -120,6 +122,11 @@ def test_kom_happy_path():
         assert actual.city == "Bluffdale"
         assert actual.state == "UT"
         assert actual.zip == 84043
+
+        assert mydb.getDict(keys=keys) == asdict(actual)
+
+        # test None
+        assert mydb.getDict(keys=("bla, bal")) == None
 
         mydb.rem(keys)
 

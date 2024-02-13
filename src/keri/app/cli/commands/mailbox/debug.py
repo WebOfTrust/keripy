@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import kering
 from keri.app import agenting, indirecting, habbing, httping
 from keri.app.cli.common import displaying, existing
+from keri.app.habbing import GroupHab
 from keri.core import coring
 from keri.kering import ConfigurationError
 
@@ -99,12 +100,12 @@ class ReadDoer(doing.DoDoer):
         print()
 
         q = dict(pre=hab.pre, topics=topics)
-        if hab.group:
+        if isinstance(hab, GroupHab):
             msg = hab.mhab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
         else:
             msg = hab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
 
-        httping.createCESRRequest(msg, client)
+        httping.createCESRRequest(msg, client, dest=self.witness)
 
         while client.requests:
             yield self.tock

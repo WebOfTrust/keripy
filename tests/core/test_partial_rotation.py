@@ -67,7 +67,7 @@ def test_partial_rotation():
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
                                  isith='3',
                                  keys=keys,
-                                 dig=kever.serder.saider.qb64,
+                                 dig=kever.serder.said,
                                  nsith='4',
                                  ndigs=ndigs,
                                  sn=1)
@@ -102,7 +102,7 @@ def test_partial_rotation():
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
                                  isith='3',
                                  keys=keys,
-                                 dig=kever.serder.saider.qb64,
+                                 dig=kever.serder.said,
                                  nsith='2',
                                  ndigs=ndigs,
                                  sn=2)
@@ -156,7 +156,7 @@ def test_partial_rotation():
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
                                  isith=["1/2", "1/2", "1/3"],
                                  keys=keys,
-                                 dig=kever.serder.saider.qb64,
+                                 dig=kever.serder.said,
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
                                  ndigs=ndigs,
                                  sn=1)
@@ -184,7 +184,7 @@ def test_partial_rotation():
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
                                  isith='2',
                                  keys=keys,
-                                 dig=kever.serder.saider.qb64,
+                                 dig=kever.serder.said,
                                  nsith='0',
                                  ndigs=ndigs,
                                  sn=2)

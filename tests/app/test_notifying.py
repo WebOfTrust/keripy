@@ -16,12 +16,12 @@ from keri.help import helping
 def test_notice():
     payload = dict(name="John", email="john@example.com", msg="test")
 
-    note = notifying.notice(payload)
+    note = notifying.notice(attrs=payload)
     assert note.attrs == payload
     assert note.datetime is not None
     assert note.rid is not None
 
-    note = notifying.notice(payload, dt="2022-07-08T15:01:05.453632")
+    note = notifying.notice(attrs=payload, dt="2022-07-08T15:01:05.453632")
     assert note.rid is not None
     assert note.datetime == "2022-07-08T15:01:05.453632"
     assert note.attrs == payload
@@ -58,7 +58,7 @@ def test_notice():
 
     now = helping.nowUTC()
     payload = dict(name="John", email="john@example.com", msg="test")
-    note = notifying.notice(payload, dt=now)
+    note = notifying.notice(attrs=payload, dt=now)
     assert note.datetime == now.isoformat()
 
 
@@ -67,7 +67,7 @@ def test_dictersuber():
         payload = dict(name="John", email="john@example.com", msg="test")
 
         dsub = notifying.DicterSuber(db=db, subkey='nots.', sep='/', klas=notifying.Notice)
-        note = notifying.notice(payload, dt="2022-07-08T15:01:05.453632")
+        note = notifying.notice(attrs=payload, dt="2022-07-08T15:01:05.453632")
         dt = note.datetime
         said = note.rid
         assert dsub.put(keys=(dt, said), val=note) is True
@@ -117,16 +117,16 @@ def test_noter():
     payload = dict(name="John", email="john@example.com", msg="test")
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
     cig = coring.Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
-    note = notifying.notice(payload, dt=dt)
+    note = notifying.notice(attrs=payload, dt=dt)
     assert noter.add(note, cig) is True
 
-    notes = noter.getNotes(start="")
+    notes = noter.getNotes(start=0)
     assert len(notes) == 1
     note1, cig1 = notes[0]
     assert note1.rid == note.rid
     assert cig1.qb64 == cig.qb64
 
-    notes = noter.getNotes(start=dt)
+    notes = noter.getNotes(start=0)
     assert len(notes) == 1
     note2, cig2 = notes[0]
     assert note2.rid == note.rid
@@ -134,7 +134,7 @@ def test_noter():
 
     assert noter.rem("ABC") is False
     assert noter.rem(note.rid) is True
-    notes = noter.getNotes(start="")
+    notes = noter.getNotes(start=0)
     assert len(notes) == 0
 
     dt = datetime.datetime.now()
@@ -146,7 +146,7 @@ def test_noter():
     assert noter.add(note, cig) is True
 
     res = []
-    for note in noter.getNoteIter(start=dt):
+    for note in noter.getNotes(start=0):
         res.append(note)
 
     assert len(res) == 3
@@ -160,10 +160,13 @@ def test_noter():
         assert noter.add(note, cig) is True
 
     res = []
-    for note in noter.getNoteIter(limit=5):
+    for note in noter.getNotes(end=4):
         res.append(note)
 
     assert len(res) == 5
+
+    cnt = noter.getNoteCnt()
+    assert cnt == 13
 
 
 def test_notifier():
@@ -205,16 +208,10 @@ def test_notifier():
         notes = notifier.getNotes()
         assert len(notes) == 3
 
-        res = []
-        for note in notifier.getNoteIter(start=dt):
-            res.append(note)
-
-        assert len(res) == 3
-
     payload = dict(a=1, b=2, c=3)
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
     cig = coring.Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
-    note = notifying.notice(payload, dt=dt)
+    note = notifying.notice(attrs=payload, dt=dt)
     assert notifier.noter.add(note, cig) is True
 
     assert notifier.mar(note.rid) is False
