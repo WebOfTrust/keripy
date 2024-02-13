@@ -2998,6 +2998,9 @@ def test_number():
     with pytest.raises(RawMaterialError):
         number = Number(raw=b'')
 
+    with pytest.raises(InvalidValueError):
+        number = Number(num=-1)
+
     number = Number()  # test None defaults to zero
     assert number.code == NumDex.Short
     assert number.raw == b'\x00\x00'
