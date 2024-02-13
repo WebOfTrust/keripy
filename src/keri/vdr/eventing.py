@@ -19,8 +19,8 @@ from .. import core
 from .. import help
 from ..core import serdering, coring
 from ..core.coring import (MtrDex, Serials, versify, Prefixer,
-                           Ilks, Seqner, Verfer)
-from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
+                           Ilks, Seqner, Verfer, Number)
+from ..core.eventing import SealEvent, ample, TraitDex, verifySigs
 from ..db import basing, dbing
 from ..db.dbing import dgKey, snKey
 from ..help import helping
@@ -850,8 +850,9 @@ class Tever:
             raise ValidationError("Invalid prefix = {} for registry inception evt = {}."
                                   .format(self.prefixer.qb64, ked))
 
-        sn = ked["s"]
-        self.sn = validateSN(sn, inceptive=True)
+        #sn = ked["s"]
+        #self.sn = validateSN(sn, inceptive=True)
+        self.sn = Number(numh=ked["s"]).validate(inceptive=True).sn
 
         self.cuts = []  # always empty at inception since no prev event
         self.adds = []  # always empty at inception since no prev event
@@ -919,12 +920,13 @@ class Tever:
 
         ked = serder.ked
         ilk = ked["t"]
-        sn = ked["s"]
+        #sn = ked["s"]
 
         icp = ilk in (Ilks.iss, Ilks.bis)
 
         # validate SN for
-        sn = validateSN(sn, inceptive=icp)
+        #sn = validateSN(sn, inceptive=icp)
+        sn = Number(numh=ked["s"]).validate(inceptive=icp).sn
 
         if ilk in (Ilks.vrt,):
             if self.noBackers is True:
@@ -1567,13 +1569,14 @@ class Tevery:
         regk = self.registryKey(serder)
         pre = serder.pre
         ked = serder.ked
-        sn = ked["s"]
+        #sn = ked["s"]
         ilk = ked["t"]
 
         inceptive = ilk in (Ilks.vcp, Ilks.iss, Ilks.bis)
 
         # validate SN for
-        sn = validateSN(sn, inceptive=inceptive)
+        #sn = validateSN(sn, inceptive=inceptive)
+        sn = Number(numh=ked["s"]).validate(inceptive=inceptive).sn
 
         if not self.lax:
             if self.local:

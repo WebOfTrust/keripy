@@ -1628,9 +1628,6 @@ class Number(Matter):
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
 
-            #elif num <= (256 ** 4 - 1):  # make long version of code
-                #code = code = NumDex.Long
-
             elif num <= (256 ** 5 - 1):  # make tall version of code
                 code = code = NumDex.Tall
 
@@ -1642,9 +1639,6 @@ class Number(Matter):
 
             elif num <= (256 ** 14 - 1):  # make great version of code
                 code = code = NumDex.Great
-
-            #elif num <= (256 ** 16 - 1):  # make huge version of code
-                #code = code = NumDex.Huge
 
             elif num <= (256 ** 17 - 1):  # make vast version of code
                 code = code = NumDex.Vast

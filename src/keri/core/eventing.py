@@ -417,44 +417,6 @@ def deTransReceiptQuintuple(data, strip=False):
     return esaider, sprefixer, sseqner, ssaider, siger
 
 
-def validateSN(sn, inceptive=None):
-    """
-    Returns:
-        sn (int): converted from sn hex str
-
-    Raises ValueError if invalid sn
-
-    Parameters:
-       sn (str): hex char sequence number of event or seal in an event
-       inceptive(bool): Check sn value and raise ValueError if invalid
-                        None means check for sn < 0
-                        True means check for sn != 0
-                        False means check for sn < 1
-
-    """
-    if len(sn) > 32:
-        raise ValueError("Invalid sn = {} too large.".format(sn))
-
-    try:
-        sn = int(sn, 16)
-    except Exception as ex:
-        raise ValueError("Invalid sn = {}.".format(sn))
-
-    if inceptive is not None:
-        if inceptive:
-            if sn != 0:
-                raise ValidationError("Nonzero sn = {} for inception evt."
-                                      "".format(sn))
-        else:
-            if sn < 1:
-                raise ValidationError("Zero or less sn = {} for non-inception evt."
-                                      "".format(sn))
-    else:
-        if sn < 0:
-            raise ValidationError("Negative sn = {} for event.".format(sn))
-
-    return sn
-
 
 def verifySigs(raw, sigers, verfers):
     """
