@@ -86,6 +86,8 @@ wait $PID_LIST
 
 SAID=$(kli vc list --name multisig1 --alias multisig --issued --said)
 
+kli oobi resolve --name holder --oobi-alias multisig --oobi http://127.0.0.1:5642/oobi/EC61gZ9lCKmHAS7U5ehUfEbGId5rcY0D7MirFZHDQcE2/witness
+
 kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --time "${TIME}" &
 pid=$!
 PID_LIST+=" $pid"
@@ -95,8 +97,6 @@ pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
-
-kli oobi resolve --name holder --oobi-alias multisig --oobi http://127.0.0.1:5642/oobi/EC61gZ9lCKmHAS7U5ehUfEbGId5rcY0D7MirFZHDQcE2/witness
 
 echo "Polling for holder's IPEX message..."
 SAID=$(kli ipex list --name holder --alias holder --poll --said)

@@ -94,7 +94,7 @@ class GrantDoer(doing.DoDoer):
         acdc = signing.serialize(creder, prefixer, seqner, saider)
 
         if self.recp is None:
-            recp = creder.subject['i'] if 'i' in creder.subject else None
+            recp = creder.attrib['i'] if 'i' in creder.attrib else None
         elif self.recp in self.hby.kevers:
             recp = self.recp
         else:
@@ -108,11 +108,11 @@ class GrantDoer(doing.DoDoer):
 
         iss = self.rgy.reger.cloneTvtAt(creder.said)
 
-        iserder = serdering.SerderKERI(raw=bytes(iss)) # coring.Serder(raw=bytes(iss))
+        iserder = serdering.SerderKERI(raw=bytes(iss))  # coring.Serder(raw=bytes(iss))
         seqner = coring.Seqner(sn=iserder.sn)
 
-        serder = self.hby.db.findAnchoringSealEvent(creder.ked['i'],
-                                                seal=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
+        serder = self.hby.db.findAnchoringSealEvent(creder.sad['i'],
+                                                    seal=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
         exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
@@ -122,7 +122,9 @@ class GrantDoer(doing.DoDoer):
 
         parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
+        sender = self.hab
         if isinstance(self.hab, habbing.GroupHab):
+            sender = self.hab.mhab
             wexn, watc = grouping.multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
@@ -140,7 +142,7 @@ class GrantDoer(doing.DoDoer):
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending message {exn.said} to {recp}")
-            postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
+            postman = forwarding.StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
 
             sources = self.rgy.reger.sources(self.hby.db, creder)
             credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)

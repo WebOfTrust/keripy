@@ -5,13 +5,11 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.core import serdering
 from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
 from keri.core import coring, eventing, serdering
 from keri.help import helping
 from keri.peer import exchanging
-from keri.vc import proving
 from keri.vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
@@ -206,7 +204,7 @@ class CredentialIssuer(doing.DoDoer):
         registry = self.rgy.registryByName(self.registryName)
         hab = registry.hab
 
-        dt = self.creder.subject["dt"] if "dt" in self.creder.subject else helping.nowIso8601()
+        dt = self.creder.attrib["dt"] if "dt" in self.creder.attrib else helping.nowIso8601()
         iserder = registry.issue(said=self.creder.said, dt=dt)
 
         vcid = iserder.ked["i"]
@@ -220,7 +218,7 @@ class CredentialIssuer(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
-        aserder = serdering.SerderACDC(raw=anc)  # coring.Serder(raw=anc)
+        aserder = serdering.SerderKERI(raw=anc)  # coring.Serder(raw=anc)
         self.credentialer.issue(self.creder, iserder)
         self.registrar.issue(self.creder, iserder, aserder)
 

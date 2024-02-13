@@ -3,6 +3,7 @@
 keri.app.storing module
 
 """
+from dataclasses import asdict
 
 from hio.base import doing
 from keri.app import agenting
@@ -43,8 +44,7 @@ class KeyStateNoticer(doing.DoDoer):
             match cue['kin']:
                 case "keyStateSaved":
                     kcue = cue
-                    serder = kcue['ksn']  # key state notice dict
-                    ksn = serder.ked['a']
+                    ksn = kcue['ksn']  # key state notice dict
                     match ksn["i"]:
                         case self.pre:
                             if kever.sn < int(ksn["s"], 16):
