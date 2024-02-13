@@ -2797,7 +2797,8 @@ class Kever:
                 raise MissingDelegationError(f"No delegation seal for delegator "
                                          "{delpre} of evt = {serder.ked}.")
 
-        ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
+        #ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
+        ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
         #ssn = sner.num sner is Number seqner is Seqner
         # ToDo XXXX need to replace Seqners with Numbers
 
@@ -2815,7 +2816,8 @@ class Kever:
 
             #  escrow event here
             inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
-            sn = validateSN(sn=serder.snh, inceptive=inceptive)
+            #sn = validateSN(sn=serder.snh, inceptive=inceptive)
+            sn = Number(num=serder.sn).validate(inceptive=inceptive).sn
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
             self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError("No delegating event from {} at {} for "

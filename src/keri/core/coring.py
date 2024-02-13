@@ -1604,10 +1604,10 @@ class Number(Matter):
                         else:
                             num = int(num, 16)
             except ValueError as ex:
-                raise InvalidValueError(f"Invalid whole number={num} .") from ex
+                raise InvalidValueError(f"Not whole number={num} .") from ex
 
             if not isinstance(num, int) or num < 0:
-                raise InvalidValueError(f"Invalid whole number={num}.")
+                raise InvalidValueError(f"Not whole number={num}.")
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
