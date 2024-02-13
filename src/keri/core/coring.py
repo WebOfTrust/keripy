@@ -1396,15 +1396,16 @@ class Matter:
 
 class Seqner(Matter):
     """
-    Seqner is subclass of Matter, cryptographic material, for ordinal numbers
-    such as sequence numbers or first seen ordering numbers.
-    Seqner provides fully qualified format for ordinals (sequence numbers etc)
-    when provided as attached cryptographic material elements.
+    Seqner is subclass of Matter, cryptographic material, for fully qualified
+    fixed serialization sized ordinal numbers such as sequence numbers or
+    first seen numbers.
 
-    Useful when parsing attached receipt groupings with sn from stream or database
+    The serialization is forced to a fixed size (single code) so that it may be
+    used  for lexocographically ordered namespaces such as database indices.
+    That code is MtrDex.Salt_128
 
-    Uses default initialization code = CryTwoDex.Salt_128
-    Raises error on init if code not CryTwoDex.Salt_128
+    Default initialization code = MtrDex.Salt_128
+    Raises error on init if code is not MtrDex.Salt_128
 
     Attributes:
 
@@ -1430,9 +1431,7 @@ class Seqner(Matter):
         ._infil is method to compute fully qualified Base64 from .raw and .code
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
-
     Methods:
-
 
     """
 
@@ -1449,16 +1448,32 @@ class Seqner(Matter):
 
 
         Parameters:
-            sn is int sequence number or some form of ordinal number
-            snh is hex string of sequence number
+            sn (int | str | None): some form of ordinal number int or hex str
+            snh (str | None): hex string of ordinal number
 
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if sn is None:
-                if snh is None:
-                    sn = 0
-                else:
-                    sn = int(snh, 16)
+            try:
+                if sn is None:
+                    if snh is None or snh == '':
+                        sn = 0
+                    else:
+                        sn = int(snh, 16)
+
+                else:  # sn is not None but so may be hex str
+                    if isinstance(sn, str):  # is it a hex str
+                        if sn == '':
+                            sn = 0
+                        else:
+                            sn = int(sn, 16)
+            except ValueError as ex:
+                raise InvalidValueError(f"Not whole number={sn} .") from ex
+
+            if not isinstance(sn, int) or sn < 0:
+                raise InvalidValueError(f"Not whole number={sn}.")
+
+            if sn > MaxON:  # too big for ordinal 256 ** 16 - 1
+                raise ValidationError(f"Non-ordinal {sn} exceeds {MaxON}.")
 
             raw = sn.to_bytes(Matter._rawSize(MtrDex.Salt_128), 'big')
 
@@ -1468,6 +1483,7 @@ class Seqner(Matter):
         if self.code != MtrDex.Salt_128:
             raise ValidationError("Invalid code = {} for Seqner."
                                   "".format(self.code))
+
 
     @property
     def sn(self):
@@ -1666,7 +1682,7 @@ class Number(Matter):
         num = self.num
 
         if num > MaxON:  # too big for ordinal 256 ** 16 - 1
-            raise ValidationError(f"Excessive num = {num} non-ordinal.")
+            raise ValidationError(f"Non-ordinal {num} exceeds {MaxON}.")
 
         if inceptive is not None:
             if inceptive:
@@ -1720,7 +1736,6 @@ class Number(Matter):
         return self.numh
 
 
-
     @property
     def positive(self):
         """
@@ -1730,6 +1745,7 @@ class Number(Matter):
         """
         return True if self.num > 0 else False
 
+
     @property
     def inceptive(self):
         """
@@ -1737,6 +1753,16 @@ class Number(Matter):
         Valid number .num must be non-negative,
         """
         return True if self.num == 0 else False
+
+
+    @property
+    def seqner(self):
+        """Seqner getter.
+
+        Returns:
+            seqner (Seqner): instance made from number
+        """
+        return Seqner(sn=self.sn)
 
 
 class Dater(Matter):
