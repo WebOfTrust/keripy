@@ -394,8 +394,12 @@ def test_missing_delegator_escrow():
         assert bobK.prefixer.qb64 == bobPre
         assert bobK.serder.said == bobSrdr.said
 
+        # apply msg to del's Kevery so he knows about the AID
+        psr.parse(ims=bytearray(msg), kvy=delKvy, local=True)
+        assert bobK.prefixer.qb64 in delKvy.kevers
+
         # Setup Del's inception event assuming that Bob's next event will be an ixn delegating event
-        verfers, digers = delMgr.incept(stem='del', temp=True) # algo default salty and rooted
+        verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobPre,
@@ -460,7 +464,6 @@ def test_missing_delegator_escrow():
         psr.parse(ims=bytearray(msg), kvy=delKvy, local=True)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delPre not in delKvy.kevers
-        assert bobPre not in delKvy.kevers
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.saidb  #  escrow entry for event
@@ -471,7 +474,6 @@ def test_missing_delegator_escrow():
         # assuming not stale but nothing else has changed
         delKvy.processEscrowPartialSigs()
         assert delPre not in delKvy.kevers
-        assert bobPre not in delKvy.kevers
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.saidb  #  escrow entry for event

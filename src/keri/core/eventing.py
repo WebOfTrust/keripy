@@ -3531,7 +3531,7 @@ class Kevery:
                                   "".format(pre, ked)) from ex
 
         sn = serder.sn
-        ilk = serder.ilk # ked["t"]
+        ilk = serder.ilk  # ked["t"]
         said = serder.said
 
 
