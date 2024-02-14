@@ -1573,10 +1573,6 @@ class Kever:
             qb64 identifier prefixes of own habitat identifiers.
             Assign db.prefixes when None
             When empty operate in promiscuous mode
-        local (bool): Injected from kevery when provided.
-            True means only process msgs for own events when .prefixes is not empty
-            False means only process msgs for not own events when .prefixes is not empty
-                Default is False.
         version (Versionage): serder.version instance of current event state version
         prefixer (Prefixer):  instance for current event state
         sner (Number): instance of sequence number
@@ -1626,7 +1622,7 @@ class Kever:
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
                  db=None, estOnly=None, delseqner=None, delsaider=None, firner=None,
-                 dater=None, cues=None, prefixes=None, local=False, check=False):
+                 dater=None, cues=None, prefixes=None, local=True, check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1659,10 +1655,10 @@ class Kever:
                 has not yet been accepted into KEL
                 Some restrictions if present
                 If empty then effectively in promiscuous mode
-            local (bool): True means only process msgs for own controller's
-                              events if .prefixes is not empty.
-                          False means only process msgs for not own events
-                              if .prefixes is not empty
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
@@ -1677,7 +1673,9 @@ class Kever:
         self.db = db
         self.cues = cues
         self.prefixes = prefixes if prefixes is not None else db.prefixes
-        self.local = True if local else False
+        local = True if local else False
+
+        self.local = True if local else False  # ToDo XXXX remove attribute
 
         if state:  # preload from state
             self.reload(state)
@@ -1706,6 +1704,7 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=self.toader,
                                                         wits=self.wits,
+                                                        local=local,
                                                         delseqner=delseqner,
                                                         delsaider=delsaider)
 
@@ -1719,7 +1718,7 @@ class Kever:
         fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
                                 first=True if not check else False,
                                 seqner=delseqner, saider=delsaider,
-                                firner=firner, dater=dater)
+                                firner=firner, dater=dater, local=local)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fner = Number(num=fn)
             self.dater = Dater(dts=dts)
@@ -1934,7 +1933,7 @@ class Kever:
 
 
     def update(self, serder, sigers, wigers=None, delseqner=None, delsaider=None,
-               firner=None, dater=None, check=False):
+               firner=None, dater=None, local=True, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
         in sigers and update state
@@ -1958,6 +1957,10 @@ class Kever:
             dater (Dater | None): Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
@@ -1975,6 +1978,7 @@ class Kever:
                                                                self.prefixer.qb64,
                                                                ked))
 
+        local = True if local else False
 
         sner = serder.sner  # Number instance ensures whole number for sequence number
         ilk = serder.ilk # ked["t"]
@@ -1997,6 +2001,7 @@ class Kever:
                                                             wigers=wigers,
                                                             toader=toader,
                                                             wits=wits,
+                                                            local=local,
                                                             delseqner=delseqner,
                                                             delsaider=delsaider)
 
@@ -2006,7 +2011,7 @@ class Kever:
             # all validated above so may add to KEL and FEL logs as first seen
             fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
                                     first=True if not check else False, seqner=delseqner, saider=delsaider,
-                                    firner=firner, dater=dater)
+                                    firner=firner, dater=dater, local=local)
 
             # nxt and signatures verify so update state
             self.sner = sner  # sequence number Number instance
@@ -2060,7 +2065,8 @@ class Kever:
                                                             tholder=self.tholder,
                                                             wigers=wigers,
                                                             toader=self.toader,
-                                                            wits=self.wits)
+                                                            wits=self.wits,
+                                                            local=local)
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
@@ -2218,7 +2224,7 @@ class Kever:
 
 
     def valSigsWigsDel(self, serder, sigers, verfers, tholder,
-                       wigers, toader, wits,
+                       wigers, toader, wits, local=True,
                        delseqner=None, delsaider=None):
         """
         Returns triple (sigers, wigers, delegator) where:
@@ -2244,6 +2250,10 @@ class Kever:
             toader (Number): instance of backer witness threshold
             wits (list): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
             delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
             delsaider (Saider | None): instance of of delegating event said.
@@ -2334,7 +2344,7 @@ class Kever:
 
         if delpre:
             self.validateDelegation(serder, sigers=sigers, wigers=wigers,
-                                    delpre=delpre,
+                                    local=local, delpre=delpre,
                                     delseqner=delseqner, delsaider=delsaider)
 
 
@@ -2388,9 +2398,8 @@ class Kever:
         return odxs
 
 
-    def validateDelegation(self, serder, sigers, wigers=None,
-                           delpre=None,
-                           delseqner=None, delsaider=None):
+    def validateDelegation(self, serder, sigers, wigers=None, local=True,
+                           delpre=None, delseqner=None, delsaider=None):
         """
         Returns delegator's qb64 identifier prefix if validation successful.
         Rules:
@@ -2410,6 +2419,10 @@ class Kever:
                 delegated event. Assumes sigers is list of unique verified sigs
             wigers (list | None): of optional Siger instance of indexed witness sigs of
                 delegated event. Assumes wigers is list of unique verified sigs
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
             delpre (str | None): qb64 prefix of delegator if any
             delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
@@ -2769,7 +2782,7 @@ class Kever:
 
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
-                 seqner=None, saider=None, firner=None, dater=None):
+                 seqner=None, saider=None, firner=None, dater=None, local=True):
         """
         Update associated logs for verified event.
         Update is idempotent. Logs will not write dup at key if already exists.
@@ -2793,7 +2806,12 @@ class Kever:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
         """
+        local = True if local else False
         fn = None  # None means not a first seen log event so does not return an fn
         dgkey = dgKey(serder.preb, serder.saidb)
         dtsb = helping.nowIso8601().encode("utf-8")
@@ -2805,6 +2823,8 @@ class Kever:
         if wits:
             self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
+
+        #self.db.esrs.put(keys=dgkey, val=esr)
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
         for verfer in (serder.verfers if serder.verfers is not None else []):
             self.db.pubs.add(keys=(verfer.qb64,), val=val)
@@ -2833,7 +2853,7 @@ class Kever:
                     serder.preb, serder.pretty())
         return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
 
-    def escrowPSEvent(self, serder, sigers, wigers=None):
+    def escrowPSEvent(self, serder, sigers, wigers=None, local=True):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but not yet verified delegation.
@@ -2842,7 +2862,12 @@ class Kever:
             serder is SerderKERI instance of event
             sigers is list of Siger instances of indexed controller sigs
             wigers is optional list of Siger instance of indexed witness sigs
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
         """
+        local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -2854,7 +2879,7 @@ class Kever:
         logger.info("Kever state: Escrowed partially signed or delegated "
                     "event = %s\n", serder.ked)
 
-    def escrowPACouple(self, serder, seqner, saider):
+    def escrowPACouple(self, serder, seqner, saider, local=True):
         """
         Update associated logs for escrow of partially authenticated issued event.
         Assuming signatures are provided elsewhere. Partial authentication results
@@ -2869,14 +2894,20 @@ class Kever:
             serder is SerderKERI instance of delegated or issued event
             seqner is Seqner instance of sn of seal source event of delegator/issuer
             saider is Saider instance of said of delegator/issuer
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
         """
+        local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         couple = seqner.qb64b + saider.qb64b
         self.db.putPde(dgkey, couple)  # idempotent
         logger.info("Kever state: Escrowed source couple for partially signed "
                     "or delegated event = %s\n", serder.ked)
 
-    def escrowPWEvent(self, serder, wigers, sigers=None, seqner=None, saider=None):
+    def escrowPWEvent(self, serder, wigers, sigers=None,
+                      seqner=None, saider=None, local=True):
         """
         Update associated logs for escrow of partially witnessed event
 
@@ -2886,7 +2917,13 @@ class Kever:
             sigers is optional list of Siger instances of indexed controller sigs
             seqner is Seqner instance of sn of seal source event of delegator/issuer
             saider is Diger instance of digest of delegator/issuer
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
+
         """
+        local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         if wigers:
@@ -3144,8 +3181,8 @@ class Kevery:
             lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes
-            local (bool): True means only process msgs for own events if not lax
-                         False means only process msgs for not own events if not lax
+            local (bool): True means event source is local (protected) for validation
+                         False means event source is remote (unprotected) for validation
             cloned (bool): True means cloned message stream so use attached
                          datetimes from clone source not own.
                          False means use current datetime
@@ -3162,7 +3199,7 @@ class Kevery:
         self.db = db
         self.rvy = rvy
         self.lax = True if lax else False  # promiscuous mode
-        self.local = True if local else False  # local vs nonlocal restrictions
+        self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned
         self.direct = True if direct else False  # process as direct mode
         self.check = True if check else False  # process as check mode
@@ -3212,26 +3249,32 @@ class Kevery:
 
     def processEvent(self, serder, sigers, *, wigers=None,
                      delseqner=None, delsaider=None,
-                     firner=None, dater=None, local=False):
+                     firner=None, dater=None, local=None):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
-            serder is SerderKERI instance of event to process
-            sigers is list of Siger instances of attached controller indexed sigs
-            wigers is optional list of Siger instances of attached witness indexed sigs
-            delseqner is Seqner instance of delegating event sequence number.
+            serder (SerderKERI): instance of event to process
+            sigers (list[Siger]): instances of attached controller indexed sigs
+            wigers (list[Siger]|None): instances of attached witness indexed sigs
+                otherwise None
+            delseqner (Seqner|None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsaider is Saider instance of of delegating event SAID.
+            delsaider (Saider|None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
-            firner is optional Seqner instance of cloned first seen ordinal
+            firner (Seqner|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            dater is optional Dater instance of cloned replay datetime
+            dater (Dater|None): instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            local (bool|None): True means local (protected) event source. False
+                means remote (unprotected), None means use default .local
         """
+        local = local if local is not None else self.local
+        local = True if local else False  # force boolean
+
         # fetch ked ilk  pre, sn, dig to see how to process
         pre = serder.pre
         ked = serder.ked
