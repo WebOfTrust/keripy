@@ -31,7 +31,7 @@ Then run `docker run -it gleif/keri /bin/bash` and you can run `kli version` fro
 ### Dependencies
 #### Binaries
 
-python 3.10.4+
+python 3.12.1+
 libsodium 1.0.18+
 
 
@@ -63,7 +63,7 @@ $ pip3 install -U cbor2
 ## Development
 
 ### Setup
-* Ensure Python 3.10.4 is present along with venv and dev header files;
+* Ensure Python 3.12.1 is present along with venv and dev header files;
 * Setup virtual environment: `python3 -m venv keripy`
 * Activate virtual environment: `source keripy/bin/activate`
 * Setup dependencies: `pip install -r requirements.txt`
