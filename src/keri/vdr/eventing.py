@@ -71,7 +71,7 @@ def incept(
     cnfg = cnfg if cnfg is not None else []
 
     baks = baks if baks is not None else []
-    if TraitDex.NoBackers in cnfg and len(baks) > 0:
+    if TraitDex.NoRegistrarBackers in cnfg and len(baks) > 0:
         raise ValueError("{} backers specified for NB vcp, 0 allowed".format(len(baks)))
 
     if len(oset(baks)) != len(baks):
@@ -644,7 +644,7 @@ class Tever:
     Has the following public attributes and properties:
 
     Class Attributes:
-        .NoBackers is Boolean
+        .NoRegistrarBackers is Boolean
                 True means do not allow backers (default to witnesses of controlling KEL)
                 False means allow backers (ignore witnesses of controlling KEL)
 
@@ -666,7 +666,7 @@ class Tever:
         .noBackers is boolean trait True means do not allow backers
 
     """
-    NoBackers = False
+    NoRegistrarBackers = False
 
     def __init__(self, cues=None, rsr=None, serder=None, seqner=None, saider=None,
                  bigers=None, db=None, reger=None, noBackers=None, estOnly=None,
@@ -765,7 +765,7 @@ class Tever:
         self.toad = int(ked["bt"], 16)
         self.baks = ked["b"]
 
-        self.noBackers = True if TraitDex.NoBackers in ked["c"] else False
+        self.noBackers = True if TraitDex.NoRegistrarBackers in ked["c"] else False
         self.estOnly = True if TraitDex.EstOnly in ked["c"] else False
 
         if (raw := self.reger.getTvt(key=dgKey(pre=self.prefixer.qb64,
@@ -786,7 +786,7 @@ class Tever:
 
         cnfg = []
         if self.noBackers:
-            cnfg.append(TraitDex.NoBackers)
+            cnfg.append(TraitDex.NoRegistrarBackers)
 
         dgkey = dbing.dgKey(self.regk, self.serder.said)
         couple = self.reger.getAnc(dgkey)
@@ -864,7 +864,7 @@ class Tever:
         """
         # assign traits
         self.noBackers = (True if (noBackers if noBackers is not None
-                                   else self.NoBackers)
+                                   else self.NoRegistrarBackers)
                           else False)  # ensure default noBackers is boolean
 
         self.estOnly = (True if (estOnly if estOnly is not None
@@ -872,7 +872,7 @@ class Tever:
                           else False)  # ensure default estOnly is boolean
 
         cnfg = serder.ked["c"]  # process cnfg for traits
-        if TraitDex.NoBackers in cnfg:
+        if TraitDex.NoRegistrarBackers in cnfg:
             self.noBackers = True
         if TraitDex.EstOnly in cnfg:
             self.estOnly = True
@@ -1759,7 +1759,7 @@ class Tevery:
 
         # Load backers from either tsn or Kever of issuer
         cnfg = rsr.c
-        if TraitDex.NoBackers in cnfg:
+        if TraitDex.NoRegistrarBackers in cnfg:
             kevers = self.kevers[pre]
             baks = kevers.wits
         else:

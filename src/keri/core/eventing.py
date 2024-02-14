@@ -55,8 +55,8 @@ class TraitCodex:
     """
     EstOnly: str = 'EO'  # Only allow establishment events
     DoNotDelegate: str = 'DND'  # Dot not allow delegated identifiers
-    NoBackers: str = 'NB'  # Do not allow any registrar backers
-    Backers: str = 'RB' # Registrar backer provided in Registrar seal
+    NoRegistrarBackers: str = 'NB'  #  This should be NRB in next versionDo not allow any registrar backers
+    RegistrarBackers: str = 'RB' # Registrar backer provided in Registrar seal
 
     def __iter__(self):
         return iter(astuple(self))
@@ -100,26 +100,27 @@ SealEvent = namedtuple("SealEvent", 'i s d')
 # used to indicate to get the latest keys available from KEL for 'i'
 SealLast = namedtuple("SealLast", 'i')
 
-# Establishment Event for Source of Message: duple (s, d)
-# s = sn of event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64 of event
-# the pre is provided in the 'i' field of the message itself which is the qb64
-# of identifier prefix of KEL from which to get  est, event given by 's d'
-# use SealSourceCouples count code for attachment
-SealEst = namedtuple("SealEst", 's d')
-
-# State (latest current) Event: triple (s, t, d)
-# s = sn of latest event as lowercase hex string  no leading zeros,
-# t = message type of latest event (ilk)
-# d = SAID digest qb64 of latest event
-StateEvent = namedtuple("StateEvent", 's t d')
-
-# State (latest current) Establishment Event: quadruple (s, d, br, ba)
+# State Establishment Event (latest current) : quadruple (s, d, br, ba)
 # s = sn of latest est event as lowercase hex string  no leading zeros,
 # d = SAID digest qb64  of latest establishment event
 # br = backer (witness) remove list (cuts) from latest est event
 # ba = backer (witness) add list (adds) from latest est event
 StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
+
+# Transaction Event Seal for Transaction Event: duple (s, d)
+# s = sn of transaction event as lowercase hex string  no leading zeros,
+# d = SAID digest qb64 of transaction event
+# the pre is provided in the 'i' field  qb64 of identifier prefix of KEL
+# key event that this seal appears.
+# use SealSourceCouples count code for attachment
+SealTrans = namedtuple("SealTrans", 's d')
+
+# not used should this be depricated
+# State Event (latest current) : triple (s, t, d)
+# s = sn of latest event as lowercase hex string  no leading zeros,
+# t = message type of latest event (ilk)
+# d = SAID digest qb64 of latest event
+StateEvent = namedtuple("StateEvent", 's t d')
 
 
 @dataclass(frozen=True)
