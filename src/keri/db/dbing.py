@@ -59,12 +59,13 @@ from hio.base import filing
 
 from hio.base import filing
 
+from ..kering import MaxON  # maximum ordinal number for seqence or first seen
+
 from ..help import helping
 
+#MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
 ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
-MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
-
 SuffixSize = 32  # does not include trailing separator
 MaxSuffix = int("f"*(SuffixSize), 16)
 

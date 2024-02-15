@@ -138,9 +138,9 @@ class Counselor(doing.DoDoer):
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
                         if self.proxy:
-                            self.witq.query(hab=self.proxy, pre=kever.delegator, anchor=anchor)
+                            self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor)
                         else:
-                            self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
+                            self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor)
 
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
@@ -175,7 +175,7 @@ class Counselor(doing.DoDoer):
                     self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
-                if serder := self.hby.db.findAnchoringSealEvent(kever.delegator, seal=anchor):
+                if serder := self.hby.db.findAnchoringSealEvent(kever.delpre, seal=anchor):
                     aseq = coring.Seqner(sn=serder.sn)
                     couple = aseq.qb64b + serder.saidb
                     dgkey = dbing.dgKey(pre, saider.qb64b)

@@ -25,6 +25,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
+from ..kering import MaxON
+
 from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
@@ -408,7 +410,7 @@ class MatterCodex:
 
     Ed25519_Seed:         str = 'A'  # Ed25519 256 bit random seed for private key
     Ed25519N:             str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    X25519:               str = 'C'  # X25519 public encryption key, converted from Ed25519 or Ed25519N.
+    X25519:               str = 'C'  # X25519 public encryption key, may be converted from Ed25519 or Ed25519N.
     Ed25519:              str = 'D'  # Ed25519 verification key basic derivation
     Blake3_256:           str = 'E'  # Blake3 256 bit digest self-addressing derivation.
     Blake2b_256:          str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
@@ -420,7 +422,7 @@ class MatterCodex:
     X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
     Short:                str = 'M'  # Short 2 byte b2 number
     Big:                  str = 'N'  # Big 8 byte b2 number
-    X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
+    X25519_Private:       str = 'O'  # X25519 private decryption key/seed, may be converted from Ed25519
     X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
     ECDSA_256r1_Seed:     str = "Q"  # ECDSA secp256r1 256 bit random Seed for private key
     Tall:                 str = 'R'  # Tall 5 byte b2 number
@@ -431,7 +433,8 @@ class MatterCodex:
     Label2:               str = 'W'  # Label2 as two char (bytes) field map label lead size 0
     Tag3:                 str = 'X'  # Tag3 3 B64 encoded chars for field tag or packet type, semver, trait like 'DND'
     Tag7:                 str = 'Y'  # Tag7 7 B64 encoded chars for field tag or packet kind and version KERIVVV
-    Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
+    Blind:                str = 'Z'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
+    Salt_128:             str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
     Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
@@ -583,27 +586,6 @@ class DigCodex:
 
 
 DigDex = DigCodex()  # Make instance
-
-
-@dataclass(frozen=True)
-class NumCodex:
-    """
-    NumCodex is codex of Base64 derivation codes for compactly representing
-    numbers across a wide rage of sizes.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Short:   str = 'M'  # Short 2 byte b2 number
-    Long:    str = '0H'  # Long 4 byte b2 number
-    Big:     str = 'N'  # Big 8 byte b2 number
-    Huge:    str = '0A'  # Huge 16 byte b2 number (same as Salt_128)
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-NumDex = NumCodex()  # Make instance
 
 
 
@@ -850,6 +832,7 @@ class Matter:
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=0, fs=4, ls=0),
         'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -1413,15 +1396,16 @@ class Matter:
 
 class Seqner(Matter):
     """
-    Seqner is subclass of Matter, cryptographic material, for ordinal numbers
-    such as sequence numbers or first seen ordering numbers.
-    Seqner provides fully qualified format for ordinals (sequence numbers etc)
-    when provided as attached cryptographic material elements.
+    Seqner is subclass of Matter, cryptographic material, for fully qualified
+    fixed serialization sized ordinal numbers such as sequence numbers or
+    first seen numbers.
 
-    Useful when parsing attached receipt groupings with sn from stream or database
+    The serialization is forced to a fixed size (single code) so that it may be
+    used  for lexocographically ordered namespaces such as database indices.
+    That code is MtrDex.Salt_128
 
-    Uses default initialization code = CryTwoDex.Salt_128
-    Raises error on init if code not CryTwoDex.Salt_128
+    Default initialization code = MtrDex.Salt_128
+    Raises error on init if code is not MtrDex.Salt_128
 
     Attributes:
 
@@ -1447,9 +1431,7 @@ class Seqner(Matter):
         ._infil is method to compute fully qualified Base64 from .raw and .code
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
-
     Methods:
-
 
     """
 
@@ -1466,16 +1448,32 @@ class Seqner(Matter):
 
 
         Parameters:
-            sn is int sequence number or some form of ordinal number
-            snh is hex string of sequence number
+            sn (int | str | None): some form of ordinal number int or hex str
+            snh (str | None): hex string of ordinal number
 
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if sn is None:
-                if snh is None:
-                    sn = 0
-                else:
-                    sn = int(snh, 16)
+            try:
+                if sn is None:
+                    if snh is None or snh == '':
+                        sn = 0
+                    else:
+                        sn = int(snh, 16)
+
+                else:  # sn is not None but so may be hex str
+                    if isinstance(sn, str):  # is it a hex str
+                        if sn == '':
+                            sn = 0
+                        else:
+                            sn = int(sn, 16)
+            except ValueError as ex:
+                raise InvalidValueError(f"Not whole number={sn} .") from ex
+
+            if not isinstance(sn, int) or sn < 0:
+                raise InvalidValueError(f"Not whole number={sn}.")
+
+            if sn > MaxON:  # too big for ordinal 256 ** 16 - 1
+                raise ValidationError(f"Non-ordinal {sn} exceeds {MaxON}.")
 
             raw = sn.to_bytes(Matter._rawSize(MtrDex.Salt_128), 'big')
 
@@ -1485,6 +1483,7 @@ class Seqner(Matter):
         if self.code != MtrDex.Salt_128:
             raise ValidationError("Invalid code = {} for Seqner."
                                   "".format(self.code))
+
 
     @property
     def sn(self):
@@ -1501,6 +1500,34 @@ class Seqner(Matter):
         Returns .sn int converted to hex str
         """
         return f"{self.sn:x}"  # "{:x}".format(self.sn)
+
+
+
+@dataclass(frozen=True)
+class NumCodex:
+    """
+    NumCodex is codex of Base64 derivation codes for compactly representing
+    numbers across a wide rage of sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Short:   str = 'M'  # Short 2 byte b2 number
+    Long:    str = '0H'  # Long 4 byte b2 number
+    Tall:    str = 'R'  # Tall 5 byte b2 number
+    Big:     str = 'N'  # Big 8 byte b2 number
+    Large:   str = 'S'  # Large 11 byte b2 number
+    Great:   str = 'T'  # Great 14 byte b2 number
+    Huge:    str = '0A'  # Huge 16 byte b2 number (same as Salt_128)
+    Vast:    str = 'U'  # Vast 17 byte b2 number
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NumDex = NumCodex()  # Make instance
+
+
 
 
 class Number(Matter):
@@ -1555,6 +1582,7 @@ class Number(Matter):
 
     Methods:
     """
+    Codex = NumDex
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=NumDex.Short, num=None, numh=None, **kwa):
@@ -1583,8 +1611,6 @@ class Number(Matter):
                     if numh is None or numh == '':
                         num = 0
                     else:
-                        #if len(numh) > 32:
-                            #raise InvalidValueError(f"Hex numh={numh} str too long.")
                         num = int(numh, 16)
 
                 else:  # handle case where num is hex str'
@@ -1592,26 +1618,30 @@ class Number(Matter):
                         if num == '':
                             num = 0
                         else:
-                            #if len(num) > 32:
-                                #raise InvalidValueError(f"Hex num={num} str too long.")
                             num = int(num, 16)
             except ValueError as ex:
-                raise InvalidValueError(f"Invalid whole number={num} .") from ex
+                raise InvalidValueError(f"Not whole number={num} .") from ex
 
             if not isinstance(num, int) or num < 0:
-                raise InvalidValueError(f"Invalid whole number={num}.")
+                raise InvalidValueError(f"Not whole number={num}.")
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
 
-            elif num <= (256 ** 4 - 1):  # make long version of code
-                code = code = NumDex.Long
+            elif num <= (256 ** 5 - 1):  # make tall version of code
+                code = code = NumDex.Tall
 
             elif num <= (256 ** 8 - 1):  # make big version of code
                 code = code = NumDex.Big
 
-            elif num <= (256 ** 16 - 1):  # make huge version of code
-                code = code = NumDex.Huge
+            elif num <= (256 ** 11 - 1):  # make large version of code
+                code = code = NumDex.Large
+
+            elif num <= (256 ** 14 - 1):  # make great version of code
+                code = code = NumDex.Great
+
+            elif num <= (256 ** 17 - 1):  # make vast version of code
+                code = code = NumDex.Vast
 
             else:
                 raise InvalidValueError(f"Invalid num = {num}, too large to encode.")
@@ -1625,6 +1655,44 @@ class Number(Matter):
 
         if self.code not in NumDex:
             raise ValidationError(f"Invalid code = {self.code} for Number.")
+
+
+    def validate(self, inceptive=None):
+        """
+        Returns:
+            self (Number):
+
+        Raises:
+            ValidationError: when .num is invalid ordinal such as
+               sequence number or first seen number etc.
+
+        Parameters:
+           inceptive(bool): raise ValidationError whan .num invalid
+                            None means exception when .num < 0
+                            True means exception when .num != 0
+                            False means exception when .num < 1
+
+        """
+        num = self.num
+
+        if num > MaxON:  # too big for ordinal 256 ** 16 - 1
+            raise ValidationError(f"Non-ordinal {num} exceeds {MaxON}.")
+
+        if inceptive is not None:
+            if inceptive:
+                if num != 0:
+                    raise ValidationError(f"Nonzero num = {num} non-inceptive"
+                                          f" ordinal.")
+            else:
+                if num < 1:
+                    raise ValidationError(f"Non-positive num = {num} not "
+                                          f"non-inceptive ordinal.")
+        else:
+            if num < 0:
+                raise ValidationError(f"Negative num = {num} non-ordinal.")
+
+        return self
+
 
 
     @property
@@ -1662,7 +1730,6 @@ class Number(Matter):
         return self.numh
 
 
-
     @property
     def positive(self):
         """
@@ -1672,14 +1739,24 @@ class Number(Matter):
         """
         return True if self.num > 0 else False
 
+
     @property
     def inceptive(self):
         """
         Returns True if .num == 0 False otherwise.
-        Because valid number .num must be non-negative, positive False means
-        that .num is zero.
+        Valid number .num must be non-negative,
         """
         return True if self.num == 0 else False
+
+
+    @property
+    def seqner(self):
+        """Seqner getter.
+
+        Returns:
+            seqner (Seqner): instance made from number
+        """
+        return Seqner(sn=self.sn)
 
 
 class Dater(Matter):
@@ -4666,7 +4743,7 @@ class CounterCodex:
     TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
     FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
     TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
-    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegators or issuers event
+    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
     SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content

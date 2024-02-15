@@ -29,15 +29,15 @@ def test_postman(seeder):
 
         recpIcp = recpHab.makeOwnEvent(sn=0)
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
-        parsing.Parser().parse(ims=bytearray(recpIcp), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = serdering.SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder)
 
         kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser().parseOne(bytearray(recpIcp), kvy=kvy)
-        parsing.Parser().parseOne(bytearray(rct), kvy=kvy)
+        parsing.Parser().parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        parsing.Parser().parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 

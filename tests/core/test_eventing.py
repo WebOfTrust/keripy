@@ -4808,6 +4808,7 @@ def test_load_event(mockHelpingNowUTC):
         assert wanHab.pre == "BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP"
         msg = wanHab.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=msg, kvy=torKvy)
+        assert wanHab.pre in torKvy.kevers
 
         # Create Wil the witness, we'll use him later
         wilHab = wilHby.makeHab(name="wil", transferable=False)
@@ -4816,14 +4817,16 @@ def test_load_event(mockHelpingNowUTC):
         torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1', wits=[wanHab.pre], toad=1)
         assert torHab.pre == "EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP"
         torIcp = torHab.makeOwnEvent(sn=0)
+        assert torHab.pre in torHab.kvy.kevers
 
         # Try to load event before Wan has seen it
         with pytest.raises(ValueError):
             _ = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
 
-        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanKvy)
+        # tor events are locallyWitnessed by wan so must process as local
+        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True) # process as local
 
-        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
         assert evt == {'ked': {'a': [],
                                'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
@@ -4857,8 +4860,8 @@ def test_load_event(mockHelpingNowUTC):
 
         # Anchor Tee's inception event in Tor's KEL
         ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)])
-        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanKvy)
-        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)  # give to wan must be local
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
 
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.kever.serder.said)
         assert evt == {'ked': {'a': [{'d': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
@@ -4894,9 +4897,12 @@ def test_load_event(mockHelpingNowUTC):
         nrct = wilHab.receipt(serder=teeHab.kever.serder)
 
         # Now Wan should be ready for Tee's inception
-        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanKvy)
-        parsing.Parser().parse(ims=bytearray(rct), kvy=wanKvy)
-        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanKvy)
+        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)  # local
+        parsing.Parser().parse(ims=bytearray(rct), kvy=wanHab.kvy, local=True) # local
+        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanHab.kvy, local=True)  # local
+        # ToDo XXXX fix it so cues are durable in db so can process cues from
+        # both and remote sources
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
         wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
 
         # Endorse Tee's inception event with Wan's Hab just so we have non-trans receipts

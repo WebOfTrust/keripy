@@ -58,9 +58,9 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
                                   count=3).qb64b)  # attach cnt
         evt.extend(sigs)
 
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
+        parsing.Parser().parse(ims=bytearray(evt), kvy=kev3, local=True)
+        parsing.Parser().parse(ims=bytearray(evt), kvy=kev2, local=True)
+        parsing.Parser().parse(ims=bytearray(evt), kvy=kev1, local=True)
 
         assert ghab1.pre in kev1.kevers
         assert ghab1.pre in kev2.kevers

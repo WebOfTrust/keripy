@@ -46,6 +46,33 @@ from ..help import helping
 logger = help.ogler.getLogger()
 
 
+
+# ToDo XXXX maybe
+'''
+class komerdict(dict):
+    """
+    Subclass of dict that has db as attribute and employs read through cache
+    from db Baser.stts of kever states to reload kever from state in database
+    when not found in memory as dict item.
+
+    add method that answers is a given pre a group hab pre .localGroup(pre)
+
+    ToDo XXXX change name of dbdict to stateDict since now have differen types
+    and can't subclass dict with init parameters.
+    but can change function by manually assigning attributes but that is ugly
+    need wrapper decorator to do that. So can update attributes with wrapper
+    on class that injects instance attributes when class is instanced
+    one of the injected parameters is function that that maps returned Komer to
+    object class
+    parameters are subdb (must be Komer) and function that maps retrieved dataclass
+    record  from dataabase to class instance. if no mapping function then just
+    return the dataclass record as value.
+    """
+
+'''
+
+
+# ToDo XXXX change name to statedict since not a generic dbdict
 class dbdict(dict):
     """
     Subclass of dict that has db as attribute and employs read through cache
@@ -98,6 +125,9 @@ class dbdict(dict):
             return default
         else:
             return self.__getitem__(k)
+
+
+
 
 
 @dataclass
@@ -215,6 +245,18 @@ class KeyStateRecord(RawRecord):  # baser.state
     di: str = '' # delegator aid qb64 if any otherwise empty '' str
 
 
+@dataclass
+class EventSourceRecord:  # tracks source of event local or remote
+    """
+    Keyed by dig (said) of serder of event
+
+    Usage:
+
+    """
+    local: bool = True  # True of local (protected) else False for remote (unprotected)
+
+    def __iter__(self):
+        return iter(asdict(self))
 
 
 @dataclass
@@ -271,7 +313,7 @@ class OobiQueryRecord:  # information for responding to OOBI query
     constraint policy for endpoint discovery .
 
     Usage:
-        oobiqs: dict[str, OobiQueryRecord] = field(default_factory=dict)
+
     """
     cid: str = None  # qb64
     role: str = None  # one of kering.Roles None is any or all
@@ -509,6 +551,46 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
+        .esrs is named sub DB instance of Komer of EventSourceRecord
+            dgKey
+            DB is keyed by identifier prefix plus digest (said) of serialized event
+            Value is serialized instance of EventSourceRecord dataclass.
+            Only one value per DB key is allowed.
+            Keeps track of the source of the event. When .local is Truthy the
+            event was sourced in a protected way such as being generated
+            locally or via a protected path. When .local is Falsey the event was
+            NOT sourced in a protected way. The value of .local determines what
+            validation logic to run on the event. This database is used to track
+            the source when processing escrows that would otherwise be decoupled
+            from the original source of the event.
+
+        .misfits is named sub DB instance of CesrIoSetSuber for misfit escrows
+            subkey "mfes."
+            snKey
+            DB is keyed by event controller prefix plus sn of serialized event
+            where sn is 32 char hex string with leading zeros
+            Value is serialized qb64b dig (said) of event
+            Misfit escrows are events with remote (nonlocal) sources that are
+            inappropriate (i.e. would be dropped) unless they can be promoted
+            to local source via some extra after the fact authentication.
+            Escrow processing determines if and how to promote event source to
+            local and then reprocess
+
+        .delegables is named sub DB instance of CesrIoSetSuber for delegable escrows
+            subkey "dees."
+            snKey
+            DB is keyed by event controller prefix plus sn of serialized event
+            where sn is 32 char hex string with leading zeros
+            Value is serialized qb64b dig (said) of event
+            Delegable event escrows are events with local delegator that need
+            to be approved via the anchoring of the delegated event seal in
+            the delegator's KEL. Event source must be local. A nonlocal (remote)
+            source for a delegable event of a local delegator must first pass
+            through the misfit escrow and get promoted to local source.
+
+        # delegable events escrows. events with local delegator that need approval
+        self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)
+
         .fels is named sub DB of first seen event log table (FEL) of digests
             that indexes events in first 'seen' accepted order for replay and
             cloning of event log. Only one value per DB key is allowed.
@@ -542,8 +624,9 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .wigs is named sub DB of indexed witness signatures of event
-            Witnesses always have nontransferable indetifier prefixes.
+        .wigs is named sub DB of indexed witness signatures of event that may
+            come directly or derived from a witness receipt message.
+            Witnesses always have nontransferable identifier prefixes.
             The index is the offset of the witness into the witness list
             of the most recent establishment event wrt the receipted event.
             dgKey
@@ -551,7 +634,10 @@ class Baser(dbing.LMDBer):
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
-            signers. Each couple is concatenation of fully qualified items.
+            signers.
+            These are endorsements from nontrasferable signers who are not witnesses
+            May be watchers or other
+            Each couple is concatenation of fully qualified items.
             These are: non-transferale prefix plus non-indexed event signature
             by that prefix.
             dgKey
@@ -563,6 +649,8 @@ class Baser(dbing.LMDBer):
             qualified items. These are: receipted event digest,
             non-transferable receiptor identifier prefix,
             plus nonindexed receipt event signature by that prefix.
+             Used to manage out of order events such as escrowing
+            receipt couple until event receipted shows up.
             snKey
             DB is keyed by receipted event controller prefix plus sn
             of serialized event
@@ -573,6 +661,8 @@ class Baser(dbing.LMDBer):
             of validator. These are: transferable prefix, plus latest establishment
             event sequence number plus latest establishment event digest,
             plus indexed event signature.
+            These are endorsements by transferable AIDs that are not the controller
+            may be watchers or others.
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
@@ -663,7 +753,7 @@ class Baser(dbing.LMDBer):
             the associated event. So one can lookup event digest, get its fn here
             and then use fn to fetch event by fn from .fels.
 
-        .states (stts) is named subDB instance of SerderSuber that maps a prefix
+        .states (subkey stts.) is named subDB instance of SerderSuber that maps a prefix
             to the latest keystate for that prefix. Used by ._kevers.db for read
             through cache of key state to reload kevers in memory
 
@@ -746,6 +836,20 @@ class Baser(dbing.LMDBer):
             identical message bodies across participants in group multisig body trying
             to reach concensus on events or credentials.
 
+        .pubs is CatCesrIoSetSuber with subkey="pubs." of concatenated tuples
+        (qb64 pre, qb64 snh) indexed by qb64 of public key. Maps each signing
+        public key from establishment event to the events's prefix and sequence number
+        so can look up an event by any of its signing keys. Updated by Kever.logEvent
+
+        .digs is CatCesrIoSetSuber with subkey="digs." of of concatenated tuples
+        (qb64 pre, qb64 snh) indexed by qb64 of digest of next signing public key.
+        Maps each next signing public key digest from establishment event to
+        the events's prefix and sequence number so can look up an event by any
+        of its next public signing key digests. Updated by Kever.logEvent
+
+        Missing ToDo XXXX other attributes as sub dbs not documented here
+            such as .wits etc
+
     Properties:
         kevers (dbdict): read through cache of kevers of states for KELs in db
 
@@ -769,7 +873,8 @@ class Baser(dbing.LMDBer):
 
 
         """
-        self.prefixes = oset()
+        self.prefixes = oset()  # should change to hids for hab ids
+        self.groups = oset()  # group hab ids
         self._kevers = dbdict()
         self._kevers.db = self  # assign db for read through cache of kevers
 
@@ -823,6 +928,17 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
+
+        # event source local (protected) or non-local (remote not protected)
+        self.esrs = koming.Komer(db=self,
+                                   schema=EventSourceRecord,
+                                   subkey='esrs.')
+
+        # misfit escrows whose processing may change the .esrs event source record
+        self.misfits = subing.CesrIoSetSuber(db=self, subkey='mfes.', klas=coring.Diger)
+
+        # delegable events escrows. events with local delegator that need approval
+        self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
@@ -1001,7 +1117,7 @@ class Baser(dbing.LMDBer):
 
         # Resolved multifactor well known OOBI auth records.  Keys by controller URL
         self.rmfa = koming.Komer(db=self,
-                                 subkey='mfa.',
+                                 subkey='rmfa.',
                                  schema=OobiRecord,
                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
@@ -1035,11 +1151,15 @@ class Baser(dbing.LMDBer):
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
                                      klas=coring.Saider)
 
-        # public keys mapped to the AID and event seq no they appeared in
+        # siging public keys mapped to the AID and event seq no they appeared in so
+        # can look up member event designating as signing keys
+        # updated by Kever.logEvent.
         self.pubs = subing.CatCesrIoSetSuber(db=self, subkey="pubs.",
                                              klas=(coring.Prefixer, coring.Seqner))
 
-        # next key digests mapped to the AID and event seq no they appeared in
+        # next key digests mapped to the AID and event seq no they appeared in so
+        # can look up event designating as next signing key digest
+        # updated by Kever.logEvent.
         self.digs = subing.CatCesrIoSetSuber(db=self, subkey="digs.",
                                              klas=(coring.Prefixer, coring.Seqner))
 
@@ -1053,6 +1173,7 @@ class Baser(dbing.LMDBer):
 
         return self.env
 
+
     def reload(self):
         """
         Reload stored prefixes and Kevers from .habs
@@ -1064,13 +1185,15 @@ class Baser(dbing.LMDBer):
                 try:
                     kever = eventing.Kever(state=ksr,
                                            db=self,
-                                           prefixes=self.prefixes,
                                            local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
+                if data.mid:  # group hab
+                    self.groups.add(data.hid)
+
             elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
@@ -1084,13 +1207,14 @@ class Baser(dbing.LMDBer):
                 try:
                     kever = eventing.Kever(state=ksr,
                                            db=self,
-                                           prefixes=self.prefixes,
                                            local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
+                if data.mid:  # group hab
+                    self.groups.add(data.hid)
             elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
@@ -1112,7 +1236,7 @@ class Baser(dbing.LMDBer):
                     temp=self.temp,
                     headDirPath=self.headDirPath,
                     perm=self.perm,
-                    clean=True) as copy:
+                    clean=True) as copy:  # copy is Baser instance
 
             with reopenDB(db=self, reuse=True, readonly=True):  # reopen as readonly
                 if not os.path.exists(self.path):
@@ -1136,7 +1260,12 @@ class Baser(dbing.LMDBer):
                     if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
                         copy.prefixes.add(val.hid)
+                        if val.mid:  # a group hab
+                            copy.groups.add(val.hid)
 
+                # ToDo XXXX
+                # is this obsolete? Should this be removed or should this be
+                # be the Signator name not the default name of the Habery?
                 if not copy.habs.get(keys=(self.name,)):
                     raise ValueError("Error cloning habs, missing orig name={}."
                                      "".format(self.name))
@@ -1172,6 +1301,10 @@ class Baser(dbing.LMDBer):
             # clear and clone .prefixes
             self.prefixes.clear()
             self.prefixes.update(copy.prefixes)
+
+            # clear and clone .gids
+            self.groups.clear()
+            self.groups.update(copy.groups)
 
             with reopenDB(db=self, reuse=True):  # make sure can reopen
                 if not isinstance(self.env, lmdb.Environment):
@@ -1260,14 +1393,16 @@ class Baser(dbing.LMDBer):
                                       count=1).qb64b)
             atc.extend(couple)
 
-        # add trans receipts quadruples to attachments
+        # add trans endorsement quadruples to attachments not controller
+        # may have been originally key event attachments or receipted endorsements
         if quads := self.getVrcs(key=dgkey):
             atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
                                       count=len(quads)).qb64b)
             for quad in quads:
                 atc.extend(quad)
 
-        # add nontrans receipts couples to attachments
+        # add nontrans endorsement couples to attachments not witnesses
+        # may have been originally key event attachments or receipted endorsements
         if coups := self.getRcts(key=dgkey):
             atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
                                       count=len(coups)).qb64b)
@@ -1302,10 +1437,10 @@ class Baser(dbing.LMDBer):
 
         """
         if kever.delegated:
-            dkever = self.kevers[kever.delegator]
+            dkever = self.kevers[kever.delpre]
             yield from self.cloneDelegation(dkever)
 
-            for dmsg in self.clonePreIter(pre=kever.delegator, fn=0):
+            for dmsg in self.clonePreIter(pre=kever.delpre, fn=0):
                 yield dmsg
 
 
@@ -1369,73 +1504,6 @@ class Baser(dbing.LMDBer):
                         return srdr
         return None
 
-
-
-    def findAnchoringSealEventClone(self, pre, seal):
-        """
-        Search through a KEL for the event that contains a specific anchored
-        SealEvent type of provided seal but in dict form.
-        Returns the Serder of the first event with the anchored SealEvent seal,
-            None if not found
-        Searchs from inception forward
-
-        Parameters:
-            pre is qb64 identifier of the KEL to search
-            seal is dict form of SealEvent to find in anchored seals list of each event
-
-        """
-        if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
-            return None
-            #raise ValueError(f"Expected SealEvent got {seal}.")
-
-        seal = eventing.SealEvent(**seal)  #convert to namedtuple
-
-        # getEvtPreIter getEvtLastPreIter
-
-        for evt in self.clonePreIter(pre=pre):  # all events including superseded
-            srdr = serdering.SerderKERI(raw=evt)
-            for eseal in srdr.seals or []:
-                if tuple(eseal.keys()) == eventing.SealEvent._fields:
-                    eseal = eventing.SealEvent(**eseal)  #convert to namedtuple
-                    if seal == eseal and self.fullyWitnessed(srdr):
-                        return srdr
-                #spre = anc["i"]
-                #ssn = int(anc["s"], 16)
-                #sdig = anc["d"]
-
-                #if spre == seal["i"] and ssn == int(seal["s"], 16) \
-                        #and seal["d"] == sdig and self.fullyWitnessed(srdr):
-                    #return srdr
-
-        return None
-
-
-    def findAnchoringSealClone(self, pre, seal):
-        """
-        Search through a KEL for the event that contains an anchored
-        Seal with same Seal type as provided seal but in dict form.
-        Returns the Serder of the first event with the anchored Seal seal,
-            None if not found
-        Searchs from inception forward
-
-        Parameters:
-            pre is qb64 identifier of the KEL to search
-            seal is dict form of Seal of any type to find in anchored seals list of each event
-
-        """
-        # create generic Seal namedtuple class using keys from provided seal dict
-        Seal = namedtuple('Seal', seal.keys())  # matching type
-
-        # getEvtPreIter getEvtLastPreIter
-
-        for evt in self.clonePreIter(pre=pre):  # all events including superseded
-            srdr = serdering.SerderKERI(raw=evt)
-            for eseal in srdr.seals or []:
-                if tuple(eseal.keys()) == Seal._fields:  # same type of seal
-                    eseal = Seal(**eseal)  #convert to namedtuple
-                    if seal == eseal and self.fullyWitnessed(srdr):
-                        return srdr
-        return None
 
 
     def signingMembers(self, pre: str):

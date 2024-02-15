@@ -278,7 +278,7 @@ class CesrSuberBase(SuberBase):
     Sub class of Suber where data is CESR encode/decode ducktyped subclass
     instance such as Matter, Indexer, Counter with .qb64b property when provided
     as fully qualified serialization
-    Automatically serializes and deserializes from qb64b to/from CESR instances
+    Automatically serializes and deserializes from qb64b to/from CESR instance
 
     """
 
@@ -319,7 +319,7 @@ class CesrSuber(CesrSuberBase, Suber):
     Sub class of Suber where data is CESR encode/decode ducktyped subclass
     instance such as Matter, Indexer, Counter with .qb64b property when provided
     as fully qualified serialization.
-    Extents Suber to support val that are ducktyped CESR serializable .qb64 .qb64b
+    Extends Suber to support val that are ducktyped CESR serializable .qb64 .qb64b
     subclasses such as coring.Matter, coring.Indexer, coring.Counter.
     Automatically serializes and deserializes from qb64b to/from CESR instances
 
@@ -509,8 +509,8 @@ class IoSetSuber(SuberBase):
             val (Union[bytes, str]): serialization
 
         Returns:
-            result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
+            result (bool): True means unique value added among duplications,
+                            False means duplicate of same value already exists.
 
         """
         return (self.db.addIoSetVal(db=self.sdb,
@@ -742,10 +742,9 @@ class IoSetSuber(SuberBase):
 class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     """
     Subclass of CesrSuber and IoSetSuber.
-    Class whose values stored in db are a concatenation of the  .qb64b property
-    from one or more  subclass instances (qb64b is bytes of fully qualified
-    serialization) that support CESR encode/decode ducktyped subclass instance
-    such as Matter, Indexer, Counter
+    Sub class of Suber where data is CESR encode/decode ducktyped subclass
+    instance such as Matter, Indexer, Counter with .qb64b property when provided
+    as fully qualified serialization
     Automatically serializes and deserializes from qb64b to/from CESR instances
 
     Extends IoSetSuber with mixin methods ._ser and ._des from CesrSuberBase
@@ -781,8 +780,8 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
                                each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
-            klas (Iterable): of Class references to subclasses of Matter, each
-                of to Type[coring.Matter]
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
 
         """
         super(CesrIoSetSuber, self).__init__(*pa, **kwa)

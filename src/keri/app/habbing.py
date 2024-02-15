@@ -129,8 +129,10 @@ class Habery:
         psr (parsing.Parser):  parses local messages for .kvy .rvy
 
         habs (dict): Hab instances keyed by prefix.
-            To look up Hab by name get prefix from db.habs .prefix field using
-            .habByName
+            To look up Hab by name use use .habByName
+            To look up Hab by prefix us .habByPrefix
+            to get hab from db need name for key
+            hab prefix in db.habs record .hid field
 
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
@@ -221,7 +223,8 @@ class Habery:
         self.exc = exchanging.Exchanger(hby=self, handlers=[])
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                                  exc=self.exc, local=True)
         self.habs = {}  # empty .habs
         self.namespaces = {}  # empty .namespaces
         self._signator = None
@@ -234,6 +237,7 @@ class Habery:
 
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
+
 
     def setup(self, *, seed=None, aeid=None, bran=None, pidx=None, algo=None,
               salt=None, tier=None, free=False, temp=None, ):
@@ -310,6 +314,7 @@ class Habery:
         self.loadHabs()
         self.inited = True
 
+
     def loadHabs(self):
         """Load Habs instance from db
 
@@ -346,9 +351,9 @@ class Habery:
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                           name=name, pre=pre, temp=self.temp)
 
-            # Rules for acceptance
-            #  if its delegated its accepted into its own local KEL even if the
-            #    delegator has not sealed it
+            # Rules for acceptance:
+            # It is accepted into its own local KEL even if it has not been fully
+            # witnessed and if delegated, its delegator has not yet sealed it
             if not hab.accepted and not habord.mid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
@@ -382,9 +387,9 @@ class Habery:
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                           name=name, ns=ns, pre=pre, temp=self.temp)
 
-            # Rules for acceptance
-            #  if its delegated its accepted into its own local KEL even if the
-            #    delegator has not sealed it
+            # Rules for acceptance:
+            # It is accepted into its own local KEL even if it has not been fully
+            # witnessed and if delegated, its delegator has not yet sealed it
             if not hab.accepted and not habord.mid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
@@ -400,6 +405,7 @@ class Habery:
             self.habs[habord.hid].mhab = self.habs[habord.mid]
 
         self.reconfigure()  # post hab load reconfiguration
+
 
     def makeHab(self, name, ns=None, cf=None, **kwa):
         """Make new Hab with name, pre is generated from **kwa
@@ -683,6 +689,8 @@ class Habery:
 
         del self.habs[hab.pre]
         self.db.prefixes.remove(hab.pre)
+        if hab.pre in self.db.groups:
+            self.db.groups.remove(hab.pre)
 
         return True
 
@@ -752,7 +760,8 @@ class Habery:
 
     def habByPre(self, pre):
         """
-        Returns the Hab from and namespace including the default namespace.
+        Returns the Hab instance from .habs or .namespace
+        including the default namespace.
 
         Args:
             pre (str): qb64 aid of hab to find
@@ -773,7 +782,8 @@ class Habery:
     def habByName(self, name, ns=None):
         """
         Returns:
-            hab (Hab): instance from .habs by name if any otherwise None
+            hab (Hab): instance by name from .habs or .namspaces
+            if any otherwise None
 
         Parameters:
            name (str): alias of Hab
@@ -1026,7 +1036,7 @@ class BaseHab:
         self.psr = psr  # injected
 
         self.name = name
-        self.ns = ns
+        self.ns = ns  # what is this?
         self.pre = pre  # wait to setup until after db is known to be opened
         self.temp = True if temp else False
 
@@ -1239,7 +1249,7 @@ class BaseHab:
         if not kever.ntholder.satisfy(indices):
             raise kering.ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
 
-        if kever.delegator is not None:  # delegator only shows up in delcept
+        if kever.delpre is not None:  # delegator only shows up in delcept
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
                                       dig=kever.serder.said,
@@ -1493,8 +1503,10 @@ class BaseHab:
         indexed receipt signatures if key state of serder.pre shows that own pre
         is a current witness of event in serder
 
-        Before calling this must check that serder being witnessed has been
-        accepted as valid event into controller's KEL
+        ToDo XXXX add parameter to force check that serder as been accepted
+        as valid. Otherwise must assume that before calling this that serder
+        being witnessed has been accepted as valid event into this hab
+        controller's KEL
 
         """
         if self.kever.prefixer.transferable:  # not non-transferable prefix
@@ -2144,6 +2156,7 @@ class BaseHab:
             # ToDo XXXX cue for kin = "psUnescrow"
             # ToDo XXXX cue for kin = "stream"
             # ToDo XXXX cue for kin = "invalid"
+            # ToDo XXXX cue for kin=""remoteMemberedSig""
 
 
     def witnesser(self):
@@ -2650,6 +2663,7 @@ class GroupHab(BaseHab):
         self.rmids = rmids  # group rotating member aids in this group hab
 
         super(GroupHab, self).__init__(**kwa)
+
 
     def make(self, *, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,

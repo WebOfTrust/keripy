@@ -193,7 +193,7 @@ class WitnessStart(doing.DoDoer):
 
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
-        done = yield from self.parser.parsator()  # process messages continuously
+        done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
     def escrowDo(self, tymth=None, tock=0.0):
@@ -382,7 +382,7 @@ class Indirector(doing.DoDoer):
 
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
-        done = yield from self.parser.parsator()  # process messages continuously
+        done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
     def cueDo(self, tymth=None, tock=0.0):
@@ -673,7 +673,7 @@ class MailboxDirector(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        done = yield from self.parser.parsator()  # process messages continuously
+        done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
     def escrowDo(self, tymth=None, tock=0.0):
@@ -1072,7 +1072,7 @@ class ReceiptEnd(doing.DoDoer):
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
-        self.psr.parseOne(ims=msg)
+        self.psr.parseOne(ims=msg, local=True)
 
         if pre in self.hab.kevers:
             kever = self.hab.kevers[pre]

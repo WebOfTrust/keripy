@@ -230,7 +230,7 @@ class Reactor(doing.DoDoer):
         yield  # enter context
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.name, self.parser.ims[:1024])
-        done = yield from self.parser.parsator()  # process messages continuously
+        done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
 
@@ -585,7 +585,7 @@ class Reactant(doing.DoDoer):
         if self.parser.ims:
             logger.info("Server %s: received:\n%s\n...\n", self.hab.name,
                         self.parser.ims[:1024])
-        done = yield from self.parser.parsator()  # process messages continuously
+        done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
 

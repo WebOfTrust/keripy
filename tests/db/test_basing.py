@@ -158,6 +158,27 @@ def test_baser():
         assert db.delEvt(key) == True
         assert db.getEvt(key) == None
 
+        # test eventsourcerecords .srcs
+        record = basing.EventSourceRecord()
+        assert db.esrs.get(key) == None
+        assert db.esrs.put(key, record) == True
+        actual = db.esrs.get(key)
+        assert actual == record
+        record.local = False
+        # put does not overwrite must pin
+        assert db.esrs.put(key, record) == False
+        actual = db.esrs.get(key)
+        assert actual.local != record.local
+        assert actual != record
+        assert not db.esrs.get(key) == record
+        assert db.esrs.pin(key, record) == True
+        actual = db.esrs.get(key)
+        assert actual.local == record.local
+        assert db.esrs.get(key) == record
+
+
+
+
         # test first seen event log .fels sub db
         preA = b'BAKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -1687,7 +1708,7 @@ def test_clean_baser():
     name = "nat"
     # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
     with habbing.openHby(name=name) as hby:  # default is temp=True
-        natHab = hby.makeHab(name=name, isith='2', icount=3)
+        natHab = hby.makeHab(name=name, isith='2', icount=3)  # default Hab
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
                                 #isith='2', icount=3, temp=True)
@@ -2069,17 +2090,53 @@ def test_keystaterecord():
 
     """End Test"""
 
+def test_eventsourcerecord():
+    """
+    Test EventSourceRecord dataclass
+    """
+    record = basing.EventSourceRecord()  # default local is True
+    assert isinstance(record, basing.EventSourceRecord)
+    assert record.local is True
+    assert record.local
+    assert "local" in record  # asdict means in is against the keys (labels)
+    assert (asdict(record)) == {'local': True}
+
+    record.local = False
+    assert record.local is False
+    assert not record.local
+    assert (asdict(record)) == {'local': False}
+
+    record = basing.EventSourceRecord(local=False)
+    assert isinstance(record, basing.EventSourceRecord)
+    assert record.local is False
+    assert not record.local
+    assert "local" in record  # asdict means in is against the keys (labels)
+    assert (asdict(record)) == {'local': False}
+
+    record = basing.EventSourceRecord(local=None)
+    assert isinstance(record, basing.EventSourceRecord)
+    assert record.local is None
+    assert not record.local
+    assert "local" in record  # asdict means in is against the keys (labels)
+    assert (asdict(record)) == {'local': None}
+
+
+
+    """End Test"""
+
 
 def test_dbdict():
     """
     Test custom dbdict subclass of dict
     """
-    dbd = basing.dbdict(a=1, b=2, c=3)
+    dbd = basing.dbdict(a=1, b=2, c=3)  # init in memory so never acesses db
     assert dbd.db == None
     assert 'a' in dbd
     assert 'b' in dbd
     assert 'c' in dbd
     assert [(k, v) for k, v in dbd.items()] == [('a', 1), ('b', 2), ('c', 3)]
+    assert list(dbd.keys()) == ['a', 'b', 'c']
+    assert list(dbd.values()) == [1, 2, 3]
 
     assert dbd.get('a') == 1
     assert dbd['a'] == 1
