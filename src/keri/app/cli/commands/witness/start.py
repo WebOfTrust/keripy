@@ -50,8 +50,8 @@ parser.add_argument("--cafilepath", action="store", required=False, default=None
 
 
 def launch(args):
-    help.ogler.level = logging.CRITICAL
-    help.ogler.reopen(name=args.name, temp=True, clear=True)
+    help.ogler.level = logging.INFO
+    help.ogler.reopen(name=args.name, temp=True, clear=True)  # need to configure for logging persistent file
 
     logger = help.ogler.getLogger()
 
