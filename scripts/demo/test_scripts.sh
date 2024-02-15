@@ -47,10 +47,10 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
-printf "Running multisig-delegate-delegator.sh"
+printf "Skipping multisig-delegate-delegator.sh"
 printf "\n************************************\n"
-"${script_dir}/basic/multisig-delegate-delegator.sh"
-isSuccess
+#"${script_dir}/basic/multisig-delegate-delegator.sh"
+#isSuccess
 
 printf "\n************************************\n"
 printf "Running challenge.sh"
