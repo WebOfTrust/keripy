@@ -220,7 +220,7 @@ def extractElementValues(element, values):
 def extractValues(ked, labels):
     """
     Returns list of depth first recursively extracted values from elements of
-    key event dict ked whose flabels are in lables list
+    key event dict ked whose labels are in labels list
 
     Parameters:
        ked is key event dict
