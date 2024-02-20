@@ -6,7 +6,7 @@ keri.core.coring module
 import re
 import json
 from typing import Union
-from collections.abc import Iterable
+from collections.abc import Sequence, Mapping
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
@@ -44,7 +44,7 @@ from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS
                       BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 
 from ..help import helping
-from ..help.helping import sceil, nonStringIterable
+from ..help.helping import sceil, nonStringIterable, nonStringSequence
 
 
 Labels = Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS, dip=DIP_LABELS,
@@ -5468,13 +5468,21 @@ class Tholder:
             The b64 portion of limen  with code stripped (Bexter.bext) of
               [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
               is '1s2c1s2c1s4c1s4c1s4a1c1' basically slash is 's', comma is 'c',
-              and ANDed clauses are delimited by 'a'.
+            ANDed clauses are delimited by 'a'.
+            Each clause top level weight may be optionally a weighted set of weights
+            delimited by 'k' for the weight on the set and 'v' for the weights in
+            the set.
+            [[{'1/3': ['1/2', '1/2', '1/2']}, '1/2', {'1/2': ['1', '1']}],
+                            ['1/2', {'1/2': ['1', '1']}]]
+            b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1'
+
 
         .sith is original signing threshold suitable for value to be serialized
             as json, cbor, mgpk in key event message as either:
                 non-negative hex number str or
                 list of str rational number fractions >= 0 and <= 1 or
                 list of list of str rational number fractions >= 0 and <= 1
+                list of list of weighted map of weights
 
         .thold is parsed signing threshold suitable for calculating satisfaction.
             either as int or list of Fractions
@@ -5482,8 +5490,8 @@ class Tholder:
         .num is int signing threshold when not ._weighted
 
     Methods:
-        .satisfy returns bool, True means ilist of verified signature key indices satisfies
-             threshold, False otherwise.
+        .satisfy returns bool, True means list of verified signature key indices
+        satisfies the threshold, False otherwise.
 
     Static Methods:
         weight (str): converts weight str expression into either int or Fraction
@@ -5510,19 +5518,27 @@ class Tholder:
         Accepts signing threshold in various forms so that may output correct
         forms for serialization and/or calculation of satisfaction.
 
-        Parameters:
-            sith is signing threshold (current or next) expressed as either:
-                non-negative int of threshold number (M-of-N threshold)
-                    next threshold may be zero
-                non-negative hex string of threshold number (M-of-N threshold)
-                    next threshold may be zero
-                fractional weight clauses which may be expressed as either:
-                    an iterable of rational number fraction strings  >= 0 and <= 1
-                    an iterable of iterables of rational number fraction strings >= 0 and <= 1
-                JSON serialized str of either:
-                   list of rational number fraction strings >= 0 and <= 1  or
-                   list of list of rational number fraction strings >= 0 and <= 1
+        The thold representation is meant to accept thresholds from computable
+        expressions for satisfaction of a threshold
 
+        The limen representation is meant to parse threshold expressions from
+        CESR serializations of key event message fields or attachments.
+
+        The sith representation is meant to parse threhold expressions from
+        deserializations of JSON, CBOR, or MGPK key event message fields  or
+        the command line or configuration files.
+
+
+        Parameters:
+
+            thold is signing threshold (current or next) is suitable for computing
+                the satisfaction of a threshold and is expressed as either:
+                    int of threshold number (M of N)
+                    fractional weight clauses which may be expressed as either:
+                        sequence of either Fractions or tuples of Fraction and
+                            sequence of Fractions
+                        sequence of sequence of either Fractions or tuples of
+                            Fraction and sequence of Fractions
 
             limen is qualified signing threshold (current or next) expressed as either:
                 Number.qb64 or .qb64b of integer threshold or
@@ -5530,22 +5546,22 @@ class Tholder:
                     Base64 delimited clauses of fractions
                     Base64 delimited clauses of fractions
 
-            thold is signing threshold (current or next) is suitable for computing
-                the satisfaction of a threshold and is expressed as either:
-                    int of threshold number (M of N)
-                    fractional weight clauses which may be expressed as either:
-                        an iterable of Fractions or
-                        an iterable of iterables of Fractions.
-
-        The sith representation is meant to parse threhold expressions from
-           deserializations of JSON, CBOR, or MGPK key event message fields  or
-           the command line or configuration files.
-
-        The limen representation is meant to parse threshold expressions from
-           CESR serializations of key event message fields or attachments.
-
-        The thold representation is meant to accept thresholds from computable
-            expressions for satisfaction of a threshold
+            sith is signing threshold (current or next) expressed as either:
+                non-negative int of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                non-negative hex string of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                fractional weight clauses which may be expressed as either:
+                    sequence of rational number fraction strings  >= 0 and <= 1
+                    sequence of either rational number fraction strings  >= 0 and <= 1 or
+                    map with key rational number string and value as sequence
+                    of rational number fraction strings
+                    rational number fraction string
+                    sequence of sequences of rational number fraction strings >= 0 and <= 1
+                    sequence of sequnces of either rational number fraction strings or
+                    map with key rational number fraction string with value sequence of
+                    rationaly number fraction strings
+                JSON serialized str of the above:
 
 
         """
@@ -5590,9 +5606,24 @@ class Tholder:
         """ sith property getter """
         # make sith expression of thold
         if self.weighted:
-            sith = [[f"{f.numerator}/{f.denominator}" if (0 < f < 1) else f"{int(f)}"
-                                           for f in clause]
-                                                   for clause in self.thold]
+            sith = []
+            for c in self.thold:
+                clause = []
+                for e in c:
+                    if isinstance(e, tuple):
+                        f = e[0]
+                        k = f"{f.numerator}/{f.denominator}" if (0 < f < 1) else f"{int(f)}"
+                        v = [f"{f.numerator}/{f.denominator}" if (0 < f < 1) else f"{int(f)}"
+                                for f in e[1]]
+                        clause.append({k: v})
+                    else:
+                        f = e
+                        clause.append(f"{f.numerator}/{f.denominator}" if (0 < f < 1) else f"{int(f)}")
+                sith.append(clause)
+
+            #sith = [[f"{f.numerator}/{f.denominator}" if (0 < f < 1) else f"{int(f)}"
+                                           #for f in clause]
+                                                   #for clause in self.thold]
             if len(sith) == 1:
                 sith = sith[0]  # simplify list of one clause to clause
         else:
@@ -5616,11 +5647,11 @@ class Tholder:
 
 
 
-    def _processThold(self, thold: int | Iterable):
+    def _processThold(self, thold: int | Sequence):
         """Process thold input
 
         Parameters:
-            thold (int | Iterable): computable thold expression
+            thold (int | Sequence): computable thold expression
         """
         if isinstance(thold, int):
             self._processUnweighted(thold=thold)
@@ -5645,15 +5676,27 @@ class Tholder:
             bexter = Bexter(raw=matter.raw, code=matter.code, **kwa)
             t = bexter.bext.replace('s', '/')
             # get clauses
-            thold = [clause.split('c') for clause in t.split('a')]
-            thold = [[self.weight(w) for w in clause] for clause in thold]
+            clauses = [clause.split('c') for clause in t.split('a')]
+
+            thold = []
+            for c in clauses:
+                clause = []
+                for e in c:
+                    k, s, v = e.partition("k")
+                    if s:  #not empty
+                        clause.append((self.weight(k), [self.weight(w) for w in v.split("v")]))
+                    else:
+                        clause.append(self.weight(k))
+
+                thold.append(clause)
+
             self._processWeighted(thold=thold)
 
         else:
             raise InvalidCodeError(f"Invalid code for limen = {matter.code}.")
 
 
-    def _processSith(self, sith: int | str | Iterable):
+    def _processSith(self, sith: int | str | Sequence):
         """
         Process attributes for fractionall weighted threshold sith
 
@@ -5664,9 +5707,9 @@ class Tholder:
                 non-negative hex string of threshold number (M-of-N threshold)
                     next threshold may be zero
                 fractional weight clauses which may be expressed as either:
-                    an iterable of rational number fraction weight str or int str
+                    an sequence of rational number fraction weight str or int str
                         each denoted w where 0 <= w <= 1
-                    an iterable of iterables of rational number fraction weight
+                    an sequence of sequences of rational number fraction weight
                        or int str
                        each denoted w where 0 <= w <= 1>= 0
                 JSON serialized str of either:
@@ -5683,32 +5726,47 @@ class Tholder:
         elif isinstance(sith, str) and '[' not in sith:
             self._processUnweighted(thold=int(sith, 16))
 
-        else:  # assumes iterable of weights or iterable of iterables of weights
+        else:  # assumes sequence of weights or sequence of sequence of weights
             if isinstance(sith, str):  # json of weighted sith from cli
                 sith = json.loads(sith)  # deserialize
 
-            if not sith:  # empty iterable
+            if not sith:  # empty or None
                 raise ValueError(f"Empty weight list = {sith}.")
 
-            # because all([]) == True  have to also test for emply mask
-            # is it non str iterable of non str iterable of strs
-            mask = [nonStringIterable(c) for c in sith]
-            if mask and not all(mask):  # not empty and not iterable of iterables
-                sith = [sith]  # attempt to make Iterable of Iterables
+            # is it non str sequence of sequences? or non str sequnce of strs?
+            # must test for emply mask because all([]) == True
+            mask = [nonStringSequence(c) for c in sith]  # check each element
+            if mask and not all(mask):  # not empty and not sequence of sequenes
+                sith = [sith]  # attempt to make sequnce of sequqnces of strs
 
             for c in sith:  # get each clause
-                mask = [isinstance(w, str) for w in c]  # must be all strs
-                if mask and not all(mask):  # not empty and not iterable of strs?
+                # each element of a clause must be a str or dict
+                mask = [(isinstance(w, str) or isinstance(w, Mapping)) for w in c]
+                if mask and not all(mask):  # not empty and not sequence of str or dicts
                     raise ValueError(f"Invalid sith = {sith} some weights in"
                                      f"clause {c} are non string.")
-
 
             # replace weight str expression, int str or fractional strings with
             # int or fraction as appropriate.
             thold = []
-            for clause in sith:  # convert string fractions to Fractions
-                # append list of weights converted fromnn str expression
-                thold.append([self.weight(w) for w in clause])
+            for c in sith:  # convert string fractions to Fractions
+                # append list of where each element is either bare weight or
+                # single key map with value as list of weights
+                # each weight is converted from its  str expression
+                clause = []
+                for e in c:  # each element of clause c
+                    if isinstance(e, Mapping):
+                        if len(e) != 1:
+                            raise ValueError(f"Invalid sith = {sith} nested "
+                                             f"weight map {e} in clause {c} "
+                                             f" not single key value.")
+                        k = list(e.keys())[0]  # zeroth k:v pair is used
+                        # convert to tuple of (weight, [list of weights])
+                        clause.append((self.weight(k), [self.weight(w) for w in e[k]]))
+                    else:
+                        clause.append(self.weight(e))
+
+                thold.append(clause)
 
             self._processWeighted(thold=thold)
 
@@ -5740,34 +5798,54 @@ class Tholder:
                 rational number fraction strings  >= 0 and <= 1
 
         """
-        for clause in thold:  # sum of fractions in clause must be >= 1
-            if not (sum(clause) >= 1):
-                raise ValueError(f"Invalid sith clause = {thold}, all "
+        for clause in thold:  # sum of top level weights in clause must be >= 1
+            # When element is dict then sum of value's weights must be >= 1
+            top = []  # top level weights
+            for e in clause:
+                if isinstance(e, tuple):
+                    top.append(e[0])
+                    if not (sum(e[1]) >= 1):
+                        raise ValueError(f"Invalid sith clause = {clause}, "
+                                         f"element = {e}. All nested clause "
+                                         f"weight sums must be >= 1.")
+                else:
+                    top.append(e)
+            if not (sum(top) >= 1):
+                raise ValueError(f"Invalid sith clause = {clause}, all top level"
                                  f"clause weight sums must be >= 1.")
 
         self._thold = thold
         self._weighted = True
-        self._size = sum(len(clause) for clause in thold)
+        #self._size = sum(len(clause) for clause in thold)
+        s = 0
+        for clause in thold:
+            for e in clause:
+                if isinstance(e, tuple):
+                    s += len(e[1])
+                else:
+                    s += 1
+        self._size = s
+
         self._satisfy = self._satisfy_weighted
         # make bext str of thold for .bexter for limen
-        bext = [[f"{f.numerator}s{f.denominator}" if (0 < f < 1) else f"{int(f)}"
-                                           for f in clause]
-                                                           for clause in thold]
-        bext = "a".join(["c".join(clause) for clause in bext])
+        ta = []  # list of list of fractions and/or single element map of fractions
+        for c in thold:
+            bc = []  # list of fractions and/or single element map of fractions
+            for e in c:
+                if isinstance(e, tuple):
+                    f = e[0]
+                    k = f"{f.numerator}s{f.denominator}" if (0 < f < 1) else f"{int(f)}"
+                    v = "v".join([f"{f.numerator}s{f.denominator}" if (0 < f < 1) else f"{int(f)}" for f in e[1]])
+                    kv = "k".join([k, v])
+                    bc.append(kv)
+                else:
+                    bc.append(f"{e.numerator}s{e.denominator}" if (0 < e < 1) else f"{int(e)}")
+
+            ta.append(bc)
+
+        bext = "a".join(["c".join(bc) for bc in ta])
         self._number = None
         self._bexter = Bexter(bext=bext)
-
-
-    @staticmethod
-    def _oldcheckWeight(w: Fraction) -> Fraction:
-        """Returns w if 0 <= w <= 1 Else raises ValueError
-
-        Parameters:
-            w (Fraction): Threshold weight Fraction
-        """
-        if not 0 <= w <= 1:
-            raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
-        return w
 
 
     @staticmethod
@@ -5850,20 +5928,29 @@ class Tholder:
             wio = 0  # weight index offset
             for clause in self.thold:
                 cw = 0  # init clause weight
-                for w in clause:
-                    if sats[wio]:  # verified signature so weight applies
-                        cw += w
-                    wio += 1
+                for e in clause:
+                    if isinstance(e, tuple):
+                        vw = 0  # init element value weight
+                        for w in e[1]:   # sum weights of value
+                            if sats[wio]:
+                                vw += w
+                            wio += 1
+                        if vw >= 1:  # element true
+                            cw += e[0]  # add element key weight to clause weight
+                    else:
+                        w = e
+                        if sats[wio]:  # verified signature so weight applies
+                            cw += w
+                        wio += 1
                 if cw < 1:  # each clause must sum to at least 1
                     return False
 
-            return True  # all clauses including final one cw >= 1
+            return True  # all clauses have cw >= 1 including final one, AND true
 
         except Exception as ex:
             return False
 
         return False
-
 
 
 class Dicter:

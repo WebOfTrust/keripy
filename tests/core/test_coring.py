@@ -6542,6 +6542,132 @@ def test_tholder():
     assert not tholder.satisfy(indices=[2, 3, 4])
     assert not tholder.satisfy(indices=[])
 
+    # test new nested weighted with Mapping dict
+    # 1s3k1s2v1s2v1s2c1s3c1s2c1s2k1v1
+    tholder = Tholder(sith='[{"1/3":["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["1", "1"]}]')
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.thold == [[(Fraction(1, 3),
+                                  [Fraction(1, 2),
+                                   Fraction(1, 2),
+                                   Fraction(1, 2)]),
+                              Fraction(1, 3),
+                              Fraction(1, 2),
+                              (Fraction(1, 2),
+                                   [1, 1])]]
+    assert tholder.limen ==b'4AAIA1s3k1s2v1s2v1s2c1s3c1s2c1s2k1v1'
+    assert tholder.sith ==[{'1/3': ['1/2', '1/2', '1/2']}, '1/3', '1/2', {'1/2': ['1', '1']}]
+    assert tholder.json == '[{"1/3": ["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["1", "1"]}]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[0, 2, 3, 6])
+    assert tholder.satisfy(indices=[3, 4, 5])
+    assert tholder.satisfy(indices=[1, 2, 3, 4])
+    assert tholder.satisfy(indices=[4, 6])
+    assert tholder.satisfy(indices=[4, 2, 0, 3])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1, 5, 6, 3])
+    assert not tholder.satisfy(indices=[0, 2, 5])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+
+    tholder = Tholder(limen=b'4AAIA1s3k1s2v1s2v1s2c1s3c1s2c1s2k1v1')
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.thold == [[(Fraction(1, 3),
+                                  [Fraction(1, 2),
+                                   Fraction(1, 2),
+                                   Fraction(1, 2)]),
+                              Fraction(1, 3),
+                              Fraction(1, 2),
+                              (Fraction(1, 2),
+                                   [1, 1])]]
+    assert tholder.limen ==b'4AAIA1s3k1s2v1s2v1s2c1s3c1s2c1s2k1v1'
+    assert tholder.sith ==[{'1/3': ['1/2', '1/2', '1/2']}, '1/3', '1/2', {'1/2': ['1', '1']}]
+    assert tholder.json == '[{"1/3": ["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["1", "1"]}]'
+    assert tholder.num == None
+
+    tholder = Tholder(thold=[[(Fraction(1, 3),
+                                  [Fraction(1, 2),
+                                   Fraction(1, 2),
+                                   Fraction(1, 2)]),
+                              Fraction(1, 3),
+                              Fraction(1, 2),
+                              (Fraction(1, 2),
+                                   [1, 1])]])
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.thold == [[(Fraction(1, 3),
+                                  [Fraction(1, 2),
+                                   Fraction(1, 2),
+                                   Fraction(1, 2)]),
+                              Fraction(1, 3),
+                              Fraction(1, 2),
+                              (Fraction(1, 2),
+                                   [1, 1])]]
+    assert tholder.limen ==b'4AAIA1s3k1s2v1s2v1s2c1s3c1s2c1s2k1v1'
+    assert tholder.sith ==[{'1/3': ['1/2', '1/2', '1/2']}, '1/3', '1/2', {'1/2': ['1', '1']}]
+    assert tholder.json == '[{"1/3": ["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["1", "1"]}]'
+    assert tholder.num == None
+
+    # test new nested weighted with Mapping dict
+
+    tholder = Tholder(sith='[[{"1/3":["1/2", "1/2", "1/2"]}, "1/2", {"1/2": ["1", "1"]}], ["1/2", {"1/2": ["1", "1"]}]]')
+    assert tholder.weighted
+    assert tholder.size == 9
+    assert tholder.thold == [[(Fraction(1, 3),
+                               [Fraction(1, 2), Fraction(1, 2), Fraction(1, 2)]),
+                              Fraction(1, 2),
+                              (Fraction(1, 2), [1, 1])],
+                             [Fraction(1, 2), (Fraction(1, 2), [1, 1])]]
+    assert tholder.limen == b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1'
+    assert tholder.sith == [[{'1/3': ['1/2', '1/2', '1/2']}, '1/2', {'1/2': ['1', '1']}],
+                            ['1/2', {'1/2': ['1', '1']}]]
+
+    assert tholder.json == ('[[{"1/3": ["1/2", "1/2", "1/2"]}, "1/2", {"1/2": ["1", "1"]}], '
+                            '["1/2", ''{"1/2": ["1", "1"]}]]')
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[0, 2, 3, 5, 6, 7])
+    assert tholder.satisfy(indices=[3, 4, 5, 6, 8])
+    assert tholder.satisfy(indices=[1, 2, 3, 4, 6, 7])
+    assert tholder.satisfy(indices=[4, 2, 0, 3, 8, 6])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1, 8, 3, 5, 6, 3])
+    assert not tholder.satisfy(indices=[0, 2, 5])
+    assert not tholder.satisfy(indices=[6, 7, 8])
+
+    tholder = Tholder(limen=b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1')
+    assert tholder.weighted
+    assert tholder.size == 9
+    assert tholder.thold == [[(Fraction(1, 3),
+                               [Fraction(1, 2), Fraction(1, 2), Fraction(1, 2)]),
+                              Fraction(1, 2),
+                              (Fraction(1, 2), [1, 1])],
+                             [Fraction(1, 2), (Fraction(1, 2), [1, 1])]]
+    assert tholder.limen == b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1'
+    assert tholder.sith == [[{'1/3': ['1/2', '1/2', '1/2']}, '1/2', {'1/2': ['1', '1']}],
+                            ['1/2', {'1/2': ['1', '1']}]]
+
+    assert tholder.json == ('[[{"1/3": ["1/2", "1/2", "1/2"]}, "1/2", {"1/2": ["1", "1"]}], '
+                            '["1/2", ''{"1/2": ["1", "1"]}]]')
+    assert tholder.num == None
+
+    tholder = Tholder(thold=[[(Fraction(1, 3),
+                               [Fraction(1, 2), Fraction(1, 2), Fraction(1, 2)]),
+                              Fraction(1, 2),
+                              (Fraction(1, 2), [1, 1])],
+                             [Fraction(1, 2), (Fraction(1, 2), [1, 1])]])
+    assert tholder.weighted
+    assert tholder.size == 9
+    assert tholder.thold == [[(Fraction(1, 3),
+                               [Fraction(1, 2), Fraction(1, 2), Fraction(1, 2)]),
+                              Fraction(1, 2),
+                              (Fraction(1, 2), [1, 1])],
+                             [Fraction(1, 2), (Fraction(1, 2), [1, 1])]]
+    assert tholder.limen == b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1'
+    assert tholder.sith == [[{'1/3': ['1/2', '1/2', '1/2']}, '1/2', {'1/2': ['1', '1']}],
+                            ['1/2', {'1/2': ['1', '1']}]]
+
+    assert tholder.json == ('[[{"1/3": ["1/2", "1/2", "1/2"]}, "1/2", {"1/2": ["1", "1"]}], '
+                            '["1/2", ''{"1/2": ["1", "1"]}]]')
+    assert tholder.num == None
+
 
     """ Done Test """
 
@@ -6551,12 +6677,12 @@ if __name__ == "__main__":
     #test_counter()
     #test_prodex()
     #test_indexer()
-    test_number()
-    test_seqner()
+    #test_number()
+    #test_seqner()
     #test_siger()
     #test_signer()
     #test_nexter()
-    #test_tholder()
+    test_tholder()
     #test_ilks()
     #test_labels()
     #test_prefixer()
