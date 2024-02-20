@@ -5468,13 +5468,21 @@ class Tholder:
             The b64 portion of limen  with code stripped (Bexter.bext) of
               [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
               is '1s2c1s2c1s4c1s4c1s4a1c1' basically slash is 's', comma is 'c',
-              and ANDed clauses are delimited by 'a'.
+            ANDed clauses are delimited by 'a'.
+            Each clause top level weight may be optionally a weighted set of weights
+            delimited by 'k' for the weight on the set and 'v' for the weights in
+            the set.
+            [[{'1/3': ['1/2', '1/2', '1/2']}, '1/2', {'1/2': ['1', '1']}],
+                            ['1/2', {'1/2': ['1', '1']}]]
+            b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1'
+
 
         .sith is original signing threshold suitable for value to be serialized
             as json, cbor, mgpk in key event message as either:
                 non-negative hex number str or
                 list of str rational number fractions >= 0 and <= 1 or
                 list of list of str rational number fractions >= 0 and <= 1
+                list of list of weighted map of weights
 
         .thold is parsed signing threshold suitable for calculating satisfaction.
             either as int or list of Fractions
@@ -5527,8 +5535,10 @@ class Tholder:
                 the satisfaction of a threshold and is expressed as either:
                     int of threshold number (M of N)
                     fractional weight clauses which may be expressed as either:
-                        an iterable of Fractions or
-                        an iterable of iterables of Fractions.
+                        sequence of either Fractions or tuples of Fraction and
+                            sequence of Fractions
+                        sequence of sequence of either Fractions or tuples of
+                            Fraction and sequence of Fractions
 
             limen is qualified signing threshold (current or next) expressed as either:
                 Number.qb64 or .qb64b of integer threshold or
@@ -5542,11 +5552,17 @@ class Tholder:
                 non-negative hex string of threshold number (M-of-N threshold)
                     next threshold may be zero
                 fractional weight clauses which may be expressed as either:
-                    an sequence of rational number fraction strings  >= 0 and <= 1
-                    an sequence of sequences of rational number fraction strings >= 0 and <= 1
-                JSON serialized str of either:
-                   list of rational number fraction strings >= 0 and <= 1  or
-                   list of list of rational number fraction strings >= 0 and <= 1
+                    sequence of rational number fraction strings  >= 0 and <= 1
+                    sequence of either rational number fraction strings  >= 0 and <= 1 or
+                    map with key rational number string and value as sequence
+                    of rational number fraction strings
+                    rational number fraction string
+                    sequence of sequences of rational number fraction strings >= 0 and <= 1
+                    sequence of sequnces of either rational number fraction strings or
+                    map with key rational number fraction string with value sequence of
+                    rationaly number fraction strings
+                JSON serialized str of the above:
+
 
         """
         if thold is not None:
@@ -5674,7 +5690,6 @@ class Tholder:
 
                 thold.append(clause)
 
-            #thold = [[self.weight(w) for w in clause] for clause in thold]
             self._processWeighted(thold=thold)
 
         else:
@@ -5829,11 +5844,6 @@ class Tholder:
             ta.append(bc)
 
         bext = "a".join(["c".join(bc) for bc in ta])
-
-        #bext = [[f"{f.numerator}s{f.denominator}" if (0 < f < 1) else f"{int(f)}"
-                                           #for f in clause]
-                                                           #for clause in thold]
-        #bext = "a".join(["c".join(clause) for clause in bext])
         self._number = None
         self._bexter = Bexter(bext=bext)
 
@@ -5934,15 +5944,6 @@ class Tholder:
                         wio += 1
                 if cw < 1:  # each clause must sum to at least 1
                     return False
-
-            #for clause in self.thold:
-                #cw = 0  # init clause weight
-                #for w in clause:
-                    #if sats[wio]:  # verified signature so weight applies
-                        #cw += w
-                    #wio += 1
-                #if cw < 1:  # each clause must sum to at least 1
-                    #return False
 
             return True  # all clauses have cw >= 1 including final one, AND true
 
