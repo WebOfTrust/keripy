@@ -4023,26 +4023,35 @@ def test_texter():
     with pytest.raises(EmptyMaterialError):
         texter = Texter()
 
+    with pytest.raises(ValidationError):
+        texter = Texter(raw=b'Wrong code for Texter', code=MtrDex.StrB64_L0)
+
+
     text = ""
     textb = b""
 
     texter = Texter(text=text)
     assert texter.code == MtrDex.Bytes_L0
     assert texter.both == '4BAA'
-    assert texter.raw == b'' == textb
+    assert texter.raw == textb
     assert texter.qb64 == '4BAA'
-    assert texter.qb2 == b'\xe0\x10\x00'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     texter = Texter(text=textb)
-    assert texter.code == MtrDex.Bytes_L0
     assert texter.both == '4BAA'
     assert texter.raw == b'' == textb
-    assert texter.qb64 == '4BAA'
-    assert texter.qb2 == b'\xe0\x10\x00'
-    assert texter.text == textb
-    assert texter.uext == text
+
+    texter = Texter(raw=textb)
+    assert texter.both == '4BAA'
+    assert texter.raw == textb
+
+    texter = Texter(qb64=texter.qb64)
+    assert texter.both == '4BAA'
+    assert texter.raw == textb
+
+    texter = Texter(qb2=texter.qb2)
+    assert texter.both == '4BAA'
+    assert texter.raw == textb
 
 
     text = "$"
@@ -4051,20 +4060,27 @@ def test_texter():
     texter = Texter(text=text)
     assert texter.code == MtrDex.Bytes_L2
     assert texter.both == '6BAB'
-    assert texter.raw ==  b"$" == textb
+    assert texter.raw == textb
     assert texter.qb64 == '6BABAAAk'
     assert texter.qb2 ==b'\xe8\x10\x01\x00\x00$'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     texter = Texter(text=textb)
-    assert texter.code == MtrDex.Bytes_L2
     assert texter.both == '6BAB'
-    assert texter.raw ==  b"$" == textb
-    assert texter.qb64 == '6BABAAAk'
-    assert texter.qb2 ==b'\xe8\x10\x01\x00\x00$'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.raw == textb
+
+    texter = Texter(raw=textb)
+    assert texter.both == '6BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb64=texter.qb64)
+    assert texter.both == '6BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb2=texter.qb2)
+    assert texter.both == '6BAB'
+    assert texter.raw == textb
+
 
 
     text = "@!"
@@ -4073,20 +4089,26 @@ def test_texter():
     texter = Texter(text=text)
     assert texter.code == MtrDex.Bytes_L1
     assert texter.both == '5BAB'
-    assert texter.raw == b'@!' == textb
+    assert texter.raw == textb
     assert texter.qb64 == '5BABAEAh'
     assert texter.qb2 ==b'\xe4\x10\x01\x00@!'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     texter = Texter(text=textb)
-    assert texter.code == MtrDex.Bytes_L1
     assert texter.both == '5BAB'
-    assert texter.raw == b'@!' == textb
-    assert texter.qb64 == '5BABAEAh'
-    assert texter.qb2 ==b'\xe4\x10\x01\x00@!'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.raw == textb
+
+    texter = Texter(raw=textb)
+    assert texter.both == '5BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb64=texter.qb64)
+    assert texter.both == '5BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb2=texter.qb2)
+    assert texter.both == '5BAB'
+    assert texter.raw == textb
 
     text = "^*#"
     textb = b"^*#"
@@ -4094,20 +4116,26 @@ def test_texter():
     texter = Texter(text=text)
     assert texter.code == MtrDex.Bytes_L0
     assert texter.both == '4BAB'
-    assert texter.raw == b"^*#" == textb
+    assert texter.raw == textb
     assert texter.qb64 == '4BABXioj'
     assert texter.qb2 == b'\xe0\x10\x01^*#'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     texter = Texter(text=textb)
-    assert texter.code == MtrDex.Bytes_L0
     assert texter.both == '4BAB'
-    assert texter.raw == b"^*#" == textb
-    assert texter.qb64 == '4BABXioj'
-    assert texter.qb2 == b'\xe0\x10\x01^*#'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.raw == textb
+
+    texter = Texter(raw=textb)
+    assert texter.both == '4BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb64=texter.qb64)
+    assert texter.both == '4BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb2=texter.qb2)
+    assert texter.both == '4BAB'
+    assert texter.raw == textb
 
     text = "&~?%"
     textb = b"&~?%"
@@ -4115,20 +4143,26 @@ def test_texter():
     texter = Texter(text=text)
     assert texter.code == MtrDex.Bytes_L2
     assert texter.both == '6BAC'
-    assert texter.raw == b"&~?%" == textb
+    assert texter.raw == textb
     assert texter.qb64 == '6BACAAAmfj8l'
     assert texter.qb2 == b'\xe8\x10\x02\x00\x00&~?%'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     texter = Texter(text=textb)
-    assert texter.code == MtrDex.Bytes_L2
     assert texter.both == '6BAC'
-    assert texter.raw == b"&~?%" == textb
-    assert texter.qb64 == '6BACAAAmfj8l'
-    assert texter.qb2 == b'\xe8\x10\x02\x00\x00&~?%'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.raw == textb
+
+    texter = Texter(raw=textb)
+    assert texter.both == '6BAC'
+    assert texter.raw == textb
+
+    texter = Texter(qb64=texter.qb64)
+    assert texter.both == '6BAC'
+    assert texter.raw == textb
+
+    texter = Texter(qb2=texter.qb2)
+    assert texter.both == '6BAC'
+    assert texter.raw == textb
 
 
     text = "\n"  # control character
@@ -4139,20 +4173,26 @@ def test_texter():
     texter = Texter(text=text)
     assert texter.code == MtrDex.Bytes_L2
     assert texter.both == '6BAB'
-    assert texter.raw ==  b"\n" == textb
+    assert texter.raw == textb
     assert texter.qb64 == '6BABAAAK'
     assert texter.qb2 ==b'\xe8\x10\x01\x00\x00\n'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     texter = Texter(text=textb)
-    assert texter.code == MtrDex.Bytes_L2
     assert texter.both == '6BAB'
-    assert texter.raw ==  b"\n" == textb
-    assert texter.qb64 == '6BABAAAK'
-    assert texter.qb2 ==b'\xe8\x10\x01\x00\x00\n'
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.raw == textb
+
+    texter = Texter(raw=textb)
+    assert texter.both == '6BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb64=texter.qb64)
+    assert texter.both == '6BAB'
+    assert texter.raw == textb
+
+    texter = Texter(qb2=texter.qb2)
+    assert texter.both == '6BAB'
+    assert texter.raw == textb
 
 
     text = "Did the lazy fox jumped over the big dog? But it's not its dog!\n"
@@ -4165,20 +4205,27 @@ def test_texter():
     assert texter.qb64 == '6BAWAABEaWQgdGhlIGxhenkgZm94IGp1bXBlZCBvdmVyIHRoZSBiaWcgZG9nPyBCdXQgaXQncyBub3QgaXRzIGRvZyEK'
     assert texter.qb2 ==(b"\xe8\x10\x16\x00\x00Did the lazy fox jumped over the big dog? But it's not "
                          b'its dog!\n')
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
 
     texter = Texter(text=textb)
-    assert texter.code == MtrDex.Bytes_L2
     assert texter.both == '6BAW'
     assert texter.raw == textb
-    assert texter.qb64 == '6BAWAABEaWQgdGhlIGxhenkgZm94IGp1bXBlZCBvdmVyIHRoZSBiaWcgZG9nPyBCdXQgaXQncyBub3QgaXRzIGRvZyEK'
-    assert texter.qb2 ==(b"\xe8\x10\x16\x00\x00Did the lazy fox jumped over the big dog? But it's not "
-                         b'its dog!\n')
-    assert texter.text == textb
-    assert texter.uext == text
+
+    texter = Texter(raw=textb)
+    assert texter.both == '6BAW'
+    assert texter.raw == textb
+
+    texter = Texter(qb64=texter.qb64)
+    assert texter.both == '6BAW'
+    assert texter.raw == textb
+
+    texter = Texter(qb2=texter.qb2)
+    assert texter.both == '6BAW'
+    assert texter.raw == textb
+
+
 
     text =  "a" * ((64 ** 2) * 3)  # big variable size
     textb = text.encode("utf-8")
@@ -4192,8 +4239,7 @@ def test_texter():
     assert len(texter.qb64) == 16392
     assert len(texter.qb2) == 12294
     assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     text =  "b" * ((64 ** 2 ) * 3 + 1)  # big variable size
     textb = text.encode("utf-8")
@@ -4207,8 +4253,7 @@ def test_texter():
     assert len(texter.qb64) == 16396
     assert len(texter.qb2) == 12297
     assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     text =  "c" * ((64 ** 2 ) * 3 + 2)  # big variable size
     textb = text.encode("utf-8")
@@ -4222,8 +4267,7 @@ def test_texter():
     assert len(texter.qb64) == 16396
     assert len(texter.qb2) == 12297
     assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
-    assert texter.text == textb
-    assert texter.uext == text
+    assert texter.text == text
 
     text =  "c" * ((64 ** 4) * 3)  # excessive variable size
     with pytest.raises(InvalidVarRawSizeError):
@@ -4239,6 +4283,9 @@ def test_bexter():
     """
     with pytest.raises(EmptyMaterialError):
         bexter = Bexter()
+
+    with pytest.raises(ValidationError):
+        bexter = Bexter(raw=b'Wrong_code_for_Bexter', code=MtrDex.Bytes_L0)
 
     bext = "@!"
     with pytest.raises(ValueError):

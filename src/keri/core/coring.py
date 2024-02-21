@@ -1949,14 +1949,7 @@ class Texter(Matter):
     @property
     def text(self):
         """
-        Property text: raw as bytes
-        """
-        return self.raw
-
-    @property
-    def uext(self):
-        """
-        Property bext: raw as str
+        Property text: raw as str
         """
         return self.raw.decode('utf-8')
 
