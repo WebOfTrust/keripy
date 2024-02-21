@@ -86,15 +86,21 @@ class Serdery:
         """
         version = version if version is not None else self.version
 
-        if len(ims) < Serder.InhaleSize:
+        if len(ims) < Serder.SmellSize:
             raise ShortageError(f"Need more raw bytes for Serdery to reap.")
 
         match = Rever.search(ims)  # Rever regex takes bytes/bytearray not str
         if not match or match.start() > Serder.MaxVSOffset:
             raise VersionError(f"Invalid version string for Serder raw = "
-                               f"{ims[: Serder.InhaleSize]}.")
+                               f"{ims[: Serder.SmellSize]}.")
 
         reaped = Reapage(*match.group("proto", "major", "minor", "kind", "size"))
+
+        vrsn = Versionage(major=int(reaped.major, 16), minor=int(reaped.minor, 16))
+        if version:  # test here for compatible cod version with message vrsn
+            if (vrsn.major > version.major or
+                (vrsn.major == version.major and vrsn.minor > version.minor)):
+                    pass  # raise error here?
 
         if reaped.proto == Protos.keri.encode("utf-8"):
             return SerderKERI(raw=ims, strip=True, version=version, reaped=reaped)
@@ -181,7 +187,7 @@ class Serder:
     """
 
     MaxVSOffset = 12
-    InhaleSize = MaxVSOffset + VERFULLSIZE  # min buffer size to inhale
+    SmellSize = MaxVSOffset + VERFULLSIZE  # min buffer size to inhale
 
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
 
@@ -783,13 +789,13 @@ class Serder:
         if reaped:
             proto, major, minor, kind, size = reaped  # tuple unpack
         else:
-            if len(raw) < clas.InhaleSize:
+            if len(raw) < clas.SmellSize:
                 raise ShortageError(f"Need more raw bytes for Serder to inhale.")
 
             match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
             if not match or match.start() > clas.MaxVSOffset:
                 raise VersionError(f"Invalid version string in raw = "
-                                   f"{raw[:clas.InhaleSize]}.")
+                                   f"{raw[:clas.SmellSize]}.")
 
             proto, major, minor, kind, size = match.group("proto",
                                                           "major",

@@ -238,34 +238,6 @@ def nabSextets(b, l):
     i <<= p  # pad with empty bits
     return (i.to_bytes(n, 'big'))
 
-MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
-
-def sniff(raw):
-    """
-    Returns serialization kind, version and size from serialized event raw
-    by investigating leading bytes that contain version string
-
-    Parameters:
-      raw is bytes of serialized event
-
-    """
-    if len(raw) < MINSNIFFSIZE:
-        raise ShortageError("Need more bytes.")
-
-    match = Rever.search(raw)  # Rever's regex takes bytes
-    if not match or match.start() > 12:
-        raise VersionError("Invalid version string in raw = {}".format(raw))
-
-    proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
-    version = Versionage(major=int(major, 16), minor=int(minor, 16))
-    kind = kind.decode("utf-8")
-    proto = proto.decode("utf-8")
-    if kind not in Serials:
-        raise DeserializeError("Invalid serialization kind = {}".format(kind))
-    size = int(size, 16)
-
-    return proto, kind, version, size
-
 
 def dumps(ked, kind=Serials.json):
     """
@@ -5275,6 +5247,8 @@ class Sadder:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
     """
+    MaxVSOffset = 12
+    SmellSize = MaxVSOffset + VERFULLSIZE  # min buffer size to inhale
 
     def __init__(self, raw=b'', ked=None, sad=None, kind=None, saidify=False,
                  code=MtrDex.Blake3_256):
@@ -5333,7 +5307,7 @@ class Sadder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
-        proto, kind, version, size = sniff(raw)
+        proto, kind, version, size = self.smell(raw)
         if version != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
                                "".format(version.major, version.minor, Version))
@@ -5388,6 +5362,33 @@ class Sadder:
 
         else:
             raise ValueError("Both said and saider may not be None.")
+
+    @staticmethod
+    def smell(raw):
+        """
+        Returns serialization kind, version and size from serialized event raw
+        by investigating leading bytes that contain version string
+
+        Parameters:
+          raw is bytes of serialized event
+
+        """
+        if len(raw) < Sadder.SmellSize:
+            raise ShortageError("Need more bytes.")
+
+        match = Rever.search(raw)  # Rever's regex takes bytes
+        if not match or match.start() > 12:
+            raise VersionError("Invalid version string in raw = {}".format(raw))
+
+        proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
+        version = Versionage(major=int(major, 16), minor=int(minor, 16))
+        kind = kind.decode("utf-8")
+        proto = proto.decode("utf-8")
+        if kind not in Serials:
+            raise DeserializeError("Invalid serialization kind = {}".format(kind))
+        size = int(size, 16)
+
+        return proto, kind, version, size
 
 
     @property
