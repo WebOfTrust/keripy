@@ -501,6 +501,8 @@ class MatterCodex:
 MtrDex = MatterCodex()  # Make instance
 
 
+
+
 @dataclass(frozen=True)
 class SmallVarRawSizeCodex:
     """
@@ -541,52 +543,6 @@ class LargeVarRawSizeCodex:
 
 
 LargeVrzDex = LargeVarRawSizeCodex()  # Make instance
-
-
-@dataclass(frozen=True)
-class NonTransCodex:
-    """
-    NonTransCodex is codex all non-transferable derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
-    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-NonTransDex = NonTransCodex()  # Make instance
-
-# When add new to DigCodes update Saider.Digests and Serder.Digests class attr
-@dataclass(frozen=True)
-class DigCodex:
-    """
-    DigCodex is codex all digest derivation codes. This is needed to ensure
-    delegated inception using a self-addressing derivation i.e. digest derivation
-    code.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256: str = 'H'  # SHA3 256 bit digest self-addressing derivation.
-    SHA2_256: str = 'I'  # SHA2 256 bit digest self-addressing derivation.
-    Blake3_512: str = '0D'  # Blake3 512 bit digest self-addressing derivation.
-    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
-    SHA3_512: str = '0F'  # SHA3 512 bit digest self-addressing derivation.
-    SHA2_512: str = '0G'  # SHA2 512 bit digest self-addressing derivation.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-DigDex = DigCodex()  # Make instance
-
 
 
 
@@ -631,6 +587,7 @@ class TextCodex:
 
 
 TexDex = TextCodex()  # Make instance
+
 
 @dataclass(frozen=True)
 class CipherX25519VarCodex:
@@ -740,6 +697,77 @@ class CipherX25519QB2VarCodex:
 CiXVarQB2Dex = CipherX25519QB2VarCodex()  # Make instance
 
 
+
+
+@dataclass(frozen=True)
+class NonTransCodex:
+    """
+    NonTransCodex is codex all non-transferable derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NonTransDex = NonTransCodex()  # Make instance
+
+# When add new to DigCodes update Saider.Digests and Serder.Digests class attr
+@dataclass(frozen=True)
+class DigCodex:
+    """
+    DigCodex is codex all digest derivation codes. This is needed to ensure
+    delegated inception using a self-addressing derivation i.e. digest derivation
+    code.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256: str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256: str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    Blake3_512: str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512: str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512: str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+DigDex = DigCodex()  # Make instance
+
+
+
+@dataclass(frozen=True)
+class NumCodex:
+    """
+    NumCodex is codex of Base64 derivation codes for compactly representing
+    numbers across a wide rage of sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Short:   str = 'M'  # Short 2 byte b2 number
+    Long:    str = '0H'  # Long 4 byte b2 number
+    Tall:    str = 'R'  # Tall 5 byte b2 number
+    Big:     str = 'N'  # Big 8 byte b2 number
+    Large:   str = 'S'  # Large 11 byte b2 number
+    Great:   str = 'T'  # Great 14 byte b2 number
+    Huge:    str = '0A'  # Huge 16 byte b2 number (same as Salt_128)
+    Vast:    str = 'U'  # Vast 17 byte b2 number
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NumDex = NumCodex()  # Make instance
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -1503,33 +1531,6 @@ class Seqner(Matter):
 
 
 
-@dataclass(frozen=True)
-class NumCodex:
-    """
-    NumCodex is codex of Base64 derivation codes for compactly representing
-    numbers across a wide rage of sizes.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Short:   str = 'M'  # Short 2 byte b2 number
-    Long:    str = '0H'  # Long 4 byte b2 number
-    Tall:    str = 'R'  # Tall 5 byte b2 number
-    Big:     str = 'N'  # Big 8 byte b2 number
-    Large:   str = 'S'  # Large 11 byte b2 number
-    Great:   str = 'T'  # Great 14 byte b2 number
-    Huge:    str = '0A'  # Huge 16 byte b2 number (same as Salt_128)
-    Vast:    str = 'U'  # Vast 17 byte b2 number
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-NumDex = NumCodex()  # Make instance
-
-
-
-
 class Number(Matter):
     """
     Number is subclass of Matter, cryptographic material, for ordinal counting
@@ -1888,6 +1889,78 @@ class Dater(Matter):
         return helping.fromIso8601(self.dts)
 
 
+class Texter(Matter):
+    """
+    Texter is subclass of Matter, cryptographic material, for variable length
+    text strings as bytes not unicode. Unicode strings converted to bytes.
+
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+
+    Properties:
+        .text is bytes value with CESR code and leader removed.
+        .uext is str value with CESR code and leader removed unicode of .text
+
+    Inherited Hidden Properties:  (See Matter)
+
+    Methods:
+
+    Codes:
+        Bytes_L0:     str = '4B'  # Byte String lead size 0
+        Bytes_L1:     str = '5B'  # Byte String lead size 1
+        Bytes_L2:     str = '6B'  # Byte String lead size 2
+        Bytes_Big_L0: str = '7AAB'  # Byte String big lead size 0
+        Bytes_Big_L1: str = '8AAB'  # Byte String big lead size 1
+        Bytes_Big_L2: str = '9AAB'  # Byte String big lead size 2
+
+    """
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=MtrDex.Bytes_L0, text=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+            text is the variable sized text string as either bytes or str
+
+        """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if text is None:
+                raise EmptyMaterialError("Missing text string.")
+            if hasattr(text, "encode"):
+                text = text.encode("utf-8")
+            raw = text
+
+        super(Texter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                     code=code, **kwa)
+        if self.code not in TexDex:
+            raise ValidationError("Invalid code = {} for Texter."
+                                  "".format(self.code))
+
+
+    @property
+    def text(self):
+        """
+        Property text: raw as bytes
+        """
+        return self.raw
+
+    @property
+    def uext(self):
+        """
+        Property bext: raw as str
+        """
+        return self.raw.decode('utf-8')
+
+
 class Bexter(Matter):
     """
     Bexter is subclass of Matter, cryptographic material, for variable length
@@ -1936,28 +2009,22 @@ class Bexter(Matter):
     Attributes:
 
     Inherited Properties:  (See Matter)
-        .pad  is int number of pad chars given raw
-
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
-        .text is the Base64 text value, .qb64 with text code and leader removed.
+        .bext is the Base64 text value, .qb64 with text code and leader removed.
 
-    Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+    Inherited Hidden Properties:  (See Matter)
 
     Methods:
+        ._rawify(self, bext)
+
+    Codes:
+        StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
+        StrB64_L1:     str = '5A'  # String Base64 Only Leader Size 1
+        StrB64_L2:     str = '6A'  # String Base64 Only Leader Size 2
+        StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
+        StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
+        StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
 
     """
 
@@ -1979,10 +2046,10 @@ class Bexter(Matter):
             if bext is None:
                 raise EmptyMaterialError("Missing bext string.")
             if hasattr(bext, "encode"):
-                bext = bext.encode("utf-8")
+                bext = bext.encode("utf-8")  # convert to bytes
             if not Reb64.match(bext):
                 raise ValueError("Invalid Base64.")
-            raw = self._rawify(bext)
+            raw = self._rawify(bext)  # convert bytes to raw with padding
 
         super(Bexter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)

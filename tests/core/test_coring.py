@@ -27,7 +27,7 @@ from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Labels, Saids, Protos, Protocolage,
                               Sadder, Tholder, Seqner,
-                              NumDex, Number, Siger, Dater, Bexter)
+                              NumDex, Number, Siger, Dater, Bexter, Texter)
 from keri.core.coring import Serialage, Serials, Tiers, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
@@ -41,7 +41,8 @@ from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError, DeserializeError, ValidationError)
+                         InvalidValueError, DeserializeError, ValidationError,
+                         InvalidVarRawSizeError)
 from keri.kering import Version, Versionage, VersionError
 from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       RPY_LABELS)
@@ -4015,6 +4016,223 @@ def test_dater():
     """ Done Test """
 
 
+def test_texter():
+    """
+    Test Texter variable sized text (bytes) subclass of Matter
+    """
+    with pytest.raises(EmptyMaterialError):
+        texter = Texter()
+
+    text = ""
+    textb = b""
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L0
+    assert texter.both == '4BAA'
+    assert texter.raw == b'' == textb
+    assert texter.qb64 == '4BAA'
+    assert texter.qb2 == b'\xe0\x10\x00'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    texter = Texter(text=textb)
+    assert texter.code == MtrDex.Bytes_L0
+    assert texter.both == '4BAA'
+    assert texter.raw == b'' == textb
+    assert texter.qb64 == '4BAA'
+    assert texter.qb2 == b'\xe0\x10\x00'
+    assert texter.text == textb
+    assert texter.uext == text
+
+
+    text = "$"
+    textb = b"$"
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAB'
+    assert texter.raw ==  b"$" == textb
+    assert texter.qb64 == '6BABAAAk'
+    assert texter.qb2 ==b'\xe8\x10\x01\x00\x00$'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    texter = Texter(text=textb)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAB'
+    assert texter.raw ==  b"$" == textb
+    assert texter.qb64 == '6BABAAAk'
+    assert texter.qb2 ==b'\xe8\x10\x01\x00\x00$'
+    assert texter.text == textb
+    assert texter.uext == text
+
+
+    text = "@!"
+    textb = b"@!"
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L1
+    assert texter.both == '5BAB'
+    assert texter.raw == b'@!' == textb
+    assert texter.qb64 == '5BABAEAh'
+    assert texter.qb2 ==b'\xe4\x10\x01\x00@!'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    texter = Texter(text=textb)
+    assert texter.code == MtrDex.Bytes_L1
+    assert texter.both == '5BAB'
+    assert texter.raw == b'@!' == textb
+    assert texter.qb64 == '5BABAEAh'
+    assert texter.qb2 ==b'\xe4\x10\x01\x00@!'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    text = "^*#"
+    textb = b"^*#"
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L0
+    assert texter.both == '4BAB'
+    assert texter.raw == b"^*#" == textb
+    assert texter.qb64 == '4BABXioj'
+    assert texter.qb2 == b'\xe0\x10\x01^*#'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    texter = Texter(text=textb)
+    assert texter.code == MtrDex.Bytes_L0
+    assert texter.both == '4BAB'
+    assert texter.raw == b"^*#" == textb
+    assert texter.qb64 == '4BABXioj'
+    assert texter.qb2 == b'\xe0\x10\x01^*#'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    text = "&~?%"
+    textb = b"&~?%"
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAC'
+    assert texter.raw == b"&~?%" == textb
+    assert texter.qb64 == '6BACAAAmfj8l'
+    assert texter.qb2 == b'\xe8\x10\x02\x00\x00&~?%'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    texter = Texter(text=textb)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAC'
+    assert texter.raw == b"&~?%" == textb
+    assert texter.qb64 == '6BACAAAmfj8l'
+    assert texter.qb2 == b'\xe8\x10\x02\x00\x00&~?%'
+    assert texter.text == textb
+    assert texter.uext == text
+
+
+    text = "\n"  # control character
+    textb = b"\n"
+
+    assert len(text) == len(textb) == 1
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAB'
+    assert texter.raw ==  b"\n" == textb
+    assert texter.qb64 == '6BABAAAK'
+    assert texter.qb2 ==b'\xe8\x10\x01\x00\x00\n'
+    assert texter.text == textb
+    assert texter.uext == text
+
+    texter = Texter(text=textb)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAB'
+    assert texter.raw ==  b"\n" == textb
+    assert texter.qb64 == '6BABAAAK'
+    assert texter.qb2 ==b'\xe8\x10\x01\x00\x00\n'
+    assert texter.text == textb
+    assert texter.uext == text
+
+
+    text = "Did the lazy fox jumped over the big dog? But it's not its dog!\n"
+    textb = b"Did the lazy fox jumped over the big dog? But it's not its dog!\n"
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAW'
+    assert texter.raw == textb
+    assert texter.qb64 == '6BAWAABEaWQgdGhlIGxhenkgZm94IGp1bXBlZCBvdmVyIHRoZSBiaWcgZG9nPyBCdXQgaXQncyBub3QgaXRzIGRvZyEK'
+    assert texter.qb2 ==(b"\xe8\x10\x16\x00\x00Did the lazy fox jumped over the big dog? But it's not "
+                         b'its dog!\n')
+    assert texter.text == textb
+    assert texter.uext == text
+
+    assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
+
+    texter = Texter(text=textb)
+    assert texter.code == MtrDex.Bytes_L2
+    assert texter.both == '6BAW'
+    assert texter.raw == textb
+    assert texter.qb64 == '6BAWAABEaWQgdGhlIGxhenkgZm94IGp1bXBlZCBvdmVyIHRoZSBiaWcgZG9nPyBCdXQgaXQncyBub3QgaXRzIGRvZyEK'
+    assert texter.qb2 ==(b"\xe8\x10\x16\x00\x00Did the lazy fox jumped over the big dog? But it's not "
+                         b'its dog!\n')
+    assert texter.text == textb
+    assert texter.uext == text
+
+    text =  "a" * ((64 ** 2) * 3)  # big variable size
+    textb = text.encode("utf-8")
+
+    assert len(text) // 3 > (64 ** 2 - 1)
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_Big_L0
+    assert texter.both == '7AABABAA'
+    assert texter.raw == textb
+    assert len(texter.qb64) == 16392
+    assert len(texter.qb2) == 12294
+    assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
+    assert texter.text == textb
+    assert texter.uext == text
+
+    text =  "b" * ((64 ** 2 ) * 3 + 1)  # big variable size
+    textb = text.encode("utf-8")
+
+    assert len(text) // 3 > (64 ** 2 - 1)
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_Big_L2
+    assert texter.both == '9AABABAB'
+    assert texter.raw == textb
+    assert len(texter.qb64) == 16396
+    assert len(texter.qb2) == 12297
+    assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
+    assert texter.text == textb
+    assert texter.uext == text
+
+    text =  "c" * ((64 ** 2 ) * 3 + 2)  # big variable size
+    textb = text.encode("utf-8")
+
+    assert len(text) // 3 > (64 ** 2 - 1)
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_Big_L1
+    assert texter.both == '8AABABAB'
+    assert texter.raw == textb
+    assert len(texter.qb64) == 16396
+    assert len(texter.qb2) == 12297
+    assert len(texter.qb64) * 3 / 4 == len(texter.qb2)
+    assert texter.text == textb
+    assert texter.uext == text
+
+    text =  "c" * ((64 ** 4) * 3)  # excessive variable size
+    with pytest.raises(InvalidVarRawSizeError):
+        texter = Texter(text=text)
+
+    """ Done Test """
+
+
+
 def test_bexter():
     """
     Test Bexter variable sized Base64 text subclass of Matter
@@ -6542,7 +6760,7 @@ def test_tholder():
     assert not tholder.satisfy(indices=[2, 3, 4])
     assert not tholder.satisfy(indices=[])
 
-    # test new nested weighted with Mapping dict
+    # test new nested weighted with Mapping dict with one clause
     # 1s3k1s2v1s2v1s2c1s3c1s2c1s2k1v1
     tholder = Tholder(sith='[{"1/3":["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["1", "1"]}]')
     assert tholder.weighted
@@ -6607,7 +6825,16 @@ def test_tholder():
     assert tholder.json == '[{"1/3": ["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["1", "1"]}]'
     assert tholder.num == None
 
-    # test new nested weighted with Mapping dict
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[{"1/3":["1/3", "1/3", "1/4"]}, "1/3", "1/2", {"1/2": ["1", "1"]}])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[{"1/3":["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["2/3", "1/4"]}])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[{"1/5":["1/2", "1/2", "1/2"]}, "1/4", "1/5", {"1/5": ["1", "1"]}])
+
+    # test new nested weighted with Mapping dict with two clauses
 
     tholder = Tholder(sith='[[{"1/3":["1/2", "1/2", "1/2"]}, "1/2", {"1/2": ["1", "1"]}], ["1/2", {"1/2": ["1", "1"]}]]')
     assert tholder.weighted
@@ -6668,12 +6895,19 @@ def test_tholder():
                             '["1/2", ''{"1/2": ["1", "1"]}]]')
     assert tholder.num == None
 
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[[{"1/3":["1/2", "1/2", "1/2"]}, "1/2", {"1/2": ["1", "1"]}], ["1/2", {"1/3": ["1", "1"]}]])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[[{"1/3":["1/3", "1/4", "1/3"]}, "1/2", {"1/2": ["1", "1"]}], ["1/2", {"1/2": ["1/2", "1/2"]}]])
+
 
     """ Done Test """
 
 
 if __name__ == "__main__":
     #test_matter()
+    test_texter()
     #test_counter()
     #test_prodex()
     #test_indexer()
@@ -6682,7 +6916,7 @@ if __name__ == "__main__":
     #test_siger()
     #test_signer()
     #test_nexter()
-    test_tholder()
+    #test_tholder()
     #test_ilks()
     #test_labels()
     #test_prefixer()
