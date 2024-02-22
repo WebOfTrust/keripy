@@ -78,9 +78,9 @@ class Serdery:
 
         smellage = smell(ims, version=version)
 
-        if smellage.proto == Protos.keri.encode("utf-8"):
+        if smellage.protocol == Protos.keri:
             return SerderKERI(raw=ims, strip=True, version=version, smellage=smellage)
-        elif smellage.proto == Protos.acdc.encode("utf-8"):
+        elif smellage.protocol == Protos.acdc:
             return SerderACDC(raw=ims, strip=True, version=version, smellage=smellage)
         else:
             raise ProtocolError(f"Unsupported protocol type = {smellage.proto}.")
@@ -347,9 +347,9 @@ class Serder:
                 Assumes that raw is bytearray when strip is True.
             version (Versionage | None): instance supported protocol version
                 None means do not enforce a supported version
-            smellage (Smellage | None): instance of deconstructed version string
-                elements. If none or empty ignore otherwise assume that raw
-                already had its version string extracted (reaped) into the
+            smellage (Smellage | None): instance of deconstructed and converted
+                version string elements. If none or empty ignore otherwise assume
+                that raw already had its version string extracted (reaped) into the
                 elements of smellage.
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
@@ -757,27 +757,27 @@ class Serder:
 
         """
         if smellage:  # passed in so don't need to smell raw again
-            proto, major, minor, kind, size = smellage  # tuple unpack
+            proto, vrsn, kind, size = smellage  # tuple unpack
         else:  # not passed in so smell raw
-            proto, major, minor, kind, size = smell(raw, version=version)
+            proto, vrsn, kind, size = smell(raw, version=version)
 
 
-        proto = proto.decode("utf-8")
-        if proto not in Protos:
-            raise ProtocolError(f"Invalid protocol type = {proto}.")
+        #proto = proto.decode("utf-8")
+        #if proto not in Protos:
+            #raise ProtocolError(f"Invalid protocol type = {proto}.")
 
-        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
-        if version is not None and vrsn != version:
-            raise VersionError(f"Expected version = {version}, got "
-                               f"{vrsn.major}.{vrsn.minor}.")
+        #vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
+        #if version is not None and vrsn != version:
+            #raise VersionError(f"Expected version = {version}, got "
+                               #f"{vrsn.major}.{vrsn.minor}.")
 
-        kind = kind.decode("utf-8")
-        if kind not in Serials:
-            raise KindError(f"Invalid serialization kind = {kind}.")
+        #kind = kind.decode("utf-8")
+        #if kind not in Serials:
+            #raise KindError(f"Invalid serialization kind = {kind}.")
 
-        size = int(size, 16)
-        if len(raw) < size:
-            raise ShortageError(f"Need more bytes.")
+        #size = int(size, 16)
+        #if len(raw) < size:
+            #raise ShortageError(f"Need more bytes.")
 
         sad = clas.loads(raw=raw, size=size, kind=kind)
 

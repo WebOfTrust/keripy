@@ -5307,12 +5307,12 @@ class Sadder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
-        proto, kind, version, size = self.smell(raw)
+        proto, version, kind, size = smell(raw)
         if version != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
                                "".format(version.major, version.minor, Version))
-        if len(raw) < size:
-            raise ShortageError("Need more bytes.")
+        #if len(raw) < size:
+            #raise ShortageError("Need more bytes.")
 
         ked = loads(raw=raw, size=size, kind=kind)
 
@@ -5362,34 +5362,6 @@ class Sadder:
 
         else:
             raise ValueError("Both said and saider may not be None.")
-
-
-    @staticmethod
-    def smell(raw):
-        """
-        Returns serialization kind, version and size from serialized event raw
-        by investigating leading bytes that contain version string
-
-        Parameters:
-          raw is bytes of serialized event
-
-        """
-        #if len(raw) < Sadder.SmellSize:
-            #raise ShortageError("Need more bytes.")
-
-        #match = Rever.search(raw)  # Rever's regex takes bytes
-        #if not match or match.start() > 12:
-            #raise VersionError("Invalid version string in raw = {}".format(raw))
-
-        proto, major, minor, kind, size = smell(raw)
-        version = Versionage(major=int(major, 16), minor=int(minor, 16))
-        kind = kind.decode("utf-8")
-        proto = proto.decode("utf-8")
-        if kind not in Serials:
-            raise DeserializeError("Invalid serialization kind = {}".format(kind))
-        size = int(size, 16)
-
-        return proto, kind, version, size
 
 
     @property
