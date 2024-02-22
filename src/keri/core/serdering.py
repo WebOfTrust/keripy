@@ -18,7 +18,8 @@ from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_1_1,
-                      VERRAWSIZE, VERFMT, VERFULLSIZE)
+                      VERRAWSIZE, VERFMT, VERFULLSIZE,
+                      SMELLSIZE, Smellage, smell)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
@@ -40,17 +41,6 @@ Example:
                       alls={'v': '','d':''})
 """
 Fieldage = namedtuple("Fieldage", "saids alls")  #values are dicts
-
-
-"""
-Reapage
-    proto (str): protocol type value of Protos examples 'KERI', 'ACDC'
-    major (str): single char hex string of major version number
-    minor (str): single char hex string of minor version number
-    kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
-
-"""
-Reapage = namedtuple("Reapage", "proto major minor kind size")
 
 
 class Serdery:
@@ -86,28 +76,14 @@ class Serdery:
         """
         version = version if version is not None else self.version
 
-        if len(ims) < Serder.SmellSize:
-            raise ShortageError(f"Need more raw bytes for Serdery to reap.")
+        smellage = smell(ims, version=version)
 
-        match = Rever.search(ims)  # Rever regex takes bytes/bytearray not str
-        if not match or match.start() > Serder.MaxVSOffset:
-            raise VersionError(f"Invalid version string for Serder raw = "
-                               f"{ims[: Serder.SmellSize]}.")
-
-        reaped = Reapage(*match.group("proto", "major", "minor", "kind", "size"))
-
-        vrsn = Versionage(major=int(reaped.major, 16), minor=int(reaped.minor, 16))
-        if version:  # test here for compatible cod version with message vrsn
-            if (vrsn.major > version.major or
-                (vrsn.major == version.major and vrsn.minor > version.minor)):
-                    pass  # raise error here?
-
-        if reaped.proto == Protos.keri.encode("utf-8"):
-            return SerderKERI(raw=ims, strip=True, version=version, reaped=reaped)
-        elif reaped.proto == Protos.acdc.encode("utf-8"):
-            return SerderACDC(raw=ims, strip=True, version=version, reaped=reaped)
+        if smellage.proto == Protos.keri.encode("utf-8"):
+            return SerderKERI(raw=ims, strip=True, version=version, smellage=smellage)
+        elif smellage.proto == Protos.acdc.encode("utf-8"):
+            return SerderACDC(raw=ims, strip=True, version=version, smellage=smellage)
         else:
-            raise ProtocolError(f"Unsupported protocol type = {reaped.proto}.")
+            raise ProtocolError(f"Unsupported protocol type = {smellage.proto}.")
 
 
 
@@ -138,8 +114,6 @@ class Serder:
     generation and verification in addition to the required fields.
 
     Class Attributes:
-        MaxVSOffset (int): Maximum Version String Offset in bytes/chars
-        InhaleSize (int): Minimum raw buffer size needed to inhale
         Labels (dict): Protocol specific dict of field labels keyed by ilk
             (packet type string value). None is default key when no ilk needed.
             Each entry is a
@@ -185,10 +159,6 @@ class Serder:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
     """
-
-    MaxVSOffset = 12
-    SmellSize = MaxVSOffset + VERFULLSIZE  # min buffer size to inhale
-
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
 
     # should be same set of codes as in coring.DigestCodex coring.DigDex so
@@ -357,7 +327,7 @@ class Serder:
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
-                 reaped=None, verify=True, makify=False,
+                 smellage=None, verify=True, makify=False,
                  proto=None, vrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
@@ -377,10 +347,10 @@ class Serder:
                 Assumes that raw is bytearray when strip is True.
             version (Versionage | None): instance supported protocol version
                 None means do not enforce a supported version
-            reaped (Reapage | None): instance of deconstructed version string
+            smellage (Smellage | None): instance of deconstructed version string
                 elements. If none or empty ignore otherwise assume that raw
                 already had its version string extracted (reaped) into the
-                elements of reaped.
+                elements of smellage.
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
                 Ignore when raw not provided or when raw and saidify is True
@@ -410,7 +380,7 @@ class Serder:
             # self._inhale works because it only references class attributes
             sad, proto, vrsn, kind, size = self._inhale(raw=raw,
                                                         version=version,
-                                                        reaped=reaped)
+                                                        smellage=smellage)
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
             self._sad = sad
             self._proto = proto
@@ -757,7 +727,7 @@ class Serder:
 
 
     @classmethod
-    def _inhale(clas, raw, version=Version, reaped=None):
+    def _inhale(clas, raw, version=Version, smellage=None):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -776,32 +746,21 @@ class Serder:
         Parameters:
             raw (bytes): serialized sad message
             version (Versionage): instance supported protocol version
-            reaped (Reapage | None): instance of deconstructed version string
+            smellage (Smellage | None): instance of deconstructed version string
                 elements. If none or empty ignore otherwise assume that raw
                 already had its version string extracted (reaped) into the
-                elements of reaped.
+                elements of smellage.
 
         Note:
             loads and jumps of json use str whereas cbor and msgpack use bytes
             Assumes only supports Version
 
         """
-        if reaped:
-            proto, major, minor, kind, size = reaped  # tuple unpack
-        else:
-            if len(raw) < clas.SmellSize:
-                raise ShortageError(f"Need more raw bytes for Serder to inhale.")
+        if smellage:  # passed in so don't need to smell raw again
+            proto, major, minor, kind, size = smellage  # tuple unpack
+        else:  # not passed in so smell raw
+            proto, major, minor, kind, size = smell(raw, version=version)
 
-            match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
-            if not match or match.start() > clas.MaxVSOffset:
-                raise VersionError(f"Invalid version string in raw = "
-                                   f"{raw[:clas.SmellSize]}.")
-
-            proto, major, minor, kind, size = match.group("proto",
-                                                          "major",
-                                                          "minor",
-                                                          "kind",
-                                                          "size")
 
         proto = proto.decode("utf-8")
         if proto not in Protos:
@@ -822,7 +781,7 @@ class Serder:
 
         sad = clas.loads(raw=raw, size=size, kind=kind)
 
-        if "v" not in sad:
+        if "v" not in sad:  # Regex does not check for version string label itself
             raise FieldError(f"Missing version string field in {sad}.")
 
         return sad, proto, vrsn, kind, size

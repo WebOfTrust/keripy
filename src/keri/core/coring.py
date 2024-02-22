@@ -36,7 +36,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE,
-                      versify, deversify, Rever)
+                      versify, deversify, Rever, smell)
 from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       RPY_LABELS)
@@ -5363,6 +5363,7 @@ class Sadder:
         else:
             raise ValueError("Both said and saider may not be None.")
 
+
     @staticmethod
     def smell(raw):
         """
@@ -5373,14 +5374,14 @@ class Sadder:
           raw is bytes of serialized event
 
         """
-        if len(raw) < Sadder.SmellSize:
-            raise ShortageError("Need more bytes.")
+        #if len(raw) < Sadder.SmellSize:
+            #raise ShortageError("Need more bytes.")
 
-        match = Rever.search(raw)  # Rever's regex takes bytes
-        if not match or match.start() > 12:
-            raise VersionError("Invalid version string in raw = {}".format(raw))
+        #match = Rever.search(raw)  # Rever's regex takes bytes
+        #if not match or match.start() > 12:
+            #raise VersionError("Invalid version string in raw = {}".format(raw))
 
-        proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
+        proto, major, minor, kind, size = smell(raw)
         version = Versionage(major=int(major, 16), minor=int(minor, 16))
         kind = kind.decode("utf-8")
         proto = proto.decode("utf-8")
