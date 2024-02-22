@@ -92,6 +92,117 @@ def deversify(vs, version=None):
 
     raise ValueError("Invalid version string = {}".format(vs))
 
+
+
+MAXVSOFFSET = 12
+SMELLSIZE = MAXVSOFFSET + VERFULLSIZE  # min buffer size to inhale
+
+#"""
+#Smellage  (results of smelling a version string such as in a Serder)
+    #proto (str): protocol type value of Protos examples 'KERI', 'ACDC'
+    #major (str): single char hex string of major version number
+    #minor (str): single char hex string of minor version number
+    #kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
+    #size (str): hex string of size of raw serialization
+
+#"""
+#Smellage = namedtuple("Smellage", "proto major minor kind size")
+
+"""
+Smellage  (results of smelling a version string such as in a Serder)
+    protocol (str): protocol type value of Protos examples 'KERI', 'ACDC'
+    version (Versionage): named tuple (major, minor) ints of major minor version
+    kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
+    size (str): int size of raw serialization
+
+"""
+Smellage = namedtuple("Smellage", "protocol version kind size")
+
+def smell(raw, *, version=None):
+    """Extract and return instance of Smellage from version string inside
+    raw serialization.
+
+    Returns:
+        smellage (Smellage): named Tuple of (protocol, version, kind, size)
+
+    Parameters:
+        raw (bytearray) of serialized incoming message stream. Assumes start
+            of stream is JSON, CBOR, or MGPK field map with first field
+            is labeled 'v' and value is version string.
+        version (Versionage | None): instance supported protocol version
+            None means do not enforce a supported version
+    """
+    if len(raw) < SMELLSIZE:
+        raise ShortageError(f"Need more raw bytes to smell full version string.")
+
+    match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
+    if not match or match.start() > MAXVSOFFSET:
+        raise VersionError(f"Invalid version string from smelled raw = "
+                           f"{raw[: SMELLSIZE]}.")
+
+    proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
+
+    # use length of version string matched to determine if version 1.x or 2.x
+    # so can convert major, minor, and size correctly hex vs B64 numbers
+
+    # Global version compatibility check. Serder instances also peform version check
+    major = int(major, 16)
+    minor = int(minor, 16)
+    vrsn = Versionage(major=major, minor=minor)
+    if version is not None:  # test here for compatible code version with message vrsn
+        if (vrsn.major > version.major or
+            (vrsn.major == version.major and vrsn.minor > version.minor)):
+                pass  # raise error here?
+
+
+    protocol = proto.decode("utf-8")
+    if protocol not in Protos:
+        raise ProtocolError(f"Invalid protocol type = {protocol}.")
+
+    kind = kind.decode("utf-8")
+    if kind not in Serials:
+        raise KindError(f"Invalid serialization kind = {kind}.")
+
+    size = int(size, 16)
+    if len(raw) < size:
+        raise ShortageError(f"Need more bytes.")
+
+    return Smellage(protocol=protocol, version=vrsn, kind=kind, size=size)
+
+
+def smelly(raw, *, version=None):
+    """Extract and return instance of Smellage from version string inside
+    raw serialization.
+
+    Returns:
+        smellage (Smellage): named Tuple of (protocol, version, kind, size)
+
+    Parameters:
+        raw (bytearray) of serialized incoming message stream. Assumes start
+            of stream is JSON, CBOR, or MGPK field map with first field
+            is labeled 'v' and value is version string.
+        version (Versionage | None): instance supported protocol version
+            None means do not enforce a supported version
+    """
+    if len(raw) < SMELLSIZE:
+        raise ShortageError(f"Need more raw bytes to smell full version string.")
+
+    match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
+    if not match or match.start() > MAXVSOFFSET:
+        raise VersionError(f"Invalid version string from smelled raw = "
+                           f"{raw[: SMELLSIZE]}.")
+
+    smellage = Smellage(*match.group("proto", "major", "minor", "kind", "size"))
+
+    # Global version compatibility check. Serder instances also peform version check
+    vrsn = Versionage(major=int(smellage.major, 16), minor=int(smellage.minor, 16))
+    if version:  # test here for compatible code version with message vrsn
+        if (vrsn.major > version.major or
+            (vrsn.major == version.major and vrsn.minor > version.minor)):
+                pass  # raise error here?
+
+    return smellage
+
 """
 ilk is short for packet or message type for a given protocol
     icp = incept, inception
@@ -166,6 +277,8 @@ TSN_LABELS = ["v", "i", "s", "d", "ii", "a", "et", "bt", "b", "c", "br", "ba"]
 CRED_TSN_LABELS = ["v", "i", "s", "d", "ri", "a", "ra"]
 
 
+
+# Exception Subclasses
 class KeriError(Exception):
     """
     Base Class for keri exceptions

@@ -31,10 +31,10 @@ from keri.core.coring import (Ilkage, Ilks, Labels, Saids, Protos, Protocolage,
 from keri.core.coring import Serialage, Serials, Tiers, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
-                              CtrDex, Counter, sniff, ProDex)
+                              CtrDex, Counter, ProDex)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
-from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
+from keri.core.coring import versify, deversify, Rever, VERFULLSIZE
 from keri.core.coring import generateSigners, generatePrivates
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
                               B64_CHARS, Reb64, nabSextets)
