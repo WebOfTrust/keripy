@@ -15,56 +15,9 @@ from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar,
 from . import serdering
 from .. import help
 from .. import kering
+from ..kering import ColdDex, Colds, sniff
 
 logger = help.ogler.getLogger()
-
-
-@dataclass(frozen=True)
-class ColdCodex:
-    """
-    ColdCodex is codex of cold stream start tritets of first byte
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    First three bits:
-        0o0 = 000 free
-        0o1 = 001 cntcode B64
-        0o2 = 010 opcode B64
-        0o3 = 011 json
-        0o4 = 100 mgpk
-        0o5 = 101 cbor
-        0o6 = 110 mgpk
-        007 = 111 cntcode or opcode B2
-
-    status is one of ('evt', 'txt', 'bny' )
-    'evt' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
-    'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
-    'bny' if tritet in (ColdDex.CtOpB2,)
-
-    otherwise raise ColdStartError
-
-    x = bytearray([0x2d, 0x5f])
-    x == bytearray(b'-_')
-    x[0] >> 5 == 0o1
-    True
-    """
-    Free: int = 0o0  # not taken
-    CtB64: int = 0o1  # CountCode Base64
-    OpB64: int = 0o2  # OpCode Base64
-    JSON: int = 0o3  # JSON Map Event Start
-    MGPK1: int = 0o4  # MGPK Fixed Map Event Start
-    CBOR: int = 0o5  # CBOR Map Event Start
-    MGPK2: int = 0o6  # MGPK Big 16 or 32 Map Event Start
-    CtOpB2: int = 0o7  # CountCode or OpCode Base2
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-ColdDex = ColdCodex()  # Make instance
-
-Coldage = namedtuple("Coldage", 'msg txt bny')  # stream cold start status
-Colds = Coldage(msg='msg', txt='txt', bny='bny')
 
 
 class Parser:
@@ -126,45 +79,7 @@ class Parser:
         self.vry = vry
         self.local = True if local else False
 
-    @staticmethod
-    def sniff(ims):
-        """
-        Returns status string of cold start of stream ims bytearray by looking
-        at first triplet of first byte to determin if message or counter code
-        and if counter code whether Base64 or Base2 representation
 
-        First three bits:
-        0o0 = 000 free
-        0o1 = 001 cntcode B64
-        0o2 = 010 opcode B64
-        0o3 = 011 json
-        0o4 = 100 mgpk
-        0o5 = 101 cbor
-        0o6 = 110 mgpk
-        007 = 111 cntcode or opcode B2
-
-        counter B64 in (0o1, 0o2) return 'txt'
-        counter B2 in (0o7)  return 'bny'
-        event in (0o3, 0o4, 0o5, 0o6)  return 'evt'
-        unexpected in (0o0)  raise ColdStartError
-        Colds = Coldage(msg='msg', txt='txt', bny='bny')
-
-        'msg' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
-        'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
-        'bny' if tritet in (ColdDex.CtOpB2,)
-        """
-        if not ims:
-            raise kering.ShortageError("Need more bytes.")
-
-        tritet = ims[0] >> 5
-        if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2):
-            return Colds.msg
-        if tritet in (ColdDex.CtB64, ColdDex.OpB64):
-            return Colds.txt
-        if tritet in (ColdDex.CtOpB2,):
-            return Colds.bny
-
-        raise kering.ColdStartError("Unexpected tritet={} at stream start.".format(tritet))
 
     @staticmethod
     def extract(ims, klas, cold=Colds.txt):
@@ -770,7 +685,7 @@ class Parser:
         while not ims:
             yield
 
-        cold = self.sniff(ims)  # check for spurious counters at front of stream
+        cold = sniff(ims)  # check for spurious counters at front of stream
         if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
             # replace with pipelining here once CESR message format supported.
             raise kering.ColdStartError("Expecting message counter tritet={}"
@@ -811,7 +726,7 @@ class Parser:
             # extract attachments must start with counter so know if txt or bny.
             while not ims:
                 yield
-            cold = self.sniff(ims)  # expect counter at front of attachments
+            cold = sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
                 if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
@@ -1036,7 +951,7 @@ class Parser:
                         # group may switch stream state txt or bny
                         if not ims:  # end of frame
                             break
-                        cold = self.sniff(ims)
+                        cold = sniff(ims)
                         if cold == Colds.msg:  # new message so attachments done
                             break  # finished attachments since new message
                     else:  # process until next message
@@ -1044,7 +959,7 @@ class Parser:
                         # group may switch stream state txt or bny
                         while not ims:
                             yield  # no frame so must wait for next message
-                        cold = self.sniff(ims)  # ctr or msg
+                        cold = sniff(ims)  # ctr or msg
                         if cold == Colds.msg:  # new message
                             break  # finished attachments since new message
 
