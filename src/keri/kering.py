@@ -5,7 +5,7 @@ Generic Constants and Classes
 import sys
 import re
 from collections import namedtuple
-
+from dataclasses import dataclass, astuple
 
 FALSEY = (False, 0, None, "?0", "no", "false", "False", "off")
 TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
@@ -93,20 +93,8 @@ def deversify(vs, version=None):
     raise ValueError("Invalid version string = {}".format(vs))
 
 
-
 MAXVSOFFSET = 12
 SMELLSIZE = MAXVSOFFSET + VERFULLSIZE  # min buffer size to inhale
-
-#"""
-#Smellage  (results of smelling a version string such as in a Serder)
-    #proto (str): protocol type value of Protos examples 'KERI', 'ACDC'
-    #major (str): single char hex string of major version number
-    #minor (str): single char hex string of minor version number
-    #kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
-    #size (str): hex string of size of raw serialization
-
-#"""
-#Smellage = namedtuple("Smellage", "proto major minor kind size")
 
 """
 Smellage  (results of smelling a version string such as in a Serder)
@@ -170,38 +158,93 @@ def smell(raw, *, version=None):
     return Smellage(protocol=protocol, version=vrsn, kind=kind, size=size)
 
 
-def smelly(raw, *, version=None):
-    """Extract and return instance of Smellage from version string inside
-    raw serialization.
-
-    Returns:
-        smellage (Smellage): named Tuple of (protocol, version, kind, size)
-
-    Parameters:
-        raw (bytearray) of serialized incoming message stream. Assumes start
-            of stream is JSON, CBOR, or MGPK field map with first field
-            is labeled 'v' and value is version string.
-        version (Versionage | None): instance supported protocol version
-            None means do not enforce a supported version
+@dataclass(frozen=True)
+class ColdCodex:
     """
-    if len(raw) < SMELLSIZE:
-        raise ShortageError(f"Need more raw bytes to smell full version string.")
+    ColdCodex is codex of cold stream start tritets of first byte
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
-    if not match or match.start() > MAXVSOFFSET:
-        raise VersionError(f"Invalid version string from smelled raw = "
-                           f"{raw[: SMELLSIZE]}.")
+    First three bits:
+        0o0 = 000 free
+        0o1 = 001 cntcode B64
+        0o2 = 010 opcode B64
+        0o3 = 011 json
+        0o4 = 100 mgpk
+        0o5 = 101 cbor
+        0o6 = 110 mgpk
+        007 = 111 cntcode or opcode B2
 
-    smellage = Smellage(*match.group("proto", "major", "minor", "kind", "size"))
+    status is one of ('evt', 'txt', 'bny' )
+    'evt' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
+    'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
+    'bny' if tritet in (ColdDex.CtOpB2,)
 
-    # Global version compatibility check. Serder instances also peform version check
-    vrsn = Versionage(major=int(smellage.major, 16), minor=int(smellage.minor, 16))
-    if version:  # test here for compatible code version with message vrsn
-        if (vrsn.major > version.major or
-            (vrsn.major == version.major and vrsn.minor > version.minor)):
-                pass  # raise error here?
+    otherwise raise ColdStartError
 
-    return smellage
+    x = bytearray([0x2d, 0x5f])
+    x == bytearray(b'-_')
+    x[0] >> 5 == 0o1
+    True
+    """
+    Free: int = 0o0  # not taken
+    CtB64: int = 0o1  # CountCode Base64
+    OpB64: int = 0o2  # OpCode Base64
+    JSON: int = 0o3  # JSON Map Event Start
+    MGPK1: int = 0o4  # MGPK Fixed Map Event Start
+    CBOR: int = 0o5  # CBOR Map Event Start
+    MGPK2: int = 0o6  # MGPK Big 16 or 32 Map Event Start
+    CtOpB2: int = 0o7  # CountCode or OpCode Base2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+ColdDex = ColdCodex()  # Make instance
+
+Coldage = namedtuple("Coldage", 'msg txt bny')  # stream cold start status
+Colds = Coldage(msg='msg', txt='txt', bny='bny')
+
+
+def sniff(ims):
+    """
+    Returns status string of cold start of stream ims bytearray by looking
+    at first triplet of first byte to determin if message or counter code
+    and if counter code whether Base64 or Base2 representation
+
+    First three bits:
+    0o0 = 000 free
+    0o1 = 001 cntcode B64
+    0o2 = 010 opcode B64
+    0o3 = 011 json
+    0o4 = 100 mgpk
+    0o5 = 101 cbor
+    0o6 = 110 mgpk
+    007 = 111 cntcode or opcode B2
+
+    counter B64 in (0o1, 0o2) return 'txt'
+    counter B2 in (0o7)  return 'bny'
+    event in (0o3, 0o4, 0o5, 0o6)  return 'evt'
+    unexpected in (0o0)  raise ColdStartError
+    Colds = Coldage(msg='msg', txt='txt', bny='bny')
+
+    'msg' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
+    'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
+    'bny' if tritet in (ColdDex.CtOpB2,)
+    """
+    if not ims:
+        raise ShortageError("Need more bytes.")
+
+    tritet = ims[0] >> 5
+    if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2):
+        return Colds.msg
+    if tritet in (ColdDex.CtB64, ColdDex.OpB64):
+        return Colds.txt
+    if tritet in (ColdDex.CtOpB2,):
+        return Colds.bny
+
+    raise ColdStartError("Unexpected tritet={} at stream start.".format(tritet))
+
 
 """
 ilk is short for packet or message type for a given protocol
