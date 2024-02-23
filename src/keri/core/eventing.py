@@ -34,8 +34,6 @@ from ..kering import (MissingEntryError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError)
 from ..kering import Version, Versionage
-from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
-                       RPY_LABELS)
 
 from ..help import helping
 
@@ -2071,10 +2069,10 @@ class Kever:
                 raise ValidationError("Unexpected non-establishment event = {}."
                                       "".format(serder.ked))
 
-            for k in IXN_LABELS:
-                if k not in ked:
-                    raise ValidationError("Missing element = {} from {} event."
-                                          " evt = {}.".format(k, Ilks.ixn, ked))
+            #for k in IXN_LABELS:
+                #if k not in ked:
+                    #raise ValidationError("Missing element = {} from {} event."
+                                          #" evt = {}.".format(k, Ilks.ixn, ked))
 
             if not sner.num == (self.sner.num + 1):  # sn not in order
                 raise ValidationError("Invalid sn = {} expecting = {} for evt "

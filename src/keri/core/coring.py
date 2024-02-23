@@ -38,30 +38,18 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
 from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE,
                       versify, deversify, Rever, smell)
 from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
-from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
-                      RPY_LABELS)
-from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
-                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
+
 
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable, nonStringSequence
 
 
-Labels = Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS, dip=DIP_LABELS,
-                drt=DRT_LABELS, rct=[], qry=[], rpy=RPY_LABELS,
-                exn=[], pro=[], bar=[],
-                vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS, rev=REV_LABELS,
-                bis=BIS_LABELS, brv=BRV_LABELS)
 
 
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
 
-
-Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
-                     mgpk=versify(kind=Serials.mgpk, size=0),
-                     cbor=versify(kind=Serials.cbor, size=0))
 
 # SAID field labels
 Saidage = namedtuple("Saidage", "dollar at id_ i d")
@@ -304,7 +292,8 @@ def loads(raw, size=None, kind=Serials.json):
 
     return ked
 
-
+# deprecated don't use anymore need to fix demo tests that use
+# use with context instead
 def generateSigners(salt=None, count=8, transferable=True):
     """
     Returns list of Signers for Ed25519
@@ -2840,51 +2829,6 @@ class Signer(Matter):
                          ondex=ondex,
                          verfer=verfer,)
 
-    # def derive_index_code(code, index, only=False, ondex=None, **kwa):
-    #     # should add Indexer class method to get ms main index size for given code
-    #     if only:  # only main index ondex not used
-    #         ondex = None
-    #         if index <= 63: # (64 ** ms - 1) where ms is main index size,  use small current only
-    #             if code == MtrDex.Ed25519_Seed:
-    #                 indxSigCode = IdrDex.Ed25519_Crt_Sig
-    #             elif code == MtrDex.ECDSA_256r1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256r1_Crt_Sig
-    #             elif code == MtrDex.ECDSA_256k1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256k1_Crt_Sig
-    #             else:
-    #                 raise ValueError("Unsupported signer code = {}.".format(code))
-    #         else:    # use big current only
-    #             if code == MtrDex.Ed25519_Seed:
-    #                 indxSigCode = IdrDex.Ed25519_Big_Crt_Sig
-    #             elif code == MtrDex.ECDSA_256r1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256r1_Big_Crt_Sig
-    #             elif code == MtrDex.ECDSA_256k1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256k1_Big_Crt_Sig
-    #             else:
-    #                 raise ValueError("Unsupported signer code = {}.".format(code))
-    #     else:  # both
-    #         if ondex == None:
-    #             ondex = index  # enable default to be same
-    #         if ondex == index and index <= 63:  # both same and small so use small both same
-    #             if code == MtrDex.Ed25519_Seed:
-    #                 indxSigCode = IdrDex.Ed25519_Sig
-    #             elif code == MtrDex.ECDSA_256r1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256r1_Sig
-    #             elif code == MtrDex.ECDSA_256k1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256k1_Sig
-    #             else:
-    #                 raise ValueError("Unsupported signer code = {}.".format(code))
-    #         else:  # otherwise big or both not same so use big both
-    #             if code == MtrDex.Ed25519_Seed:
-    #                 indxSigCode = IdrDex.Ed25519_Big_Sig
-    #             elif code == MtrDex.ECDSA_256r1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256r1_Big_Sig
-    #             elif code == MtrDex.ECDSA_256k1_Seed:
-    #                 indxSigCode = IdrDex.ECDSA_256k1_Big_Sig
-    #             else:
-    #                 raise ValueError("Unsupported signer code = {}.".format(code))
-
-    #     return (indxSigCode, ondex)
 
 class Salter(Matter):
     """
@@ -3618,11 +3562,12 @@ class Prefixer(Matter):
         if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
             raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
 
-        labels = getattr(Labels, ilk)
-        for k in labels:
-            if k not in ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, ked))
+        # Serder now does this check
+        #labels = getattr(Labels, ilk)
+        #for k in labels:
+            #if k not in ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, ked))
 
         return (self._derive(ked=ked))
 
@@ -3639,11 +3584,12 @@ class Prefixer(Matter):
         if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
             raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
 
-        labels = getattr(Labels, ilk)
-        for k in labels:
-            if k not in ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, ked))
+        # Serder now does this check
+        #labels = getattr(Labels, ilk)
+        #for k in labels:
+            #if k not in ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, ked))
 
         return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
 

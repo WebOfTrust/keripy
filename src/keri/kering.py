@@ -292,34 +292,6 @@ Roles = Rolage(controller='controller', witness='witness', registrar='registrar'
                watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox", agent="agent")
 
 
-ICP_LABELS = ["v", "t", "d", "i", "s", "kt", "k", "nt", "n",
-              "bt", "b", "c", "a"]
-DIP_LABELS = ["v", "d", "i", "s", "t", "kt", "k", "nt", "n",
-              "bt", "b", "c", "a", "di"]
-ROT_LABELS = ["v", "d", "i", "s", "t", "p", "kt", "k", "nt", "n",
-              "bt", "br", "ba", "a"]
-DRT_LABELS = ["v", "d", "i", "s", "t", "p", "kt", "k", "nt", "n",
-              "bt", "br", "ba", "a"]
-IXN_LABELS = ["v", "d", "i", "s", "t", "p", "a"]
-
-#KSN_LABELS = ["v", "d", "i", "s", "p", "d", "f", "dt", "et", "kt", "k", "nt", "n",
-              #"bt", "b", "c", "ee", "di"]
-
-RPY_LABELS = ["v", "d", "t", "d", "dt", "r", "a"]
-
-VCP_LABELS = ["v", "d", "i", "s", "t", "bt", "b", "c"]
-VRT_LABELS = ["v", "d", "i", "s", "t", "p", "bt", "b", "ba", "br"]
-
-ISS_LABELS = ["v", "i", "s", "t", "ri", "dt"]
-BIS_LABELS = ["v", "i", "s", "t", "ra", "dt"]
-
-REV_LABELS = ["v", "i", "s", "t", "p", "dt"]
-BRV_LABELS = ["v", "i", "s", "t", "ra", "p", "dt"]
-
-TSN_LABELS = ["v", "i", "s", "d", "ii", "a", "et", "bt", "b", "c", "br", "ba"]
-CRED_TSN_LABELS = ["v", "i", "s", "d", "ri", "a", "ra"]
-
-
 
 # Exception Subclasses
 class KeriError(Exception):
