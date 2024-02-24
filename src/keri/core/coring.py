@@ -1914,14 +1914,7 @@ class Streamer:
         """
         return self._stream
 
-    @property
-    def bexter(self):
-        """expanded stream as Bexter instance
-        Returns:
-           bexter (Bexter): Bexter primitive as stream suitable wrapping
 
-        """
-        return self._stream
 
 
 
