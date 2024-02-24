@@ -3,7 +3,7 @@
 tests.test_kering module
 
 """
-
+import re
 import json
 
 import cbor2 as cbor
@@ -12,9 +12,11 @@ import msgpack
 from keri import kering
 from keri.kering import Protocolage, Protos
 from keri.kering import Serialage,  Serials
+from keri.kering import Ilkage, Ilks
 from keri.kering import (Versionage, Version, VERFULLSIZE,
                          versify, deversify, Rever)
-from keri.kering import Ilkage, Ilks
+from keri.kering import (VER1FULLSPAN, VER1TERM, VEREX1,
+                         VER2FULLSPAN, VER2TERM, VEREX2, VEREX)
 
 
 
@@ -33,6 +35,128 @@ def test_protos():
     assert 'KERI' in Protos
     assert 'CREL' in Protos
     assert 'ACDC' in Protos
+
+    """End Test"""
+
+def test_version_regex():
+    """
+    Test version string regexing
+    """
+
+    #VER1FULLSPAN = 17  # number of characters in full version string
+    #VER1TERM = b'_'
+    #VEREX1 = b'(?P<proto1>[A-Z]{4})(?P<major1>[0-9a-f])(?P<minor1>[0-9a-f])(?P<kind1>[A-Z]{4})(?P<size1>[0-9a-f]{6})_'
+
+    #VER2FULLSPAN = 16  # number of characters in full version string
+    #VER2TERM = b'.'
+    #VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4}).'
+
+    #VEREX = VEREX2 + b'|' + VEREX1
+
+    pattern = re.compile(VEREX2)  # compile is faster
+
+    vs = b'KERICAAJSONAAAB.'
+
+    match = pattern.match(vs)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vs
+    span = len(full)
+    assert span == VER2FULLSPAN
+    assert VER2TERM ==  chr(full[-1]).encode("utf-8")
+    assert ord(VER2TERM) == full[-1]
+
+    groups = match.group("proto2",
+                        "major2",
+                        "minor2",
+                        "kind2",
+                        "size2")
+
+    assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
+
+
+    pattern = re.compile(VEREX)  # compile is faster
+
+    vs = b'KERICAAJSONAAAB.'
+
+    match = pattern.match(vs)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vs
+    span = len(full)
+    assert span == VER2FULLSPAN
+    assert VER2TERM ==  chr(full[-1]).encode("utf-8")
+    assert ord(VER2TERM) == full[-1]
+
+    groups = match.group("proto2",
+                        "major2",
+                        "minor2",
+                        "kind2",
+                        "size2")
+
+    assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
+
+    vs = b'KERI10JSON000002_'
+
+    match = pattern.match(vs)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vs
+    span = len(full)
+    assert span == VER1FULLSPAN
+    assert VER1TERM ==  chr(full[-1]).encode("utf-8")
+    assert ord(VER1TERM) == full[-1]
+
+    groups = match.group("proto1",
+                        "major1",
+                        "minor1",
+                        "kind1",
+                        "size1")
+
+    assert groups == (b'KERI', b'1', b'0', b'JSON', b'000002')
+
+    raw = b'{"vs":"KERICAAJSONAAAB.","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"}'
+
+    match = pattern.search(raw)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    span = len(full)
+    assert span == VER2FULLSPAN
+    assert VER2TERM ==  chr(full[-1]).encode("utf-8")
+    assert ord(VER2TERM) == full[-1]
+
+    groups = match.group("proto2",
+                        "major2",
+                        "minor2",
+                        "kind2",
+                        "size2")
+
+    assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
+
+
+
+    raw = b'{"vs":"KERI10JSON000002_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"}'
+
+    match = pattern.search(raw)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    span = len(full)
+    assert span == VER1FULLSPAN
+    assert VER1TERM ==  chr(full[-1]).encode("utf-8")
+    assert ord(VER1TERM) == full[-1]
+
+    groups = match.group("proto1",
+                        "major1",
+                        "minor1",
+                        "kind1",
+                        "size1")
+
+    assert groups == (b'KERI', b'1', b'0', b'JSON', b'000002')
 
     """End Test"""
 
@@ -285,6 +409,7 @@ def test_ilks():
 
 if __name__ == "__main__":
     test_protos()
+    test_version_regex()
     test_serials()
     test_versify()
     test_ilks()

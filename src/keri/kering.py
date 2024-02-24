@@ -31,8 +31,22 @@ VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full version string
 
-VEREX = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
-Rever = re.compile(VEREX)  # compile is faster
+VEREX0 = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
+
+Rever = re.compile(VEREX0)  # compile is faster
+
+
+VER1FULLSPAN = 17  # number of characters in full version string
+VER1TERM = b'_'
+VEREX1 = b'(?P<proto1>[A-Z]{4})(?P<major1>[0-9a-f])(?P<minor1>[0-9a-f])(?P<kind1>[A-Z]{4})(?P<size1>[0-9a-f]{6})_'
+
+VER2FULLSPAN = 16  # number of characters in full version string
+VER2TERM = b'.'
+VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4}).'
+
+VEREX = VEREX2 + b'|' + VEREX1
+
+pattern = re.compile(VEREX)  # compile is faster
 
 
 def versify(proto=Protos.keri, version=Version, kind=Serials.json, size=0):
@@ -69,6 +83,9 @@ def deversify(vs, version=None):
         serialization kind
         serialization size
     """
+    # length of matched string is sum of lengths of returned group elements
+    # span
+
     match = Rever.match(vs.encode("utf-8"))  # match takes bytes
     if match:
         proto, major, minor, kind, size = match.group("proto",
@@ -76,6 +93,7 @@ def deversify(vs, version=None):
                                                       "minor",
                                                       "kind",
                                                       "size")
+
         proto = proto.decode("utf-8")
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         kind = kind.decode("utf-8")
