@@ -761,24 +761,6 @@ class Serder:
         else:  # not passed in so smell raw
             proto, vrsn, kind, size = smell(raw, version=version)
 
-
-        #proto = proto.decode("utf-8")
-        #if proto not in Protos:
-            #raise ProtocolError(f"Invalid protocol type = {proto}.")
-
-        #vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
-        #if version is not None and vrsn != version:
-            #raise VersionError(f"Expected version = {version}, got "
-                               #f"{vrsn.major}.{vrsn.minor}.")
-
-        #kind = kind.decode("utf-8")
-        #if kind not in Serials:
-            #raise KindError(f"Invalid serialization kind = {kind}.")
-
-        #size = int(size, 16)
-        #if len(raw) < size:
-            #raise ShortageError(f"Need more bytes.")
-
         sad = clas.loads(raw=raw, size=size, kind=kind)
 
         if "v" not in sad:  # Regex does not check for version string label itself

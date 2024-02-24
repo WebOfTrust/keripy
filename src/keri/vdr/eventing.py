@@ -26,8 +26,6 @@ from ..db.dbing import dgKey, snKey
 from ..help import helping
 from ..kering import (MissingWitnessSignatureError, Version,
                       MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
-from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
-                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 from ..vdr import viring
 
 logger = help.ogler.getLogger()
@@ -718,11 +716,11 @@ class Tever:
             raise ValidationError("Expected ilk {} got {} for evt: {}".format(Ilks.vcp, ilk, serder))
 
         self.ilk = ilk
-        labels = VCP_LABELS
-        for k in labels:
-            if k not in serder.ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, serder.ked))
+        #labels = VCP_LABELS
+        #for k in labels:
+            #if k not in serder.ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, serder.ked))
 
         self.incept(serder=serder)
         self.config(serder=serder, noBackers=noBackers, estOnly=estOnly)
@@ -963,8 +961,8 @@ class Tever:
         ilk = ked["t"]
         dig = ked["p"]
 
-        # XXXX should there be validation of labels here
-        labels = VRT_LABELS  # assumes ilk == Ilks.vrt
+
+        #labels = VRT_LABELS  # assumes ilk == Ilks.vrt
         #for k in labels:
             #if k not in ked:
                 #raise ValidationError("Missing element = {} from {} event for "
@@ -1053,12 +1051,11 @@ class Tever:
         ilk = ked["t"]
         vci = vcpre
 
-        labels = ISS_LABELS if ilk == Ilks.iss else BIS_LABELS
-
-        for k in labels:
-            if k not in ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, ked))
+        #labels = ISS_LABELS if ilk == Ilks.iss else BIS_LABELS
+        #for k in labels:
+            #if k not in ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, ked))
 
         if ilk == Ilks.iss:  # simple issue
             if self.noBackers is False:
@@ -1120,12 +1117,11 @@ class Tever:
         vcpre = ked["i"]
         ilk = ked["t"]
 
-        labels = REV_LABELS if ilk == Ilks.rev else BRV_LABELS
-
-        for k in labels:
-            if k not in ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, ked))
+        #labels = REV_LABELS if ilk == Ilks.rev else BRV_LABELS
+        #for k in labels:
+            #if k not in ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, ked))
 
         # have to compare with VC issuance serder
         vci = vcpre

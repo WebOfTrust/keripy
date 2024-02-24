@@ -80,7 +80,6 @@ class Parser:
         self.local = True if local else False
 
 
-
     @staticmethod
     def extract(ims, klas, cold=Colds.txt):
         """
@@ -94,6 +93,7 @@ class Parser:
             return klas(qb2=ims, strip=True)
         else:
             raise kering.ColdStartError("Invalid stream state cold={}.".format(cold))
+
 
     @staticmethod
     def _extractor(ims, klas, cold=Colds.txt, abort=False):
@@ -121,6 +121,7 @@ class Parser:
                 if abort:  # pipelined pre-collects full frame before extracting
                     raise  # bad pipelined frame so abort by raising error
                 yield
+
 
     def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt, pipelined=False):
         """
@@ -173,6 +174,7 @@ class Parser:
             raise kering.UnexpectedCountCodeError("Wrong "
                                                   "count code={}.Expected code={}."
                                                   "".format(ctr.code, CtrDex.ControllerIdxSigs))
+
 
     def _transIdxSigGroups(self, ctr, ims, cold=Colds.txt, pipelined=False):
         """
@@ -227,6 +229,7 @@ class Parser:
                 isigers.append(isiger)
 
             yield prefixer, seqner, saider, isigers
+
 
     def _nonTransReceiptCouples(self, ctr, ims, cold=Colds.txt, pipelined=False):
         """
