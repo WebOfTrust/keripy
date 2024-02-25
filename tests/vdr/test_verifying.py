@@ -109,6 +109,12 @@ def test_verifier(seeder):
         saider = regery.reger.schms.get("EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC")
         assert saider[0].qb64 == creder.said
 
+        # also try it via the cloneCreds function
+        creds = regery.reger.cloneCreds(saids=saider, db=hab.db)
+
+        for idx, cred in enumerate(creds):
+            assert dcre.sad == cred["sad"]
+
     """End Test"""
 
 
