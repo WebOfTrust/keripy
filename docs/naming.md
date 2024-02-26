@@ -213,7 +213,7 @@ Verticle white space matters. Code should have paragraphs. Balanced brackets,
 indendation and blank lines demarcate paragraphs
 
 For example
-
+```c
 void display(void)
 {
   int start;
@@ -223,13 +223,16 @@ void display(void)
   if(start == -1)
     return;
 }
+```
 
 is more readable than
 
+```c
 void display(void){
 int start; start = -1;
 if(start == -1) return;
 }
+```
 
 Line length matters. Which means variable length matters.
 Simple logic statments that wrap are no longer simple.
