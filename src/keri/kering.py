@@ -90,7 +90,7 @@ def rematch(match, *, version=None):
             raise ProtocolError(f"Invalid protocol type = {protocol}.")
         vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
         if vrsn.major < 2:  # version2 vs but major < 2
-            VersionError(f"Incompatible {vrsn=} with version string.")
+            raise VersionError(f"Incompatible {vrsn=} with version string.")
         if version is not None:  # compatible version with vrsn
             if (vrsn.major > version.major or
                 (vrsn.major == version.major and vrsn.minor > version.minor)):
@@ -113,7 +113,7 @@ def rematch(match, *, version=None):
             raise ProtocolError(f"Invalid protocol type = {protocol}.")
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if vrsn.major > 1:  # version1 vs but major > 1
-            VersionError(f"Incompatible {vrsn=} with version string.")
+            raise VersionError(f"Incompatible {vrsn=} with version string.")
         if version is not None and vrsn != version:
                         raise VersionError(f"Expected {version=}, got "
                                            f"{vrsn=}.")
@@ -146,7 +146,7 @@ def versify(protocol=Protos.keri, version=Version, kind=Serials.json, size=0):
         return VERFMT.format(protocol, version.major, version.minor, kind, size, VERRAWSIZE)
     else:  # version 2+ version string
         return (f"{protocol}{intToB64(version.major)}"
-                f"{intToB64(version.minor, l=2)}{kind}{intToB64(size, l=4)})")
+                f"{intToB64(version.minor, l=2)}{kind}{intToB64(size, l=4)}.")
 
 
 
