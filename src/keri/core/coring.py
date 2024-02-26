@@ -26,6 +26,8 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 from ..kering import MaxON
+from ..kering import (intToB64, intToB64b, b64ToInt, B64_CHARS,
+                      codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
 
 from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
@@ -111,120 +113,6 @@ def sizeify(ked, kind=None, version=Version):
     return raw, proto, kind, ked, vrsn
 
 
-# Base64 utilities
-BASE64_PAD = b'='
-
-# Mappings between Base64 Encode Index and Decode Characters
-#  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
-#  B64IdxByChr is dict where each key is a B64 char and each value is the B64 index
-# Map Base64 index to char
-B64ChrByIdx = dict((index, char) for index, char in enumerate([chr(x) for x in range(65, 91)]))
-B64ChrByIdx.update([(index + 26, char) for index, char in enumerate([chr(x) for x in range(97, 123)])])
-B64ChrByIdx.update([(index + 52, char) for index, char in enumerate([chr(x) for x in range(48, 58)])])
-B64ChrByIdx[62] = '-'
-B64ChrByIdx[63] = '_'
-# Map char to Base64 index
-B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
-B64_CHARS = tuple(B64ChrByIdx.values())  # tuple of characters in Base64
-
-B64REX = b'^[A-Za-z0-9\-\_]*\Z'
-Reb64 = re.compile(B64REX)  # compile is faster
-
-
-def intToB64(i, l=1):
-    """
-    Returns conversion of int i to Base64 str
-    l is min number of b64 digits left padded with Base64 0 == "A" char
-    """
-    d = deque()  # deque of characters base64
-
-    while l:
-        d.appendleft(B64ChrByIdx[i % 64])
-        i = i // 64
-        if not i:
-            break
-        # d.appendleft(B64ChrByIdx[i % 64])
-        # i = i // 64
-    for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
-        d.appendleft("A")
-    return ("".join(d))
-
-
-def intToB64b(i, l=1):
-    """
-    Returns conversion of int i to Base64 bytes
-    l is min number of b64 digits left padded with Base64 0 == "A" char
-    """
-    return (intToB64(i=i, l=l).encode("utf-8"))
-
-
-def b64ToInt(s):
-    """
-    Returns conversion of Base64 str s or bytes to int
-    """
-    if not s:
-        raise ValueError("Empty string, conversion undefined.")
-    if hasattr(s, 'decode'):
-        s = s.decode("utf-8")
-    i = 0
-    for e, c in enumerate(reversed(s)):
-        i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
-    return i
-
-
-def codeB64ToB2(s):
-    """
-    Returns conversion (decode) of Base64 chars to Base2 bytes.
-    Where the number of total bytes returned is equal to the minimun number of
-    octets sufficient to hold the total converted concatenated sextets from s,
-    with one sextet per each Base64 decoded char of s. Assumes no pad chars in s.
-    Sextets are left aligned with pad bits in last (rightmost) byte.
-    This is useful for decoding as bytes, code characters from the front of
-    a Base64 encoded string of characters.
-    """
-    i = b64ToInt(s)
-    i <<= 2 * (len(s) % 4)  # add 2 bits right zero padding for each sextet
-    n = sceil(len(s) * 3 / 4)  # compute min number of ocetets to hold all sextets
-    return (i.to_bytes(n, 'big'))
-
-
-def codeB2ToB64(b, l):
-    """
-    Returns conversion (encode) of l Base2 sextets from front of b to Base64 chars.
-    One char for each of l sextets from front (left) of b.
-    This is useful for encoding as code characters, sextets from the front of
-    a Base2 bytes (byte string). Must provide l because of ambiguity between l=3
-    and l=4. Both require 3 bytes in b.
-    """
-    if hasattr(b, 'encode'):
-        b = b.encode("utf-8")  # convert to bytes
-    n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
-    if n > len(b):
-        raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
-    i = int.from_bytes(b[:n], 'big')  # convert only first n bytes to int
-    # check if prepad bits are zero
-    tbs = 2 * (l % 4)  # trailing bit size in bits
-    i >>= tbs  # right shift out trailing bits to make right aligned
-    return (intToB64(i, l))  # return as B64
-
-
-def nabSextets(b, l):
-    """
-    Return first l sextets from front (left) of b as bytes (byte string).
-    Length of bytes returned is minimum sufficient to hold all l sextets.
-    Last byte returned is right bit padded with zeros
-    b is bytes or str
-    """
-    if hasattr(b, 'encode'):
-        b = b.encode("utf-8")  # convert to bytes
-    n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
-    if n > len(b):
-        raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
-    i = int.from_bytes(b[:n], 'big')
-    p = 2 * (l % 4)
-    i >>= p  # strip of last bits
-    i <<= p  # pad with empty bits
-    return (i.to_bytes(n, 'big'))
 
 
 def dumps(ked, kind=Serials.json):
