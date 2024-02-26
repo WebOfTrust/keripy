@@ -36,7 +36,7 @@ from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE
 from keri.core.coring import generateSigners, generatePrivates
-from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
+from keri.help.helping import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
                               B64_CHARS, Reb64, nabSextets)
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
@@ -44,14 +44,6 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          InvalidValueError, DeserializeError, ValidationError,
                          InvalidVarRawSizeError)
 from keri.kering import Version, Versionage, VersionError
-#from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
-                      #RPY_LABELS)
-#from keri.kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
-                      #BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
-
-
-
-
 
 
 def test_protocol_genus_codex():

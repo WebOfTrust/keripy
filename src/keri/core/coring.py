@@ -26,8 +26,6 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 from ..kering import MaxON
-from ..kering import (intToB64, intToB64b, b64ToInt, B64_CHARS,
-                      codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
 
 from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
@@ -44,6 +42,8 @@ from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
 
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable, nonStringSequence
+from ..help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
+                            codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
 
 
 

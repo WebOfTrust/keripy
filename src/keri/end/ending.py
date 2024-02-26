@@ -220,7 +220,7 @@ def designature(value):
 
         if "indexed" not in items:
             raise ValueError("Missing indexed field in Signature header signage.")
-        indexed = items["indexed"] not in kering.FALSEY  # make bool
+        indexed = items["indexed"] not in helping.FALSEY  # make bool
         del items["indexed"]
 
         if "signer" in items:
