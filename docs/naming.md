@@ -117,6 +117,12 @@ When using CapCamelCase or mixedCase the acronyms should be treated as words
    when namespacing. First ref is module not package variable such as:
    core.behaving, core.clustering
 
+### Public Module Level Class Instances Singletons
+   UpperCamelCase
+
+### Private Module Level Class Instances Singletons
+   _LeadingUnderscoreUpperCamelCase
+
 ### Public Module Level Methods and Attributes:
    lowerCamelCase.
    Methods use verbs.
@@ -124,15 +130,15 @@ When using CapCamelCase or mixedCase the acronyms should be treated as words
    Examples: getName setStyle, display, first, last, itemCount, entities, books, data
 
 ### Private Module Level Methods and Attributes (not exported by from import `*`):
-   leadingUnderscoreLowerCamelCase.
+   _leadingUnderscoreLowerCamelCase.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Examples: `_dirtyBit`
 
 ### Constants Module Level:
-   UPPER_CASE_WITH_UNDERSCORES
+   UPPER_CASE_WITH_UNDERSCORES or ALLUPPERCASE
    Not meant to be changed should be numbers or strings.
-   Examples: MY_CONSTANT
+   Examples: MY_CONSTANT, SOMECONSTANT
 
 ### Dynamic Global Variables (not constants) Module Level:
    Capitalized_With_Underscores.
@@ -158,7 +164,7 @@ When using CapCamelCase or mixedCase the acronyms should be treated as words
    Example: TotalInstances, Storage, Store, Redact
 
 ### Private Class Attributes, Class Methods, Static Methods:
-   LeadingUnderscoreUpperCamelCase,
+   _LeadingUnderscoreUpperCamelCase,
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Example: `_TotalInstances _Storage __Entries`
@@ -177,7 +183,7 @@ When using CapCamelCase or mixedCase the acronyms should be treated as words
 
 
 ### Private Instance and Attributes (not exported with from import `*``):
-   leadingUnderscoreLowerCamelCase.
+   _leadingUnderscoreLowerCamelCase.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Examples: `_getScore _setInternal _lastName _count _entries`
@@ -271,41 +277,73 @@ that are sufficiently evocative.
 ## Suffix Mapping
 
 Adjective describing module. What does the module enable one to do.
+
 Verb is the deed or act
+
 Object is actor doer
+
 Place to keep track of or create Objects container or factory
+
  doery actorery doerage actorage
+
  of an Doer is a doery or doage or dodom or dohood
 
 -er -or -eur -ster Agent one who does something brewer (Object Classes)
+
 -ery a place for an actor to act  factory brewery  (Object Factories)
+
 -ing  action of   running, wishing  (Module Names)
+
 -age state of acting  actor to act  brewerage
+
 -dom state of doing acting  kingdom
+
 -hood state of being childhood
+
 -ship quality of or state of rank of midship
+
 -ize to make itemize
+
 -izer Someone who makes one do itemizer
+
 -ive having nature of active rotative inceptive
+
 -acy -isy -ty  quality of  linty piracy clerisy
+
 -ion -tion -sion act or state of action itemization
+
 -y -ly like full of happening  noisy monthly
 
 patron
+
 patroner
+
 patronist
+
 patronery
+
 patronage
+
 patrondom
+
 patronship
+
 patronacy
+
 patronhood
+
 patronize
+
 patronish
+
 patronive
+
 patronlet
+
 patronly
+
 patrony
+
 
 
 
@@ -316,51 +354,97 @@ http://www.prefixsuffix.com/rootchart.php
 
 
 Suffix   Meaning   Examples  Used
+
 able, ible   capable of, worthy  agreeable, comfortable, credible
+
 age          act of or state of  salvage, bondage
+
 acy, isy   quality   hypocrisy, piracy
+
 al, eal, ial   on account of related to, action of   judicial, official arrival, refusal
+
 ance, ence   act or fact of doing state of   violence, dependence allowance, insurance
+
 ant  quality of one who  defiant, expectant, reliant occupant, accountant
+
 er, or, eur  agent, one who  author, baker, winner, dictator, chauffeur, worker
+
 ed   past  jumped, baked
+
 ery  a place to practice of condition of  nunnery, cannery surgery bravery, drudgery
+
 dom  state, condition of   wisdom, kingdom, martyrdom
+
 ent  having the quality of   different, dependent, innocent
+
 en   made of, to make  woolen, wooden, darken
 
-er   degree of comparison  harder, newer, older  5440
-est  highest of comparison   cleanest, hardest, softest  1339
-ful full of  graceful, restful, faithful   212
-hood   state of being  boyhood, knighthood, womanhood  61
-ible, ile, il  capable of being  digestible, responsible, docile, civil  783
-ier, ior   one who   carrier, warrior  1114
-ify  to make   magnify, beautify, falsify  125
-ic   like, made of   metallic, toxic, poetic   3774
-ing  action of   running, wishing  5440
-ion  act or state of   confusion, correction, protection   3362
-ism  fact of being   communism, socialism  1147
-ish  like  childish, sheepish, foolish   566
-ist  a person who does   artist, geologist   1375
-ity, ty  state of  majesty, chastity, humanity   4795
-itis   inflammation of   appendicitis, tonsillitis   124
-ive  having nature of  attractive, active  961
-ize  to make   pasteurize, motorize  637
-less   without   motionless, careless, childless   282
+er   degree of comparison  harder, newer, older
 
-let  small   starlet, eaglet   185
-ly   like, in a manner happening   heavenly, remarkably, suddenly every absolutely, monthly  5440
-ment   state or quality act of doing   accomplishment, excitement placement, movement  680
-meter  device for measuring  thermometer, barometer  166
-ness   state of  blindness, kindness   3322
-ology  study of  geology, zoology, archaeology   374
-ous, ious  full of   joyous, marvelous, furious  1615
+est  highest of comparison   cleanest, hardest, softest
+
+ful full of  graceful, restful, faithful
+
+hood   state of being  boyhood, knighthood, womanhood
+
+ible, ile, il  capable of being  digestible, responsible, docile, civil
+
+ier, ior   one who   carrier, warrior
+
+ify  to make   magnify, beautify, falsify
+
+ic   like, made of   metallic, toxic, poetic
+
+ing  action of   running, wishing
+
+ion  act or state of   confusion, correction, protection
+
+ism  fact of being   communism, socialism
+
+ish  like  childish, sheepish, foolish
+
+ist  a person who does   artist, geologist
+
+ity, ty  state of  majesty, chastity, humanity
+
+itis   inflammation of   appendicitis, tonsillitis
+
+ive  having nature of  attractive, active
+
+ize  to make   pasteurize, motorize
+
+less   without   motionless, careless, childless
+
+
+let  small   starlet, eaglet
+
+ly   like, in a manner happening   heavenly, remarkably, suddenly every absolutely, monthly
+
+ment   state or quality act of doing   accomplishment, excitement placement, movement
+
+meter  device for measuring  thermometer, barometer
+
+ness   state of  blindness, kindness
+
+ology  study of  geology, zoology, archaeology
+
+ous, ious  full of   joyous, marvelous, furious
+
 ship   quality of or state of rank of  friendship, leadership  lordship
+
 scope  instrument for seeing   telescope, microscope
+
 some   like  tiresome, lonesome
+
 tion, sion   action, state of being  condition, attention, fusion
+
 ty   quality or state of   liberty, majesty
+
 ward   toward  southward, forward
+
 y  like, full of, diminutive:  noisy, sooty, kitty
+
 ure noun from verv indicating act or office  seizure prefecture
+
+
 
