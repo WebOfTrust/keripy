@@ -4,13 +4,15 @@ Generic Constants and Classes
 """
 import sys
 import re
-from collections import namedtuple
+from collections import namedtuple, deque
 from dataclasses import dataclass, astuple
 
-FALSEY = (False, 0, None, "?0", "no", "false", "False", "off")
-TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
+from .help.helping import sceil
+from .help.helping import intToB64, intToB64b, b64ToInt
+
 
 MaxON = int("f"*32, 16)  # 256 ** 16 - 1 maximum ordinal number, sequence or first seen etc
+
 
 # Serialization Kinds
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
@@ -25,16 +27,14 @@ Version = Versionage(major=1, minor=0)  # KERI Protocol Version
 Vrsn_1_0 = Versionage(major=1, minor=0)  # KERI Protocol Version Specific
 Vrsn_1_1 = Versionage(major=1, minor=1)  # KERI Protocol Version Specific
 
-VERRAWSIZE = 6  # hex characters in raw serialization size in version string
+
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'
 VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
-VERFULLSIZE = 17  # number of characters in full version string
+VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 
-VEREX0 = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
-
-Rever = re.compile(VEREX0)  # compile is faster
-
+#VEREX0 = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
+#Rever = re.compile(VEREX0)  # compile is faster
 
 VER1FULLSPAN = 17  # number of characters in full version string
 VER1TERM = b'_'
@@ -46,73 +46,15 @@ VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]
 
 VEREX = VEREX2 + b'|' + VEREX1
 
-pattern = re.compile(VEREX)  # compile is faster
+MAXVERFULLSPAN = max(VER1FULLSPAN, VER2FULLSPAN)  # number of characters in full version string
 
-
-def versify(proto=Protos.keri, version=Version, kind=Serials.json, size=0):
-    """
-    Returns version string
-    """
-    if proto not in Protos:
-        raise ValueError("Invalid message identifier = {}".format(proto))
-    #version = version if version else Version
-    if kind not in Serials:
-        raise ValueError("Invalid serialization kind = {}".format(kind))
-
-    return VERFMT.format(proto, version[0], version[1], kind, size, VERRAWSIZE)
-
-
-def deversify(vs, version=None):
-    """
-    Returns:  tuple(proto, kind, version, size) Where:
-        proto (str): value is protocol type identifier one of Protos (Protocolage)
-                   acdc='ACDC', keri='KERI'
-        kind (str): value is serialization kind, one of Serials
-                   json='JSON', mgpk='MGPK', cbor='CBOR'
-        vrsn (tuple):  version tuple of type Versionage
-        size  (int): raw size in bytes
-
-    Parameters:
-      vs (str): version string to extract from
-      version (Versionage | None): supported version. None means do not check
-            for supported version.
-
-    Uses regex match to extract:
-        protocol type
-        protocol version tuple
-        serialization kind
-        serialization size
-    """
-    # length of matched string is sum of lengths of returned group elements
-    # span
-
-    match = Rever.match(vs.encode("utf-8"))  # match takes bytes
-    if match:
-        proto, major, minor, kind, size = match.group("proto",
-                                                      "major",
-                                                      "minor",
-                                                      "kind",
-                                                      "size")
-
-        proto = proto.decode("utf-8")
-        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
-        kind = kind.decode("utf-8")
-
-        if proto not in Protos:
-            raise ValueError("Invalid message identifier = {}".format(proto))
-        if version is not None and vrsn != version:
-            raise ValueError(f"Expected version = {version}, got "
-                               f"{vrsn.major}.{vrsn.minor}.")
-        if kind not in Serials:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
-        size = int(size, 16)
-        return proto, vrsn, kind, size
-
-    raise ValueError("Invalid version string = {}".format(vs))
+Rever = re.compile(VEREX)  # compile is faster
 
 
 MAXVSOFFSET = 12
-SMELLSIZE = MAXVSOFFSET + VERFULLSIZE  # min buffer size to inhale
+SMELLSIZE = MAXVSOFFSET + MAXVERFULLSPAN  # min buffer size to inhale
+
+
 
 """
 Smellage  (results of smelling a version string such as in a Serder)
@@ -123,6 +65,124 @@ Smellage  (results of smelling a version string such as in a Serder)
 
 """
 Smellage = namedtuple("Smellage", "protocol version kind size")
+
+def rematch(match, *, version=None):
+    """
+    Returns:
+        smellage (Smellage): named tuple extracted from version string regex match
+                            (protocol, version, kind, size)
+
+    Parameters:
+        match (re.Match):  instance of Match class
+        version (Versionage | None): supported version. None means do not check
+            for supported version. namedtuple (major, minor)
+
+    """
+    full = match.group()  # full matched version string
+    if len(full) == VER2FULLSPAN and full[-1] == ord(VER2TERM):
+        proto, major, minor, kind, size  = match.group("proto2",
+                                                       "major2",
+                                                       "minor2",
+                                                       "kind2",
+                                                       "size2")
+        protocol = proto.decode("utf-8")
+        if protocol not in Protos:
+            raise ProtocolError(f"Invalid protocol type = {protocol}.")
+        vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
+        if vrsn.major < 2:  # version2 vs but major < 2
+            raise VersionError(f"Incompatible {vrsn=} with version string.")
+        if version is not None:  # compatible version with vrsn
+            if (vrsn.major > version.major or
+                (vrsn.major == version.major and vrsn.minor > version.minor)):
+                    raise VersionError(f"Incompatible {version=}, with "
+                                           f"{vrsn=}.")
+
+        kind = kind.decode("utf-8")
+        if kind not in Serials:
+            raise KindError(f"Invalid serialization kind = {kind}.")
+        size = b64ToInt(size)
+
+    elif len(full) == VER1FULLSPAN and full[-1] == ord(VER1TERM):
+        proto, major, minor, kind, size = match.group("proto1",
+                                                     "major1",
+                                                     "minor1",
+                                                     "kind1",
+                                                     "size1")
+        protocol = proto.decode("utf-8")
+        if protocol not in Protos:
+            raise ProtocolError(f"Invalid protocol type = {protocol}.")
+        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
+        if vrsn.major > 1:  # version1 vs but major > 1
+            raise VersionError(f"Incompatible {vrsn=} with version string.")
+        if version is not None and vrsn != version:
+                        raise VersionError(f"Expected {version=}, got "
+                                           f"{vrsn=}.")
+        kind = kind.decode("utf-8")
+        if kind not in Serials:
+            raise KindError(f"Invalid serialization kind = {kind}.")
+        size = int(size, 16)
+
+    return Smellage(protocol=protocol, version=vrsn, kind=kind, size=size)
+
+
+
+def versify(protocol=Protos.keri, version=Version, kind=Serials.json, size=0):
+    """
+    Returns:
+       vs (str): version string
+
+    Parameters:
+        protocol (str): protocol one of Protos
+        version (Versionage): namedtuple (major, minor) of ints
+        kind (str): one of Serials
+        size (int): length of serialized map that embeds version string field.
+    """
+    if protocol not in Protos:
+        raise ProtocolError("Invalid message identifier = {}".format(protocol))
+    if kind not in Serials:
+        raise KindError("Invalid serialization kind = {}".format(kind))
+
+    if version.major < 2:  # version1 version string
+        return VERFMT.format(protocol, version.major, version.minor, kind, size, VERRAWSIZE)
+    else:  # version 2+ version string
+        return (f"{protocol}{intToB64(version.major)}"
+                f"{intToB64(version.minor, l=2)}{kind}{intToB64(size, l=4)}.")
+
+
+
+def deversify(vs, version=None):
+    """
+    Returns:  tuple(proto, kind, version, size) Where:
+        proto (str): value is protocol type identifier one of Protos (Protocolage)
+                   acdc='ACDC', keri='KERI'
+
+        vrsn (tuple):  version tuple of type Versionage
+        kind (str): value is serialization kind, one of Serials
+                   json='JSON', mgpk='MGPK', cbor='CBOR'
+        size  (int): raw size in bytes
+
+    Parameters:
+      vs (str | bytes): version string to extract from
+      version (Versionage | None): supported version. None means do not check
+            for supported version. namedtuple of ints (major, minor)
+
+    Uses regex match to extract:
+        protocol type
+        protocol version tuple
+        serialization kind
+        serialization size
+    """
+    if hasattr(vs, "encode"):   # match takes bytes
+        vs = vs.encode("utf-8")
+
+    match = Rever.match(vs)
+    if not match:
+        raise VersionError(f"Invalid version string = '{vs}'.")
+
+    return rematch(match, version=version)
+
+
+
 
 def smell(raw, *, version=None):
     """Extract and return instance of Smellage from version string inside
@@ -146,34 +206,9 @@ def smell(raw, *, version=None):
         raise VersionError(f"Invalid version string from smelled raw = "
                            f"{raw[: SMELLSIZE]}.")
 
-    proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
-
-    # use length of version string matched to determine if version 1.x or 2.x
-    # so can convert major, minor, and size correctly hex vs B64 numbers
-
-    # Global version compatibility check. Serder instances also peform version check
-    major = int(major, 16)
-    minor = int(minor, 16)
-    vrsn = Versionage(major=major, minor=minor)
-    if version is not None:  # test here for compatible code version with message vrsn
-        if (vrsn.major > version.major or
-            (vrsn.major == version.major and vrsn.minor > version.minor)):
-                pass  # raise error here?
+    return rematch(match, version=version)
 
 
-    protocol = proto.decode("utf-8")
-    if protocol not in Protos:
-        raise ProtocolError(f"Invalid protocol type = {protocol}.")
-
-    kind = kind.decode("utf-8")
-    if kind not in Serials:
-        raise KindError(f"Invalid serialization kind = {kind}.")
-
-    size = int(size, 16)
-    if len(raw) < size:
-        raise ShortageError(f"Need more bytes.")
-
-    return Smellage(protocol=protocol, version=vrsn, kind=kind, size=size)
 
 
 @dataclass(frozen=True)

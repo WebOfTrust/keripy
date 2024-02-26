@@ -15,6 +15,8 @@ from keri.help import helping
 from keri.help.helping import isign, sceil
 from keri.help.helping import extractValues
 from keri.help.helping import dictify, datify, klasify
+from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
+                               codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
 
 def test_utilities():
     """
@@ -273,5 +275,172 @@ def test_iso8601():
     """ End Test """
 
 
+
+def test_b64_conversions():
+    """
+    Test Base64 conversion utility routines
+    """
+
+    cs = intToB64(0)
+    assert cs == "A"
+    i = b64ToInt(cs)
+    assert i == 0
+
+    cs = intToB64(0, l=0)
+    assert cs == ""
+    with pytest.raises(ValueError):
+        i = b64ToInt(cs)
+
+    cs = intToB64(None, l=0)
+    assert cs == ""
+    with pytest.raises(ValueError):
+        i = b64ToInt(cs)
+
+    cs = intToB64b(0)
+    assert cs == b"A"
+    i = b64ToInt(cs)
+    assert i == 0
+
+    cs = intToB64(27)
+    assert cs == "b"
+    i = b64ToInt(cs)
+    assert i == 27
+
+    cs = intToB64b(27)
+    assert cs == b"b"
+    i = b64ToInt(cs)
+    assert i == 27
+
+    cs = intToB64(27, l=2)
+    assert cs == "Ab"
+    i = b64ToInt(cs)
+    assert i == 27
+
+    cs = intToB64b(27, l=2)
+    assert cs == b"Ab"
+    i = b64ToInt(cs)
+    assert i == 27
+
+    cs = intToB64(80)
+    assert cs == "BQ"
+    i = b64ToInt(cs)
+    assert i == 80
+
+    cs = intToB64b(80)
+    assert cs == b"BQ"
+    i = b64ToInt(cs)
+    assert i == 80
+
+    cs = intToB64(4095)
+    assert cs == '__'
+    i = b64ToInt(cs)
+    assert i == 4095
+
+    cs = intToB64b(4095)
+    assert cs == b'__'
+    i = b64ToInt(cs)
+    assert i == 4095
+
+    cs = intToB64(4096)
+    assert cs == 'BAA'
+    i = b64ToInt(cs)
+    assert i == 4096
+
+    cs = intToB64b(4096)
+    assert cs == b'BAA'
+    i = b64ToInt(cs)
+    assert i == 4096
+
+    cs = intToB64(6011)
+    assert cs == "Bd7"
+    i = b64ToInt(cs)
+    assert i == 6011
+
+    cs = intToB64b(6011)
+    assert cs == b"Bd7"
+    i = b64ToInt(cs)
+    assert i == 6011
+
+    s = "-BAC"
+    b = codeB64ToB2(s[:])
+    assert len(b) == 3
+    assert b == b'\xf8\x10\x02'
+    t = codeB2ToB64(b, 4)
+    assert t == s[:]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o76010002
+    i >>= 2 * (len(s) % 4)
+    assert i == 0o76010002
+    p = nabSextets(b, 4)
+    assert p == b'\xf8\x10\x02'
+
+    b = codeB64ToB2(s[:3])
+    assert len(b) == 3
+    assert b == b'\xf8\x10\x00'
+    t = codeB2ToB64(b, 3)
+    assert t == s[:3]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o76010000
+    i >>= 2 * (len(s[:3]) % 4)
+    assert i == 0o760100
+    p = nabSextets(b, 3)
+    assert p == b'\xf8\x10\x00'
+
+    b = codeB64ToB2(s[:2])
+    assert len(b) == 2
+    assert b == b'\xf8\x10'
+    t = codeB2ToB64(b, 2)
+    assert t == s[:2]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o174020
+    i >>= 2 * (len(s[:2]) % 4)
+    assert i == 0o7601
+    p = nabSextets(b, 2)
+    assert p == b'\xf8\x10'
+
+    b = codeB64ToB2(s[:1])
+    assert len(b) == 1
+    assert b == b'\xf8'
+    t = codeB2ToB64(b, 1)
+    assert t == s[:1]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o370
+    i >>= 2 * (len(s[:1]) % 4)
+    assert i == 0o76
+    p = nabSextets(b, 1)
+    assert p == b'\xf8'
+
+    assert B64_CHARS == ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+                         'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+                         'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+                         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_')
+    assert '@' not in B64_CHARS
+    assert 'A' in B64_CHARS
+
+    text = b"-A-Bg-1-3-cd"
+    match = Reb64.match(text)
+    assert match
+    assert match is not None
+
+    text = b''
+    match = Reb64.match(text)
+    assert match
+    assert match is not None
+
+    text = b'123#$'
+    match = Reb64.match(text)
+    assert not match
+    assert match is None
+
+    """End Test"""
+
+
 if __name__ == "__main__":
+    test_utilities()
+    test_datify()
+    test_dictify()
     test_klasify()
+    test_extractvalues()
+    test_iso8601()
+    test_b64_conversions()
