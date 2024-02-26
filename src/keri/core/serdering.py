@@ -18,7 +18,7 @@ from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_1_1,
-                      VERRAWSIZE, VERFMT, VERFULLSIZE,
+                      VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       SMELLSIZE, Smellage, smell)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
@@ -682,13 +682,13 @@ class Serder:
             raise SerializeError(f"Missing requires version string field 'v'"
                                           f" in sad = {sad}.")
 
-        sad['v'] = self.Dummy * VERFULLSIZE  # ensure size of vs
+        sad['v'] = self.Dummy * MAXVERFULLSPAN  # ensure size of vs
 
         raw = self.dumps(sad, kind)  # get size of fully dummied sad
         size = len(raw)
 
         # generate new version string with correct size
-        vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
+        vs = versify(protocol=proto, version=vrsn, kind=kind, size=size)
         sad["v"] = vs  # update version string in sad
 
         # now have correctly sized version string in sad
@@ -844,7 +844,7 @@ class Serder:
         size = len(raw)
 
         # generate new version string with correct size
-        vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
+        vs = versify(protocol=proto, version=vrsn, kind=kind, size=size)
 
         # find location of old version string inside raw
         match = Rever.search(raw)  # Rever's regex takes bytes

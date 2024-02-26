@@ -35,7 +35,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       EmptyListError,
                       ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
-from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE,
+from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
 from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
 
@@ -103,7 +103,7 @@ def sizeify(ked, kind=None, version=Version):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
+    vs = versify(protocol=proto, version=vrsn, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
@@ -5151,7 +5151,7 @@ class Sadder:
 
     """
     MaxVSOffset = 12
-    SmellSize = MaxVSOffset + VERFULLSIZE  # min buffer size to inhale
+    SmellSize = MaxVSOffset + MAXVERFULLSPAN  # min buffer size to inhale
 
     def __init__(self, raw=b'', ked=None, sad=None, kind=None, saidify=False,
                  code=MtrDex.Blake3_256):

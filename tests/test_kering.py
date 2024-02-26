@@ -15,7 +15,7 @@ from keri import kering
 from keri.kering import Protocolage, Protos
 from keri.kering import Serialage,  Serials
 from keri.kering import Ilkage, Ilks
-from keri.kering import (Versionage, Version, VERFULLSIZE,
+from keri.kering import (Versionage, Version, MAXVERFULLSPAN,
                          versify, deversify, Rever)
 from keri.kering import (VER1FULLSPAN, VER1TERM, VEREX1,
                          VER2FULLSPAN, VER2TERM, VEREX2, VEREX)
@@ -293,7 +293,7 @@ def test_versify():
     """
     vs = versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
-    assert len(vs) == VERFULLSIZE
+    assert len(vs) == MAXVERFULLSPAN
     proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.json
@@ -302,16 +302,16 @@ def test_versify():
 
     vs = versify(kind=Serials.json, size=65)
     assert vs == "KERI10JSON000041_"
-    assert len(vs) == VERFULLSIZE
+    assert len(vs) == MAXVERFULLSPAN
     proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 65
 
-    vs = versify(proto=Protos.acdc, kind=Serials.json, size=86)
+    vs = versify(protocol=Protos.acdc, kind=Serials.json, size=86)
     assert vs == "ACDC10JSON000056_"
-    assert len(vs) == VERFULLSIZE
+    assert len(vs) == MAXVERFULLSPAN
     proto, version, kind, size = deversify(vs)
     assert proto == Protos.acdc
     assert kind == Serials.json
@@ -320,7 +320,7 @@ def test_versify():
 
     vs = versify(kind=Serials.mgpk, size=0)
     assert vs == "KERI10MGPK000000_"
-    assert len(vs) == VERFULLSIZE
+    assert len(vs) == MAXVERFULLSPAN
     proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.mgpk
@@ -329,7 +329,7 @@ def test_versify():
 
     vs = versify(kind=Serials.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
-    assert len(vs) == VERFULLSIZE
+    assert len(vs) == MAXVERFULLSPAN
     proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.mgpk
@@ -338,7 +338,7 @@ def test_versify():
 
     vs = versify(kind=Serials.cbor, size=0)
     assert vs == "KERI10CBOR000000_"
-    assert len(vs) == VERFULLSIZE
+    assert len(vs) == MAXVERFULLSPAN
     proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.cbor
@@ -347,7 +347,7 @@ def test_versify():
 
     vs = versify(kind=Serials.cbor, size=65)
     assert vs == "KERI10CBOR000041_"
-    assert len(vs) == VERFULLSIZE
+    assert len(vs) == MAXVERFULLSPAN
     proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.cbor
