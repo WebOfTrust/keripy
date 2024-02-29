@@ -718,8 +718,7 @@ class Habery:
 
         """
         ns = "" if ns is None else ns
-        if (prefixer := self.db.names.get(keys=(ns, name))) is not None:
-            pre = prefixer.qb64
+        if (pre := self.db.names.get(keys=(ns, name))) is not None:
             if pre in self.habs:
                 return self.habs[pre]
 
@@ -1059,8 +1058,11 @@ class BaseHab:
         self.db.habs.pin(keys=self.pre,
                          val=habord)
         ns = "" if self.ns is None else self.ns
-        self.db.names.put(keys=(ns, self.name),
-                          val=coring.Prefixer(qb64=self.pre))
+        if self.db.names.get(keys=(ns, self.name)) is not None:
+            raise ValueError("AID already exists with that name")
+
+        self.db.names.pin(keys=(ns, self.name),
+                          val=self.pre)
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.

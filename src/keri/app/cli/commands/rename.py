@@ -48,13 +48,13 @@ def rename(tymth, tock=0.0, **opts):
             if hby.habByName(newAlias) is not None:
                 print(f"{newAlias} is already in use")
 
-            if (prefixer := hab.db.names.get(keys=("", name))) is not None:
+            if (pre := hab.db.names.get(keys=("", name))) is not None:
 
-                habord = hab.db.habs.get(keys=prefixer.qb64)
+                habord = hab.db.habs.get(keys=pre)
                 habord.name = name
                 hab.db.habs.pin(keys=habord.hid,
                                 val=habord)
-                hab.db.names.pin(keys=("", name), val=prefixer)
+                hab.db.names.pin(keys=("", name), val=pre)
                 hab.db.names.rem(keys=("", alias))
 
                 print(f"Hab {alias} renamed to {newAlias}")

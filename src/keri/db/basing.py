@@ -956,7 +956,7 @@ class Baser(dbing.LMDBer):
                                  subkey='habs.',
                                  schema=HabitatRecord, )
         # habitat name database mapping (domain,name) as key to Prefixer
-        self.names = subing.CesrSuber(db=self, subkey='names.', klas=coring.Prefixer, sep="^")
+        self.names = subing.Suber(db=self, subkey='names.', sep="^")
 
         # SAD support datetime stamps and signatures indexed and not-indexed
         # all sad  sdts (sad datetime serializations) maps said to date-time
@@ -1236,7 +1236,7 @@ class Baser(dbing.LMDBer):
                     if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
                         ns = "" if val.domain is None else val.domain
-                        copy.names.put(keys=(ns, val.name), val=coring.Prefixer(qb64=val.hid))
+                        copy.names.put(keys=(ns, val.name), val=val.hid)
                         copy.prefixes.add(val.hid)
                         if val.mid:  # a group hab
                             copy.groups.add(val.hid)
