@@ -662,11 +662,11 @@ def test_multisig_rotate(mockHelpingNowUTC):
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, rot=rot)
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'ENfCk9DUUck6Ixe6cYnbCbJfIsisA3H4kHPwm5Z-2Tf8'
+        assert exn.saidb == b'EAE5RLyDb_3W8fUOzDOHWwpMAvHePaz8Jpz1XWL0b0lQ'
         assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAADChiAf'
-                       b'iExAQ2ETkzzf7MOubXV9mL-r6fPsOI4yn348yeE5dXqdI7ddn5-wnPwNVjqqKkDp'
-                       b'xlOEFYRiBQEbwZQC')
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAACzqlzb'
+                       b'yRO_M5Kp6nyN1K5JZ9s9D4UAreliSs4OiyCe_y9KnDeP65tub3DW5hUKlVQWnPv4'
+                       b'TrOBHk2vJNOEJtAF')
 
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids

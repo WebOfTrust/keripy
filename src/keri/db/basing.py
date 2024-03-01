@@ -1486,22 +1486,10 @@ class Baser(dbing.LMDBer):
             list: qb64 identifier prefixes of signing members for provided aid
 
         """
-        members = []
-        if pre not in self.kevers:
-            return members
+        if (habord := self.habs.get(keys=(pre,))) is None:
+            return None
 
-        kever = self.kevers[pre]
-        for verfer in kever.verfers:
-            if (couples := self.pubs.get(keys=(verfer.qb64,))) is None:
-                continue
-
-            for couple in couples:
-                prefixer, seqner = couple
-                if prefixer.qb64 != pre:  # Rule out aid being queried
-                    members.append(prefixer.qb64)
-
-        return members
-
+        return habord.smids
 
     def rotationMembers(self, pre: str):
         """ Find rotation members of a multisig group aid.
@@ -1514,21 +1502,10 @@ class Baser(dbing.LMDBer):
         Returns:
             list: qb64 identifier prefixes of rotation members for provided aid
         """
-        members = []
-        if pre not in self.kevers:
-            return members
+        if (habord := self.habs.get(keys=(pre,))) is None:
+            return None
 
-        kever = self.kevers[pre]
-        for diger in kever.ndigers:
-            if (couples := self.digs.get(keys=(diger.qb64,))) is None:
-                continue
-
-            for couple in couples:
-                prefixer, seqner = couple
-                if prefixer.qb64 != pre:  # Rule out aid being queried
-                    members.append(prefixer.qb64)
-
-        return members
+        return habord.rmids
 
     def fullyWitnessed(self, serder):
         """ Verify the witness threshold on the event

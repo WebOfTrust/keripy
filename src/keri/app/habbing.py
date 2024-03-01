@@ -2512,8 +2512,11 @@ class SignifyHab(BaseHab):
 
 
 class SignifyGroupHab(SignifyHab):
-    def __init__(self, mhab=None, **kwa):
+    def __init__(self, smids, mhab=None, rmids=None, **kwa):
         self.mhab = mhab
+        self.smids = smids  # group signing member aids in this group hab
+        self.rmids = rmids or smids # group rotating member aids in this group hab
+
         super(SignifyGroupHab, self).__init__(**kwa)
 
     def make(self, *, serder, sigers, **kwargs):
@@ -2549,8 +2552,18 @@ class SignifyGroupHab(SignifyHab):
                                          f"pre={self.pre}.")
 
     def rotate(self, *, smids=None, rmids=None, serder=None, sigers=None, **kwargs):
-        # TODO: save smids and rmids here
+
+        if (habord := self.db.habs.get(keys=(self.pre,))) is None:
+            raise kering.ValidationError(f"Missing HabitatRecord for pre={self.pre}")
+
         super(SignifyGroupHab, self).rotate(serder=serder, sigers=sigers, **kwargs)
+
+        self.smids = smids
+        self.rmids = rmids
+        habord.smids = smids
+        habord.rmids = rmids
+
+        self.db.habs.pin(keys=(self.pre,), val=habord)
 
 
 class GroupHab(BaseHab):
@@ -2633,10 +2646,9 @@ class GroupHab(BaseHab):
         """
         self.mhab = mhab  # local participant Hab of this group hab
         self.smids = smids  # group signing member aids in this group hab
-        self.rmids = rmids  # group rotating member aids in this group hab
+        self.rmids = rmids or smids  # group rotating member aids in this group hab
 
         super(GroupHab, self).__init__(**kwa)
-
 
     def make(self, *, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
@@ -2726,10 +2738,12 @@ class GroupHab(BaseHab):
         self.inited = True
 
     def rotate(self, smids=None, rmids=None, serder=None, **kwargs):
-        # TODO: save smids and rmids here
 
         if serder is None:
             return super(GroupHab, self).rotate(**kwargs)
+
+        if (habord := self.db.habs.get(keys=(self.pre,))) is None:
+            raise kering.ValidationError(f"Missing HabitatRecord for pre={self.pre}")
 
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
@@ -2744,6 +2758,12 @@ class GroupHab(BaseHab):
         except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={self.pre}.") from ex
+
+        self.smids = smids
+        self.rmids = rmids
+        habord.smids = smids
+        habord.rmids = rmids
+        self.db.habs.pin(keys=(self.pre,), val=habord)
 
         return msg
 
