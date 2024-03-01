@@ -538,11 +538,11 @@ class Habery:
         self.habs[hab.pre] = hab
         return hab
 
-    def makeSignifyGroupHab(self, name, mhab, ns=None, **kwa):
+    def makeSignifyGroupHab(self, name, mhab, smids, rmids=None,  ns=None, **kwa):
         # create group Hab in this Habery
         hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                              name=name, mhab=mhab, ns=ns, temp=self.temp)
+                              name=name, mhab=mhab, smids=smids, rmids=rmids, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
 
@@ -590,7 +590,7 @@ class Habery:
         # create group Hab in this Habery
         hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                              name=name, mhab=mhab, ns=ns, temp=self.temp)
+                              name=name, mhab=mhab, smids=smids, rmids=rmids, ns=ns, temp=self.temp)
 
         hab.pre = pre
         habord = basing.HabitatRecord(hid=hab.pre,
@@ -2525,7 +2525,8 @@ class SignifyGroupHab(SignifyHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, sid=self.pre, name=self.name, domain=self.ns)
+        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, smids=self.smids, rmids=self.rmids,
+                                      sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
         self.inited = True
