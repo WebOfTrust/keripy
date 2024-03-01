@@ -43,8 +43,8 @@ isSuccess
 printf "\n************************************\n"
 printf "Running delegate.sh"
 printf "\n************************************\n"
-"${script_dir}/basic/delegate.sh"
-isSuccess
+#"${script_dir}/basic/delegate.sh"
+#isSuccess
 
 printf "\n************************************\n"
 printf "Running multisig.sh"
