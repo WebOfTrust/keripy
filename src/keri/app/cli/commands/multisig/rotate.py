@@ -92,7 +92,7 @@ class GroupMultisigRotate(doing.DoDoer):
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         grouping.loadHandlers(exc, mux)
 
-        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
+        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 
