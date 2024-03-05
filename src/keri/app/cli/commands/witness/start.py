@@ -50,8 +50,6 @@ parser.add_argument("--cafilepath", action="store", required=False, default=None
 parser.add_argument("--loglevel", action="store", required=False, default="CRITICAL",
                     help="Set log level to DEBUG | INFO | WARNING | ERROR | CRITICAL. Default is CRITICAL")
 
-print("FUCK ME")
-
 
 def launch(args):
     help.ogler.level = logging.getLevelName(args.loglevel)
