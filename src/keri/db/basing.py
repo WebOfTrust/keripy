@@ -34,7 +34,7 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from . import dbing, koming, subing
+from . import dbing, koming, subing, migrating
 from .. import kering
 
 from ..core import coring, eventing, parsing, serdering
@@ -931,6 +931,8 @@ class Baser(dbing.LMDBer):
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
 
+        self.migs = subing.CesrSuber(db=self, subkey="migs.", klas=coring.Dater)
+
         # event source local (protected) or non-local (remote not protected)
         self.esrs = koming.Komer(db=self,
                                    schema=EventSourceRecord,
@@ -945,6 +947,7 @@ class Baser(dbing.LMDBer):
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
         # Kever state made of KeyStateRecord key states
+        # TODO: clean
         self.states = koming.Komer(db=self,
                                    schema=KeyStateRecord,
                                    subkey='stts.')
@@ -977,6 +980,7 @@ class Baser(dbing.LMDBer):
         # all reply messages. Maps reply said to serialization. Replys are
         # versioned sads ( with version string) so use Serder to deserialize and
         # use  .sdts, .ssgs, and .scgs for datetimes and signatures
+        # TODO: clean
         self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
 
         # all reply escrows indices of partially signed reply messages. Maps
@@ -987,6 +991,7 @@ class Baser(dbing.LMDBer):
 
         # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
         # maps key=cid.role.eid to val=said of end reply
+        # TODO: clean
         self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
 
         # auth AuthN/AuthZ by endpoint provider at eid of location at scheme url
@@ -1005,6 +1010,7 @@ class Baser(dbing.LMDBer):
                                  schema=LocationRecord, )
 
         # index of last retrieved message from witness mailbox
+        # TODO: clean
         self.tops = koming.Komer(db=self,
                                  subkey='witm.',
                                  schema=TopicsRecord, )
@@ -1022,6 +1028,7 @@ class Baser(dbing.LMDBer):
                                              klas=(coring.Seqner, coring.Saider))
 
         # completed group multisig
+        # TODO: clean
         self.cgms = subing.CesrSuber(db=self, subkey='cgms.',
                                      klas=coring.Saider)
 
@@ -1029,50 +1036,58 @@ class Baser(dbing.LMDBer):
         self.epse = subing.SerderSuber(db=self, subkey="epse.")
 
         # exchange messages
+        # TODO: clean
         self.exns = subing.SerderSuber(db=self, subkey="exns.")
 
         # Forward pointer to a provided reply message
+        # TODO: clean
         self.erpy = subing.CesrSuber(db=self, subkey="erpy.", klas=coring.Saider)
 
-        # exchange messages
-        self.sxns = subing.SerderSuber(db=self, subkey="sxns.")
-
         # exchange message signatures
+        # TODO: clean
         self.esigs = subing.CesrIoSetSuber(db=self, subkey='esigs.', klas=coring.Siger)
 
         # exchange message signatures
+        # TODO: clean
         self.ecigs = subing.CatCesrIoSetSuber(db=self, subkey='ecigs.',
                                               klas=(coring.Verfer, coring.Cigar))
 
         # exchange pathed attachments
+        # TODO: clean
         self.epath = subing.IoSetSuber(db=self, subkey=".epath")
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
+        # TODO: clean
         self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Saider)
 
         # successfull signed 12-word challenge response exn messages keys by prefix of signer
+        # TODO: clean
         self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Saider)
 
         # authorzied well known OOBIs
+        # TODO: clean
         self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', schema=WellKnownAuthN)
 
         # KSN support datetime stamps and signatures indexed and not-indexed
         # all ksn  kdts (key state datetime serializations) maps said to date-time
+        # TODO: clean
         self.kdts = subing.CesrSuber(db=self, subkey='kdts.', klas=coring.Dater)
 
         # all key state messages. Maps key state said to serialization. ksns are
         # KeyStateRecords so use ._asdict or ._asjson as appropriate
         # use  .kdts, .ksgs, and .kcgs for datetimes and signatures
+        # TODO: clean
         self.ksns = koming.Komer(db=self,
                                 schema=KeyStateRecord,
                                 subkey='ksns.')
-        #self.ksns = subing.SerderSuber(db=self, subkey='ksns.')
 
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
+        # TODO: clean
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
 
         # config loaded oobis to be processed asynchronously, keyed by oobi URL
+        # TODO: clean
         self.oobis = koming.Komer(db=self,
                                   subkey='oobis.',
                                   schema=OobiRecord,
@@ -1091,52 +1106,62 @@ class Baser(dbing.LMDBer):
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         # Resolved OOBIs (those that have been processed successfully for this database.
+        # TODO: clean
         self.roobi = koming.Komer(db=self,
                                   subkey='roobi.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        # TODO: clean
         self.woobi = koming.Komer(db=self,
                                   subkey='woobi.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        # TODO: clean
         self.moobi = koming.Komer(db=self,
                                   subkey='moobi.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         # Multifactor well known OOBI auth records to process.  Keys by controller URL
+        # TODO: clean
         self.mfa = koming.Komer(db=self,
                                 subkey='mfa.',
                                 schema=OobiRecord,
                                 sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         # Resolved multifactor well known OOBI auth records.  Keys by controller URL
+        # TODO: clean
         self.rmfa = koming.Komer(db=self,
                                  subkey='rmfa.',
                                  schema=OobiRecord,
                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         # JSON schema SADs keys by the SAID
+        # TODO: clean
         self.schema = subing.SchemerSuber(db=self,
                                           subkey='schema.')
 
         # Field values for contact information for remote identifiers.  Keyed by prefix/field
+        # TODO: clean
         self.cfld = subing.Suber(db=self,
                                  subkey="cfld.")
 
         # Global settings for the Habery environment
         self.hbys = subing.Suber(db=self, subkey='hbys.')
         # Signed contact data, keys by prefix
+        # TODO: clean
         self.cons = subing.Suber(db=self,
                                  subkey="cons.")
 
         # Transferable signatures on contact data
+        # TODO: clean
         self.ccigs = subing.CesrSuber(db=self, subkey='ccigs.', klas=coring.Cigar)
         # Chunked image data for contact information for remote identifiers
+        # TODO: clean
         self.imgs = self.env.open_db(key=b'imgs.')
 
         # Delegation escrow dbs #
@@ -1146,26 +1171,17 @@ class Baser(dbing.LMDBer):
         # delegated unanchored escrow
         self.dune = subing.SerderSuber(db=self, subkey='dune.')
 
-        # completed group multisig
+        # completed group delegated AIDs
+        # TODO: clean
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
                                      klas=coring.Saider)
 
-        # siging public keys mapped to the AID and event seq no they appeared in so
-        # can look up member event designating as signing keys
-        # updated by Kever.logEvent.
-        self.pubs = subing.CatCesrIoSetSuber(db=self, subkey="pubs.",
-                                             klas=(coring.Prefixer, coring.Seqner))
-
-        # next key digests mapped to the AID and event seq no they appeared in so
-        # can look up event designating as next signing key digest
-        # updated by Kever.logEvent.
-        self.digs = subing.CatCesrIoSetSuber(db=self, subkey="digs.",
-                                             klas=(coring.Prefixer, coring.Seqner))
-
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
+        # TODO: clean
         self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Saider)
 
         # multisig sig embed payload SAID mapped to group multisig participants AIDs
+        # TODO: clean
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
 
         self.reload()
@@ -1177,6 +1193,10 @@ class Baser(dbing.LMDBer):
         Reload stored prefixes and Kevers from .habs
 
         """
+        # Check migrations to see if this database is up to date.  Error otherwise
+        if not migrating.Migrator(db=self).current():
+            raise kering.DatabaseError("Database migrations must be run.")
+
         removes = []
         for keys, data in self.habs.getItemIter():
             if (ksr := self.states.get(keys=data.hid)) is not None:
@@ -1230,6 +1250,33 @@ class Baser(dbing.LMDBer):
                 for msg in self.cloneAllPreIter():  # clone into copy
                     psr.parseOne(ims=msg)
 
+                # This is the list of non-set based databases that are not created as part of event processing.
+                # for now we are just copying them from self to copy without worrying about being able to
+                # reprocess them.  We need a more secure method in the future
+                unsecured = ["hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns", "erpy",
+                             "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi", "mfa", "rmfa",
+                             "cfld", "cons", "ccigs", "cdel", "migs"]
+
+                for name in unsecured:
+                    srcdb = getattr(self, name)
+                    cpydb = getattr(copy, name)
+                    for keys, val in srcdb.getItemIter():
+                        cpydb.put(keys=keys, val=val)
+
+                # This is the list of set based databases that are not created as part of event processing.
+                # for now we are just copying them from self to copy without worrying about being able to
+                # reprocess them.  We need a more secure method in the future
+                sets = ["esigs", "ecigs", "epath", "chas", "reps", "wkas", "meids", "maids"]
+                for name in sets:
+                    srcdb = getattr(self, name)
+                    cpydb = getattr(copy, name)
+                    for keys, val in srcdb.getItemIter():
+                        cpydb.add(keys=keys, val=val)
+
+                # Insecure raw imgs database copy.
+                for (key, val) in self.getAllItemIter(self.imgs):
+                    copy.imgs.setVal(key=key, val=val)
+
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
                 for keys, val in self.habs.getItemIter():
@@ -1242,15 +1289,15 @@ class Baser(dbing.LMDBer):
                             copy.groups.add(val.hid)
 
                 # clone .ends and .locs databases
-                for keys, val in self.ends.getItemIter():
+                for (cid, role, eid), val in self.ends.getItemIter():
                     exists = False  # only copy if entries in both .ends and .locs
                     for scheme in ("https", "http", "tcp"):  # all supported schemes
-                        lval = self.locs.get(keys=(val.eid, scheme))
-                        if lval and lval.cid == keys[0] and lval.role == keys[1]:
+                        lval = self.locs.get(keys=(eid, scheme))
+                        if lval:
                             exists = True  # loc with matching cid and rol
-                            copy.locs.put(keys=(val.eid, scheme), val=lval)
+                            copy.locs.put(keys=(eid, scheme), val=lval)
                     if exists:  # only copy end if has at least one matching loc
-                        copy.ends.put(keys=keys, vals=[val])
+                        copy.ends.put(keys=(cid, role, eid), val=val)
 
             # remove own db directory replace with clean clone copy
             if os.path.exists(self.path):

@@ -313,7 +313,6 @@ class Habery:
         self.loadHabs()
         self.inited = True
 
-
     def loadHabs(self):
         """Load Habs instance from db
 
