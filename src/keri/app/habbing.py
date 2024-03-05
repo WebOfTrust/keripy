@@ -68,7 +68,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
 
     """
     habery = None
-    salt = salt if not None else coring.Salter(raw=b'0123456789abcdef').qb64
+    salt = salt if salt is not None else coring.Salter().qb64
     try:
         habery = Habery(name=name, base=base, temp=temp, salt=salt, **kwa)
         yield habery
@@ -79,7 +79,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
 
 
 @contextmanager
-def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, cf=None, **kwa):
+def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
     """
     Context manager wrapper for Hab instance.
     Defaults to temporary resources
@@ -297,7 +297,7 @@ class Habery:
                 aeid = signer.verfer.qb64  # lest it remove encryption
 
         if salt is None:  # salt for signing keys not aeid seed
-            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+            salt = coring.Salter().qb64
         else:
             salt = coring.Salter(qb64=salt).qb64
 

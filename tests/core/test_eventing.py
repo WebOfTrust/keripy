@@ -4726,7 +4726,7 @@ def test_reload_kever(mockHelpingNowUTC):
     Test reload Kever from keystate state message
     """
 
-    with habbing.openHby(name="nat", base="test") as natHby:
+    with habbing.openHby(name="nat", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as natHby:
         # setup Nat's habitat using default salt multisig already incepts
         natHab = natHby.makeHab(name="nat", isith='2', icount=3)
         assert natHab.name == 'nat'
@@ -4795,10 +4795,10 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 def test_load_event(mockHelpingNowUTC):
-    with habbing.openHby(name="tor", base="test") as torHby, \
-         habbing.openHby(name="wil", base="test") as wilHby, \
-         habbing.openHby(name="wan", base="test") as wanHby, \
-         habbing.openHby(name="tee", base="test") as teeHby:
+    with habbing.openHby(name="tor", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as torHby, \
+         habbing.openHby(name="wil", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wilHby, \
+         habbing.openHby(name="wan", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wanHby, \
+         habbing.openHby(name="tee", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as teeHby:
 
         wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
         torKvy = Kevery(db=torHby.db, lax=False, local=False)

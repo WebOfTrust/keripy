@@ -28,7 +28,7 @@ def test_pathed_material(mockHelpingNowUTC):
             self.atcs.append(attachments)
 
     with (habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby,
-          habbing.openHby(name="deb", base="test") as debHby):
+          habbing.openHby(name="deb", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as debHby):
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         palHab = hby.makeHab(name="pal")
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3)

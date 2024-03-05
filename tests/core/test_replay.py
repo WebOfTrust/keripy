@@ -25,10 +25,11 @@ def test_replay():
     Compare replay of Deb's events with receipts by both Deb and Cam to confirm identical
     """
     artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-    with (habbing.openHby(name="deb", base="test") as debHby,
-         habbing.openHby(name="cam", base="test") as camHby,
-         habbing.openHby(name="bev", base="test") as bevHby,
+    with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
+         habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
+         habbing.openHby(name="bev", base="test", salt=default_salt) as bevHby,
          habbing.openHby(name="art", base="test", salt=artSalt) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts
@@ -493,11 +494,11 @@ def test_replay_all():
 
     """
     artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-
-    with (habbing.openHby(name="deb", base="test") as debHby,
-         habbing.openHby(name="cam", base="test") as camHby,
-         habbing.openHby(name="bev", base="test") as bevHby,
+    with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
+         habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
+         habbing.openHby(name="bev", base="test", salt=default_salt) as bevHby,
          habbing.openHby(name="art", base="test", salt=artSalt) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts

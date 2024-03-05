@@ -17,7 +17,7 @@ from keri.vdr import verifying, credentialing, eventing
 
 
 def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+    with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         regery = credentialing.Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
@@ -310,8 +310,8 @@ def test_verifier_chained_credential(seeder):
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
-            habbing.openHab(name="han", transferable=True, temp=True) as (hanHby, han), \
-            habbing.openHab(name="vic", transferable=True, temp=True) as (vicHby, vic):
+            habbing.openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han), \
+            habbing.openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef') as (vicHby, vic):
         seeder.seedSchema(db=ronHby.db)
         seeder.seedSchema(db=ianHby.db)
         seeder.seedSchema(db=hanHby.db)

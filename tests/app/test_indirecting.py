@@ -101,7 +101,7 @@ def test_mailbox_multiple_iter():
 
 
 def test_qrymailbox_iter():
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+    with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         icp = hab.makeOwnInception()
         icpSrdr = serdering.SerderKERI(raw=icp)

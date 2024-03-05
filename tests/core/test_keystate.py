@@ -26,7 +26,7 @@ def test_keystate(mockHelpingNowUTC):
             "t": "ksn",
             "p": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
             "d": "EtgNGVxYd6W0LViISr7RSn6ul8Yn92uyj2kiWzt51mHc",
-            "f": "1",
+           "f": "1",
             "dt": "2021-11-04T12:55:14.480038+00:00",
             "et": "ixn",
             "kt": "1",
@@ -57,13 +57,15 @@ def test_keystate(mockHelpingNowUTC):
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
     # Bob is the controller
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
 
     # default for openHby temp = True
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby,
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby,
          habbing.openHby(name="wes", base="test", salt=salt) as wesHby):
 
         # setup Wes's habitat nontrans
@@ -124,8 +126,8 @@ def test_keystate(mockHelpingNowUTC):
     # Bam is verifying the key state for Bob from Wes
     # Wes is Bam's watcher
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby,
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby,
          habbing.openHby(name="wes", base="test",  salt=salt) as wesHby):
 
         # setup Wes's habitat nontrans
@@ -192,8 +194,8 @@ def test_keystate(mockHelpingNowUTC):
     # Bam is verifying the key state for Bob from Wes
     # Wes is no one
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby,
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby,
          habbing.openHby(name="wes", base="test",  salt=salt) as wesHby):
 
         # setup Wes's habitat nontrans
@@ -234,8 +236,8 @@ def test_keystate(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby):
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
         assert bobHab.pre == bobpre
