@@ -544,6 +544,15 @@ def test_ilks():
     """End Test """
 
 
+def test_smell():
+    """
+    Test smell function to parse into Serializations
+    """
+    pass
+
+    """End Test"""
+
+
 if __name__ == "__main__":
     test_protos()
     test_version_regex()
@@ -551,3 +560,4 @@ if __name__ == "__main__":
     test_versify_v1()
     test_versify_v2()
     test_ilks()
+    test_smell()
