@@ -51,7 +51,6 @@ def migrate(tymth, tock=0.0, **opts):
                                   subkey='stts.')
 
             for _, sad in states.getItemIter():
-                print(sad)
                 rsr = viring.RegStateRecord(
                     vn=list(Version),  # version number as list [major, minor]
                     i=sad['i'],  # qb64 registry SAID
