@@ -17,7 +17,7 @@ from .. import kering
 from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
-from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_1_1,
+from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       SMELLSIZE, Smellage, smell)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
@@ -114,7 +114,7 @@ class Serder:
     generation and verification in addition to the required fields.
 
     Class Attributes:
-        Labels (dict): Protocol specific dict of field labels keyed by ilk
+        Fields (dict): Protocol specific dict of field labels keyed by ilk
             (packet type string value). None is default key when no ilk needed.
             Each entry is a
 
@@ -246,7 +246,7 @@ class Serder:
                         alls=dict(v='', t='',d='', i='', s='0', p='', ra={},
                                   dt='')),
                 },
-                Vrsn_1_1:
+                Vrsn_2_0:
                 {
                     Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
@@ -284,9 +284,14 @@ class Serder:
                                     a=[], e={})),
                 },
             },
-            Protos.crel:
+            Protos.acdc:
             {
-                Vrsn_1_1:
+                Vrsn_1_0:
+                {
+                    None: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                                   alls=dict(v='', d='', i='', s='')),
+                },
+                Vrsn_2_0:
                 {
                     Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
@@ -309,21 +314,13 @@ class Serder:
                                   dt='')),
                 },
             },
-            Protos.acdc:
-            {
-                Vrsn_1_0:
-                {
-                    None: Fieldage(saids={Saids.d: DigDex.Blake3_256},
-                                   alls=dict(v='', d='', i='', s='')),
-                }
-            },
         }
 
 
     # default ilk for each protocol at default version is zeroth ilk in dict
     Ilks = dict()
     for key, val in Fields.items():
-        Ilks[key] = list(list(val.values())[0].keys())[0]
+        Ilks[key] = list(list(val.values())[0].keys())
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
@@ -605,7 +602,7 @@ class Serder:
             kind = skind if skind is not None else self.Kind
 
         if ilk is None:
-            ilk = silk if silk is not None else self.Ilks[proto]
+            ilk = silk if silk is not None else self.Ilks[proto][0]
 
 
         if proto not in self.Fields:
@@ -1395,57 +1392,57 @@ class SerderKERI(Serder):
             return self.uuid
 
 
-class SerderCREL(Serder):
-    """SerderCREL is Serder subclass with Labels for CREL packet types (ilks) and
-       properties for exposing field values of CREL messages
-       Container Registry Event Log for issuance, revocation, etc registries of
-       ACDC
+#class SerderCREL(Serder):
+    #"""SerderCREL is Serder subclass with Labels for CREL packet types (ilks) and
+       #properties for exposing field values of CREL messages
+       #Container Registry Event Log for issuance, revocation, etc registries of
+       #ACDC
 
-       See docs for Serder
-    """
-    #override in subclass to enforce specific protocol
-    Protocol = Protos.crel  # required protocol, None means any in Protos is ok
-    Proto = Protos.crel  # default protocol type
-    Vrsn = Vrsn_1_1  # default protocol version for protocol type
-
-
-    def _verify(self, **kwa):
-        """Verifies said(s) in sad against raw
-        Override for protocol and ilk specific verification behavior. Especially
-        for inceptive ilks that have more than one said field like a said derived
-        identifier prefix.
-
-        Raises a ValidationError (or subclass) if any verification fails
-
-        """
-        super(SerderCREL, self)._verify(**kwa)
-
-        try:
-            code = Matter(qb64=self.issuer).code
-        except Exception as ex:
-            raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.issuer}.") from ex
-
-        if code not in PreDex:
-            raise ValidationError(f"Invalid issuer AID code = {code}.")
+       #See docs for Serder
+    #"""
+    ##override in subclass to enforce specific protocol
+    #Protocol = Protos.crel  # required protocol, None means any in Protos is ok
+    #Proto = Protos.crel  # default protocol type
+    #Vrsn = Vrsn_1_1  # default protocol version for protocol type
 
 
-    @property
-    def issuer(self):
-        """
-        Returns:
-           issuer (str): qb64  of .sad["i"] issuer AID property getter
-        """
-        return self._sad.get('i')
+    #def _verify(self, **kwa):
+        #"""Verifies said(s) in sad against raw
+        #Override for protocol and ilk specific verification behavior. Especially
+        #for inceptive ilks that have more than one said field like a said derived
+        #identifier prefix.
+
+        #Raises a ValidationError (or subclass) if any verification fails
+
+        #"""
+        #super(SerderCREL, self)._verify(**kwa)
+
+        #try:
+            #code = Matter(qb64=self.issuer).code
+        #except Exception as ex:
+            #raise ValidationError(f"Invalid issuer AID = "
+                                  #f"{self.issuer}.") from ex
+
+        #if code not in PreDex:
+            #raise ValidationError(f"Invalid issuer AID code = {code}.")
 
 
-    @property
-    def issuerb(self):
-        """
-        Returns:
-        issuerb (bytes): qb64b  of .issuer property getter as bytes
-        """
-        return self.issuer.encode("utf-8") if self.issuer is not None else None
+    #@property
+    #def issuer(self):
+        #"""
+        #Returns:
+           #issuer (str): qb64  of .sad["i"] issuer AID property getter
+        #"""
+        #return self._sad.get('i')
+
+
+    #@property
+    #def issuerb(self):
+        #"""
+        #Returns:
+        #issuerb (bytes): qb64b  of .issuer property getter as bytes
+        #"""
+        #return self.issuer.encode("utf-8") if self.issuer is not None else None
 
 
 class SerderACDC(Serder):

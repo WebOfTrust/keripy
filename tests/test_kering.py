@@ -36,11 +36,9 @@ def test_protos():
     assert isinstance(Protos, Protocolage)
 
     assert Protos.keri == 'KERI'
-    assert Protos.crel == 'CREL'
     assert Protos.acdc == 'ACDC'
 
     assert 'KERI' in Protos
-    assert 'CREL' in Protos
     assert 'ACDC' in Protos
 
     """End Test"""
