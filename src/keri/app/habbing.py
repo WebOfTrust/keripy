@@ -804,12 +804,33 @@ class Habery:
         """Apply configuration from config file managed by .cf. to this Habery
         Process any oobis or endpoints
 
-        conf
+        config file  json or hjon
+
         {
-          dt: "isodatetime",
-          curls: ["tcp://localhost:5620/"],
-          iurls: ["tcp://localhost:5621/?name=eve"],
+          "dt": "2021-01-01T00:00:00.000000+00:00",
+          "nel":
+          {
+            "dt": "2021-01-01T00:00:00.000000+00:00",
+            "curls":
+            [
+              "tcp://localhost:5621/"
+            ]
+          },
+          "iurls":
+          [
+            "tcp://localhost:5620/?role=peer&name=tam"
+          ],
+          "durls":
+          [
+            "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
+            "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi",
+          ],
+          "wurls":
+          [
+            "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
+          ]
         }
+
 
         Config file is meant to be read only at init not changed by app at
         run time. Any dynamic app changes must go in database not config file
@@ -1122,12 +1143,34 @@ class BaseHab:
         Assumes that .pre and signing keys have been setup in order to create
         own endpoint auth when provided in .cf.
 
-        conf
+        config file  json or hjon
+
         {
-          dt: "isodatetime",
-          curls: ["tcp://localhost:5620/"],
-          iurls: ["tcp://localhost:5621/?name=eve"]
+          "dt": "2021-01-01T00:00:00.000000+00:00",
+          "nel":
+          {
+            "dt": "2021-01-01T00:00:00.000000+00:00",
+            "curls":
+            [
+              "tcp://localhost:5621/"
+            ]
+          },
+          "iurls":
+          [
+            "tcp://localhost:5620/?role=peer&name=tam"
+          ],
+          "durls":
+          [
+            "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
+            "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi",
+          ],
+          "wurls":
+          [
+            "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
+          ]
         }
+
+
 
         Config file is meant to be read only at init not changed by app at
         run time. Any dynamic app changes must go in database not config file
