@@ -47,7 +47,7 @@ class Sealer(doing.DoDoer):
         self.proxy = proxy
 
         super(Sealer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
-                                        **kwa)
+                                     **kwa)
 
     def delegation(self, pre, sn=None, proxy=None):
         if pre not in self.hby.habs:
@@ -69,10 +69,10 @@ class Sealer(doing.DoDoer):
         if isinstance(hab, GroupHab):
             phab = hab.mhab
             smids = hab.smids
-        elif hab.kever.sn > 0:
-            phab = hab
         elif proxy is not None:
             phab = proxy
+        elif hab.kever.sn > 0:
+            phab = hab
         elif self.proxy is not None:
             phab = self.proxy
         else:

@@ -402,7 +402,7 @@ class Reger(dbing.LMDBer):
             atc = bytearray(signing.serialize(creder, prefixer, seqner, saider))
             del atc[0:creder.size]
 
-            iss = bytearray(self.cloneTvtAt(pre=prefixer.qb64, sn=seqner.sn))
+            iss = bytearray(self.cloneTvtAt(creder.said))
             iserder = serdering.SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
 

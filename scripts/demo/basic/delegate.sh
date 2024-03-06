@@ -9,7 +9,6 @@ kli incept --name delegate --alias delegate --proxy proxy --file ${KERI_DEMO_SCR
 pid=$!
 PID_LIST+=" $pid"
 
-# In other console run the following:
 sleep 2
 kli delegate confirm --name delegator --alias delegator -Y &
 pid=$!
@@ -18,3 +17,16 @@ PID_LIST+=" $pid"
 wait $PID_LIST
 
 kli status --name delegate --alias delegate
+
+echo "Now rotating delegate..."
+kli rotate --name delegate --alias delegate --proxy proxy &
+pid=$!
+PID_LIST="$pid"
+
+sleep 2
+echo "Checking for delegate rotate..."
+kli delegate confirm --name delegator --alias delegator -Y &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST

@@ -26,6 +26,8 @@ parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signi
                     default=None, type=int, required=False)
 parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
                     dest="endpoint", action='store_true')
+parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
+
 rotating.addRotationArgs(parser)
 
 
@@ -58,7 +60,7 @@ def rotate(args):
                          cuts=opts.witsCut, adds=opts.witsAdd,
                          isith=opts.isith, nsith=opts.nsith,
                          count=opts.ncount, toad=opts.toad,
-                         data=opts.data)
+                         data=opts.data, proxy=args.proxy)
 
     doers = [rotDoer]
 
@@ -113,7 +115,7 @@ class RotateDoer(doing.DoDoer):
     """
 
     def __init__(self, name, base, bran, alias, endpoint=False, isith=None, nsith=None, count=None,
-                 toad=None, wits=None, cuts=None, adds=None, data: list = None):
+                 toad=None, wits=None, cuts=None, adds=None, data: list = None, proxy=None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
 
@@ -126,6 +128,8 @@ class RotateDoer(doing.DoDoer):
             cuts is list of qb64 pre of witnesses to be removed from witness list
             adds is list of qb64 pre of witnesses to be added to witness list
             data is list of dicts of committed data such as seals
+            proxy is optional name of proxy Hab to use to send messages to delegator
+
        """
 
         self.alias = alias
@@ -135,6 +139,7 @@ class RotateDoer(doing.DoDoer):
         self.toad = toad
         self.data = data
         self.endpoint = endpoint
+        self.proxy = proxy
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
@@ -144,7 +149,7 @@ class RotateDoer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.swain = delegating.Sealer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt"])
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers)
@@ -183,7 +188,7 @@ class RotateDoer(doing.DoDoer):
                    data=self.data)
 
         if hab.kever.delpre:
-            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn)
+            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, proxy=self.hby.habByName(self.proxy))
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock
