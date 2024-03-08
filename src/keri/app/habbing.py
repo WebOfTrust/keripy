@@ -339,7 +339,7 @@ class Habery:
             elif habord.sid and habord.mid:
                 hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=habord.sid)
+                                      name=name, pre=pre)
                 groups.append(habord)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
@@ -656,7 +656,7 @@ class Habery:
 
         hab.pre = pre
         habord = basing.HabitatRecord(hid=hab.pre,
-                                      mid=mhab.pre,
+                                      sid=mhab.pre,
                                       smids=smids,
                                       rmids=rmids)
 
@@ -1101,7 +1101,7 @@ class BaseHab:
 
     def save(self, habord):
         if self.ns is None:
-            self.db.habs.put(keys=self.name,
+            self.db.habs.pin(keys=self.name,
                              val=habord)
         else:
             self.db.nmsp.put(keys=(self.ns, self.name),

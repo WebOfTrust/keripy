@@ -10,6 +10,7 @@ import sys
 from hio import help
 from hio.base import doing
 
+from keri.app import signing
 from keri.app.cli.common import existing
 from keri.core import serdering
 from keri.vdr import credentialing
@@ -27,7 +28,7 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
-parser.add_argument("--said", "-s", help="SAID of the credential to export.", required=True)
+parser.add_argument("--said", "-s", help="SAID of the credential to export.", required=False, default=None)
 parser.add_argument("--tels", help="export the transaction event logs for the credential and any chained credentials",
                     action="store_true")
 parser.add_argument("--kels", help="export the key event logs for the issuer's of the credentials", action="store_true")
@@ -93,7 +94,12 @@ class ExportDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        self.outputCred(said=self.said)
+        if self.said is None:
+            for (said,), _ in self.rgy.reger.creds.getItemIter():
+                self.outputCred(said=said)
+
+        else:
+            self.outputCred(said=self.said)
 
     def outputCred(self, said):
         creder, *_ = self.rgy.reger.cloneCred(said=said)
@@ -122,12 +128,13 @@ class ExportDoer(doing.DoDoer):
             for said in saids:
                 self.outputCred(said)
 
+        (prefixer, seqner, saider) = self.rgy.reger.cancs.get(keys=(creder.said,))
         if self.files:
             f = open(f"{creder.said}-acdc.cesr", 'w')
-            f.write(creder.raw.decode("utf-8"))
+            f.write(signing.serialize(creder, prefixer, seqner, saider))
             f.close()
         else:
-            sys.stdout.write(creder.raw.decode("utf-8"))
+            sys.stdout.write(signing.serialize(creder, prefixer, seqner, saider).decode("utf-8"))
             sys.stdout.flush()
 
     def outputTEL(self, regk):
