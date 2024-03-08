@@ -251,10 +251,10 @@ class Serder:
             {
                 Vrsn_1_0:
                 {
-                    Ilks.icp: FieldDom(saids={Saids.d: DigDex.Blake3_256,
-                                              Saids.i: DigDex.Blake3_256,},
-                        alls=dict(v='', t='',d='', i='', s='0', kt='0',
-                            k=[], nt='0', n=[], bt='0', b=[], c=[], a=[])),
+                    Ilks.icp: FieldDom(alls=dict(v='', t='',d='', i='', s='0',
+                            kt='0',k=[], nt='0', n=[], bt='0', b=[], c=[], a=[]),
+                        saids={Saids.d: DigDex.Blake3_256,
+                               Saids.i: DigDex.Blake3_256,}),
                     Ilks.rot: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='',
                             kt='0',k=[], nt='0', n=[], bt='0', br=[],
