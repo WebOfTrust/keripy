@@ -14,7 +14,7 @@ from ..app import agenting
 from ..app.habbing import GroupHab
 from ..core import parsing, coring, scheming, serdering
 from ..core.coring import Seqner, MtrDex
-from ..core.eventing import SealEvent, TraitDex
+from ..core.eventing import TraitDex
 from ..db import dbing
 from ..db.dbing import snKey, dgKey
 from ..vc import proving
@@ -405,7 +405,11 @@ class SignifyRegistry(BaseRegistry):
         self.reger.regs.put(keys=self.name,
                             val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
 
-        self.processEvent(serder=regser)
+        try:
+            self.processEvent(serder=regser)
+        except kering.LikelyDuplicitousError:
+            pass
+
         self.inited = True
 
     def rotate(self, serder):

@@ -108,16 +108,16 @@ kli vc list --name holder --alias holder --poll
 
 SAID=$(kli vc list --name holder --alias holder --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao)
 
-echo "Revoking ${SAID}..."
-TIME=$(date -Iseconds -u)
-kli vc revoke --name multisig1 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
-pid=$!
-PID_LIST=" $pid"
-
-kli vc revoke --name multisig2 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
-pid=$!
-PID_LIST+=" $pid"
-
-
-wait $PID_LIST
-kli vc list --name holder --alias holder --poll
+#echo "Revoking ${SAID}..."
+#TIME=$(date -Iseconds -u)
+#kli vc revoke --name multisig1 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
+#pid=$!
+#PID_LIST=" $pid"
+#
+#kli vc revoke --name multisig2 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
+#pid=$!
+#PID_LIST+=" $pid"
+#
+#
+#wait $PID_LIST
+#kli vc list --name holder --alias holder --poll
