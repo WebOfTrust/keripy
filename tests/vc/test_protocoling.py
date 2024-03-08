@@ -21,7 +21,9 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
     assert wanSalt == '0AB3YW5uLXRoZS13aXRuZXNz'
 
-    with (habbing.openHby(name="red", base="test") as redHby,
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+    with (habbing.openHby(name="red", base="test", salt=default_salt) as redHby,
           habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby):
         seeder.seedSchema(redHby.db)
         seeder.seedSchema(sidHby.db)

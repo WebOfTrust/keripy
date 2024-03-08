@@ -25,7 +25,7 @@ from tests.app import openMultiSig
 def test_oobi_share(mockHelpingNowUTC):
     oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
            "/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil"
-    with habbing.openHab(name="test", temp=True) as (hby, hab):
+    with habbing.openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         exc = exchanging.Exchanger(hby=hby, handlers=[])
         notifier = notifying.Notifier(hby=hby)
 

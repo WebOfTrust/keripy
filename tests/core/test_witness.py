@@ -576,9 +576,10 @@ def test_out_of_order_witnessed_events():
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
 
-    with habbing.openHby(name="wes", base="test") as wesHby, \
-         habbing.openHby(name="bob", base="test") as bobHby, \
-         habbing.openHby(name="bam", base="test") as bamHby:
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    with habbing.openHby(name="wes", base="test", salt=default_salt) as wesHby, \
+         habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby, \
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby:
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name='wes', isith='1', icount=1, transferable=False)

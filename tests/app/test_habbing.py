@@ -24,7 +24,7 @@ def test_habery():
     """
     # test default
     default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
-    hby = habbing.Habery(temp=True)
+    hby = habbing.Habery(temp=True, salt=default_salt)
     assert hby.name == "test"
     assert hby.base == ""
     assert hby.temp
@@ -76,7 +76,7 @@ def test_habery():
     seed4bran = 'ALQVu9AjGW3JrIzX0UHm2awGCbDXcsLzy-vAE649Fz1j'
     aeid4seed = 'BHRYV_5a1AlibCrXFG_KDD9rC6aXx9cb0sR968NL80VI'
 
-    hby = habbing.Habery(bran=bran, temp=True)
+    hby = habbing.Habery(bran=bran, temp=True, salt=default_salt)
     assert hby.name == "test"
     assert hby.base == ""
     assert hby.temp
@@ -126,7 +126,7 @@ def test_habery():
 
     # setup habery
     hby = habbing.Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
-                         bran=bran)
+                         bran=bran, salt=default_salt)
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     assert hby.name == "main"
@@ -180,7 +180,7 @@ def test_habery():
     temp = True
 
     # setup habery with resources
-    hby = habbing.Habery(name=name, base=base, temp=temp, bran=bran, free=True)
+    hby = habbing.Habery(name=name, base=base, temp=temp, bran=bran, free=True, salt=default_salt)
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     conf = hby.cf.get()
@@ -234,7 +234,7 @@ def test_habery():
     assert not os.path.exists(hby.db.path)
     assert not os.path.exists(hby.ks.path)
 
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         assert hby.name == "test"
         assert hby.base == ""
         assert hby.temp
@@ -281,7 +281,7 @@ def test_habery():
     assert not os.path.exists(hby.ks.path)
 
     bran = "MyPasscodeARealSecret"
-    with habbing.openHby(bran=bran) as hby:
+    with habbing.openHby(bran=bran, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         assert hby.name == "test"
         assert hby.base == ""
         assert hby.temp
@@ -342,7 +342,7 @@ def test_make_load_hab_with_habery():
     name = "sue"
     suePre = 'ELF1S0jZkyQx8YtHaPLu-qyFmrkcykAiEW8twS-KPSO1'  # with temp=True
 
-    with habbing.openHby() as hby:  # default is temp=True on openHab
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True on openHab
         hab = hby.makeHab(name=name)
         assert isinstance(hab, habbing.Hab)
         assert hab.pre in hby.habs
@@ -386,7 +386,7 @@ def test_make_load_hab_with_habery():
     suePre = 'EAxe215BJ4Iy9r0mfoMEGVmHW8A4Avk3RYBC1A1_DZam'  # with temp=False
     bobPre = 'ENya5E5pvc6MVCe75huDK0QQhE4_64J55vCn4aKdXhR9'  # with temp=False
 
-    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
+    with habbing.openHby(base=base, temp=False, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
         assert hby.cf.path.endswith("keri/cf/hold/test.json")
         assert hby.db.path.endswith("keri/db/hold/test")
         assert hby.ks.path.endswith('keri/ks/hold/test')
@@ -560,7 +560,7 @@ def test_habery_reinitialization():
 
 
 def test_habery_signatory():
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         signer = hby.signator
 
         assert signer is not None
@@ -714,7 +714,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
 
 
 def test_namespaced_habs():
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -797,7 +797,7 @@ def test_namespaced_habs():
 
 
 def test_make_other_event():
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -867,9 +867,9 @@ def test_hab_by_pre():
 
 
 def test_postman_endsfor():
-    with habbing.openHby(name="test", temp=True) as hby, \
-            habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
-            habbing.openHab(name="agent", temp=True) as (agentHby, agentHab):
+    with habbing.openHby(name="test", temp=True, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby, \
+            habbing.openHby(name="wes", temp=True, salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHab(name="agent", temp=True, salt=b'0123456789abcdef') as (agentHby, agentHab):
 
         wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
         assert not wesHab.kever.prefixer.transferable
