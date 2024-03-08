@@ -6,6 +6,7 @@ keri.core.serdering module
 import copy
 import json
 from collections import namedtuple
+from dataclasses import dataclass, asdict, field
 
 import cbor2 as cbor
 import msgpack
@@ -30,17 +31,63 @@ from ..help import helping
 
 logger = help.ogler.getLogger()
 
-"""
-Fieldage
-    saids (dict): keyed by saidive field labels with values as default codes
-    alls (dict): keyed by all field labels including saidive ones
-                   with values as default codes
 
-Example:
-    Fields = Labelage(saids={'d': DigDex.Blake3_256},
-                      alls={'v': '','d':''})
-"""
-Fieldage = namedtuple("Fieldage", "saids alls")  #values are dicts
+
+
+@dataclass
+class FieldDom:
+    """
+    Field configuration dataclass for Serder messages. Provides field labels
+    and default field values for a given ilk (message type).
+
+    Attributes:
+        alls (dict):  Ordered set of allowed fields (not extra)
+                    alls must not be empty since at least version string
+                    or protocol version filed is always required.
+                    Fields in alls that appear must appear in order.
+
+        opts (dict): Optional fields within alls.
+                    opts defaults to empty.
+                    When opts is empty than all alls are required.
+                    Any fields in alls but not in opts are required.
+                    opts is a subset of alls
+
+        saids (dict): are saidive fields whose value may be computed as a said of the message.
+                    saids defaults to empty
+                    when provided a field in saids indicates the field value is saidive.
+                    A simple SAID field value is always computed.
+                    An AID SAID field value is only computed when its code indicates.
+                    saids is a subset of alls
+
+        strict (bool): determines if alls is strict, no extra fields are allowed
+                       strict defaults to True.
+                       True means no extra fields are allowed, only those in alls.
+                       False means extra fields are allowed besides thos in alls.
+                       Extra fields are fields not in alls.
+                       Extra fields may appear in any order after the last field
+                       in alls.
+
+
+        When strict:  no extras allowed
+           Any fields not in alls raise error
+           If opts is empty then all alls are required in order
+           If opts is not empty then fields in opts are optional but the rest of
+                the fields in alls are required
+
+        When not strict: extras allowed
+           Any fields not in alls must appear after all fields in alls
+           If opts is empty then all alls are required in order
+           If opts is not empty then fields in opts are optional but the rest of
+                the fields in alls are required
+
+    """
+    alls: dict  # all allowed fields when strict
+    opts: dict = field(default_factory=dict)  # optional fields
+    saids: dict = field(default_factory=dict)  # saidive fields
+    strict: bool = True  # only alls allowed no extras
+
+    def __iter__(self):
+        return iter(asdict(self))
 
 
 class Serdery:
@@ -114,9 +161,11 @@ class Serder:
     generation and verification in addition to the required fields.
 
     Class Attributes:
-        Fields (dict): Protocol specific dict of field labels keyed by ilk
-            (packet type string value). None is default key when no ilk needed.
-            Each entry is a
+        Fields (dict): nested dict of field labels keyed by protocol, version,
+            and message type (ilk). Felds labels are provided with a Fieldage
+            named tuple (saids, reqs, alls) that governs field type and presence.
+            None is default message type (ilk) when no ilk needed in a message.
+            See below for detailed logic associated with Fields class attribute
 
     Properties:
         raw (bytes): of serialized event only
@@ -158,6 +207,16 @@ class Serder:
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
+
+    Fields:
+        Each element of Fields is a FieldDom dataclass instance with four attributes:
+            alls (dict):
+            opts (dict):
+            saids (dict):
+            strict (bool):
+
+
+
     """
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
 
@@ -192,94 +251,94 @@ class Serder:
             {
                 Vrsn_1_0:
                 {
-                    Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                    Ilks.icp: FieldDom(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', kt='0',
                             k=[], nt='0', n=[], bt='0', b=[], c=[], a=[])),
-                    Ilks.rot: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.rot: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='',
                             kt='0',k=[], nt='0', n=[], bt='0', br=[],
                             ba=[], a=[])),
-                    Ilks.ixn: Fieldage({Saids.d: DigDex.Blake3_256},
+                    Ilks.ixn: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='', a=[])),
-                    Ilks.dip: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                    Ilks.dip: FieldDom(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', kt='0',
                             k=[], nt='0', n=[], bt='0', b=[], c=[], a=[],
                             di='')),
-                    Ilks.drt: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.drt: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='',
                             kt='0',k=[], nt='0', n=[], bt='0', br=[],
                             ba=[], a=[])),
-                    Ilks.rct: Fieldage(saids={},
+                    Ilks.rct: FieldDom(saids={},
                         alls=dict(v='', t='',d='', i='', s='0')),
-                    Ilks.qry: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.qry: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', dt='', r='', rr='',
                                     q={})),
-                    Ilks.rpy: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.rpy: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', dt='', r='',a=[])),
-                    Ilks.pro: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.pro: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', dt='', r='', rr='',
                                     q={})),
-                    Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.bar: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', dt='', r='',a=[])),
-                    Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.exn: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='', d='', i="", p="", dt='', r='',q={},
                                     a=[], e={})),
-                    Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                    Ilks.vcp: FieldDom(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
                                     bt='0', b=[], n='')),
-                    Ilks.vrt: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.vrt: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', p='', s='0',
                                     bt='0', br=[], ba=[])),
-                    Ilks.iss: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.iss: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', ri='',
                                   dt='')),
-                    Ilks.rev: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.rev: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', ri='',
                                   p='', dt='')),
-                    Ilks.bis: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.bis: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', ii='', s='0', ra={},
                                   dt='')),
-                    Ilks.brv: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.brv: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', p='', ra={},
                                   dt='')),
                 },
                 Vrsn_2_0:
                 {
-                    Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                    Ilks.icp: FieldDom(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', kt='0',
                             k=[], nt='0', n=[], bt='0', b=[], c=[], a=[])),
-                    Ilks.rot: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.rot: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='',
                             kt='0',k=[], nt='0', n=[], bt='0', br=[],
                             ba=[], c=[], a=[])),
-                    Ilks.ixn: Fieldage({Saids.d: DigDex.Blake3_256},
+                    Ilks.ixn: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='', a=[])),
-                    Ilks.dip: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                    Ilks.dip: FieldDom(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', kt='0',
                             k=[], nt='0', n=[], bt='0', b=[], c=[], a=[],
                             di='')),
-                    Ilks.drt: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.drt: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='',
                             kt='0',k=[], nt='0', n=[], bt='0', br=[],
                             ba=[], c=[], a=[])),
-                    Ilks.rct: Fieldage(saids={},
+                    Ilks.rct: FieldDom(saids={},
                         alls=dict(v='', t='',d='', i='', s='0')),
-                    Ilks.qry: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.qry: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', dt='', r='', rr='',
                                     q={})),
-                    Ilks.rpy: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.rpy: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', dt='', r='',a=[])),
-                    Ilks.pro: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.pro: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', dt='', r='', rr='',
                                     q={})),
-                    Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.bar: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', dt='', r='',a=[])),
-                    Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    Ilks.exn: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='', d='', i="", p="", dt='', r='', q={},
                                     a=[], e={})),
                 },
@@ -288,28 +347,28 @@ class Serder:
             {
                 Vrsn_1_0:
                 {
-                    None: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                    None: FieldDom(saids={Saids.d: DigDex.Blake3_256},
                                    alls=dict(v='', d='', i='', s='')),
                 },
                 Vrsn_2_0:
                 {
-                    Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                    Ilks.vcp: FieldDom(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
                                     bt='0', b=[], u='')),
-                    Ilks.vrt: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.vrt: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', p='', s='0',
                                     bt='0', br=[], ba=[])),
-                    Ilks.iss: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.iss: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', ri='',
                                   dt='')),
-                    Ilks.rev: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.rev: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', ri='',
                                   p='', dt='')),
-                    Ilks.bis: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.bis: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', ii='', s='0', ra={},
                                   dt='')),
-                    Ilks.brv: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                    Ilks.brv: FieldDom(saids={Saids.d: DigDex.Blake3_256,},
                         alls=dict(v='', t='',d='', i='', s='0', p='', ra={},
                                   dt='')),
                 },
@@ -634,7 +693,7 @@ class Serder:
                     value = copy.copy(value)
                 sad[label] = value
 
-            if 't' in sad:  # packet type (ilk) requried so set value to ilk
+            if 't' in sad:  # packet type (ilk) required so set value to ilk
                 sad['t'] = ilk
 
         # ensure all required fields in alls are in sad
