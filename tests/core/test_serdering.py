@@ -49,7 +49,8 @@ def test_serder():
 
     assert Serder.Fields
 
-    assert Serder.Ilks == {'KERI': ['icp',
+    # Version 1.0 ilks
+    assert Serder.DefaultIlks == {'KERI': ['icp',
                                     'rot',
                                     'ixn',
                                     'dip',

@@ -336,16 +336,19 @@ class Serder:
                             r='', rr='', q={}),
                         saids={Saids.d: DigDex.Blake3_256}),
                     Ilks.rpy: FieldDom(alls=dict(v='', t='',d='', i='', dt='',
-                            r='',a=[]),
+                            r='',a={}),
                         saids={Saids.d: DigDex.Blake3_256}),
                     Ilks.pro: FieldDom(alls=dict(v='', t='',d='', i='', dt='',
                             r='', rr='', q={}),
                         saids={Saids.d: DigDex.Blake3_256}),
                     Ilks.bar: FieldDom(alls=dict(v='', t='',d='', i='', dt='',
-                            r='',a=[]),
+                            r='',a={}),
                         saids={Saids.d: DigDex.Blake3_256}),
-                    Ilks.exn: FieldDom(alls=dict(v='', t='', d='', i="", p="",
-                            dt='', r='', q={}, a=[], e={}),
+                    Ilks.xip: FieldDom(alls=dict(v='', t='', d='', i="", dt='',
+                                                 r='', q={}, a={}),
+                        saids={Saids.d: DigDex.Blake3_256}),
+                    Ilks.exn: FieldDom(alls=dict(v='', t='', d='', i="", x="",
+                            p="", dt='', r='', q={}, a={}),
                         saids={Saids.d: DigDex.Blake3_256}),
                 },
             },
@@ -366,9 +369,9 @@ class Serder:
 
 
     # default ilk for each protocol at default version is zeroth ilk in dict
-    Ilks = dict()
+    DefaultIlks = dict()
     for key, val in Fields.items():
-        Ilks[key] = list(list(val.values())[0].keys())
+        DefaultIlks[key] = list(list(val.values())[0].keys())
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
@@ -650,7 +653,7 @@ class Serder:
             kind = skind if skind is not None else self.Kind
 
         if ilk is None:
-            ilk = silk if silk is not None else self.Ilks[proto][0]
+            ilk = silk if silk is not None else self.DefaultIlks[proto][0]
 
 
         if proto not in self.Fields:

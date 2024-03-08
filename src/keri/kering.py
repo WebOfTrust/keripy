@@ -321,13 +321,15 @@ ilk is short for packet or message type for a given protocol
 """
 
 # KERI protocol packet (message) types
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy exn '
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy xip exn '
                                'pro bar vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
               rct='rct',
-              qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
+              qry='qry', rpy='rpy', xip='xip', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
+
+# Ilks needs to be versioned for Protocol versions or else use Serder.Fields
 
 # note ksn is not actual standalone message but is embedded in exn msg when sent
 # over the wire. But keep ilk for legacy reasons.
