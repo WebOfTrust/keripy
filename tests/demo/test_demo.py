@@ -417,12 +417,12 @@ def test_indirect_mode_sam_cam_wit_demo():
     camSigners = coring.Salter(raw=raw).signers(count=8, path="cam", temp=True)
     camSecrecies = [[signer.qb64] for signer in camSigners]
 
-    with (habbing.openHby(name="cam", base="test") as camHby,
-          habbing.openHby(name="sam", base="test") as samHby,
-          habbing.openHby(name="wit", base="test") as witHby):
+    with (habbing.openHby(name="cam", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as camHby,
+          habbing.openHby(name="sam", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as samHby,
+          habbing.openHby(name="wit", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as witHby):
 
         samPort = 5620  # sam's TCP listening port for server
-        witPort = 5621  # wit' TCP listneing port for server
+        witPort = 5621  # wit' TCP listening port for server
 
         # setup the witness
         witHab = witHby.makeHab(name="Wit",

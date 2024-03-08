@@ -76,7 +76,7 @@ def test_exchanger():
 
 
 def test_hab_exchange(mockHelpingNowUTC):
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 

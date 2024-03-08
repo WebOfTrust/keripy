@@ -59,7 +59,7 @@ def test_signature_designature():
     # db = basing.Baser(name=name, temp=temp, reopen=reopen)
 
     # Setup Habery and Hab
-    with habbing.openHby(name=name, base=base) as hby:
+    with habbing.openHby(name=name, base=base, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         # hby = habbing.Habery(name=name, base=base, temp=temp, free=True)
         hab = hby.makeHab(name=name, icount=3)
         print()
@@ -313,7 +313,7 @@ def test_seid_api():
     # Setup Habery and Hab
     name = 'zoe'
     base = 'test'
-    with habbing.openHby(name=name, base=base) as hby:
+    with habbing.openHby(name=name, base=base, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name=name)
         # hab = setupTestHab(name='zoe')
         # must do it here to inject into Falcon endpoint resource instances
@@ -382,7 +382,7 @@ def test_get_admin():
     # Setup Habery and Hab
     name = 'zoe'
     base = 'test'
-    with habbing.openHby(name=name, base=base) as hby:
+    with habbing.openHby(name=name, base=base, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name=name)
         # hab = setupTestHab(name='zoe')
 
@@ -439,7 +439,7 @@ def test_get_oobi():
 
 def test_siginput(mockHelpingNowUTC):
     print()
-    with habbing.openHab(name="test", base="test", temp=True) as (hby, hab):
+    with habbing.openHab(name="test", base="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         headers = Hict([
             ("Content-Type", "application/json"),
             ("Content-Length", "256"),

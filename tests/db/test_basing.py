@@ -1707,7 +1707,7 @@ def test_clean_baser():
     """
     name = "nat"
     # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
-    with habbing.openHby(name=name) as hby:  # default is temp=True
+    with habbing.openHby(name=name, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
         natHab = hby.makeHab(name=name, isith='2', icount=3)  # default Hab
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,

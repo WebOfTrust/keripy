@@ -632,7 +632,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
 
 def test_multisig_incept(mockHelpingNowUTC):
-    with habbing.openHab(name="test", temp=True) as (hby, hab):
+    with habbing.openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids,
                                               icp=hab.makeOwnEvent(sn=hab.kever.sn))
@@ -715,7 +715,7 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
 def test_multisig_incept_handler(mockHelpingNowUTC):
-    with habbing.openHab(name="test0", temp=True) as (hby, hab):
+    with habbing.openHab(name="test0", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids,
                                               icp=hab.makeOwnEvent(sn=hab.kever.sn))
