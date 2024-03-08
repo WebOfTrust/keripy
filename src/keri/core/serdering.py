@@ -161,6 +161,14 @@ class Serder:
     generation and verification in addition to the required fields.
 
     Class Attributes:
+        Dummy (str): dummy character for computing SAIDs
+        Digests (dict): map of digestive codes. Should be same set of codes as
+            in coring.DigestCodex coring.DigDex so that .digestive property works.
+            Use unit tests to ensure codex sets match
+        Protocol (str): default protocol version type
+        Proto (str): default CESR protocol genus type
+        Vrsn (Versionage): default version
+        Kind (str): default serialization kind one of Serials
         Fields (dict): nested dict of field labels keyed by protocol, version,
             and message type (ilk). Felds labels are provided with a Fieldage
             named tuple (saids, reqs, alls) that governs field type and presence.
@@ -218,7 +226,7 @@ class Serder:
 
 
     """
-    Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
+    Dummy = "#"  # dummy spaceholder char for SAID. Must not be a valid Base64 char
 
     # should be same set of codes as in coring.DigestCodex coring.DigDex so
     # .digestive property works. Use unit tests to ensure codex sets match
@@ -237,7 +245,7 @@ class Serder:
     #override in subclass to enforce specific protocol
     Protocol = None  # required protocol, None means any in Protos is ok
 
-    Proto = Protos.keri  # default protocol type
+    Proto = Protos.keri  # default CESR protocol type
     Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
 
@@ -366,12 +374,6 @@ class Serder:
                 },
             },
         }
-
-
-    # default ilk for each protocol at default version is zeroth ilk in dict
-    DefaultIlks = dict()
-    for key, val in Fields.items():
-        DefaultIlks[key] = list(list(val.values())[0].keys())
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
@@ -646,19 +648,21 @@ class Serder:
         if proto is None:
             proto = sproto if sproto is not None else self.Proto
 
+        if proto not in self.Fields:
+            raise SerializeError(f"Invalid protocol type = {proto}.")
+
         if vrsn is None:
             vrsn = svrsn if svrsn is not None else self.Vrsn
+
+        if vrsn not in self.Fields[proto]:
+            raise SerializeError(f"Invalid version = {vrsn} for protocol = {proto}.")
 
         if kind is None:
             kind = skind if skind is not None else self.Kind
 
         if ilk is None:
-            ilk = silk if silk is not None else self.DefaultIlks[proto][0]
-
-
-        if proto not in self.Fields:
-            raise SerializeError(f"Invalid protocol type = {proto}.")
-
+            ilk = (silk if silk is not None else
+                   list(self.Fields[proto][vrsn].keys())[0])
 
         if self.Protocol and proto != self.Protocol:
             raise SerializeError(f"Expected protocol = {self.Protocol}, got "

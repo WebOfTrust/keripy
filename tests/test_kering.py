@@ -491,7 +491,7 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', qry='qry', rpy='rpy',
-                          exn='exn', pro='pro', bar='bar',
+                          xip='xip', exn='exn', pro='pro', bar='bar',
                           vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
 

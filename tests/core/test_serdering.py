@@ -49,26 +49,6 @@ def test_serder():
 
     assert Serder.Fields
 
-    # Version 1.0 ilks
-    assert Serder.DefaultIlks == {'KERI': ['icp',
-                                    'rot',
-                                    'ixn',
-                                    'dip',
-                                    'drt',
-                                    'rct',
-                                    'qry',
-                                    'rpy',
-                                    'pro',
-                                    'bar',
-                                    'exn',
-                                    'vcp',
-                                    'vrt',
-                                    'iss',
-                                    'rev',
-                                    'bis',
-                                    'brv'],
-                           'ACDC': [None]}
-
     assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids == {'d': 'E'}
     assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
 
