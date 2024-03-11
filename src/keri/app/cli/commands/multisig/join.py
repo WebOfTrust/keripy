@@ -146,9 +146,13 @@ class ConfirmDoer(doing.DoDoer):
         """ Incept group multisig
 
         """
-        smids = attrs["smids"]  # change body mids for group member ids
-        rmids = attrs["rmids"] if "rmids" in attrs else None
-        ked = attrs["ked"]
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        payload = exn.ked['a']
+
+        smids = payload["smids"]
+        rmids = payload["rmids"] if "rmids" in attrs else None
+        ked = exn.ked
 
         both = list(set(smids + (rmids or [])))
 
@@ -205,10 +209,18 @@ class ConfirmDoer(doing.DoDoer):
             return True
 
     def interact(self, attrs):
-        pre = attrs["gid"]
-        smids = attrs["aids"]  # change attrs["aids"]" to "smids"
-        rmids = attrs["rmids"] if "rmids" in attrs else None
-        data = attrs["data"]
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        payload = exn.ked['a']
+
+        pre = payload["gid"]
+        smids = payload["aids"]
+        rmids = payload["rmids"] if "rmids" in attrs else None
+
+        embeds = exn.ked['e']
+        # original ixn
+        oixn = serdering.SerderKERI(sad=embeds["ixn"])
+        data = oixn.ked['a']
 
         if pre not in self.hby.habs:
             print(f"Invalid multisig group interaction request {pre} not in Habs")
@@ -284,9 +296,13 @@ class ConfirmDoer(doing.DoDoer):
         """ Rotate group multisig
 
         """
-        smids = attrs["smids"]
-        rmids = attrs["rmids"]
-        ked = attrs["ked"]
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+
+        payload = exn.ked['a']
+        smids = payload["smids"]
+        rmids = payload["rmids"]
+        ked = exn.ked
 
         both = list(set(smids + (rmids or [])))
 
