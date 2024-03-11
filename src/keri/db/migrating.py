@@ -3,7 +3,11 @@ import sys
 
 from keri.core import coring
 
-MIGRATIONS = ["rekey_habs"]
+MIGRATIONS = [
+    ("1", ["rekey_habs"])
+]
+
+VERSION = "1"
 
 
 class Migrator:
@@ -23,7 +27,7 @@ class Migrator:
                 mod.migrate(self.db)
                 print("done.")
             except Exception as e:
-                print(f"Abandoning migratoin {migration} with error: {e}")
+                print(f"\nAbandoning migratoin {migration} with error: {e}")
                 return
 
             self.db.migs.pin(keys=(migration,), val=coring.Dater())

@@ -932,6 +932,7 @@ class Baser(dbing.LMDBer):
         self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
 
         self.migs = subing.CesrSuber(db=self, subkey="migs.", klas=coring.Dater)
+        self.vers = subing.Suber(db=self, subkey="vers.")
 
         # event source local (protected) or non-local (remote not protected)
         self.esrs = koming.Komer(db=self,
