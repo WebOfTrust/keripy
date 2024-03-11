@@ -15,7 +15,6 @@ from keri.app import habbing, indirecting, agenting, notifying, grouping, connec
 from keri.app.cli.common import existing, displaying
 from keri.core import coring, eventing, scheming, parsing, routing, serdering
 from keri.peer import exchanging
-from keri.vc import proving
 from keri.vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
@@ -27,6 +26,7 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
                     required=False, default="")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
 
 
 def confirm(args):
@@ -39,8 +39,9 @@ def confirm(args):
     name = args.name
     base = args.base
     bran = args.bran
+    auto = args.auto
 
-    confirmDoer = ConfirmDoer(name=name, base=base, bran=bran)
+    confirmDoer = ConfirmDoer(name=name, base=base, bran=bran, auto=auto)
 
     doers = [confirmDoer]
     return doers
@@ -51,7 +52,7 @@ class ConfirmDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran):
+    def __init__(self, name, base, bran, auto=False):
         """ Create doer for polling for group multisig events and either approve automatically or prompt user
 
         Parameters:
@@ -87,7 +88,7 @@ class ConfirmDoer(doing.DoDoer):
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
-
+        self.auto = auto
         super(ConfirmDoer, self).__init__(doers=doers)
 
     def confirmDo(self, tymth, tock=0.0):
@@ -106,41 +107,47 @@ class ConfirmDoer(doing.DoDoer):
 
         print("Waiting for group multisig events...")
 
-        while True:
-            for keys, notice in self.notifier.noter.notes.getItemIter():
-                attrs = notice.attrs
-                route = attrs['r']
+        while self.notifier.noter.notes.cntAll() == 0:
+            yield self.tock
 
-                match route:
-                    case '/multisig/icp':
-                        done = yield from self.incept(attrs)
-                    case '/multisig/ixn':
-                        done = yield from self.interact(attrs)
-                    case '/multisig/rot':
-                        done = yield from self.rotate(attrs)
-                    case '/multisig/rpy':
-                        done = yield from self.rpy(attrs)
-                    case '/multisig/vcp':
-                        done = yield from self.vcp(attrs)
-                    case '/multisig/iss':
-                        done = yield from self.iss(attrs)
-                    case '/multisig/rev':
-                        done = yield from self.rev(attrs)
-                    case '/multisig/exn':
-                        done = yield from self.exn(attrs)
-                    case _:
-                        continue
+        for keys, notice in self.notifier.noter.notes.getItemIter():
+            attrs = notice.attrs
+            route = attrs['r']
 
-                if done:
+            match route:
+                case '/multisig/icp':
+                    done = yield from self.incept(attrs)
+                case '/multisig/ixn':
+                    done = yield from self.interact(attrs)
+                case '/multisig/rot':
+                    done = yield from self.rotate(attrs)
+                case '/multisig/rpy':
+                    done = yield from self.rpy(attrs)
+                case '/multisig/vcp':
+                    done = yield from self.vcp(attrs)
+                case '/multisig/iss':
+                    done = yield from self.iss(attrs)
+                case '/multisig/rev':
+                    done = yield from self.rev(attrs)
+                case '/multisig/exn':
+                    done = yield from self.exn(attrs)
+                case _:
+                    continue
+
+            if done:
+                self.notifier.noter.notes.rem(keys=keys)
+
+            else:
+                delete = input(f"\nDelete event [Y|n]? ")
+                if delete in ("Y", "y"):
                     self.notifier.noter.notes.rem(keys=keys)
 
-                else:
-                    delete = input(f"\nDelete event [Y|n]? ")
-                    if delete in ("Y", "y"):
-                        self.notifier.noter.notes.rem(keys=keys)
-
-                yield self.tock
             yield self.tock
+        while True:
+            print(len(self.postman.cues))
+            yield self.tock
+
+        self.remove(self.toRemove)
 
     def incept(self, attrs):
         """ Incept group multisig
@@ -153,7 +160,6 @@ class ConfirmDoer(doing.DoDoer):
         smids = payload["smids"]
         rmids = payload["rmids"] if "rmids" in attrs else None
         ked = exn.ked
-
         both = list(set(smids + (rmids or [])))
 
         mhab = None
@@ -168,29 +174,40 @@ class ConfirmDoer(doing.DoDoer):
 
         inits = dict()
 
-        inits["isith"] = ked["kt"]
-        inits["nsith"] = ked["nt"]
+        #original icp
+        embeds = exn.ked['e']
+        oicp = serdering.SerderKERI(sad=embeds["icp"])
 
-        inits["estOnly"] = eventing.TraitCodex.EstOnly in ked["c"]
-        inits["DnD"] = eventing.TraitCodex.DoNotDelegate in ked["c"]
+        inits["isith"] = oicp.ked["kt"]
+        inits["nsith"] = oicp.ked["nt"]
 
-        inits["toad"] = ked["bt"]
-        inits["wits"] = ked["b"]
-        inits["delpre"] = ked["di"] if "di" in ked else None
+        inits["estOnly"] = eventing.TraitCodex.EstOnly in oicp.ked["c"]
+        inits["DnD"] = eventing.TraitCodex.DoNotDelegate in oicp.ked["c"]
+
+        inits["toad"] = oicp.ked["bt"]
+        inits["wits"] = oicp.ked["b"]
+        inits["delpre"] = oicp.ked["di"] if "di" in ked else None
 
         print()
         print("Group Multisig Inception proposed:")
-        self.showEvent(mhab, both, ked)
-        yn = input(f"\nJoin [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+        self.showEvent(mhab, both, oicp.ked)
+
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nJoin [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
-            while True:
-                alias = input(f"\nEnter alias for new AID: ")
-                if self.hby.habByName(alias) is not None:
-                    print(f"AID alias {alias} is already in use, please try again")
-                else:
-                    break
+            if self.auto:
+                alias = "test alias"
+            else:
+                while True:
+                    alias = input(f"\nEnter alias for new AID: ")
+                    if self.hby.habByName(alias) is not None:
+                        print(f"AID alias {alias} is already in use, please try again")
+                    else:
+                        break
 
             try:
                 ghab = self.hby.makeGroupHab(group=alias, mhab=mhab,
@@ -237,8 +254,12 @@ class ConfirmDoer(doing.DoDoer):
         print(f"Group Multisig Interaction for {ghab.name} ({ghab.pre}) proposed:")
         print(f"Data:")
         print(json.dumps(data, indent=2))
-        yn = input(f"\nJoin [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nJoin [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
             ixn = ghab.interact(data=data)
@@ -264,7 +285,6 @@ class ConfirmDoer(doing.DoDoer):
             yield self.tock
 
     def showEvent(self, hab, mids, ked):
-        print()
         print("Participants:")
 
         thold = coring.Tholder(sith=ked["kt"])
@@ -319,20 +339,26 @@ class ConfirmDoer(doing.DoDoer):
         print()
         print("Group Multisig Rotation proposed:")
         self.showRotation(mhab, smids, rmids, ked)
-        yn = input(f"\nJoin [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nJoin [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
             pre = ked['i']
             if pre in self.hby.habs:
                 ghab = self.hby.habs[pre]
             else:
-                while True:
-                    alias = input(f"\nEnter alias for new AID: ")
-                    if self.hby.habByName(alias) is not None:
-                        print(f"AID alias {alias} is already in use, please try again")
-                    else:
-                        break
+                if self.auto:
+                    alias = "test alias"
+                else:
+                    while True:
+                        alias = input(f"\nEnter alias for new AID: ")
+                        if self.hby.habByName(alias) is not None:
+                            print(f"AID alias {alias} is already in use, please try again")
+                        else:
+                            break
 
                 ghab = self.hby.joinGroupHab(pre, group=alias, mhab=mhab, smids=smids, rmids=rmids)
 
@@ -458,8 +484,11 @@ class ConfirmDoer(doing.DoDoer):
         print(f"    Role: {role.capitalize()}")
         print(f"    Endpoint Provider: {endpointAlias} ({eid})")
 
-        yn = input(f"\nApprove [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nApprove [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
             # Create and parse the event with "their" signatures
@@ -518,8 +547,11 @@ class ConfirmDoer(doing.DoDoer):
         print(f"\nGroup Credential Regitry Creation (from {senderAlias}):")
         print(f"Usage: {usage}:\n")
 
-        yn = input(f"\nApprove [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nApprove [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
             # Create and parse the event with "their" signatures
@@ -613,8 +645,11 @@ class ConfirmDoer(doing.DoDoer):
             if k not in ('d', 'i'):
                 print(f"        {k}: {v}")
 
-        yn = input(f"\nApprove [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nApprove [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
             # Create and parse the event with "their" signatures
@@ -711,8 +746,11 @@ class ConfirmDoer(doing.DoDoer):
             else:
                 print(f"    Issued To: Unknown AID ({isse})")
 
-        yn = input(f"\nApprove Revocation [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nApprove Revocation [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
             # Create and parse the event with "their" signatures
@@ -807,8 +845,11 @@ class ConfirmDoer(doing.DoDoer):
         else:
             print(f"    Sending To: Unknown AID ({recp})")
 
-        yn = input(f"\nApprove [Y|n]? ")
-        approve = yn in ('', 'y', 'Y')
+        if self.auto:
+            approve = True
+        else:
+            yn = input(f"\nApprove [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
 
         if approve:
             eserder = serdering.SerderKERI(sad=eexn)
