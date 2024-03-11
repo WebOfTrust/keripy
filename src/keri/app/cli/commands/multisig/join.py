@@ -156,7 +156,7 @@ class ConfirmDoer(doing.DoDoer):
         payload = exn.ked['a']
 
         smids = payload["smids"]
-        rmids = payload["rmids"] if "rmids" in attrs else None
+        rmids = payload["rmids"] if "rmids" in payload else None
         ked = exn.ked
         both = list(set(smids + (rmids or [])))
 
@@ -251,8 +251,8 @@ class ConfirmDoer(doing.DoDoer):
         payload = exn.ked['a']
 
         pre = payload["gid"]
-        smids = payload["aids"]
-        rmids = payload["rmids"] if "rmids" in attrs else None
+        smids = payload["smids"]
+        rmids = payload["rmids"] if "rmids" in payload else None
 
         embeds = exn.ked['e']
         # original ixn
@@ -284,6 +284,26 @@ class ConfirmDoer(doing.DoDoer):
         if approve:
             ixn = ghab.interact(data=data)
             serder = serdering.SerderKERI(raw=ixn)
+
+            ixn = ghab.makeOwnEvent(allowPartiallySigned=True, sn=oixn.sn)
+
+            exn, ims = grouping.multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
+            others = list(oset(smids + (rmids or [])))
+
+            others.remove(ghab.mhab.pre)
+
+            for recpt in others:  # this goes to other participants only as a signaling mechanism
+                self.postman.send(src=ghab.mhab.pre,
+                                  dest=recpt,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=ims)
+
+                while not self.postman.sent(said=exn.said):
+                    yield self.tock
+
+                self.postman.cues.clear()
+
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
             saider = coring.Saider(qb64b=serder.saidb)
@@ -344,6 +364,9 @@ class ConfirmDoer(doing.DoDoer):
         rmids = payload["rmids"]
         ked = exn.ked
 
+        embeds = ked['e']
+        orot = serdering.SerderKERI(sad=embeds["rot"])
+
         both = list(set(smids + (rmids or [])))
 
         mhab = None
@@ -358,7 +381,8 @@ class ConfirmDoer(doing.DoDoer):
 
         print()
         print("Group Multisig Rotation proposed:")
-        self.showRotation(mhab, smids, rmids, ked)
+        self.showRotation(mhab, smids, rmids, orot.ked)
+
         if self.auto:
             approve = True
         else:
@@ -366,7 +390,7 @@ class ConfirmDoer(doing.DoDoer):
             approve = yn in ('', 'y', 'Y')
 
         if approve:
-            pre = ked['i']
+            pre = orot.ked['i']
             if pre in self.hby.habs:
                 ghab = self.hby.habs[pre]
             else:
@@ -383,10 +407,31 @@ class ConfirmDoer(doing.DoDoer):
                 ghab = self.hby.joinGroupHab(pre, group=alias, mhab=mhab, smids=smids, rmids=rmids)
 
             try:
-                serder = serdering.SerderKERI(sad=ked)
-                rot = ghab.rotate(serder=serder)
-            except ValueError as e:
+                ghab.rotate(serder=orot)
+            except ValueError:
                 return False
+
+            rot = ghab.makeOwnEvent(allowPartiallySigned=True, sn=orot.sn)
+
+            exn, ims = grouping.multisigRotateExn(ghab,
+                                                  smids=ghab.smids,
+                                                  rmids=ghab.rmids,
+                                                  rot=rot)
+            others = list(oset(smids + (rmids or [])))
+
+            others.remove(ghab.mhab.pre)
+
+            for recpt in others:  # this goes to other participants only as a signaling mechanism
+                self.postman.send(src=ghab.mhab.pre,
+                                  dest=recpt,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=ims)
+
+                while not self.postman.sent(said=exn.said):
+                    yield self.tock
+
+                self.postman.cues.clear()
 
             serder = serdering.SerderKERI(raw=rot)
             prefixer = coring.Prefixer(qb64=ghab.pre)
