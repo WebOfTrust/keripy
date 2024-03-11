@@ -29,7 +29,7 @@ kli status --name multisig1 --alias multisig
 
 PID_LIST=""
 
-kli multisig rotate --name multisig1 --alias multisig --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --smids ENkjt7khEI5edCMw5qugagbJw1QvGnQEtcewxb0FnU9U --isith '["1/3", "1/3", "1/3"]' --nsith '["1/2", "1/2", "1/2"]' --rmids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --rmids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --rmids ENkjt7khEI5edCMw5qugagbJw1QvGnQEtcewxb0FnU9U &
+kli multisig rotate --name multisig1 --alias multisig --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --isith '["1/2", "1/2"]' --nsith '["1/2", "1/2"]' --rmids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --rmids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 &
 pid=$!
 PID_LIST+=" $pid"
 
@@ -43,7 +43,7 @@ kli status --name multisig1 --alias multisig
 
 PID_LIST=""
 
-kli multisig interact --name multisig1 --alias multisig --data "{}" &
+kli multisig interact --name multisig1 --alias multisig --data '{"d": "potato"}' &
 pid=$!
 PID_LIST+=" $pid"
 
