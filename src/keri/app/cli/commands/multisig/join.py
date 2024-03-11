@@ -6,6 +6,7 @@ keri.kli.commands.delegate module
 """
 import argparse
 import json
+from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 from prettytable import PrettyTable
@@ -143,9 +144,6 @@ class ConfirmDoer(doing.DoDoer):
                     self.notifier.noter.notes.rem(keys=keys)
 
             yield self.tock
-        while True:
-            print(len(self.postman.cues))
-            yield self.tock
 
         self.remove(self.toRemove)
 
@@ -214,6 +212,28 @@ class ConfirmDoer(doing.DoDoer):
                                              smids=smids, rmids=rmids, **inits)
             except ValueError as e:
                 return False
+
+            icp = ghab.makeOwnInception(allowPartiallySigned=True)
+
+            exn, ims = grouping.multisigInceptExn(ghab.mhab,
+                                                  smids=ghab.smids,
+                                                  rmids=ghab.rmids,
+                                                  icp=icp)
+            others = list(oset(smids + (rmids or [])))
+
+            others.remove(ghab.mhab.pre)
+
+            for recpt in others:  # this goes to other participants only as a signaling mechanism
+                self.postman.send(src=ghab.mhab.pre,
+                                  dest=recpt,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=ims)
+
+                while not self.postman.sent(said=exn.said):
+                    yield self.tock
+
+                self.postman.cues.clear()
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
