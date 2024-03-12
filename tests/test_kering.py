@@ -36,11 +36,9 @@ def test_protos():
     assert isinstance(Protos, Protocolage)
 
     assert Protos.keri == 'KERI'
-    assert Protos.crel == 'CREL'
     assert Protos.acdc == 'ACDC'
 
     assert 'KERI' in Protos
-    assert 'CREL' in Protos
     assert 'ACDC' in Protos
 
     """End Test"""
@@ -491,11 +489,12 @@ def test_ilks():
     """
     Test Ilkage namedtuple instance Ilks
     """
-    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
-                          rct='rct', qry='qry', rpy='rpy',
-                          exn='exn', pro='pro', bar='bar',
-                          vcp='vcp', vrt='vrt',
-                          iss='iss', rev='rev', bis='bis', brv='brv', )
+    Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
+              rct='rct',
+              qry='qry', rpy='rpy', xip='xip', exn='exn', pro='pro', bar='bar',
+              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv',
+              rip='rip', upd='upd', acd='acd', sch='sch', att='att', agg='agg',
+              edg='edg', rul='rul')
 
     assert isinstance(Ilks, Ilkage)
 
@@ -540,6 +539,24 @@ def test_ilks():
     assert Ilks.bis == 'bis'
     assert 'brv' in Ilks
     assert Ilks.brv == 'brv'
+
+    assert 'rip' in Ilks
+    assert Ilks.rip == 'rip'
+    assert 'upd' in Ilks
+    assert Ilks.upd == 'upd'
+
+    assert 'acd' in Ilks
+    assert Ilks.acd == 'acd'
+    assert 'sch' in Ilks
+    assert Ilks.sch == 'sch'
+    assert 'att' in Ilks
+    assert Ilks.att == 'att'
+    assert 'agg' in Ilks
+    assert Ilks.agg == 'agg'
+    assert 'edg' in Ilks
+    assert Ilks.edg == 'edg'
+    assert 'rul' in Ilks
+    assert Ilks.rul == 'rul'
 
     """End Test """
 

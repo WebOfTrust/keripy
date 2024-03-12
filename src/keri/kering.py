@@ -19,13 +19,13 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
 # Protocol Types
-Protocolage = namedtuple("Protocolage", "keri crel acdc")
-Protos = Protocolage(keri="KERI", crel="CREL", acdc="ACDC", )
+Protocolage = namedtuple("Protocolage", "keri acdc")
+Protos = Protocolage(keri="KERI", acdc="ACDC")
 
 Versionage = namedtuple("Versionage", "major minor")
 Version = Versionage(major=1, minor=0)  # KERI Protocol Version
 Vrsn_1_0 = Versionage(major=1, minor=0)  # KERI Protocol Version Specific
-Vrsn_1_1 = Versionage(major=1, minor=1)  # KERI Protocol Version Specific
+Vrsn_2_0 = Versionage(major=2, minor=0)  # KERI Protocol Version Specific
 
 
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
@@ -320,14 +320,19 @@ ilk is short for packet or message type for a given protocol
     brv = backed vc revoke, registry-backed transaction event log credential revocation
 """
 
-# KERI protocol packet (message) types
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy exn '
-                               'pro bar vcp vrt iss rev bis brv '))
+# KERI/ACDC protocol packet (message) types
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy xip exn '
+                               'pro bar vcp vrt iss rev bis brv rip upd '
+                               'acd sch att agg edg rul '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
               rct='rct',
-              qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
-              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
+              qry='qry', rpy='rpy', xip='xip', exn='exn', pro='pro', bar='bar',
+              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv',
+              rip='rip', upd='upd', acd='acd', sch='sch', att='att', agg='agg',
+              edg='edg', rul='rul')
+
+# Ilks needs to be versioned for Protocol versions or else use Serder.Fields
 
 # note ksn is not actual standalone message but is embedded in exn msg when sent
 # over the wire. But keep ilk for legacy reasons.

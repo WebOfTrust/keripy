@@ -388,7 +388,7 @@ est  highest of comparison   cleanest, hardest, softest
 
 ful full of  graceful, restful, faithful
 
-hood   state of being  boyhood, knighthood, womanhood
+-hood  noun from noun group state of being  boyhood, knighthood, womanhood
 
 ible, ile, il  capable of being  digestible, responsible, docile, civil
 
@@ -400,7 +400,7 @@ ic   like, made of   metallic, toxic, poetic
 
 ing  action of   running, wishing
 
-ion  act or state of   confusion, correction, protection
+ion, sion, tion  act or state of being  confusion, correction, protection
 
 ism  fact of being   communism, socialism
 
@@ -433,21 +433,21 @@ ology  study of  geology, zoology, archaeology
 
 ous, ious  full of   joyous, marvelous, furious
 
-ship   quality of or state of rank of  friendship, leadership  lordship
+-ship   noun from noun quality of state of rank of  friendship, leadership  lordship
 
-scope  instrument for seeing   telescope, microscope
+-scope  instrument for seeing   telescope, microscope
 
-some   like  tiresome, lonesome
+-some   like  tiresome, lonesome
 
-tion, sion   action, state of being  condition, attention, fusion
+-tude  noun from adjective state of  altitude, latitude
 
-ty   quality or state of   liberty, majesty
+-ty   quality or state of   liberty, majesty
 
-ward   toward  southward, forward
+-ward   toward  southward, forward
 
-y  like, full of, diminutive:  noisy, sooty, kitty
+-y  like, full of, diminutive:  noisy, sooty, kitty
 
-ure noun from verv indicating act or office  seizure prefecture
+-ure noun from verb indicating act or office  seizure prefecture
 
 
 
