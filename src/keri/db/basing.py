@@ -1461,7 +1461,7 @@ class Baser(dbing.LMDBer):
             sn (int): beginning sn to search
 
         """
-        if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
+        if tuple(seal) != eventing.SealEvent._fields:  # wrong type of seal
             return None
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
@@ -1469,7 +1469,7 @@ class Baser(dbing.LMDBer):
         for evt in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
             srdr = serdering.SerderKERI(raw=evt.tobytes())
             for eseal in srdr.seals or []:
-                if tuple(eseal.keys()) == eventing.SealEvent._fields:
+                if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
                     if seal == eseal and self.fullyWitnessed(srdr):
                         return srdr
@@ -1493,12 +1493,12 @@ class Baser(dbing.LMDBer):
 
         """
         # create generic Seal namedtuple class using keys from provided seal dict
-        Seal = namedtuple('Seal', seal.keys())  # matching type
+        Seal = namedtuple('Seal', list(seal))  # matching type
 
         for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
             srdr = serdering.SerderKERI(raw=evt.tobytes())
             for eseal in srdr.seals or []:
-                if tuple(eseal.keys()) == Seal._fields:  # same type of seal
+                if tuple(eseal) == Seal._fields:  # same type of seal
                     eseal = Seal(**eseal)  #convert to namedtuple
                     if seal == eseal and self.fullyWitnessed(srdr):
                         return srdr

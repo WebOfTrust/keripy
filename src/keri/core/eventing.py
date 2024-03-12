@@ -72,7 +72,7 @@ LastEstLoc = namedtuple("LastEstLoc", 's d')
 # sealdict =seal._asdict()
 # to convet dict to namedtuple use ** unpacking as in seal = SealDigest(**sealdict)
 # to check if dict of seal matches fields of associted namedtuple
-# if tuple(sealdict.keys()) == SealEvent._fields:
+# if tuple(sealdict) == SealEvent._fields:
 
 # Digest Seal: uniple (d,)
 # d = digest qb64 of data  (usually SAID)
@@ -2700,15 +2700,19 @@ class Kever:
 
 
         if self.kevers is None or delpre not in self.kevers:   # drop event
-            # ToDo XXXX may want to cue a trigger to get the KEL of the delegator
-            raise ValidationError("Missing Kever for delegator = {} for evt = {}."
-                                  "".format(delpre, serder.ked))
+            # ToDo XXXX cue a trigger to get the KEL of the delegator
+            # the processDelegableEvent should also cue a trigger to get KEL
+            # of delegator if still missing when processing escrow later.
+            self.escrowDelegableEvent(serder=serder, sigers=sigers,
+                                              wigers=wigers,local=local)
+            raise MissingDelegableApprovalError(f"Missing Kever for delegator"
+                                                f" = {delpre} of event"
+                                                f" = {serder.ked}.")
 
         dkever = self.kevers[delpre]
         if dkever.doNotDelegate:  # drop event if delegation not allowed
-            raise ValidationError("Delegator = {} for evt = {},"
-                                  " does not allow delegation.".format(delpre,
-                                                                       serder.ked))
+            raise ValidationError(f"Delegator = {delpre} for evt = {serder.ked},"
+                                  f" does not allow delegation.")
 
 
         # Delegator accepts here without waiting for delegation seal to be anchored in
@@ -2807,7 +2811,7 @@ class Kever:
         # for JSON, CBOR, MGPK
         # may want to try harder here by walking KEL
         for dseal in dserder.seals:  # find delegating seal anchor
-            if tuple(dseal.keys()) == SealEvent._fields:
+            if tuple(dseal) == SealEvent._fields:
                 seal = SealEvent(**dseal)
                 if (seal.i == serder.pre and
                     seal.s == serder.sner.numh and
@@ -2855,10 +2859,10 @@ class Kever:
 
             if bossn.said == bosso.said: # same delegating event
                 nseals = [SealEvent(**seal) for seal in bossn.seals
-                                  if tuple(seal.keys()) == SealEvent._fields]
+                                  if tuple(seal) == SealEvent._fields]
                 nindex = nseals.index(SealEvent(i=serfn.pre, s=serfn.snh, d=serfn.said))
                 oseals = [SealEvent(**seal) for seal in bosso.seals
-                                      if tuple(seal.keys()) == SealEvent._fields]
+                                      if tuple(seal) == SealEvent._fields]
                 oindex = oseals.index(SealEvent(i=serfo.pre, s=serfo.snh, d=serfo.said))
 
                 if nindex > oindex:  # later seal supersedes

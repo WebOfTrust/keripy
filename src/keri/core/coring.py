@@ -5697,7 +5697,7 @@ class Tholder:
                             raise ValueError(f"Invalid sith = {sith} nested "
                                              f"weight map {e} in clause {c} "
                                              f" not single key value.")
-                        k = list(e.keys())[0]  # zeroth k:v pair is used
+                        k = list(e)[0]  # zeroth key is used
                         # convert to tuple of (weight, [list of weights])
                         clause.append((self.weight(k), [self.weight(w) for w in e[k]]))
                     else:
