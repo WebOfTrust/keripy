@@ -63,3 +63,9 @@ printf "Running challenge.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/challenge.sh"
 isSuccess
+
+printf "\n************************************\n"
+printf "Running multisig-join.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/multisig-join.sh"
+isSuccess
