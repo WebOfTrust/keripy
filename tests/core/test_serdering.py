@@ -53,14 +53,14 @@ def test_serder():
     assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
 
     # said field labels must be subset of all field labels
-    assert (set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids.keys()) <=
-            set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls.keys()))
+    assert (set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids) <=
+            set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls))
 
 
     for proto, vrsns in Serder.Fields.items():
         for vrsn, ilks in vrsns.items():
             for ilk, fields in ilks.items():
-                assert set(fields.saids.keys()) <= set(fields.alls.keys())
+                assert set(fields.saids) <= set(fields.alls)
 
 
     with pytest.raises(ValueError):

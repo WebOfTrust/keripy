@@ -459,7 +459,7 @@ class Serder:
             self._size = size
             # primary said field label
             try:
-                label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
+                label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
                 if label not in self._sad:
                     raise FieldError(f"Missing primary said field in {self._sad}.")
                 self._said = self._sad[label]  # not verified
@@ -499,7 +499,7 @@ class Serder:
                 self._size = size
                 # primary said field label
                 try:
-                    label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
+                    label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
                     if label not in self._sad:
                         raise DeserializeError(f"Missing primary said field in {self._sad}.")
                     self._said = self._sad[label]  # not verified
@@ -568,21 +568,21 @@ class Serder:
             if key not in alls:
                 del keys[keys.index(key)]  # remove non required fields
 
-        if list(alls.keys()) != keys:  # forces ordering of labels in .sad
+        if list(alls) != keys:  # forces ordering of labels in .sad
             raise MissingFieldError(f"Missing one or more required fields from"
-                                    f"= {list(alls.keys())} in sad = "
+                                    f"= {list(alls)} in sad = "
                                     f"{self._sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         saids = copy.copy(fields.saids)  # get copy of saidive field labels and defaults values
-        if not (set(saids.keys()) <= set(alls.keys())):
+        if not (set(saids) <= set(alls)):
             raise MissingFieldError(f"Missing one or more required said fields"
-                                    f" from {list(saids.keys())} in sad = "
+                                    f" from {list(saids)} in sad = "
                                     f"{self._sad}.")
 
         sad = self.sad  # make shallow copy so don't clobber original .sad
-        for label in saids.keys():
+        for label in saids:
             try:  # replace default code with code of value from sad
                 saids[label] = Matter(qb64=sad[label]).code
             except Exception as ex:
@@ -680,9 +680,9 @@ class Serder:
         if kind is None:
             kind = skind if skind is not None else self.Kind
 
-        if ilk is None:
+        if ilk is None:  # default is first ilk in Fields for given proto vrsn
             ilk = (silk if silk is not None else
-                   list(self.Fields[proto][vrsn].keys())[0])
+                   list(self.Fields[proto][vrsn])[0])  # list(dict) gives list of keys
 
         if self.Protocol and proto != self.Protocol:
             raise SerializeError(f"Expected protocol = {self.Protocol}, got "
@@ -725,16 +725,16 @@ class Serder:
             if key not in alls:
                 del keys[keys.index(key)]  # remove non required fields
 
-        if list(alls.keys()) != keys:  # ensure ordering of fields matches alls
+        if list(alls) != keys:  # ensure ordering of fields matches alls
             raise SerializeError(f"Mismatch one or more of all required fields "
-                                 f" = {list(alls.keys())} in sad = {sad}.")
+                                 f" = {list(alls)} in sad = {sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         _saids = copy.copy(fields.saids)  # get copy of defaults
-        if not (set(_saids.keys()) <= set(alls.keys())):
+        if not (set(_saids) <= set(alls)):
             raise SerializeError(f"Missing one or more required said fields "
-                                 f"from {list(_saids.keys())} in sad = {sad}.")
+                                 f"from {list(_saids)} in sad = {sad}.")
 
         # override saidive defaults
         for label in _saids:
@@ -789,7 +789,7 @@ class Serder:
         self._size = size
         # primary said field label
         try:
-            label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
+            label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
             if label not in self._sad:
                 raise SerializeError(f"Missing primary said field in {self._sad}.")
             self._said = self._sad[label]  # implicitly verified
@@ -1074,7 +1074,7 @@ class Serder:
         Returns:
            said (str): qb64
         """
-        if not self.Fields[self.proto][self.vrsn][self.ilk].saids.keys() and 'd' in self._sad:
+        if not self.Fields[self.proto][self.vrsn][self.ilk].saids and 'd' in self._sad:
             return self._sad['d']  # special case for non-saidive messages like rct
         return self._said
 
@@ -1121,8 +1121,8 @@ class SerderKERI(Serder):
         """
         super(SerderKERI, self)._verify(**kwa)
 
-        allkeys = list(self.Fields[self.proto][self.vrsn][self.ilk].alls.keys())
-        keys = list(self.sad.keys())
+        allkeys = list(self.Fields[self.proto][self.vrsn][self.ilk].alls)
+        keys = list(self.sad)
         if allkeys != keys:
             raise ValidationError(f"Invalid top level field list. Expected "
                                   f"{allkeys} got {keys}.")
