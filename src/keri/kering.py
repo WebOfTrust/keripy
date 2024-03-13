@@ -323,14 +323,14 @@ ilk is short for packet or message type for a given protocol
 # KERI/ACDC protocol packet (message) types
 Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy xip exn '
                                'pro bar vcp vrt iss rev bis brv rip upd '
-                               'acd sch att agg edg rul '))
+                               'acd ace sch att agg edg rul '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
               rct='rct',
               qry='qry', rpy='rpy', xip='xip', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv',
-              rip='rip', upd='upd', acd='acd', sch='sch', att='att', agg='agg',
-              edg='edg', rul='rul')
+              rip='rip', upd='upd', acd='acd', ace='ace',
+              sch='sch', att='att', agg='agg', edg='edg', rul='rul')
 
 # Ilks needs to be versioned for Protocol versions or else use Serder.Fields
 
@@ -536,11 +536,29 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
+
 class MissingFieldError(ValidationError):
     """
     Missing a required element or field of message
     Usage:
         raise MissingElementError("error message")
+    """
+
+
+class ExtraFieldError(ValidationError):
+    """
+    Extra unallowed field in message
+    Usage:
+        raise ExtraFieldError("error message")
+    """
+
+
+class AlternateFieldError(ValidationError):
+    """
+    Unallowed alternate field in message
+
+    Usage:
+        raise AlternateFieldError("error message")
     """
 
 
@@ -706,7 +724,6 @@ class MissingDelegableApprovalError(ValidationError):
         raise MissingDelegableApprovalError("error message")
     """
 
-MissingDelegableApprovalError
 
 
 # Stream Parsing and Extraction Errors

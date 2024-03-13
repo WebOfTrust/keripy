@@ -11,6 +11,7 @@ import cbor2 as cbor
 import msgpack
 
 import pytest
+from  ordered_set import OrderedSet as oset
 
 from keri import kering
 from keri.kering import Versionage, Version
@@ -31,6 +32,8 @@ def test_fielddom():
     assert fdom.alls == alls
     assert fdom.opts == {}
     assert not fdom.opts
+    assert fdom.alts == {}
+    assert not fdom.alts
     assert fdom.saids == {}
     assert not fdom.saids
     assert fdom.strict
@@ -49,8 +52,28 @@ def test_serder():
 
     assert Serder.Fields
 
+    # Ensure all Serder.Fields all and opts and alts and saids are correct subsets
+    # iterate through all FieldDoms
+
+    for kp, kv in Serder.Fields.items():  # iterate through protocols
+        for kv, vv in kv.items():  # iterate through versions for each protocol
+            for kf, vf in vv.items():  # iterate through fields for each version
+                assert oset(vf.opts) <= oset(vf.alls)
+                assert oset(vf.alts) <= oset(vf.opts)
+                assert oset(vf.saids) <= oset(vf.alls)
+
+
     assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids == {'d': 'E'}
-    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls ==
+            {'v': '', 'd': '', 'u': '', 'i': '', 'ri': '', 's': '', 'a': '', 'A': '', 'e': '', 'r': ''})
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].opts ==
+            {'u': '', 'ri': '', 'a': '', 'A': '', 'e': '', 'r': ''})
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alts ==
+            {'a': 'A', 'A': 'a'})
+    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].strict
+
+
+    #assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
 
     # said field labels must be subset of all field labels
     assert (set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids) <=
@@ -545,11 +568,91 @@ def test_serder():
     assert serder.said == said
     assert serder.ilk == ilk
 
+    # test opts
+    serder = Serder(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    assert serder.sad == {'v': 'ACDC10JSON00005a_',
+                            'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
+                            'i': '',
+                            's': ''}
+    assert serder.raw == (b'{"v":"ACDC10JSON00005a_","d":"EMk7BvrqO_2sYjpI_-'
+                          b'BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}')
+    assert serder.verify()
+    sad = serder.sad
 
+    sad['a'] = ""
+    sad['e'] = ""
+    sad['r'] = ""
+
+    serder = Serder(makify=True, sad=sad)  # make using sad
+    assert serder.raw == (b'{"v":"ACDC10JSON00006f_","d":"EBE7-v1veGz54DF2PIYmUoSG2BCLsEcIQSDSIYFsn9uw",'
+                          b'"i":"","s":"","a":"","e":"","r":""}')
+    assert serder.verify()
+
+    # out of order field
+    sad = serder.sad
+    sad["ri"] = ""
+
+    with pytest.raises(kering.SerializeError):
+        serder = Serder(makify=True, sad=sad)  # make using sad
+
+
+    # extra field with strict
+    sad = serder.sad
+    assert 'ri' not in sad
+    sad["x"] = ""
+
+    with pytest.raises(kering.SerializeError):
+        serder = Serder(makify=True, sad=sad)  # make using sad
+
+    # test alts
+    serder = Serder(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    assert serder.sad == {'v': 'ACDC10JSON00005a_',
+                            'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
+                            'i': '',
+                            's': ''}
+    assert serder.verify()
+    sad = serder.sad
+
+    sad['a'] = ""
+    sad['A'] = ""  # both alts
+    sad['e'] = ""
+    sad['r'] = ""
+
+    with pytest.raises(kering.SerializeError):
+        serder = Serder(makify=True, sad=sad)  # make using sad
+
+    # test not strict
+    # test opts
+    serder = Serder(makify=True, proto=kering.Protos.acdc, ilk=kering.Ilks.ace)  # make defaults for ACDC
+    assert serder.sad == {'v': 'ACDC10JSON000064_',
+                            't': 'ace',
+                            'd': 'EKFsN95K2h5I6pJC6eTrNKiX8uHyn5o-SYHy6IelbPK8',
+                            'i': '',
+                            's': ''}
+    assert serder.verify()
+
+    sad = serder.sad
+    sad["x"] = ""
+    serder = Serder(makify=True, sad=sad)  # make using sad
+    assert serder.sad == {'v': 'ACDC10JSON00006b_',
+                        't': 'ace',
+                        'd': 'ECmOYyE7X5TVvBiM7PtApT-w9wsj7ZYI0jQt1TTcTa-1',
+                        'i': '',
+                        's': '',
+                        'x': ''}
+    assert serder.verify()
+
+    # out of order with extra
+    sad = serder.sad
+    sad["ri"] = ""
+    with pytest.raises(kering.SerializeError):
+        serder = Serder(makify=True, sad=sad)  # make using sad
 
     # ToDo: create malicious raw values to test verify more thoroughly
     # ToDo: create bad sad values to test makify more thoroughly
     # unhappy paths
+
+
 
 
     """End Test"""
