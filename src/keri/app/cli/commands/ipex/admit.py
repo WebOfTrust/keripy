@@ -31,6 +31,7 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 parser.add_argument("--said", "-s", help="SAID of the exn grant message to admit", required=True)
 parser.add_argument("--message", "-m", help="optional human readable message to "
                                             "send to recipient", required=False, default="")
+parser.add_argument("--time", help="timestamp", required=False, default=None)
 
 
 def handler(args):
@@ -39,15 +40,17 @@ def handler(args):
                    base=args.base,
                    bran=args.bran,
                    said=args.said,
-                   message=args.message)
+                   message=args.message,
+                   timestamp=args.time)
     return [ed]
 
 
 class AdmitDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, message):
+    def __init__(self, name, alias, base, bran, said, message, timestamp ):
         self.said = said
         self.message = message
+        self.timestamp = timestamp
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
@@ -118,7 +121,7 @@ class AdmitDoer(doing.DoDoer):
             yield self.tock
 
         recp = grant.ked['i']
-        exn, atc = protocoling.ipexAdmitExn(hab=self.hab, message=self.message, grant=grant)
+        exn, atc = protocoling.ipexAdmitExn(hab=self.hab, message=self.message, grant=grant, dt=self.timestamp)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 

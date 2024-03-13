@@ -77,7 +77,7 @@ kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient EL
 pid=$!
 PID_LIST="$pid"
 
-kli multisig join --name multisig2
+kli ipex join --name multisig2
 
 wait ${PID_LIST}
 

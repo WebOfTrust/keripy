@@ -102,7 +102,7 @@ echo "Polling for holder's IPEX message..."
 SAID=$(kli ipex list --name holder --alias holder --poll --said)
 
 echo "Admitting GRANT ${SAID}"
-kli ipex admit --name holder --alias holder --said "${SAID}"
+kli ipex admit --name holder --alias holder --said "${SAID}" --time "${TIME}"
 
 kli vc list --name holder --alias holder --poll
 

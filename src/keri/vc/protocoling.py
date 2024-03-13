@@ -264,13 +264,14 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
     return exn, ims
 
 
-def ipexAdmitExn(hab, message, grant):
+def ipexAdmitExn(hab, message, grant, dt=None):
     """ Admit a disclosure
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the admission
         grant (Serder): IPEX grant exn message serder
+        dt (str): timestamp
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -281,7 +282,7 @@ def ipexAdmitExn(hab, message, grant):
         m=message,
     )
 
-    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant.said)
+    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant.said, date=dt)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
