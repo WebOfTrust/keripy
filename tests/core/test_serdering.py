@@ -31,6 +31,8 @@ def test_fielddom():
     assert fdom.alls == alls
     assert fdom.opts == {}
     assert not fdom.opts
+    assert fdom.alts == {}
+    assert not fdom.alts
     assert fdom.saids == {}
     assert not fdom.saids
     assert fdom.strict
@@ -49,8 +51,36 @@ def test_serder():
 
     assert Serder.Fields
 
+    # Ensure all Serder.Fields all and opts and alts are correct subsets
+    # iterate through all FieldDoms
+    #fields = self.Fields[proto][vrsn][ilk]  # get FieldDom of fields
+    #if not (set(fields.opts) <= set(fields.alls)):
+        #raise SerializeError(f"Opts = {fields.opts} not subset of alls = "
+                             #f" {fields.alls}.")
+
+    #if not (set(fields.alts) <= set(fields.opts)):
+        #raise SerializeError(f"Alts = {fields.alts} not subset of opts = "
+                             #f" {fields.opts}.")
+
+    #if not (set(fields.opts) <= set(fields.alls)):
+        #raise SerializeError(f"Opts = {fields.opts} not subset of alls = "
+                             #f" {fields.alls}.")
+
+    #if not (set(fields.alts) <= set(fields.opts)):
+        #raise SerializeError(f"Alts = {fields.alts} not subset of opts = "
+                             #f" {fields.opts}.")
+
     assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids == {'d': 'E'}
-    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls ==
+            {'v': '', 'd': '', 'u': '', 'i': '', 'ri': '', 's': '', 'a': '', 'A': '', 'e': '', 'r': ''})
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].opts ==
+            {'u': '', 'ri': '', 'a': '', 'A': '', 'e': '', 'r': ''})
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alts ==
+            {'a': 'A', 'A': 'a'})
+    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].strict
+
+
+    #assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
 
     # said field labels must be subset of all field labels
     assert (set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids) <=
@@ -544,6 +574,23 @@ def test_serder():
     assert serder.kind == kering.Serials.json
     assert serder.said == said
     assert serder.ilk == ilk
+
+    # test opts
+    #Test Serder bare makify bootstrap for ACDC JSON
+    serder = Serder(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    assert serder.sad == {'v': 'ACDC10JSON00005a_',
+                            'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
+                            'i': '',
+                            's': ''}
+    assert serder.raw == (b'{"v":"ACDC10JSON00005a_","d":"EMk7BvrqO_2sYjpI_-'
+                          b'BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}')
+    assert serder.verify()
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
+
+
 
 
 

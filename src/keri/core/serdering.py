@@ -13,9 +13,12 @@ import msgpack
 import pysodium
 import blake3
 import hashlib
+from  ordered_set import OrderedSet as oset
+
 
 from .. import kering
-from ..kering import (ValidationError,  MissingFieldError,
+from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
+                      AlternateFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
@@ -41,7 +44,7 @@ class FieldDom:
     and default field values for a given ilk (message type).
 
     Attributes:
-        alls (dict):  Ordered set of allowed fields (not extra)
+        alls (dict): Allowed fields (not extra)
                     alls must not be empty since at least version string
                     or protocol version filed is always required.
                     Fields in alls that appear must appear in order.
@@ -51,6 +54,18 @@ class FieldDom:
                     When opts is empty than all alls are required.
                     Any fields in alls but not in opts are required.
                     opts is a subset of alls
+
+        alts (dict): Alternate fields within alls.
+                    alts defaults to empty.
+                    An alt field means that one or the other of two fields is
+                    allowed but not both. Two entries in alts are required, one
+                    for each field in an alt pair. the alt pair key value are
+                    the two labels. One entry for each order.
+                    all alts must be in opts since both can't be required.
+                    Suppose 'a' and 'A' are an alternate pair then alts =
+                    { 'a': 'A', 'A': 'a'}. This allows the presence of one to
+                    block the presence of the other by looking up the one present
+                    as key to see the value of the one to block.
 
         saids (dict): are saidive fields whose value may be computed as a said of the message.
                     saids defaults to empty
@@ -83,6 +98,7 @@ class FieldDom:
     """
     alls: dict  # all allowed fields when strict
     opts: dict = field(default_factory=dict)  # optional fields
+    alts:  dict = field(default_factory=dict)  # alternate optional fields
     saids: dict = field(default_factory=dict)  # saidive fields
     strict: bool = True  # only alls allowed no extras
 
@@ -364,7 +380,10 @@ class Serder:
             {
                 Vrsn_1_0:
                 {
-                    None: FieldDom(alls=dict(v='', d='', i='', s=''),
+                    None: FieldDom(alls=dict(v='', d='', u='', i='',
+                            ri='', s='', a='', A='', e='', r=''),
+                        opts=dict(u='', ri='', a='', A='', e='', r=''),
+                        alts=dict(a="A", A="a"),
                         saids={Saids.d: DigDex.Blake3_256}),
                 },
                 Vrsn_2_0:
@@ -372,10 +391,12 @@ class Serder:
                     None: FieldDom(alls=dict(v='', d='', u='', i='',
                             rd='', s='', a='', A='', e='', r=''),
                         opts=dict(u='', rd='', a='', A='', e='', r=''),
+                        alts=dict(a="A", A="a"),
                         saids={Saids.d: DigDex.Blake3_256}),
                     Ilks.acd: FieldDom(alls=dict(v='', t='', d='', u='', i='',
                             rd='', s='', a='', A='', e='', r=''),
                         opts=dict(u='', rd='', a='', A='', e='', r=''),
+                        alts=dict(a="A", A="a"),
                         saids={Saids.d: DigDex.Blake3_256}),
                     Ilks.sch: FieldDom(alls=dict(v='', t='', d='', s=''),
                         saids={Saids.d: DigDex.Blake3_256}),
@@ -561,17 +582,36 @@ class Serder:
                                   f"protocol = {self.proto}.")
 
         fields = self.Fields[self.proto][self.vrsn][self.ilk]  # get labelage
-        # ensure all required fields in alls are in sad
-        alls = fields.alls  # dict of all field labels with default values
-        keys = list(self._sad)  # get list of keys of self.sad
-        for key in list(keys):  # make copy to mutate
-            if key not in alls:
-                del keys[keys.index(key)]  # remove non required fields
 
-        if list(alls) != keys:  # forces ordering of labels in .sad
-            raise MissingFieldError(f"Missing one or more required fields from"
-                                    f"= {list(alls)} in sad = "
-                                    f"{self._sad}.")
+        alls = fields.alls  # faster local reference
+        oalls = oset(alls)  # ordereset of field labels
+        oopts = oset(fields.opts)  # ordereset of field labels
+        oreqs = oalls - oopts  # required fields
+
+        oskeys = oset(self._sad)  # ordered set of keys in sad (skeys)
+        osexts = oskeys - oalls  # get ordered set of extras in sad (sexts)
+        if osexts and fields.strict:
+            raise ExtraFieldError(f"Unallowed extra field(s) = {list(osexts)} "
+                                     f"in sad.")
+
+        osopts = oskeys - oreqs - osexts  # subset of opts in sad
+
+        osalls = oalls - (oopts - osopts)  # subset of alls without missing opts in sad
+
+        for k, v in fields.alts.items():
+            if k in osopts and v in osopts:
+                raise AlternateFieldError(f"Unallowed, alternate fields '{k}' "
+                                          f"and '{v}' both present in sad.")
+
+        # can't do set math osalls == oskeys - osexts becasue of osexts might be
+        # out-of-order so have to iterate to ensure osexts if any appear in oskeys
+        # after all fields in osalls
+        for i, label in enumerate(osalls):
+            if oskeys[i] != label:
+                raise MissingFieldError(f"Missing or out-of-order field = {label} "
+                                         f"from = {list(osalls)} in sad.")
+
+
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
@@ -663,7 +703,7 @@ class Serder:
             except ValueError as ex:
                 pass
             else:
-                silk = sad.get('t')  # if not in get returns None which may be valid
+                silk = sad.get('t')  # if 't' not in sad .get returns None which may be valid
 
         if proto is None:
             proto = sproto if sproto is not None else self.Proto
@@ -700,34 +740,74 @@ class Serder:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
-        fields = self.Fields[proto][vrsn][ilk]  # get Fieldage of fields
+        fields = self.Fields[proto][vrsn][ilk]  # get FieldDom of fields
 
-        if not sad:  # empty or None so create from defaults
+
+
+        alls = fields.alls  # faster local reference
+        oalls = oset(alls)  # ordereset of field labels
+        oopts = oset(fields.opts)  # ordereset of field labels
+        oreqs = oalls - oopts  # required fields
+
+
+        if not sad:  # empty or None so create sad dict
             sad = {}
-            for label, value in fields.alls.items():
-                if helping.nonStringIterable(value):  # copy iterable defaults
-                    value = copy.copy(value)
+
+        # ensure all required fields are in sad. If not provide default
+        for label in oreqs:
+            if label not in sad:
+                value = alls[label]
+                if helping.nonStringIterable(value):
+                    value = copy.copy(value)  # copy iterable defaults
                 sad[label] = value
 
-            if 't' in sad:  # packet type (ilk) required so set value to ilk
-                sad['t'] = ilk
+        if 't' in sad:  # when packet type field then force ilk
+            sad['t'] = ilk  # assign ilk
 
-        # ensure all required fields in alls are in sad
-        alls = fields.alls  # all field labels
-        for label, value in alls.items():  # ensure provided sad as all required fields
-            if label not in sad:  # supply default
-                if helping.nonStringIterable(value):  # copy iterable defaults
-                    value = copy.copy(value)
-                sad[label] = value
+        # ensure all required fields are in sad. If not provide default
+        #for label in oreqs:  # ensure provided sad has all required fields
+            #if label not in sad:  # supply default
+                #value = alls[label]
+                #if helping.nonStringIterable(value):  # copy iterable defaults
+                    #value = copy.copy(value)
+                #sad[label] = value
 
-        keys = list(sad)  # get list of keys of self.sad
-        for key in list(keys):  # make copy to mutate
-            if key not in alls:
-                del keys[keys.index(key)]  # remove non required fields
+        # ensure required fields are present and all fields are ordered wrt alls
 
-        if list(alls) != keys:  # ensure ordering of fields matches alls
-            raise SerializeError(f"Mismatch one or more of all required fields "
-                                 f" = {list(alls)} in sad = {sad}.")
+        oskeys = oset(sad)  # ordered set of keys in sad (skeys)
+        osexts = oskeys - oalls  # get ordered set of extras in sad (sexts)
+        if osexts and fields.strict:
+            raise SerializeError(f"Unallowed extra field(s) = {list(osexts)} "
+                                 f"in sad.")
+
+        osopts = oskeys - oreqs - osexts  # subset of opts in sad
+
+        osalls = oalls - (oopts - osopts)  # subset of alls without missing opts in sad
+
+        for k, v in fields.alts.items():
+            if k in osopts and v in osopts:
+                raise SerializeError(f"Unallowed, alternate fields '{k}' "
+                                          f"and '{v}' both present in sad.")
+
+        # can't do set math osalls == oskeys - osexts becasue of osexts might be
+        # out-of-order so have to iterate to ensure osexts if any appear in oskeys
+        # after all fields in osalls
+        for i, label in enumerate(osalls):
+            if oskeys[i] != label:
+                raise SerializeError(f"Missing or out-of-order field = {label} "
+                                            f"from = {list(osalls)} in sad.")
+
+
+
+
+        #keys = list(sad)  # get list of keys of self.sad
+        #for key in list(keys):  # make copy to mutate
+            #if key not in alls:
+                #del keys[keys.index(key)]  # remove non required fields
+
+        #if list(alls) != keys:  # ensure ordering of fields matches alls
+            #raise SerializeError(f"Mismatch one or more of all required fields "
+                                 #f" = {list(alls)} in sad = {sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
@@ -1466,58 +1546,6 @@ class SerderKERI(Serder):
         else:
             return self.uuid
 
-
-#class SerderCREL(Serder):
-    #"""SerderCREL is Serder subclass with Labels for CREL packet types (ilks) and
-       #properties for exposing field values of CREL messages
-       #Container Registry Event Log for issuance, revocation, etc registries of
-       #ACDC
-
-       #See docs for Serder
-    #"""
-    ##override in subclass to enforce specific protocol
-    #Protocol = Protos.crel  # required protocol, None means any in Protos is ok
-    #Proto = Protos.crel  # default protocol type
-    #Vrsn = Vrsn_1_1  # default protocol version for protocol type
-
-
-    #def _verify(self, **kwa):
-        #"""Verifies said(s) in sad against raw
-        #Override for protocol and ilk specific verification behavior. Especially
-        #for inceptive ilks that have more than one said field like a said derived
-        #identifier prefix.
-
-        #Raises a ValidationError (or subclass) if any verification fails
-
-        #"""
-        #super(SerderCREL, self)._verify(**kwa)
-
-        #try:
-            #code = Matter(qb64=self.issuer).code
-        #except Exception as ex:
-            #raise ValidationError(f"Invalid issuer AID = "
-                                  #f"{self.issuer}.") from ex
-
-        #if code not in PreDex:
-            #raise ValidationError(f"Invalid issuer AID code = {code}.")
-
-
-    #@property
-    #def issuer(self):
-        #"""
-        #Returns:
-           #issuer (str): qb64  of .sad["i"] issuer AID property getter
-        #"""
-        #return self._sad.get('i')
-
-
-    #@property
-    #def issuerb(self):
-        #"""
-        #Returns:
-        #issuerb (bytes): qb64b  of .issuer property getter as bytes
-        #"""
-        #return self.issuer.encode("utf-8") if self.issuer is not None else None
 
 
 class SerderACDC(Serder):

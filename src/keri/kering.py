@@ -536,11 +536,29 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
+
 class MissingFieldError(ValidationError):
     """
     Missing a required element or field of message
     Usage:
         raise MissingElementError("error message")
+    """
+
+
+class ExtraFieldError(ValidationError):
+    """
+    Extra unallowed field in message
+    Usage:
+        raise ExtraFieldError("error message")
+    """
+
+
+class AlternateFieldError(ValidationError):
+    """
+    Unallowed alternate field in message
+
+    Usage:
+        raise AlternateFieldError("error message")
     """
 
 
@@ -706,7 +724,6 @@ class MissingDelegableApprovalError(ValidationError):
         raise MissingDelegableApprovalError("error message")
     """
 
-MissingDelegableApprovalError
 
 
 # Stream Parsing and Extraction Errors
