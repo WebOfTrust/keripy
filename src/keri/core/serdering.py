@@ -385,6 +385,12 @@ class Serder:
                         opts=dict(u='', ri='', a='', A='', e='', r=''),
                         alts=dict(a="A", A="a"),
                         saids={Saids.d: DigDex.Blake3_256}),
+                    Ilks.ace: FieldDom(alls=dict(v='', t='', d='', u='', i='',
+                            ri='', s='', a='', A='', e='', r=''),
+                        opts=dict(u='', ri='', a='', A='', e='', r=''),
+                        alts=dict(a="A", A="a"),
+                        saids={Saids.d: DigDex.Blake3_256},
+                        strict=False),
                 },
                 Vrsn_2_0:
                 {
@@ -398,6 +404,12 @@ class Serder:
                         opts=dict(u='', rd='', a='', A='', e='', r=''),
                         alts=dict(a="A", A="a"),
                         saids={Saids.d: DigDex.Blake3_256}),
+                    Ilks.ace: FieldDom(alls=dict(v='', t='', d='', u='', i='',
+                            rd='', s='', a='', A='', e='', r=''),
+                        opts=dict(u='', rd='', a='', A='', e='', r=''),
+                        alts=dict(a="A", A="a"),
+                        saids={Saids.d: DigDex.Blake3_256},
+                        strict=False),
                     Ilks.sch: FieldDom(alls=dict(v='', t='', d='', s=''),
                         saids={Saids.d: DigDex.Blake3_256}),
                     Ilks.att: FieldDom(alls=dict(v='', t='', d='', a=''),
@@ -611,8 +623,6 @@ class Serder:
                 raise MissingFieldError(f"Missing or out-of-order field = {label} "
                                          f"from = {list(osalls)} in sad.")
 
-
-
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         saids = copy.copy(fields.saids)  # get copy of saidive field labels and defaults values
@@ -764,16 +774,7 @@ class Serder:
         if 't' in sad:  # when packet type field then force ilk
             sad['t'] = ilk  # assign ilk
 
-        # ensure all required fields are in sad. If not provide default
-        #for label in oreqs:  # ensure provided sad has all required fields
-            #if label not in sad:  # supply default
-                #value = alls[label]
-                #if helping.nonStringIterable(value):  # copy iterable defaults
-                    #value = copy.copy(value)
-                #sad[label] = value
-
         # ensure required fields are present and all fields are ordered wrt alls
-
         oskeys = oset(sad)  # ordered set of keys in sad (skeys)
         osexts = oskeys - oalls  # get ordered set of extras in sad (sexts)
         if osexts and fields.strict:
@@ -796,18 +797,6 @@ class Serder:
             if oskeys[i] != label:
                 raise SerializeError(f"Missing or out-of-order field = {label} "
                                             f"from = {list(osalls)} in sad.")
-
-
-
-
-        #keys = list(sad)  # get list of keys of self.sad
-        #for key in list(keys):  # make copy to mutate
-            #if key not in alls:
-                #del keys[keys.index(key)]  # remove non required fields
-
-        #if list(alls) != keys:  # ensure ordering of fields matches alls
-            #raise SerializeError(f"Mismatch one or more of all required fields "
-                                 #f" = {list(alls)} in sad = {sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
