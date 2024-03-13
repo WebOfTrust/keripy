@@ -580,8 +580,9 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"End role authorization added for role {role}")
+            return True
 
-        yield self.tock
+        return False
 
     def vcp(self, attrs):
         """  Handle issue messages
@@ -656,8 +657,9 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"Registry {vserder.pre} created.")
+            return True
 
-        yield self.tock
+        return False
 
     def iss(self, attrs):
         """  Handle issue messages
@@ -758,8 +760,9 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"Credential {creder.said} complete.")
+            return True
 
-        yield self.tock
+        return False
 
     def rev(self, attrs):
         """  Handle revocation messages
@@ -872,4 +875,6 @@ class ConfirmDoer(doing.DoDoer):
                 while not self.postman.sent(said=last.said):
                     yield self.tock
 
-        yield self.tock
+            return True
+
+        return False

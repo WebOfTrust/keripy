@@ -6,16 +6,13 @@ keri.kli.commands.ipex module
 Join multisig ipex messages
 """
 import argparse
-import json
-from ordered_set import OrderedSet as oset
 
 from hio.base import doing
-from prettytable import PrettyTable
 
-from keri import help, kering
+from keri import help
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
-from keri.app.cli.common import existing, displaying
-from keri.core import coring, eventing, scheming, parsing, routing, serdering
+from keri.app.cli.common import existing
+from keri.core import parsing, routing, serdering
 from keri.peer import exchanging
 from keri.vdr import verifying, credentialing
 
@@ -117,8 +114,12 @@ class JoinDoer(doing.DoDoer):
             route = attrs['r']
 
             if route == '/multisig/exn':
-                if attrs['e']['exn']['r'].startswith("/ipex"):
-                    done = yield from self.ipex(attrs)
+                said = attrs["d"]
+                exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+                embeds = exn.ked['e']
+
+                if embeds['exn']['r'].startswith("/ipex"):
+                    done = yield from self.ipex(exn, pathed)
 
                     if done:
                         self.notifier.noter.notes.rem(keys=keys)
@@ -132,17 +133,16 @@ class JoinDoer(doing.DoDoer):
 
         self.remove(self.toRemove)
 
-    def ipex(self, attrs):
+    def ipex(self, exn, pathed):
         """  Handle exn messages for ipex
 
         Parameters:
-            attrs (dict): attributes of the reply message
+            exn (SerderKERI): exn message
+            pathed (dict): pathed attachments dict
 
         Returns:
 
         """
-        said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
         embeds = exn.ked['e']
         sender = exn.ked['i']
 
@@ -228,8 +228,9 @@ class JoinDoer(doing.DoDoer):
                     yield self.tock
 
                 print("... grant message sent")
+                return True
 
-        yield self.tock
+        return False
 
     def getAdmitRecp(self, exn):
         grant, pathed = exchanging.cloneMessage(self.hby, exn['p'])
