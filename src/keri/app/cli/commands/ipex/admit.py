@@ -127,25 +127,30 @@ class AdmitDoer(doing.DoDoer):
 
         parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
+        sender = self.hab
         if isinstance(self.hab, habbing.GroupHab):
+            sender = self.hab.mhab
             wexn, watc = grouping.multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
-            for recp in smids:  # this goes to other participants only as a signaling mechanism
-                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=recp, topic="multisig")
+            for part in smids:  # this goes to other participants only as a signaling mechanism
+                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
                 postman.send(serder=wexn,
                              attachment=watc)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
-            while not self.exc.complete(said=wexn.said):
+            while not self.exc.complete(said=exn.said):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending admit message to {recp}")
-            postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
+            postman = forwarding.StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
+
+            atc = exchanging.serializeMessage(self.hby, exn.said)
+            del atc[:exn.size]
             postman.send(serder=exn,
                          attachment=atc)
 
@@ -154,5 +159,8 @@ class AdmitDoer(doing.DoDoer):
 
             while not doer.done:
                 yield self.tock
+
+            print(f"... admit message sent")
+            self.remove([doer])
 
         self.remove(self.toRemove)

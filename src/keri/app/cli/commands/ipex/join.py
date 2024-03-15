@@ -12,7 +12,7 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
 from keri.app.cli.common import existing
-from keri.core import parsing, routing, serdering
+from keri.core import parsing, routing, serdering, coring
 from keri.peer import exchanging
 from keri.vdr import verifying, credentialing
 
@@ -106,28 +106,31 @@ class JoinDoer(doing.DoDoer):
 
         print("Waiting for group ipex events...")
 
-        while self.notifier.noter.notes.cntAll() == 0:
-            yield self.tock
+        while True:
 
-        for keys, notice in self.notifier.noter.notes.getItemIter():
-            attrs = notice.attrs
-            route = attrs['r']
+            found = False
+            for keys, notice in self.notifier.noter.notes.getItemIter():
+                attrs = notice.attrs
+                route = attrs['r']
 
-            if route == '/multisig/exn':
-                said = attrs["d"]
-                exn, pathed = exchanging.cloneMessage(self.hby, said=said)
-                embeds = exn.ked['e']
+                if route == '/multisig/exn':
+                    said = attrs["d"]
+                    exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+                    embeds = exn.ked['e']
 
-                if embeds['exn']['r'].startswith("/ipex"):
-                    done = yield from self.ipex(exn, pathed)
+                    if embeds['exn']['r'].startswith("/ipex"):
+                        done = yield from self.ipex(exn, pathed)
 
-                    if done:
-                        self.notifier.noter.notes.rem(keys=keys)
-
-                    else:
-                        delete = input(f"\nDelete event [Y|n]? ")
-                        if delete in ("Y", "y"):
+                        if done:
                             self.notifier.noter.notes.rem(keys=keys)
+
+                        else:
+                            delete = input(f"\nDelete event [Y|n]? ")
+                            if delete in ("Y", "y"):
+                                self.notifier.noter.notes.rem(keys=keys)
+                        found = True
+            if found:
+                break
 
             yield self.tock
 
@@ -158,13 +161,15 @@ class JoinDoer(doing.DoDoer):
         if hab is None:
             raise ValueError(f"message sender not a valid AID={group}")
 
+        print()
         print(f"Group IPEX Message proposal (from {senderAlias}):")
         print(f"    Message Type: {eexn['r']}")
+        print(f"    Message SAID: {eexn['d']}")
         print(f"    Sending From: {hab.name} ({hab.pre})")
 
         match route:
             case "/ipex/admit":
-                recp = self.getAdmitRecp(eexn)
+                recp = yield from self.getAdmitRecp(eexn)
             case "/ipex/agree":
                 recp = self.getAgreeRecp(eexn)
             case "/ipex/apply":
@@ -209,12 +214,14 @@ class JoinDoer(doing.DoDoer):
                                   topic="multisig",
                                   serder=rexn,
                                   attachment=atc)
+                while not self.postman.sent(said=rexn.said):
+                    yield self.tock
 
             while not self.exc.complete(said=eserder.said):
                 self.exc.processEscrow()
                 yield self.tock
 
-            if self.exc.lead(hab.mhab, said=exn.said):
+            if self.exc.lead(hab, said=exn.said):
                 print(f"Sending message {eserder.said} to {recp}")
                 atc = exchanging.serializeMessage(self.hby, eserder.said)
                 del atc[:eserder.size]
@@ -227,9 +234,10 @@ class JoinDoer(doing.DoDoer):
                 while not self.postman.sent(said=eserder.said):
                     yield self.tock
 
-                print("... grant message sent")
+                print("... ipex message sent")
                 return True
 
+            return True
         return False
 
     def getAdmitRecp(self, exn):
@@ -239,6 +247,16 @@ class JoinDoer(doing.DoDoer):
 
         embeds = grant.ked['e']
         acdc = embeds["acdc"]
+        for label in ("anc", "iss", "acdc"):
+            ked = embeds[label]
+            sadder = coring.Sadder(ked=ked)
+            ims = bytearray(sadder.raw) + pathed[label]
+            self.psr.parseOne(ims=ims)
+
+        said = acdc["d"]
+        while not self.rgy.reger.saved.get(keys=said):
+            yield self.tock
+
         return acdc['i']
 
     def getAgreeRecp(self, exn):

@@ -120,10 +120,13 @@ kli ipex join --name issuer2
 wait ${PID_LIST}
 
 echo "Polling for issuee1's IPEX message..."
-SAID=$(kli ipex list --name issuee1 --alias issuee1 --poll --said)
+SAID=$(kli ipex list --name issuee1 --alias issuee1 --poll --said | sed -n '1 p')
+
+echo "Polling for issuee2's IPEX message..."
+kli ipex list --name issuee2 --alias issuee2 --poll --said
 
 echo "Issuee1 Admitting GRANT ${SAID}"
-kli ipex admit --name issuee1 --alias issuee1 --said "${SAID}" &
+kli ipex admit --name issuee1 --alias issuee --said "${SAID}" &
 pid=$!
 PID_LIST="$pid"
 
@@ -132,4 +135,7 @@ kli ipex join --name issuee2
 
 wait ${PID_LIST}
 
-kli vc list --name holder --alias issuee1
+kli vc list --name issuee1 --alias issuee
+
+echo "Issuer1 checking for ADMIT"
+kli ipex list --name issuer1 --alias issuer --poll
