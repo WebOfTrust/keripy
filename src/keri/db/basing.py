@@ -1195,7 +1195,7 @@ class Baser(dbing.LMDBer):
 
         """
         # Check migrations to see if this database is up to date.  Error otherwise
-        if not migrating.Migrator(db=self).current():
+        if not migrating.Migrator(db=self).current(self.version):
             raise kering.DatabaseError("Database migrations must be run.")
 
         removes = []

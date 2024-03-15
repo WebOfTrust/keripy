@@ -1,13 +1,12 @@
 import importlib
 import sys
 
+import keri
 from keri.core import coring
 
 MIGRATIONS = [
-    ("1", ["rekey_habs"])
+    ("1.1.0", ["rekey_habs"])
 ]
-
-VERSION = "1"
 
 
 class Migrator:
@@ -32,8 +31,9 @@ class Migrator:
 
             self.db.migs.pin(keys=(migration,), val=coring.Dater())
 
-    def current(self):
-        return self.db.migs.get(MIGRATIONS[-1]) is not None
+    def current(self, version):
+        return version == keri.__version__
+        # return self.db.migs.get(MIGRATIONS[-1]) is not None
 
     def complete(self, name=None):
         migrations = []

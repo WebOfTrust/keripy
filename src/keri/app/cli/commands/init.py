@@ -12,6 +12,7 @@ from hio.base import doing
 import keri.app.oobiing
 from keri.app import habbing, configing, oobiing, connecting
 from keri.app.keeping import Algos
+from keri.db import migrating
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing
 

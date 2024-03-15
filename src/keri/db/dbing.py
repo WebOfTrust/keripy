@@ -53,12 +53,14 @@ from contextlib import contextmanager
 from typing import Union
 
 import lmdb
+from hio.help.helping import ocfn
 from  ordered_set import OrderedSet as oset
 
 from hio.base import filing
 
 from hio.base import filing
 
+import keri
 from ..kering import MaxON  # maximum ordinal number for seqence or first seen
 
 from ..help import helping
@@ -383,6 +385,16 @@ class LMDBer(filing.Filer):
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=104857600,
                              mode=self.perm, readonly=self.readonly)
+
+        fver = ocfn(path=f"{self.path}/VERSION", perm=self.perm)
+
+        if ver := fver.read():
+            self.version = ver
+        else:
+            self.version = keri.__version__
+            fver.write(self.version)
+            fver.close()
+
         self.opened = True if opened and self.env else False
         return self.opened
 
