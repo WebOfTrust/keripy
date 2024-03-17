@@ -31,6 +31,7 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 parser.add_argument("--said", "-s", help="SAID of the exn grant message to admit", required=True)
 parser.add_argument("--message", "-m", help="optional human readable message to "
                                             "send to recipient", required=False, default="")
+parser.add_argument("--time", help="timestamp", required=False, default=None)
 
 
 def handler(args):
@@ -39,15 +40,17 @@ def handler(args):
                    base=args.base,
                    bran=args.bran,
                    said=args.said,
-                   message=args.message)
+                   message=args.message,
+                   timestamp=args.time)
     return [ed]
 
 
 class AdmitDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, message):
+    def __init__(self, name, alias, base, bran, said, message, timestamp ):
         self.said = said
         self.message = message
+        self.timestamp = timestamp
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
@@ -118,31 +121,36 @@ class AdmitDoer(doing.DoDoer):
             yield self.tock
 
         recp = grant.ked['i']
-        exn, atc = protocoling.ipexAdmitExn(hab=self.hab, message=self.message, grant=grant)
+        exn, atc = protocoling.ipexAdmitExn(hab=self.hab, message=self.message, grant=grant, dt=self.timestamp)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
         parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
+        sender = self.hab
         if isinstance(self.hab, habbing.GroupHab):
+            sender = self.hab.mhab
             wexn, watc = grouping.multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
-            for recp in smids:  # this goes to other participants only as a signaling mechanism
-                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=recp, topic="multisig")
+            for part in smids:  # this goes to other participants only as a signaling mechanism
+                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
                 postman.send(serder=wexn,
                              attachment=watc)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
-            while not self.exc.complete(said=wexn.said):
+            while not self.exc.complete(said=exn.said):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending admit message to {recp}")
-            postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
+            postman = forwarding.StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
+
+            atc = exchanging.serializeMessage(self.hby, exn.said)
+            del atc[:exn.size]
             postman.send(serder=exn,
                          attachment=atc)
 
@@ -151,5 +159,8 @@ class AdmitDoer(doing.DoDoer):
 
             while not doer.done:
                 yield self.tock
+
+            print(f"... admit message sent")
+            self.remove([doer])
 
         self.remove(self.toRemove)

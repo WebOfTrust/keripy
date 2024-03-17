@@ -39,9 +39,12 @@ kli multisig incept --name multisig1 --alias multisig1 --group multisig --file $
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig incept --name multisig2 --alias multisig2 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-sample.json &
-pid=$!
-PID_LIST+=" $pid"
+#kli multisig incept --name multisig2 --alias multisig2 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-sample.json &
+#pid=$!
+#PID_LIST+=" $pid"
+#
+echo "Multisig2 looking to join inception event"
+kli multisig join --name multisig2
 
 wait $PID_LIST
 kli oobi resolve --name holder --oobi-alias multisig --oobi http://127.0.0.1:5642/oobi/EC61gZ9lCKmHAS7U5ehUfEbGId5rcY0D7MirFZHDQcE2/witness
@@ -77,7 +80,7 @@ kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient EL
 pid=$!
 PID_LIST="$pid"
 
-kli multisig join --name multisig2
+kli ipex join --name multisig2
 
 wait ${PID_LIST}
 

@@ -7,8 +7,8 @@ kli query --name multisig1 --alias multisig1 --prefix EJccSRTfXYF6wrUVuenAIHzwcx
 
 # Perform rotation of mulisig AID from local kli AIDs that roll themselves out and the new AIDs in
 kli multisig rotate --name multisig1 --alias multisig \
-         --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:2 \
-         --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:2 \
+         --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 \
+         --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 \
          --smids EBFg-5SGDCv5YfwpkArWRBdTxNRUXU8uVcDKNzizOQZc:0 \
          --smids EBmW2bXbgsP3HITwW3FmITzAb3wVmHlxCusZ46vgGgP5:0 \
          --smids EL4RpdS2Atb2Syu5xLdpz9CcNNYoFUUDlLHxHD09vcgh:0 \
@@ -22,8 +22,8 @@ kli multisig rotate --name multisig1 --alias multisig \
 pid=$!
 PID_LIST="$pid"
 kli multisig rotate --name multisig2 --alias multisig \
-         --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:2 \
-         --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:2 \
+         --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 \
+         --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 \
          --smids EBFg-5SGDCv5YfwpkArWRBdTxNRUXU8uVcDKNzizOQZc:0 \
          --smids EBmW2bXbgsP3HITwW3FmITzAb3wVmHlxCusZ46vgGgP5:0 \
          --smids EL4RpdS2Atb2Syu5xLdpz9CcNNYoFUUDlLHxHD09vcgh:0 \

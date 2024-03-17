@@ -162,6 +162,6 @@ class GrantDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"... grant message sent")
-            self.remove([postman])
+            self.remove([doer])
 
         self.remove(self.toRemove)

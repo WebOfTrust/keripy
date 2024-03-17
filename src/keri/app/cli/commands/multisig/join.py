@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.kli.commands.delegate module
+keri.kli.commands.multisig module
 
 """
 import argparse
@@ -130,8 +130,6 @@ class ConfirmDoer(doing.DoDoer):
                     done = yield from self.iss(attrs)
                 case '/multisig/rev':
                     done = yield from self.rev(attrs)
-                case '/multisig/exn':
-                    done = yield from self.exn(attrs)
                 case _:
                     continue
 
@@ -582,8 +580,9 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"End role authorization added for role {role}")
+            return True
 
-        yield self.tock
+        return False
 
     def vcp(self, attrs):
         """  Handle issue messages
@@ -658,8 +657,9 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"Registry {vserder.pre} created.")
+            return True
 
-        yield self.tock
+        return False
 
     def iss(self, attrs):
         """  Handle issue messages
@@ -760,8 +760,9 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"Credential {creder.said} complete.")
+            return True
 
-        yield self.tock
+        return False
 
     def rev(self, attrs):
         """  Handle revocation messages
@@ -874,85 +875,6 @@ class ConfirmDoer(doing.DoDoer):
                 while not self.postman.sent(said=last.said):
                     yield self.tock
 
-        yield self.tock
+            return True
 
-    def exn(self, attrs):
-        """  Handle exn messages
-
-        Parameters:
-            attrs (dict): attributes of the reply message
-
-        Returns:
-
-        """
-        said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
-        embeds = exn.ked['e']
-        sender = exn.ked['i']
-
-        contact = self.org.get(sender)
-        senderAlias = contact['alias']
-
-        eexn = embeds['exn']
-
-        group = eexn["i"]
-        hab = self.hby.habs[group] if group in self.hby.habs else None
-        if hab is None:
-            raise ValueError(f"message sender not a valid AID={group}")
-
-        print(f"Group Peer-2-Peer Message proposal (from {senderAlias}):")
-        print(f"    Message Type: {eexn['r']}")
-        print(f"    Sending From: {hab.name} ({hab.pre})")
-        recp = eexn['a']['i']
-        contact = self.org.get(recp)
-        if contact is not None and "alias" in contact:
-            print(f"    Sending To: {contact['alias']} ({recp})")
-        else:
-            print(f"    Sending To: Unknown AID ({recp})")
-
-        if self.auto:
-            approve = True
-        else:
-            yn = input(f"\nApprove [Y|n]? ")
-            approve = yn in ('', 'y', 'Y')
-
-        if approve:
-            eserder = serdering.SerderKERI(sad=eexn)
-            anc = bytearray(eserder.raw) + pathed["exn"]
-            self.psr.parseOne(ims=bytes(anc))
-
-            msg = hab.endorse(serder=eserder, last=False, pipelined=False)
-            msg = msg + pathed["exn"]
-            self.psr.parseOne(ims=bytes(msg))
-
-            smids = hab.db.signingMembers(pre=hab.pre)
-            smids.remove(hab.mhab.pre)
-
-            for smid in smids:  # this goes to other participants only as a signaling mechanism
-                rexn, atc = grouping.multisigExn(ghab=hab, exn=msg)
-                self.postman.send(src=hab.mhab.pre,
-                                  dest=smid,
-                                  topic="multisig",
-                                  serder=rexn,
-                                  attachment=atc)
-
-            while not self.exc.complete(said=eserder.said):
-                self.exc.processEscrow()
-                yield self.tock
-
-            if self.exc.lead(hab.mhab, said=exn.said):
-                print(f"Sending message {eserder.said} to {recp}")
-                atc = exchanging.serializeMessage(self.hby, eserder.said)
-                del atc[:eserder.size]
-                self.postman.send(src=hab.mhab.pre,
-                                  dest=recp,
-                                  topic="credential",
-                                  serder=eserder,
-                                  attachment=atc)
-
-                while not self.postman.sent(said=eserder.said):
-                    yield self.tock
-
-                print("... grant message sent")
-
-        yield self.tock
+        return False
