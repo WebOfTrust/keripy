@@ -2090,7 +2090,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-digestive prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519})
+                                      saids = {'i': coring.PreDex.Ed25519},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2233,7 +2234,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N})
+                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid

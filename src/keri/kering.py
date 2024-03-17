@@ -46,7 +46,7 @@ VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]
 
 VEREX = VEREX2 + b'|' + VEREX1
 
-MAXVERFULLSPAN = max(VER1FULLSPAN, VER2FULLSPAN)  # number of characters in full version string
+MAXVERFULLSPAN = max(VER1FULLSPAN, VER2FULLSPAN)  # max number of characters in full version string
 
 Rever = re.compile(VEREX)  # compile is faster
 

@@ -22,8 +22,10 @@ from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
-                      SMELLSIZE, Smellage, smell)
+                      VERRAWSIZE, VERFMT,
+                      MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
+from ..kering import SMELLSIZE, Smellage, smell
+
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
@@ -178,6 +180,7 @@ class Serder:
 
     Class Attributes:
         Dummy (str): dummy character for computing SAIDs
+        Spans (dict): version string spans keyed by version
         Digests (dict): map of digestive codes. Should be same set of codes as
             in coring.DigestCodex coring.DigDex so that .digestive property works.
             Use unit tests to ensure codex sets match
@@ -243,6 +246,9 @@ class Serder:
 
     """
     Dummy = "#"  # dummy spaceholder char for SAID. Must not be a valid Base64 char
+
+    # Spans dict keyed by version (Versionage instance) of version string span (size)
+    Spans = {Vrsn_1_0: VER1FULLSPAN, Vrsn_2_0: VER2FULLSPAN}
 
     # should be same set of codes as in coring.DigestCodex coring.DigDex so
     # .digestive property works. Use unit tests to ensure codex sets match
@@ -539,13 +545,13 @@ class Serder:
                 except Exception:
                     self._said = None  # no saidive field
 
-                if verify:  # verify the said(s) provided in sad
-                    try:
-                        self._verify()  # raises exception when not verify
-                    except Exception as ex:
-                        logger.error("Invalid sad for Serder %s\n%s",
-                                     self.pretty(), ex.args[0])
-                        raise ValidationError(f"Invalid sad for Serder ="
+            if verify:  # verify the said(s) provided in sad
+                try:
+                    self._verify()  # raises exception when not verify
+                except Exception as ex:
+                    logger.error("Invalid sad for Serder %s\n%s",
+                                 self.pretty(), ex.args[0])
+                    raise ValidationError(f"Invalid sad for Serder ="
                                               f"{self._sad}.") from ex
 
         else:
@@ -771,6 +777,10 @@ class Serder:
                     value = copy.copy(value)  # copy iterable defaults
                 sad[label] = value
 
+        # Need to insert required fields in proper place because passed in sad
+        # may have missing require fields that appear before provided ones so
+        # can't simply append
+
         if 't' in sad:  # when packet type field then force ilk
             sad['t'] = ilk  # assign ilk
 
@@ -823,9 +833,11 @@ class Serder:
             raise SerializeError(f"Missing requires version string field 'v'"
                                           f" in sad = {sad}.")
 
-        sad['v'] = self.Dummy * MAXVERFULLSPAN  # ensure size of vs
+        # this size of sad needs to be computed based on actual version string span
+        # since not same for all versions
+        sad['v'] = self.Dummy * self.Spans[vrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
 
-        raw = self.dumps(sad, kind)  # get size of fully dummied sad
+        raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
         size = len(raw)
 
         # generate new version string with correct size
