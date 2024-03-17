@@ -46,7 +46,7 @@ VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]
 
 VEREX = VEREX2 + b'|' + VEREX1
 
-MAXVERFULLSPAN = max(VER1FULLSPAN, VER2FULLSPAN)  # number of characters in full version string
+MAXVERFULLSPAN = max(VER1FULLSPAN, VER2FULLSPAN)  # max number of characters in full version string
 
 Rever = re.compile(VEREX)  # compile is faster
 
@@ -114,9 +114,12 @@ def rematch(match, *, version=None):
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if vrsn.major > 1:  # version1 vs but major > 1
             raise VersionError(f"Incompatible {vrsn=} with version string.")
-        if version is not None and vrsn != version:
-                        raise VersionError(f"Expected {version=}, got "
+        if version is not None:  # compatible version with vrsn
+            if (vrsn.major > version.major or
+                (vrsn.major == version.major and vrsn.minor > version.minor)):
+                    raise VersionError(f"Incompatible {version=}, with "
                                            f"{vrsn=}.")
+
         kind = kind.decode("utf-8")
         if kind not in Serials:
             raise KindError(f"Invalid serialization kind = {kind}.")

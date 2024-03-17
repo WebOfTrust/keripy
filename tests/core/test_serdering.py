@@ -14,7 +14,9 @@ import pytest
 from  ordered_set import OrderedSet as oset
 
 from keri import kering
-from keri.kering import Versionage, Version
+from keri.kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
+                      VERRAWSIZE, VERFMT,
+                      MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
 
 from keri.core import coring
 
@@ -41,6 +43,17 @@ def test_fielddom():
 
     """End Test"""
 
+def test_spans():
+    """
+    Test Spans dict of version string sizes by version
+    """
+    assert Serder.Spans
+    assert isinstance(Serder.Spans, dict)
+
+    assert Serder.Spans[kering.Vrsn_1_0] == kering.VER1FULLSPAN == 17
+    assert Serder.Spans[kering.Vrsn_2_0] == kering.VER2FULLSPAN == 16
+
+    """End Test"""
 
 
 def test_serder():
@@ -437,7 +450,8 @@ def test_serder():
     # Test with non-digestive code for 'i' saidive field no sad
     serder = Serder(makify=True,
                     ilk=kering.Ilks.icp,
-                    saids = {'i': coring.PreDex.Ed25519})
+                    saids = {'i': coring.PreDex.Ed25519},
+                    verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
                         't': 'icp',
@@ -881,7 +895,8 @@ def test_serderkeri_icp():
     # Test with non-digestive code for 'i' saidive field no sad
     serder = SerderKERI(makify=True,
                     ilk=kering.Ilks.icp,
-                    saids = {'i': coring.PreDex.Ed25519})
+                    saids = {'i': coring.PreDex.Ed25519},
+                    verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
                         't': 'icp',
@@ -1018,7 +1033,7 @@ def test_serderkeri_rot():
     """Test SerderKERI rot msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rot
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.rot)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.rot, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                         't': 'rot',
                         'd': 'EMgauZPVfh6807jO9QO8A4Iauq1xhYTZnKX2doVd_UDl',
@@ -1135,7 +1150,7 @@ def test_serderkeri_ixn():
     """Test SerderKERI ixn msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON000073_',
                         't': 'ixn',
                         'd': 'ELI1jUxlJky6RvRieoO20H7_YikKnQMthnWM38etba3r',
@@ -1245,7 +1260,7 @@ def test_serderkeri_dip():
     """Test SerderKERI dip msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk dip
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.dip)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.dip, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000d7_',
                         't': 'dip',
                         'd': 'EPyzEgwg6ls8iY4jViniM15rAFWaaVbsZ4eP2a9ZcKfC',
@@ -1378,7 +1393,8 @@ def test_serderkeri_dip():
     # Test with non-digestive code for 'i' saidive field no sad
     serder = SerderKERI(makify=True,
                     ilk=kering.Ilks.dip,
-                    saids = {'i': coring.PreDex.Ed25519})
+                    saids = {'i': coring.PreDex.Ed25519},
+                    verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000ab_',
                         't': 'dip',
@@ -1412,7 +1428,7 @@ def test_serderkeri_dip():
     sad['i'] = pre
     sad['di'] = delpre
 
-    serder = SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True, verify=False)
 
     assert not serder.verify()
     pre = 'EF78YGUYCWXptoVVel1TN1F9-KShPHAtEqvf-TEiGvv9'
@@ -1547,7 +1563,7 @@ def test_serderkeri_dip():
 def test_serderkeri_drt():
     """Test SerderKERI drt msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk drt
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.drt)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.drt, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                         't': 'drt',
                         'd': 'EMiEhgKRsD559TX6b03AT5P2GfKPPqoNk5COHZxU2TkR',
@@ -1578,7 +1594,7 @@ def test_serderkeri_drt():
     pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
     sad['i'] = pre
 
-    serder = SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True, verify=False)
 
     assert not serder.verify()  # because pre is not digest and delpre is empty
     sad = serder.sad
@@ -1671,7 +1687,7 @@ def test_serderkeri_rct():
     """Test SerderKERI rct msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.rct)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.rct, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON000039_', 't': 'rct', 'd': '', 'i': '', 's': '0'}
 
     assert serder.raw == b'{"v":"KERI10JSON000039_","t":"rct","d":"","i":"","s":"0"}'
@@ -2392,7 +2408,7 @@ def test_serderacdc():
     with pytest.raises(ValueError):
         serder = SerderACDC()
 
-    serder = SerderACDC(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    serder = SerderACDC(makify=True, proto=kering.Protos.acdc, verify=False)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON00005a_',
                           'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
                           'i': '',
@@ -2456,12 +2472,101 @@ def test_serderacdc():
 
     """End Test"""
 
+def test_serder_v2():
+    """
+    Test Serder with version 2.00 of protocols
+    """
+
+
+    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_2_0][None].saids == {'d': 'E'}
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_2_0][None].alls ==
+            {'v': '', 'd': '', 'u': '', 'i': '', 'rd': '', 's': '', 'a': '', 'A': '', 'e': '', 'r': ''})
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_2_0][None].opts ==
+            {'u': '', 'rd': '', 'a': '', 'A': '', 'e': '', 'r': ''})
+    assert (Serder.Fields[kering.Protos.acdc][kering.Vrsn_2_0][None].alts ==
+            {'a': 'A', 'A': 'a'})
+    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_2_0][None].strict
+
+
+
+    with pytest.raises(ValueError):
+        serder = Serder(version=kering.Vrsn_2_0)
+
+    #Test Serder bare makify bootstrap for ACDC JSON
+    serder = Serder(makify=True,
+                    proto=kering.Protos.acdc,
+                    vrsn=kering.Vrsn_2_0,
+                    version=kering.Vrsn_2_0)  # make defaults for ACDC
+    assert serder.sad == {'v': 'ACDCCAAJSONAABZ.',
+                            'd': 'EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy',
+                            'i': '',
+                            's': ''}
+    assert serder.raw == (b'{"v":"ACDCCAAJSONAABZ.","d":"EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy","'
+                          b'i":"","s":""}')
+    assert serder.verify()
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
+
+    serder = Serder(sad=sad, version=kering.Vrsn_2_0)
+    assert serder.raw == raw
+    assert isinstance(serder.raw, bytes)
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.acdc
+    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
+    assert serder.ilk == None
+    assert serder.compare(said=said)
+    assert serder.compare(said=said.encode("utf-8"))
+    assert not serder.compare(said='EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE')
+    assert serder.pretty() == ('{\n'
+                ' "v": "ACDCCAAJSONAABZ.",\n'
+                ' "d": "EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy",\n'
+                ' "i": "",\n'
+                ' "s": ""\n'
+                '}')
+
+    serder = Serder(raw=raw, version=kering.Vrsn_2_0)
+    assert serder.raw == raw
+    assert isinstance(serder.raw, bytes)
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.acdc
+    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
+    assert serder.ilk == None
+    assert serder.compare(said=said)
+    assert serder.compare(said=said.encode("utf-8"))
+
+    serder = Serder(sad=sad, makify=True, version=kering.Vrsn_2_0)  # test makify with sad
+    assert serder.raw == raw
+    assert isinstance(serder.raw, bytes)
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.acdc
+    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
+    assert serder.ilk == None
+    assert serder.compare(said=said)
+
+
+    """End Test"""
+
+
 
 def test_serdery():
     """Test Serdery"""
     #Create incoming message stream for Serdery to reap
 
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn, verify=False)  # make with defaults
     sad = serder.sad
     pre = "EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"
     sad['i'] = pre
@@ -2472,7 +2577,7 @@ def test_serdery():
 
     ims = bytearray(serderKeri.raw)
 
-    serder = SerderACDC(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    serder = SerderACDC(makify=True, proto=kering.Protos.acdc, verify=False)  # make defaults for ACDC
     sad = serder.sad
     isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
     sad['i'] = isr
@@ -2514,7 +2619,7 @@ def test_serdery_noversion():
     """Test Serdery unsupported version"""
     #Create incoming message stream for Serdery to reap
 
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn, verify=False)  # make with defaults
     sad = serder.sad
     pre = "EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"
     sad['i'] = pre
@@ -2525,7 +2630,7 @@ def test_serdery_noversion():
 
     ims = bytearray(serderKeri.raw)
 
-    serder = SerderACDC(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    serder = SerderACDC(makify=True, proto=kering.Protos.acdc, verify=False)  # make defaults for ACDC
     sad = serder.sad
     isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
     sad['i'] = isr
@@ -2566,6 +2671,7 @@ def test_serdery_noversion():
 
 if __name__ == "__main__":
     test_fielddom()
+    test_spans()
     test_serder()
     test_serderkeri()
     test_serderkeri_icp()
@@ -2581,5 +2687,6 @@ if __name__ == "__main__":
     test_serderkeri_exn()
     test_serderkeri_vcp()
     test_serderacdc()
+    test_serder_v2()
     test_serdery()
     test_serdery_noversion()

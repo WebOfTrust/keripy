@@ -2090,7 +2090,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-digestive prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519})
+                                      saids = {'i': coring.PreDex.Ed25519},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2233,7 +2234,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N})
+                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2244,7 +2246,7 @@ def test_kever(mockHelpingNowUTC):
         sad['n'] = nxt
         sad['bt'] = "{:x}".format(toad)
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EFsuiA86Q5gGuVOO3tou8KSU6LORSExIUxzWNrlnW7WP'
         assert serder.pre == skp0.verfer.qb64
         aid0 = serder.pre
@@ -2270,7 +2272,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N})
+                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2278,7 +2281,7 @@ def test_kever(mockHelpingNowUTC):
         sad['kt'] = "{:x}".format(sith)  # hex string
         sad['k'] = keys
         sad['nt'] = 0
-        sad['n'] = nxt
+        sad['n'] = nxt  # empty nxt
         sad['bt'] = "{:x}".format(toad)
 
         serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
@@ -2327,7 +2330,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N})
+                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2339,7 +2343,7 @@ def test_kever(mockHelpingNowUTC):
         sad['bt'] = "{:x}".format(toad)
         sad['b'] = baks
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EKcREpfNupJ8oOqdnqDIyJVr1-GgIMBrVOtBUR9Gm6lO'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2362,7 +2366,7 @@ def test_kever(mockHelpingNowUTC):
         sad =serder.sad  # makes copy
         sad['bt'] = "{:x}".format(toad)
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EBKhptvqccp0KNBaS45bNPdTE4m19U1IvweHJW2PIEDI'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2391,7 +2395,7 @@ def test_kever(mockHelpingNowUTC):
         sad['b'] = baks
         sad['a'] = a
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EEu-cdj_9b_66XRJ5UuhgEvJxAPpn4RjyaHvRgDU3iyA'
         assert serder.pre == skp0.verfer.qb64
 

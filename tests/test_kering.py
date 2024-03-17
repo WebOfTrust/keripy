@@ -19,6 +19,7 @@ from keri.kering import (Versionage, Version, MAXVERFULLSPAN,
                          versify, deversify, Rever)
 from keri.kering import (VER1FULLSPAN, VER1TERM, VEREX1,
                          VER2FULLSPAN, VER2TERM, VEREX2, VEREX)
+
 from keri.kering import VersionError, ProtocolError, KindError
 from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
                          codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
@@ -42,6 +43,8 @@ def test_protos():
     assert 'ACDC' in Protos
 
     """End Test"""
+
+
 
 def test_version_regex():
     """
@@ -480,9 +483,10 @@ def test_versify_v2():
     with pytest.raises(KindError):
         smellage = deversify(vs)
 
-
-
     """End Test"""
+
+
+
 
 
 def test_ilks():
