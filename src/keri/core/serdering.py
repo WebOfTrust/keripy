@@ -744,9 +744,12 @@ class Serder:
             raise SerializeError(f"Expected protocol = {self.Protocol}, got "
                                  f"{proto} instead.")
 
-        if version is not None and vrsn != version:
-            raise SerializeError(f"Expected version = {version}, got "
-                               f"{vrsn.major}.{vrsn.minor}.")
+        if version is not None:  # compatible version with vrsn
+            if (vrsn.major > version.major or
+                (vrsn.major == version.major and vrsn.minor > version.minor)):
+                    raise SerializeError(f"Incompatible {version=}, with "
+                                           f"{vrsn=}.")
+
 
         if kind not in Serials:
             raise SerializeError(f"Invalid serialization kind = {kind}")
