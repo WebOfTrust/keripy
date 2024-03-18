@@ -15,8 +15,8 @@ MaxON = int("f"*32, 16)  # 256 ** 16 - 1 maximum ordinal number, sequence or fir
 
 
 # Serialization Kinds
-Serialage = namedtuple("Serialage", 'json mgpk cbor')
-Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
+Serialage = namedtuple("Serialage", 'json mgpk cbor cesr')
+Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR', cesr='CESR')
 
 # Protocol Types
 Protocolage = namedtuple("Protocolage", "keri acdc")
