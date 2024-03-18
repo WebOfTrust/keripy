@@ -59,6 +59,8 @@ class SuberBase():
         db (dbing.LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
+        verify (bool): some subclasses want to re-verify when deser from db
+                       default false
     """
     Sep = '.'  # separator for combining key iterables
 
@@ -66,6 +68,7 @@ class SuberBase():
                        subkey: str='docs.',
                        dupsort: bool=False,
                        sep: str=None,
+                       verify: bool=False,
                        **kwa):
         """
         Parameters:
@@ -77,10 +80,12 @@ class SuberBase():
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
         """
-        super(SuberBase, self).__init__()
+        super(SuberBase, self).__init__()  # for multi inheritance
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.sep = sep if sep is not None else self.Sep
+        self.verify = True if verify else False
+
 
 
     def _tokey(self, keys: Union[str, bytes, memoryview, Iterable],
@@ -1113,7 +1118,7 @@ class SerderSuber(Suber):
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return self.klas(raw=bytes(val)) if val is not None else None
+        return self.klas(raw=bytes(val), verify=self.verify) if val is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -1145,7 +1150,7 @@ class SerderSuber(Suber):
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield self._tokeys(iokey), self.klas(raw=bytes(val))
+            yield self._tokeys(iokey), self.klas(raw=bytes(val), verify=self.verify)
 
 
 class SchemerSuber(Suber):
