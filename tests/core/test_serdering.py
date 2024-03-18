@@ -2554,6 +2554,34 @@ def test_serder_v2():
     assert serder.ilk == None
     assert serder.compare(said=said)
 
+    # test default
+    serder = Serder(makify=True,
+                    vrsn=kering.Vrsn_2_0,
+                    version=kering.Vrsn_2_0)  # make defaults for default proto
+
+
+    assert serder.sad == {'v': 'KERICAAJSONAADO.',
+                            't': 'icp',
+                            'd': 'EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf21VH3bn',
+                            'i': 'EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf21VH3bn',
+                            's': '0',
+                            'kt': '0',
+                            'k': [],
+                            'nt': '0',
+                            'n': [],
+                            'bt': '0',
+                            'b': [],
+                            'c': [],
+                            'a': []}
+    assert serder.raw == (b'{"v":"KERICAAJSONAADO.","t":"icp","d":"EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf'
+                        b'21VH3bn","i":"EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf21VH3bn","s":"0","kt":"0"'
+                        b',"k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
+    assert serder.verify()
+    assert serder.proto == kering.Protos.keri == Serder.Proto  # default
+    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.kind == kering.Serials.json == Serder.Kind  # default
+    assert serder.ilk == kering.Ilks.icp  # default first one
+
 
     """End Test"""
 
