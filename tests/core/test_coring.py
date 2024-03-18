@@ -31,7 +31,7 @@ from keri.core.coring import (Ilkage, Ilks, Saids, Protos, Protocolage,
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
-                              CtrDex, Counter, ProDex)
+                              CtrDex, Counter, GenDex)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
@@ -46,21 +46,21 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
 from keri.kering import Version, Versionage, VersionError
 
 
-def test_protocol_genus_codex():
+def test_genus_codex():
     """
-    Test genera in ProDex as instance of ProtocolGenusCodex
+    Test protocol genera in GenDex as instance of GenusCodex
 
     """
 
-    assert dataclasses.asdict(ProDex) == {
+    assert dataclasses.asdict(GenDex) == {
         'KERI': '--AAA', # KERI and ACDC Protocol Stacks share the same tables
         'ACDC': '--AAA',
         }
 
-    assert '--AAA' in ProDex
-    assert ProDex.KERI == "--AAA"
-    assert ProDex.ACDC == "--AAA"
-    assert ProDex.KERI == ProDex.ACDC
+    assert '--AAA' in GenDex
+    assert GenDex.KERI == "--AAA"
+    assert GenDex.ACDC == "--AAA"
+    assert GenDex.KERI == GenDex.ACDC
 
     """End Test"""
 
