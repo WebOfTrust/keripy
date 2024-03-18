@@ -456,7 +456,7 @@ class Counter:
         Extracts self.code and self.count from qualified base64 bytes qb64b
         """
         if not qb64b:  # empty need more bytes
-            raise ShortageError("Empty material, Need more characters.")
+            raise kering.ShortageError("Empty material, Need more characters.")
 
         first = qb64b[:2]  # extract first two char code selector
         if hasattr(first, "decode"):
