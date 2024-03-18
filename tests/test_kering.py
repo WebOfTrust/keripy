@@ -173,9 +173,6 @@ def test_serials():
     """
     Test Serializations namedtuple instance Serials
     """
-    Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
-                         mgpk=versify(kind=Serials.mgpk, size=0),
-                         cbor=versify(kind=Serials.cbor, size=0))
 
     assert Version == Versionage(major=1, minor=0)
 
@@ -184,14 +181,23 @@ def test_serials():
     assert Serials.json == 'JSON'
     assert Serials.mgpk == 'MGPK'
     assert Serials.cbor == 'CBOR'
+    assert Serials.cesr == 'CESR'
 
     assert 'JSON' in Serials
     assert 'MGPK' in Serials
     assert 'CBOR' in Serials
+    assert 'CESR' in Serials
+
+    Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
+                         mgpk=versify(kind=Serials.mgpk, size=0),
+                         cbor=versify(kind=Serials.cbor, size=0),
+                         cesr=versify(kind=Serials.cesr, size=0))
+
 
     assert Vstrings.json == 'KERI10JSON000000_'
     assert Vstrings.mgpk == 'KERI10MGPK000000_'
     assert Vstrings.cbor == 'KERI10CBOR000000_'
+    assert Vstrings.cesr == 'KERI10CESR000000_'
 
     icp = dict(vs=Vstrings.json,
                pre='AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',

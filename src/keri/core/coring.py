@@ -4695,8 +4695,8 @@ CtrDex = CounterCodex()
 
 
 @dataclass(frozen=True)
-class ProtocolGenusCodex:
-    """ProtocolGenusCodex is codex of protocol genera for code table.
+class GenusCodex:
+    """GenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -4710,45 +4710,7 @@ class ProtocolGenusCodex:
         # duplicate values above just result in multiple entries in tuple so
         # in inclusion still works
 
-ProDex = ProtocolGenusCodex()  # Make instance
-
-
-@dataclass(frozen=True)
-class AltCounterCodex:
-    """
-    CounterCodex is codex hard (stable) part of all counter derivation codes.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-
-    ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
-    WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
-    NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
-    TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
-    FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
-    TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
-    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegators or issuers event
-    TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
-    SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
-    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
-    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    MessageDataGroups: str = '-U'  # Composed Message Data Group or Primitive
-    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    MessageDataMaterialQuadlets: str = '-W'  # Composed Grouped Message Data Quadlet (4 char each)
-    CombinedMaterialQuadlets: str = '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
-    MaterialGroups: str = '-Y'  # Composed Generic Material Group or Primitive
-    MaterialQuadlets: str = '-Z'  # Composed Generic Material Quadlet (4 char each)
-    BigMessageDataGroups: str = '-0U'  # Composed Message Data Group or Primitive
-    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigMessageDataMaterialQuadlets: str = '-0W'  # Composed Grouped Message Data Quadlet (4 char each)
-    BigCombinedMaterialQuadlets: str = '-0X'  # Combined Message Data + Attachments Quadlet (4 char each)
-    BigMaterialGroups: str = '-0Y'  # Composed Generic Material Group or Primitive
-    BigMaterialQuadlets: str = '-0Z'  # Composed Generic Material Quadlet (4 char each)
-
-
-    def __iter__(self):
-        return iter(astuple(self))  # enables inclusion test with "in"
+GenDex = GenusCodex()  # Make instance
 
 
 class Counter:
@@ -4759,6 +4721,8 @@ class Counter:
     Sub classes are derivation code and key event element context specific.
 
     Includes the following attributes and properties:
+
+    Class Attributes:
 
     Attributes:
 
@@ -4780,7 +4744,6 @@ class Counter:
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    Codex = CtrDex
     # Hards table maps from bytes Base64 first two code chars to int of
     # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
     # is always > 0 and hs + ss = fs always
@@ -4788,6 +4751,11 @@ class Counter:
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
     Hards.update([('-0', 3)])
     Hards.update([('--', 5)])
+
+    # Bards table maps to hard size, hs, of code from bytes holding sextets
+    # converted from first two code char. Used for ._bexfil.
+    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
+
     # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
@@ -4808,9 +4776,9 @@ class Counter:
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
         '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
     }
-    # Bards table maps to hard size, hs, of code from bytes holding sextets
-    # converted from first two code char. Used for ._bexfil.
-    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
+
+    Codex = CtrDex
+
 
     def __init__(self, code=None, count=None, countB64=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
