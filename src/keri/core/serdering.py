@@ -780,9 +780,15 @@ class Serder:
                     value = copy.copy(value)  # copy iterable defaults
                 sad[label] = value
 
-        # Need to insert required fields in proper place because passed in sad
-        # may have missing require fields that appear before provided ones so
-        # can't simply append
+        sadold = sad
+        sad = {}
+        for label in oalls:  # make sure all fields are in correct order
+            if label in sadold:
+                sad[label] = sadold[label]
+
+        for label in sadold:  # copy extras if any
+            if label not in sad:
+                sad[label] = sadold[label]
 
         if 't' in sad:  # when packet type field then force ilk
             sad['t'] = ilk  # assign ilk
