@@ -606,13 +606,10 @@ def test_serder():
     sad = serder.sad
     sad["ri"] = ""
 
-    with pytest.raises(kering.SerializeError):
-        serder = Serder(makify=True, sad=sad)  # make using sad
-
+    serder = Serder(makify=True, sad=sad)  # make using sad fixes order
 
     # extra field with strict
     sad = serder.sad
-    assert 'ri' not in sad
     sad["x"] = ""
 
     with pytest.raises(kering.SerializeError):
@@ -659,8 +656,7 @@ def test_serder():
     # out of order with extra
     sad = serder.sad
     sad["ri"] = ""
-    with pytest.raises(kering.SerializeError):
-        serder = Serder(makify=True, sad=sad)  # make using sad
+    serder = Serder(makify=True, sad=sad)  # makify fixes order with extra
 
     # ToDo: create malicious raw values to test verify more thoroughly
     # ToDo: create bad sad values to test makify more thoroughly
@@ -1313,6 +1309,7 @@ def test_serderkeri_dip():
     assert serder.verify()
 
     raw = serder.raw
+    sad = serder.sad
     said = serder.said
     size = serder.size
     ilk = serder.ilk
