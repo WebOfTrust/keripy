@@ -5,15 +5,16 @@ keri.core.counting module
 Provides versioning support for Counter classes and codes
 """
 
-from dataclasses import dataclass, astuple
-
+from dataclasses import dataclass, astuple, asdict
+from collections import namedtuple
 
 from ..help import helping
 from ..help.helping import sceil
-from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
+from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64,
                             nabSextets)
 
 from .. import kering
+from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0)
 
 from ..core.coring import Sizage
 
@@ -78,7 +79,7 @@ class MapCodex:
 
 
 @dataclass(frozen=True)
-class CounterCodex:
+class CounterCodex_1_0(MapCodex):
     """
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
@@ -104,11 +105,40 @@ class CounterCodex:
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-CtrDex = CounterCodex()
+CtrDex_1_0 = CounterCodex_1_0()
+
+@dataclass(frozen=True)
+class CounterCodex_2_0(MapCodex):
+    """
+    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+
+    ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
+    WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
+    NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
+    TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
+    FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
+    TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
+    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
+    TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
+    SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
+    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
+    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
+    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+CtrDex_2_0 = CounterCodex_2_0()
 
 
 @dataclass(frozen=True)
-class GenusCodex:
+class GenusCodex(MapCodex):
     """GenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.
@@ -124,6 +154,19 @@ class GenusCodex:
         # in inclusion still works
 
 GenDex = GenusCodex()  # Make instance
+
+# keys and values as strings of keys
+Codict1 = asdict(CtrDex_1_0)
+Tagage_1_0 = namedtuple("Tagage_1_0", list(Codict1), defaults=list(Codict1))
+Tags_1_0 = Tagage_1_0()  # uses defaults
+
+Codict2 = asdict(CtrDex_2_0)
+Tagage_2_0 = namedtuple("Tagage_2_0", list(Codict2), defaults=list(Codict2))
+Tags_2_0 = Tagage_2_0()  # uses defaults
+
+CodictAll = Codict1 | Codict2
+AllTagage = namedtuple("AllTagage", list(CodictAll), defaults=list(CodictAll))
+AllTags = AllTagage()  # uses defaults
 
 
 """
@@ -180,10 +223,21 @@ class Counter:
 
     Includes the following attributes and properties:
 
+    Class Attributes:
+        Codes
+        Tags
+        Hards
+        Bards
+        Sizes
+
     Attributes:
 
+
     Properties:
-        .code is  str derivation code to indicate cypher suite
+        .version (Versionage): current CESR code table protocol genus version
+        .codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
+        .sizes (dict): version specific sizes table
+        .code (str) derivation code to indicate cypher suite
         .raw is bytes crypto material only without code
         .pad  is int number of pad chars given raw
         .count is int count of grouped following material (not part of counter)
@@ -192,6 +246,9 @@ class Counter:
         .qb2  is bytes in binary with derivation code + crypto material
 
     Hidden:
+        ._version (Versionage): value for .version property
+        ._codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
+        ._sizes (dict): version specific sizes table
         ._code is str value for .code property
         ._raw is bytes value for .raw property
         ._pad is method to compute  .pad property
@@ -200,6 +257,9 @@ class Counter:
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
+    Codes = {Vrsn_1_0: CtrDex_1_0, Vrsn_2_0: CtrDex_2_0}
+    Tags = {Vrsn_1_0: Tags_1_0, Vrsn_2_0: Tags_2_0}
+
     # Hards table maps from bytes Base64 first two code chars to int of
     # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
     # is always > 0 and hs + ss = fs always
@@ -217,6 +277,8 @@ class Counter:
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
     Sizes = \
     {
+        Vrsn_1_0: \
+        {
         '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
@@ -232,17 +294,39 @@ class Counter:
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
         '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+        },
+        Vrsn_2_0: \
+        {
+        '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+        },
     }
 
-    Codex = CtrDex
 
-
-    def __init__(self, code=None, count=None, countB64=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
+    def __init__(self, tag=None, *, code = None, count=None, countB64=None,
+                 qb64b=None, qb64=None, qb2=None, strip=False, version=Version):
         """
         Validate as fully qualified
         Parameters:
+            tag (str | None):  label of stable (hard) part of derivation code
+                               to lookup in codex so it can depend on version.
+                               takes precedence over tag
             code (str | None):  stable (hard) part of derivation code
+                            if tag provided lookup code from tag
+                            else if tag is None and code provided use code
             count (int | None): count for composition.
                 Count may represent quadlets/triplet, groups, primitives or
                 other numericy
@@ -251,11 +335,16 @@ class Counter:
                 countB64 may represent quadlets/triplet, groups, primitives or
                 other numericy
             qb64b (bytes | bytearray | None): fully qualified crypto material text domain
+                if code nor tag is provided
             qb64 (str | None) fully qualified crypto material text domain
+                if code nor tag not qb64b is provided
             qb2 (bytes | bytearray | None)  fully qualified crypto material binary domain
+                if code nor tag not qb64b nor qb54 is provided
             strip (bool):  True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip.
                 default False
+            version (Versionage): instance of version of code tables to use
+                                  provides protocol genera version
 
 
         Needs either code or qb64b or qb64 or qb2
@@ -265,11 +354,20 @@ class Counter:
         .code and .count
 
         """
+        self._version = version
+        self._codes = self.Codes[self._version]
+        self._sizes = self.Sizes[self._version]
+
+        if tag:
+            if not hasattr(self._codes, tag):
+                raise kering.InvalidCodeError(f"Unsupported {tag=}.")
+            code = self._codes[tag]
+
         if code is not None:  # code provided
-            if code not in self.Sizes:
+            if code not in self._sizes:
                 raise kering.InvalidCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
+            hs, ss, fs, ls = self._sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
             if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
                 raise kering.InvalidCodeSizeError("Whole code size not full size or not "
@@ -287,7 +385,7 @@ class Counter:
         elif qb64b is not None:
             self._exfil(qb64b)
             if strip:  # assumes bytearray
-                del qb64b[:self.Sizes[self.code].fs]
+                del qb64b[:self._sizes[self.code].fs]
 
         elif qb64 is not None:
             self._exfil(qb64)
@@ -295,12 +393,44 @@ class Counter:
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
             self._bexfil(qb2)
             if strip:  # assumes bytearray
-                del qb2[:self.Sizes[self.code].fs * 3 // 4]
+                del qb2[:self._sizes[self.code].fs * 3 // 4]
 
         else:
             raise kering.EmptyMaterialError("Improper initialization need either "
                                      "(code and count) or qb64b or "
                                      "qb64 or qb2.")
+
+    @property
+    def version(self):
+        """
+        Returns ._version
+        Makes .version read only
+        """
+        return self._version
+
+    @property
+    def codes(self):
+        """
+        Returns ._codes
+        Makes .codes read only
+        """
+        return self._codes
+
+    @property
+    def tags(self):
+        """
+        Returns ._tags
+        Makes .tags read only
+        """
+        return self._tags
+
+    @property
+    def sizes(self):
+        """
+        Returns ._sizes
+        Makes .sizes read only
+        """
+        return self._sizes
 
     @property
     def code(self):
@@ -357,44 +487,77 @@ class Counter:
 
         """
         if l is None:
-            _, ss, _, _ = self.Sizes[self.code]
+            _, ss, _, _ = self._sizes[self.code]
             l = ss
         return (intToB64(self.count, l=l))
 
 
     @staticmethod
-    def semVerToB64(version="", major=0, minor=0, patch=0):
-        """ Converts semantic version to Base64 representation of countB64
+    def verToB64(version=None, *, text="", major=0, minor=0):
+        """ Converts version to Base64 representation of countB64
         suitable for CESR protocol genus and version
 
         Returns:
             countB64 (str): suitable for input to Counter
-            example: Counter(countB64=semVerToB64(version = "1.0.0"))
+
+        Example:
+            Counter(countB64=Counter.verToB64(verstr = "1.0"))
 
         Parameters:
-            version (str | None): dot separated semantic version string of format
-                "major.minor.patch"
-            major (int): When version is None or empty then use major,minor, patch
-            minor (int): When version is None or empty then use major,minor, patch
-            patch (int): When version is None or empty then use major,minor, patch
-
-        each of major, minor, patch must be in range [0,63] for represenation as
-        three Base64 characters
+            version (Versionage): instange of namedtuple
+                         Versionage(major=major,minor=minor)
+            text (str): text format of version as dotted decimal "major.minor"
+            major (int): When version is None and verstr is empty then use major minor
+                        range [0, 63] for one Base64 character
+            minor (int): When version is None and verstr is  empty then use major minor
+                        range [0, 4095] for two Base64 characters
 
         """
-        parts = [major, minor, patch]
         if version:
-            splits = version.split(".", maxsplit=3)
-            splits = [(int(s) if s else 0) for s in splits]
-            for i in range(3-len(splits),0, -1):
-                splits.append(parts[-i])
-            parts = splits
+            major = version.major
+            minor = version.minor
 
-        for p in parts:
-            if p < 0 or p > 63:
-                raise ValueError(f"Out of bounds semantic version. "
-                                 f"Part={p} is < 0 or > 63.")
-        return ("".join(intToB64(p, l=1) for p in parts))
+        elif text:
+            splits = text.split(".", maxsplit=2)
+            splits = [(int(s) if s else 0) for s in splits]
+            parts = [major, minor]
+            for i in range(2-len(splits),0, -1):  # append missing minor and/or major
+                splits.append(parts[-i])
+            major = splits[0]
+            minor = splits[1]
+
+        if major < 0 or major > 63 or minor < 0 or minor > 4095:
+                raise ValueError(f"Out of bounds version = {major}.{minor}.")
+
+        return (f"{intToB64(major)}{intToB64(minor, l=2)}")
+
+
+    @staticmethod
+    def b64ToVer(b64, *, texted=False):
+        """ Converts Base64 representation of version to Versionage or
+        text dotted decimal format
+
+        default is Versionage
+
+        Returns:
+            version (Versionage | str):
+
+        Example:
+            Counter(version=Counter.b64ToVer("BAA"))
+
+        Parameters:
+            b64 (str): base64 string of three characters Mmm for Major minor
+            texted (bool): return text format dotted decimal string
+
+
+        """
+        if not Reb64.match(b64.encode("utf-8")):
+            raise ValueError("Invalid Base64.")
+
+        if texted:
+            return ".".join([f"{b64ToInt(b64[0])}", f"{b64ToInt(b64[1:3])}"])
+
+        return Versionage(major=b64ToInt(b64[0]), minor=b64ToInt(b64[1:3]))
 
 
     def _infil(self):
@@ -405,7 +568,7 @@ class Counter:
         code = self.code  # codex value chars hard code
         count = self.count  # index value int used for soft
 
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, fs, ls = self._sizes[code]
         cs = hs + ss  # both hard + soft size
         if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
             raise kering.InvalidCodeSizeError("Whole code size not full size or not "
@@ -433,7 +596,7 @@ class Counter:
         code = self.code  # codex chars hard code
         count = self.count  # index value int used for soft
 
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, fs, ls = self._sizes[code]
         cs = hs + ss
         if fs != cs or cs % 4:  # fs must be cs and multiple of 4 for count codes
             raise kering.InvalidCodeSizeError("Whole code size not full size or not "
@@ -475,10 +638,10 @@ class Counter:
         hard = qb64b[:hs]  # get hard code
         if hasattr(hard, "decode"):
             hard = hard.decode("utf-8")  # decode converts bytearray/bytes to str
-        if hard not in self.Sizes:  # Sizes needs str not bytes
+        if hard not in self._sizes:  # Sizes needs str not bytes
             raise kering.UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
-        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs consistent in both tables
+        hs, ss, fs, ls = self._sizes[hard]  # assumes hs consistent in both tables
         cs = hs + ss  # both hard + soft code size
 
         # assumes that unit tests on Counter and CounterCodex ensure that
@@ -518,10 +681,10 @@ class Counter:
             raise kering.ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
 
         hard = codeB2ToB64(qb2, hs)  # extract and convert hard part of code
-        if hard not in self.Sizes:
+        if hard not in self._sizes:
             raise kering.UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
-        hs, ss, fs, ls = self.Sizes[hard]
+        hs, ss, fs, ls = self._sizes[hard]
         cs = hs + ss  # both hs and ss
         # assumes that unit tests on Counter and CounterCodex ensure that
         # .Codes and .Sizes are well formed.
