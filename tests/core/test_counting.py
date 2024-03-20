@@ -352,10 +352,11 @@ def test_counter():
         for ckey, cval in vsize.items():
             assert Counter.Hards[ckey[:2]] == cval.hs
 
-    #  verify all Codes have hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
+    #  verify all Codes have hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
+    # if hs < 2 or ss <= 0 or fs != cs or cs % 4   cs = hs + ss
     for vsize in Counter.Sizes.values():
         for val in vsize.values():
-            assert val.hs > 0 and val.ss > 0 and val.hs + val.ss == val.fs and not val.fs % 4
+            assert val.hs >= 2 and val.ss > 0 and val.hs + val.ss == val.fs and not val.fs % 4
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes

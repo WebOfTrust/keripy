@@ -169,51 +169,6 @@ AllTagage = namedtuple("AllTagage", list(CodictAll), defaults=list(CodictAll))
 AllTags = AllTagage()  # uses defaults
 
 
-"""
-Design Notes
-
-Need sizes by version can assume only support KERI/ACDC Genus so do not
-need to support different protocol genera in Counting
-Hards and Bards are the same for both versions
-
-Need to pass in version so Counter Instance knows what version to use
-simpler than Serder since version is not provided in version string
-Each instance when created needs to get its version at init
-
-So Sizes in dictionary indexed by version.
-
-CtrDex Codex itself is not referenced inside Counter but by external classes
-making instances so use CtrDex to pass in code.  So we need versioned codex
-
-one option is to have different dataclasses with each version codex and then
-have dictionary Codex of those indexed by version as class variable.
-
-Another option is to have code name index that is indexed by version
-so the actual code is looked up for the version instead of passing in the code
-itself which requires dereferencing with the version so the version gets used
-twice.  Also need to reverse code and version to get codename as property
-
-codename = label or tag.  use tag for code tag
-
-
-Counter(codename=, verion=)
-
-When using code not tag then must check against version to make sure code is
-a valid code for version.  Likewise a tag may not have a code for a given version
-
-So tags are strings that can be attribute names for dataclasses
-Tags is namedtuple where each attribute value is its key so one can look up the
-string by the tag
-
-But given string value for tag then to lookup code in codex need to to use
-builtin getattr
-
-Instead maybe we just extend the codex dataclass with .__getitem__ .__setitem__ and .__delitem__ methods
-so we can access a code by its tag using Codex[tag]
-
-
-"""
-
 class Counter:
     """
     Counter is fully qualified cryptographic material primitive base class for
@@ -224,11 +179,11 @@ class Counter:
     Includes the following attributes and properties:
 
     Class Attributes:
-        Codes
-        Tags
-        Hards
-        Bards
-        Sizes
+        Codes (dict): of codexes keyed by version
+        Tags (dict): of tagages keyed by version
+        Hards (dict): of hard code sizes keyed by selector text
+        Bards (dict): of hard code sizes keyed by selector binary
+        Sizes (dict): of Sizages keyed by hard code
 
     Attributes:
 
@@ -363,21 +318,33 @@ class Counter:
                 raise kering.InvalidCodeError(f"Unsupported {tag=}.")
             code = self._codes[tag]
 
-        if code is not None:  # code provided
-            if code not in self._sizes:
-                raise kering.InvalidCodeError("Unsupported code={}.".format(code))
+        if code is not None:  # code (hard) provided
+            if code not in self._sizes or len(code) < 2:
+                raise kering.InvalidCodeError(f"Unsupported {code=}.")
 
             hs, ss, fs, ls = self._sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
-            if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
-                raise kering.InvalidCodeSizeError("Whole code size not full size or not "
-                                           "multiple of 4. cs={} fs={}.".format(cs, fs))
+            if hs < 2 or fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
+                raise kering.InvalidCodeSizeError(f"Whole code size not full "
+                                                  f"size or not multiple of 4. "
+                                                  f"{cs=} {fs=}.")
 
             if count is None:
                 count = 1 if countB64 is None else b64ToInt(countB64)
 
+            if code[1] not in ("123456789-_"):  # small [A-Z,a-z] or large [0]
+                if ss not in (2, 5):  # not valid dynamic soft sizes
+                    raise kering.InvalidVarIndexError(f"Invalid {ss=} "
+                                                      f"for {code=}.")
+                # dynamically promote code based on count
+                if code[0] != '0' and count > (64 ** 2 - 1):  # small code but large count
+                    # elevate code due to large count
+                    code = f"-0{code[1]}"  # promote hard
+                    ss = 5
+
             if count < 0 or count > (64 ** ss - 1):
-                raise kering.InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
+                raise kering.InvalidVarIndexError(f"Invalid {count=} for "
+                                                  f"{code=} with {ss=}.")
 
             self._code = code
             self._count = count
@@ -570,7 +537,7 @@ class Counter:
 
         hs, ss, fs, ls = self._sizes[code]
         cs = hs + ss  # both hard + soft size
-        if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
+        if hs < 2 or fs != cs or cs % 4:  # hs >=2 fs must be bs and multiple of 4 for count codes
             raise kering.InvalidCodeSizeError("Whole code size not full size or not "
                                        "multiple of 4. cs={} fs={}.".format(cs, fs))
         if count < 0 or count > (64 ** ss - 1):
@@ -598,7 +565,7 @@ class Counter:
 
         hs, ss, fs, ls = self._sizes[code]
         cs = hs + ss
-        if fs != cs or cs % 4:  # fs must be cs and multiple of 4 for count codes
+        if hs < 2 or fs != cs or cs % 4:  # hs >= 2 fs must be cs and multiple of 4 for count codes
             raise kering.InvalidCodeSizeError("Whole code size not full size or not "
                                        "multiple of 4. cs={} fs={}.".format(cs, fs))
 
