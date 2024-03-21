@@ -410,7 +410,7 @@ class Counter:
                     raise kering.InvalidVarIndexError(f"Invalid {ss=} "
                                                       f"for {code=}.")
                 # dynamically promote code based on count
-                if code[0] != '0' and count > (64 ** 2 - 1):  # small code but large count
+                if code[1] != '0' and count > (64 ** 2 - 1):  # small code but large count
                     # elevate code due to large count
                     code = f"-0{code[1]}"  # promote hard
                     ss = 5

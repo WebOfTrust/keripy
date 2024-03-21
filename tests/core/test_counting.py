@@ -1071,7 +1071,7 @@ def test_counter_v2():
     with pytest.raises(TypeError):
         counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
 
-    # test with big codes index=1024
+    # test with big codes count=1024
     count = 1024
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
     assert qsc == '-0AAAAQA'
@@ -1106,7 +1106,7 @@ def test_counter_v2():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
-    # test ims with big codes index=1024
+    # test ims with big codes count=1024
     count = 1024
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
     assert qsc == '-0AAAAQA'
@@ -1131,8 +1131,88 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert not ims
 
+    # test with big codes count=8193
+    count = 8193
+    qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
+    assert qsc == '-0AAACAB'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.BigGenericGroup, count=count, version=Vrsn_2_0)
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    # test ims with big codes count=8193
+    count = 8193
+    qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
+    assert qsc == '-0AAACAB'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    ims = bytearray(qscb)
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # test with bytes not str
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert not ims
+
+    ims = bytearray(qscb2)
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)  # test with qb2
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert not ims
+
+    # test with promotion from small to big codes with count=8193
+    count = 8193
+    qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
+    assert qsc == '-0AAACAB'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.GenericGroup, count=count, version=Vrsn_2_0)
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(tag=AllTags.GenericGroup, count=count, version=Vrsn_2_0)
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
     # test protocol genus with CESR version
-    # test with big codes index=1024
     genverint = 0
     genver = intToB64(genverint, l=3)
     assert genver == 'AAA'
