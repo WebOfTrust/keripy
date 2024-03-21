@@ -907,6 +907,7 @@ class Serder:
             kind (str): value of Serials (Serialage) serialization kind
 
         Parameters:
+            clas (Serder): class reference
             raw (bytes): serialized sad message
             version (Versionage): instance supported protocol version
             smellage (Smellage | None): instance of deconstructed version string
@@ -973,6 +974,21 @@ class Serder:
 
         return sad
 
+    @classmethod
+    def _loads(clas, raw, size=None):
+        """CESR native desserialization of raw
+
+        Returns:
+           sad (dict): deserialized dict of CESR native serialization.
+
+        Parameters:
+           clas (Serder): class reference
+           raw (bytes |bytearray): raw serialization to deserialze as dict
+           size (int): number of bytes to consume for the deserialization.
+                       If None then consume all bytes in raw
+        """
+        pass
+
 
     @classmethod
     def _exhale(clas, sad, version=None):
@@ -991,6 +1007,7 @@ class Serder:
             vrsn (Versionage): tuple value (major, minor)
 
         Parameters:
+            clas (Serder): class reference
             sad (dict): serializable attribute dict of saidified data
             version (Versionage | None): supported protocol version for message
                 None means do not enforce a supported version
@@ -1049,6 +1066,26 @@ class Serder:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
         return raw
+
+
+    @classmethod
+    def _dumps(clas, sad, protocol, version):
+        """CESR native serialization of sad
+
+        Returns:
+            raw (bytes): CESR native serialization of sad dict
+
+        Parameters:
+            clas (Serder): class reference
+            sad (dict | list)): serializable dict or list to serialize
+            protocol (str): protocol type
+            version (Versionage): protocol version
+
+        """
+        pass
+
+
+
 
 
     def compare(self, said=None):

@@ -609,10 +609,10 @@ class Counter:
         count = self.count  # index value int used for soft
 
         hs, ss, fs, ls = self._sizes[code]
-        cs = hs + ss  # both hard + soft size
-        if hs < 2 or fs != cs or cs % 4:  # hs >=2 fs must be bs and multiple of 4 for count codes
-            raise kering.InvalidCodeSizeError("Whole code size not full size or not "
-                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
+        # assumes fs = hs + ss  # both hard + soft size
+        # assumes unit tests ensure ._sizes table entries are consistent
+        # hs >= 2, ss > 0 fs == hs + ss, not (fs % 4)
+
         if count < 0 or count > (64 ** ss - 1):
             raise kering.InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
@@ -637,19 +637,18 @@ class Counter:
         count = self.count  # index value int used for soft
 
         hs, ss, fs, ls = self._sizes[code]
-        cs = hs + ss
-        if hs < 2 or fs != cs or cs % 4:  # hs >= 2 fs must be cs and multiple of 4 for count codes
-            raise kering.InvalidCodeSizeError("Whole code size not full size or not "
-                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
+        # assumes fs = hs + ss
+        # assumes unit tests ensure ._sizes table entries are consistent
+        # hs >= 2, ss>0 fs ==  hs + ss, not (fs % 4)
 
         if count < 0 or count > (64 ** ss - 1):
             raise kering.InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both = "{}{}".format(code, intToB64(count, l=ss))
-        if len(both) != cs:
+        if len(both) != fs:
             raise kering.InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                       .format(cs, len(both)))
+                                       .format(fs, len(both)))
 
         return (codeB64ToB2(both))  # convert to b2 left shift if any
 
@@ -682,16 +681,15 @@ class Counter:
             raise kering.UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs, ls = self._sizes[hard]  # assumes hs consistent in both tables
-        cs = hs + ss  # both hard + soft code size
-
+        # assumes fs = hs + ss  # both hard + soft code size
         # assumes that unit tests on Counter and CounterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs consistent and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
+        # hs consistent and hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
 
-        if len(qb64b) < cs:  # need more bytes
-            raise kering.ShortageError("Need {} more characters.".format(cs - len(qb64b)))
+        if len(qb64b) < fs:  # need more bytes
+            raise kering.ShortageError("Need {} more characters.".format(fs - len(qb64b)))
 
-        count = qb64b[hs:hs + ss]  # extract count chars
+        count = qb64b[hs:fs]  # extract count chars
         if hasattr(count, "decode"):
             count = count.decode("utf-8")
         count = b64ToInt(count)  # compute int count
@@ -725,17 +723,17 @@ class Counter:
             raise kering.UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs, ls = self._sizes[hard]
-        cs = hs + ss  # both hs and ss
+        # assumes fs = hs + ss  # both hs and ss
         # assumes that unit tests on Counter and CounterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs consistent and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
+        # hs consistent and hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
 
-        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+        bcs = sceil(fs * 3 / 4)  # bcs is min bytes to hold fs sextets
         if len(qb2) < bcs:  # need more bytes
             raise kering.ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
-        both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        count = b64ToInt(both[hs:hs + ss])  # get count
+        both = codeB2ToB64(qb2, fs)  # extract and convert both hard and soft part of code
+        count = b64ToInt(both[hs:fs])  # get count
 
         self._code = hard
         self._count = count
