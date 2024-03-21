@@ -2159,41 +2159,14 @@ def test_counter():
         'SealSourceCouples': '-G',
         'TransLastIdxSigGroups': '-H',
         'SealSourceTriples': '-I',
-        'SadPathSig': '-J',
-        'SadPathSigGroup': '-K',
-        'PathedMaterialQuadlets': '-L',
-        'AttachedMaterialQuadlets': '-V',
-        'BigAttachedMaterialQuadlets': '-0V',
-        'KERIProtocolStack': '--AAA',
+        'SadPathSigGroups': '-J',
+        'RootSadPathSigGroups': '-K',
+        'PathedMaterialGroup': '-L',
+        'AttachmentGroup': '-V',
+        'BigAttachmentGroup': '-0V',
+        'KERIACDCGenusVersion': '--AAA',
     }
 
-    # new version 2
-    #assert dataclasses.asdict(CtrDex) == {
-        #'ControllerIdxSigs': '-A',
-        #'WitnessIdxSigs': '-B',
-        #'NonTransReceiptCouples': '-C',
-        #'TransReceiptQuadruples': '-D',
-        #'FirstSeenReplayCouples': '-E',
-        #'TransIdxSigGroups': '-F',
-        #'SealSourceCouples': '-G',
-        #'TransLastIdxSigGroups': '-H',
-        #'SealSourceTriples': '-I',
-        #'SadPathSig': '-J',
-        #'SadPathSigGroup': '-K',
-        #'PathedMaterialQuadlets': '-L',
-        #'MessageDataGroups': '-U',
-        #'AttachedMaterialQuadlets': '-V',
-        #'MessageDataMaterialQuadlets': '-W',
-        #'CombinedMaterialQuadlets': '-X',
-        #'MaterialGroups': '-Y',
-        #'MaterialQuadlets': '-Z',
-        #'BigMessageDataGroups': '-0U',
-        #'BigAttachedMaterialQuadlets': '-0V',
-        #'BigMessageDataMaterialQuadlets': '-0W',
-        #'BigCombinedMaterialQuadlets': '-0X',
-        #'BigMaterialGroups': '-0Y',
-        #'BigMaterialQuadlets': '-0Z'
-    #}
 
     assert CtrDex.ControllerIdxSigs == '-A'
     assert CtrDex.WitnessIdxSigs == '-B'
@@ -2345,34 +2318,34 @@ def test_counter():
 
     # test with big codes index=1024
     count = 1024
-    qsc = CtrDex.BigAttachedMaterialQuadlets + intToB64(count, l=5)
+    qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
     assert qsc == '-0VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigAttachedMaterialQuadlets, count=count)
-    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
+    counter = Counter(code=CtrDex.BigAttachmentGroup, count=count)
+    assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb64b=qscb)  # test with bytes not str
-    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
+    assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb64=qsc)  # test with str not bytes
-    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
+    assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb2=qscb2)  # test with qb2
-    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
+    assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -2455,14 +2428,14 @@ def test_counter():
 
     # test with big codes index=1024
     count = 1024
-    qsc = CtrDex.BigAttachedMaterialQuadlets + intToB64(count, l=5)
+    qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
     assert qsc == '-0VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
     counter = Counter(qb64b=ims, strip=True)  # test with bytes not str
-    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
+    assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -2471,7 +2444,7 @@ def test_counter():
 
     ims = bytearray(qscb2)
     counter = Counter(qb2=ims, strip=True)  # test with qb2
-    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
+    assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -2484,13 +2457,13 @@ def test_counter():
     version = intToB64(verint, l=3)
     assert version == 'AAA'
     assert verint == b64ToInt(version)
-    qsc = CtrDex.KERIProtocolStack + version
+    qsc = CtrDex.KERIACDCGenusVersion + version
     assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.KERIProtocolStack, count=verint)
-    assert counter.code == CtrDex.KERIProtocolStack
+    counter = Counter(code=CtrDex.KERIACDCGenusVersion, count=verint)
+    assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == verint
     assert counter.countToB64(l=3) == version
     assert counter.countToB64() == version  # default length
@@ -2498,8 +2471,8 @@ def test_counter():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
-    counter = Counter(code=CtrDex.KERIProtocolStack, countB64=version)
-    assert counter.code == CtrDex.KERIProtocolStack
+    counter = Counter(code=CtrDex.KERIACDCGenusVersion, countB64=version)
+    assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == verint
     assert counter.countToB64(l=3) == version
     assert counter.countToB64() == version  # default length

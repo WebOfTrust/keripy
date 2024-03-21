@@ -4681,12 +4681,12 @@ class CounterCodex:
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
-    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
-    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+    SadPathSigGroups: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
+    RootSadPathSigGroups: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
+    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"

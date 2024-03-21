@@ -440,7 +440,7 @@ class Reger(dbing.LMDBer):
             )
 
             ctr = coring.Counter(qb64b=iss, strip=True)
-            if ctr.code == coring.CtrDex.AttachedMaterialQuadlets:
+            if ctr.code == coring.CtrDex.AttachmentGroup:
                 ctr = coring.Counter(qb64b=iss, strip=True)
 
             if ctr.code == coring.CtrDex.SealSourceCouples:
@@ -541,7 +541,7 @@ class Reger(dbing.LMDBer):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+        pcnt = coring.Counter(code=coring.CtrDex.AttachmentGroup,
                               count=(len(atc) // 4)).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
@@ -1009,7 +1009,7 @@ def messagize(creder, proof):
     if len(proof) % 4:
         raise ValueError("Invalid attachments size={}, nonintegral"
                          " quadlets.".format(len(proof)))
-    craw.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+    craw.extend(coring.Counter(code=coring.CtrDex.AttachmentGroup,
                                count=(len(proof) // 4)).qb64b)
     craw.extend(proof)
 
