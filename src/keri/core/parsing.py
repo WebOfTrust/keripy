@@ -139,7 +139,7 @@ class Parser:
         Returns:
 
         """
-        if ctr.code != CtrDex.SadPathSig:
+        if ctr.code != CtrDex.SadPathSigGroups:
             raise kering.UnexpectedCountCodeError("Wrong "
                                                   "count code={}.Expected code={}."
                                                   "".format(ctr.code, CtrDex.ControllerIdxSigs))
@@ -732,7 +732,7 @@ class Parser:
             cold = sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-                if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
+                if ctr.code == CtrDex.AttachmentGroup:  # pipeline ctr?
                     pipelined = True
                     # compute pipelined attached group size based on txt or bny
                     pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
@@ -901,7 +901,7 @@ class Parser:
                                                                 abort=pipelined)
                             ssts.append((prefixer, seqner, saider))
 
-                    elif ctr.code == CtrDex.SadPathSigGroup:
+                    elif ctr.code == CtrDex.SadPathSigGroups:
                         path = yield from self._extractor(ims,
                                                           klas=Pather,
                                                           cold=cold,
@@ -921,7 +921,7 @@ class Parser:
                                 else:
                                     sadcigs.append(sigs)
 
-                    elif ctr.code == CtrDex.SadPathSig:
+                    elif ctr.code == CtrDex.SadPathSigGroups:
                         for code, sigs in self._sadPathSigGroup(ctr=ctr,
                                                                 ims=ims,
                                                                 cold=cold,
@@ -931,7 +931,7 @@ class Parser:
                             else:
                                 sadcigs.append(sigs)
 
-                    elif ctr.code == CtrDex.PathedMaterialQuadlets:  # pathed ctr?
+                    elif ctr.code == CtrDex.PathedMaterialGroup:  # pathed ctr?
                         # compute pipelined attached group size based on txt or bny
                         pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
                         while len(ims) < pags:  # wait until rx full pipelned group

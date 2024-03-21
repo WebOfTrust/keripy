@@ -85,7 +85,6 @@ class CounterCodex_1_0(MapCodex):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-
     ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
     WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
     NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
@@ -95,12 +94,13 @@ class CounterCodex_1_0(MapCodex):
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
-    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
-    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+    SadPathSigGroups: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
+    RootSadPathSigGroups: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
+    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -114,22 +114,59 @@ class CounterCodex_2_0(MapCodex):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
+    GenericGroup: str = '-A'  # Generic Group (Universal with Override).
+    BigGenericGroup: str = '-0A'  # Big Generic Group (Universal with Override).
+    MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageGroup: str = '-0B'  # Big Message Body plus Attachments Group (Universal with Override).
+    AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
+    BigAttachmentGroup: str = '-0C'  # Big Attachments Only Group (Universal with Override).
+    DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
+    BigDatagramSegmentGroup: str = '-0D'  # Big Datagram Segment Group (Universal).
+    ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
+    BigESSRWrapperGroup: str = '-0E'  # Big ESSR Wrapper Group (Universal).
+    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedMessageBodyGroup: str = '-0F'  # Big Fixed Field Message Body Group (Universal).
+    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapMessageBodyGroup: str = '-0G'  # Big Field Map Message Body Group (Universal).
+    GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
+    BigGenericMapGroup: str = '-0H'  # Big Generic Field Map Group (Universal).
+    GenericListGroup: str = '-L'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '-0L'  # Big Generic List Group (Universal).
+    ControllerIdxSigs: str = '-J'  # Controller Indexed Signature(s) of qb64.
+    BigControllerIdxSigs: str = '-0J'  # Big Controller Indexed Signature(s) of qb64.
+    WitnessIdxSigs: str = '-K'  # Witness Indexed Signature(s) of qb64.
+    BigWitnessIdxSigs: str = '-0K'  # Big Witness Indexed Signature(s) of qb64.
+    NonTransReceiptCouples: str = '-L'  # NonTrans Receipt Couple(s), pre+cig.
+    BigNonTransReceiptCouples: str = '-0L'  # Big NonTrans Receipt Couple(s), pre+cig.
+    TransReceiptQuadruples: str = '-M'  # Trans Receipt Quadruple(s), pre+snu+dig+sig.
+    BigTransReceiptQuadruples: str = '-0M'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
+    FirstSeenReplayCouples: str = '-N'  # First Seen Replay Couple(s), fnu+dts.
+    BigFirstSeenReplayCouples: str = '-0N'  # First Seen Replay Couple(s), fnu+dts.
+    TransIdxSigGroups: str = '-O'  # Trans Indexed Signature Group(s), pre+snu+dig+ControllerIdxSigs of qb64.
+    TransIdxSigGroups: str = '-0O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+ControllerIdxSigs of qb64.
+    TransLastIdxSigGroups: str = '-P'  # Trans Last Est Evt Indexed Signature Group(s), pre+ControllerIdxSigs of qb64.
+    BigTransLastIdxSigGroups: str = '-0P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+ControllerIdxSigs of qb64.
+    SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '-0Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    PathedMaterialGroup: str = '-S'  # Pathed Material Group.
+    BigPathedMaterialGroup: str = '-0S'  # Big Pathed Material Group.
+    SadPathSigGroups: str = '-T'  # SAD Path Group(s) sadpath+TransIdxSigGroup(s) of SAID qb64 of content.
+    BigSadPathSigGroups: str = '-0T'  # Big SAD Path Group(s) sadpath+TransIdxSigGroup(s) of SAID qb64 of content.
+    RootSadPathSigGroups: str = '-U'  # Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
+    BigRootSadPathSigGroups: str = '-0U'  # Big Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
+    DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '-0V'  # Big Digest Seal Single(s), dig of sealed data.
+    MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '-0W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '-0X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
+    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group.
+    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
-    ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
-    WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
-    NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
-    TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
-    FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
-    TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
-    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
-    TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
-    SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
-    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
-    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -164,7 +201,7 @@ Codict2 = asdict(CtrDex_2_0)
 Tagage_2_0 = namedtuple("Tagage_2_0", list(Codict2), defaults=list(Codict2))
 Tags_2_0 = Tagage_2_0()  # uses defaults
 
-CodictAll = Codict1 | Codict2
+CodictAll = Codict2 | Codict1
 AllTagage = namedtuple("AllTagage", list(CodictAll), defaults=list(CodictAll))
 AllTags = AllTagage()  # uses defaults
 
@@ -234,39 +271,75 @@ class Counter:
     {
         Vrsn_1_0: \
         {
-        '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+            '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
         },
         Vrsn_2_0: \
         {
-        '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+            '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0A': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0B': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0C': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0D': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0E': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0F': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0G': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0H': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0I': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0J': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0K': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-M': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0M': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-N': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0N': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-O': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0O': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-P': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0P': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-Q': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0Q': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-R': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0R': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-S': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0S': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0T': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
+            '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+            '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
         },
     }
 

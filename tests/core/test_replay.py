@@ -337,7 +337,7 @@ def test_replay():
         assert len(msg) == 1076
 
         counter = coring.Counter(qb64b=msg)  # attachment length quadlets counter
-        assert counter.code == coring.CtrDex.AttachedMaterialQuadlets
+        assert counter.code == coring.CtrDex.AttachmentGroup
         assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 268
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1072 == 268 * 4

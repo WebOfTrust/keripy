@@ -70,7 +70,7 @@ def test_proving(mockHelpingNowIso8601):
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True)
-        assert ctr.code == CtrDex.AttachedMaterialQuadlets
+        assert ctr.code == CtrDex.AttachmentGroup
         assert ctr.count == 52
 
         pags = ctr.count * 4

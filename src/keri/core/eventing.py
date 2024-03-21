@@ -1429,7 +1429,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        msg.extend(Counter(code=CtrDex.AttachedMaterialQuadlets,
+        msg.extend(Counter(code=CtrDex.AttachmentGroup,
                            count=(len(atc) // 4)).qb64b)
 
     msg.extend(atc)
@@ -1461,7 +1461,7 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
     count = 0
     for (pather, sigers) in sadsigers:
         count += 1
-        atc.extend(coring.Counter(coring.CtrDex.SadPathSig, count=1).qb64b)
+        atc.extend(coring.Counter(coring.CtrDex.SadPathSigGroups, count=1).qb64b)
         atc.extend(pather.qb64b)
 
         atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
@@ -1470,7 +1470,7 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
 
     for (pather, prefixer, seqner, saider, sigers) in sadtsgs:
         count += 1
-        atc.extend(coring.Counter(coring.CtrDex.SadPathSig, count=1).qb64b)
+        atc.extend(coring.Counter(coring.CtrDex.SadPathSigGroups, count=1).qb64b)
         atc.extend(pather.qb64b)
 
         atc.extend(coring.Counter(coring.CtrDex.TransIdxSigGroups, count=1).qb64b)
@@ -1484,7 +1484,7 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
 
     for (pather, cigars) in sadcigars:
         count += 1
-        atc.extend(coring.Counter(coring.CtrDex.SadPathSig, count=1).qb64b)
+        atc.extend(coring.Counter(coring.CtrDex.SadPathSigGroups, count=1).qb64b)
         atc.extend(pather.qb64b)
 
         atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=len(sadcigars)).qb64b)
@@ -1501,12 +1501,12 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        msg.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+        msg.extend(coring.Counter(code=coring.CtrDex.AttachmentGroup,
                                   count=(len(atc) // 4)).qb64b)
 
     if count > 1:
         root = coring.Pather(bext="-")
-        msg.extend(coring.Counter(code=coring.CtrDex.SadPathSigGroup, count=count).qb64b)
+        msg.extend(coring.Counter(code=coring.CtrDex.RootSadPathSigGroups, count=count).qb64b)
         msg.extend(root.qb64b)
 
     msg.extend(atc)
