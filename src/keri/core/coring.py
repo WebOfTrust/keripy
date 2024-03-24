@@ -295,7 +295,8 @@ class MatterCodex:
     Tag1:                 str = '0J'  # Tag1 1 B64 encoded char with pre pad for field tag
     Tag2:                 str = '0K'  # Tag2 2 B64 encoded chars for field tag or version VV or trait like 'EO'
     Tag5:                 str = '0L'  # Tag5 5 B64 encoded chars with pre pad for field tag
-    Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for field tag or protocol kind version like KERIVV (KERI 1.1) or KKKVVV
+    Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for field tag
+    Tag10:                str = '0N'  # Tag10 10 B64 encoded chars for field tag or version PPPPMmmMmm
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -723,6 +724,7 @@ class Matter:
         '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
         '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=0, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),

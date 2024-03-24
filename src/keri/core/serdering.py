@@ -272,7 +272,7 @@ class Serder:
     #override in subclass to enforce specific protocol
     Protocol = None  # required protocol, None means any in Protos is ok
 
-    Proto = Protos.keri  # default CESR protocol type
+    Proto = Protos.keri  # default CESR protocol type for makify on base Serder
     Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
 
@@ -1074,7 +1074,7 @@ class Serder:
 
 
     @classmethod
-    def _dumps(clas, sad, protocol, version, gversion=Vrsn_2_0):
+    def _dumps(clas, sad, protocol, version, cversion=Vrsn_2_0):
         """CESR native serialization of sad
 
         Returns:
@@ -1085,7 +1085,19 @@ class Serder:
             sad (dict | list)): serializable dict or list to serialize
             protocol (str): message protocol
             version (Versionage): message protocol version
-            gversion (Versionage): CESR code table genus version
+            cversion (Versionage): CESR code table genus version
+
+        Versioning:
+            CESR native serialization includes message protocol, protocol version
+            and CESR (genus) version. Assumes genus is compatible with message
+            protocol so genus is not needed. Protects from malleability attack
+            and ensure compatible cesr codes especially count (group) codes.
+            Primitive codes are less problematic since so far all primitive codes
+            tables are backwards compatible across major versions.
+
+            0NPPPPMmmMmm (12 B64 characters)
+
+
 
         """
         fixed = True  # True = use fixed field, False= use field map
@@ -1145,7 +1157,7 @@ class Serder:
 
                         val = bytearray(Counter(tag=AllTags.GenericListGroup,
                                                 count=len(frame) % 4,
-                                                version=gversion).qb64b)
+                                                version=cversion).qb64b)
                         val.extend(frame)
 
                     case "c":  # list of config traits strings
@@ -1156,7 +1168,7 @@ class Serder:
 
                         val = bytearray(Counter(tag=AllTags.GenericListGroup,
                                                 count=len(frame) % 4,
-                                                version=gversion).qb64b)
+                                                version=cversion).qb64b)
                         val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
@@ -1166,7 +1178,7 @@ class Serder:
                                 pass
                             val = bytearray(Counter(tag=AllTags.GenericMapGroup,
                                                 count=len(frame) % 4,
-                                                version=gversion).qb64b)
+                                                version=cversion).qb64b)
                         else:
                             for e in v:  # list
                                 pass
@@ -1174,7 +1186,7 @@ class Serder:
 
                             val = bytearray(Counter(tag=AllTags.GenericListGroup,
                                                 count=len(frame) % 4,
-                                                version=gversion).qb64b)
+                                                version=cversion).qb64b)
                         val.extend(frame)
 
 

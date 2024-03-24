@@ -279,9 +279,10 @@ class Counter:
         The two versions, CESR Genus and Protocol Stack, may be synchronized in
         the following way:
 
-        * Major versions must match.
+        * Major versions must match or be compatible
 
-        * Minor versions may differ.
+        * Minor versions may differ but must be compatible within a
+        major version.
 
         Importantly the CESR code table version may not be included in the
         message body itself but only provided in the surrounding CESR stream.
@@ -290,10 +291,13 @@ class Counter:
         primitives and groups must be protected from a CESR code table genus
         version malleability attack.
 
-        Because the major versions of the CESR code table and protocol stack
-        must match, the signed embedded protocol stack major version protects
+        When the major versions of the CESR code table and protocol stack
+        match, the signed embedded protocol stack major version protects
         the receiver from a major version malleability attack on the CESR
-        code table.
+        code table. Otherwise the major versions must be compatible in a way
+        that does not allow malleability. For example the set of allowed codes
+        for a given message protocol version are compatible across CESR code
+        table major versions.
 
         This, however, does not protect the receiver of a message body from
         a minor version malleability attack on the CESR code table.
