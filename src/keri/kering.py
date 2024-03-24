@@ -20,7 +20,7 @@ Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR', cesr='CESR')
 
 # Protocol Types
 Protocolage = namedtuple("Protocolage", "keri acdc")
-Protos = Protocolage(keri="KERI", acdc="ACDC")
+Protocols = Protocolage(keri="KERI", acdc="ACDC")
 
 Versionage = namedtuple("Versionage", "major minor")
 Version = Versionage(major=1, minor=0)  # KERI Protocol Version
@@ -58,7 +58,7 @@ SMELLSIZE = MAXVSOFFSET + MAXVERFULLSPAN  # min buffer size to inhale
 
 """
 Smellage  (results of smelling a version string such as in a Serder)
-    protocol (str): protocol type value of Protos examples 'KERI', 'ACDC'
+    protocol (str): protocol type value of Protocols examples 'KERI', 'ACDC'
     version (Versionage): named tuple (major, minor) ints of major minor version
     kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
     size (str): int size of raw serialization
@@ -85,7 +85,7 @@ def rematch(match):
                                                        "kind2",
                                                        "size2")
         protocol = proto.decode("utf-8")
-        if protocol not in Protos:
+        if protocol not in Protocols:
             raise ProtocolError(f"Invalid protocol type = {protocol}.")
         vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
         if vrsn.major < 2:  # version2 vs but major < 2
@@ -108,7 +108,7 @@ def rematch(match):
                                                      "kind1",
                                                      "size1")
         protocol = proto.decode("utf-8")
-        if protocol not in Protos:
+        if protocol not in Protocols:
             raise ProtocolError(f"Invalid protocol type = {protocol}.")
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if vrsn.major > 1:  # version1 vs but major > 1
@@ -128,18 +128,18 @@ def rematch(match):
 
 
 
-def versify(protocol=Protos.keri, version=Version, kind=Serials.json, size=0):
+def versify(protocol=Protocols.keri, version=Version, kind=Serials.json, size=0):
     """
     Returns:
        vs (str): version string
 
     Parameters:
-        protocol (str): protocol one of Protos
+        protocol (str): protocol one of Protocols
         version (Versionage): namedtuple (major, minor) of ints
         kind (str): one of Serials
         size (int): length of serialized map that embeds version string field.
     """
-    if protocol not in Protos:
+    if protocol not in Protocols:
         raise ProtocolError("Invalid message identifier = {}".format(protocol))
     if kind not in Serials:
         raise KindError("Invalid serialization kind = {}".format(kind))
@@ -155,7 +155,7 @@ def versify(protocol=Protos.keri, version=Version, kind=Serials.json, size=0):
 def deversify(vs):
     """
     Returns:  tuple(proto, kind, version, size) Where:
-        proto (str): value is protocol type identifier one of Protos (Protocolage)
+        proto (str): value is protocol type identifier one of Protocols (Protocolage)
                    acdc='ACDC', keri='KERI'
 
         vrsn (tuple):  version tuple of type Versionage

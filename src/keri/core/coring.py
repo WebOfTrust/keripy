@@ -37,7 +37,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
-from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
+from ..kering import Serials, Serialage, Protocols, Protocolage, Ilkage, Ilks
 
 
 from ..help import helping

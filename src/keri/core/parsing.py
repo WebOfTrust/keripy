@@ -11,7 +11,7 @@ from collections import namedtuple
 from dataclasses import dataclass, astuple
 
 from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar,
-                     Dater, Verfer, Prefixer, Saider, Pather, Protos )
+                     Dater, Verfer, Prefixer, Saider, Pather, Protocols )
 from . import serdering
 from .. import help
 from .. import kering

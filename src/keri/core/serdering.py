@@ -27,7 +27,7 @@ from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
 from ..kering import SMELLSIZE, Smellage, smell
 
-from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
+from ..kering import Protocols, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
@@ -147,9 +147,9 @@ class Serdery:
 
         smellage = smell(ims)
 
-        if smellage.protocol == Protos.keri:
+        if smellage.protocol == Protocols.keri:
             return SerderKERI(raw=ims, strip=True, smellage=smellage)
-        elif smellage.protocol == Protos.acdc:
+        elif smellage.protocol == Protocols.acdc:
             return SerderACDC(raw=ims, strip=True, smellage=smellage)
         else:
             raise ProtocolError(f"Unsupported protocol type = {smellage.proto}.")
@@ -269,8 +269,8 @@ class Serder:
     }
 
     #override in subclass to enforce specific protocol
-    Protocol = None  # class based message protocol, None means any in Protos is ok
-    Proto = Protos.keri  # default message protocol type for makify on base Serder
+    Protocol = None  # class based message protocol, None means any in Protocols is ok
+    Proto = Protocols.keri  # default message protocol type for makify on base Serder
     Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
 
@@ -281,7 +281,7 @@ class Serder:
     # ilk value of None is default for protocols that support ilkless packets
     Fields = \
     {
-        Protos.keri:
+        Protocols.keri:
         {
             Vrsn_1_0:
             {
@@ -386,7 +386,7 @@ class Serder:
                     saids={Saids.d: DigDex.Blake3_256}),
             },
         },
-        Protos.acdc:
+        Protocols.acdc:
         {
             Vrsn_1_0:
             {
@@ -467,7 +467,7 @@ class Serder:
                 Ignore when raw not provided or when raw and saidify is True
             makify (bool): True means compute fields for sad including size and
                 saids.
-            proto (str | None): desired protocol type str value of Protos
+            proto (str | None): desired protocol type str value of Protocols
                 If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
@@ -691,7 +691,7 @@ class Serder:
         Parameters:
             sad (dict): serializable saidified field map of message.
                 Ignored if raw provided
-            proto (str | None): desired protocol type str value of Protos
+            proto (str | None): desired protocol type str value of Protocols
                 If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
@@ -896,7 +896,7 @@ class Serder:
 
         Returns: tuple (sad, proto, vrsn, kind, size) where:
             sad (dict): serializable attribute dict of saidified data
-            proto (str): value of Protos (Protocolage) protocol type
+            proto (str): value of Protocols (Protocolage) protocol type
             vrsn (Versionage | None): tuple of (major, minor) version ints
                 None means do not enforce version
             kind (str): value of Serials (Serialage) serialization kind
@@ -1090,7 +1090,7 @@ class Serder:
 
         raw = bytearray()
 
-        if protocol not in Protos:
+        if protocol not in Protocols:
             raise SerializeError(f"Invalid {protocol=}.")
 
         if version not in clas.Fields[protocol]:
@@ -1113,7 +1113,7 @@ class Serder:
         # so can serialize in order to compute saidive fields
         # need to fix ._verify and .makify to account for CESR native serialization
 
-        if protocol == Protos.keri:
+        if protocol == Protocols.keri:
             for l, v in sad.items():  # assumes valid field order & presence
                 if not fixed:  # prepend label
                     pass
@@ -1184,7 +1184,7 @@ class Serder:
                 raw.extend(val)
 
 
-        elif protocol == Protos.acdc:
+        elif protocol == Protocols.acdc:
             for l, val in sad.items():  # assumes valid field order & presence
                 if not fixed:
                     pass  # prepend label
@@ -1351,8 +1351,8 @@ class SerderKERI(Serder):
        See docs for Serder
     """
     #override in subclass to enforce specific protocol
-    Protocol = Protos.keri  # required protocol, None means any in Protos is ok
-    Proto = Protos.keri  # default protocol type
+    Protocol = Protocols.keri  # required protocol, None means any in Protocols is ok
+    Proto = Protocols.keri  # default protocol type
 
 
 
@@ -1721,8 +1721,8 @@ class SerderACDC(Serder):
        See docs for Serder
     """
     #override in subclass to enforce specific protocol
-    Protocol = Protos.acdc  # required protocol, None means any in Protos is ok
-    Proto = Protos.acdc  # default protocol type
+    Protocol = Protocols.acdc  # required protocol, None means any in Protocols is ok
+    Proto = Protocols.acdc  # default protocol type
 
 
 

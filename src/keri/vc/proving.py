@@ -50,7 +50,7 @@ def credential(schema,
         SerderACDC: credential instance
 
     """
-    vs = versify(protocol=coring.Protos.acdc, version=version, kind=kind, size=0)
+    vs = versify(protocol=coring.Protocols.acdc, version=version, kind=kind, size=0)
 
     vc = dict(
         v=vs,

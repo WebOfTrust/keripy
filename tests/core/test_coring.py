@@ -25,7 +25,7 @@ from cryptography import exceptions
 
 from keri.core import coring
 from keri.core import eventing
-from keri.core.coring import (Ilkage, Ilks, Saids, Protos, Protocolage,
+from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
                               Sadder, Tholder, Seqner,
                               NumDex, Number, Siger, Dater, Bexter, Texter)
 from keri.core.coring import Serialage, Serials, Tiers
