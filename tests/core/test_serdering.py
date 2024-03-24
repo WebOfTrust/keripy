@@ -2487,13 +2487,12 @@ def test_serder_v2():
 
 
     with pytest.raises(ValueError):
-        serder = Serder(version=kering.Vrsn_2_0)
+        serder = Serder()
 
     #Test Serder bare makify bootstrap for ACDC JSON
     serder = Serder(makify=True,
                     proto=kering.Protos.acdc,
-                    vrsn=kering.Vrsn_2_0,
-                    version=kering.Vrsn_2_0)  # make defaults for ACDC
+                    vrsn=kering.Vrsn_2_0)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDCCAAJSONAABZ.',
                             'd': 'EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy',
                             'i': '',
@@ -2501,17 +2500,18 @@ def test_serder_v2():
     assert serder.raw == (b'{"v":"ACDCCAAJSONAABZ.","d":"EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy","'
                           b'i":"","s":""}')
     assert serder.verify()
+    assert serder.vrsn == serder.version == kering.Vrsn_2_0
     sad = serder.sad
     raw = serder.raw
     said = serder.said
     size = serder.size
 
-    serder = Serder(sad=sad, version=kering.Vrsn_2_0)
+    serder = Serder(sad=sad)
     assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.vrsn == kering.Vrsn_2_0 == serder.version
     assert serder.size == size
     assert serder.kind == kering.Serials.json
     assert serder.said == said
@@ -2527,12 +2527,12 @@ def test_serder_v2():
                 ' "s": ""\n'
                 '}')
 
-    serder = Serder(raw=raw, version=kering.Vrsn_2_0)
+    serder = Serder(raw=raw)
     assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.vrsn == kering.Vrsn_2_0 == serder.version
     assert serder.size == size
     assert serder.kind == kering.Serials.json
     assert serder.said == said
@@ -2541,7 +2541,7 @@ def test_serder_v2():
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
 
-    serder = Serder(sad=sad, makify=True, version=kering.Vrsn_2_0)  # test makify with sad
+    serder = Serder(sad=sad, makify=True)  # test makify with sad
     assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
@@ -2556,8 +2556,7 @@ def test_serder_v2():
 
     # test default
     serder = Serder(makify=True,
-                    vrsn=kering.Vrsn_2_0,
-                    version=kering.Vrsn_2_0)  # make defaults for default proto
+                    vrsn=kering.Vrsn_2_0)  # make defaults for default proto
 
 
     assert serder.sad == {'v': 'KERICAAJSONAADO.',

@@ -66,7 +66,7 @@ Smellage  (results of smelling a version string such as in a Serder)
 """
 Smellage = namedtuple("Smellage", "protocol version kind size")
 
-def rematch(match, *, version=None):
+def rematch(match):
     """
     Returns:
         smellage (Smellage): named tuple extracted from version string regex match
@@ -74,8 +74,7 @@ def rematch(match, *, version=None):
 
     Parameters:
         match (re.Match):  instance of Match class
-        version (Versionage | None): supported version. None means do not check
-            for supported version. namedtuple (major, minor)
+
 
     """
     full = match.group()  # full matched version string
@@ -91,11 +90,11 @@ def rematch(match, *, version=None):
         vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
         if vrsn.major < 2:  # version2 vs but major < 2
             raise VersionError(f"Incompatible {vrsn=} with version string.")
-        if version is not None:  # compatible version with vrsn
-            if (vrsn.major > version.major or
-                (vrsn.major == version.major and vrsn.minor > version.minor)):
-                    raise VersionError(f"Incompatible {version=}, with "
-                                           f"{vrsn=}.")
+        #if version is not None:  # compatible version with vrsn
+            #if (vrsn.major > version.major or
+                #(vrsn.major == version.major and vrsn.minor > version.minor)):
+                    #raise VersionError(f"Incompatible {version=}, with "
+                                           #f"{vrsn=}.")
 
         kind = kind.decode("utf-8")
         if kind not in Serials:
@@ -114,11 +113,11 @@ def rematch(match, *, version=None):
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if vrsn.major > 1:  # version1 vs but major > 1
             raise VersionError(f"Incompatible {vrsn=} with version string.")
-        if version is not None:  # compatible version with vrsn
-            if (vrsn.major > version.major or
-                (vrsn.major == version.major and vrsn.minor > version.minor)):
-                    raise VersionError(f"Incompatible {version=}, with "
-                                           f"{vrsn=}.")
+        #if version is not None:  # compatible version with vrsn
+            #if (vrsn.major > version.major or
+                #(vrsn.major == version.major and vrsn.minor > version.minor)):
+                    #raise VersionError(f"Incompatible {version=}, with "
+                                           #f"{vrsn=}.")
 
         kind = kind.decode("utf-8")
         if kind not in Serials:
@@ -153,7 +152,7 @@ def versify(protocol=Protos.keri, version=Version, kind=Serials.json, size=0):
 
 
 
-def deversify(vs, version=None):
+def deversify(vs):
     """
     Returns:  tuple(proto, kind, version, size) Where:
         proto (str): value is protocol type identifier one of Protos (Protocolage)
@@ -166,8 +165,6 @@ def deversify(vs, version=None):
 
     Parameters:
       vs (str | bytes): version string to extract from
-      version (Versionage | None): supported version. None means do not check
-            for supported version. namedtuple of ints (major, minor)
 
     Uses regex match to extract:
         protocol type
@@ -182,12 +179,12 @@ def deversify(vs, version=None):
     if not match:
         raise VersionError(f"Invalid version string = '{vs}'.")
 
-    return rematch(match, version=version)
+    return rematch(match)
 
 
 
 
-def smell(raw, *, version=None):
+def smell(raw):
     """Extract and return instance of Smellage from version string inside
     raw serialization.
 
@@ -198,8 +195,7 @@ def smell(raw, *, version=None):
         raw (bytearray) of serialized incoming message stream. Assumes start
             of stream is JSON, CBOR, or MGPK field map with first field
             is labeled 'v' and value is version string.
-        version (Versionage | None): instance supported protocol version
-            None means do not enforce a supported version
+
     """
     if len(raw) < SMELLSIZE:
         raise ShortageError(f"Need more raw bytes to smell full version string.")
@@ -209,7 +205,7 @@ def smell(raw, *, version=None):
         raise VersionError(f"Invalid version string from smelled raw = "
                            f"{raw[: SMELLSIZE]}.")
 
-    return rematch(match, version=version)
+    return rematch(match)
 
 
 
