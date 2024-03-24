@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 keri.core.counting module
 
@@ -14,7 +14,7 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
                             nabSextets)
 
 from .. import kering
-from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0)
+from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
 
 from ..core.coring import Sizage
 
@@ -218,9 +218,10 @@ class Counter:
     Class Attributes:
         Codes (dict): of codexes keyed by version
         Tags (dict): of tagages keyed by version
-        Hards (dict): of hard code sizes keyed by selector text
-        Bards (dict): of hard code sizes keyed by selector binary
-        Sizes (dict): of Sizages keyed by hard code
+        Hards (dict): of hard code sizes keyed by text domain selector
+        Bards (dict): of hard code sizes keyed by binary domain selector
+        Sizes (dict): of size tables keyed by version. Size table is dict
+                      of Sizages keyed by hard code
 
     Attributes:
 
@@ -232,7 +233,8 @@ class Counter:
         .code (str) derivation code to indicate cypher suite
         .raw is bytes crypto material only without code
         .pad  is int number of pad chars given raw
-        .count is int count of grouped following material (not part of counter)
+        .count is int count of quadlets/triplets of following framed material
+            (not including code)
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
@@ -248,8 +250,78 @@ class Counter:
         ._infil is method to compute fully qualified Base64 from .raw and .code
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
+
+    Versioning:
+        CESR Genus specific code tables have a major and a minor version.
+
+        For a given major version all minor versions must be backwards compatible.
+        This means that minor version changes to tables are append only. New
+        codes may be added but no existing codes may be changed. This means that
+        a given implementation need only use use the latest minor version of
+        the code table for a given major version when generating or parsing a
+        primitive or group. Assuming the major versions match, when parsing,
+        a primitive, when that primitive was generated with a later minor version
+        than the implementation supports then it will not be recognized and
+        raise an error. But if a primitive was generated with any earlier minor
+        version than the version the implementation supports then the primitive
+        will parse correctly using any later minor version of the code table.
+
+        Likewise a given protocol stack may have message bodies that carry
+        a major and a minor version.
+
+        A given CESR Genus and a given Protocol message stack may be paired in
+        order to synchronize versioning between the two when the message bodies
+        use primitives and or groups defined by codes in the CESR Genus table.
+
+        In this case pairing is between the CESR Genus labeled KERI_ACDC_SPAC
+        and the message body protocol stack labeled KERI/ACDC/SPAC
+
+        The two versions, CESR Genus and Protocol Stack, may be synchronized in
+        the following way:
+
+        * Major versions must match.
+
+        * Minor versions may differ.
+
+        Importantly the CESR code table version may not be included in the
+        message body itself but only provided in the surrounding CESR stream.
+        This means the code table version used by a message body may not be
+        signed. Therefore the receiver of a message body with embedded CESR
+        primitives and groups must be protected from a CESR code table genus
+        version malleability attack.
+
+        Because the major versions of the CESR code table and protocol stack
+        must match, the signed embedded protocol stack major version protects
+        the receiver from a major version malleability attack on the CESR
+        code table.
+
+        This, however, does not protect the receiver of a message body from
+        a minor version malleability attack on the CESR code table.
+        Nevertheless, the requirement that all minor versions of a CESR code
+        table for a given major version must be backwards compatible,
+        does indeed provide this protection.
+
+        Either, the receiver of the message body recognizes exactly
+        all primitives and groups in the message body because the CESR code
+        table minor version supported by the receiver is greater than or equal
+        to that used by the the minor version of the sender or any unsupported
+        (later appended) primitives or group codes will be unrecognized by
+        the received thereby raising an error that results in the message being
+        dropped.
+
     """
-    Codes = {Vrsn_1_0: CtrDex_1_0, Vrsn_2_0: CtrDex_2_0}
+    Codes = \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: CtrDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: CtrDex_2_0,
+        },
+    }
+
     Tags = {Vrsn_1_0: Tags_1_0, Vrsn_2_0: Tags_2_0}
 
     # Hards table maps from bytes Base64 first two code chars to int of
@@ -264,88 +336,96 @@ class Counter:
     # converted from first two code char. Used for ._bexfil.
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
-    # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
+    # Sizes table indexes size tables first by major version and then by
+    # lastest minor version
+    # Each size table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
     Sizes = \
     {
-        Vrsn_1_0: \
+        Vrsn_1_0.major: \
         {
-            '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+            Vrsn_1_0.minor: \
+            {
+                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+            },
         },
-        Vrsn_2_0: \
+        Vrsn_2_0.major: \
         {
-            '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0A': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0B': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0C': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0D': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0E': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0F': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0G': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0H': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0I': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0J': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0K': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-M': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0M': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-N': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0N': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-O': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0O': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-P': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0P': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-Q': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0Q': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-R': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0R': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-S': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0S': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0T': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+            Vrsn_2_0.minor: \
+            {
+                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0A': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0B': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0C': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0D': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0E': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0F': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0G': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0H': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0I': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0J': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0K': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-M': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0M': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-N': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0N': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-O': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0O': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-P': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0P': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Q': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0Q': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-R': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0R': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-S': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0S': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0T': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
+            },
         },
     }
 
 
     def __init__(self, tag=None, *, code = None, count=None, countB64=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False, version=Version):
+                 qb64b=None, qb64=None, qb2=None, strip=False, version=Vrsn_2_0):
         """
         Validate as fully qualified
         Parameters:
@@ -355,13 +435,13 @@ class Counter:
             code (str | None):  stable (hard) part of derivation code
                             if tag provided lookup code from tag
                             else if tag is None and code provided use code
-            count (int | None): count for composition.
-                Count may represent quadlets/triplet, groups, primitives or
-                other numericy
+            count (int | None): count of framed material for composition
+                Count does not include code.
+                Count represents quadlets/triplets
                 When both count and countB64 are None then count defaults to 1
-            countB64 (str | None): count for composition as Base64
-                countB64 may represent quadlets/triplet, groups, primitives or
-                other numericy
+            countB64 (str | None): count of framed material for composition
+                as Base64
+                countB64 represents quadlets/triplets
             qb64b (bytes | bytearray | None): fully qualified crypto material text domain
                 if code nor tag is provided
             qb64 (str | None) fully qualified crypto material text domain
@@ -382,9 +462,20 @@ class Counter:
         .code and .count
 
         """
-        self._version = version
-        self._codes = self.Codes[self._version]
-        self._sizes = self.Sizes[self._version]
+        if version.major not in self.Sizes:
+            raise kering.InvalidVersionError(f"Unsupported major version="
+                                             f"{version.major}.")
+
+        latest = list(self.Sizes[version.major])[0]  # get latest minor version
+        if version.minor > latest:
+            raise kering.InvalidVersionError(f"Minor version={version.minor} "
+                                             f" exceeds latest supported minor"
+                                             f" version={latest}.")
+
+        self._codes = self.Codes[version.major][latest]  # use latest supported version codes
+        self._sizes = self.Sizes[version.major][latest]  # use latest supported version sizes
+        self._version = version  # provided version may be earlier than supported version
+
 
         if tag:
             if not hasattr(self._codes, tag):

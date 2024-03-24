@@ -243,7 +243,7 @@ class ColdCodex:
     x[0] >> 5 == 0o1
     True
     """
-    Free: int = 0o0  # not taken
+    Anno: int = 0o0  # Annotated CESR
     CtB64: int = 0o1  # CountCode Base64
     OpB64: int = 0o2  # OpCode Base64
     JSON: int = 0o3  # JSON Map Event Start
@@ -269,14 +269,14 @@ def sniff(ims):
     and if counter code whether Base64 or Base2 representation
 
     First three bits:
-    0o0 = 000 free
+    0o0 = 000 annotated cesr
     0o1 = 001 cntcode B64
     0o2 = 010 opcode B64
     0o3 = 011 json
     0o4 = 100 mgpk
     0o5 = 101 cbor
     0o6 = 110 mgpk
-    007 = 111 cntcode or opcode B2
+    007 = 111 cntcode B2 or opcode B2
 
     counter B64 in (0o1, 0o2) return 'txt'
     counter B2 in (0o7)  return 'bny'
@@ -287,6 +287,7 @@ def sniff(ims):
     'msg' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
     'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
     'bny' if tritet in (ColdDex.CtOpB2,)
+    'ano' if tritet in (ColdDex.Anno,)
     """
     if not ims:
         raise ShortageError("Need more bytes.")
@@ -458,6 +459,13 @@ class EmptyMaterialError(MaterialError):
         raise EmptyMaterialError("error message")
     """
 
+class InvalidVersionError(MaterialError):
+    """
+    Invalid, Unknown, or unrecognized CESR code table version encountered during
+    crypto material init
+    Usage:
+        raise InvalidVersionError("error message")
+    """
 
 class InvalidCodeError(MaterialError):
     """

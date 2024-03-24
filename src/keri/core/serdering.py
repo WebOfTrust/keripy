@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 keri.core.serdering module
 
@@ -30,6 +30,9 @@ from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
+
+from ..core import counting
+from ..core.counting import AllTags, Counter
 
 from .. import help
 from ..help import helping
@@ -1069,7 +1072,7 @@ class Serder:
 
 
     @classmethod
-    def _dumps(clas, sad, protocol, version):
+    def _dumps(clas, sad, protocol, version, gversion=Vrsn_2_0):
         """CESR native serialization of sad
 
         Returns:
@@ -1078,13 +1081,98 @@ class Serder:
         Parameters:
             clas (Serder): class reference
             sad (dict | list)): serializable dict or list to serialize
-            protocol (str): protocol type
-            version (Versionage): protocol version
+            protocol (str): message protocol
+            version (Versionage): message protocol version
+            gversion (Versionage): CESR code table genus version
 
         """
-        pass
+        fixed = True  # True = use fixed field, False= use field map
+
+        raw = bytearray()
+
+        if protocol not in Protos:
+            raise SerializeError(f"Invalid {protocol=}.")
+
+        if version not in clas.Fields[protocol]:
+            raise SerializeError(f"Invalid {version=} for {protocol=}.")
+
+        ilks = clas.Fields[protocol][version]  # get fields keyed by ilk
+
+        ilk = sad.get('t')  # returns None if missing message type (ilk)
+        if ilk not in ilks:  #
+            raise SerializeError(f"Missing message type field "
+                                 f"'t' for {protocol=} {version=} with {sad=}.")
+
+        fields = ilks[ilk]  # FieldDom for given protocol and ilk
+
+        if fields.opts or not fields.strict:  # optional or extra fields allowed
+            fixed = False  # so must use field map
 
 
+        # assumes that sad's field ordering and field inclusion is correct
+        # so can serialize in order to compute saidive fields
+        # need to fix ._verify and .makify to account for CESR native serialization
+
+        if protocol == Protos.keri:
+            for l, v in sad.items():  # assumes valid field order & presence
+                if not fixed:  # prepend label
+                    pass
+
+                # should dispatch or use match instead of big if else
+                match l:  # label
+                    case "v":  # protocol+version
+                        val = (MtrDex.Tag7 + protocol +
+                               Counter.verToB64(version)).encode("utf-8")
+
+                    case "t":  # message type
+                        val = (MtrDex.Tag3 + ilk).encode("utf-8")  # add code
+
+                    case "d" | "i" | "di":  # said or aid
+                        val = v.encode("utf-8")  # already primitive qb64 make qb6b
+
+                    case "s" | "bt":  # sequence number
+                        val = coring.Number(numh=v).qb64b  # convert hex str
+
+                    case "kt" | "nt": # current or next signing threshold
+                        val = coring.Tholder(sith=v).limen  # convert sith str
+
+                    case "k" | "n" | "b" | "ba" | "br":  # list of primitives
+                        frame = bytearray()
+                        for e in v:  # list
+                            frame.extend(e.encode("utf-8"))
+                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) % 4,
+                                                version=gversion).qb64b)
+                        val.extend(frame)
+
+
+                    case _:  # if extra fields this is where logic wouldl
+                        raise SerializeError(f"Unsupported protocol field label"
+                                             f"='{l}' for {protocol=} {version=}.")
+
+
+                raw.extend(val)
+
+
+        elif protocol == Protos.acdc:
+            for l, val in sad.items():  # assumes valid field order & presence
+                if not fixed:
+                    pass  # prepend label
+
+
+
+        else:
+            raise SerializeError(f"Unsupported {protocol=}.")
+
+
+        # prepend count code for message
+        if fixed:
+            pass
+        else:
+            pass
+
+
+        return raw
 
 
 

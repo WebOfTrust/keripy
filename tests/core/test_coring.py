@@ -52,14 +52,19 @@ def test_genus_codex():
 
     """
 
-    assert dataclasses.asdict(GenDex) == {
-        'KERI': '--AAA', # KERI and ACDC Protocol Stacks share the same tables
+    assert dataclasses.asdict(GenDex) == \
+    {
+        'KERI_ACDC_SPAC': '--AAA',
+        'KERI': '--AAA',
         'ACDC': '--AAA',
-        }
+        'SPAC': '--AAA'
+    }
 
     assert '--AAA' in GenDex
     assert GenDex.KERI == "--AAA"
     assert GenDex.ACDC == "--AAA"
+    assert GenDex.SPAC == "--AAA"
+    assert GenDex.KERI_ACDC_SPAC == "--AAA"
     assert GenDex.KERI == GenDex.ACDC
 
     """End Test"""

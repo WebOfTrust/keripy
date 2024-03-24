@@ -4701,8 +4701,10 @@ class GenusCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
+    KERI_ACDC_SPAC: str = '--AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
     KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
     ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    SPAC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
 
 
     def __iter__(self):
