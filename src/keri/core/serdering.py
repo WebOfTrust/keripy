@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 keri.core.serdering module
 
@@ -6,6 +6,7 @@ keri.core.serdering module
 import copy
 import json
 from collections import namedtuple
+from collections.abc import Mapping
 from dataclasses import dataclass, asdict, field
 
 import cbor2 as cbor
@@ -26,13 +27,17 @@ from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
 from ..kering import SMELLSIZE, Smellage, smell
 
-from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
+from ..kering import Protocols, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
 
+from ..core import counting
+from ..core.counting import AllTags, Counter
+
 from .. import help
 from ..help import helping
+from ..help.helping import nonStringSequence
 
 logger = help.ogler.getLogger()
 
@@ -115,17 +120,16 @@ class Serdery:
 
     """
 
-    def __init__(self, *, version=None):
+    def __init__(self, *pa, **kwa):
         """Init instance
 
         Parameters:
-            version (Versionage | None): instance supported protocol version
-                     None means do not enforce a supported version
+
         """
-        self.version = version  # default version
+        pass
 
 
-    def reap(self, ims, *, version=None):
+    def reap(self, ims):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -139,14 +143,14 @@ class Serdery:
             version (Versionage | None): instance supported protocol version
                 None means do not enforce a supported version
         """
-        version = version if version is not None else self.version
+        #version = version if version is not None else self.version
 
-        smellage = smell(ims, version=version)
+        smellage = smell(ims)
 
-        if smellage.protocol == Protos.keri:
-            return SerderKERI(raw=ims, strip=True, version=version, smellage=smellage)
-        elif smellage.protocol == Protos.acdc:
-            return SerderACDC(raw=ims, strip=True, version=version, smellage=smellage)
+        if smellage.protocol == Protocols.keri:
+            return SerderKERI(raw=ims, strip=True, smellage=smellage)
+        elif smellage.protocol == Protocols.acdc:
+            return SerderACDC(raw=ims, strip=True, smellage=smellage)
         else:
             raise ProtocolError(f"Unsupported protocol type = {smellage.proto}.")
 
@@ -184,8 +188,8 @@ class Serder:
         Digests (dict): map of digestive codes. Should be same set of codes as
             in coring.DigestCodex coring.DigDex so that .digestive property works.
             Use unit tests to ensure codex sets match
-        Protocol (str): default protocol version type
-        Proto (str): default CESR protocol genus type
+        Protocol (str): class specific message protocol
+        Proto (str): default message protocol
         Vrsn (Versionage): default version
         Kind (str): default serialization kind one of Serials
         Fields (dict): nested dict of field labels keyed by protocol, version,
@@ -265,9 +269,8 @@ class Serder:
     }
 
     #override in subclass to enforce specific protocol
-    Protocol = None  # required protocol, None means any in Protos is ok
-
-    Proto = Protos.keri  # default CESR protocol type
+    Protocol = None  # class based message protocol, None means any in Protocols is ok
+    Proto = Protocols.keri  # default message protocol type for makify on base Serder
     Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
 
@@ -278,7 +281,7 @@ class Serder:
     # ilk value of None is default for protocols that support ilkless packets
     Fields = \
     {
-        Protos.keri:
+        Protocols.keri:
         {
             Vrsn_1_0:
             {
@@ -383,7 +386,7 @@ class Serder:
                     saids={Saids.d: DigDex.Blake3_256}),
             },
         },
-        Protos.acdc:
+        Protocols.acdc:
         {
             Vrsn_1_0:
             {
@@ -436,7 +439,7 @@ class Serder:
     }
 
 
-    def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
+    def __init__(self, *, raw=b'', sad=None, strip=False,
                  smellage=None, verify=True, makify=False,
                  proto=None, vrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
@@ -455,8 +458,6 @@ class Serder:
             strip (bool): True means strip (delete) raw from input stream
                 bytearray after parsing. False means do not strip.
                 Assumes that raw is bytearray when strip is True.
-            version (Versionage | None): instance supported protocol version
-                None means do not enforce a supported version
             smellage (Smellage | None): instance of deconstructed and converted
                 version string elements. If none or empty ignore otherwise assume
                 that raw already had its version string extracted (reaped) into the
@@ -466,7 +467,7 @@ class Serder:
                 Ignore when raw not provided or when raw and saidify is True
             makify (bool): True means compute fields for sad including size and
                 saids.
-            proto (str | None): desired protocol type str value of Protos
+            proto (str | None): desired protocol type str value of Protocols
                 If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
@@ -488,9 +489,7 @@ class Serder:
 
         if raw:  # deserialize raw using property setter
             # self._inhale works because it only references class attributes
-            sad, proto, vrsn, kind, size = self._inhale(raw=raw,
-                                                        version=version,
-                                                        smellage=smellage)
+            sad, proto, vrsn, kind, size = self._inhale(raw=raw, smellage=smellage)
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
             self._sad = sad
             self._proto = proto
@@ -523,14 +522,13 @@ class Serder:
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
-                # makify resets sad, raw, proto, version, kind, and size
-                self.makify(sad=sad, version=version,
-                        proto=proto, vrsn=vrsn, kind=kind, ilk=ilk, saids=saids)
+                # makify resets sad, raw, proto, vrsn, kind, ilk, and size
+                self.makify(sad=sad, proto=proto, vrsn=vrsn, kind=kind,
+                            ilk=ilk, saids=saids)
 
             else:
                 # self._exhale works because it only access class attributes
-                raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad,
-                                                                 version=version)
+                raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad)
                 self._raw = raw
                 self._sad = sad
                 self._proto = proto
@@ -675,8 +673,7 @@ class Serder:
         # verified successfully since no exception
 
 
-    def makify(self, sad, *, version=None,
-               proto=None, vrsn=None, kind=None, ilk=None, saids=None):
+    def makify(self, sad, *, proto=None, vrsn=None, kind=None, ilk=None, saids=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
         raw, sad, proto, version, kind, size
@@ -694,9 +691,7 @@ class Serder:
         Parameters:
             sad (dict): serializable saidified field map of message.
                 Ignored if raw provided
-            version (Versionage): instance supported protocol version
-                None means do not enforce version
-            proto (str | None): desired protocol type str value of Protos
+            proto (str | None): desired protocol type str value of Protocols
                 If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
@@ -716,7 +711,7 @@ class Serder:
         sproto = svrsn = skind = silk = None
         if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
-                sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
+                sproto, svrsn, skind, _ = deversify(sad["v"])
             except ValueError as ex:
                 pass
             else:
@@ -745,11 +740,11 @@ class Serder:
             raise SerializeError(f"Expected protocol = {self.Protocol}, got "
                                  f"{proto} instead.")
 
-        if version is not None:  # compatible version with vrsn
-            if (vrsn.major > version.major or
-                (vrsn.major == version.major and vrsn.minor > version.minor)):
-                    raise SerializeError(f"Incompatible {version=}, with "
-                                           f"{vrsn=}.")
+        #if version is not None:  # compatible version with vrsn
+            #if (vrsn.major > version.major or
+                #(vrsn.major == version.major and vrsn.minor > version.minor)):
+                    #raise SerializeError(f"Incompatible {version=}, with "
+                                           #f"{vrsn=}.")
 
 
         if kind not in Serials:
@@ -890,7 +885,7 @@ class Serder:
 
 
     @classmethod
-    def _inhale(clas, raw, version=Version, smellage=None):
+    def _inhale(clas, raw, *, smellage=None):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -901,14 +896,14 @@ class Serder:
 
         Returns: tuple (sad, proto, vrsn, kind, size) where:
             sad (dict): serializable attribute dict of saidified data
-            proto (str): value of Protos (Protocolage) protocol type
+            proto (str): value of Protocols (Protocolage) protocol type
             vrsn (Versionage | None): tuple of (major, minor) version ints
                 None means do not enforce version
             kind (str): value of Serials (Serialage) serialization kind
 
         Parameters:
+            clas (Serder): class reference
             raw (bytes): serialized sad message
-            version (Versionage): instance supported protocol version
             smellage (Smellage | None): instance of deconstructed version string
                 elements. If none or empty ignore otherwise assume that raw
                 already had its version string extracted (reaped) into the
@@ -922,7 +917,7 @@ class Serder:
         if smellage:  # passed in so don't need to smell raw again
             proto, vrsn, kind, size = smellage  # tuple unpack
         else:  # not passed in so smell raw
-            proto, vrsn, kind, size = smell(raw, version=version)
+            proto, vrsn, kind, size = smell(raw)
 
         sad = clas.loads(raw=raw, size=size, kind=kind)
 
@@ -973,11 +968,25 @@ class Serder:
 
         return sad
 
+    @classmethod
+    def _loads(clas, raw, size=None):
+        """CESR native desserialization of raw
+
+        Returns:
+           sad (dict): deserialized dict of CESR native serialization.
+
+        Parameters:
+           clas (Serder): class reference
+           raw (bytes |bytearray): raw serialization to deserialze as dict
+           size (int): number of bytes to consume for the deserialization.
+                       If None then consume all bytes in raw
+        """
+        pass
+
 
     @classmethod
-    def _exhale(clas, sad, version=None):
-        """Serializes sad given kind and version and sets the serialized size
-        in the version string.
+    def _exhale(clas, sad):
+        """Serializes sad and sets the serialized size in its version string.
 
         As classmethod enables bootstrap of valid sad dict that has correct size
         in version string. This obviates sizeify. This can be called on self as
@@ -991,9 +1000,8 @@ class Serder:
             vrsn (Versionage): tuple value (major, minor)
 
         Parameters:
+            clas (Serder): class reference
             sad (dict): serializable attribute dict of saidified data
-            version (Versionage | None): supported protocol version for message
-                None means do not enforce a supported version
 
 
         """
@@ -1001,7 +1009,7 @@ class Serder:
             raise SerializeError(f"Missing version string field in {sad}.")
 
         # extract elements so can replace size element but keep others
-        proto, vrsn, kind, size = deversify(sad["v"], version=version)
+        proto, vrsn, kind, size = deversify(sad["v"])
 
         raw = clas.dumps(sad, kind)
         size = len(raw)
@@ -1049,6 +1057,153 @@ class Serder:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
         return raw
+
+
+    @classmethod
+    def _dumps(clas, sad, protocol, version, cversion=Vrsn_2_0):
+        """CESR native serialization of sad
+
+        Returns:
+            raw (bytes): CESR native serialization of sad dict
+
+        Parameters:
+            clas (Serder): class reference
+            sad (dict | list)): serializable dict or list to serialize
+            protocol (str): message protocol
+            version (Versionage): message protocol version
+            cversion (Versionage): CESR code table genus version
+
+        Versioning:
+            CESR native serialization includes message protocol, protocol version
+            and CESR (genus) version. Assumes genus is compatible with message
+            protocol so genus is not needed. Protects from malleability attack
+            and ensure compatible cesr codes especially count (group) codes.
+            Primitive codes are less problematic since so far all primitive codes
+            tables are backwards compatible across major versions.
+
+            0NPPPPMmmMmm (12 B64 characters)
+
+
+
+        """
+        fixed = True  # True = use fixed field, False= use field map
+
+        raw = bytearray()
+
+        if protocol not in Protocols:
+            raise SerializeError(f"Invalid {protocol=}.")
+
+        if version not in clas.Fields[protocol]:
+            raise SerializeError(f"Invalid {version=} for {protocol=}.")
+
+        ilks = clas.Fields[protocol][version]  # get fields keyed by ilk
+
+        ilk = sad.get('t')  # returns None if missing message type (ilk)
+        if ilk not in ilks:  #
+            raise SerializeError(f"Missing message type field "
+                                 f"'t' for {protocol=} {version=} with {sad=}.")
+
+        fields = ilks[ilk]  # FieldDom for given protocol and ilk
+
+        if fields.opts or not fields.strict:  # optional or extra fields allowed
+            fixed = False  # so must use field map
+
+
+        # assumes that sad's field ordering and field inclusion is correct
+        # so can serialize in order to compute saidive fields
+        # need to fix ._verify and .makify to account for CESR native serialization
+
+        if protocol == Protocols.keri:
+            for l, v in sad.items():  # assumes valid field order & presence
+                if not fixed:  # prepend label
+                    pass
+
+                # should dispatch or use match instead of big if else
+                match l:  # label
+                    case "v":  # protocol+version
+                        val = (MtrDex.Tag7 + protocol +
+                               Counter.verToB64(version)).encode("utf-8")
+
+                    case "t":  # message type
+                        val = (MtrDex.Tag3 + ilk).encode("utf-8")  # add code
+
+                    case "d" | "i" | "p" | "di":  # said or aid
+                        val = v.encode("utf-8")  # already primitive qb64 make qb6b
+
+                    case "s" | "bt":  # sequence number or numeric threshold
+                        val = coring.Number(numh=v).qb64b  # convert hex str
+
+                    case "kt" | "nt": # current or next signing threshold
+                        val = coring.Tholder(sith=v).limen  # convert sith str
+
+                    case "k" | "n" | "b" | "ba" | "br":  # list of primitives
+                        frame = bytearray()
+                        for e in v:  # list
+                            frame.extend(e.encode("utf-8"))
+
+                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) % 4,
+                                                version=cversion).qb64b)
+                        val.extend(frame)
+
+                    case "c":  # list of config traits strings
+                        frame = bytearray()
+                        for e in v:  # list
+                            pass
+                            #frame.extend(e.encode("utf-8"))
+
+                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) % 4,
+                                                version=cversion).qb64b)
+                        val.extend(frame)
+
+                    case "a":  # list of seals or field map of attributes
+                        frame = bytearray()
+                        if isinstance(v, Mapping):
+                            for l, e in v.items():
+                                pass
+                            val = bytearray(Counter(tag=AllTags.GenericMapGroup,
+                                                count=len(frame) % 4,
+                                                version=cversion).qb64b)
+                        else:
+                            for e in v:  # list
+                                pass
+                                #frame.extend(e.encode("utf-8"))
+
+                            val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) % 4,
+                                                version=cversion).qb64b)
+                        val.extend(frame)
+
+
+                    case _:  # if extra fields this is where logic would be
+                        raise SerializeError(f"Unsupported protocol field label"
+                                             f"='{l}' for {protocol=} {version=}.")
+
+
+                raw.extend(val)
+
+
+        elif protocol == Protocols.acdc:
+            for l, val in sad.items():  # assumes valid field order & presence
+                if not fixed:
+                    pass  # prepend label
+
+
+
+        else:
+            raise SerializeError(f"Unsupported {protocol=}.")
+
+
+        # prepend count code for message
+        if fixed:
+            pass
+        else:
+            pass
+
+
+        return raw
+
 
 
     def compare(self, said=None):
@@ -1196,8 +1351,8 @@ class SerderKERI(Serder):
        See docs for Serder
     """
     #override in subclass to enforce specific protocol
-    Protocol = Protos.keri  # required protocol, None means any in Protos is ok
-    Proto = Protos.keri  # default protocol type
+    Protocol = Protocols.keri  # required protocol, None means any in Protocols is ok
+    Proto = Protocols.keri  # default protocol type
 
 
 
@@ -1566,8 +1721,8 @@ class SerderACDC(Serder):
        See docs for Serder
     """
     #override in subclass to enforce specific protocol
-    Protocol = Protos.acdc  # required protocol, None means any in Protos is ok
-    Proto = Protos.acdc  # default protocol type
+    Protocol = Protocols.acdc  # required protocol, None means any in Protocols is ok
+    Proto = Protocols.acdc  # default protocol type
 
 
 

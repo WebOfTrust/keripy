@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 tests.core.test_counting module
 
@@ -20,7 +20,7 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
 
 from keri.core import counting
 from keri.core.counting import Sizage, MapDom, MapCodex, Counter
-from keri.core.counting import Versionage, Version, Vrsn_1_0, Vrsn_2_0, AllTags
+from keri.core.counting import Versionage, Vrsn_1_0, Vrsn_2_0, AllTags
 
 
 def test_mapdom():
@@ -388,8 +388,14 @@ def test_counter():
 
     assert Counter.Codes == \
     {
-        counting.Vrsn_1_0: counting.CtrDex_1_0,
-        counting.Vrsn_2_0: counting.CtrDex_2_0,
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: counting.CtrDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: counting.CtrDex_2_0,
+        },
     }
 
     assert Counter.Tags == \
@@ -414,95 +420,109 @@ def test_counter():
     # Codes table with sizes of code (hard) and full primitive material
     assert Counter.Sizes == \
     {
-        counting.Vrsn_1_0: \
+        Vrsn_1_0.major: \
         {
-            '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
+            Vrsn_1_0.minor: \
+            {
+                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
+            },
         },
-        counting.Vrsn_2_0: \
+        Vrsn_2_0.major: \
         {
-            '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0A': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0B': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0C': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0D': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0E': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0F': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0G': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0H': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0I': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0J': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0K': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-M': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0M': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-N': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0N': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-O': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0O': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-P': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0P': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-Q': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0Q': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-R': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0R': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-S': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0S': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0T': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-            '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-            '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
-        }
+            Vrsn_2_0.minor: \
+            {
+                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0A': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0B': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0C': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0D': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0E': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0F': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0G': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0H': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0I': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0J': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0K': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-M': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0M': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-N': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0N': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-O': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0O': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-P': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0P': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Q': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0Q': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-R': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0R': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-S': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0S': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0T': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
+            },
+        },
     }
 
-    assert Counter.Sizes[counting.Vrsn_1_0]['-A'].hs == 2  # hard size
-    assert Counter.Sizes[counting.Vrsn_1_0]['-A'].ss == 2  # soft size
-    assert Counter.Sizes[counting.Vrsn_1_0]['-A'].fs == 4  # full size
-    assert Counter.Sizes[counting.Vrsn_1_0]['-A'].ls == 0  # lead size
+    assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].hs == 2  # hard size
+    assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ss == 2 # soft size
+    assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].fs == 4  # full size
+    assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ls == 0  # lead size
+
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].hs == 3  # hard size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].ss == 5  # soft size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].fs == 8  # full size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].ls == 0  # lead size
+
 
     # verify first hs Sizes matches hs in Codes for same first char
-    for vsize in Counter.Sizes.values():
-        for ckey, cval in vsize.items():
-            assert Counter.Hards[ckey[:2]] == cval.hs
+    for vmajor in Counter.Sizes.values():
+        for vminor in vmajor.values():
+            for key, val in vminor.items(): # size table items
+                assert Counter.Hards[key[:2]] == val.hs
 
-    #  verify all Codes have hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
-    # if hs < 2 or ss <= 0 or fs != cs or cs % 4   cs = hs + ss
-    for vsize in Counter.Sizes.values():
-        for val in vsize.values():
-            assert val.hs >= 2 and val.ss > 0 and val.hs + val.ss == val.fs and not val.fs % 4
+    ##  verify all Codes have hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
+    ## if hs < 2 or ss <= 0 or fs != cs or cs % 4   cs = hs + ss
+    for vmajor in Counter.Sizes.values():
+        for vminor in vmajor.values():
+            for val in vminor.values():  # size table values
+                assert val.hs >= 2 and val.ss > 0 and val.hs + val.ss == val.fs and not val.fs % 4
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
@@ -578,13 +598,12 @@ def test_counter_v1():
     """
     test Counter instances for verision 1.0 code tables
     """
-    # version 1_0 tests  default version is Version
-    assert Version == Vrsn_1_0
-    CtrDex = Counter.Codes[Version]  # set CtrDex to Vrsn_1_0
+    # version 1_0 tests
+    CtrDex = Counter.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]  # set CtrDex to Vrsn_1_0
 
     # test Counter instances
     with pytest.raises(kering.EmptyMaterialError):
-        counter = Counter()
+        counter = Counter(version=Vrsn_1_0)
 
     # create code manually
     count = 1
@@ -593,78 +612,86 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(tag="ControllerIdxSigs", count=count)
+    counter = Counter(tag="ControllerIdxSigs", count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(tag=AllTags.ControllerIdxSigs, count=count)
+    counter = Counter(tag=AllTags.ControllerIdxSigs, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     # test tag takes precedence
     counter = Counter(tag=AllTags.ControllerIdxSigs,
                       code=CtrDex.WitnessIdxSigs,
-                      count=count)
+                      count=count,
+                      version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs)  # default count = 1
+    counter = Counter(code=CtrDex.ControllerIdxSigs, version=Vrsn_1_0)  # default count = 1
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     # test truncates extra bytes from qb64 parameter
     longqsc64 = qsc + "ABCD"
-    counter = Counter(qb64=longqsc64)
+    counter = Counter(qb64=longqsc64, version=Vrsn_1_0)
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb64=shortqsc64)
+        counter = Counter(qb64=shortqsc64, version=Vrsn_1_0)
 
     # test truncates extra bytes from qb2 parameter
     longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
-    counter = Counter(qb2=longqscb2)
+    counter = Counter(qb2=longqscb2, version=Vrsn_1_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb2=shortqscb2)
+        counter = Counter(qb2=shortqscb2, version=Vrsn_1_0)
 
     # test with non-zero count=5
     count = 5
@@ -673,33 +700,37 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count)
+    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     # test with big codes index=1024
     count = 1024
@@ -708,36 +739,40 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigAttachmentGroup, count=count)
+    counter = Counter(code=CtrDex.BigAttachmentGroup, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     # Test ._bexfil
-    counter = Counter(qb64=qsc)  #
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  #
     code = counter.code
     count = counter.count
     qb2 = counter.qb2
@@ -746,6 +781,7 @@ def test_counter_v1():
     assert counter.count == count
     assert counter.qb64 == qsc
     assert counter.qb2 == qb2
+    assert counter.version == Vrsn_1_0
 
     # Test ._binfil
     test = counter._binfil()
@@ -760,35 +796,38 @@ def test_counter_v1():
     qscb2 = decodeB64(qscb)
 
     # strip ignored if qb64
-    counter = Counter(qb64=qsc, strip=True)  # test with str not bytes
+    counter = Counter(qb64=qsc, strip=True, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     ims = bytearray(qscb)  # test with qb64b
-    counter = Counter(qb64b=ims, strip=True)  # strip
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # strip
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     ims = bytearray(qscb2)  # test with qb2
-    counter = Counter(qb2=ims, strip=True)
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     # test with longer ims for qb64b
     extra = b"ABCD"
     ims = bytearray(qscb + b"ABCD")
-    counter = Counter(qb64b=ims, strip=True)
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)
     assert counter.qb64b == qscb
     assert len(counter.qb64b) == counter.sizes[counter.code].fs
     assert ims == extra
@@ -796,7 +835,7 @@ def test_counter_v1():
     # test with longer ims for qb2
     extra = bytearray([1, 2, 3, 4, 5])
     ims = bytearray(qscb2) + extra
-    counter = Counter(qb2=ims, strip=True)
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb2) == counter.sizes[counter.code].fs * 3 // 4
     assert ims == extra
@@ -805,11 +844,11 @@ def test_counter_v1():
 
     ims = bytes(qscb)  # test with qb64b
     with pytest.raises(TypeError):
-        counter = Counter(qb64b=ims, strip=True)  # strip
+        counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # strip
 
     ims = bytes(qscb2)  # test with qb2
     with pytest.raises(TypeError):
-        counter = Counter(qb2=ims, strip=True)
+        counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
 
     # test with big codes index=1024
     count = 1024
@@ -819,21 +858,23 @@ def test_counter_v1():
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
-    counter = Counter(qb64b=ims, strip=True)  # test with bytes not str
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
     assert not ims
 
     ims = bytearray(qscb2)
-    counter = Counter(qb2=ims, strip=True)  # test with qb2
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
     assert not ims
 
     # test protocol genus with CESR protocol genus version
@@ -847,7 +888,9 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.KERIACDCGenusVersion, count=genverint)
+    counter = Counter(code=CtrDex.KERIACDCGenusVersion,
+                      count=genverint,
+                      version=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
@@ -855,8 +898,11 @@ def test_counter_v1():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
-    counter = Counter(code=CtrDex.KERIACDCGenusVersion, countB64=genver)
+    counter = Counter(code=CtrDex.KERIACDCGenusVersion,
+                      countB64=genver,
+                      version=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
@@ -864,6 +910,7 @@ def test_counter_v1():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
 
     """End Test"""
 
@@ -872,8 +919,7 @@ def test_counter_v2():
     test Counter instances for verision 2.0 code tables
     """
     # version 2_0 tests  default version is Version
-    #assert Version == Vrsn_2_0
-    CtrDex = Counter.Codes[Vrsn_2_0]  # set CtrDex to Vrsn_2_0
+    CtrDex = Counter.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]  # set CtrDex to Vrsn_2_0
 
     # test Counter instances
     with pytest.raises(kering.EmptyMaterialError):
@@ -886,6 +932,15 @@ def test_counter_v2():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
+    # default version and default count = 1
+    counter = Counter(code=CtrDex.ControllerIdxSigs)
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
+
     # default count = 1
     counter = Counter(code=CtrDex.ControllerIdxSigs, version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -893,6 +948,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -900,6 +956,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -907,6 +964,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -914,6 +972,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     # test truncates extra bytes from qb64 parameter
     longqsc64 = qsc + "ABCD"
@@ -949,13 +1008,17 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
-    counter = Counter(tag=AllTags.ControllerIdxSigs, count=count, version=Vrsn_2_0)
+    counter = Counter(tag=AllTags.ControllerIdxSigs,
+                      count=count,
+                      version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     # test tag takes precedence
     counter = Counter(tag=AllTags.ControllerIdxSigs,
@@ -967,6 +1030,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -974,6 +1038,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -981,6 +1046,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -988,6 +1054,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -995,6 +1062,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     # Test ._bexfil
     counter = Counter(qb64=qsc, version=Vrsn_2_0)
@@ -1006,6 +1074,7 @@ def test_counter_v2():
     assert counter.count == count
     assert counter.qb64 == qsc
     assert counter.qb2 == qb2
+    assert counter.version == Vrsn_2_0
 
     # Test ._binfil
     test = counter._binfil()
@@ -1026,6 +1095,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     ims = bytearray(qscb)  # test with qb64b
     counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # strip
@@ -1035,6 +1105,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     ims = bytearray(qscb2)  # test with qb2
     counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
@@ -1044,6 +1115,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     # test with longer ims for qb64b
     extra = b"ABCD"
@@ -1084,6 +1156,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
@@ -1091,6 +1164,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
@@ -1098,6 +1172,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
@@ -1105,6 +1180,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     # test ims with big codes count=1024
     count = 1024
@@ -1120,6 +1196,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
     assert not ims
 
     ims = bytearray(qscb2)
@@ -1129,6 +1206,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
     assert not ims
 
     # test with big codes count=8193
@@ -1144,6 +1222,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
@@ -1151,6 +1230,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
@@ -1158,6 +1238,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
@@ -1165,6 +1246,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     # test ims with big codes count=8193
     count = 8193
@@ -1180,6 +1262,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
     assert not ims
 
     ims = bytearray(qscb2)
@@ -1189,6 +1272,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
     assert not ims
 
     # test with promotion from small to big codes with count=8193
@@ -1204,6 +1288,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     counter = Counter(tag=AllTags.GenericGroup, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup
@@ -1211,6 +1296,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     # test protocol genus with CESR version
     genverint = 0
@@ -1222,7 +1308,9 @@ def test_counter_v2():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.KERIACDCGenusVersion, count=genverint, version=Vrsn_2_0)
+    counter = Counter(code=CtrDex.KERIACDCGenusVersion,
+                      count=genverint,
+                      version=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
@@ -1230,8 +1318,11 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
-    counter = Counter(code=CtrDex.KERIACDCGenusVersion, countB64=genver, version=Vrsn_2_0)
+    counter = Counter(code=CtrDex.KERIACDCGenusVersion,
+                      countB64=genver,
+                      version=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
@@ -1239,6 +1330,7 @@ def test_counter_v2():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
 
     """End Test"""
 
