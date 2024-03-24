@@ -6,6 +6,7 @@ keri.core.serdering module
 import copy
 import json
 from collections import namedtuple
+from collections.abc import Mapping
 from dataclasses import dataclass, asdict, field
 
 import cbor2 as cbor
@@ -36,6 +37,7 @@ from ..core.counting import AllTags, Counter
 
 from .. import help
 from ..help import helping
+from ..help.helping import nonStringSequence
 
 logger = help.ogler.getLogger()
 
@@ -1127,10 +1129,10 @@ class Serder:
                     case "t":  # message type
                         val = (MtrDex.Tag3 + ilk).encode("utf-8")  # add code
 
-                    case "d" | "i" | "di":  # said or aid
+                    case "d" | "i" | "p" | "di":  # said or aid
                         val = v.encode("utf-8")  # already primitive qb64 make qb6b
 
-                    case "s" | "bt":  # sequence number
+                    case "s" | "bt":  # sequence number or numeric threshold
                         val = coring.Number(numh=v).qb64b  # convert hex str
 
                     case "kt" | "nt": # current or next signing threshold
@@ -1140,13 +1142,43 @@ class Serder:
                         frame = bytearray()
                         for e in v:  # list
                             frame.extend(e.encode("utf-8"))
+
                         val = bytearray(Counter(tag=AllTags.GenericListGroup,
                                                 count=len(frame) % 4,
                                                 version=gversion).qb64b)
                         val.extend(frame)
 
+                    case "c":  # list of config traits strings
+                        frame = bytearray()
+                        for e in v:  # list
+                            pass
+                            #frame.extend(e.encode("utf-8"))
 
-                    case _:  # if extra fields this is where logic wouldl
+                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) % 4,
+                                                version=gversion).qb64b)
+                        val.extend(frame)
+
+                    case "a":  # list of seals or field map of attributes
+                        frame = bytearray()
+                        if isinstance(v, Mapping):
+                            for l, e in v.items():
+                                pass
+                            val = bytearray(Counter(tag=AllTags.GenericMapGroup,
+                                                count=len(frame) % 4,
+                                                version=gversion).qb64b)
+                        else:
+                            for e in v:  # list
+                                pass
+                                #frame.extend(e.encode("utf-8"))
+
+                            val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) % 4,
+                                                version=gversion).qb64b)
+                        val.extend(frame)
+
+
+                    case _:  # if extra fields this is where logic would be
                         raise SerializeError(f"Unsupported protocol field label"
                                              f"='{l}' for {protocol=} {version=}.")
 
