@@ -919,8 +919,7 @@ class Serder:
         self._size = size
 
 
-    @staticmethod
-    def loads(raw, size=None, kind=Serials.json):
+    def loads(self, raw, size=None, kind=Serials.json):
         """Utility static method to handle deserialization by kind
 
         Returns:
@@ -960,8 +959,8 @@ class Serder:
 
         return sad
 
-    @classmethod
-    def _loads(clas, raw, size=None):
+
+    def _loads(self, raw, size=None):
         """CESR native desserialization of raw
 
         Returns:
@@ -1028,8 +1027,7 @@ class Serder:
         self._size = size
 
 
-    @staticmethod
-    def dumps(sad, kind=Serials.json):
+    def dumps(self, sad, kind=Serials.json):
         """Utility static method to handle serialization by kind
 
         Returns:
@@ -1055,8 +1053,7 @@ class Serder:
         return raw
 
 
-    @classmethod
-    def _dumps(clas, sad, protocol, version, cversion=Vrsn_2_0):
+    def _dumps(self, sad, protocol, version, cversion=Vrsn_2_0):
         """CESR native serialization of sad
 
         Returns:
@@ -1089,10 +1086,10 @@ class Serder:
         if protocol not in Protocols:
             raise SerializeError(f"Invalid {protocol=}.")
 
-        if version not in clas.Fields[protocol]:
+        if version not in self.Fields[protocol]:
             raise SerializeError(f"Invalid {version=} for {protocol=}.")
 
-        ilks = clas.Fields[protocol][version]  # get fields keyed by ilk
+        ilks = self.Fields[protocol][version]  # get fields keyed by ilk
 
         ilk = sad.get('t')  # returns None if missing message type (ilk)
         if ilk not in ilks:  #
