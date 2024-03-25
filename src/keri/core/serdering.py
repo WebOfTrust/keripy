@@ -273,6 +273,7 @@ class Serder:
     Proto = Protocols.keri  # default message protocol type for makify on base Serder
     Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
+    CVrsn = Vrsn_2_0  # default CESR code table version
 
 
     # Nested dict keyed by protocol.
@@ -439,8 +440,8 @@ class Serder:
     }
 
 
-    def __init__(self, *, raw=b'', sad=None, strip=False,
-                 smellage=None, verify=True, makify=False,
+    def __init__(self, *, raw=b'', sad=None, strip=False, smellage=None,
+                 cvrsn=None, verify=True, makify=False,
                  proto=None, vrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
@@ -462,6 +463,8 @@ class Serder:
                 version string elements. If none or empty ignore otherwise assume
                 that raw already had its version string extracted (reaped) into the
                 elements of smellage.
+            cvrsn (Versionage | None): instance desired CESR code table version
+                If None then its extracted from raw or uses default .CVrsn
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
                 Ignore when raw not provided or when raw and saidify is True
@@ -486,16 +489,12 @@ class Serder:
 
 
         """
+        cvrsn = cvrsn if cvrsn is not None else self.CVrsn
 
         if raw:  # deserialize raw using property setter
-            # self._inhale works because it only references class attributes
-            sad, proto, vrsn, kind, size = self._inhale(raw=raw, smellage=smellage)
-            self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
-            self._sad = sad
-            self._proto = proto
-            self._vrsn = vrsn
-            self._kind = kind
-            self._size = size
+            self._inhale(raw=raw, smellage=smellage, cvrsn=cvrsn)
+            # ._inhale updates ._raw, ._sad, ._cvrsn, ._proto, ._vrsn, ._kind, ._size
+
             # primary said field label
             try:
                 label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
@@ -523,26 +522,22 @@ class Serder:
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, vrsn, kind, ilk, and size
-                self.makify(sad=sad, proto=proto, vrsn=vrsn, kind=kind,
+                self.makify(sad=sad, cvrsn=cvrsn, proto=proto, vrsn=vrsn, kind=kind,
                             ilk=ilk, saids=saids)
+                # .makify updates ._raw, ._sad, ._cvrsn, ._proto, ._vrsn, ._kind, ._size
 
             else:
-                # self._exhale works because it only access class attributes
-                raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad)
-                self._raw = raw
-                self._sad = sad
-                self._proto = proto
-                self._vrsn = vrsn
-                self._kind = kind
-                self._size = size
-                # primary said field label
-                try:
-                    label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
-                    if label not in self._sad:
-                        raise DeserializeError(f"Missing primary said field in {self._sad}.")
-                    self._said = self._sad[label]  # not verified
-                except Exception:
-                    self._said = None  # no saidive field
+                self._exhale(sad=sad, cvrsn=cvrsn)
+                # .exhale updates ._raw, ._sad, ._cvrsn, ._proto, ._vrsn, ._kind, ._size
+
+            # primary said field label
+            try:
+                label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
+                if label not in self._sad:
+                    raise DeserializeError(f"Missing primary said field in {self._sad}.")
+                self._said = self._sad[label]  # not verified
+            except Exception:
+                self._said = None  # no saidive field
 
             if verify:  # verify the said(s) provided in sad
                 try:
@@ -673,7 +668,8 @@ class Serder:
         # verified successfully since no exception
 
 
-    def makify(self, sad, *, proto=None, vrsn=None, kind=None, ilk=None, saids=None):
+    def makify(self, sad, *, cvrsn=None, proto=None, vrsn=None, kind=None,
+               ilk=None, saids=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
         raw, sad, proto, version, kind, size
@@ -691,6 +687,8 @@ class Serder:
         Parameters:
             sad (dict): serializable saidified field map of message.
                 Ignored if raw provided
+            cvrsn (Versionage | None): instance desired CESR code table version
+                If None then its extracted from raw or uses default .CVrsn
             proto (str | None): desired protocol type str value of Protocols
                 If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
@@ -717,6 +715,8 @@ class Serder:
             else:
                 silk = sad.get('t')  # if 't' not in sad .get returns None which may be valid
 
+        cvrsn = cvrsn if cvrsn is not None else self.CVrsn
+
         if proto is None:
             proto = sproto if sproto is not None else self.Proto
 
@@ -739,12 +739,6 @@ class Serder:
         if self.Protocol and proto != self.Protocol:
             raise SerializeError(f"Expected protocol = {self.Protocol}, got "
                                  f"{proto} instead.")
-
-        #if version is not None:  # compatible version with vrsn
-            #if (vrsn.major > version.major or
-                #(vrsn.major == version.major and vrsn.minor > version.minor)):
-                    #raise SerializeError(f"Incompatible {version=}, with "
-                                           #f"{vrsn=}.")
 
 
         if kind not in Serials:
@@ -869,23 +863,14 @@ class Serder:
 
         self._raw = raw
         self._sad = sad
+        self._cvrsn = cvrsn
         self._proto = proto
         self._vrsn = vrsn
         self._kind = kind
         self._size = size
-        # primary said field label
-        try:
-            label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
-            if label not in self._sad:
-                raise SerializeError(f"Missing primary said field in {self._sad}.")
-            self._said = self._sad[label]  # implicitly verified
-        except Exception:
-            self._said = None  # no saidive field
 
 
-
-    @classmethod
-    def _inhale(clas, raw, *, smellage=None):
+    def _inhale(self, raw, *, smellage=None, cvrsn=None):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -908,6 +893,8 @@ class Serder:
                 elements. If none or empty ignore otherwise assume that raw
                 already had its version string extracted (reaped) into the
                 elements of smellage.
+            cvrsn (Versionage | None): instance desired CESR code table version
+                If None then its extracted from raw or uses default .CVrsn
 
         Note:
             loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -919,16 +906,24 @@ class Serder:
         else:  # not passed in so smell raw
             proto, vrsn, kind, size = smell(raw)
 
-        sad = clas.loads(raw=raw, size=size, kind=kind)
+        sad = self.loads(raw=raw, size=size, kind=kind)
+
+        cvrsn = cvrsn if cvrsn is not None else self.CVrsn
 
         if "v" not in sad:  # Regex does not check for version string label itself
             raise FieldError(f"Missing version string field in {sad}.")
 
-        return sad, proto, vrsn, kind, size
+        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
+        self._sad = sad
+        self._cvrsn = cvrsn
+        self._proto = proto
+        self._vrsn = vrsn
+        self._kind = kind
+        self._size = size
 
 
-    @staticmethod
-    def loads(raw, size=None, kind=Serials.json):
+
+    def loads(self, raw, size=None, kind=Serials.json):
         """Utility static method to handle deserialization by kind
 
         Returns:
@@ -968,8 +963,8 @@ class Serder:
 
         return sad
 
-    @classmethod
-    def _loads(clas, raw, size=None):
+
+    def _loads(self, raw, size=None):
         """CESR native desserialization of raw
 
         Returns:
@@ -984,8 +979,7 @@ class Serder:
         pass
 
 
-    @classmethod
-    def _exhale(clas, sad):
+    def _exhale(self, sad, cvrsn=None):
         """Serializes sad and sets the serialized size in its version string.
 
         As classmethod enables bootstrap of valid sad dict that has correct size
@@ -1002,6 +996,8 @@ class Serder:
         Parameters:
             clas (Serder): class reference
             sad (dict): serializable attribute dict of saidified data
+            cvrsn (Versionage | None): instance desired CESR code table version
+                If None then its extracted from raw or uses default .CVrsn
 
 
         """
@@ -1011,11 +1007,13 @@ class Serder:
         # extract elements so can replace size element but keep others
         proto, vrsn, kind, size = deversify(sad["v"])
 
-        raw = clas.dumps(sad, kind)
+        raw = self.dumps(sad, kind)
         size = len(raw)
 
         # generate new version string with correct size
         vs = versify(protocol=proto, version=vrsn, kind=kind, size=size)
+
+        cvrsn = cvrsn if cvrsn is not None else self.CVrsn
 
         # find location of old version string inside raw
         match = Rever.search(raw)  # Rever's regex takes bytes
@@ -1029,11 +1027,16 @@ class Serder:
             raise SerializeError(f"Malformed size of raw in version string == {vs}")
         sad["v"] = vs  # update sad
 
-        return raw, sad, proto, vrsn, kind, size
+        self._raw = raw
+        self._sad = sad
+        self._cvrsn = cvrsn
+        self._proto = proto
+        self._vrsn = vrsn
+        self._kind = kind
+        self._size = size
 
 
-    @staticmethod
-    def dumps(sad, kind=Serials.json):
+    def dumps(self, sad, kind=Serials.json):
         """Utility static method to handle serialization by kind
 
         Returns:
@@ -1059,8 +1062,7 @@ class Serder:
         return raw
 
 
-    @classmethod
-    def _dumps(clas, sad, protocol, version, cversion=Vrsn_2_0):
+    def _dumps(self, sad, protocol, version, cversion=Vrsn_2_0):
         """CESR native serialization of sad
 
         Returns:
@@ -1093,10 +1095,10 @@ class Serder:
         if protocol not in Protocols:
             raise SerializeError(f"Invalid {protocol=}.")
 
-        if version not in clas.Fields[protocol]:
+        if version not in self.Fields[protocol]:
             raise SerializeError(f"Invalid {version=} for {protocol=}.")
 
-        ilks = clas.Fields[protocol][version]  # get fields keyed by ilk
+        ilks = self.Fields[protocol][version]  # get fields keyed by ilk
 
         ilk = sad.get('t')  # returns None if missing message type (ilk)
         if ilk not in ilks:  #
@@ -1265,6 +1267,15 @@ class Serder:
             sad (dict): serializable attribute dict (saidified data)
         """
         return dict(self._sad)  # return copy
+
+    @property
+    def cvrsn(self):
+        """cvrsn (version) property getter
+
+        Returns:
+            cvrsn (Versionage): instance of CESR code table version for this Serder
+        """
+        return self._cvrsn
 
 
     @property
