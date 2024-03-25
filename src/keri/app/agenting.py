@@ -74,10 +74,13 @@ class Receiptor(doing.DoDoer):
         clients = dict()
         doers = []
         for wit in wits:
-            client, clientDoer = httpClient(hab, wit)
-            clients[wit] = client
-            doers.append(clientDoer)
-            self.extend([clientDoer])
+            try:
+                client, clientDoer = httpClient(hab, wit)
+                clients[wit] = client
+                doers.append(clientDoer)
+                self.extend([clientDoer])
+            except Exception as e:
+                logger.error(f"unable to create http client for witness {wit}: {e}")
 
         rcts = dict()
         for wit, client in clients.items():
