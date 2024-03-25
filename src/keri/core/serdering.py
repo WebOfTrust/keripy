@@ -489,13 +489,7 @@ class Serder:
 
         if raw:  # deserialize raw using property setter
             # self._inhale works because it only references class attributes
-            sad, proto, vrsn, kind, size = self._inhale(raw=raw, smellage=smellage)
-            self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
-            self._sad = sad
-            self._proto = proto
-            self._vrsn = vrsn
-            self._kind = kind
-            self._size = size
+            self._inhale(raw=raw, smellage=smellage)
             # primary said field label
             try:
                 label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
@@ -528,13 +522,8 @@ class Serder:
 
             else:
                 # self._exhale works because it only access class attributes
-                raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad)
-                self._raw = raw
-                self._sad = sad
-                self._proto = proto
-                self._vrsn = vrsn
-                self._kind = kind
-                self._size = size
+                self._exhale(sad=sad)
+
                 # primary said field label
                 try:
                     label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
@@ -883,9 +872,7 @@ class Serder:
             self._said = None  # no saidive field
 
 
-
-    @classmethod
-    def _inhale(clas, raw, *, smellage=None):
+    def _inhale(self, raw, *, smellage=None):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -919,12 +906,17 @@ class Serder:
         else:  # not passed in so smell raw
             proto, vrsn, kind, size = smell(raw)
 
-        sad = clas.loads(raw=raw, size=size, kind=kind)
+        sad = self.loads(raw=raw, size=size, kind=kind)
 
         if "v" not in sad:  # Regex does not check for version string label itself
             raise FieldError(f"Missing version string field in {sad}.")
 
-        return sad, proto, vrsn, kind, size
+        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
+        self._sad = sad
+        self._proto = proto
+        self._vrsn = vrsn
+        self._kind = kind
+        self._size = size
 
 
     @staticmethod
@@ -984,8 +976,7 @@ class Serder:
         pass
 
 
-    @classmethod
-    def _exhale(clas, sad):
+    def _exhale(self, sad):
         """Serializes sad and sets the serialized size in its version string.
 
         As classmethod enables bootstrap of valid sad dict that has correct size
@@ -1011,7 +1002,7 @@ class Serder:
         # extract elements so can replace size element but keep others
         proto, vrsn, kind, size = deversify(sad["v"])
 
-        raw = clas.dumps(sad, kind)
+        raw = self.dumps(sad, kind)
         size = len(raw)
 
         # generate new version string with correct size
@@ -1029,7 +1020,12 @@ class Serder:
             raise SerializeError(f"Malformed size of raw in version string == {vs}")
         sad["v"] = vs  # update sad
 
-        return raw, sad, proto, vrsn, kind, size
+        self._raw = raw
+        self._sad = sad
+        self._proto = proto
+        self._vrsn = vrsn
+        self._kind = kind
+        self._size = size
 
 
     @staticmethod
