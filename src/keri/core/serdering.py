@@ -201,8 +201,13 @@ class Serder:
     Properties:
         raw (bytes): of serialized event only
         sad (dict): self addressed data dict
+        cvrsn (Versionage): CESR code table version (Major, Minor)
         proto (str): Protocolage value as protocol identifier such as KERI, ACDC
-        version (Versionage): protocol version (Major, Minor)
+                     alias of .protocol
+        protocol (str): Protocolage value as protocol identifier such as KERI, ACDC
+                        alias of .proto
+        vrsn (Versionage): protocol version (Major, Minor) alias of .version
+        version (Versionage): protocol version (Major, Minor) alias of .vrsn
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
         said (str): qb64 said of .raw given by appropriate field
@@ -211,10 +216,11 @@ class Serder:
 
 
     Hidden Attributes:
-        ._raw is bytes of serialized event only
-        ._sad is key event dict
+        ._raw (bytes): serialized message
+        ._sad (dict): sad dict (key event dict)
+        ._cvrsn (Versionage): CESR code table version
         ._proto (str):  Protocolage value as protocol type identifier
-        ._version is Versionage instance of event version
+        ._vrsn is Versionage instance of event version
         ._kind is serialization kind string value (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
@@ -1288,7 +1294,7 @@ class Serder:
 
     @property
     def proto(self):
-        """proto property getter
+        """proto property getter, alias of .protocol
         protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
 
         Returns:
@@ -1296,10 +1302,20 @@ class Serder:
         """
         return self._proto
 
+    @property
+    def protocol(self):
+        """protocp; property getter, alias of .proto
+        protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
+
+        Returns:
+            protocol (str): Protocolage value as protocol type
+        """
+        return self._proto
+
 
     @property
     def vrsn(self):
-        """vrsn (version) property getter
+        """vrsn (version) property getter,  alias of .version
 
         Returns:
             vrsn (Versionage): instance of protocol version for this Serder
@@ -1308,7 +1324,7 @@ class Serder:
 
     @property
     def version(self):
-        """version property getter alias of .vrsn
+        """version property getter, alias of .vrsn
 
         Returns:
             version (Versionage): instance of protocol version for this Serder
