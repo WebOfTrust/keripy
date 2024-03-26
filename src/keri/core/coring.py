@@ -83,7 +83,7 @@ def sizeify(ked, kind=None, version=Version):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    proto, vrsn, knd, size = deversify(ked["v"])  # extract kind and version
+    proto, vrsn, knd, size, _ = deversify(ked["v"])  # extract kind and version
     if vrsn != version:
         raise ValueError("Unsupported version = {}.{}".format(vrsn.major,
                                                               vrsn.minor))
@@ -3754,7 +3754,7 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            _, _, knd, _ = deversify(sad['v'])
+            _, _, knd, _, _ = deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd
@@ -5161,14 +5161,14 @@ class Sadder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
-        proto, version, kind, size = smell(raw)
-        if version != Version:
+        proto, vrsn, kind, size, _ = smell(raw)
+        if vrsn != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
-                               "".format(version.major, version.minor, Version))
+                               "".format(vrsn.major, vrsn.minor, Version))
 
         ked = loads(raw=raw, size=size, kind=kind)
 
-        return ked, proto, kind, version, size
+        return ked, proto, kind, vrsn, size
 
 
     def _exhale(self, ked, kind=None):

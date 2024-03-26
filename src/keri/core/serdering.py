@@ -197,7 +197,7 @@ class Serdery:
         pass
 
 
-    def reap(self, ims, skip=0, native=False):
+    def reap(self, ims, genus=GenDex.KERI, gvrsn=Vrsn_2_0, native=False, skip=0):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -208,21 +208,32 @@ class Serdery:
         Parameters:
             ims (bytearray) of serialized incoming message stream. Assumes start
                 of stream is raw Serder.
-            skip (int): bytes to skip at front of ims. Useful when CESR native
-                serialization where skip is size of the message counter so smell
-                does need to see counter
+            genus (str): CESR genus code from stream parser.
+                    Provides genus of enclosing stream top-level or nested group
+            gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+                    Provides genus of enclosing stream top-level or nested group
             native (bool): True means sniff determined may be CESR native message
                            so snuff instead of smell.
                            False means sniff determined not CESR native i.e
                            JSON, CBOR, MGPK field map. so use smell. Default False
+             skip (int): bytes to skip at front of ims. Useful when CESR native
+                serialization where skip is size of the message counter so smell
+                does need to see counter
 
         """
-        smellage = smell(memoryview(ims)[skip:])  # does not copy to skip
+        if native:
+            pass
+            #smellage = smell(memoryview(ims)[skip:])  # does not copy to skip
 
-        if smellage.protocol == Protocols.keri:
-            return SerderKERI(raw=ims, strip=True, smellage=smellage)
-        elif smellage.protocol == Protocols.acdc:
-            return SerderACDC(raw=ims, strip=True, smellage=smellage)
+        else:
+            smellage = smell(ims)
+
+        if smellage.proto == Protocols.keri:
+            return SerderKERI(raw=ims, strip=True, smellage=smellage,
+                              genus=genus, gvrsn=gvrsn)
+        elif smellage.proto == Protocols.acdc:
+            return SerderACDC(raw=ims, strip=True, smellage=smellage,
+                              genus=genus, gvrsn=gvrsn)
         else:
             raise ProtocolError(f"Unsupported protocol type = {smellage.proto}.")
 
@@ -768,7 +779,7 @@ class Serder:
             raise ValidationError(f"Missing version string field in {sad}.")
 
         # extract version string elements to verify consistency with attributes
-        proto, vrsn, kind, size = deversify(sad["v"])
+        proto, vrsn, kind, size, opt = deversify(sad["v"])
         if self.proto != proto:
             raise ValidationError(f"Inconsistent protocol={self.proto} in {sad}.")
 
@@ -827,7 +838,7 @@ class Serder:
         sproto = svrsn = skind = silk = None
         if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
-                sproto, svrsn, skind, _ = deversify(sad["v"])
+                sproto, svrsn, skind, _, _ = deversify(sad["v"])
             except ValueError as ex:
                 pass
             else:
@@ -1023,9 +1034,9 @@ class Serder:
 
         """
         if smellage:  # passed in so don't need to smell raw again
-            proto, vrsn, kind, size = smellage  # tuple unpack
+            proto, vrsn, kind, size, gvrsn = smellage  # tuple unpack
         else:  # not passed in so smell raw
-            proto, vrsn, kind, size = smell(raw)
+            proto, vrsn, kind, size, gvrsn = smell(raw)
 
         sad = self.loads(raw=raw, size=size, kind=kind)
         # ._gvrsn may be set in loads when CESR native deserialization provides _gvrsn
@@ -1117,7 +1128,7 @@ class Serder:
             raise SerializeError(f"Missing version string field in {sad}.")
 
         # extract elements so can replace size element but keep others
-        proto, vrsn, kind, size = deversify(sad["v"])
+        proto, vrsn, kind, size, opt = deversify(sad["v"])
 
         raw = self.dumps(sad, kind)
 

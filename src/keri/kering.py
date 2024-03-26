@@ -66,14 +66,15 @@ Revfer = re.compile(VFREX)  # compile is faster
 
 """
 Smellage  (results of smelling a version string such as in a Serder)
-    protocol (str): protocol type value of Protocols examples 'KERI', 'ACDC'
-    version (Versionage): protocol version namedtuple (major, minor) of ints
+    proto (str): protocol type value of Protocols examples 'KERI', 'ACDC'
+    vrsn (Versionage): protocol version namedtuple (major, minor) of ints
     kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
-    size (int | Versionage): int size of raw serialization or
-                             genus version namedtuple (major, minor) of ints
+    size (int): int size of raw serialization or
+    gvrsn (None | Versionage): optional default is None
+                For CESR native genus version namedtuple (major, minor) of ints
 
 """
-Smellage = namedtuple("Smellage", "protocol version kind size")
+Smellage = namedtuple("Smellage", "proto vrsn kind size gvrsn", defaults=(None, ))
 
 def rematch(match):
     """
@@ -95,9 +96,9 @@ def rematch(match):
                                                        "minor2",
                                                        "kind2",
                                                        "size2")
-        protocol = proto.decode("utf-8")
-        if protocol not in Protocols:
-            raise ProtocolError(f"Invalid protocol type = {protocol}.")
+        proto = proto.decode("utf-8")
+        if proto not in Protocols:
+            raise ProtocolError(f"Invalid protocol={proto}.")
         vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
         if vrsn.major < 2:  # version2 vs but major < 2
             raise VersionError(f"Incompatible {vrsn=} with version string.")
@@ -113,9 +114,9 @@ def rematch(match):
                                                      "minor1",
                                                      "kind1",
                                                      "size1")
-        protocol = proto.decode("utf-8")
-        if protocol not in Protocols:
-            raise ProtocolError(f"Invalid protocol type = {protocol}.")
+        proto = proto.decode("utf-8")
+        if proto not in Protocols:
+            raise ProtocolError(f"Invalid protocol={proto}.")
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if vrsn.major > 1:  # version1 vs but major > 1
             raise VersionError(f"Incompatible {vrsn=} with version string.")
@@ -128,7 +129,7 @@ def rematch(match):
     else:
         raise VersionError(f"Bad rematch.")
 
-    return Smellage(protocol=protocol, version=vrsn, kind=kind, size=size)
+    return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size)
 
 
 def versify(protocol=Protocols.keri, version=Version, kind=Serials.json, size=0):
@@ -221,15 +222,15 @@ def snatch(match, size=0):
         regular expressions work with memoryview objects not just bytes or
         bytearrays
     """
-    if len(full) == VER0FULLSPAN:
+    if len(full) == VFFULLSPAN:
         proto, major, minor, gmajor, gminor = match.group("proto0",
                                                      "major0",
                                                      "minor0",
                                                      "gmajor0",
                                                      "gminor0")
-        protocol = proto.decode("utf-8")
-        if protocol not in Protocols:
-            raise ProtocolError(f"Invalid protocol type = {protocol}.")
+        proto = proto.decode("utf-8")
+        if proto not in Protocols:
+            raise ProtocolError(f"Invalid protocol type = {proto}.")
         vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
         if vrsn.major < 2:  # version2 vs but major < 2
             raise VersionError(f"Incompatible {vrsn=} with version string.")
@@ -243,7 +244,7 @@ def snatch(match, size=0):
     else:
         raise VersionError(f"Bad snatch.")
 
-    return Smellage(protocol=protocol, version=vrsn, kind=kind, size=size)
+    return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size, gvrsn=gvrsn)
 
 
 def snuff(raw, size=0):
