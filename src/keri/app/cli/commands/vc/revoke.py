@@ -122,9 +122,7 @@ class RevokeDoer(doing.DoDoer):
             aserder = serdering.SerderKERI(raw=bytes(anc))
             self.registrar.revoke(creder, rserder, aserder)
 
-            senderHab = self.hab
             if isinstance(self.hab, GroupHab):
-                senderHab = self.hab.mhab
                 smids = self.hab.db.signingMembers(pre=self.hab.pre)
                 smids.remove(self.hab.mhab.pre)
 
@@ -139,8 +137,13 @@ class RevokeDoer(doing.DoDoer):
             while not self.registrar.complete(creder.said, sn=1):
                 yield self.tock
 
-            if self.hab.witnesser() and 'i' in creder.attrib:
-                recp = creder.attrib['i']
+            recps = [creder.attrib['i']] if 'i' in creder.attrib else []
+            if self.send is not None:
+                recps.extend(self.send)
+
+            senderHab = self.hab.mhab if isinstance(self.hab, GroupHab) else self.hab
+
+            if len(recps) > 0:
                 msgs = []
                 for msg in self.hby.db.clonePreIter(pre=creder.issuer):
                     serder = serdering.SerderKERI(raw=msg)
@@ -151,12 +154,21 @@ class RevokeDoer(doing.DoDoer):
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
 
-                for (serder, atc) in msgs:
-                    self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=serder,
-                                      attachment=atc)
+                sent = 0
+                for send in recps:
+                    if send in self.hby.kevers:
+                        recp = send
+                    else:
+                        recp = self.org.find("alias", send)
+                        if len(recp) != 1:
+                            raise ValueError(f"invalid recipient {send}")
+                        recp = recp[0]['id']
+                    for (serder, atc) in msgs:
+                        self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=serder,
+                                          attachment=atc)
+                        sent += 1
 
-                last = msgs[-1][0]
-                while not self.postman.sent(said=last.said):
+                while not len(self.postman.cues) == sent:
                     yield self.tock
 
         except kering.ValidationError as ex:
