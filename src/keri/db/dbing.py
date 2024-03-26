@@ -348,6 +348,7 @@ class LMDBer(filing.Filer):
 
         """
         self.env = None
+        self.version = None
         self.readonly = True if readonly else False
         super(LMDBer, self).__init__(**kwa)
 
@@ -386,17 +387,28 @@ class LMDBer(filing.Filer):
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=104857600,
                              mode=self.perm, readonly=self.readonly)
 
-        fver = ocfn(path=f"{self.path}/VERSION", perm=self.perm)
-
-        if ver := fver.read():
-            self.version = ver
-        else:
+        self.version = self.getVersion()
+        if self.version is None:
             self.version = keri.__version__
-            fver.write(self.version)
-            fver.close()
+            self.setVersion(keri.__version__)
 
         self.opened = True if opened and self.env else False
         return self.opened
+
+    def getVersion(self):
+        with self.env.begin() as txn:
+            cursor = txn.cursor()
+            version = cursor.get(b'__version__')
+            return version.decode("utf-8") if version is not None else None
+
+    def setVersion(self, val):
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+
+        with self.env.begin(write=True) as txn:
+            cursor = txn.cursor()
+            version = cursor.replace(b'__version__', val)
+            return version
 
 
     def close(self, clear=False):
