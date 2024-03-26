@@ -19,6 +19,29 @@ from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
 from ..core.coring import Sizage
 
 
+
+@dataclass(frozen=True)
+class GenusCodex:
+    """GenusCodex is codex of protocol genera for code table.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    KERI_ACDC_SPAC: str = '--AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
+    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    SPAC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables inclusion test with "in"
+        # duplicate values above just result in multiple entries in tuple so
+        # in inclusion still works
+
+GenDex = GenusCodex()  # Make instance
+
+
+
 @dataclass
 class MapDom:
     """Base class for dataclasses that support map syntax
@@ -172,25 +195,6 @@ class CounterCodex_2_0(MapCodex):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
 CtrDex_2_0 = CounterCodex_2_0()
-
-
-@dataclass(frozen=True)
-class GenusCodex(MapCodex):
-    """GenusCodex is codex of protocol genera for code table.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-
-
-    def __iter__(self):
-        return iter(astuple(self))  # enables value not key inclusion test with "in"
-        # duplicate values above just result in multiple entries in tuple so
-        # in inclusion still works
-
-GenDex = GenusCodex()  # Make instance
 
 # keys and values as strings of keys
 Codict1 = asdict(CtrDex_1_0)
@@ -581,8 +585,22 @@ class Counter:
         """
         Returns ._count
         Makes ._count read only
+
+        number of quadlets of b64 chars or triplets of b2 bytes of material
+        framed by counter
         """
         return self._count
+
+
+    @property
+    def fullSize(self):
+        """
+        Returns full size of counter in bytes
+
+        """
+        _, _, fs, _ = self.sizes[self.code]  # get from sizes table
+
+        return fs
 
 
     @property

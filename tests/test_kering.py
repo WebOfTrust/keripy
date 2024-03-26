@@ -16,17 +16,15 @@ from keri.kering import Protocolage, Protocols
 from keri.kering import Serialage,  Serials
 from keri.kering import Ilkage, Ilks
 from keri.kering import (Versionage, Version, MAXVERFULLSPAN,
-                         versify, deversify, Rever)
-from keri.kering import (VER1FULLSPAN, VER1TERM, VEREX1,
-                         VER2FULLSPAN, VER2TERM, VEREX2, VEREX)
+                         versify, deversify, Rever, Smellage, smell,
+                         VER1FULLSPAN, VER1TERM, VEREX1,
+                         VER2FULLSPAN, VER2TERM, VEREX2,
+                         VEREX)
+from keri.kering import VFFULLSPAN, VFREX, Revfer
 
 from keri.kering import VersionError, ProtocolError, KindError
 from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
                          codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
-
-
-
-
 
 
 def test_protos():
@@ -49,18 +47,20 @@ def test_protos():
 def test_version_regex():
     """
     Test version string regexing
+
+    VER1FULLSPAN = 17  # number of characters in full version string
+    VER1TERM = b'_'
+    VEREX1 = b'(?P<proto1>[A-Z]{4})(?P<major1>[0-9a-f])(?P<minor1>[0-9a-f])(?P<kind1>[A-Z]{4})(?P<size1>[0-9a-f]{6})_'
+
+    VER2FULLSPAN = 16  # number of characters in full version string
+    VER2TERM = b'.'
+    VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4}).'
+
+    VEREX = VEREX2 + b'|' + VEREX1
     """
 
-    #VER1FULLSPAN = 17  # number of characters in full version string
-    #VER1TERM = b'_'
-    #VEREX1 = b'(?P<proto1>[A-Z]{4})(?P<major1>[0-9a-f])(?P<minor1>[0-9a-f])(?P<kind1>[A-Z]{4})(?P<size1>[0-9a-f]{6})_'
 
-    #VER2FULLSPAN = 16  # number of characters in full version string
-    #VER2TERM = b'.'
-    #VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4}).'
-
-    #VEREX = VEREX2 + b'|' + VEREX1
-
+    # Test VEREX2 by itself
     pattern = re.compile(VEREX2)  # compile is faster
 
     vs = b'KERICAAJSONAAAB.'
@@ -83,7 +83,7 @@ def test_version_regex():
 
     assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
 
-
+    # Test VEREX with combined VEREXes
     pattern = re.compile(VEREX)  # compile is faster
 
     vs = b'KERICAAJSONAAAB.'
@@ -146,7 +146,6 @@ def test_version_regex():
     assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
 
 
-
     raw = b'{"vs":"KERI10JSON000002_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"}'
 
     match = pattern.search(raw)
@@ -167,6 +166,203 @@ def test_version_regex():
     assert groups == (b'KERI', b'1', b'0', b'JSON', b'000002')
 
     """End Test"""
+
+
+def test_smell():
+    """
+    Test smell function to parse into Serializations
+    """
+
+    raw = b'{"vs":"KERICAAJSONAAAB.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
+    assert smell(raw) == Smellage(protocol='KERI',
+                                  version=Versionage(major=2, minor=0),
+                                  kind='JSON',
+                                  size=1)
+
+    raw = b'{"vs":"KERI10JSON000002_","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
+    assert smell(raw) == Smellage(protocol='KERI',
+                                  version=Versionage(major=1, minor=0),
+                                  kind='JSON',
+                                  size=2)
+
+    raw = b'{"vs":"KERICAAJSONAAABX.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
+    with pytest.raises(ProtocolError):
+        smell(raw)
+
+    raw = b'{"vs":"KERI1XJSON000002_","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
+    with pytest.raises(VersionError):
+        smell(raw)
+
+    """End Test"""
+
+
+def test_snuff():
+    """
+    Test snuff for looking ahead at CESR native messages from stream
+
+    VER0FULLSPAN = 12  # number of characters in full version string
+    VEREX0 = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
+
+
+    """
+    #pattern = re.compile(VFREX)  # compile is faster
+    pattern = Revfer
+
+    vv = b'0NKERICAACAB'
+
+    match = pattern.match(vv)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vv
+    span = len(full)
+    assert span == VFFULLSPAN
+
+    groups = match.group("proto0",
+                        "major0",
+                        "minor0",
+                        "gmajor0",
+                        "gminor0")
+
+    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
+
+    raw = b'-FAM' + vv
+    assert raw == b'-FAM0NKERICAACAB'
+
+    match = pattern.search(raw)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vv
+    span = len(full)
+    assert span == VFFULLSPAN
+
+    groups = match.group("proto0",
+                        "major0",
+                        "minor0",
+                        "gmajor0",
+                        "gminor0")
+
+    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
+
+    raw = b'-0FAAAAM' + vv
+    assert raw == b'-0FAAAAM0NKERICAACAB'
+
+    match = pattern.search(raw)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vv
+    span = len(full)
+    assert span == VFFULLSPAN
+
+    groups = match.group("proto0",
+                        "major0",
+                        "minor0",
+                        "gmajor0",
+                        "gminor0")
+
+    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
+
+
+    vv = b'0NKERICAACAB'
+
+    match = pattern.match(vv)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vv
+    span = len(full)
+    assert span == VFFULLSPAN
+
+    groups = match.group("proto0",
+                        "major0",
+                        "minor0",
+                        "gmajor0",
+                        "gminor0")
+
+    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
+
+    raw = b'-FAM' + vv
+    assert raw == b'-FAM0NKERICAACAB'
+
+    match = pattern.search(raw)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vv
+    span = len(full)
+    assert span == VFFULLSPAN
+
+    groups = match.group("proto0",
+                        "major0",
+                        "minor0",
+                        "gmajor0",
+                        "gminor0")
+
+    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
+
+    raw = b'-0FAAAAM' + vv
+    assert raw == b'-0FAAAAM0NKERICAACAB'
+
+    match = pattern.search(raw)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vv
+    span = len(full)
+    assert span == VFFULLSPAN
+
+    groups = match.group("proto0",
+                        "major0",
+                        "minor0",
+                        "gmajor0",
+                        "gminor0")
+
+    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
+
+    vv = b'0NKERI______'
+    raw = b'-0FAAAAM' + vv
+    assert raw == b'-0FAAAAM0NKERI______'
+
+    match = pattern.search(raw)
+    assert match
+
+    full = match.group()  # not group args so returns full  match
+    assert full == vv
+    span = len(full)
+    assert span == VFFULLSPAN
+
+    groups = match.group("proto0",
+                        "major0",
+                        "minor0",
+                        "gmajor0",
+                        "gminor0")
+
+    assert groups == (b'KERI', b'_', b'__', b'_', b'__')
+
+
+
+    #raw = b'-FAM0NKERICAACABXicpEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
+    #assert smell(raw) == Smellage(protocol='KERI',
+                                  #version=Versionage(major=2, minor=0),
+                                  #kind='CESR',
+                                  #size=0)
+
+    #raw =b'-0FAAAAM0NKERICAACABXrotEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
+    #assert smell(raw, size=4096) == Smellage(protocol='KERI',
+                                             #version=Versionage(major=2, minor=0),
+                                             #kind='CESR',
+                                             #size=4096)
+
+    #raw =b'-0FAAAAM0MKERICAACABXrotEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
+    #with pytest.raises(VersionError):
+        #smell(raw)
+
+    #raw =b'-0FAAAAMNKERICAACABXrotEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
+    #with pytest.raises(VersionError):
+        #smell(raw)
+
 
 
 def test_serials():
@@ -573,20 +769,15 @@ def test_ilks():
     """End Test """
 
 
-def test_smell():
-    """
-    Test smell function to parse into Serializations
-    """
-    pass
-
-    """End Test"""
 
 
 if __name__ == "__main__":
     test_protos()
     test_version_regex()
+    test_smell()
+    test_snuff()
     test_serials()
     test_versify_v1()
     test_versify_v2()
     test_ilks()
-    test_smell()
+

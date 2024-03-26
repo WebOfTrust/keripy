@@ -4696,27 +4696,6 @@ class CounterCodex:
 CtrDex = CounterCodex()
 
 
-@dataclass(frozen=True)
-class GenusCodex:
-    """GenusCodex is codex of protocol genera for code table.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    KERI_ACDC_SPAC: str = '--AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
-    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    SPAC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-
-
-    def __iter__(self):
-        return iter(astuple(self))  # enables inclusion test with "in"
-        # duplicate values above just result in multiple entries in tuple so
-        # in inclusion still works
-
-GenDex = GenusCodex()  # Make instance
-
-
 class Counter:
     """
     Counter is fully qualified cryptographic material primitive base class for
@@ -5186,8 +5165,6 @@ class Sadder:
         if version != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
                                "".format(version.major, version.minor, Version))
-        #if len(raw) < size:
-            #raise ShortageError("Need more bytes.")
 
         ked = loads(raw=raw, size=size, kind=kind)
 

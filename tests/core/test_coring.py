@@ -31,7 +31,7 @@ from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
-                              CtrDex, Counter, GenDex)
+                              CtrDex, Counter)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
@@ -44,30 +44,6 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          InvalidValueError, DeserializeError, ValidationError,
                          InvalidVarRawSizeError)
 from keri.kering import Version, Versionage, VersionError
-
-
-def test_genus_codex():
-    """
-    Test protocol genera in GenDex as instance of GenusCodex
-
-    """
-
-    assert dataclasses.asdict(GenDex) == \
-    {
-        'KERI_ACDC_SPAC': '--AAA',
-        'KERI': '--AAA',
-        'ACDC': '--AAA',
-        'SPAC': '--AAA'
-    }
-
-    assert '--AAA' in GenDex
-    assert GenDex.KERI == "--AAA"
-    assert GenDex.ACDC == "--AAA"
-    assert GenDex.SPAC == "--AAA"
-    assert GenDex.KERI_ACDC_SPAC == "--AAA"
-    assert GenDex.KERI == GenDex.ACDC
-
-    """End Test"""
 
 
 
