@@ -1421,7 +1421,7 @@ class Serder:
 
     @property
     def proto(self):
-        """proto property getter, alias of .protocol
+        """proto property getter,
         protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
 
         Returns:
@@ -1437,12 +1437,12 @@ class Serder:
         Returns:
             protocol (str): Protocolage value as protocol type
         """
-        return self._proto
+        return self.proto
 
 
     @property
     def vrsn(self):
-        """vrsn (version) property getter,  alias of .version
+        """vrsn (version) property getter
 
         Returns:
             vrsn (Versionage): instance of protocol version for this Serder

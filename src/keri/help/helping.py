@@ -331,7 +331,8 @@ def codeB2ToB64(b, l):
     One char for each of l sextets from front (left) of b.
     This is useful for encoding as code characters, sextets from the front of
     a Base2 bytes (byte string). Must provide l because of ambiguity between l=3
-    and l=4. Both require 3 bytes in b.
+    and l=4. Both require 3 bytes in b. Trailing pad bits are removed so
+    returned sextets as characters are right aligned .
     """
     if hasattr(b, 'encode'):
         b = b.encode("utf-8")  # convert to bytes

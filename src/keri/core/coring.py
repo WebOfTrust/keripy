@@ -639,18 +639,27 @@ class Matter:
 
     Includes the following attributes and properties:
 
+    Class Attributes:
+        Codex (MatterCodex):  MtrDex
+        Hards (dict): hard sizes keyed by qb64 selector
+        Bards (dict): hard size keyed by qb2 selector
+        Sizes (dict): sizes tables for codes
+
     Attributes:
 
     Properties:
         code (str): hard part of derivation code to indicate cypher suite
-        both (int): hard and soft parts of full text code
-        size (int): Number of triplets of bytes including lead bytes
-            (quadlets of chars) of variable sized material. Value of soft size,
-            ss, part of full text code.
-            Otherwise None.
-        rize (int): number of bytes of raw material not including
-                    lead bytes
-        raw (bytes): crypto material only without code
+        hard (str): hard part of derivation code. alias for code
+        soft (str): soft part of derivation code fs any.
+                    Empty when ss = 0.
+        both (str): hard + soft parts of full text code
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
+        rize (int): number of bytes of raw material not including lead bytes
+        raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
         qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
         qb2  (bytes): binary with derivation code + crypto material
@@ -671,6 +680,16 @@ class Matter:
         _exfil (types.MethodType): extracts .code and .raw from qb64b
                                    (fully qualified Base64)
 
+    When fs is None then ss must not be 0 as size must be defined
+    When fs is not None then ss may be 0 and must have fs >= hs + ss
+        When fs > hs + ss then must have  fs = hs + ss + size where size =
+            converted soft value + ls
+        When fs = hs + ss then raw must be empty and soft value is special
+            this also includes the case where soft value = 0 because raw
+            must still be empty to satisfy fs = hs + ss + 0
+            so no need to compute soft value when fs = hs + ss only ensure
+            raw is empty. This allows treating soft value as special not a size.
+
     """
     Codex = MtrDex
     # Hards table maps from bytes Base64 first code char to int of hard size, hs,
@@ -681,6 +700,12 @@ class Matter:
     Hards.update({chr(c): 1 for c in range(97, 97 + 26)})
     Hards.update([('0', 2), ('1', 4), ('2', 4), ('3', 4), ('4', 2), ('5', 2),
                   ('6', 2), ('7', 4), ('8', 4), ('9', 4)])
+
+
+    # Bards table maps first code char. converted to binary sextext of hard size,
+    # hs. Used for ._bexfil.
+    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
+
     # Sizes table maps from value of hs chars of code to Sizage namedtuple of
     # (hs, ss, fs, ls) where hs is hard size, ss is soft size, and fs is full size
     # and ls is lead size
@@ -777,36 +802,37 @@ class Matter:
     }
 
 
-    # Bards table maps first code char. converted to binary sextext of hard size,
-    # hs. Used for ._bexfil.
-    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, rize=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
-            raw (bytes): unqualified crypto material usable for crypto operations
+            raw (bytes | bytearray | None): unqualified crypto material usable
+                    for crypto operations.
             code (str): stable (hard) part of derivation code
-            rize (int): raw size in bytes when variable sized material else None
-            qb64b (bytes): fully qualified crypto material Base64
-            qb64 (str, bytes):  fully qualified crypto material Base64
-            qb2 (bytes): fully qualified crypto material Base2
+            rize (int | None): raw size in bytes when variable sized material not
+                        including lead bytes if any
+                        Otherwise None
+            qb64b (bytes | None): fully qualified crypto material Base64
+            qb64 (str | bytes | None):  fully qualified crypto material Base64
+            qb2 (bytes | None): fully qualified crypto material Base2
             strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 
 
-        Needs either (raw and code and optionally size and rsize)
+        Needs either (raw and code and optionally rsize)
                or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
-        When raw and code and optional size and rsize provided
-            then validate that code is correct for length of raw, size, rsize
-            and assign .raw
+        When raw and code and optional rsize provided
+            then validate that code is correct for length of raw, rsize,
+            computed size from Sizes and assign .raw
         Else when qb64b or qb64 or qb2 provided extract and assign
             .raw and .code and .size and .rsize
 
         """
         size = None  # variable raw binary size including leader in quadlets
+        soft = ''  # soft portion of code,
         if raw is not None:  # raw provided
             if not code:
                 raise EmptyMaterialError(f"Improper initialization need either "
@@ -819,7 +845,7 @@ class Matter:
                 raise InvalidCodeError("Unsupported code={}.".format(code))
 
             if code[0] in SmallVrzDex or code[0] in LargeVrzDex:  # dynamic size
-                if rize:  # use rsize to determin length of raw to extract
+                if rize:  # use rsize to determine length of raw to extract
                     if rize < 0:
                         raise InvalidVarRawSizeError(f"Missing var raw size for "
                                                      f"code={code}.")
@@ -865,8 +891,9 @@ class Matter:
                 raise RawMaterialError(f"Not enougth raw bytes for code={code}"
                                        f"expected {rize} got {len(raw)}.")
 
-            self._code = code  # hard value part of code
-            self._size = size  # soft value part of code in int
+            self._code = code  # str hard part of code
+            self._soft = soft  # srtsoft part of code, empty when ss=0
+            self._size = size  # int of soft part value, None when fs != None
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64b is not None:
@@ -886,6 +913,7 @@ class Matter:
             raise EmptyMaterialError(f"Improper initialization need either "
                                      f"(raw and code) or qb64b or qb64 or qb2.")
 
+
     @classmethod
     def _rawSize(cls, code):
         """
@@ -899,6 +927,7 @@ class Matter:
             raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
         return (((fs - cs) * 3 // 4) - ls)
 
+
     @classmethod
     def _leadSize(cls, code):
         """
@@ -909,34 +938,74 @@ class Matter:
         _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
         return ls
 
+
     @property
     def code(self):
         """
-        Returns ._code which is the hard part only of full text code.
-        Some codes only have a hard part. Soft part is for variable sized matter.
-        Makes .code read only
+        Returns:
+            code (str): hard part only of full text code.
+
+        Getter for ._code. Makes ._code read only
+
+        Some codes only have a hard part. Soft part may be for variable sized
+        matter or for special codes that are code only (raw is empty)
         """
         return self._code
 
+
     @property
-    def both(self):
+    def hard(self):
         """
-        Returns both hard and soft parts of full text code
+        Returns:
+            hard (str): hard part only of full text code. Alias for .code.
+
         """
-        _, ss, _, _ = self.Sizes[self.code]
-        return (f"{self.code}{intToB64(self.size, l=ss)}")
+        return self.code
+
+
+    @property
+    def soft(self):
+        """
+        Returns:
+            soft (str): soft part only of full text code.
+
+        Getter for ._soft. Make ._soft read only
+        """
+        return self._soft
 
 
     @property
     def size(self):
         """
-        Returns ._size int or None if not variable sized matter
-        Makes .size read only
+        Returns:
+            size(int | None): Number of variably sized b64 quadlets/b2 triplets
+                                in primitive when varibly sized
+                              None when not variably sized (fs==None)
 
-        Number of triplets of bytes including lead bytes (quadlets of chars)
-        of variable sized material. Value of soft size, ss, part of full text code.
+        Getter for ._size. Makes ._size read only
+
+        Number of quadlets/triplets of chars/bytes of variable sized material or
+        None when not variably sized.
+
+        Converted qb64 value to int of ss portion of full text code when variably
+        sized primitive material (fs = None).
+
         """
         return self._size
+
+
+    @property
+    def both(self):
+        """
+        Returns:
+            both (str):  hard + soft parts of full text code
+        """
+        _, ss, _, fs = self.Sizes[self.code]
+
+        if self.size is not None:
+            return (f"{self.code}{intToB64(self.size, l=ss)}")
+        else:
+            return (f"{self.code}{self.soft}")
 
 
     @property
@@ -952,6 +1021,7 @@ class Matter:
             fs = hs + ss + (self.size * 4)
         return fs
 
+
     @property
     def raw(self):
         """
@@ -959,6 +1029,7 @@ class Matter:
         Makes .raw read only
         """
         return self._raw
+
 
     @property
     def qb64b(self):
@@ -969,6 +1040,7 @@ class Matter:
         """
         return self._infil()
 
+
     @property
     def qb64(self):
         """
@@ -978,6 +1050,7 @@ class Matter:
         """
         return self.qb64b.decode("utf-8")
 
+
     @property
     def qb2(self):
         """
@@ -985,6 +1058,7 @@ class Matter:
         Returns Fully Qualified Binary Version Bytes
         """
         return self._binfil()
+
 
     @property
     def transferable(self):
@@ -994,6 +1068,7 @@ class Matter:
                 False otherwise
         """
         return (self.code not in NonTransDex)
+
 
     @property
     def digestive(self):

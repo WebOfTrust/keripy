@@ -574,22 +574,55 @@ class Counter:
     @property
     def code(self):
         """
-        Returns ._code
-        Makes .code read only
+        Returns:
+            code (str): hard part only of full text code.
+                Getter for ._code. Makes .code read only
+
+        Soft part is count
         """
         return self._code
 
 
     @property
+    def hard(self):
+        """
+        Returns:
+            hard (str): hard part only of full text code. Alias for .code.
+
+        """
+        return self.code
+
+
+    @property
     def count(self):
         """
-        Returns ._count
-        Makes ._count read only
-
-        number of quadlets of b64 chars or triplets of b2 bytes of material
-        framed by counter
+        Returns:
+            count (int):  count value in quadlets/triples chars/bytes of material
+                framed by counter.
+                Getter for ._count. Makes ._count read only
         """
         return self._count
+
+
+    @property
+    def soft(self):
+        """
+       Returns:
+            soft (str):  Base64 soft part of full counter code. Count value in
+                quadlets/triples chars/bytes of material framed by counter.
+                Converts .count to b64
+        """
+        _, ss, _, _ = self.sizes[self.code]
+        return intToB64(self._count, l=ss)
+
+
+    @property
+    def both(self):
+        """
+        Returns:
+            both (str):  hard + soft parts of full text code
+        """
+        return f"{self.hard}{self.soft}"
 
 
     @property
