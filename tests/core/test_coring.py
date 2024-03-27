@@ -27,7 +27,8 @@ from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
                               Sadder, Tholder, Seqner,
-                              NumDex, Number, Siger, Dater, Bexter, Texter)
+                              NumDex, Number, Siger, Dater, Bexter, Texter,
+                              Verser, Versage)
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
@@ -76,9 +77,10 @@ def test_matter():
         'Vast': 'U',
         'Label1': 'V',
         'Label2': 'W',
-        'Tag3': 'X',
-        'Tag7': 'Y',
-        'Blind': 'Z',
+        'Tag2': 'X',
+        'Tag6': 'Y',
+        'Tag10': 'Z',
+        'Blind': 'a',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -89,10 +91,8 @@ def test_matter():
         'Long': '0H',
         'ECDSA_256r1_Sig': '0I',
         'Tag1': '0J',
-        'Tag2': '0K',
-        'Tag5': '0L',
-        'Tag6': '0M',
-        'Tag10': '0N',
+        'Tag5': '0K',
+        'Tag9': '0L',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -103,9 +103,12 @@ def test_matter():
         'X25519_Cipher_Salt': '1AAH',
         'ECDSA_256r1N': '1AAI',
         'ECDSA_256r1': '1AAJ',
-        'Null': '1AAK',
-        'Yes': '1AAL',
-        'No': '1AAM',
+        'Tag3': '1AAK',
+        'Tag7': '1AAL',
+        'Tag8': '1AAM',
+        'Null': '1AAN',
+        'No': '1AAO',
+        'Yes': '1AAP',
         'TBD1': '2AAA',
         'TBD2': '3AAA',
         'StrB64_L0': '4A',
@@ -156,7 +159,8 @@ def test_matter():
     }
 
     # Codes table with sizes of code (hard) and full primitive material
-    assert Matter.Sizes == {
+    assert Matter.Sizes == \
+    {
         'A': Sizage(hs=1, ss=0, fs=44, ls=0),
         'B': Sizage(hs=1, ss=0, fs=44, ls=0),
         'C': Sizage(hs=1, ss=0, fs=44, ls=0),
@@ -182,7 +186,8 @@ def test_matter():
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=0, fs=4, ls=0),
         'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'Z': Sizage(hs=1, ss=0, fs=12, ls=0),
+        'a': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -193,10 +198,8 @@ def test_matter():
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=0, fs=12, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0L': Sizage(hs=2, ss=0, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -207,9 +210,12 @@ def test_matter():
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=12, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=12, ls=0),
+        '1AAN': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAO': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAP': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -3695,6 +3701,23 @@ def test_dater():
 
     """ Done Test """
 
+def test_verser():
+    """
+    Test Verser version primitive subclass of Matter
+    """
+    verser = Verser()  # defaults
+    assert verser.code == MtrDex.Tag10
+    assert verser.raw == b'\x02\x84D\x80\x80\x00 \x00'
+    assert verser.qb64 == 'ZAKERICAACAA'
+    assert verser.qb2 == b'd\x02\x84D\x80\x80\x00 \x00'
+    assert verser.versage == Versage(proto='KERI',
+                                     vrsn=Versionage(major=2, minor=0),
+                                     gvrsn=Versionage(major=2, minor=0))
+
+
+
+    """ Done Test """
+
 
 def test_texter():
     """
@@ -6450,6 +6473,7 @@ def test_tholder():
 
 if __name__ == "__main__":
     test_matter()
+    test_verser()
     test_texter()
     #test_counter()
     #test_prodex()

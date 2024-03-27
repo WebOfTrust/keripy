@@ -35,10 +35,10 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       EmptyListError,
                       ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
-from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
+from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
+                      VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
 from ..kering import Serials, Serialage, Protocols, Protocolage, Ilkage, Ilks
-
 
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable, nonStringSequence
@@ -280,9 +280,10 @@ class MatterCodex:
     Vast:                 str = 'U'  # Vast 17 byte b2 number
     Label1:               str = 'V'  # Label1 as one char (bytes) field map label lead size 1
     Label2:               str = 'W'  # Label2 as two char (bytes) field map label lead size 0
-    Tag3:                 str = 'X'  # Tag3 3 B64 encoded chars for field tag or packet type, semver, trait like 'DND'
-    Tag7:                 str = 'Y'  # Tag7 7 B64 encoded chars for field tag or packet kind and version KERIVVV
-    Blind:                str = 'Z'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
+    Tag2:                 str = 'X'  # Tag2 1 prepad + 2 B64 encoded chars for field tag
+    Tag6:                 str = 'Y'  # Tag6 1 prepad + 6 B64 encoded chars for field tag
+    Tag10:                str = 'Z'  # Tag10 1 prepad + 10 B64 encoded chars for field tag
+    Blind:                str = 'a'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
     Salt_128:             str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -292,24 +293,25 @@ class MatterCodex:
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     Long:                 str = '0H'  # Long 4 byte b2 number
     ECDSA_256r1_Sig:      str = '0I'  # ECDSA secp256r1 signature.
-    Tag1:                 str = '0J'  # Tag1 1 B64 encoded char with pre pad for field tag
-    Tag2:                 str = '0K'  # Tag2 2 B64 encoded chars for field tag or version VV or trait like 'EO'
-    Tag5:                 str = '0L'  # Tag5 5 B64 encoded chars with pre pad for field tag
-    Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for field tag
-    Tag10:                str = '0N'  # Tag10 10 B64 encoded chars for field tag or version PPPPMmmMmm
+    Tag1:                 str = '0J'  # Tag1 1 prepad + 1 B64 encoded char for field tag
+    Tag5:                 str = '0K'  # Tag5 1 prepad + 5 B64 encoded chars for field tag
+    Tag9:                 str = '0L'  # Tag9 1 prepad + 9 B64 encoded chars for field tag
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for field tag or message kind
+    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for field tag
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
-    Null:                 str = '1AAK'  # Null None or empty value
-    Yes:                  str = '1AAL'  # Yes Truthy Boolean value
-    No:                   str = '1AAM'  # No Falsey Boolean value
+    Tag3:                 str = '1AAK'  # Tag1 1 prepad + 3 B64 encoded chars for field tag
+    Tag7:                 str = '1AAL'  # Tag7 1 prepad + 7 B64 encoded chars for field tag
+    Tag8:                 str = '1AAM'  # Tag8 8 B64 encoded chars for field tag
+    Null:                 str = '1AAN'  # Null None or empty value
+    No:                   str = '1AAO'  # No Falsey Boolean value
+    Yes:                  str = '1AAP'  # Yes Truthy Boolean value
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 only lead size 0
@@ -710,7 +712,8 @@ class Matter:
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=0, fs=4, ls=0),
         'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'Z': Sizage(hs=1, ss=0, fs=12, ls=0),
+        'a': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -721,10 +724,8 @@ class Matter:
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=0, fs=12, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0L': Sizage(hs=2, ss=0, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -735,9 +736,12 @@ class Matter:
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=12, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=12, ls=0),
+        '1AAN': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAO': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAP': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -1703,8 +1707,7 @@ class Dater(Matter):
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if dts is None:  # defaults to now
                 dts = helping.nowIso8601()
-            # if len(dts) != 32:
-            #     raise ValueError("Invalid length of date time string")
+
             if hasattr(dts, "decode"):
                 dts = dts.decode("utf-8")
             qb64 = MtrDex.DateTime + dts.translate(self.ToB64)
@@ -1738,6 +1741,202 @@ class Dater(Matter):
         Returns datetime.datetime instance converted from .dts
         """
         return helping.fromIso8601(self.dts)
+
+# Versage namedtuple
+# proto (str): protocol element of Protocols
+# vrsn (Versionage): instance protocol version namedtuple (major, minor) ints
+# vrsn (Versionage | None): instance genus version namedtuple (major, minor) ints
+Versage = namedtuple("Versage", "proto vrsn gvrsn", defaults=(None, ))
+
+
+class Verser(Matter):
+    """
+    Verser is subclass of Matter, cryptographic material, for formatted
+    version primitives in Base64.  Supports different primitives based on code.
+
+    Verser provides a more compact representation than would be obtained by
+    converting the raw ASCII representation to Base64.
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+        code (str): hard part of derivation code to indicate cypher suite
+        both (int): hard and soft parts of full text code
+        size (int): Number of triplets of bytes including lead bytes
+            (quadlets of chars) of variable sized material. Value of soft size,
+            ss, part of full text code.
+            Otherwise None.
+        rize (int): number of bytes of raw material not including
+                    lead bytes
+        raw (bytes): crypto material only without code
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
+
+    Properties:
+        proto (str): protocol from Protocols
+        vrsn  (Versionage): instance protocol version.
+               namedtuple (major, minor) of ints
+        gvrsn (Versionage | None): instance genus version.
+               namedtuple (major, minor) of ints
+
+    Hidden Inherited:
+        _code (str): value for .code property
+        _raw (bytes): value for .raw property
+        _rsize (bytes): value for .rsize property. Raw size in bytes when
+            variable sized material else None.
+        _size (int): value for .size property. Number of triplets of bytes
+            including lead bytes (quadlets of chars) of variable sized material
+            else None.
+        _infil (types.MethodType): creates qb64b from .raw and .code
+                                   (fully qualified Base64)
+        _exfil (types.MethodType): extracts .code and .raw from qb64b
+                                   (fully qualified Base64)
+
+    Hidden:
+        _proto (str): value for .proto property
+        _vrsn (Versionage): value for .vrsn property
+        _gvrsn (Versionage | None): value for .gvrsn property
+
+    Methods:
+
+    """
+
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=MtrDex.Tag10, versage=None, proto=Protocols.keri,
+                 vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw (bytes): unqualified crypto material usable for crypto operations
+            code (str): stable (hard) part of derivation code
+            rize (int): raw size in bytes when variable sized material else None
+            qb64b (bytes): fully qualified crypto material Base64
+            qb64 (str, bytes):  fully qualified crypto material Base64
+            qb2 (bytes): fully qualified crypto material Base2
+            strip (bool): True means strip (delete) matter from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
+
+        Parameters:
+            versage (Versage | None): namedtuple of (proto, vrsn, gvrsn)
+            proto (str | None): protocol from Protocols
+            vrsn  (Versionage | None): instance protocol version.
+               namedtuple (major, minor) of ints
+            gvrsn (Versionage | None): instance genus version.
+               namedtuple (major, minor) of ints
+
+        Notes:
+            prepad = 'A'
+        """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if versage:
+                proto, vrsn, gvrsn = versage
+            if code == MtrDex.Tag10:
+                if not gvrsn:
+                    raise  InvalidValueError(f"Missing genus version.")
+
+                qb64 = (code + 'A' + proto +
+                        self.verToB64(vrsn) +
+                        self.verToB64(gvrsn)).encode("utf-8")
+
+            elif code == MtrDex.Tag7:
+                qb64 = (code + 'A' + proto + self.verToB64(vrsn))
+
+            else:
+                raise InvalidCodeError(f"Invalid {code=} for Verser.")
+
+
+        super(Verser, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                    code=code, **kwa)
+
+        if self.code not in (MtrDex.Tag10, MtrDex.Tag7):
+            raise InvalidCodeError(f"Invalid code={self.code} for Verser.")
+
+    @property
+    def versage(self):
+        """Property versage (Versage):  named tuple of (proto, vrsn, gvrsn)
+
+        """
+        gvrsn = None
+        clp = len(self.code) + 1  # code plus prepad
+        proto = self.qb64[clp:clp+4]
+        vrsn = self.b64ToVer(self.qb64[clp+4:clp+7])
+        if self.fullSize == clp + 10:
+            gvrsn = self.b64ToVer(self.qb64[clp+7:clp+10])
+
+        return Versage(proto=proto, vrsn=vrsn, gvrsn=gvrsn)
+
+
+    @staticmethod
+    def verToB64(version=None, *, text="", major=0, minor=0):
+        """ Converts version to Base64 representation
+
+        Returns:
+            verB64 (str):
+
+        Example:
+            Verser.verToB64(verstr = "1.0"))
+
+        Parameters:
+            version (Versionage): instange of namedtuple
+                         Versionage(major=major,minor=minor)
+            text (str): text format of version as dotted decimal "major.minor"
+            major (int): When version is None and verstr is empty then use major minor
+                        range [0, 63] for one Base64 character
+            minor (int): When version is None and verstr is  empty then use major minor
+                        range [0, 4095] for two Base64 characters
+
+        """
+        if version:
+            major = version.major
+            minor = version.minor
+
+        elif text:
+            splits = text.split(".", maxsplit=2)
+            splits = [(int(s) if s else 0) for s in splits]
+            parts = [major, minor]
+            for i in range(2-len(splits),0, -1):  # append missing minor and/or major
+                splits.append(parts[-i])
+            major = splits[0]
+            minor = splits[1]
+
+        if major < 0 or major > 63 or minor < 0 or minor > 4095:
+                raise ValueError(f"Out of bounds version = {major}.{minor}.")
+
+        return (f"{intToB64(major)}{intToB64(minor, l=2)}")
+
+
+    @staticmethod
+    def b64ToVer(b64, *, texted=False):
+        """ Converts Base64 representation of version to Versionage or
+        text dotted decimal format
+
+        default is Versionage
+
+        Returns:
+            version (Versionage | str):
+
+        Example:
+            .b64ToVer("BAA"))
+
+        Parameters:
+            b64 (str): base64 string of three characters Mmm for Major minor
+            texted (bool): return text format dotted decimal string
+
+
+        """
+        if not Reb64.match(b64.encode("utf-8")):
+            raise ValueError("Invalid Base64.")
+
+        if texted:
+            return ".".join([f"{b64ToInt(b64[0])}", f"{b64ToInt(b64[1:3])}"])
+
+        return Versionage(major=b64ToInt(b64[0]), minor=b64ToInt(b64[1:3]))
+
+
 
 
 class Streamer:

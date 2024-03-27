@@ -30,7 +30,7 @@ from ..kering import SMELLSIZE, Smellage, smell
 from ..kering import Protocols, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
-from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
+from .coring import Matter, Saider, Verfer, Diger, Number, Tholder, Verser
 
 from ..core import counting
 from ..core.counting import GenDex, AllTags, Counter
@@ -1243,9 +1243,10 @@ class Serder:
                 # should dispatch or use match instead of big if else
                 match l:  # label
                     case "v":  # protocol+version
-                        val = (MtrDex.Tag10 + self.proto +
-                               Counter.verToB64(self.vrsn) +
-                               Counter.verToB64(self.gvrsn)).encode("utf-8")
+                        val = Verser(code=MtrDex.Tag10,
+                                     proto=self.proto,
+                                     vrsn=self.vrsn,
+                                     gvrsn=self.gvrsn).qb64b
 
                     case "t":  # message type
                         val = (MtrDex.Tag3 + ilk).encode("utf-8")  # add code
