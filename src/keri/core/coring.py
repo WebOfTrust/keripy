@@ -280,12 +280,11 @@ class MatterCodex:
     Large:                str = 'S'  # Large 11 byte b2 number
     Great:                str = 'T'  # Great 14 byte b2 number
     Vast:                 str = 'U'  # Vast 17 byte b2 number
-    Label1:               str = 'V'  # Label1 as one char (bytes) field map label lead size 1
-    Label2:               str = 'W'  # Label2 as two char (bytes) field map label lead size 0
-    Tag2:                 str = 'X'  # Tag2 1 prepad + 2 B64 encoded chars for field tag
-    Tag6:                 str = 'Y'  # Tag6 1 prepad + 6 B64 encoded chars for field tag
-    Tag10:                str = 'Z'  # Tag10 1 prepad + 10 B64 encoded chars for field tag
-    Blind:                str = 'a'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
+    Label1:               str = 'V'  # Label1 as 1 bytes for label lead size 1
+    Label2:               str = 'W'  # Label2 as 2 bytes for label lead size 0
+    Tag3:                 str = 'X'  # Tag3  3 B64 encoded chars for field tag
+    Tag7:                 str = 'Y'  # Tag7  7 B64 encoded chars for field tag
+    Blind:                str = 'Z'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
     Salt_128:             str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -296,24 +295,26 @@ class MatterCodex:
     Long:                 str = '0H'  # Long 4 byte b2 number
     ECDSA_256r1_Sig:      str = '0I'  # ECDSA secp256r1 signature.
     Tag1:                 str = '0J'  # Tag1 1 prepad + 1 B64 encoded char for field tag
-    Tag5:                 str = '0K'  # Tag5 1 prepad + 5 B64 encoded chars for field tag
-    Tag9:                 str = '0L'  # Tag9 1 prepad + 9 B64 encoded chars for field tag
+    Tag2:                 str = '0K'  # Tag2 2 B64 encoded chars for field tag
+    Tag5:                 str = '0L'  # Tag5 1 prepad + 5 B64 encoded chars for field tag
+    Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for field tag
+    Tag9:                 str = '0N'  # Tag9 1 prepad + 9 B64 encoded chars for field tag
+    Tag10:                str = '0O'  # Tag10 10 B64 encoded chars for field tag
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for field tag
+    Label3:               str = '1AAF'  # Label3 as 3 bytes for label lead size 0
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
-    Tag3:                 str = '1AAK'  # Tag1 1 prepad + 3 B64 encoded chars for field tag
-    Tag7:                 str = '1AAL'  # Tag7 1 prepad + 7 B64 encoded chars for field tag
-    Tag8:                 str = '1AAM'  # Tag8 8 B64 encoded chars for field tag
-    Null:                 str = '1AAN'  # Null None or empty value
-    No:                   str = '1AAO'  # No Falsey Boolean value
-    Yes:                  str = '1AAP'  # Yes Truthy Boolean value
+    Null:                 str = '1AAK'  # Null None or empty value
+    No:                   str = '1AAL'  # No Falsey Boolean value
+    Yes:                  str = '1AAM'  # Yes Truthy Boolean value
+    Tag4:                 str = '1AAN'  # Tag4 4 B64 encoded chars for field tag
+    Tag8:                 str = '1AAO'  # Tag8 8 B64 encoded chars for field tag
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 only lead size 0
@@ -743,10 +744,9 @@ class Matter:
         'U': Sizage(hs=1, ss=0, fs=24, ls=0),
         'V': Sizage(hs=1, ss=0, fs=4, ls=1),
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=11, fs=12, ls=0),
-        'a': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'X': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=7, fs=8, ls=0),
+        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -756,9 +756,12 @@ class Matter:
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0L': Sizage(hs=2, ss=0, fs=12, ls=0),
+        '0J': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=10, fs=12, ls=0),
+        '0O': Sizage(hs=2, ss=10, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -769,12 +772,11 @@ class Matter:
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAK': Sizage(hs=4, ss=0, fs=8, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=12, ls=0),
-        '1AAM': Sizage(hs=4, ss=0, fs=12, ls=0),
-        '1AAN': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAO': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAP': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
+        '1AAO': Sizage(hs=4, ss=8, fs=12, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -1321,13 +1323,6 @@ class Matter:
 
         size = None
         if not fs:  # compute fs from size chars in ss part of code
-            #if ss < 1:  # ss < 1 so not variable sized
-                #raise ValidationError(f"Soft size {ss=} must be positive for "
-                                      #f" variable length material.")
-            #if cs % 4:
-                #raise ValidationError(f"Whole code size, {cs=}, not multiple"
-                                      #f" of 4 for variable length material.")
-
             size = b64ToInt(soft)  # compute variable size int may have value 0
             fs = (size * 4) + cs
 
@@ -1417,13 +1412,6 @@ class Matter:
 
         size = None
         if not fs:  # compute fs from size chars in ss part of code
-            #if ss < 1:  # ss < 1 so not variable sized
-                #raise ValidationError(f"Soft size {ss=} must be positive for "
-                                      #f" variable length material.")
-
-            #if cs % 4:
-                #raise ValidationError("Whole code size not multiple of 4 for "
-                                      #"variable length material. cs={}.".format(cs))
 
             if len(qb2) < bcs:  # need more bytes
                 raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
@@ -2026,12 +2014,13 @@ class Verser(Matter):
                 if not gvrsn:
                     raise  InvalidValueError(f"Missing genus version.")
 
-                qb64 = (code + 'A' + proto +
+                qb64 = (code +
+                        proto +
                         self.verToB64(vrsn) +
                         self.verToB64(gvrsn)).encode("utf-8")
 
             elif code == MtrDex.Tag7:
-                qb64 = (code + 'A' + proto + self.verToB64(vrsn))
+                qb64 = (code + proto + self.verToB64(vrsn)).encode("utf-8")
 
             else:
                 raise InvalidCodeError(f"Invalid {code=} for Verser.")
@@ -2052,7 +2041,7 @@ class Verser(Matter):
 
         """
         gvrsn = None
-        clp = len(self.code) + 1  # code plus prepad
+        clp = len(self.code)
         proto = self.qb64[clp:clp+4]
         vrsn = self.b64ToVer(self.qb64[clp+4:clp+7])
         if self.fullSize == clp + 10: # assumes special

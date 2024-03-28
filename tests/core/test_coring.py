@@ -3,7 +3,7 @@
 tests.core.test_coring module
 
 """
-import dataclasses
+from dataclasses import asdict
 import hashlib
 import json
 from base64 import urlsafe_b64decode as decodeB64
@@ -53,7 +53,7 @@ def test_matter_class():
     Test Matter class attributes
     """
 
-    assert dataclasses.asdict(MtrDex) == \
+    assert asdict(MtrDex) == \
     {
         'Ed25519_Seed': 'A',
         'Ed25519N': 'B',
@@ -78,10 +78,9 @@ def test_matter_class():
         'Vast': 'U',
         'Label1': 'V',
         'Label2': 'W',
-        'Tag2': 'X',
-        'Tag6': 'Y',
-        'Tag10': 'Z',
-        'Blind': 'a',
+        'Tag3': 'X',
+        'Tag7': 'Y',
+        'Blind': 'Z',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -92,24 +91,26 @@ def test_matter_class():
         'Long': '0H',
         'ECDSA_256r1_Sig': '0I',
         'Tag1': '0J',
-        'Tag5': '0K',
-        'Tag9': '0L',
+        'Tag2': '0K',
+        'Tag5': '0L',
+        'Tag6': '0M',
+        'Tag9': '0N',
+        'Tag10': '0O',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Tag4': '1AAF',
+        'Label3': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
         'ECDSA_256r1N': '1AAI',
         'ECDSA_256r1': '1AAJ',
-        'Tag3': '1AAK',
-        'Tag7': '1AAL',
-        'Tag8': '1AAM',
-        'Null': '1AAN',
-        'No': '1AAO',
-        'Yes': '1AAP',
+        'Null': '1AAK',
+        'No': '1AAL',
+        'Yes': '1AAM',
+        'Tag4': '1AAN',
+        'Tag8': '1AAO',
         'TBD1': '2AAA',
         'TBD2': '3AAA',
         'StrB64_L0': '4A',
@@ -185,10 +186,9 @@ def test_matter_class():
         'U': Sizage(hs=1, ss=0, fs=24, ls=0),
         'V': Sizage(hs=1, ss=0, fs=4, ls=1),
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=11, fs=12, ls=0),
-        'a': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'X': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=7, fs=8, ls=0),
+        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -198,9 +198,12 @@ def test_matter_class():
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0L': Sizage(hs=2, ss=0, fs=12, ls=0),
+        '0J': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=10, fs=12, ls=0),
+        '0O': Sizage(hs=2, ss=10, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -211,12 +214,11 @@ def test_matter_class():
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAK': Sizage(hs=4, ss=0, fs=8, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=12, ls=0),
-        '1AAM': Sizage(hs=4, ss=0, fs=12, ls=0),
-        '1AAN': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAO': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAP': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
+        '1AAO': Sizage(hs=4, ss=8, fs=12, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -250,6 +252,7 @@ def test_matter_class():
         '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2)
     }
+
 
     assert Matter.Sizes['A'].hs == 1  # hard size
     assert Matter.Sizes['A'].ss == 0  # soft size
@@ -1332,20 +1335,20 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Tag4
+    # test Label3
     #val = int("F89CFF", 16)
     #assert val == 16293119
     #raw = val.to_bytes(3, 'big')
     #assert raw == b'\xf8\x9c\xff'
     raw = b'hio'
-    cs = len(MtrDex.Tag4)
+    cs = len(MtrDex.Label3)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
     #assert txt == b'-Jz_'
     assert txt == b'aGlv'
-    qb64b = MtrDex.Tag4.encode("utf-8") + txt[ps:]
+    qb64b = MtrDex.Label3.encode("utf-8") + txt[ps:]
     #assert qb64b == b'1AAF-Jz_'
     assert qb64b == b'1AAFaGlv'
     qb64 = qb64b.decode("utf-8")
@@ -1356,9 +1359,9 @@ def test_matter():
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tag4)
+    matter = Matter(raw=raw, code=MtrDex.Label3)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1370,7 +1373,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1382,7 +1385,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1394,7 +1397,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1404,18 +1407,18 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Tag4 as chars
+    # test Label3 as chars
     txt = b'icp_'
     raw = decodeB64(txt)
     assert raw == b'\x89\xca\x7f'
     val = int.from_bytes(raw, 'big')
     assert val == 9030271
-    cs = len(MtrDex.Tag4)
+    cs = len(MtrDex.Label3)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
-    qb64b = MtrDex.Tag4.encode("utf-8") + txt
+    qb64b = MtrDex.Label3.encode("utf-8") + txt
     assert qb64b == b'1AAFicp_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
@@ -1424,9 +1427,9 @@ def test_matter():
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tag4)
+    matter = Matter(raw=raw, code=MtrDex.Label3)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1436,7 +1439,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1448,7 +1451,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1458,7 +1461,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1477,7 +1480,7 @@ def test_indexer():
     """
     assert Indexer.Codex == IdrDex
 
-    assert dataclasses.asdict(IdrDex) == {
+    assert asdict(IdrDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
@@ -1519,7 +1522,7 @@ def test_indexer():
     assert IdrDex.TBD1 == '1z'
     assert IdrDex.TBD4 == '4z'
 
-    assert dataclasses.asdict(IdxSigDex) == {
+    assert asdict(IdxSigDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
@@ -1556,7 +1559,7 @@ def test_indexer():
     assert IdxSigDex.Ed448_Big_Crt_Sig == '3B'
 
 
-    assert dataclasses.asdict(IdxCrtSigDex) == {
+    assert asdict(IdxCrtSigDex) == {
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Crt_Sig': 'D',
         'ECDSA_256r1_Crt_Sig': 'F',
@@ -1577,7 +1580,7 @@ def test_indexer():
     assert IdxCrtSigDex.Ed448_Big_Crt_Sig == '3B'
 
 
-    assert dataclasses.asdict(IdxBthSigDex) == {
+    assert asdict(IdxBthSigDex) == {
         'Ed25519_Sig': 'A',
         'ECDSA_256k1_Sig': 'C',
         'ECDSA_256r1_Sig': 'E',
@@ -2162,7 +2165,7 @@ def test_counter():
     """
     Test Counter class
     """
-    assert dataclasses.asdict(CtrDex) == {
+    assert asdict(CtrDex) == {
         'ControllerIdxSigs': '-A',
         'WitnessIdxSigs': '-B',
         'NonTransReceiptCouples': '-C',
@@ -2697,7 +2700,7 @@ def test_number():
     Test Number subclass of Matter
     """
 
-    assert dataclasses.asdict(NumDex) == {
+    assert asdict(NumDex) == {
         'Short': 'M',
         'Long': '0H',
         'Tall': 'R',
@@ -3729,9 +3732,9 @@ def test_verser():
     Test Verser version primitive subclass of Matter
     """
     code = MtrDex.Tag10
-    soft = 'AKERICAACAA'
-    qb64 = 'ZAKERICAACAA'
-    qb2 = b'd\x02\x84D\x80\x80\x00 \x00'
+    soft = 'KERICAACAA'
+    qb64 = '0OKERICAACAA'
+    qb2 = b'\xd0\xe2\x84D\x80\x80\x00 \x00'
     raw = b''
 
     verser = Verser()  # defaults
