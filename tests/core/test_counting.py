@@ -19,8 +19,39 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
                             nabSextets)
 
 from keri.core import counting
-from keri.core.counting import Sizage, MapDom, MapCodex, Counter
+from keri.core.counting import GenDex, Sizage, MapDom, MapCodex, Counter
 from keri.core.counting import Versionage, Vrsn_1_0, Vrsn_2_0, AllTags
+
+
+
+def test_genus_codex():
+    """
+    Test protocol genera in GenDex as instance of GenusCodex
+
+    """
+
+    assert asdict(GenDex) == \
+    {
+        'KERI_ACDC_SPAC': '--AAA',
+        'KERI': '--AAA',
+        'ACDC': '--AAA',
+        'SPAC': '--AAA'
+    }
+
+    assert '--AAA' in GenDex
+    assert GenDex.KERI == "--AAA"
+    assert GenDex.ACDC == "--AAA"
+    assert GenDex.SPAC == "--AAA"
+    assert GenDex.KERI_ACDC_SPAC == "--AAA"
+    assert GenDex.KERI == GenDex.ACDC
+
+    assert hasattr(GenDex, "KERI")
+    assert hasattr(GenDex, "ACDC")
+    assert hasattr(GenDex, "SPAC")
+    assert hasattr(GenDex, "KERI_ACDC_SPAC")
+
+    """End Test"""
+
 
 
 def test_mapdom():
@@ -165,6 +196,7 @@ def test_mapcodex():
         delattr(tmc, "gamma")
 
     """End Test"""
+
 
 def test_codexes_tags():
     """
@@ -380,9 +412,9 @@ def test_codexes_tags():
     """End Test"""
 
 
-def test_counter():
+def test_counter_class():
     """
-    Test Counter class
+    Test Counter class variables
     """
     # test class attributes
 
@@ -613,12 +645,15 @@ def test_counter_v1():
     qscb2 = decodeB64(qscb)
 
     counter = Counter(tag="ControllerIdxSigs", count=count, version=Vrsn_1_0)
-    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.code == CtrDex.ControllerIdxSigs == counter.hard
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
+    assert counter.fullSize == 4
+    assert counter.soft =='AB'
+    assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
     counter = Counter(tag=AllTags.ControllerIdxSigs, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
@@ -865,6 +900,7 @@ def test_counter_v1():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
+    assert counter.fullSize == 8
     assert not ims
 
     ims = bytearray(qscb2)
@@ -875,6 +911,7 @@ def test_counter_v1():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
+    assert counter.fullSize == 8
     assert not ims
 
     # test protocol genus with CESR protocol genus version
@@ -934,12 +971,15 @@ def test_counter_v2():
 
     # default version and default count = 1
     counter = Counter(code=CtrDex.ControllerIdxSigs)
-    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.code == CtrDex.ControllerIdxSigs == counter.hard
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+    assert counter.fullSize == 4
+    assert counter.soft =='AB'
+    assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
     # default count = 1
     counter = Counter(code=CtrDex.ControllerIdxSigs, version=Vrsn_2_0)
@@ -1217,12 +1257,15 @@ def test_counter_v2():
     qscb2 = decodeB64(qscb)
 
     counter = Counter(code=CtrDex.BigGenericGroup, count=count, version=Vrsn_2_0)
-    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.code == CtrDex.BigGenericGroup == counter.hard
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+    assert counter.fullSize == 8
+    assert counter.soft == 'AACAB'
+    assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
     counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
@@ -1263,6 +1306,7 @@ def test_counter_v2():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+    assert counter.fullSize == 8
     assert not ims
 
     ims = bytearray(qscb2)
@@ -1283,12 +1327,14 @@ def test_counter_v2():
     qscb2 = decodeB64(qscb)
 
     counter = Counter(code=CtrDex.GenericGroup, count=count, version=Vrsn_2_0)
-    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.code == CtrDex.BigGenericGroup == counter.hard
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+    assert counter.soft =='AACAB'
+    assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
     counter = Counter(tag=AllTags.GenericGroup, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup
@@ -1319,6 +1365,7 @@ def test_counter_v2():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+    assert counter.fullSize == 8
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       countB64=genver,
@@ -1336,10 +1383,11 @@ def test_counter_v2():
 
 
 if __name__ == "__main__":
+    test_genus_codex()
     test_mapdom()
     test_mapcodex()
     test_codexes_tags()
-    test_counter()
+    test_counter_class()
     test_counter_v1()
     test_counter_v2()
 

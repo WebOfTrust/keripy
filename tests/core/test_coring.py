@@ -3,7 +3,7 @@
 tests.core.test_coring module
 
 """
-import dataclasses
+from dataclasses import asdict
 import hashlib
 import json
 from base64 import urlsafe_b64decode as decodeB64
@@ -27,11 +27,12 @@ from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
                               Sadder, Tholder, Seqner,
-                              NumDex, Number, Siger, Dater, Bexter, Texter)
+                              NumDex, Number, Siger, Dater, Bexter, Texter,
+                              Verser, Versage)
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
-                              CtrDex, Counter, GenDex)
+                              CtrDex, Counter)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
@@ -46,36 +47,13 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
 from keri.kering import Version, Versionage, VersionError
 
 
-def test_genus_codex():
+
+def test_matter_class():
     """
-    Test protocol genera in GenDex as instance of GenusCodex
-
+    Test Matter class attributes
     """
 
-    assert dataclasses.asdict(GenDex) == \
-    {
-        'KERI_ACDC_SPAC': '--AAA',
-        'KERI': '--AAA',
-        'ACDC': '--AAA',
-        'SPAC': '--AAA'
-    }
-
-    assert '--AAA' in GenDex
-    assert GenDex.KERI == "--AAA"
-    assert GenDex.ACDC == "--AAA"
-    assert GenDex.SPAC == "--AAA"
-    assert GenDex.KERI_ACDC_SPAC == "--AAA"
-    assert GenDex.KERI == GenDex.ACDC
-
-    """End Test"""
-
-
-
-def test_matter():
-    """
-    Test Matter class
-    """
-    assert dataclasses.asdict(MtrDex) == \
+    assert asdict(MtrDex) == \
     {
         'Ed25519_Seed': 'A',
         'Ed25519N': 'B',
@@ -116,20 +94,23 @@ def test_matter():
         'Tag2': '0K',
         'Tag5': '0L',
         'Tag6': '0M',
-        'Tag10': '0N',
+        'Tag9': '0N',
+        'Tag10': '0O',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Tag4': '1AAF',
+        'Label3': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
         'ECDSA_256r1N': '1AAI',
         'ECDSA_256r1': '1AAJ',
         'Null': '1AAK',
-        'Yes': '1AAL',
-        'No': '1AAM',
+        'No': '1AAL',
+        'Yes': '1AAM',
+        'Tag4': '1AAN',
+        'Tag8': '1AAO',
         'TBD1': '2AAA',
         'TBD2': '3AAA',
         'StrB64_L0': '4A',
@@ -180,7 +161,8 @@ def test_matter():
     }
 
     # Codes table with sizes of code (hard) and full primitive material
-    assert Matter.Sizes == {
+    assert Matter.Sizes == \
+    {
         'A': Sizage(hs=1, ss=0, fs=44, ls=0),
         'B': Sizage(hs=1, ss=0, fs=44, ls=0),
         'C': Sizage(hs=1, ss=0, fs=44, ls=0),
@@ -204,8 +186,8 @@ def test_matter():
         'U': Sizage(hs=1, ss=0, fs=24, ls=0),
         'V': Sizage(hs=1, ss=0, fs=4, ls=1),
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'X': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=7, fs=8, ls=0),
         'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -216,11 +198,12 @@ def test_matter():
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=0, fs=12, ls=0),
+        '0J': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=10, fs=12, ls=0),
+        '0O': Sizage(hs=2, ss=10, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -234,6 +217,8 @@ def test_matter():
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
+        '1AAO': Sizage(hs=4, ss=8, fs=12, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -268,25 +253,36 @@ def test_matter():
         '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2)
     }
 
+
     assert Matter.Sizes['A'].hs == 1  # hard size
     assert Matter.Sizes['A'].ss == 0  # soft size
     assert Matter.Sizes['A'].fs == 44  # full size
     assert Matter.Sizes['A'].ls == 0  # lead size
 
+
+    #  verify all Codes
+    #  if fs None else not (hs + ss) % 4
+    for val in Matter.Sizes.values():
+        assert (isinstance(val.hs, int) and isinstance(val.ss, int) and
+                isinstance(val.ls, int))
+        assert val.hs > 0 and val.ss >= 0 and val.ls >= 0
+        if val.fs is not None:  # fixed sized
+            assert isinstance(val.fs, int) and val.fs > 0 and not val.fs % 4
+            assert val.fs >= (val.hs + val.ss)
+            if val.ss > 0:  # special soft value
+                assert val.fs == val.hs + val.ss  # raw must be empty
+                assert val.ls == 0  # no lead
+            else:
+                assert val.ss == 0
+        else:  # variable sized
+            assert val.ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
+
+    # Test .Hards
     # verify first hs Sizes matches hs in Codes for same first char
     for ckey in Matter.Sizes.keys():
         assert Matter.Hards[ckey[0]] == Matter.Sizes[ckey].hs
 
-    #  verify all Codes have ss == 0 and not fs % 4 and hs > 0 and fs > hs
-    #  if fs is not None else not (hs + ss) % 4
-    for val in Matter.Sizes.values():
-        if val.fs is not None:
-            assert val.ss == 0 and not val.fs % 4 and val.hs > 0 and val.fs >= (val.hs + val.ss)
-        else:
-            assert not (val.hs + val.ss) % 4
-
-
-    # Bizes maps bytes of sextet of decoded first character of code with hard size of code
+    # Test .Bards
     # verify equivalents of items for Sizes and Bizes
     for skey, sval in Matter.Hards.items():
         ckey = codeB64ToB2(skey)
@@ -294,6 +290,14 @@ def test_matter():
 
     assert Matter._rawSize(MtrDex.Ed25519) == 32
     assert Matter._leadSize(MtrDex.Ed25519) == 0
+
+
+
+def test_matter():
+    """
+    Test Matter instances
+    """
+
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
@@ -315,7 +319,8 @@ def test_matter():
     # test from raw
     matter = Matter(raw=verkey)  # default code is MtrDex.Ed25519N
     assert matter.raw == verkey
-    assert matter.code == MtrDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N == matter.hard
+    assert matter.soft == ""
     assert matter.both == MtrDex.Ed25519N
     assert matter.size == None
     assert matter.fullSize == 44
@@ -330,6 +335,7 @@ def test_matter():
     assert matter.transferable == False
     assert matter.digestive == False
     assert matter.prefixive == True
+
 
     # test round trip
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
@@ -692,13 +698,15 @@ def test_matter():
     assert Matter._leadSize(code) == 1
     raw = b'abcde'  # 5 bytes two triplets with lead 1
     both = '5BAC'  # full code both hard and soft parts two quadlets/triplets
+    soft = 'AC'
     qb64 = '5BACAGFiY2Rl'
     qb2 = b'\xe4\x10\x02\x00abcde'
     matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
-    assert matter.code == code
-    assert matter.both == both
+    assert matter.code == code == matter.hard
     assert matter.size == 2  # quadlets
+    assert matter.soft == soft
+    assert matter.both == both
     assert matter.fullSize == 12  # chars
     assert matter.qb64 == qb64
     assert matter.qb2 == qb2
@@ -1327,20 +1335,20 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Tag4
+    # test Label3
     #val = int("F89CFF", 16)
     #assert val == 16293119
     #raw = val.to_bytes(3, 'big')
     #assert raw == b'\xf8\x9c\xff'
     raw = b'hio'
-    cs = len(MtrDex.Tag4)
+    cs = len(MtrDex.Label3)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
     #assert txt == b'-Jz_'
     assert txt == b'aGlv'
-    qb64b = MtrDex.Tag4.encode("utf-8") + txt[ps:]
+    qb64b = MtrDex.Label3.encode("utf-8") + txt[ps:]
     #assert qb64b == b'1AAF-Jz_'
     assert qb64b == b'1AAFaGlv'
     qb64 = qb64b.decode("utf-8")
@@ -1351,9 +1359,9 @@ def test_matter():
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tag4)
+    matter = Matter(raw=raw, code=MtrDex.Label3)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1365,7 +1373,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1377,7 +1385,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1389,7 +1397,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1399,18 +1407,18 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Tag4 as chars
+    # test Label3 as chars
     txt = b'icp_'
     raw = decodeB64(txt)
     assert raw == b'\x89\xca\x7f'
     val = int.from_bytes(raw, 'big')
     assert val == 9030271
-    cs = len(MtrDex.Tag4)
+    cs = len(MtrDex.Label3)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
-    qb64b = MtrDex.Tag4.encode("utf-8") + txt
+    qb64b = MtrDex.Label3.encode("utf-8") + txt
     assert qb64b == b'1AAFicp_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
@@ -1419,9 +1427,9 @@ def test_matter():
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tag4)
+    matter = Matter(raw=raw, code=MtrDex.Label3)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1431,7 +1439,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1443,7 +1451,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1453,7 +1461,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag4
+    assert matter.code == MtrDex.Label3
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1472,7 +1480,7 @@ def test_indexer():
     """
     assert Indexer.Codex == IdrDex
 
-    assert dataclasses.asdict(IdrDex) == {
+    assert asdict(IdrDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
@@ -1514,7 +1522,7 @@ def test_indexer():
     assert IdrDex.TBD1 == '1z'
     assert IdrDex.TBD4 == '4z'
 
-    assert dataclasses.asdict(IdxSigDex) == {
+    assert asdict(IdxSigDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
@@ -1551,7 +1559,7 @@ def test_indexer():
     assert IdxSigDex.Ed448_Big_Crt_Sig == '3B'
 
 
-    assert dataclasses.asdict(IdxCrtSigDex) == {
+    assert asdict(IdxCrtSigDex) == {
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Crt_Sig': 'D',
         'ECDSA_256r1_Crt_Sig': 'F',
@@ -1572,7 +1580,7 @@ def test_indexer():
     assert IdxCrtSigDex.Ed448_Big_Crt_Sig == '3B'
 
 
-    assert dataclasses.asdict(IdxBthSigDex) == {
+    assert asdict(IdxBthSigDex) == {
         'Ed25519_Sig': 'A',
         'ECDSA_256k1_Sig': 'C',
         'ECDSA_256r1_Sig': 'E',
@@ -2157,7 +2165,7 @@ def test_counter():
     """
     Test Counter class
     """
-    assert dataclasses.asdict(CtrDex) == {
+    assert asdict(CtrDex) == {
         'ControllerIdxSigs': '-A',
         'WitnessIdxSigs': '-B',
         'NonTransReceiptCouples': '-C',
@@ -2692,7 +2700,7 @@ def test_number():
     Test Number subclass of Matter
     """
 
-    assert dataclasses.asdict(NumDex) == {
+    assert asdict(NumDex) == {
         'Short': 'M',
         'Long': '0H',
         'Tall': 'R',
@@ -3716,6 +3724,57 @@ def test_dater():
 
     assert dater1.datetime < dater2.datetime
     assert dater4.datetime > dater3.datetime
+
+    """ Done Test """
+
+def test_verser():
+    """
+    Test Verser version primitive subclass of Matter
+    """
+    code = MtrDex.Tag10
+    soft = 'KERICAACAA'
+    qb64 = '0OKERICAACAA'
+    qb2 = b'\xd0\xe2\x84D\x80\x80\x00 \x00'
+    raw = b''
+
+    verser = Verser()  # defaults
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == Versage(proto='KERI',
+                                     vrsn=Versionage(major=2, minor=0),
+                                     gvrsn=Versionage(major=2, minor=0))
+
+    code = verser.code
+    soft = verser.soft
+    qb2 = verser.qb2
+    qb64 = verser.qb64
+
+    verser = Verser(qb2=qb2)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == Versage(proto='KERI',
+                                     vrsn=Versionage(major=2, minor=0),
+                                     gvrsn=Versionage(major=2, minor=0))
+
+    verser = Verser(qb64=qb64)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == Versage(proto='KERI',
+                                     vrsn=Versionage(major=2, minor=0),
+                                     gvrsn=Versionage(major=2, minor=0))
+
 
     """ Done Test """
 
@@ -6473,8 +6532,10 @@ def test_tholder():
 
 
 if __name__ == "__main__":
+    test_matter_class()
     test_matter()
-    test_texter()
+    test_verser()
+    #test_texter()
     #test_counter()
     #test_prodex()
     #test_indexer()

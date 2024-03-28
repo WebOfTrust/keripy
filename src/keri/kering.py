@@ -36,35 +36,45 @@ VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 #VEREX0 = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 #Rever = re.compile(VEREX0)  # compile is faster
 
+# version string in JSON, CBOR, or MGPK field map serialization version 1
 VER1FULLSPAN = 17  # number of characters in full version string
 VER1TERM = b'_'
 VEREX1 = b'(?P<proto1>[A-Z]{4})(?P<major1>[0-9a-f])(?P<minor1>[0-9a-f])(?P<kind1>[A-Z]{4})(?P<size1>[0-9a-f]{6})_'
 
+# version string in JSON, CBOR, or MGPK field map serialization version 2
 VER2FULLSPAN = 16  # number of characters in full version string
 VER2TERM = b'.'
-VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4}).'
+VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\.'
 
 VEREX = VEREX2 + b'|' + VEREX1
 
-MAXVERFULLSPAN = max(VER1FULLSPAN, VER2FULLSPAN)  # max number of characters in full version string
+# max number of characters in full version string
+MAXVERFULLSPAN = max(VER2FULLSPAN, VER1FULLSPAN)
 
 Rever = re.compile(VEREX)  # compile is faster
-
 
 MAXVSOFFSET = 12
 SMELLSIZE = MAXVSOFFSET + MAXVERFULLSPAN  # min buffer size to inhale
 
 
+# version field in CESR native serialization
+VFFULLSPAN = 12  # number of characters in full version string
+VFREX = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
+
+Revfer = re.compile(VFREX)  # compile is faster
+
 
 """
 Smellage  (results of smelling a version string such as in a Serder)
-    protocol (str): protocol type value of Protocols examples 'KERI', 'ACDC'
-    version (Versionage): named tuple (major, minor) ints of major minor version
+    proto (str): protocol type value of Protocols examples 'KERI', 'ACDC'
+    vrsn (Versionage): protocol version namedtuple (major, minor) of ints
     kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
-    size (str): int size of raw serialization
+    size (int): int size of raw serialization or
+    gvrsn (None | Versionage): optional default is None
+                For CESR native genus version namedtuple (major, minor) of ints
 
 """
-Smellage = namedtuple("Smellage", "protocol version kind size")
+Smellage = namedtuple("Smellage", "proto vrsn kind size gvrsn", defaults=(None, ))
 
 def rematch(match):
     """
@@ -75,7 +85,9 @@ def rematch(match):
     Parameters:
         match (re.Match):  instance of Match class
 
-
+    Notes:
+        regular expressions work with memoryview objects not just bytes or
+        bytearrays
     """
     full = match.group()  # full matched version string
     if len(full) == VER2FULLSPAN and full[-1] == ord(VER2TERM):
@@ -84,17 +96,12 @@ def rematch(match):
                                                        "minor2",
                                                        "kind2",
                                                        "size2")
-        protocol = proto.decode("utf-8")
-        if protocol not in Protocols:
-            raise ProtocolError(f"Invalid protocol type = {protocol}.")
+        proto = proto.decode("utf-8")
+        if proto not in Protocols:
+            raise ProtocolError(f"Invalid protocol={proto}.")
         vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
         if vrsn.major < 2:  # version2 vs but major < 2
             raise VersionError(f"Incompatible {vrsn=} with version string.")
-        #if version is not None:  # compatible version with vrsn
-            #if (vrsn.major > version.major or
-                #(vrsn.major == version.major and vrsn.minor > version.minor)):
-                    #raise VersionError(f"Incompatible {version=}, with "
-                                           #f"{vrsn=}.")
 
         kind = kind.decode("utf-8")
         if kind not in Serials:
@@ -107,25 +114,22 @@ def rematch(match):
                                                      "minor1",
                                                      "kind1",
                                                      "size1")
-        protocol = proto.decode("utf-8")
-        if protocol not in Protocols:
-            raise ProtocolError(f"Invalid protocol type = {protocol}.")
+        proto = proto.decode("utf-8")
+        if proto not in Protocols:
+            raise ProtocolError(f"Invalid protocol={proto}.")
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if vrsn.major > 1:  # version1 vs but major > 1
             raise VersionError(f"Incompatible {vrsn=} with version string.")
-        #if version is not None:  # compatible version with vrsn
-            #if (vrsn.major > version.major or
-                #(vrsn.major == version.major and vrsn.minor > version.minor)):
-                    #raise VersionError(f"Incompatible {version=}, with "
-                                           #f"{vrsn=}.")
 
         kind = kind.decode("utf-8")
         if kind not in Serials:
             raise KindError(f"Invalid serialization kind = {kind}.")
         size = int(size, 16)
 
-    return Smellage(protocol=protocol, version=vrsn, kind=kind, size=size)
+    else:
+        raise VersionError(f"Bad rematch.")
 
+    return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size)
 
 
 def versify(protocol=Protocols.keri, version=Version, kind=Serials.json, size=0):
@@ -149,7 +153,6 @@ def versify(protocol=Protocols.keri, version=Version, kind=Serials.json, size=0)
     else:  # version 2+ version string
         return (f"{protocol}{intToB64(version.major)}"
                 f"{intToB64(version.minor, l=2)}{kind}{intToB64(size, l=4)}.")
-
 
 
 def deversify(vs):
@@ -182,8 +185,6 @@ def deversify(vs):
     return rematch(match)
 
 
-
-
 def smell(raw):
     """Extract and return instance of Smellage from version string inside
     raw serialization.
@@ -196,6 +197,7 @@ def smell(raw):
             of stream is JSON, CBOR, or MGPK field map with first field
             is labeled 'v' and value is version string.
 
+
     """
     if len(raw) < SMELLSIZE:
         raise ShortageError(f"Need more raw bytes to smell full version string.")
@@ -207,7 +209,68 @@ def smell(raw):
 
     return rematch(match)
 
+def snatch(match, size=0):
+    """ Returns:
+        smellage (Smellage): named tuple extracted from version string regex match
+                            (protocol, version, kind, size)
 
+    Parameters:
+        match (re.Match):  instance of Match class
+        size (int): provided size to substitute when missing
+
+    Notes:
+        regular expressions work with memoryview objects not just bytes or
+        bytearrays
+    """
+    full = match.group()  # full matched version string
+    if len(full) == VFFULLSPAN:
+        proto, major, minor, gmajor, gminor = match.group("proto0",
+                                                     "major0",
+                                                     "minor0",
+                                                     "gmajor0",
+                                                     "gminor0")
+        proto = proto.decode("utf-8")
+        if proto not in Protocols:
+            raise ProtocolError(f"Invalid protocol type = {proto}.")
+        vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
+        if vrsn.major < 2:  # version2 vs but major < 2
+            raise VersionError(f"Incompatible {vrsn=} with version string.")
+
+        gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
+        if gvrsn.major < 2:  # version2 vs but major < 2
+            raise VersionError(f"Incompatible {gvrsn=} with CESR native version"
+                               f"field.")
+        kind = Serials.cesr
+        size = size
+    else:
+        raise VersionError(f"Bad snatch.")
+
+    return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size, gvrsn=gvrsn)
+
+
+def snuff(raw, size=0):
+    """Extract and return instance of Smellage from version string inside
+    raw serialization.
+
+    Returns:
+        smellage (Smellage): named Tuple of (protocol, version, kind, size)
+
+    Parameters:
+        raw (bytearray) of serialized incoming message stream. Assumes start
+            of stream is JSON, CBOR, or MGPK field map with first field
+            is labeled 'v' and value is version string.
+        size (int): provided size to substitute when missing
+
+    """
+    if len(raw) < SMELLSIZE:
+        raise ShortageError(f"Need more raw bytes to smell full version string.")
+
+    match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
+    if not match or match.start() > MAXVSOFFSET:
+        raise VersionError(f"Invalid version string from smelled raw = "
+                           f"{raw[: SMELLSIZE]}.")
+
+    return snatch(match, size=size)
 
 
 @dataclass(frozen=True)
@@ -444,7 +507,15 @@ class RawMaterialError(MaterialError):
     """
     Not Enough bytes in buffer bytearray for raw material
     Usage:
-        raise ShortageError("error message")
+        raise RawMaterialError("error message")
+    """
+
+
+class SoftMaterialError(MaterialError):
+    """
+    Not Enough chars in soft for soft material
+    Usage:
+        raise SoftMaterialError("error message")
     """
 
 
@@ -455,6 +526,7 @@ class EmptyMaterialError(MaterialError):
         raise EmptyMaterialError("error message")
     """
 
+
 class InvalidVersionError(MaterialError):
     """
     Invalid, Unknown, or unrecognized CESR code table version encountered during
@@ -463,12 +535,22 @@ class InvalidVersionError(MaterialError):
         raise InvalidVersionError("error message")
     """
 
+
 class InvalidCodeError(MaterialError):
     """
     Invalid, Unknown, or unrecognized code encountered during crypto material init
     Usage:
         raise InvalidCodeError("error message")
     """
+
+
+class InvalidSoftError(MaterialError):
+    """
+    Invalid, Unknown, or unrecognized soft part encountered during crypto material init
+    Usage:
+        raise InvalidSoftError("error message")
+    """
+
 
 class InvalidTypeError(MaterialError):
     """
@@ -477,12 +559,14 @@ class InvalidTypeError(MaterialError):
         raise InvalidTypeError("error message")
     """
 
+
 class InvalidValueError(MaterialError):
     """
     Invalid material value encountered during crypto material init
     Usage:
         raise InvalidValueError("error message")
     """
+
 
 class InvalidSizeError(MaterialError):
     """

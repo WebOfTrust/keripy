@@ -27,7 +27,9 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 from ..kering import MaxON
 
-from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
+from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
+                      InvalidCodeError, InvalidSoftError,
+                      InvalidSizeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
                       ConversionError, InvalidValueError, InvalidTypeError,
@@ -35,10 +37,10 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       EmptyListError,
                       ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
-from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
+from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
+                      VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
 from ..kering import Serials, Serialage, Protocols, Protocolage, Ilkage, Ilks
-
 
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable, nonStringSequence
@@ -83,7 +85,7 @@ def sizeify(ked, kind=None, version=Version):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    proto, vrsn, knd, size = deversify(ked["v"])  # extract kind and version
+    proto, vrsn, knd, size, _ = deversify(ked["v"])  # extract kind and version
     if vrsn != version:
         raise ValueError("Unsupported version = {}.{}".format(vrsn.major,
                                                               vrsn.minor))
@@ -278,10 +280,10 @@ class MatterCodex:
     Large:                str = 'S'  # Large 11 byte b2 number
     Great:                str = 'T'  # Great 14 byte b2 number
     Vast:                 str = 'U'  # Vast 17 byte b2 number
-    Label1:               str = 'V'  # Label1 as one char (bytes) field map label lead size 1
-    Label2:               str = 'W'  # Label2 as two char (bytes) field map label lead size 0
-    Tag3:                 str = 'X'  # Tag3 3 B64 encoded chars for field tag or packet type, semver, trait like 'DND'
-    Tag7:                 str = 'Y'  # Tag7 7 B64 encoded chars for field tag or packet kind and version KERIVVV
+    Label1:               str = 'V'  # Label1 as 1 bytes for label lead size 1
+    Label2:               str = 'W'  # Label2 as 2 bytes for label lead size 0
+    Tag3:                 str = 'X'  # Tag3  3 B64 encoded chars for field tag
+    Tag7:                 str = 'Y'  # Tag7  7 B64 encoded chars for field tag
     Blind:                str = 'Z'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
     Salt_128:             str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
@@ -292,24 +294,27 @@ class MatterCodex:
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     Long:                 str = '0H'  # Long 4 byte b2 number
     ECDSA_256r1_Sig:      str = '0I'  # ECDSA secp256r1 signature.
-    Tag1:                 str = '0J'  # Tag1 1 B64 encoded char with pre pad for field tag
-    Tag2:                 str = '0K'  # Tag2 2 B64 encoded chars for field tag or version VV or trait like 'EO'
-    Tag5:                 str = '0L'  # Tag5 5 B64 encoded chars with pre pad for field tag
+    Tag1:                 str = '0J'  # Tag1 1 prepad + 1 B64 encoded char for field tag
+    Tag2:                 str = '0K'  # Tag2 2 B64 encoded chars for field tag
+    Tag5:                 str = '0L'  # Tag5 1 prepad + 5 B64 encoded chars for field tag
     Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for field tag
-    Tag10:                str = '0N'  # Tag10 10 B64 encoded chars for field tag or version PPPPMmmMmm
+    Tag9:                 str = '0N'  # Tag9 1 prepad + 9 B64 encoded chars for field tag
+    Tag10:                str = '0O'  # Tag10 10 B64 encoded chars for field tag
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for field tag or message kind
+    Label3:               str = '1AAF'  # Label3 as 3 bytes for label lead size 0
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
     Null:                 str = '1AAK'  # Null None or empty value
-    Yes:                  str = '1AAL'  # Yes Truthy Boolean value
-    No:                   str = '1AAM'  # No Falsey Boolean value
+    No:                   str = '1AAL'  # No Falsey Boolean value
+    Yes:                  str = '1AAM'  # Yes Truthy Boolean value
+    Tag4:                 str = '1AAN'  # Tag4 4 B64 encoded chars for field tag
+    Tag8:                 str = '1AAO'  # Tag8 8 B64 encoded chars for field tag
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 only lead size 0
@@ -637,37 +642,62 @@ class Matter:
 
     Includes the following attributes and properties:
 
+    Class Attributes:
+        Codex (MatterCodex):  MtrDex
+        Hards (dict): hard sizes keyed by qb64 selector
+        Bards (dict): hard size keyed by qb2 selector
+        Sizes (dict): sizes tables for codes
+
+    Calss Methods:
+
+
     Attributes:
 
     Properties:
         code (str): hard part of derivation code to indicate cypher suite
-        both (int): hard and soft parts of full text code
-        size (int): Number of triplets of bytes including lead bytes
-            (quadlets of chars) of variable sized material. Value of soft size,
-            ss, part of full text code.
-            Otherwise None.
-        rize (int): number of bytes of raw material not including
-                    lead bytes
-        raw (bytes): crypto material only without code
+        hard (str): hard part of derivation code. alias for code
+        soft (str): soft part of derivation code fs any.
+                    Empty when ss = 0.
+        both (str): hard + soft parts of full text code
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
+        fullSize (int): full size of primitive
+        raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
         qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
         qb2  (bytes): binary with derivation code + crypto material
         transferable (bool): True means transferable derivation code False otherwise
         digestive (bool): True means digest derivation code False otherwise
         prefixive (bool): True means identifier prefix derivation code False otherwise
+        special (bool): True when soft is special raw is empty and fixed size
 
     Hidden:
         _code (str): value for .code property
-        _raw (bytes): value for .raw property
-        _rsize (bytes): value for .rsize property. Raw size in bytes when
-            variable sized material else None.
+        _soft (str): soft value of full code
         _size (int): value for .size property. Number of triplets of bytes
             including lead bytes (quadlets of chars) of variable sized material
             else None.
-        _infil (types.MethodType): creates qb64b from .raw and .code
-                                   (fully qualified Base64)
-        _exfil (types.MethodType): extracts .code and .raw from qb64b
-                                   (fully qualified Base64)
+        _raw (bytes): value for .raw property
+        _rawSize():
+        _leadSize():
+        _special():
+        _infil(): creates qb64b from .raw and .code (fully qualified Base64)
+        _binfil(): creates qb2 from .raw and .code (fully qualified Base2)
+        _exfil(): extracts .code and .raw from qb64b (fully qualified Base64)
+        _bexfil(): extracts .code and .raw from qb2 (fully qualified Base2)
+
+
+
+    Size table rules for special soft values:
+    if fn in table is None then must have ss > 0 and (hs + ss) % 4
+    else (fn is not None) then
+        if ss > 0 and fn = hs + ss and ls == 0 then
+           special soft value
+        else
+           not special must have ss == 0
 
     """
     Codex = MtrDex
@@ -679,6 +709,12 @@ class Matter:
     Hards.update({chr(c): 1 for c in range(97, 97 + 26)})
     Hards.update([('0', 2), ('1', 4), ('2', 4), ('3', 4), ('4', 2), ('5', 2),
                   ('6', 2), ('7', 4), ('8', 4), ('9', 4)])
+
+
+    # Bards table maps first code char. converted to binary sextext of hard size,
+    # hs. Used for ._bexfil.
+    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
+
     # Sizes table maps from value of hs chars of code to Sizage namedtuple of
     # (hs, ss, fs, ls) where hs is hard size, ss is soft size, and fs is full size
     # and ls is lead size
@@ -708,8 +744,8 @@ class Matter:
         'U': Sizage(hs=1, ss=0, fs=24, ls=0),
         'V': Sizage(hs=1, ss=0, fs=4, ls=1),
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'X': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=7, fs=8, ls=0),
         'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -720,11 +756,12 @@ class Matter:
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=0, fs=12, ls=0),
+        '0J': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=10, fs=12, ls=0),
+        '0O': Sizage(hs=2, ss=10, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -738,6 +775,8 @@ class Matter:
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
+        '1AAO': Sizage(hs=4, ss=8, fs=12, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -773,49 +812,54 @@ class Matter:
     }
 
 
-    # Bards table maps first code char. converted to binary sextext of hard size,
-    # hs. Used for ._bexfil.
-    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, rize=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
+                 qb64b=None, qb64=None, qb2=None, soft='', strip=False):
         """
         Validate as fully qualified
         Parameters:
-            raw (bytes): unqualified crypto material usable for crypto operations
+            raw (bytes | bytearray | None): unqualified crypto material usable
+                    for crypto operations.
             code (str): stable (hard) part of derivation code
-            rize (int): raw size in bytes when variable sized material else None
-            qb64b (bytes): fully qualified crypto material Base64
-            qb64 (str, bytes):  fully qualified crypto material Base64
-            qb2 (bytes): fully qualified crypto material Base2
+            rize (int | None): raw size in bytes when variable sized material not
+                        including lead bytes if any
+                        Otherwise None
+            qb64b (bytes | None): fully qualified crypto material Base64
+            qb64 (str | bytes | None):  fully qualified crypto material Base64
+            qb2 (bytes | None): fully qualified crypto material Base2
+            soft (str | None): soft part for special codes
             strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 
 
-        Needs either (raw and code and optionally size and rsize)
+        Needs either (raw and code and optionally rsize)
                or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
-        When raw and code and optional size and rsize provided
-            then validate that code is correct for length of raw, size, rsize
-            and assign .raw
+        When raw and code and optional rsize provided
+            then validate that code is correct for length of raw, rsize,
+            computed size from Sizes and assign .raw
         Else when qb64b or qb64 or qb2 provided extract and assign
             .raw and .code and .size and .rsize
 
         """
         size = None  # variable raw binary size including leader in quadlets
-        if raw is not None:  # raw provided
+        soft = soft  # soft portion of code,
+        if raw is not None:  # raw provided but may be empty
             if not code:
                 raise EmptyMaterialError(f"Improper initialization need either "
-                                         f"(raw and code) or qb64b or qb64 or qb2.")
+                                         f"(raw not None and code) or "
+                                         f"(raw empty and code and soft) or "
+                                         f"(code and soft) or "
+                                         f"qb64b or qb64 or qb2.")
 
             if not isinstance(raw, (bytes, bytearray)):
-                raise TypeError(f"Not a bytes or bytearray, raw={raw}.")
+                raise TypeError(f"Not a bytes or bytearray {raw=}.")
 
             if code not in self.Sizes:
-                raise InvalidCodeError("Unsupported code={}.".format(code))
+                raise InvalidCodeError(f"Unsupported {code=}.")
 
             if code[0] in SmallVrzDex or code[0] in LargeVrzDex:  # dynamic size
-                if rize:  # use rsize to determin length of raw to extract
+                if rize:  # use rsize to determine length of raw to extract
                     if rize < 0:
                         raise InvalidVarRawSizeError(f"Missing var raw size for "
                                                      f"code={code}.")
@@ -825,45 +869,105 @@ class Matter:
                 ls = (3 - (rize % 3)) % 3  # calc actual lead (pad) size
                 # raw binary size including leader in bytes
                 size = (rize + ls) // 3  # calculate value of size in triplets
+
                 if code[0] in SmallVrzDex:  # compute code with sizes
                     if size <= (64 ** 2 - 1):
                         hs = 2
                         s = astuple(SmallVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
+                        ss = 2
                     elif size <= (64 ** 4 - 1):  # make big version of code
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{'A' * (hs - 2)}{code[1]}"
+                        soft = intToB64(size, 4)
+                        ss = 4
                     else:
-                        raise InvalidVarRawSizeError(r"Unsupported raw size for "
-                                                     f"code={code}.")
+                        raise InvalidVarRawSizeError(f"Unsupported raw size for "
+                                                     f"{code=}.")
                 elif code[0] in LargeVrzDex:  # compute code with sizes
                     if size <= (64 ** 4 - 1):
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
+                        ss = 4
                     else:
-                        raise InvalidVarRawSizeError(r"Unsupported raw size for "
-                                                     f"code={code}.")
+                        raise InvalidVarRawSizeError(f"Unsupported raw size for "
+                                                     f"{code=}.")
                 else:
-                    raise InvalidVarRawSizeError(r"Unsupported variable raw size "
-                                                 f"code={code}.")
+                    raise InvalidVarRawSizeError(f"Unsupported variable raw size "
+                                                 f"{code=}.")
+                soft = intToB64(size, ss)
 
             else:
                 hs, ss, fs, ls = self.Sizes[code]  # get sizes assumes ls consistent
-                if not fs:  # invalid
-                    raise InvalidVarSizeError(r"Unsupported variable size "
-                                              f"code={code}.")
+                if not fs:  # invalid must not be variable size
+                    raise InvalidVarSizeError(f"Unsupported {code=} for "
+                                              f"variable size {fs=}.")
+
                 rize = Matter._rawSize(code)
+
+                if ss == 0 and soft:
+                    raise InvalidSoftError(f"Non-empty {soft=} part when not"
+                                           f" special.")
+
+                if fs == hs + ss and ss > 0: # special soft size
+                    if ls != 0:  # lead must be zero
+                        raise InvalidSoftError(f"Nonzero lead(ls)) for {code=}"
+                                               f" {soft=} when special.")
+
+                    if rize:  # raw must be empty
+                        raise RawMaterialError(f"Nonzero raw size {rize=} when "
+                                               f" special {code=} {soft=}.")
+
+                    if not soft or len(soft) < ss:
+                        raise SoftMaterialError(f"Not enough chars in {code=} "
+                                                 f"{soft=} with {ss=}.")
+
+                    soft = soft[:ss]
+
+                    if not Reb64.match(soft):
+                        raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
+
 
             raw = raw[:rize]  # copy only exact size from raw stream
             if len(raw) != rize:  # forbids shorter
                 raise RawMaterialError(f"Not enougth raw bytes for code={code}"
-                                       f"expected {rize} got {len(raw)}.")
+                                       f"expected {rize=} got {len(raw)}.")
 
-            self._code = code  # hard value part of code
-            self._size = size  # soft value part of code in int
+            self._code = code  # str hard part of code
+            self._soft = soft  # str soft part of code, empty when ss=0
+            self._size = size  # int of soft part value, None when fs != None
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
+
+        elif soft and code:  # special when raw None
+            hs, ss, fs, ls = self.Sizes[code]  # get sizes assumes ls consistent
+            if not fs:  #
+                raise InvalidSoftError(f"Unsupported {code=} {fs=} for special"
+                                       f" soft.")
+
+            if fs != hs + ss or ss == 0 or ls != 0: # not special soft code
+                raise InvalidSoftError("Invalid {code=} {fs=} or lead={ls} "
+                                       f" when special soft.")
+
+            rize = Matter._rawSize(code)
+            if rize:
+                raise InvalidSizeError(f"Nonzero raw size {rize=} when special"
+                                       f" {code=}.")
+
+            if not soft or len(soft) < ss:
+                raise SoftMaterialError(f"Not enough chars in {code=} "
+                                         f"{soft=} with {ss=}.")
+
+            soft = soft[:ss]
+
+            if not Reb64.match(soft):
+                raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
+
+            self._code = code  # str hard part of code
+            self._soft = soft  # str soft part of code, empty when ss=0
+            self._size = size  # int of soft part value, None when fs != None
+            self._raw = b''  # empty raw when special
 
         elif qb64b is not None:
             self._exfil(qb64b)
@@ -880,7 +984,11 @@ class Matter:
 
         else:
             raise EmptyMaterialError(f"Improper initialization need either "
-                                     f"(raw and code) or qb64b or qb64 or qb2.")
+                                         f"(raw not None and code) or "
+                                         f"(raw empty and code and soft) or "
+                                         f"(code and soft) or "
+                                         f"qb64b or qb64 or qb2.")
+
 
     @classmethod
     def _rawSize(cls, code):
@@ -895,6 +1003,7 @@ class Matter:
             raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
         return (((fs - cs) * 3 // 4) - ls)
 
+
     @classmethod
     def _leadSize(cls, code):
         """
@@ -905,34 +1014,89 @@ class Matter:
         _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
         return ls
 
+
+    @classmethod
+    def _special(cls, code):
+        """
+        Returns:
+            special (bool): True when code has special soft i.e. when
+                    fs is not None and ss > 0  and fs = hs + ss and ls = 0
+                    i.e. (fs fixed and soft not empty and raw is empty and no lead)
+                False otherwise
+
+        """
+        hs, ss, fs, ls = cls.Sizes[code]
+
+        return (fs is not None and ss > 0 and fs == hs + ss and ls == 0)
+
+
     @property
     def code(self):
         """
-        Returns ._code which is the hard part only of full text code.
-        Some codes only have a hard part. Soft part is for variable sized matter.
-        Makes .code read only
+        Returns:
+            code (str): hard part only of full text code.
+
+        Getter for ._code. Makes ._code read only
+
+        Some codes only have a hard part. Soft part may be for variable sized
+        matter or for special codes that are code only (raw is empty)
         """
         return self._code
 
+
     @property
-    def both(self):
+    def hard(self):
         """
-        Returns both hard and soft parts of full text code
+        Returns:
+            hard (str): hard part only of full text code. Alias for .code.
+
         """
-        _, ss, _, _ = self.Sizes[self.code]
-        return (f"{self.code}{intToB64(self.size, l=ss)}")
+        return self.code
+
+
+    @property
+    def soft(self):
+        """
+        Returns:
+            soft (str): soft part only of full text code.
+
+        Getter for ._soft. Make ._soft read only
+        """
+        return self._soft
 
 
     @property
     def size(self):
         """
-        Returns ._size int or None if not variable sized matter
-        Makes .size read only
+        Returns:
+            size(int | None): Number of variably sized b64 quadlets/b2 triplets
+                                in primitive when varibly sized
+                              None when not variably sized (fs==None)
 
-        Number of triplets of bytes including lead bytes (quadlets of chars)
-        of variable sized material. Value of soft size, ss, part of full text code.
+        Getter for ._size. Makes ._size read only
+
+        Number of quadlets/triplets of chars/bytes of variable sized material or
+        None when not variably sized.
+
+        Converted qb64 value to int of ss portion of full text code when variably
+        sized primitive material (fs = None).
+
         """
         return self._size
+
+
+    @property
+    def both(self):
+        """
+        Returns:
+            both (str):  hard + soft parts of full text code
+        """
+        _, ss, _, _ = self.Sizes[self.code]
+
+        if self.size is not None:
+            return (f"{self.code}{intToB64(self.size, l=ss)}")
+        else:
+            return (f"{self.code}{self.soft}")
 
 
     @property
@@ -948,6 +1112,7 @@ class Matter:
             fs = hs + ss + (self.size * 4)
         return fs
 
+
     @property
     def raw(self):
         """
@@ -955,6 +1120,7 @@ class Matter:
         Makes .raw read only
         """
         return self._raw
+
 
     @property
     def qb64b(self):
@@ -965,6 +1131,7 @@ class Matter:
         """
         return self._infil()
 
+
     @property
     def qb64(self):
         """
@@ -974,6 +1141,7 @@ class Matter:
         """
         return self.qb64b.decode("utf-8")
 
+
     @property
     def qb2(self):
         """
@@ -981,6 +1149,7 @@ class Matter:
         Returns Fully Qualified Binary Version Bytes
         """
         return self._binfil()
+
 
     @property
     def transferable(self):
@@ -990,6 +1159,7 @@ class Matter:
                 False otherwise
         """
         return (self.code not in NonTransDex)
+
 
     @property
     def digestive(self):
@@ -1011,16 +1181,31 @@ class Matter:
         return (self.code in PreDex)
 
 
+    @property
+    def special(self):
+        """
+        special (bool): True when self.code has special self.soft i.e. when
+                    fs is not None and ss > 0  and fs = hs + ss and ls = 0
+                    i.e. (fs fixed and soft not empty and raw is empty and no lead)
+                False otherwise
+        """
+        return self._special(self.code)
+
+
     def _infil(self):
         """
         Returns bytes of fully qualified base64 characters
         self.code + converted self.raw to Base64 with pad chars stripped
 
         cs = hs + ss
-        fs = (size * 4) + cs
+        if fs is None in table:
+            fs = (size * 4) + cs
+        else:  # fs set by table where
+            fs = hs + cs + ls + rawsize
 
         """
-        code = self.code  # hard size codex value
+        code = self.code  # hard part of full code == codex value
+        soft = self.soft  # soft part of full code may be empty
         size = self.size  # size if variable length, None otherwise
         raw = self.raw  # bytes or bytearray
 
@@ -1028,6 +1213,10 @@ class Matter:
         hs, ss, fs, ls = self.Sizes[code]
         if not fs:  # variable sized, compute code ss value from .size
             cs = hs + ss  # both hard + soft size
+
+            if ss < 1:  # ss < 1 so not variable sized
+                raise InvalidCodeSizeError(f"Soft size {ss=} must be positive for "
+                                      f" variable length material.")
             if cs % 4:
                 raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
                                            f"variable length material. cs={cs}.")
@@ -1045,14 +1234,14 @@ class Matter:
             return (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw))
 
         else:  # fixed size so prepad but lead ls may not be zero
-            both = code
+            both = code + soft
             cs = len(both)
             if (cs % 4) != ps - ls:  # adjusted pad given lead bytes
                 raise InvalidCodeSizeError(f"Invalid code={both} for converted"
                                            f" raw pad size={ps}.")
             # prepad, convert, and replace upfront
             # when fixed and ls != 0 then cs % 4 is zero and ps==ls
-            # otherwise  fixed and ls == 0 then cs % 4 == ps
+            # otherwise when fixed and ls == 0 then cs % 4 == ps
             return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[cs % 4:])
 
 
@@ -1063,6 +1252,7 @@ class Matter:
         equivalent of Base64 decode of .qb64 into .qb2
         """
         code = self.code  # codex value
+        soft = self.soft
         size = self.size  # optional size if variable length
         raw = self.raw  # bytes or bytearray
 
@@ -1070,6 +1260,9 @@ class Matter:
         cs = hs + ss
 
         if not fs:  # compute both and fs from size
+            if ss < 1:  # ss < 1 so not variable sized
+                raise InvalidCodeSizeError(f"Soft size {ss=} must be positive for "
+                                      f" variable length material.")
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
                                            "variable length material. cs={}.".format(cs))
@@ -1081,7 +1274,7 @@ class Matter:
             both = f"{code}{intToB64(size, l=ss)}"
             fs = hs + ss + (size * 4)
         else:
-            both = code
+            both = code + soft
 
         if len(both) != cs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
@@ -1134,21 +1327,18 @@ class Matter:
 
         hs, ss, fs, ls = self.Sizes[hard]  # assumes hs in both tables match
         cs = hs + ss  # both hs and ss
+        # assumes that unit tests on Matter .Sizes .Hards and .Bards ensure that
+        # these are well formed.
+        # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
+
+        soft = qb64b[hs:hs + ss]  # extract soft chars, empty when ss==0
+        if hasattr(soft, "decode"):
+            soft = soft.decode("utf-8")
+
         size = None
         if not fs:  # compute fs from size chars in ss part of code
-            if cs % 4:
-                raise ValidationError(f"Whole code size not multiple of 4 for "
-                                      f"variable length material. cs={cs}.")
-            size = qb64b[hs:hs + ss]  # extract size chars
-            if hasattr(size, "decode"):
-                size = size.decode("utf-8")
-            size = b64ToInt(size)  # compute int size
+            size = b64ToInt(soft)  # compute variable size int may have value 0
             fs = (size * 4) + cs
-
-        # assumes that unit tests on Matter and MatterCodex ensure that
-        # .Codes and .Sizes are well formed.
-        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs >= hs + ss
-        # unless fs is None
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError(f"Need {fs - len(qb64b)} more chars.")
@@ -1167,7 +1357,7 @@ class Matter:
             if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
                 raise ValueError(f"Non zeroed prepad bits = "
                                  f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
-            raw = paw[ps:]  # strip off ps prepad paw bytes
+            raw = paw[ps:]  # strip off ps prepad paw bytes, paw is bytes so raw is bytes
 
         else:  # not ps. IF not ps THEN may or may not be ls (lead)
             base = qb64b[cs:]  # strip off code leaving lead chars if any and value
@@ -1186,8 +1376,9 @@ class Matter:
             raise ConversionError(f"Improperly qualified material = {qb64b}")
 
         self._code = hard  # hard only
-        self._size = size
-        self._raw = raw  # ensure bytes so immutable and for crypto ops
+        self._soft = soft  # soft only
+        self._size = size  # variable size or None
+        self._raw = raw  # ensure bytes for crypto ops, may be empty
 
 
     def _bexfil(self, qb2):
@@ -1222,24 +1413,25 @@ class Matter:
 
         hs, ss, fs, ls = self.Sizes[hard]
         cs = hs + ss  # both hs and ss
+        # assumes that unit tests on Matter .Sizes .Hards and .Bards ensure that
+        # these are well formed.
+        # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
+
         bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+        if len(qb2) < bcs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
+
+        both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
+        soft = both[hs:hs + ss]  # get soft may be empty
+
         size = None
         if not fs:  # compute fs from size chars in ss part of code
-            if cs % 4:
-                raise ValidationError("Whole code size not multiple of 4 for "
-                                      "variable length material. cs={}.".format(cs))
 
             if len(qb2) < bcs:  # need more bytes
                 raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
-            both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-            size = b64ToInt(both[hs:hs + ss])  # get size
-            fs = (size * 4) + cs
-
-        # assumes that unit tests on Matter and MatterCodex ensure that
-        # .Codes and .Sizes are well formed.
-        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and
-        # (fs >= hs + ss if fs is not None else True)
+            size = b64ToInt(soft)  # get size from soft
+            fs = (size * 4) + cs  # compute fs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
@@ -1263,14 +1455,16 @@ class Matter:
                 else:
                     raise ValueError(f"Non zeroed lead bytes = 0x{li:02x}.")
 
-        raw = qb2[(bcs + ls):]  # strip code and leader bytes from qb2 to get raw
+        # strip code and leader bytes from qb2 to get raw
+        raw = qb2[(bcs + ls):]  # may be empty
 
         if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
             raise ConversionError(r"Improperly qualified material = {qb2}")
 
-        self._code = hard
-        self._size = size
-        self._raw = bytes(raw)  # ensure bytes so immutable and crypto operations
+        self._code = hard  # hard only
+        self._soft = soft  # soft only may be empty
+        self._size = size  # variable size or None
+        self._raw = bytes(raw)  # ensure bytes for crypto ops may be empty
 
 
 class Seqner(Matter):
@@ -1703,8 +1897,7 @@ class Dater(Matter):
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if dts is None:  # defaults to now
                 dts = helping.nowIso8601()
-            # if len(dts) != 32:
-            #     raise ValueError("Invalid length of date time string")
+
             if hasattr(dts, "decode"):
                 dts = dts.decode("utf-8")
             qb64 = MtrDex.DateTime + dts.translate(self.ToB64)
@@ -1738,6 +1931,206 @@ class Dater(Matter):
         Returns datetime.datetime instance converted from .dts
         """
         return helping.fromIso8601(self.dts)
+
+# Versage namedtuple
+# proto (str): protocol element of Protocols
+# vrsn (Versionage): instance protocol version namedtuple (major, minor) ints
+# vrsn (Versionage | None): instance genus version namedtuple (major, minor) ints
+Versage = namedtuple("Versage", "proto vrsn gvrsn", defaults=(None, ))
+
+
+class Verser(Matter):
+    """
+    Verser is subclass of Matter, cryptographic material, for formatted
+    version primitives in Base64.  Supports different primitives based on code.
+
+    Verser provides a more compact representation than would be obtained by
+    converting the raw ASCII representation to Base64.
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+        code (str): hard part of derivation code to indicate cypher suite
+        both (int): hard and soft parts of full text code
+        size (int): Number of triplets of bytes including lead bytes
+            (quadlets of chars) of variable sized material. Value of soft size,
+            ss, part of full text code.
+            Otherwise None.
+        rize (int): number of bytes of raw material not including
+                    lead bytes
+        raw (bytes): crypto material only without code
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
+
+    Properties:
+        proto (str): protocol from Protocols
+        vrsn  (Versionage): instance protocol version.
+               namedtuple (major, minor) of ints
+        gvrsn (Versionage | None): instance genus version.
+               namedtuple (major, minor) of ints
+
+    Hidden Inherited:
+        _code (str): value for .code property
+        _raw (bytes): value for .raw property
+        _rsize (bytes): value for .rsize property. Raw size in bytes when
+            variable sized material else None.
+        _size (int): value for .size property. Number of triplets of bytes
+            including lead bytes (quadlets of chars) of variable sized material
+            else None.
+        _infil (types.MethodType): creates qb64b from .raw and .code
+                                   (fully qualified Base64)
+        _exfil (types.MethodType): extracts .code and .raw from qb64b
+                                   (fully qualified Base64)
+
+    Hidden:
+        _proto (str): value for .proto property
+        _vrsn (Versionage): value for .vrsn property
+        _gvrsn (Versionage | None): value for .gvrsn property
+
+    Methods:
+
+    """
+
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=MtrDex.Tag10, versage=None, proto=Protocols.keri,
+                 vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw (bytes): unqualified crypto material usable for crypto operations
+            code (str): stable (hard) part of derivation code
+            rize (int): raw size in bytes when variable sized material else None
+            qb64b (bytes): fully qualified crypto material Base64
+            qb64 (str, bytes):  fully qualified crypto material Base64
+            qb2 (bytes): fully qualified crypto material Base2
+            strip (bool): True means strip (delete) matter from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
+
+        Parameters:
+            versage (Versage | None): namedtuple of (proto, vrsn, gvrsn)
+            proto (str | None): protocol from Protocols
+            vrsn  (Versionage | None): instance protocol version.
+               namedtuple (major, minor) of ints
+            gvrsn (Versionage | None): instance genus version.
+               namedtuple (major, minor) of ints
+
+        Notes:
+            prepad = 'A'
+        """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if versage:
+                proto, vrsn, gvrsn = versage
+            if code == MtrDex.Tag10:
+                if not gvrsn:
+                    raise  InvalidValueError(f"Missing genus version.")
+
+                qb64 = (code +
+                        proto +
+                        self.verToB64(vrsn) +
+                        self.verToB64(gvrsn)).encode("utf-8")
+
+            elif code == MtrDex.Tag7:
+                qb64 = (code + proto + self.verToB64(vrsn)).encode("utf-8")
+
+            else:
+                raise InvalidCodeError(f"Invalid {code=} for Verser.")
+
+
+        super(Verser, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                    code=code, **kwa)
+
+        if self.code not in (MtrDex.Tag10, MtrDex.Tag7):
+            raise InvalidCodeError(f"Invalid code={self.code} for Verser.")
+
+        if not self._special(self.code):
+            raise InvalidCodeError(f"Not special code={self.code} for Verser.")
+
+    @property
+    def versage(self):
+        """Property versage (Versage):  named tuple of (proto, vrsn, gvrsn)
+
+        """
+        gvrsn = None
+        clp = len(self.code)
+        proto = self.qb64[clp:clp+4]
+        vrsn = self.b64ToVer(self.qb64[clp+4:clp+7])
+        if self.fullSize == clp + 10: # assumes special
+            gvrsn = self.b64ToVer(self.qb64[clp+7:clp+10])
+
+        return Versage(proto=proto, vrsn=vrsn, gvrsn=gvrsn)
+
+
+    @staticmethod
+    def verToB64(version=None, *, text="", major=0, minor=0):
+        """ Converts version to Base64 representation
+
+        Returns:
+            verB64 (str):
+
+        Example:
+            Verser.verToB64(verstr = "1.0"))
+
+        Parameters:
+            version (Versionage): instange of namedtuple
+                         Versionage(major=major,minor=minor)
+            text (str): text format of version as dotted decimal "major.minor"
+            major (int): When version is None and verstr is empty then use major minor
+                        range [0, 63] for one Base64 character
+            minor (int): When version is None and verstr is  empty then use major minor
+                        range [0, 4095] for two Base64 characters
+
+        """
+        if version:
+            major = version.major
+            minor = version.minor
+
+        elif text:
+            splits = text.split(".", maxsplit=2)
+            splits = [(int(s) if s else 0) for s in splits]
+            parts = [major, minor]
+            for i in range(2-len(splits),0, -1):  # append missing minor and/or major
+                splits.append(parts[-i])
+            major = splits[0]
+            minor = splits[1]
+
+        if major < 0 or major > 63 or minor < 0 or minor > 4095:
+                raise ValueError(f"Out of bounds version = {major}.{minor}.")
+
+        return (f"{intToB64(major)}{intToB64(minor, l=2)}")
+
+
+    @staticmethod
+    def b64ToVer(b64, *, texted=False):
+        """ Converts Base64 representation of version to Versionage or
+        text dotted decimal format
+
+        default is Versionage
+
+        Returns:
+            version (Versionage | str):
+
+        Example:
+            .b64ToVer("BAA"))
+
+        Parameters:
+            b64 (str): base64 string of three characters Mmm for Major minor
+            texted (bool): return text format dotted decimal string
+
+
+        """
+        if not Reb64.match(b64.encode("utf-8")):
+            raise ValueError("Invalid Base64.")
+
+        if texted:
+            return ".".join([f"{b64ToInt(b64[0])}", f"{b64ToInt(b64[1:3])}"])
+
+        return Versionage(major=b64ToInt(b64[0]), minor=b64ToInt(b64[1:3]))
+
+
 
 
 class Streamer:
@@ -3754,7 +4147,7 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            _, _, knd, _ = deversify(sad['v'])
+            _, _, knd, _, _ = deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd
@@ -4696,27 +5089,6 @@ class CounterCodex:
 CtrDex = CounterCodex()
 
 
-@dataclass(frozen=True)
-class GenusCodex:
-    """GenusCodex is codex of protocol genera for code table.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    KERI_ACDC_SPAC: str = '--AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
-    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    SPAC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-
-
-    def __iter__(self):
-        return iter(astuple(self))  # enables inclusion test with "in"
-        # duplicate values above just result in multiple entries in tuple so
-        # in inclusion still works
-
-GenDex = GenusCodex()  # Make instance
-
-
 class Counter:
     """
     Counter is fully qualified cryptographic material primitive base class for
@@ -5182,16 +5554,14 @@ class Sadder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
-        proto, version, kind, size = smell(raw)
-        if version != Version:
+        proto, vrsn, kind, size, _ = smell(raw)
+        if vrsn != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
-                               "".format(version.major, version.minor, Version))
-        #if len(raw) < size:
-            #raise ShortageError("Need more bytes.")
+                               "".format(vrsn.major, vrsn.minor, Version))
 
         ked = loads(raw=raw, size=size, kind=kind)
 
-        return ked, proto, kind, version, size
+        return ked, proto, kind, vrsn, size
 
 
     def _exhale(self, ked, kind=None):

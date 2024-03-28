@@ -2616,7 +2616,7 @@ def test_serdery():
                             b'kj_S6LJQDRNOiGohW327FMA6D2","s":""}Not a Serder here or there or'
                             b' anywhere.')
 
-    serdery = Serdery(version=Version)
+    serdery = Serdery()
 
     serder = serdery.reap(ims)
     assert isinstance(serder, SerderKERI)
@@ -2636,58 +2636,7 @@ def test_serdery():
 
     """End Test"""
 
-def test_serdery_noversion():
-    """Test Serdery unsupported version"""
-    #Create incoming message stream for Serdery to reap
 
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn, verify=False)  # make with defaults
-    sad = serder.sad
-    pre = "EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"
-    sad['i'] = pre
-    sad['s'] = 2
-    sad['a'] = []
-    serderKeri = SerderKERI(sad=sad, makify=True)
-    assert serderKeri.verify()
-
-    ims = bytearray(serderKeri.raw)
-
-    serder = SerderACDC(makify=True, proto=Protocols.acdc, verify=False)  # make defaults for ACDC
-    sad = serder.sad
-    isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
-    sad['i'] = isr
-    serderAcdc = SerderACDC(sad=sad, makify=True)
-    assert serderAcdc.verify()
-
-    ims.extend(serderAcdc.raw)
-
-    ims.extend(b"Not a Serder here or there or anywhere.")
-
-    assert ims == bytearray(b'{"v":"KERI10JSON00009d_","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYML'
-                            b'Od2eYjmclndQN4bArjSf","i":"EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf'
-                            b'87Bc70J","s":2,"p":"","a":[]}{"v":"ACDC10JSON000086_","d":"EJxJ1'
-                            b'GB8oGD4JAH7YpiMCSWKDV3ulpt37zg9vq1QnOh_","i":"EO8CE5RH1X8QJwHHhP'
-                            b'kj_S6LJQDRNOiGohW327FMA6D2","s":""}Not a Serder here or there or'
-                            b' anywhere.')
-
-    serdery = Serdery()  # effective version is None
-
-    serder = serdery.reap(ims)
-    assert isinstance(serder, SerderKERI)
-    assert serder.raw == serderKeri.raw
-
-    serder = serdery.reap(ims)
-    assert isinstance(serder, SerderACDC)
-    assert serder.raw == serderAcdc.raw
-
-    assert ims == bytearray(b'Not a Serder here or there or anywhere.')
-
-    with pytest.raises(kering.VersionError):
-        serder = serdery.reap(ims)
-
-    assert ims == bytearray(b'Not a Serder here or there or anywhere.')
-
-
-    """End Test"""
 
 
 if __name__ == "__main__":
@@ -2710,4 +2659,4 @@ if __name__ == "__main__":
     test_serderacdc()
     test_serder_v2()
     test_serdery()
-    test_serdery_noversion()
+
