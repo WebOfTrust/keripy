@@ -695,14 +695,15 @@ def test_matter():
     assert Matter._leadSize(code) == 1
     raw = b'abcde'  # 5 bytes two triplets with lead 1
     both = '5BAC'  # full code both hard and soft parts two quadlets/triplets
+    soft = 'AC'
     qb64 = '5BACAGFiY2Rl'
     qb2 = b'\xe4\x10\x02\x00abcde'
     matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
     assert matter.code == code == matter.hard
-    assert matter.soft == ""
-    assert matter.both == both
     assert matter.size == 2  # quadlets
+    assert matter.soft == soft
+    assert matter.both == both
     assert matter.fullSize == 12  # chars
     assert matter.qb64 == qb64
     assert matter.qb2 == qb2

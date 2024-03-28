@@ -647,6 +647,9 @@ class Matter:
         Bards (dict): hard size keyed by qb2 selector
         Sizes (dict): sizes tables for codes
 
+    Calss Methods:
+
+
     Attributes:
 
     Properties:
@@ -660,7 +663,7 @@ class Matter:
                             Converted value of the soft part (of len ss) of full
                             derivation code.
                           Otherwise None when not variably sized (fs != None)
-        rize (int): number of bytes of raw material not including lead bytes
+        fullSize (int): full size of primitive
         raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
         qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
@@ -668,25 +671,32 @@ class Matter:
         transferable (bool): True means transferable derivation code False otherwise
         digestive (bool): True means digest derivation code False otherwise
         prefixive (bool): True means identifier prefix derivation code False otherwise
+        special (bool): True when soft is special raw is empty and fixed size
 
     Hidden:
         _code (str): value for .code property
-        _raw (bytes): value for .raw property
-        _rsize (bytes): value for .rsize property. Raw size in bytes when
-            variable sized material else None.
+        _soft (str): soft value of full code
         _size (int): value for .size property. Number of triplets of bytes
             including lead bytes (quadlets of chars) of variable sized material
             else None.
-        _infil (types.MethodType): creates qb64b from .raw and .code
-                                   (fully qualified Base64)
-        _exfil (types.MethodType): extracts .code and .raw from qb64b
-                                   (fully qualified Base64)
+        _raw (bytes): value for .raw property
+        _rawSize():
+        _leadSize():
+        _special():
+        _infil(): creates qb64b from .raw and .code (fully qualified Base64)
+        _binfil(): creates qb2 from .raw and .code (fully qualified Base2)
+        _exfil(): extracts .code and .raw from qb64b (fully qualified Base64)
+        _bexfil(): extracts .code and .raw from qb2 (fully qualified Base2)
+
+
 
     Size table rules for special soft values:
-    if fn in table is None then must have ss > 0
+    if fn in table is None then must have ss > 0 and (hs + ss) % 4
     else (fn is not None) then
-        if ss > 0 and fn = hs + ss then special soft value
-        else must have ss == 0
+        if ss > 0 and fn = hs + ss and ls == 0 then
+           special soft value
+        else
+           not special must have ss == 0
 
     """
     Codex = MtrDex
@@ -857,15 +867,19 @@ class Matter:
                 ls = (3 - (rize % 3)) % 3  # calc actual lead (pad) size
                 # raw binary size including leader in bytes
                 size = (rize + ls) // 3  # calculate value of size in triplets
+
                 if code[0] in SmallVrzDex:  # compute code with sizes
                     if size <= (64 ** 2 - 1):
                         hs = 2
                         s = astuple(SmallVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
+                        ss = 2
                     elif size <= (64 ** 4 - 1):  # make big version of code
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{'A' * (hs - 2)}{code[1]}"
+                        soft = intToB64(size, 4)
+                        ss = 4
                     else:
                         raise InvalidVarRawSizeError(f"Unsupported raw size for "
                                                      f"{code=}.")
@@ -874,12 +888,14 @@ class Matter:
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
+                        ss = 4
                     else:
                         raise InvalidVarRawSizeError(f"Unsupported raw size for "
                                                      f"{code=}.")
                 else:
                     raise InvalidVarRawSizeError(f"Unsupported variable raw size "
                                                  f"{code=}.")
+                soft = intToB64(size, ss)
 
             else:
                 hs, ss, fs, ls = self.Sizes[code]  # get sizes assumes ls consistent
@@ -888,15 +904,22 @@ class Matter:
                 rize = Matter._rawSize(code)
 
                 if ss == 0 and soft:
-                    raise InvalidSoftError(f"Non-empty {soft=} part when not special.")
+                    raise InvalidSoftError(f"Non-empty {soft=} part when not"
+                                           f" special.")
 
                 if fs == hs + ss and ss > 0: # special soft size
-                    if not soft or len(soft) != ss or ls != 0:  # invalid code
-                        raise InvalidSoftError(f"Invalid {soft=} or {code=}"
-                                               f" when special.")
+                    if not soft or len(soft) < ss:
+                        raise ShortageError(f"Not enough chars in {code=} "
+                                            f"{soft=} with {ss=}.")
+
+                    if ls != 0:  # lead must be zero
+                        raise InvalidSoftError(f"Nonzero lead(ls)) for {code=}"
+                                               f" {soft=} when special.")
+
                     if rize:  # raw must be empty
-                        raise InvalidSizeError(f"Nonzero raw size {rize=} when "
-                                               f" special {code=}.")
+                        raise RawMaterialError(f"Nonzero raw size {rize=} when "
+                                               f" special {code=} {soft=}.")
+                    soft = soft[:ss]
 
             raw = raw[:rize]  # copy only exact size from raw stream
             if len(raw) != rize:  # forbids shorter
@@ -976,6 +999,21 @@ class Matter:
         return ls
 
 
+    @classmethod
+    def _special(cls, code):
+        """
+        Returns:
+            special (bool): True when code has special soft i.e. when
+                    fs is not None and ss > 0  and fs = hs + ss and ls = 0
+                    i.e. (fs fixed and soft not empty and raw is empty and no lead)
+                False otherwise
+
+        """
+        hs, ss, fs, ls = cls.Sizes[code]
+
+        return (fs is not None and ss > 0 and fs == hs + ss and ls == 0)
+
+
     @property
     def code(self):
         """
@@ -1043,21 +1081,6 @@ class Matter:
             return (f"{self.code}{intToB64(self.size, l=ss)}")
         else:
             return (f"{self.code}{self.soft}")
-
-
-    @property
-    def special(self):
-        """
-        Returns:
-            special (bool): True when .soft is special i.e. when
-                                .soft is not empty (ss > 0) and
-                                .size is None (fs is not None) and
-                                fs = hs + ss (raw is empty)
-                            False otherwise
-
-        """
-        hs, ss, fs, _ = self.Sizes[self.code]
-        return (self.soft and self.size is None and fs == hs + ss)
 
 
     @property
@@ -1140,6 +1163,17 @@ class Matter:
                 False otherwise
         """
         return (self.code in PreDex)
+
+
+    @property
+    def special(self):
+        """
+        special (bool): True when self.code has special self.soft i.e. when
+                    fs is not None and ss > 0  and fs = hs + ss and ls = 0
+                    i.e. (fs fixed and soft not empty and raw is empty and no lead)
+                False otherwise
+        """
+        return self._special(self.code)
 
 
     def _infil(self):
@@ -1287,12 +1321,12 @@ class Matter:
 
         size = None
         if not fs:  # compute fs from size chars in ss part of code
-            if ss < 1:  # ss < 1 so not variable sized
-                raise ValidationError(f"Soft size {ss=} must be positive for "
-                                      f" variable length material.")
-            if cs % 4:
-                raise ValidationError(f"Whole code size, {cs=}, not multiple"
-                                      f" of 4 for variable length material.")
+            #if ss < 1:  # ss < 1 so not variable sized
+                #raise ValidationError(f"Soft size {ss=} must be positive for "
+                                      #f" variable length material.")
+            #if cs % 4:
+                #raise ValidationError(f"Whole code size, {cs=}, not multiple"
+                                      #f" of 4 for variable length material.")
 
             size = b64ToInt(soft)  # compute variable size int may have value 0
             fs = (size * 4) + cs
@@ -1383,13 +1417,13 @@ class Matter:
 
         size = None
         if not fs:  # compute fs from size chars in ss part of code
-            if ss < 1:  # ss < 1 so not variable sized
-                raise ValidationError(f"Soft size {ss=} must be positive for "
-                                      f" variable length material.")
+            #if ss < 1:  # ss < 1 so not variable sized
+                #raise ValidationError(f"Soft size {ss=} must be positive for "
+                                      #f" variable length material.")
 
-            if cs % 4:
-                raise ValidationError("Whole code size not multiple of 4 for "
-                                      "variable length material. cs={}.".format(cs))
+            #if cs % 4:
+                #raise ValidationError("Whole code size not multiple of 4 for "
+                                      #"variable length material. cs={}.".format(cs))
 
             if len(qb2) < bcs:  # need more bytes
                 raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
@@ -2009,8 +2043,8 @@ class Verser(Matter):
         if self.code not in (MtrDex.Tag10, MtrDex.Tag7):
             raise InvalidCodeError(f"Invalid code={self.code} for Verser.")
 
-        if not self.special:
-            raise MaterialError(f"Invalid code={self.code} for Verser.")
+        if not self._special(self.code):
+            raise InvalidCodeError(f"Not special code={self.code} for Verser.")
 
     @property
     def versage(self):
