@@ -532,6 +532,13 @@ class InvalidCodeError(MaterialError):
         raise InvalidCodeError("error message")
     """
 
+class InvalidSoftError(MaterialError):
+    """
+    Invalid, Unknown, or unrecognized soft part encountered during crypto material init
+    Usage:
+        raise InvalidSoftError("error message")
+    """
+
 class InvalidTypeError(MaterialError):
     """
     Invalid material value type encountered during crypto material init

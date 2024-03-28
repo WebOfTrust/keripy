@@ -187,7 +187,7 @@ def test_matter_class():
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=0, fs=4, ls=0),
         'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, fs=12, ls=0),
+        'Z': Sizage(hs=1, ss=11, fs=12, ls=0),
         'a': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -260,13 +260,17 @@ def test_matter_class():
     for ckey in Matter.Sizes.keys():
         assert Matter.Hards[ckey[0]] == Matter.Sizes[ckey].hs
 
-    #  verify all Codes have ss == 0 and not fs % 4 and hs > 0 and fs > hs
-    #  if fs is not None else not (hs + ss) % 4
+    #  verify all Codes
+    #  if fs None else not (hs + ss) % 4
     for val in Matter.Sizes.values():
         if val.fs is not None:
-            assert val.ss == 0 and not val.fs % 4 and val.hs > 0 and val.fs >= (val.hs + val.ss)
+            assert not val.fs % 4 and val.hs > 0 and val.fs >= (val.hs + val.ss)
+            if val.ss > 0:  # special soft value
+                assert val.fs == val.hs + val.ss  # raw must be empty
+                assert val.ls == 0  # no lead
+
         else:
-            assert not (val.hs + val.ss) % 4
+            assert val.ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
 
 
     # Test .Bards
@@ -3717,15 +3721,49 @@ def test_verser():
     """
     Test Verser version primitive subclass of Matter
     """
-    #verser = Verser()  # defaults
-    #assert verser.code == MtrDex.Tag10
-    #assert verser.raw == b''
-    #assert verser.qb64 == 'ZAKERICAACAA'
-    #assert verser.qb2 == b'd\x02\x84D\x80\x80\x00 \x00'
-    #assert verser.versage == Versage(proto='KERI',
-                                     #vrsn=Versionage(major=2, minor=0),
-                                     #gvrsn=Versionage(major=2, minor=0))
+    code = MtrDex.Tag10
+    soft = 'AKERICAACAA'
+    qb64 = 'ZAKERICAACAA'
+    qb2 = b'd\x02\x84D\x80\x80\x00 \x00'
+    raw = b''
 
+    verser = Verser()  # defaults
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == Versage(proto='KERI',
+                                     vrsn=Versionage(major=2, minor=0),
+                                     gvrsn=Versionage(major=2, minor=0))
+
+    code = verser.code
+    soft = verser.soft
+    qb2 = verser.qb2
+    qb64 = verser.qb64
+
+    verser = Verser(qb2=qb2)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == Versage(proto='KERI',
+                                     vrsn=Versionage(major=2, minor=0),
+                                     gvrsn=Versionage(major=2, minor=0))
+
+    verser = Verser(qb64=qb64)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == Versage(proto='KERI',
+                                     vrsn=Versionage(major=2, minor=0),
+                                     gvrsn=Versionage(major=2, minor=0))
 
 
     """ Done Test """
