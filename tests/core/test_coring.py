@@ -256,22 +256,28 @@ def test_matter_class():
     assert Matter.Sizes['A'].fs == 44  # full size
     assert Matter.Sizes['A'].ls == 0  # lead size
 
-    # verify first hs Sizes matches hs in Codes for same first char
-    for ckey in Matter.Sizes.keys():
-        assert Matter.Hards[ckey[0]] == Matter.Sizes[ckey].hs
 
     #  verify all Codes
     #  if fs None else not (hs + ss) % 4
     for val in Matter.Sizes.values():
-        if val.fs is not None:
-            assert not val.fs % 4 and val.hs > 0 and val.fs >= (val.hs + val.ss)
+        assert (isinstance(val.hs, int) and isinstance(val.ss, int) and
+                isinstance(val.ls, int))
+        assert val.hs > 0 and val.ss >= 0 and val.ls >= 0
+        if val.fs is not None:  # fixed sized
+            assert isinstance(val.fs, int) and val.fs > 0 and not val.fs % 4
+            assert val.fs >= (val.hs + val.ss)
             if val.ss > 0:  # special soft value
                 assert val.fs == val.hs + val.ss  # raw must be empty
                 assert val.ls == 0  # no lead
-
-        else:
+            else:
+                assert val.ss == 0
+        else:  # variable sized
             assert val.ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
 
+    # Test .Hards
+    # verify first hs Sizes matches hs in Codes for same first char
+    for ckey in Matter.Sizes.keys():
+        assert Matter.Hards[ckey[0]] == Matter.Sizes[ckey].hs
 
     # Test .Bards
     # verify equivalents of items for Sizes and Bizes

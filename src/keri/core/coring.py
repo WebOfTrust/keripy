@@ -682,29 +682,11 @@ class Matter:
         _exfil (types.MethodType): extracts .code and .raw from qb64b
                                    (fully qualified Base64)
 
-    When fs in table is None then ss must not be 0 as size must be defined
-
-    When fs computed is not None then ss may be 0
-        When fs > hs + ss then must have ss != 0,  fs = hs + ss + size where size =
-            converted soft value from ss chars + ls, size is not None
-
-        When ss == 0 raw must be empty and size must be None, soft must be empty
-
-
-        When fs = hs + ss then raw must be empty, size must be None,
-            and soft value may be special:
-
-            When fs = hs + ss and ss == 0, raw is empty, soft is empty and soft not special
-                but fs == hs == hs + 0 is still valid code
-            When fs = hs + ss and ss > 0, raw is empty soft not empty and soft is spectial
-
-            These includes the case where ss > 0 but if we compute size == 0
-            from soft not empty. because when size == 0, raw must still be empty to
-            satisfy fs = hs + ss + 0 = hs + ss.
-            So no need to compute soft value when fs = hs + ss only ensure
-            raw is empty.
-            This allows treating soft value as special not a size.
-            and force size = None.
+    Size table rules for special soft values:
+    if fn in table is None then must have ss > 0
+    else (fn is not None) then
+        if ss > 0 and fn = hs + ss then special soft value
+        else must have ss == 0
 
     """
     Codex = MtrDex
