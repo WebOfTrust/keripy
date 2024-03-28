@@ -222,6 +222,7 @@ def snatch(match, size=0):
         regular expressions work with memoryview objects not just bytes or
         bytearrays
     """
+    full = match.group()  # full matched version string
     if len(full) == VFFULLSPAN:
         proto, major, minor, gmajor, gminor = match.group("proto0",
                                                      "major0",
@@ -506,7 +507,15 @@ class RawMaterialError(MaterialError):
     """
     Not Enough bytes in buffer bytearray for raw material
     Usage:
-        raise ShortageError("error message")
+        raise RawMaterialError("error message")
+    """
+
+
+class SoftMaterialError(MaterialError):
+    """
+    Not Enough chars in soft for soft material
+    Usage:
+        raise SoftMaterialError("error message")
     """
 
 
@@ -517,6 +526,7 @@ class EmptyMaterialError(MaterialError):
         raise EmptyMaterialError("error message")
     """
 
+
 class InvalidVersionError(MaterialError):
     """
     Invalid, Unknown, or unrecognized CESR code table version encountered during
@@ -525,12 +535,14 @@ class InvalidVersionError(MaterialError):
         raise InvalidVersionError("error message")
     """
 
+
 class InvalidCodeError(MaterialError):
     """
     Invalid, Unknown, or unrecognized code encountered during crypto material init
     Usage:
         raise InvalidCodeError("error message")
     """
+
 
 class InvalidSoftError(MaterialError):
     """
@@ -539,6 +551,7 @@ class InvalidSoftError(MaterialError):
         raise InvalidSoftError("error message")
     """
 
+
 class InvalidTypeError(MaterialError):
     """
     Invalid material value type encountered during crypto material init
@@ -546,12 +559,14 @@ class InvalidTypeError(MaterialError):
         raise InvalidTypeError("error message")
     """
 
+
 class InvalidValueError(MaterialError):
     """
     Invalid material value encountered during crypto material init
     Usage:
         raise InvalidValueError("error message")
     """
+
 
 class InvalidSizeError(MaterialError):
     """

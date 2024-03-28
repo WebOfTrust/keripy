@@ -27,7 +27,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 from ..kering import MaxON
 
-from ..kering import (EmptyMaterialError, RawMaterialError,
+from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       InvalidCodeError, InvalidSoftError,
                       InvalidSizeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
@@ -901,8 +901,10 @@ class Matter:
 
             else:
                 hs, ss, fs, ls = self.Sizes[code]  # get sizes assumes ls consistent
-                if not fs:  # invalid
-                    raise InvalidVarSizeError(f"Unsupported variable size {code=}.")
+                if not fs:  # invalid must not be variable size
+                    raise InvalidVarSizeError(f"Unsupported {code=} for "
+                                              f"variable size {fs=}.")
+
                 rize = Matter._rawSize(code)
 
                 if ss == 0 and soft:
@@ -910,10 +912,6 @@ class Matter:
                                            f" special.")
 
                 if fs == hs + ss and ss > 0: # special soft size
-                    if not soft or len(soft) < ss:
-                        raise ShortageError(f"Not enough chars in {code=} "
-                                            f"{soft=} with {ss=}.")
-
                     if ls != 0:  # lead must be zero
                         raise InvalidSoftError(f"Nonzero lead(ls)) for {code=}"
                                                f" {soft=} when special.")
@@ -921,7 +919,16 @@ class Matter:
                     if rize:  # raw must be empty
                         raise RawMaterialError(f"Nonzero raw size {rize=} when "
                                                f" special {code=} {soft=}.")
+
+                    if not soft or len(soft) < ss:
+                        raise SoftMaterialError(f"Not enough chars in {code=} "
+                                                 f"{soft=} with {ss=}.")
+
                     soft = soft[:ss]
+
+                    if not Reb64.match(soft):
+                        raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
+
 
             raw = raw[:rize]  # copy only exact size from raw stream
             if len(raw) != rize:  # forbids shorter
@@ -935,20 +942,27 @@ class Matter:
 
         elif soft and code:  # special when raw None
             hs, ss, fs, ls = self.Sizes[code]  # get sizes assumes ls consistent
-            if not fs:  # invalid can be variable size
-                raise InvalidVarSizeError(f"Missing raw for variable size {code=}.")
+            if not fs:  #
+                raise InvalidSoftError(f"Unsupported {code=} {fs=} for special"
+                                       f" soft.")
 
-            if ss == 0:
-                raise InvalidCodeError("Nonempty {soft=} part for zero soft "
-                                       f"size {ss=} for {code=}.")
-
-            if fs != hs + ss or len(soft) != ss or ls != 0: # not special soft code
-                raise InvalidSoftError("Invalid {soft=} or {code=} when special.")
+            if fs != hs + ss or ss == 0 or ls != 0: # not special soft code
+                raise InvalidSoftError("Invalid {code=} {fs=} or lead={ls} "
+                                       f" when special soft.")
 
             rize = Matter._rawSize(code)
             if rize:
                 raise InvalidSizeError(f"Nonzero raw size {rize=} when special"
                                        f" {code=}.")
+
+            if not soft or len(soft) < ss:
+                raise SoftMaterialError(f"Not enough chars in {code=} "
+                                         f"{soft=} with {ss=}.")
+
+            soft = soft[:ss]
+
+            if not Reb64.match(soft):
+                raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
 
             self._code = code  # str hard part of code
             self._soft = soft  # str soft part of code, empty when ss=0

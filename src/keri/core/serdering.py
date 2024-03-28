@@ -1288,7 +1288,7 @@ class Serder:
                                 pass
                             val = bytearray(Counter(tag=AllTags.GenericMapGroup,
                                                 count=len(frame) % 4,
-                                                version=cversion).qb64b)
+                                                version=self.gvrsn).qb64b)
                         else:
                             for e in v:  # list
                                 pass
@@ -1296,13 +1296,14 @@ class Serder:
 
                             val = bytearray(Counter(tag=AllTags.GenericListGroup,
                                                 count=len(frame) % 4,
-                                                version=cversion).qb64b)
+                                                version=self.gvrsn).qb64b)
                         val.extend(frame)
 
 
                     case _:  # if extra fields this is where logic would be
                         raise SerializeError(f"Unsupported protocol field label"
-                                             f"='{l}' for {protocol=} {version=}.")
+                                             f"='{l}' for protocol={self.proto}"
+                                             f" version={self.vrsn}.")
 
 
                 raw.extend(val)
@@ -1316,7 +1317,7 @@ class Serder:
 
 
         else:
-            raise SerializeError(f"Unsupported protocol={self.protocol}.")
+            raise SerializeError(f"Unsupported protocol={self.proto}.")
 
 
         # prepend count code for message
