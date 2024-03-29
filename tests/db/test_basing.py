@@ -1753,7 +1753,7 @@ def test_clean_baser():
             assert natHab.db.env.stat()['entries'] <= 96 #68
 
             # verify name pre kom in db
-            data = natHab.db.habs.get(keys=natHab.name)
+            data = natHab.db.habs.get(keys=natHab.pre)
             assert data.hid == natHab.pre
 
             # add garbage event to corrupt database
@@ -1812,7 +1812,7 @@ def test_clean_baser():
             assert state.f == '6'
 
             # verify name pre kom in db
-            data = natHab.db.habs.get(keys=natHab.name)
+            data = natHab.db.habs.get(keys=natHab.pre)
             assert data.hid == natHab.pre
 
 

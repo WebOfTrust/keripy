@@ -274,6 +274,8 @@ class HabitatRecord:  # baser.habs
 
     """
     hid: str  # hab own identifier prefix qb64
+    name: str | None = None
+    domain: str | None = None
     mid: str | None = None  # group member identifier qb64 when hid is group
     smids: list | None = None  # group signing member ids when hid is group
     rmids: list | None = None  # group rotating member ids when hid is group
@@ -953,11 +955,8 @@ class Baser(dbing.LMDBer):
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
                                  schema=HabitatRecord, )
-
-        # habitat application state keyed by habitat namespace + b'\x00' + name, includes prefix
-        self.nmsp = koming.Komer(db=self,
-                                 subkey='nmsp.',
-                                 schema=HabitatRecord, )
+        # habitat name database mapping (domain,name) as key to Prefixer
+        self.names = subing.CesrSuber(db=self, subkey='names.', klas=coring.Prefixer, sep="^")
 
         # SAD support datetime stamps and signatures indexed and not-indexed
         # all sad  sdts (sad datetime serializations) maps said to date-time
@@ -1173,7 +1172,6 @@ class Baser(dbing.LMDBer):
 
         return self.env
 
-
     def reload(self):
         """
         Reload stored prefixes and Kevers from .habs
@@ -1199,28 +1197,6 @@ class Baser(dbing.LMDBer):
 
         for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
-
-        # Load namespaced Habs
-        removes = []
-        for keys, data in self.nmsp.getItemIter():
-            if (ksr := self.states.get(keys=data.hid)) is not None:
-                try:
-                    kever = eventing.Kever(state=ksr,
-                                           db=self,
-                                           local=True)
-                except kering.MissingEntryError as ex:  # no kel event for keystate
-                    removes.append(keys)  # remove from .habs
-                    continue
-                self.kevers[kever.prefixer.qb64] = kever
-                self.prefixes.add(kever.prefixer.qb64)
-                if data.mid:  # group hab
-                    self.groups.add(data.hid)
-            elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
-                removes.append(keys)  # no key state or KEL event for .hab record
-
-        for keys in removes:  # remove bare .habs records
-            self.nmsp.rem(keys=keys)
-
 
     def clean(self):
         """
@@ -1259,16 +1235,11 @@ class Baser(dbing.LMDBer):
                 for keys, val in self.habs.getItemIter():
                     if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
+                        ns = "" if val.domain is None else val.domain
+                        copy.names.put(keys=(ns, val.name), val=coring.Prefixer(qb64=val.hid))
                         copy.prefixes.add(val.hid)
                         if val.mid:  # a group hab
                             copy.groups.add(val.hid)
-
-                # ToDo XXXX
-                # is this obsolete? Should this be removed or should this be
-                # be the Signator name not the default name of the Habery?
-                if not copy.habs.get(keys=(self.name,)):
-                    raise ValueError("Error cloning habs, missing orig name={}."
-                                     "".format(self.name))
 
                 # clone .ends and .locs databases
                 for keys, val in self.ends.getItemIter():
@@ -1314,7 +1285,6 @@ class Baser(dbing.LMDBer):
         # clone success so remove if still there
         if os.path.exists(copy.path):
             shutil.rmtree(copy.path)
-
 
     def clonePreIter(self, pre, fn=0):
         """
@@ -1503,8 +1473,6 @@ class Baser(dbing.LMDBer):
                     if seal == eseal and self.fullyWitnessed(srdr):
                         return srdr
         return None
-
-
 
     def signingMembers(self, pre: str):
         """ Find signing members of a multisig group aid.

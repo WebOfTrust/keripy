@@ -45,12 +45,19 @@ def rename(tymth, tock=0.0, **opts):
 
     try:
         with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (hby, hab):
-            habord = hab.db.habs.get(keys=alias)
-            hab.db.habs.put(keys=newAlias,
-                            val=habord)
-            hab.db.habs.rem(keys=alias)
+            if hby.habByName(newAlias) is not None:
+                print(f"{newAlias} is already in use")
 
-            print(f"Hab {alias} renamed to {newAlias}")
+            if (prefixer := hab.db.names.get(keys=("", name))) is not None:
+
+                habord = hab.db.habs.get(keys=prefixer.qb64)
+                habord.name = name
+                hab.db.habs.pin(keys=habord.hid,
+                                val=habord)
+                hab.db.names.pin(keys=("", name), val=prefixer)
+                hab.db.names.rem(keys=("", alias))
+
+                print(f"Hab {alias} renamed to {newAlias}")
 
     except ConfigurationError as e:
         print(f"identifier prefix for {name} does not exist, incept must be run first", )

@@ -226,7 +226,6 @@ class Habery:
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
                                   exc=self.exc, local=True)
         self.habs = {}  # empty .habs
-        self.namespaces = {}  # empty .namespaces
         self._signator = None
         self.inited = False
 
@@ -327,85 +326,45 @@ class Habery:
         self.reconfigure()  # pre hab load reconfiguration
 
         groups = []
-        for name, habord in self.db.habs.getItemIter():
-            name = ".".join(name)  # detupleize the database key name
+        for prefix, habord in self.db.habs.getItemIter():
             pre = habord.hid
 
             # create Hab instance and inject dependencies
             if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                               name=name, pre=pre, temp=self.temp, smids=habord.smids)
+                               name=habord.name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
             elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                 name=name, pre=habord.sid)
+                                 name=habord.name, pre=habord.sid)
             elif habord.sid and habord.mid:
                 hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=pre)
+                                      name=habord.name, pre=pre)
                 groups.append(habord)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                          name=name, pre=pre, temp=self.temp)
+                          name=habord.name, pre=pre, temp=self.temp)
 
             # Rules for acceptance:
             # It is accepted into its own local KEL even if it has not been fully
             # witnessed and if delegated, its delegator has not yet sealed it
             if not hab.accepted and not habord.mid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
-                                                f"{pre} name={name} from db.")
+                                                f"{pre} name={habord.name} from db.")
 
             # read in config file and process any oobis or endpoints for hab
             hab.inited = True
             self.habs[hab.pre] = hab
-
-        for keys, habord in self.db.nmsp.getItemIter():
-            ns = keys[0]
-            name = ".".join(keys[1:])  # detupleize the database key name
-            pre = habord.hid
-
-            # create Hab instance and inject dependencies
-            if habord.mid and not habord.sid:
-                hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                               name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
-                groups.append(habord)
-            elif habord.sid and not habord.mid:
-                hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                 rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                 name=name, ns=ns, pre=habord.sid)
-            elif habord.sid and habord.mid:
-                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=habord.sid)
-                groups.append(habord)
-            else:
-                hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                          rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                          name=name, ns=ns, pre=pre, temp=self.temp)
-
-            # Rules for acceptance:
-            # It is accepted into its own local KEL even if it has not been fully
-            # witnessed and if delegated, its delegator has not yet sealed it
-            if not hab.accepted and not habord.mid:
-                raise kering.ConfigurationError(f"Problem loading Hab pre="
-                                                f"{pre} name={name} from db.")
-
-            # read in config file and process any oobis or endpoints for hab
-            hab.inited = True
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
 
         # Populate the participant hab after loading all habs
         for habord in groups:
             self.habs[habord.hid].mhab = self.habs[habord.mid]
 
         self.reconfigure()  # post hab load reconfiguration
-
 
     def makeHab(self, name, ns=None, cf=None, **kwa):
         """Make new Hab with name, pre is generated from **kwa
@@ -437,13 +396,7 @@ class Habery:
 
         hab.make(**kwa)
 
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
     def makeGroupHab(self, group, mhab, smids, rmids=None, ns=None, **kwa):
@@ -514,13 +467,7 @@ class Habery:
                        name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
     def joinGroupHab(self, pre, group, mhab, smids, rmids=None, ns=None):
@@ -568,6 +515,8 @@ class Habery:
 
         hab.pre = pre
         habord = basing.HabitatRecord(hid=hab.pre,
+                                      name=self.name,
+                                      domain=ns,
                                       mid=mhab.pre,
                                       smids=smids,
                                       rmids=rmids)
@@ -576,13 +525,7 @@ class Habery:
         hab.prefixes.add(pre)
         hab.inited = True
 
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
     def makeSignifyHab(self, name, ns=None, **kwa):
@@ -592,13 +535,7 @@ class Habery:
                          name=name, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
     def makeSignifyGroupHab(self, name, mhab, ns=None, **kwa):
@@ -608,13 +545,8 @@ class Habery:
                               name=name, mhab=mhab, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
 
+        self.habs[hab.pre] = hab
         return hab
 
     def joinSignifyGroupHab(self, pre, name, mhab, smids, rmids=None, ns=None):
@@ -663,6 +595,8 @@ class Habery:
         hab.pre = pre
         habord = basing.HabitatRecord(hid=hab.pre,
                                       sid=mhab.pre,
+                                      name=name,
+                                      domain=ns,
                                       smids=smids,
                                       rmids=rmids)
 
@@ -670,21 +604,19 @@ class Habery:
         hab.prefixes.add(pre)
         hab.inited = True
 
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
-    def deleteHab(self, name):
-        hab = self.habByName(name)
+    def deleteHab(self, name, ns=None):
+        hab = self.habByName(name, ns=ns)
         if not hab:
             return False
 
-        if not self.db.habs.rem(keys=(name,)):
+        if not self.db.habs.rem(keys=(hab.pre,)):
+            return False
+
+        ns = "" if ns is None else ns
+        if not self.db.names.rem(keys=(ns, name)):
             return False
 
         del self.habs[hab.pre]
@@ -760,7 +692,7 @@ class Habery:
 
     def habByPre(self, pre):
         """
-        Returns the Hab instance from .habs or .namespace
+        Returns the Hab instance from .habs or None
         including the default namespace.
 
         Args:
@@ -769,15 +701,10 @@ class Habery:
         Returns:
             Hab: Hab instance for the aid pre or None
         """
-        hab = None
         if pre in self.habs:
-            hab = self.habs[pre]
-        else:
-            for nsp in self.namespaces.values():
-                if pre in nsp:
-                    hab = nsp[pre]
+            return self.habs[pre]
 
-        return hab
+        return None
 
     def habByName(self, name, ns=None):
         """
@@ -790,13 +717,11 @@ class Habery:
            ns (str): optional namespace of hab
 
         """
-        if ns is not None:
-            if (habord := self.db.nmsp.get(keys=(ns, name))) is not None:
-                habs = self.namespaces[ns]
-                return habs[habord.hid] if habord.hid in habs else None
-
-        elif (habord := self.db.habs.get(name)) is not None:
-            return self.habs[habord.hid] if habord.hid in self.habs else None
+        ns = "" if ns is None else ns
+        if (prefixer := self.db.names.get(keys=(ns, name))) is not None:
+            pre = prefixer.qb64
+            if pre in self.habs:
+                return self.habs[pre]
 
         return None
 
@@ -1131,12 +1056,11 @@ class BaseHab:
         return serder
 
     def save(self, habord):
-        if self.ns is None:
-            self.db.habs.pin(keys=self.name,
-                             val=habord)
-        else:
-            self.db.nmsp.put(keys=(self.ns, self.name),
-                             val=habord)
+        self.db.habs.pin(keys=self.pre,
+                         val=habord)
+        ns = "" if self.ns is None else self.ns
+        self.db.names.put(keys=(ns, self.name),
+                          val=coring.Prefixer(qb64=self.pre))
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.
@@ -2349,7 +2273,7 @@ class Hab(BaseHab):
         self.mgr.move(old=opre, new=self.pre)  # move to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        habord = basing.HabitatRecord(hid=self.pre)
+        habord = basing.HabitatRecord(hid=self.pre, name=self.name, domain=self.ns)
 
         if not hidden:
             self.save(habord)
@@ -2437,7 +2361,7 @@ class SignifyHab(BaseHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre)
+        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
         self.inited = True
@@ -2596,7 +2520,7 @@ class SignifyGroupHab(SignifyHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, sid=self.pre)
+        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
         self.inited = True
@@ -2621,6 +2545,10 @@ class SignifyGroupHab(SignifyHab):
         except Exception:
             raise kering.ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
                                          f"pre={self.pre}.")
+
+    def rotate(self, *, smids=None, rmids=None, serder=None, sigers=None, **kwargs):
+        # TODO: save smids and rmids here
+        super(SignifyGroupHab, self).rotate(serder=serder, sigers=sigers, **kwargs)
 
 
 class GroupHab(BaseHab):
@@ -2785,6 +2713,8 @@ class GroupHab(BaseHab):
 
         habord = basing.HabitatRecord(hid=self.pre,
                                       mid=self.mhab.pre,
+                                      name=self.name,
+                                      domain=self.ns,
                                       smids=self.smids,
                                       rmids=self.rmids)
 
@@ -2793,7 +2723,8 @@ class GroupHab(BaseHab):
 
         self.inited = True
 
-    def rotate(self, serder=None, **kwargs):
+    def rotate(self, smids=None, rmids=None, serder=None, **kwargs):
+        # TODO: save smids and rmids here
 
         if serder is None:
             return super(GroupHab, self).rotate(**kwargs)
