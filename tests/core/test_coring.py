@@ -3,7 +3,7 @@
 tests.core.test_coring module
 
 """
-from dataclasses import asdict
+from dataclasses import asdict, astuple
 import hashlib
 import json
 from base64 import urlsafe_b64decode as decodeB64
@@ -261,8 +261,7 @@ def test_matter_class():
 
 
     #  verify all Codes
-    #  if fs None else not (hs + ss) % 4
-    for val in Matter.Sizes.values():
+    for code, val in Matter.Sizes.items():  # hard code
         assert (isinstance(val.hs, int) and isinstance(val.ss, int) and
                 isinstance(val.ls, int))
         assert val.hs > 0 and val.ss >= 0 and val.ls >= 0
@@ -276,6 +275,12 @@ def test_matter_class():
                 assert val.ss == 0
         else:  # variable sized
             assert val.ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
+        if code[0] in coring.SmallVrzDex:  # small variable sized code
+            assert val.hs == 2 and val.ss == 2 and val.fs == None
+            assert code[0] == astuple(coring.SmallVrzDex)[val.ls]
+        elif code[0] in coring.LargeVrzDex: # large veriable sized code
+            assert val.hs == 4 and val.ss == 4 and val.fs == None
+            assert code[0] == astuple(coring.LargeVrzDex)[val.ls]
 
     # Test .Hards
     # verify first hs Sizes matches hs in Codes for same first char

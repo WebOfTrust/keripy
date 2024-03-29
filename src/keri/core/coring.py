@@ -871,12 +871,12 @@ class Matter:
                 size = (rize + ls) // 3  # calculate value of size in triplets
 
                 if code[0] in SmallVrzDex:  # compute code with sizes
-                    if size <= (64 ** 2 - 1):
+                    if size <= (64 ** 2 - 1):  # ss = 2
                         hs = 2
                         s = astuple(SmallVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
                         ss = 2
-                    elif size <= (64 ** 4 - 1):  # make big version of code
+                    elif size <= (64 ** 4 - 1):  # ss = 4 make big version of code
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{'A' * (hs - 2)}{code[1]}"
@@ -886,7 +886,7 @@ class Matter:
                         raise InvalidVarRawSizeError(f"Unsupported raw size for "
                                                      f"{code=}.")
                 elif code[0] in LargeVrzDex:  # compute code with sizes
-                    if size <= (64 ** 4 - 1):
+                    if size <= (64 ** 4 - 1):  # ss = 4
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
@@ -1082,7 +1082,8 @@ class Matter:
         sized primitive material (fs = None).
 
         """
-        return self._size
+        #return self._size
+        return (b64ToInt(self.soft) if self.soft else None)
 
 
     @property
@@ -1093,10 +1094,12 @@ class Matter:
         """
         _, ss, _, _ = self.Sizes[self.code]
 
-        if self.size is not None:
-            return (f"{self.code}{intToB64(self.size, l=ss)}")
-        else:
-            return (f"{self.code}{self.soft}")
+        #if self.size is not None:
+            #return (f"{self.code}{intToB64(self.size, l=ss)}")
+        #else:
+            #return (f"{self.code}{self.soft}")
+
+        return (f"{self.code}{self.soft}")
 
 
     @property
@@ -1211,15 +1214,9 @@ class Matter:
 
         ps = ((3 - (len(raw) % 3)) % 3)  # pad size chars or lead size bytes
         hs, ss, fs, ls = self.Sizes[code]
+        # assumes unit tests on Matter.Sizes ensure valid size entries
         if not fs:  # variable sized, compute code ss value from .size
             cs = hs + ss  # both hard + soft size
-
-            if ss < 1:  # ss < 1 so not variable sized
-                raise InvalidCodeSizeError(f"Soft size {ss=} must be positive for "
-                                      f" variable length material.")
-            if cs % 4:
-                raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
-                                           f"variable length material. cs={cs}.")
 
             if size < 0 or size > (64 ** ss - 1):
                 raise InvalidVarSizeError("Invalid size={} for code={}."
@@ -1258,14 +1255,8 @@ class Matter:
 
         hs, ss, fs, ls = self.Sizes[code]
         cs = hs + ss
-
+        # assumes unit tests on Matter.Sizes ensure valid size entries
         if not fs:  # compute both and fs from size
-            if ss < 1:  # ss < 1 so not variable sized
-                raise InvalidCodeSizeError(f"Soft size {ss=} must be positive for "
-                                      f" variable length material.")
-            if cs % 4:
-                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                           "variable length material. cs={}.".format(cs))
 
             if size < 0 or size > (64 ** ss - 1):
                 raise InvalidVarSizeError("Invalid size={} for code={}."
