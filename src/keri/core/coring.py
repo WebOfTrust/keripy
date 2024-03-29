@@ -862,9 +862,6 @@ class Matter:
             hs, ss, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
 
             if fs is None:  # variable sized assumes code[0] in SmallVrzDex or LargeVrzDex
-                #if not (code[0] in SmallVrzDex or code[0] in LargeVrzDex):
-                    #raise InvalidCodeError(f"Non-variable size {code=}.")
-
                 if rize:  # use rsize to determine length of raw to extract
                     if rize < 0:
                         raise InvalidVarRawSizeError(f"Missing var raw size for "
@@ -906,22 +903,9 @@ class Matter:
                 soft = intToB64(size, ss)
 
             else:  # fixed size but raw may be empty and/or special soft
-                rize = Matter._rawSize(code)
-
-                #if ss == 0 and soft:
-                    #raise InvalidSoftError(f"Non-empty {soft=} part when not"
-                                           #f" special.")
+                rize = Matter._rawSize(code)  # get raw size from Sizes for code
 
                 if ss > 0: # special soft size, so soft must be provided
-                    #if fs == hs + ss:
-                        #if ls != 0:  # lead must be zero
-                            #raise InvalidSoftError(f"Nonzero lead(ls)) for {code=}"
-                                               #f" {soft=} when special.")
-
-                        #if rize:  # raw must be empty
-                            #raise RawMaterialError(f"Nonzero raw size {rize=} when "
-                                                   #f" special {code=} {soft=}.")
-
                     soft = soft[:ss]
                     if len(soft) != ss:
                         raise SoftMaterialError(f"Not enough chars in {soft=} "
@@ -950,20 +934,10 @@ class Matter:
                 raise InvalidSoftError("Invalid soft size={ss} or lead={ls} "
                                        f" or {code=} {fs=} when special soft.")
 
-            #rize = Matter._rawSize(code)
-            #if rize:
-                #raise InvalidSizeError(f"Nonzero raw size {rize=} when special"
-                                       #f" soft {code=}.")
-
-            #if not soft or len(soft) < ss:
-                #raise SoftMaterialError(f"Not enough chars in {soft=} with "
-                                        #f"{ss=} for {code=}.")
-
             soft = soft[:ss]
             if len(soft) != ss:
                 raise SoftMaterialError(f"Not enough chars in {soft=} "
                                          f"with {ss=} for {code=}.")
-
 
             if not Reb64.match(soft.encode("utf-8")):
                 raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
