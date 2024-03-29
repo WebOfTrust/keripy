@@ -1473,6 +1473,62 @@ def test_matter():
 
     """ Done Test """
 
+def test_matter_special():
+    """
+    Test Matter instances using code with special soft values
+    """
+    # test Tag3
+
+    code = MtrDex.Tag3
+    soft = 'icp'
+    qb64 = 'Xicp'
+    qb2 = b"^')"
+    raw = b''
+
+    matter = Matter(code=code, soft=soft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+    code = matter.code
+    soft = matter.soft
+    qb2 = matter.qb2
+    qb64 = matter.qb64
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+    # Test corner conditions
+    # Empty raw
+    matter = Matter(raw=b'', code=code, soft=soft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+
+
+
+    """ Done Test """
+
 
 def test_indexer():
     """
@@ -6534,6 +6590,7 @@ def test_tholder():
 if __name__ == "__main__":
     test_matter_class()
     test_matter()
+    test_matter_special()
     test_verser()
     #test_texter()
     #test_counter()

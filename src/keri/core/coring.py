@@ -926,7 +926,7 @@ class Matter:
 
                     soft = soft[:ss]
 
-                    if not Reb64.match(soft):
+                    if not Reb64.match(soft.encode("utf-8")):
                         raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
 
 
@@ -961,7 +961,7 @@ class Matter:
 
             soft = soft[:ss]
 
-            if not Reb64.match(soft):
+            if not Reb64.match(soft.encode("utf-8")):
                 raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
 
             self._code = code  # str hard part of code
