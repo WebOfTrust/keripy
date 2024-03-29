@@ -285,13 +285,25 @@ def test_matter_class():
 
         if fs is None:  # variable sized
             assert ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
+            assert code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex
+
+            if code[0] in coring.SmallVrzDex:  # small variable sized code
+                assert val.hs == 2 and val.ss == 2 and val.fs is None
+                assert code[0] == astuple(coring.SmallVrzDex)[val.ls]
+
+            elif code[0] in coring.LargeVrzDex: # large veriable sized code
+                assert val.hs == 4 and val.ss == 4 and val.fs is None
+                assert code[0] == astuple(coring.LargeVrzDex)[val.ls]
 
         else:  # fixed size
+            assert not (code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex)
             assert isinstance(fs, int) and fs > 0 and not fs % 4
             assert fs >= cs
             assert cs % 4 != 3  # prevent ambiguous conversion
             if ss > 0 and fs == cs:  # special soft value with raw empty
                 assert ls == 0  # no lead
+                assert Matter._rawSize(code) == 0
+
             rs = (fs - cs) * 3 // 4 - ls  # raw size bytes sans lead
             ps = (3 - (rs + ls) % 3) % 3  # pad size given raw + lead
             assert ps == (cs % 4)  # cs % 4  is pad size given cs % 4 != 3
@@ -311,13 +323,6 @@ def test_matter_class():
         else:
             assert code[0] not in '-_'  # count or op code
 
-        if code[0] in coring.SmallVrzDex:  # small variable sized code
-            assert val.hs == 2 and val.ss == 2 and val.fs is None
-            assert code[0] == astuple(coring.SmallVrzDex)[val.ls]
-
-        elif code[0] in coring.LargeVrzDex: # large veriable sized code
-            assert val.hs == 4 and val.ss == 4 and val.fs is None
-            assert code[0] == astuple(coring.LargeVrzDex)[val.ls]
 
     # Test .Hards
     # verify first hs Sizes matches hs in Codes for same first char
