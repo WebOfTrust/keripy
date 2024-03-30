@@ -16,6 +16,7 @@ import pysodium
 
 from hio.base import doing
 
+from keri import kering
 from keri.help import helping
 from keri.core import coring
 from keri.core.coring import IdrDex
@@ -708,7 +709,7 @@ def test_manager():
 
     with keeping.openKS() as keeper:
 
-        with pytest.raises(ValueError):
+        with pytest.raises(kering.ConversionError):
             #test invalid qb64 of Salt
             manager = keeping.Manager(ks=keeper, salt='0AzwMTIzNDU2Nzg5YWJjZGVm')
 

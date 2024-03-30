@@ -677,6 +677,7 @@ class Matter:
         digestive (bool): True means digest derivation code False otherwise
         prefixive (bool): True means identifier prefix derivation code False otherwise
         special (bool): True when soft is special raw is empty and fixed size
+        composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
 
     Hidden:
         _code (str): value for .code property
@@ -831,7 +832,7 @@ class Matter:
             qb64b (bytes | None): fully qualified crypto material Base64
             qb64 (str | bytes | None):  fully qualified crypto material Base64
             qb2 (bytes | None): fully qualified crypto material Base2
-            soft (str | None): soft part for special codes
+            soft (str | bytes): soft part for special codes
             strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 
@@ -846,6 +847,9 @@ class Matter:
             .raw and .code and .size and .rsize
 
         """
+        if hasattr(soft, "decode"):  # make soft str
+            soft = soft.decode("utf-8")
+
         if raw is not None:  # raw provided but may be empty
             if not code:
                 raise EmptyMaterialError(f"Improper initialization need either "
@@ -913,6 +917,8 @@ class Matter:
 
                     if not Reb64.match(soft.encode("utf-8")):
                         raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
+                else:
+                    soft = ''  # must be empty when ss == 0
 
 
             raw = raw[:rize]  # copy only exact size from raw stream
@@ -997,14 +1003,13 @@ class Matter:
         """
         Returns:
             special (bool): True when code has special soft i.e. when
-                    fs is not None and ss > 0  and fs = hs + ss and ls = 0
-                    i.e. (fs fixed and soft not empty and raw is empty and no lead)
+                    fs is not None and ss > 0
                 False otherwise
 
         """
         hs, ss, fs, ls = cls.Sizes[code]
 
-        return (fs is not None and ss > 0 and fs == hs + ss and ls == 0)
+        return (fs is not None and ss > 0)
 
 
     @property
@@ -1167,6 +1172,18 @@ class Matter:
         """
         return self._special(self.code)
 
+    @property
+    def composable(self):
+        """
+        composable (bool): True when both .qb64b and .qb2 are 24 bit aligned and
+                           round trip using encodeB64 and decodeB64.
+                           False otherwise
+        """
+        qb64b = self.qb64b
+        qb2 = self.qb2
+        return (len(qb64b) % 4 == 0 and len(qb2) % 3 == 0 and
+                encodeB64(qb2) == qb64b and decodeB64(qb64b) == qb2)
+
 
     def _infil(self):
         """
@@ -1184,8 +1201,6 @@ class Matter:
         if cs != len(both):
             InvalidCodeSizeError(f"Invalid full code={both} for sizes {hs=} and"
                                 f" {ss=}.")
-
-
 
         if not fs:  # variable sized
             # Tests on .Sizes table must ensure ls in (0,1,2) and cs % 4 == 0 but
@@ -1315,30 +1330,44 @@ class Matter:
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
             qb64b = qb64b.encode("utf-8")
 
-        # check for non-zeroed pad bits or lead bytes
-        ps = cs % 4  # code pad size ps = cs mod 4 assumes cs mod 4 != 3
-        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
-        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
-            base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
-            paw = decodeB64(base)  # decode base to leave prepadded raw
-            pi = (int.from_bytes(paw[:ps], "big"))  # prepad as int
-            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
-                raise ValueError(f"Non zeroed prepad bits = "
-                                 f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
-            raw = paw[ps:]  # strip off ps prepad paw bytes, paw is bytes so raw is bytes
+        # check for non-zeroed pad bits and/or lead bytes
+        # net prepad ps == cs % 4 (remainer).  Assumes ps != 3 i.e ps in (0,1,2)
+        # To ensure number of prepad bytes and prepad chars are same.
+        # need net prepad chars ps to invert using decodeB64 of lead + raw
 
-        else:  # not ps. IF not ps THEN may or may not be ls (lead)
-            base = qb64b[cs:]  # strip off code leaving lead chars if any and value
-            # decode lead chars + val leaving lead bytes + raw bytes
-            # then strip off ls lead bytes leaving raw
-            paw = decodeB64(base) # decode base to leave prepadded paw bytes
-            li = int.from_bytes(paw[:ls], "big")  # lead as int
-            if li:  # pre pad lead bytes must be zero
-                if ls == 1:
-                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
-                else:
-                    raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
-            raw = paw[ls:]  # paw is bytes so raw is bytes
+        ps = cs % 4  # net prepad bytes to ensure 24 bit align when encodeB64
+        base =  ps * b'A' + qb64b[cs:]  # prepad ps 'A's to  B64 of (lead + raw)
+        paw = decodeB64(base)  # now should have ps + ls leading sextexts of zeros
+        raw = paw[ps+ls:]  # remove prepad midpat bytes to invert back to raw
+        # ensure midpad bytes are zero
+        pi = int.from_bytes(paw[:ps+ls], "big")
+        if pi != 0:
+            raise ConversionError(f"Non zeroed midpad bytes=0x{pi:0{(ps + ls) * 2}x}.")
+
+
+        #ps = cs % 4  # net prepad bytes to ensure 24 bit align when encodeB64
+        #pbs = 2 * (ps if ps else ls)  # pad bit size in bits
+        #if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
+            #base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
+            #paw = decodeB64(base)  # decode base to leave prepadded raw
+            #pi = (int.from_bytes(paw[:ps], "big"))  # prepad as int
+            #if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
+                #raise ValueError(f"Non zeroed prepad bits = "
+                                 #f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
+            #raw = paw[ps:]  # strip off ps prepad paw bytes, paw is bytes so raw is bytes
+
+        #else:  # not ps. IF not ps THEN may or may not be ls (lead)
+            #base = qb64b[cs:]  # strip off code leaving lead chars if any and value
+            ## decode lead chars + val leaving lead bytes + raw bytes
+            ## then strip off ls lead bytes leaving raw
+            #paw = decodeB64(base) # decode base to leave prepadded paw bytes
+            #li = int.from_bytes(paw[:ls], "big")  # lead as int
+            #if li:  # pre pad lead bytes must be zero
+                #if ls == 1:
+                    #raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                #else:
+                    #raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
+            #raw = paw[ls:]  # paw is bytes so raw is bytes
 
         if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
@@ -1410,15 +1439,15 @@ class Matter:
             # convert last byte of code bytes in which are pad bits to int
             pi = (int.from_bytes(qb2[bcs-1:bcs], "big"))
             if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
-                raise ValueError(f"Non zeroed pad bits = "
+                raise ConversionError(f"Non zeroed pad bits = "
                                  f"{pi & (2 ** pbs - 1 ):>08b} in 0x{pi:02x}.")
         else:  # not ps. IF not ps THEN may or may not be ls (lead)
             li = int.from_bytes(qb2[bcs:bcs+ls], "big")  # lead as int
             if li:  # pre pad lead bytes must be zero
                 if ls == 1:
-                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                    raise ConversionError(f"Non zeroed lead byte = 0x{li:02x}.")
                 else:
-                    raise ValueError(f"Non zeroed lead bytes = 0x{li:02x}.")
+                    raise ConversionError(f"Non zeroed lead bytes = 0x{li:02x}.")
 
         # strip code and leader bytes from qb2 to get raw
         raw = qb2[(bcs + ls):]  # may be empty

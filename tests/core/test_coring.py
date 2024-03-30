@@ -23,10 +23,12 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives import hashes
 from cryptography import exceptions
 
+from keri import kering
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
                          InvalidValueError, DeserializeError, ValidationError,
-                         InvalidVarRawSizeError)
+                         InvalidVarRawSizeError, ConversionError,
+                         SoftMaterialError, InvalidSoftError)
 from keri.kering import Version, Versionage, VersionError
 
 from keri.core import coring
@@ -405,11 +407,14 @@ def test_matter():
     assert matter.transferable == False
     assert matter.digestive == False
     assert matter.prefixive == True
+    assert not matter.special
+    assert matter.composable
 
 
     # test round trip
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+    assert matter.composable
 
     # Test from qb64b
     matter = Matter(qb64b=prefixb)
@@ -433,15 +438,17 @@ def test_matter():
 
     # test non-zero pad bits in qb64 init ps == 1
     badprefix1 = 'B_AAY2RlZmdoaWprbG1ub3BxcnN0dXYwMTIzNDU2Nzg5'
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ConversionError) as ex:
         matter = Matter(qb64=badprefix1)
-    assert str(ex.value) == "Non zeroed prepad bits = 110000 in b'_'."
+    #assert str(ex.value) == "Non zeroed prepad bits = 110000 in b'_'."
+    assert str(ex.value) == 'Non zeroed midpad bytes=0x03.'
 
     # test non-zero pad bits in qb64 init ps == 2
     badprefix2 = '0A_wMTIzNDU2Nzg5YWJjZGVm'
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ConversionError) as ex:
         matter = Matter(qb64=badprefix2)
-    assert str(ex.value) == "Non zeroed prepad bits = 111100 in b'_'."
+    #assert str(ex.value) == "Non zeroed prepad bits = 111100 in b'_'."
+    assert str(ex.value) == 'Non zeroed midpad bytes=0x000f.'
 
     # test truncates extra bytes from qb64 parameter
     longprefix = prefix + "ABCD"  # extra bytes in size
@@ -466,13 +473,13 @@ def test_matter():
 
     # test non-zero pad bits in qb2 init ps ==1
     badprebin1 = decodeB64(badprefix1)  # b'\x07\xf0\x00cdefghijklmnopqrstuv0123456789'
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ConversionError) as ex:
         matter = Matter(qb2=badprebin1)
     assert str(ex.value) == 'Non zeroed pad bits = 00000011 in 0x07.'
 
     # test non-zero pad bits in qb2 init ps ==2
     badprebin2 = decodeB64(badprefix2)  # b'\xd0\x0f\xf0123456789abcdef'
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ConversionError) as ex:
         matter = Matter(qb2=badprebin2)
     assert str(ex.value) == 'Non zeroed pad bits = 00001111 in 0x0f.'
 
@@ -630,6 +637,8 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -684,13 +693,15 @@ def test_matter():
     badqb64 = '2____2Fi'  # '2___' + encodeB64(b'\xffab').decode("utf-8")
     badqb2 = decodeB64(badqb64)  # b'\xd8\x00\x00\xffab'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
-    assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
+    #assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
+    assert str(ex.value) == 'Non zeroed midpad bytes=0xff.'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
     assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
+    #assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
 
 
     # test fix sized with leader 2
@@ -712,6 +723,8 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -753,11 +766,12 @@ def test_matter():
     badqb64 = '3_____96'  # '3AAA' + encodeB64(b'\xff\xffz').decode("utf-8")
     badqb2 = decodeB64(badqb64)  #b'\xdc\x00\x00\xff\xffz'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
-    assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
+    #assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
+    assert str(ex.value) == 'Non zeroed midpad bytes=0xffff.'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
     assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
 
@@ -841,11 +855,12 @@ def test_matter():
     badqb64 = '5BAC_2FiY2Rl'  # '5BAC' + encodeB64(b'\xffabcde').decode("utf-8")
     badqb2 = decodeB64(badqb64)  # b'\xe4\x10\x02\xffabcde'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
-    assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
+    #assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
+    assert str(ex.value) == 'Non zeroed midpad bytes=0xff.'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
     assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
 
@@ -974,11 +989,12 @@ def test_matter():
     badqb64 = '6BAC__9hYmNk'  # '5BAC' + encodeB64(b'\xff\xffabcd').decode("utf-8")
     badqb2 = decodeB64(badqb64)  # b'\xe8\x10\x02\xff\xffabcd'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
-    assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
+    #assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
+    assert str(ex.value) == 'Non zeroed midpad bytes=0xffff.'
 
-    with pytest.raises(ValueError) as  ex:
+    with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
     assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
 
@@ -1548,7 +1564,6 @@ def test_matter_special():
     Test Matter instances using code with special soft values
     """
     # test Tag3
-
     code = MtrDex.Tag3
     soft = 'icp'
     qb64 = 'Xicp'
@@ -1562,6 +1577,7 @@ def test_matter_special():
     assert matter.qb64 == qb64
     assert matter.qb2 == qb2
     assert matter.special
+    assert matter.composable
 
     code = matter.code
     soft = matter.soft
@@ -1575,6 +1591,7 @@ def test_matter_special():
     assert matter.qb64 == qb64
     assert matter.qb2 == qb2
     assert matter.special
+    assert matter.composable
 
     matter = Matter(qb64=qb64)
     assert matter.code == matter.hard == code
@@ -1583,6 +1600,7 @@ def test_matter_special():
     assert matter.qb64 == qb64
     assert matter.qb2 == qb2
     assert matter.special
+    assert matter.composable
 
     # Test corner conditions
     # Empty raw
@@ -1593,8 +1611,177 @@ def test_matter_special():
     assert matter.qb64 == qb64
     assert matter.qb2 == qb2
     assert matter.special
+    assert matter.composable
 
+    #non empty raw ignored since code special, forces empty raw
+    badraw = b'abcdefg'
+    matter = Matter(raw=badraw, code=code, soft=soft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
 
+    #raw None
+    matter = Matter(code=code, soft=soft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # soft extra chars ignored
+    bigsoft = 'icprot'
+    matter = Matter(code=code, soft=bigsoft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # soft bytes not str
+    bigsoft = b'icprot'
+    matter = Matter(code=code, soft=bigsoft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # soft too small
+    weesoft = 'ic'
+    with pytest.raises(SoftMaterialError):
+        matter = Matter(code=code, soft=weesoft)
+
+    # soft not B64 chars
+    badsoft = b'#@$%^&*!'
+    with pytest.raises(InvalidSoftError):
+        matter = Matter(code=code, soft=badsoft)
+
+    #non empty raw and badsoft
+    badraw = b'abcdefg'
+    badsoft = b'#@$%^&*!'
+    with pytest.raises(InvalidSoftError):
+        matter = Matter(raw=badraw, code=code, soft=badsoft)
+
+    # soft but not special code
+    numraw = b'\xf7\x7f'
+    matter = Matter(raw=numraw, code=MtrDex.Short, soft=soft)
+    assert matter.code == matter.hard == MtrDex.Short
+    assert matter.soft == ''
+    assert matter.raw == numraw
+    assert not matter.special
+    assert matter.composable
+
+    # Test TBD0S  '1__-'
+    # soft special but valid non-empty raw as part of primitive
+    code = MtrDex.TBD0S  # sizes '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
+    rs = Matter._rawSize(code)  # raw size
+    soft = 'TG'
+    qb64 = '1__-TGB1dnd4'
+    qb2 = b'\xd7\xff\xfeL`uvwx'
+    raw = b'uvwx'
+
+    assert rs == 4
+
+    bigsoft = 'TGIF'
+    extraw = b'uvwxyz'
+
+    matter = Matter(raw=extraw, code=code, soft=bigsoft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # Same as above but raw all zeros
+
+    qb64 = '1__-TGAAAAAA'
+    qb2 = b'\xd7\xff\xfeL`\x00\x00\x00\x00'
+    raw = b'\x00\x00\x00\x00'
+
+    assert rs == 4
+
+    bigsoft = 'TGIF'
+    extraw = bytearray([0] * 7)
+
+    matter = Matter(raw=extraw, code=code, soft=bigsoft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # Test TBD1S  '2__-'
+    # soft special but valid non-empty raw as part of primitive
+    code = MtrDex.TBD1S  # sizes '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
+    rs = Matter._rawSize(code)  # raw size
+    soft = 'TG'
+    qb64 = '2__-TGAAdXZ3'  # see lead byte
+    qb2 = b'\xdb\xff\xfeL`\x00uvw'
+    raw = b'uvw'
+
+    assert rs == 3
+
+    bigsoft = 'TGIF'
+    extraw = b'uvwxyz'
+
+    matter = Matter(raw=extraw, code=code, soft=bigsoft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
 
 
     """ Done Test """
