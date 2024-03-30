@@ -3,7 +3,7 @@
 tests.core.test_coring module
 
 """
-from dataclasses import asdict
+from dataclasses import asdict, astuple
 import hashlib
 import json
 from base64 import urlsafe_b64decode as decodeB64
@@ -23,6 +23,12 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives import hashes
 from cryptography import exceptions
 
+from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
+                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
+                         InvalidValueError, DeserializeError, ValidationError,
+                         InvalidVarRawSizeError)
+from keri.kering import Version, Versionage, VersionError
+
 from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
@@ -37,14 +43,10 @@ from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
 from keri.core.coring import generateSigners, generatePrivates
-from keri.help.helping import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
-                              B64_CHARS, Reb64, nabSextets)
+
 from keri.help import helping
-from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError, DeserializeError, ValidationError,
-                         InvalidVarRawSizeError)
-from keri.kering import Version, Versionage, VersionError
+from keri.help.helping import (sceil, intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
+                              B64_CHARS, Reb64, nabSextets)
 
 
 
@@ -111,8 +113,12 @@ def test_matter_class():
         'Yes': '1AAM',
         'Tag4': '1AAN',
         'Tag8': '1AAO',
-        'TBD1': '2AAA',
-        'TBD2': '3AAA',
+        'TBD0S': '1__-',
+        'TBD0': '1___',
+        'TBD1S': '2__-',
+        'TBD1': '2___',
+        'TBD2S': '3__-',
+        'TBD2': '3___',
         'StrB64_L0': '4A',
         'StrB64_L1': '5A',
         'StrB64_L2': '6A',
@@ -218,9 +224,13 @@ def test_matter_class():
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAO': Sizage(hs=4, ss=8, fs=12, ls=0),
-        '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
-        '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
+        '1AAO': Sizage(hs=4, ss=2, fs=12, ls=0),
+        '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
+        '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
+        '2___': Sizage(hs=4, ss=0, fs=8, ls=1),
+        '3__-': Sizage(hs=4, ss=2, fs=12, ls=2),
+        '3___': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
         '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
         '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
@@ -261,21 +271,58 @@ def test_matter_class():
 
 
     #  verify all Codes
-    #  if fs None else not (hs + ss) % 4
-    for val in Matter.Sizes.values():
-        assert (isinstance(val.hs, int) and isinstance(val.ss, int) and
-                isinstance(val.ls, int))
-        assert val.hs > 0 and val.ss >= 0 and val.ls >= 0
-        if val.fs is not None:  # fixed sized
-            assert isinstance(val.fs, int) and val.fs > 0 and not val.fs % 4
-            assert val.fs >= (val.hs + val.ss)
-            if val.ss > 0:  # special soft value
-                assert val.fs == val.hs + val.ss  # raw must be empty
-                assert val.ls == 0  # no lead
-            else:
-                assert val.ss == 0
-        else:  # variable sized
-            assert val.ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
+    for code, val in Matter.Sizes.items():  # hard code
+        hs = val.hs
+        ss = val.ss
+        fs = val.fs
+        ls = val.ls
+        cs = hs + ss
+
+        assert (isinstance(hs, int) and isinstance(ss, int) and
+                isinstance(ls, int))
+        assert hs > 0 and ss >= 0 and ls in (0, 1, 2)
+        assert len(code) == hs
+
+        if fs is None:  # variable sized
+            assert ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
+            assert code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex
+
+            if code[0] in coring.SmallVrzDex:  # small variable sized code
+                assert val.hs == 2 and val.ss == 2 and val.fs is None
+                assert code[0] == astuple(coring.SmallVrzDex)[val.ls]
+
+            elif code[0] in coring.LargeVrzDex: # large veriable sized code
+                assert val.hs == 4 and val.ss == 4 and val.fs is None
+                assert code[0] == astuple(coring.LargeVrzDex)[val.ls]
+
+        else:  # fixed size
+            assert not (code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex)
+            assert isinstance(fs, int) and fs > 0 and not fs % 4
+            assert fs >= cs
+            assert cs % 4 != 3  # prevent ambiguous conversion
+            if ss > 0 and fs == cs:  # special soft value with raw empty
+                assert ls == 0  # no lead
+                assert Matter._rawSize(code) == 0
+
+            rs = (fs - cs) * 3 // 4 - ls  # raw size bytes sans lead
+            ps = (3 - (rs + ls) % 3) % 3  # pad size given raw + lead
+            assert ps == (cs % 4)  # cs % 4  is pad size given cs % 4 != 3
+            assert sceil((rs + ls) * 4 / 3) + cs == fs  # sextets add up
+
+
+        if code[0] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz':
+            assert len(code) == 1
+        elif code[0] in '0':
+            assert len(code) == 2
+        elif code[0] in '1':
+            assert len(code) == 4 and ls == 0
+        elif code[0] in '2':
+            assert len(code) == 4 and ls == 1
+        elif code[0] in '3':
+            assert len(code) == 4 and ls == 2
+        else:
+            assert code[0] not in '-_'  # count or op code
+
 
     # Test .Hards
     # verify first hs Sizes matches hs in Codes for same first char
@@ -290,6 +337,8 @@ def test_matter_class():
 
     assert Matter._rawSize(MtrDex.Ed25519) == 32
     assert Matter._leadSize(MtrDex.Ed25519) == 0
+    assert not Matter._special(MtrDex.Ed25519)
+    assert Matter._special(MtrDex.Tag3)
 
 
 
@@ -541,14 +590,14 @@ def test_matter():
     assert ims == extra  # stripped not include extra
 
     # test fix sized with leader 1
-    # TBD1 = '2AAA'  # Testing purposes only fixed with lead size 1
+    # TBD1 = '2___'  # Testing purposes only fixed with lead size 1
 
     code = MtrDex.TBD1  # '2AAA'
     assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
     raw = b'ab'
-    qb64 = '2AAAAGFi'  # '2AAA' + encodeB64(b'\x00ab').decode("utf-8")
-    qb2 = decodeB64(qb64)  # b'\xd8\x00\x00\x00ab'
+    qb64 = '2___AGFi'  # '2AAA' + encodeB64(b'\x00ab').decode("utf-8")
+    qb2 = decodeB64(qb64)
     matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
     assert matter.code == code
@@ -611,7 +660,7 @@ def test_matter():
     assert matter.prefixive == False
 
     # test with bad pad or lead
-    badqb64 = '2AAA_2Fi'  # '2AAA' + encodeB64(b'\xffab').decode("utf-8")
+    badqb64 = '2____2Fi'  # '2___' + encodeB64(b'\xffab').decode("utf-8")
     badqb2 = decodeB64(badqb64)  # b'\xd8\x00\x00\xffab'
 
     with pytest.raises(ValueError) as  ex:
@@ -624,13 +673,13 @@ def test_matter():
 
 
     # test fix sized with leader 2
-    # TBD2 = '3AAA'  # Testing purposes only of fixed with lead size 2
+    # TBD2 = '3___'  # Testing purposes only of fixed with lead size 2
     code = MtrDex.TBD2  # '3AAA'
     assert Matter._rawSize(code) == 1
     assert Matter._leadSize(code) == 2
     raw = b'z'
-    qb64 = '3AAAAAB6'
-    qb2 = b'\xdc\x00\x00\x00\x00z'
+    qb64 = '3___AAB6'
+    qb2 = decodeB64(qb64)
     matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
     assert matter.code == code
@@ -680,7 +729,7 @@ def test_matter():
     assert matter.prefixive == False
 
     # test with bad pad or lead
-    badqb64 = '3AAA__96'  # '3AAA' + encodeB64(b'\xff\xffz').decode("utf-8")
+    badqb64 = '3_____96'  # '3AAA' + encodeB64(b'\xff\xffz').decode("utf-8")
     badqb2 = decodeB64(badqb64)  #b'\xdc\x00\x00\xff\xffz'
 
     with pytest.raises(ValueError) as  ex:
@@ -1470,6 +1519,62 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+
+    """ Done Test """
+
+def test_matter_special():
+    """
+    Test Matter instances using code with special soft values
+    """
+    # test Tag3
+
+    code = MtrDex.Tag3
+    soft = 'icp'
+    qb64 = 'Xicp'
+    qb2 = b"^')"
+    raw = b''
+
+    matter = Matter(code=code, soft=soft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+    code = matter.code
+    soft = matter.soft
+    qb2 = matter.qb2
+    qb64 = matter.qb64
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+    # Test corner conditions
+    # Empty raw
+    matter = Matter(raw=b'', code=code, soft=soft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+
+
+
 
     """ Done Test """
 
@@ -6534,6 +6639,7 @@ def test_tholder():
 if __name__ == "__main__":
     test_matter_class()
     test_matter()
+    test_matter_special()
     test_verser()
     #test_texter()
     #test_counter()
