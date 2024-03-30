@@ -975,10 +975,10 @@ class Matter:
         """
         hs, ss, fs, ls = cls.Sizes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
-        # assumes .Sizes only has valid entries
         if fs is None:
             raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
-        return (((fs - cs) * 3 // 4) - ls)  # assumes cs % 4 != 3 and fs % 4 == 0
+        # assumes .Sizes only has valid entries, cs % 4 != 3, and fs % 4 == 0
+        return (((fs - cs) * 3 // 4) - ls)
 
 
     @classmethod
@@ -1170,20 +1170,13 @@ class Matter:
 
     def _infil(self):
         """
-        Returns bytes of fully qualified base64 characters
-        self.code + converted self.raw to Base64 with pad chars stripped
-
-        cs = hs + ss
-        if fs is None in table:
-            fs = (size * 4) + cs
-        else:  # fs set by table where
-            fs = hs + cs + ls + rawsize
-
+        Returns:
+            primitive (bytes): fully qualified base64 characters.
         """
         code = self.code  # hard part of full code == codex value
         both = self.both  # code + soft, soft may be empty
         raw = self.raw  # bytes or bytearray, raw may be empty
-
+        rs = len(raw)  # raw size
         hs, ss, fs, ls = self.Sizes[code]
         cs = hs + ss
         # assumes unit tests on Matter.Sizes ensure valid size entries
@@ -1192,25 +1185,50 @@ class Matter:
             InvalidCodeSizeError(f"Invalid full code={both} for sizes {hs=} and"
                                 f" {ss=}.")
 
-        ps = ((3 - (len(raw) % 3)) % 3)  # pad size chars or lead size bytes
-        if (cs % 4) != ps - ls:  # adjusted pad provided by full code given lead bytes
-            raise InvalidCodeSizeError(f"Invalid code={both} for converted "
-                                       f"raw pad size={ps} and lead size={ls}.")
+
 
         if not fs:  # variable sized
-            # prepad, convert, and prepend. When ls and ps then ls accounts for
-            # which ensures encodeB64 does not have trailing B64 pad chars
-            return (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw))
+            # Tests on .Sizes table must ensure ls in (0,1,2) and cs % 4 == 0 but
+            # can't know the variable size. So instance methods must ensure that
+            # (ls + rs) % 3 == 0 i.e. both full code (B64) and lead+raw (B2)
+            # are both 24 bit aligned.
+            # If so then should not need following check.
+            if (ls + rs) % 3 or cs % 4:
+                raise InvalidCodeSizeError(f"Invalid full code{both=} with "
+                                           f"variable raw size={rs} given "
+                                           f" {cs=}, {hs=}, {ss=}, {fs=}, and "
+                                           f"{ls=}.")
 
-        else:  # fixed size so prepad but lead ls may not be zero
-            # prepad, convert, and replace upfront
-            # When fixed fs, raw may have ps != 0 when ls = 0 which hs+ss must
-            # provide so encodeB64 may have trailing B64 pad chars so need to
-            # strip these off. When fixed and ls != 0 then ps == ls
-            # When fixed and ls != 0 then cs % 4 is zero and ps==ls so using
-            # ps instead of ls for prepad works. Otherwise when fixed and
-            # ls == 0 then cs % 4 == ps so strip compensates for prepad.
-            return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[cs % 4:])
+            # When ls+rs is 24 bit aligned then encodeB64 has no trailing
+            # pad chars that need to be stripped. So simply prepad raw with
+            # ls zero bytes and convert (encodeB64).
+            full = (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw))
+
+        else:  # fixed size
+            ps = (3 - ((rs + ls) % 3)) % 3  # net pad size given raw with lead
+            # net pad size must equal both code size remainder so that primitive
+            # both + converted padded raw is fs long. Assumes ls in (0,1,2) and
+            # cs % 4 != 3, fs % 4 == 0. Sizes table test must ensure these properties.
+            # If so then should not need following check.
+            if ps != (cs % 4):  # given cs % 4 != 3 then cs % 4 is pad size
+                raise InvalidCodeSizeError(f"Invalid full code{both=} with "
+                                           f"fixed raw size={rs} given "
+                                           f" {cs=}, {hs=}, {ss=}, {fs=}, and "
+                                           f"{ls=}.")
+
+            # Predpad raw so we midpad the full primitive. Prepad with ps+ls
+            # zero bytes ensures encodeB64 of prepad+lead+raw has no trailing
+            # pad characters. Finally skip first ps == cs % 4 of the converted
+            # characters to ensure that when full code is prepended, the full
+            # primitive size is fs but midpad bits are zeros.
+            full = (both.encode("utf-8") + encodeB64(bytes([0] * (ps + ls)) + raw)[ps:])
+
+        if (len(full) % 4) or (fs and len(full) != fs):
+            raise InvalidCodeSizeError(f"Invalid full size given code{both=} "
+                                       f" with raw size={rs}, {cs=}, {hs=}, "
+                                       f"{ss=}, {fs=}, and {ls=}.")
+
+        return full
 
 
     def _binfil(self):

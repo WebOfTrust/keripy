@@ -284,16 +284,37 @@ def test_matter_class():
         assert len(code) == hs
 
         if fs is None:  # variable sized
-            assert ss > 0 and not ((val.hs + val.ss) % 4)  # i.e. cs % 4 is 0
+            assert ss > 0 and not (cs % 4)  # full code is 24 bit aligned
+            # assumes that Matter methods also ensure (ls + rs) % 3 == 0 i.e.
+            # variable raw with lead is 24 bit aligned, where rs is raw size.
             assert code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex
 
             if code[0] in coring.SmallVrzDex:  # small variable sized code
-                assert val.hs == 2 and val.ss == 2 and val.fs is None
-                assert code[0] == astuple(coring.SmallVrzDex)[val.ls]
+                assert hs == 2 and ss == 2 and fs is None
+                assert code[0] == astuple(coring.SmallVrzDex)[ls]
+                if code[0] in '4':
+                    assert ls == 0
+                elif code[0] in '5':
+                    assert ls == 1
+                elif code[0] in '6':
+                    assert ls == 2
+                else:
+                    assert False
 
             elif code[0] in coring.LargeVrzDex: # large veriable sized code
                 assert val.hs == 4 and val.ss == 4 and val.fs is None
-                assert code[0] == astuple(coring.LargeVrzDex)[val.ls]
+                assert code[0] == astuple(coring.LargeVrzDex)[ls]
+                if code[0] in '7':
+                    assert ls == 0
+                elif code[0] in '8':
+                    assert ls == 1
+                elif code[0] in '9':
+                    assert ls == 2
+                else:
+                    assert False
+
+            else:
+                assert False
 
         else:  # fixed size
             assert not (code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex)
@@ -304,24 +325,24 @@ def test_matter_class():
                 assert ls == 0  # no lead
                 assert Matter._rawSize(code) == 0
 
-            rs = (fs - cs) * 3 // 4 - ls  # raw size bytes sans lead
-            ps = (3 - (rs + ls) % 3) % 3  # pad size given raw + lead
-            assert ps == (cs % 4)  # cs % 4  is pad size given cs % 4 != 3
+            # verify correct sizes given raw size. Assumes properties above
+            rs = ((fs - cs) * 3 // 4) - ls  # raw size bytes sans lead
             assert sceil((rs + ls) * 4 / 3) + cs == fs  # sextets add up
+            ps = (3 - ((rs + ls) % 3)) % 3  # net pad size given raw with lead
+            assert ps == (cs % 4)  # ensure correct midpad zero bits for cs
 
-
-        if code[0] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz':
-            assert len(code) == 1
-        elif code[0] in '0':
-            assert len(code) == 2
-        elif code[0] in '1':
-            assert len(code) == 4 and ls == 0
-        elif code[0] in '2':
-            assert len(code) == 4 and ls == 1
-        elif code[0] in '3':
-            assert len(code) == 4 and ls == 2
-        else:
-            assert code[0] not in '-_'  # count or op code
+            if code[0] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz':
+                assert len(code) == 1
+            elif code[0] in '0':
+                assert len(code) == 2
+            elif code[0] in '1':
+                assert len(code) == 4 and ls == 0
+            elif code[0] in '2':
+                assert len(code) == 4 and ls == 1
+            elif code[0] in '3':
+                assert len(code) == 4 and ls == 2
+            else:
+                assert code[0] not in '456789-_'  # count or op code
 
 
     # Test .Hards
