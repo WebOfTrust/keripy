@@ -1342,32 +1342,7 @@ class Matter:
         # ensure midpad bytes are zero
         pi = int.from_bytes(paw[:ps+ls], "big")
         if pi != 0:
-            raise ConversionError(f"Non zeroed midpad bytes=0x{pi:0{(ps + ls) * 2}x}.")
-
-
-        #ps = cs % 4  # net prepad bytes to ensure 24 bit align when encodeB64
-        #pbs = 2 * (ps if ps else ls)  # pad bit size in bits
-        #if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
-            #base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
-            #paw = decodeB64(base)  # decode base to leave prepadded raw
-            #pi = (int.from_bytes(paw[:ps], "big"))  # prepad as int
-            #if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
-                #raise ValueError(f"Non zeroed prepad bits = "
-                                 #f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
-            #raw = paw[ps:]  # strip off ps prepad paw bytes, paw is bytes so raw is bytes
-
-        #else:  # not ps. IF not ps THEN may or may not be ls (lead)
-            #base = qb64b[cs:]  # strip off code leaving lead chars if any and value
-            ## decode lead chars + val leaving lead bytes + raw bytes
-            ## then strip off ls lead bytes leaving raw
-            #paw = decodeB64(base) # decode base to leave prepadded paw bytes
-            #li = int.from_bytes(paw[:ls], "big")  # lead as int
-            #if li:  # pre pad lead bytes must be zero
-                #if ls == 1:
-                    #raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
-                #else:
-                    #raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
-            #raw = paw[ls:]  # paw is bytes so raw is bytes
+            raise ConversionError(f"Nonzero midpad bytes=0x{pi:0{(ps + ls) * 2}x}.")
 
         if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
@@ -1432,22 +1407,21 @@ class Matter:
             raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
 
         qb2 = qb2[:bfs]  # extract qb2 fully qualified primitive code plus material
-        # check for non-zeroed prepad bits or lead bytes
-        ps = cs % 4  # code pad size ps = cs mod 4
-        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
-        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
-            # convert last byte of code bytes in which are pad bits to int
-            pi = (int.from_bytes(qb2[bcs-1:bcs], "big"))
-            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
-                raise ConversionError(f"Non zeroed pad bits = "
-                                 f"{pi & (2 ** pbs - 1 ):>08b} in 0x{pi:02x}.")
-        else:  # not ps. IF not ps THEN may or may not be ls (lead)
-            li = int.from_bytes(qb2[bcs:bcs+ls], "big")  # lead as int
-            if li:  # pre pad lead bytes must be zero
-                if ls == 1:
-                    raise ConversionError(f"Non zeroed lead byte = 0x{li:02x}.")
-                else:
-                    raise ConversionError(f"Non zeroed lead bytes = 0x{li:02x}.")
+
+
+        # check for nonzero trailing full code mid pad bits
+        ps = cs % 4  # full code (both) net pad size for 24 bit alignment
+        pbs = 2 * ps  # mid pad bits = 2 per net pad
+        # get pad bits in last byte of full code
+        pi = (int.from_bytes(qb2[bcs-1:bcs], "big")) # convert byte to int
+        pi = pi & (2 ** pbs - 1 ) # mask with 1's in pad bit locations
+        if pi:  # not zero so raise error
+            raise ConversionError(f"Nonzero code mid pad bits=0b{pi:0{pbs}b}.")
+
+        # check nonzero leading mid pad lead bytes in lead + raw
+        li = int.from_bytes(qb2[bcs:bcs+ls], "big")  # lead as int
+        if li:  # midpad lead bytes must be zero
+            raise ConversionError(f"Nonzero lead midpad bytes=0x{li:0{ls*2}x}.")
 
         # strip code and leader bytes from qb2 to get raw
         raw = qb2[(bcs + ls):]  # may be empty

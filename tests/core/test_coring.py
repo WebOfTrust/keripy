@@ -441,14 +441,14 @@ def test_matter():
     with pytest.raises(ConversionError) as ex:
         matter = Matter(qb64=badprefix1)
     #assert str(ex.value) == "Non zeroed prepad bits = 110000 in b'_'."
-    assert str(ex.value) == 'Non zeroed midpad bytes=0x03.'
+    assert str(ex.value) == 'Nonzero midpad bytes=0x03.'
 
     # test non-zero pad bits in qb64 init ps == 2
     badprefix2 = '0A_wMTIzNDU2Nzg5YWJjZGVm'
     with pytest.raises(ConversionError) as ex:
         matter = Matter(qb64=badprefix2)
     #assert str(ex.value) == "Non zeroed prepad bits = 111100 in b'_'."
-    assert str(ex.value) == 'Non zeroed midpad bytes=0x000f.'
+    assert str(ex.value) == 'Nonzero midpad bytes=0x000f.'
 
     # test truncates extra bytes from qb64 parameter
     longprefix = prefix + "ABCD"  # extra bytes in size
@@ -475,13 +475,15 @@ def test_matter():
     badprebin1 = decodeB64(badprefix1)  # b'\x07\xf0\x00cdefghijklmnopqrstuv0123456789'
     with pytest.raises(ConversionError) as ex:
         matter = Matter(qb2=badprebin1)
-    assert str(ex.value) == 'Non zeroed pad bits = 00000011 in 0x07.'
+    #assert str(ex.value) == 'Non zeroed pad bits = 00000011 in 0x07.'
+    assert str(ex.value) == 'Nonzero code mid pad bits=0b11.'
 
     # test non-zero pad bits in qb2 init ps ==2
     badprebin2 = decodeB64(badprefix2)  # b'\xd0\x0f\xf0123456789abcdef'
     with pytest.raises(ConversionError) as ex:
         matter = Matter(qb2=badprebin2)
-    assert str(ex.value) == 'Non zeroed pad bits = 00001111 in 0x0f.'
+    #assert str(ex.value) == 'Non zeroed pad bits = 00001111 in 0x0f.'
+    assert str(ex.value) == 'Nonzero code mid pad bits=0b1111.'
 
 
     # test raises ShortageError if not enough bytes in qb2 parameter
@@ -696,12 +698,12 @@ def test_matter():
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
     #assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
-    assert str(ex.value) == 'Non zeroed midpad bytes=0xff.'
+    assert str(ex.value) == 'Nonzero midpad bytes=0xff.'
 
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
-    assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
-    #assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
+    #assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
+    assert str(ex.value) == 'Nonzero lead midpad bytes=0xff.'
 
 
     # test fix sized with leader 2
@@ -769,11 +771,12 @@ def test_matter():
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
     #assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
-    assert str(ex.value) == 'Non zeroed midpad bytes=0xffff.'
+    assert str(ex.value) == 'Nonzero midpad bytes=0xffff.'
 
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
-    assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
+    #assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
+    assert str(ex.value) == 'Nonzero lead midpad bytes=0xffff.'
 
     # test variable sized with leader 1
     code = MtrDex.Bytes_L1
@@ -858,11 +861,12 @@ def test_matter():
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
     #assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
-    assert str(ex.value) == 'Non zeroed midpad bytes=0xff.'
+    assert str(ex.value) == 'Nonzero midpad bytes=0xff.'
 
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
-    assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
+    #assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
+    assert str(ex.value) == 'Nonzero lead midpad bytes=0xff.'
 
     # test variable sized with leader 1 with code replacement
     code0 = MtrDex.Bytes_L0  # use leader 0 code but with lead size 1 raw
@@ -992,11 +996,12 @@ def test_matter():
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb64=badqb64)
     #assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
-    assert str(ex.value) == 'Non zeroed midpad bytes=0xffff.'
+    assert str(ex.value) == 'Nonzero midpad bytes=0xffff.'
 
     with pytest.raises(ConversionError) as  ex:
         matter = Matter(qb2=badqb2)
-    assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
+    #assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
+    assert str(ex.value) == 'Nonzero lead midpad bytes=0xffff.'
 
     # test variable sized with leader 2 with code replacement
     code0 = MtrDex.Bytes_L0  # use leader 0 code but with lead size 2 raw
