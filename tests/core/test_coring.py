@@ -619,14 +619,89 @@ def test_matter():
     assert matter.prefixive == True
     assert ims == extra  # stripped not include extra
 
+    # test fixed size with leader 0
+    # TBD0 = '1___'  # Testing purposes only fixed with lead size 0
+
+    code = MtrDex.TBD0  # '1___'
+    assert Matter._rawSize(code) == 3
+    assert Matter._leadSize(code) == 0
+    raw = b'abc'
+    qb64 = '1___YWJj'  #
+    qb2 = decodeB64(qb64)
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == code
+    assert matter.size == None
+    assert matter.fullSize == 8
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
+
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+
+    matter._exfil(qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+
+    matter = Matter(qb64b=qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64.encode("utf-8"))  # works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    # Test ._bexfil
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == code
+    assert matter.raw == raw
+    assert matter.qb64b == qb64.encode("utf-8")
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == code
+    assert matter.size == None
+    assert matter.fullSize == 8
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+
+    # Can't have bad pad because cs % 4 == 0
+    # Can't habe bad lead because ls ==0
+
     # test fix sized with leader 1
     # TBD1 = '2___'  # Testing purposes only fixed with lead size 1
 
-    code = MtrDex.TBD1  # '2AAA'
+    code = MtrDex.TBD1  # '2___'
     assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
     raw = b'ab'
-    qb64 = '2___AGFi'  # '2AAA' + encodeB64(b'\x00ab').decode("utf-8")
+    qb64 = '2___AGFi'  # '2___' + encodeB64(b'\x00ab').decode("utf-8")
     qb2 = decodeB64(qb64)
     matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
@@ -1780,6 +1855,87 @@ def test_matter_special():
     assert matter.composable
 
     matter = Matter(qb64=qb64)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # Same as above but raw all zeros
+
+    qb64 = '2__-TGAAAAAA'
+    qb2 = b'\xdb\xff\xfeL`\x00\x00\x00\x00'
+    raw = b'\x00\x00\x00'
+
+    assert rs == 3
+
+    bigsoft = 'TGIF'
+    extraw = bytearray([0] * 7)
+
+    matter = Matter(raw=extraw, code=code, soft=bigsoft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # Test TBD2S  '3__-'
+    # soft special but valid non-empty raw as part of primitive
+    code = MtrDex.TBD2S  # sizes '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
+    rs = Matter._rawSize(code)  # raw size
+    soft = 'TG'
+    qb64 = '3__-TGAAAHV2'  # see lead byte
+    qb2 = b'\xdf\xff\xfeL`\x00\x00uv'
+    raw = b'uv'
+
+    assert rs == 2
+
+    bigsoft = 'TGIF'
+    extraw = b'uvwxyz'
+
+    matter = Matter(raw=extraw, code=code, soft=bigsoft)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.special
+    assert matter.composable
+
+    # Same as above but raw all zeros
+
+    qb64 = '3__-TGAAAAAA'
+    qb2 = b'\xdf\xff\xfeL`\x00\x00\x00\x00'
+    raw = b'\x00\x00'
+
+    assert rs == 2
+
+    bigsoft = 'TGIF'
+    extraw = bytearray([0] * 7)
+
+    matter = Matter(raw=extraw, code=code, soft=bigsoft)
     assert matter.code == matter.hard == code
     assert matter.soft == soft
     assert matter.raw == raw
