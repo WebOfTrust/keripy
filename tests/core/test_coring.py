@@ -36,7 +36,7 @@ from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
                               Sadder, Tholder, Seqner,
                               NumDex, Number, Siger, Dater, Bexter, Texter,
-                              Verser, Versage)
+                              Verser, Versage, TagDex, PadTagDex, Tagger)
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
@@ -153,8 +153,6 @@ def test_matter_class():
     }
 
 
-    assert Matter.Codex == MtrDex
-
     # first character of code with hard size of code
     assert Matter.Hards == {
         'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1, 'G': 1, 'H': 1, 'I': 1,
@@ -224,7 +222,7 @@ def test_matter_class():
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=2, fs=12, ls=0),
+        '1AAN': Sizage(hs=4, ss=8, fs=12, ls=0),
         '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
@@ -3156,8 +3154,6 @@ def test_number():
         'Vast': 'U'
     }
 
-    assert Number.Codex == NumDex
-
 
     with pytest.raises(RawMaterialError):
         number = Number(raw=b'')
@@ -4171,6 +4167,95 @@ def test_dater():
     assert dater4.datetime > dater3.datetime
 
     """ Done Test """
+
+def test_tagger():
+    """
+    Test Tagger version primitive subclass of Matter
+    """
+    # Test TagCodex PadTagCodex and associated Sizes to be valid specials
+
+
+
+
+    with pytest.raises(EmptyMaterialError):
+        tagger = Tagger()  # defaults
+
+    # Tag1
+    tag = 'v'
+    code = MtrDex.Tag1
+    soft = '_v'
+    qb64 = '0J_v'
+    qb64b = qb64.encode("utf-8")
+    qb2 = decodeB64(qb64b)
+    raw = b''
+
+    tagger = Tagger(tag=tag)  # defaults
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+    tagger = Tagger(qb2=qb2)
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+    tagger = Tagger(qb64=qb64)
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+
+    tagger = Tagger(qb64b=qb64b)
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+
+    tags = 'abcdefghij'
+    alltags = dict()
+    for l in range(1, len(astuple(TagDex)) + 1):
+        tag = tags[:l]
+        tagger = Tagger(tag=tag)
+        assert tagger.tag == tag
+        assert len(tagger.tag) == l
+        assert tagger.code == astuple(TagDex)[l - 1]
+        alltags[l] = (tagger.tag, tagger.code)
+
+    assert alltags == \
+        {
+            1: ('a', '0J'),
+            2: ('ab', '0K'),
+            3: ('abc', 'X'),
+            4: ('abcd', '1AAF'),
+            5: ('abcde', '0L'),
+            6: ('abcdef', '0M'),
+            7: ('abcdefg', 'Y'),
+            8: ('abcdefgh', '1AAN'),
+            9: ('abcdefghi', '0N'),
+            10: ('abcdefghij', '0O')
+         }
+    """ Done Test """
+
 
 def test_verser():
     """
@@ -6980,6 +7065,7 @@ if __name__ == "__main__":
     test_matter_class()
     test_matter()
     test_matter_special()
+    test_tagger()
     test_verser()
     #test_texter()
     #test_counter()
