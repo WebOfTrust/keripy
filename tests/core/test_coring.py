@@ -105,7 +105,7 @@ def test_matter_class():
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Label3': '1AAF',
+        'Tag4': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
         'ECDSA_256r1N': '1AAI',
@@ -113,8 +113,7 @@ def test_matter_class():
         'Null': '1AAK',
         'No': '1AAL',
         'Yes': '1AAM',
-        'Tag4': '1AAN',
-        'Tag8': '1AAO',
+        'Tag8': '1AAN',
         'TBD0S': '1__-',
         'TBD0': '1___',
         'TBD1S': '2__-',
@@ -217,7 +216,7 @@ def test_matter_class():
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-        '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAF': Sizage(hs=4, ss=4, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
@@ -225,8 +224,7 @@ def test_matter_class():
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAO': Sizage(hs=4, ss=2, fs=12, ls=0),
+        '1AAN': Sizage(hs=4, ss=2, fs=12, ls=0),
         '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
@@ -1501,141 +1499,114 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Label3
-    #val = int("F89CFF", 16)
-    #assert val == 16293119
-    #raw = val.to_bytes(3, 'big')
-    #assert raw == b'\xf8\x9c\xff'
-    raw = b'hio'
-    cs = len(MtrDex.Label3)
-    assert cs == 4
-    ps = cs % 4
-    assert ps == 0
-    txt = encodeB64(bytes([0]*ps) + raw)
-    #assert txt == b'-Jz_'
-    assert txt == b'aGlv'
-    qb64b = MtrDex.Label3.encode("utf-8") + txt[ps:]
-    #assert qb64b == b'1AAF-Jz_'
-    assert qb64b == b'1AAFaGlv'
-    qb64 = qb64b.decode("utf-8")
+    # test Label1
+    code = MtrDex.Label1
+    raw = b'*'
+    qb64 = 'VAAq'
+    qb64b = qb64.encode("utf-8")
     qb2 = decodeB64(qb64b)
-    assert qb2 == b'\xd4\x00\x05hio'
-    #assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
-    bs = ceil((cs * 3) / 4)
-    assert qb2[bs:] == raw  # stable value in qb2
-    assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Label3)
+    matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
-    # test Label3 as chars
-    txt = b'icp_'
-    raw = decodeB64(txt)
-    assert raw == b'\x89\xca\x7f'
-    val = int.from_bytes(raw, 'big')
-    assert val == 9030271
-    cs = len(MtrDex.Label3)
-    assert cs == 4
-    ps = cs % 4
-    assert ps == 0
-    txt = encodeB64(bytes([0]*ps) + raw)
-    qb64b = MtrDex.Label3.encode("utf-8") + txt
-    assert qb64b == b'1AAFicp_'
-    qb64 = qb64b.decode("utf-8")
+    # test Label2
+    code = MtrDex.Label2
+    raw = b'@&'
+    qb64 = 'WEAm'
+    qb64b = qb64.encode("utf-8")
     qb2 = decodeB64(qb64b)
-    assert qb2 == b'\xd4\x00\x05\x89\xca\x7f'
-    bs = ceil((cs * 3) / 4)
-    assert qb2[bs:] == raw  # stable value in qb2
-    assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Label3)
+    matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code ==code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
+
 
     """ Done Test """
 

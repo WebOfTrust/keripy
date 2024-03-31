@@ -305,7 +305,7 @@ class MatterCodex:
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Label3:               str = '1AAF'  # Label3 as 3 bytes for label lead size 0
+    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for special values
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
@@ -313,13 +313,12 @@ class MatterCodex:
     Null:                 str = '1AAK'  # Null None or empty value
     No:                   str = '1AAL'  # No Falsey Boolean value
     Yes:                  str = '1AAM'  # Yes Truthy Boolean value
-    Tag4:                 str = '1AAN'  # Tag4 4 B64 encoded chars for special values
-    Tag8:                 str = '1AAO'  # Tag8 8 B64 encoded chars for special values
+    Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
     TBD0:                 str = '1___'  # Testing purposes only, fixed with lead size 0
     TBD1S:                str = '2__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
     TBD1:                 str = '2___'  # Testing purposes only, fixed with lead size 1
-    TBD2S:                str = '3__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
+    TBD2S:                str = '3__-'  # Testing purposes only, fixed special values with non-empty raw lead size 2
     TBD2:                 str = '3___'  # Testing purposes only, fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 only lead size 0
     StrB64_L1:            str = '5A'  # String Base64 only lead size 1
@@ -768,7 +767,7 @@ class Matter:
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-        '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAF': Sizage(hs=4, ss=4, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
@@ -776,8 +775,7 @@ class Matter:
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAO': Sizage(hs=4, ss=2, fs=12, ls=0),
+        '1AAN': Sizage(hs=4, ss=2, fs=12, ls=0),
         '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
