@@ -305,7 +305,7 @@ class MatterCodex:
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Label3:               str = '1AAF'  # Label3 as 3 bytes for label lead size 0
+    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for special values
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
@@ -313,13 +313,12 @@ class MatterCodex:
     Null:                 str = '1AAK'  # Null None or empty value
     No:                   str = '1AAL'  # No Falsey Boolean value
     Yes:                  str = '1AAM'  # Yes Truthy Boolean value
-    Tag4:                 str = '1AAN'  # Tag4 4 B64 encoded chars for special values
-    Tag8:                 str = '1AAO'  # Tag8 8 B64 encoded chars for special values
+    Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
     TBD0:                 str = '1___'  # Testing purposes only, fixed with lead size 0
     TBD1S:                str = '2__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
     TBD1:                 str = '2___'  # Testing purposes only, fixed with lead size 1
-    TBD2S:                str = '3__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
+    TBD2S:                str = '3__-'  # Testing purposes only, fixed special values with non-empty raw lead size 2
     TBD2:                 str = '3___'  # Testing purposes only, fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 only lead size 0
     StrB64_L1:            str = '5A'  # String Base64 only lead size 1
@@ -603,7 +602,6 @@ class DigCodex:
 DigDex = DigCodex()  # Make instance
 
 
-
 @dataclass(frozen=True)
 class NumCodex:
     """
@@ -627,6 +625,54 @@ class NumCodex:
 
 
 NumDex = NumCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class TagCodex:
+    """
+    TagCodex is codex of Base64 derivation codes for compactly representing
+    various small Base64 tag values as special code soft part values.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
+    Tag2:  str = '0K'  # 1 B64 char tag
+    Tag3:  str = 'X'  # 1 B64 char tag
+    Tag4:  str = '1AAF'  # 1 B64 char tag
+    Tag5:  str = '0L'  # 1 B64 char tag with 1 pre pad
+    Tag6:  str = '0M'  # 1 B64 char tag
+    Tag7:  str = 'Y'  # 1 B64 char tag
+    Tag8:  str = '1AAN'  # 1 B64 char tag
+    Tag9:  str = '0N'  # 1 B64 char tag with 1 pre pad
+    Tag10: str = '0O'  # 1 B64 char tag
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+TagDex = TagCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class PadTagCodex:
+    """
+    TagCodex is codex of Base64 derivation codes for compactly representing
+    various small Base64 tag values as prepadded special code soft part values.
+    Prepad is 1 B64 char.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
+    Tag5:  str = '0L'  # 1 B64 char tag with 1 pre pad
+    Tag9:  str = '0N'  # 1 B64 char tag with 1 pre pad
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+PadTagDex = PadTagCodex()  # Make instance
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -660,7 +706,7 @@ class Matter:
     Properties:
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
-        soft (str): soft part of derivation code fs any.
+        soft (str | bytes): soft part of derivation code fs any.
                     Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
@@ -692,16 +738,9 @@ class Matter:
         _bexfil(): extracts .code and .raw from qb2 (fully qualified Base2)
 
 
-    Size table rules for special soft values:
-    if fn in table is None then must have ss > 0 and (hs + ss) % 4
-    else (fn is not None) then
-        if ss > 0 and fn = hs + ss and ls == 0 then
-           special soft value
-        else
-           not special must have ss == 0
+    Special soft values are indicated when fn in table is None and ss > 0.
 
     """
-    Codex = MtrDex
     # Hards table maps from bytes Base64 first code char to int of hard size, hs,
     # (stable) of code. The soft size, ss, (unstable) is always 0 for Matter
     # unless fs is None which allows for variable size multiple of 4, i.e.
@@ -768,7 +807,7 @@ class Matter:
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-        '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAF': Sizage(hs=4, ss=4, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
@@ -776,8 +815,7 @@ class Matter:
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAO': Sizage(hs=4, ss=2, fs=12, ls=0),
+        '1AAN': Sizage(hs=4, ss=8, fs=12, ls=0),
         '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
@@ -818,21 +856,21 @@ class Matter:
 
 
 
-    def __init__(self, raw=None, code=MtrDex.Ed25519N, rize=None,
-                 qb64b=None, qb64=None, qb2=None, soft='', strip=False):
+    def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
+                 qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
             raw (bytes | bytearray | None): unqualified crypto material usable
                     for crypto operations.
             code (str): stable (hard) part of derivation code
+            soft (str | bytes): soft part for special codes
             rize (int | None): raw size in bytes when variable sized material not
                         including lead bytes if any
                         Otherwise None
             qb64b (bytes | None): fully qualified crypto material Base64
             qb64 (str | bytes | None):  fully qualified crypto material Base64
             qb2 (bytes | None): fully qualified crypto material Base2
-            soft (str | bytes): soft part for special codes
             strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 
@@ -936,7 +974,7 @@ class Matter:
                 raise InvalidSoftError(f"Unsupported variable sized {code=} "
                                        f" with {fs=} for special {soft=}.")
 
-            if not ss > 0 or not ls == 0 or not fs == hs + ss:  # not special soft
+            if not ss > 0 or (fs == hs + ss and not ls == 0):  # not special soft
                 raise InvalidSoftError("Invalid soft size={ss} or lead={ls} "
                                        f" or {code=} {fs=} when special soft.")
 
@@ -1595,7 +1633,6 @@ class Number(Matter):
 
     Methods:
     """
-    Codex = NumDex
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=NumDex.Short, num=None, numh=None, **kwa):
@@ -1899,6 +1936,126 @@ class Dater(Matter):
         """
         return helping.fromIso8601(self.dts)
 
+
+class Tagger(Matter):
+    """
+    Tagger is subclass of Matter, cryptographic material, for compact special
+    fixed size primitive with non-empty soft part and empty raw part.
+
+    Tagger provides a more compact representation of small Base64 values in
+    as soft part of code rather than would be obtained by by using a small raw
+    part whose ASCII representation is converted to Base64.
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+        code (str): hard part of derivation code to indicate cypher suite
+        hard (str): hard part of derivation code. alias for code
+        soft (str): soft part of derivation code fs any.
+                    Empty when ss = 0.
+        both (str): hard + soft parts of full text code
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
+        fullSize (int): full size of primitive
+        raw (bytes): crypto material only. Not derivation code or lead bytes.
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
+        special (bool): True when soft is special raw is empty and fixed size
+        composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
+
+    Properties:
+        tag (str): B64 primitive without prepad (strips prepad from soft)
+
+
+    Inherited Hidden:  (See Matter)
+        _code (str): value for .code property
+        _soft (str): soft value of full code
+        _raw (bytes): value for .raw property
+        _rawSize():
+        _leadSize():
+        _special():
+        _infil(): creates qb64b from .raw and .code (fully qualified Base64)
+        _binfil(): creates qb2 from .raw and .code (fully qualified Base2)
+        _exfil(): extracts .code and .raw from qb64b (fully qualified Base64)
+        _bexfil(): extracts .code and .raw from qb2 (fully qualified Base2)
+
+
+    Hidden:
+
+
+    Methods:
+
+    def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
+                 qb64b=None, qb64=None, qb2=None, strip=False):
+
+    """
+    Pad = '_'  # B64 pad char for tag codes with pre-padded soft values
+
+    def __init__(self, tag='', soft='', code=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw (bytes | bytearray | None): unqualified crypto material usable
+                    for crypto operations.
+            code (str): stable (hard) part of derivation code
+            soft (str | bytes): soft part for special codes
+            rize (int | None): raw size in bytes when variable sized material not
+                        including lead bytes if any
+                        Otherwise None
+            qb64b (bytes | None): fully qualified crypto material Base64
+            qb64 (str | bytes | None):  fully qualified crypto material Base64
+            qb2 (bytes | None): fully qualified crypto material Base2
+            strip (bool): True means strip (delete) matter from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
+
+        Parameters:
+            tag (str | bytes):  Base64 plain. Prepad is added as needed.
+
+        """
+        if tag:
+            if hasattr(tag, "decode"):  # make tag str
+                tag = tag.decode("utf-8")
+            if not Reb64.match(tag.encode("utf-8")):
+                raise InvalidSoftError(f"Non Base64 chars in {tag=}.")
+            codes = astuple(TagDex)
+            l = len(tag)  # soft not empty so l > 0
+            if l > len(codes):
+                raise InvalidSoftError("Oversized tag={soft}.")
+            code = codes[l-1]  # get code for size of soft
+            if code in PadTagDex:
+                soft = self.Pad + tag # pre pad for those that need it
+            else:
+                soft = tag
+
+
+        super(Tagger, self).__init__(soft=soft, code=code, **kwa)
+
+        if (not self._special(self.code)) or self.code not in TagDex:
+            raise InvalidCodeError(f"Invalid code={self.code} for Tagger.")
+
+    @property
+    def tag(self):
+        """Returns:
+                tag (str): B64 primitive without prepad (strips prepad from soft)
+
+        """
+        tag = self.soft
+        if self.code in PadTagDex:
+            pad = self.soft[0]
+            tag = self.soft[1:]
+            if pad != self.Pad:
+                raise  InvalidSoftError("Invaid pre {pad=} for {tag=}.")
+
+        return tag
+
+
+
 # Versage namedtuple
 # proto (str): protocol element of Protocols
 # vrsn (Versionage): instance protocol version namedtuple (major, minor) ints
@@ -1906,76 +2063,81 @@ class Dater(Matter):
 Versage = namedtuple("Versage", "proto vrsn gvrsn", defaults=(None, ))
 
 
-class Verser(Matter):
+class Verser(Tagger):
     """
-    Verser is subclass of Matter, cryptographic material, for formatted
-    version primitives in Base64.  Supports different primitives based on code.
+    Verser is subclass of Tagger, cryptographic material, for formatted
+    version primitives in Base64. Leverages Tagger support compact special
+    fixed size primitives with non-empty soft part and empty raw part.
 
     Verser provides a more compact representation than would be obtained by
     converting the raw ASCII representation to Base64.
 
     Attributes:
 
-    Inherited Properties:  (See Matter)
+    Inherited Properties:  (See Tagger)
         code (str): hard part of derivation code to indicate cypher suite
-        both (int): hard and soft parts of full text code
-        size (int): Number of triplets of bytes including lead bytes
-            (quadlets of chars) of variable sized material. Value of soft size,
-            ss, part of full text code.
-            Otherwise None.
-        rize (int): number of bytes of raw material not including
-                    lead bytes
-        raw (bytes): crypto material only without code
+        hard (str): hard part of derivation code. alias for code
+        soft (str): soft part of derivation code fs any.
+                    Empty when ss = 0.
+        both (str): hard + soft parts of full text code
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
+        fullSize (int): full size of primitive
+        raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
         qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
         qb2  (bytes): binary with derivation code + crypto material
         transferable (bool): True means transferable derivation code False otherwise
         digestive (bool): True means digest derivation code False otherwise
         prefixive (bool): True means identifier prefix derivation code False otherwise
+        special (bool): True when soft is special raw is empty and fixed size
+        composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
+        tag (str): B64 primitive without prepad (strips prepad from soft)
+
 
     Properties:
-        proto (str): protocol from Protocols
-        vrsn  (Versionage): instance protocol version.
-               namedtuple (major, minor) of ints
-        gvrsn (Versionage | None): instance genus version.
-               namedtuple (major, minor) of ints
+        versage (Versage):  named tuple of (proto, vrsn, gvrsn)
 
-    Hidden Inherited:
+    Inherited Hidden:  (See Tagger)
         _code (str): value for .code property
+        _soft (str): soft value of full code
         _raw (bytes): value for .raw property
-        _rsize (bytes): value for .rsize property. Raw size in bytes when
-            variable sized material else None.
-        _size (int): value for .size property. Number of triplets of bytes
-            including lead bytes (quadlets of chars) of variable sized material
-            else None.
-        _infil (types.MethodType): creates qb64b from .raw and .code
-                                   (fully qualified Base64)
-        _exfil (types.MethodType): extracts .code and .raw from qb64b
-                                   (fully qualified Base64)
+        _rawSize():
+        _leadSize():
+        _special():
+        _infil(): creates qb64b from .raw and .code (fully qualified Base64)
+        _binfil(): creates qb2 from .raw and .code (fully qualified Base2)
+        _exfil(): extracts .code and .raw from qb64b (fully qualified Base64)
+        _bexfil(): extracts .code and .raw from qb2 (fully qualified Base2)
 
     Hidden:
-        _proto (str): value for .proto property
-        _vrsn (Versionage): value for .vrsn property
-        _gvrsn (Versionage | None): value for .gvrsn property
+
 
     Methods:
 
     """
 
 
-    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.Tag10, versage=None, proto=Protocols.keri,
-                 vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, **kwa):
+    def __init__(self, qb64b=None, qb64=None, qb2=None, versage=None,
+                 proto=Protocols.keri, vrsn=Vrsn_2_0, gvrsn=None, tag='', **kwa):
         """
-        Inherited Parameters:  (see Matter)
-            raw (bytes): unqualified crypto material usable for crypto operations
+        Inherited Parameters:  (see Tagger)
+            raw (bytes | bytearray | None): unqualified crypto material usable
+                    for crypto operations.
             code (str): stable (hard) part of derivation code
-            rize (int): raw size in bytes when variable sized material else None
-            qb64b (bytes): fully qualified crypto material Base64
-            qb64 (str, bytes):  fully qualified crypto material Base64
-            qb2 (bytes): fully qualified crypto material Base2
+            soft (str | bytes): soft part for special codes
+            rize (int | None): raw size in bytes when variable sized material not
+                        including lead bytes if any
+                        Otherwise None
+            qb64b (bytes | None): fully qualified crypto material Base64
+            qb64 (str | bytes | None):  fully qualified crypto material Base64
+            qb2 (bytes | None): fully qualified crypto material Base2
             strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
+            tag (str | bytes):  Base64 plain. Prepad is added as needed.
 
         Parameters:
             versage (Versage | None): namedtuple of (proto, vrsn, gvrsn)
@@ -1988,45 +2150,32 @@ class Verser(Matter):
         Notes:
             prepad = 'A'
         """
-        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+        if not (qb64b or qb64 or qb2):
             if versage:
                 proto, vrsn, gvrsn = versage
-            if code == MtrDex.Tag10:
-                if not gvrsn:
-                    raise  InvalidValueError(f"Missing genus version.")
 
-                qb64 = (code +
-                        proto +
-                        self.verToB64(vrsn) +
-                        self.verToB64(gvrsn)).encode("utf-8")
+            tag = proto + self.verToB64(vrsn)
 
-            elif code == MtrDex.Tag7:
-                qb64 = (code + proto + self.verToB64(vrsn)).encode("utf-8")
+            if gvrsn:
+                tag += self.verToB64(gvrsn)
 
-            else:
-                raise InvalidCodeError(f"Invalid {code=} for Verser.")
+        super(Verser, self).__init__(qb64b=qb64b, qb64=qb64, qb2=qb2, tag=tag, **kwa)
 
+        if self.code not in (MtrDex.Tag7, MtrDex.Tag10, ):
+            raise InvalidCodeError(f"Invalid code={self.code} for Verser "
+                                   f"{self.tag=}.")
 
-        super(Verser, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
-                                    code=code, **kwa)
-
-        if self.code not in (MtrDex.Tag10, MtrDex.Tag7):
-            raise InvalidCodeError(f"Invalid code={self.code} for Verser.")
-
-        if not self._special(self.code):
-            raise InvalidCodeError(f"Not special code={self.code} for Verser.")
 
     @property
     def versage(self):
-        """Property versage (Versage):  named tuple of (proto, vrsn, gvrsn)
+        """Returns:
+            versage (Versage):  named tuple of (proto, vrsn, gvrsn)
 
         """
         gvrsn = None
-        clp = len(self.code)
-        proto = self.qb64[clp:clp+4]
-        vrsn = self.b64ToVer(self.qb64[clp+4:clp+7])
-        if self.fullSize == clp + 10: # assumes special
-            gvrsn = self.b64ToVer(self.qb64[clp+7:clp+10])
+        proto = self.tag[:4]
+        vrsn = self.b64ToVer(self.tag[4:7])
+        gvrsn = self.b64ToVer(self.tag[7:10]) if len(self.tag) == 10 else None
 
         return Versage(proto=proto, vrsn=vrsn, gvrsn=gvrsn)
 

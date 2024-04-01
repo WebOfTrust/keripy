@@ -1243,10 +1243,7 @@ class Serder:
                 # should dispatch or use match instead of big if else
                 match l:  # label
                     case "v":  # protocol+version
-                        val = Verser(code=MtrDex.Tag10,
-                                     proto=self.proto,
-                                     vrsn=self.vrsn,
-                                     gvrsn=self.gvrsn).qb64b
+                        val = Verser(proto=self.proto, vrsn=self.vrsn).qb64b
 
                     case "t":  # message type
                         val = (MtrDex.Tag3 + ilk).encode("utf-8")  # add code

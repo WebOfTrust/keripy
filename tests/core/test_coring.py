@@ -29,14 +29,14 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          InvalidValueError, DeserializeError, ValidationError,
                          InvalidVarRawSizeError, ConversionError,
                          SoftMaterialError, InvalidSoftError)
-from keri.kering import Version, Versionage, VersionError
+from keri.kering import Version, Versionage, VersionError, Vrsn_1_0, Vrsn_2_0
 
 from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
                               Sadder, Tholder, Seqner,
                               NumDex, Number, Siger, Dater, Bexter, Texter,
-                              Verser, Versage)
+                              Verser, Versage, TagDex, PadTagDex, Tagger)
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
@@ -105,7 +105,7 @@ def test_matter_class():
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Label3': '1AAF',
+        'Tag4': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
         'ECDSA_256r1N': '1AAI',
@@ -113,8 +113,7 @@ def test_matter_class():
         'Null': '1AAK',
         'No': '1AAL',
         'Yes': '1AAM',
-        'Tag4': '1AAN',
-        'Tag8': '1AAO',
+        'Tag8': '1AAN',
         'TBD0S': '1__-',
         'TBD0': '1___',
         'TBD1S': '2__-',
@@ -153,8 +152,6 @@ def test_matter_class():
         'X25519_Cipher_QB2_Big_L2': '9AAD'
     }
 
-
-    assert Matter.Codex == MtrDex
 
     # first character of code with hard size of code
     assert Matter.Hards == {
@@ -217,7 +214,7 @@ def test_matter_class():
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
         '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-        '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAF': Sizage(hs=4, ss=4, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
@@ -225,8 +222,7 @@ def test_matter_class():
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAO': Sizage(hs=4, ss=2, fs=12, ls=0),
+        '1AAN': Sizage(hs=4, ss=8, fs=12, ls=0),
         '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
@@ -1501,141 +1497,114 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Label3
-    #val = int("F89CFF", 16)
-    #assert val == 16293119
-    #raw = val.to_bytes(3, 'big')
-    #assert raw == b'\xf8\x9c\xff'
-    raw = b'hio'
-    cs = len(MtrDex.Label3)
-    assert cs == 4
-    ps = cs % 4
-    assert ps == 0
-    txt = encodeB64(bytes([0]*ps) + raw)
-    #assert txt == b'-Jz_'
-    assert txt == b'aGlv'
-    qb64b = MtrDex.Label3.encode("utf-8") + txt[ps:]
-    #assert qb64b == b'1AAF-Jz_'
-    assert qb64b == b'1AAFaGlv'
-    qb64 = qb64b.decode("utf-8")
+    # test Label1
+    code = MtrDex.Label1
+    raw = b'*'
+    qb64 = 'VAAq'
+    qb64b = qb64.encode("utf-8")
     qb2 = decodeB64(qb64b)
-    assert qb2 == b'\xd4\x00\x05hio'
-    #assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
-    bs = ceil((cs * 3) / 4)
-    assert qb2[bs:] == raw  # stable value in qb2
-    assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Label3)
+    matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
-    # test Label3 as chars
-    txt = b'icp_'
-    raw = decodeB64(txt)
-    assert raw == b'\x89\xca\x7f'
-    val = int.from_bytes(raw, 'big')
-    assert val == 9030271
-    cs = len(MtrDex.Label3)
-    assert cs == 4
-    ps = cs % 4
-    assert ps == 0
-    txt = encodeB64(bytes([0]*ps) + raw)
-    qb64b = MtrDex.Label3.encode("utf-8") + txt
-    assert qb64b == b'1AAFicp_'
-    qb64 = qb64b.decode("utf-8")
+    # test Label2
+    code = MtrDex.Label2
+    raw = b'@&'
+    qb64 = 'WEAm'
+    qb64b = qb64.encode("utf-8")
     qb2 = decodeB64(qb64b)
-    assert qb2 == b'\xd4\x00\x05\x89\xca\x7f'
-    bs = ceil((cs * 3) / 4)
-    assert qb2[bs:] == raw  # stable value in qb2
-    assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Label3)
+    matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code == code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Label3
+    assert matter.code ==code
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    bs = ceil((len(matter.code) * 3) / 4)
-    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
     assert matter.prefixive == False
+    assert not matter.special
+    assert matter.composable
+
 
     """ Done Test """
 
@@ -3185,8 +3154,6 @@ def test_number():
         'Vast': 'U'
     }
 
-    assert Number.Codex == NumDex
-
 
     with pytest.raises(RawMaterialError):
         number = Number(raw=b'')
@@ -4201,54 +4168,232 @@ def test_dater():
 
     """ Done Test """
 
+def test_tagger():
+    """
+    Test Tagger version primitive subclass of Matter
+    """
+    # Test TagCodex PadTagCodex and associated Sizes to be valid specials
+
+
+
+
+    with pytest.raises(EmptyMaterialError):
+        tagger = Tagger()  # defaults
+
+    # Tag1
+    tag = 'v'
+    code = MtrDex.Tag1
+    soft = '_v'
+    qb64 = '0J_v'
+    qb64b = qb64.encode("utf-8")
+    qb2 = decodeB64(qb64b)
+    raw = b''
+
+    tagger = Tagger(tag=tag)  # defaults
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+    tagger = Tagger(qb2=qb2)
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+    tagger = Tagger(qb64=qb64)
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+
+    tagger = Tagger(qb64b=qb64b)
+    assert tagger.code == tagger.hard == code
+    assert tagger.soft == soft
+    assert tagger.raw == raw
+    assert tagger.qb64 == qb64
+    assert tagger.qb2 == qb2
+    assert tagger.special
+    assert tagger.composable
+    assert tagger.tag == tag
+
+
+    tags = 'abcdefghij'
+    alltags = dict()
+    for l in range(1, len(astuple(TagDex)) + 1):
+        tag = tags[:l]
+        tagger = Tagger(tag=tag)
+        assert tagger.tag == tag
+        assert len(tagger.tag) == l
+        assert tagger.code == astuple(TagDex)[l - 1]
+        alltags[l] = (tagger.tag, tagger.code)
+
+    assert alltags == \
+        {
+            1: ('a', '0J'),
+            2: ('ab', '0K'),
+            3: ('abc', 'X'),
+            4: ('abcd', '1AAF'),
+            5: ('abcde', '0L'),
+            6: ('abcdef', '0M'),
+            7: ('abcdefg', 'Y'),
+            8: ('abcdefgh', '1AAN'),
+            9: ('abcdefghi', '0N'),
+            10: ('abcdefghij', '0O')
+         }
+    """ Done Test """
+
+
 def test_verser():
     """
     Test Verser version primitive subclass of Matter
     """
-    code = MtrDex.Tag10
-    soft = 'KERICAACAA'
-    qb64 = '0OKERICAACAA'
-    qb2 = b'\xd0\xe2\x84D\x80\x80\x00 \x00'
+    # Test defaults
+    code = MtrDex.Tag7
+    soft = 'KERICAA'
+    tag = 'KERICAA'
+    qb64 = 'YKERICAA'
+    qb64b = qb64.encode()
+    qb2 = decodeB64(qb64b)
     raw = b''
+    versage = Versage(proto=Protocols.keri, vrsn=Vrsn_2_0, gvrsn=None)
 
     verser = Verser()  # defaults
     assert verser.code == verser.hard == code
     assert verser.soft == soft
+    assert verser.tag == tag
     assert verser.raw == raw
     assert verser.qb64 == qb64
     assert verser.qb2 == qb2
     assert verser.special
-    assert verser.versage == Versage(proto='KERI',
-                                     vrsn=Versionage(major=2, minor=0),
-                                     gvrsn=Versionage(major=2, minor=0))
+    assert verser.composable
+    assert verser.versage == versage
 
-    code = verser.code
-    soft = verser.soft
-    qb2 = verser.qb2
-    qb64 = verser.qb64
+    # test with default equivalent values
+    verser = Verser(versage=versage)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.composable
+    assert verser.versage == versage
+
+    verser = Verser(proto=Protocols.keri, vrsn=Vrsn_2_0)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
 
     verser = Verser(qb2=qb2)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
+    assert verser.tag == tag
     assert verser.raw == raw
     assert verser.qb64 == qb64
     assert verser.qb2 == qb2
     assert verser.special
-    assert verser.versage == Versage(proto='KERI',
-                                     vrsn=Versionage(major=2, minor=0),
-                                     gvrsn=Versionage(major=2, minor=0))
+    assert verser.versage == versage
 
     verser = Verser(qb64=qb64)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
+    assert verser.tag == tag
     assert verser.raw == raw
     assert verser.qb64 == qb64
     assert verser.qb2 == qb2
     assert verser.special
-    assert verser.versage == Versage(proto='KERI',
-                                     vrsn=Versionage(major=2, minor=0),
-                                     gvrsn=Versionage(major=2, minor=0))
+    assert verser.versage == versage
 
+    verser = Verser(qb64b=qb64b)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    # Test with gvrsn
+    code = MtrDex.Tag10
+    soft = 'ACDCCAACAA'
+    tag = 'ACDCCAACAA'
+    qb64 = '0OACDCCAACAA'
+    qb64b = qb64.encode()
+    qb2 = decodeB64(qb64b)
+    raw = b''
+    versage = Versage(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+
+    verser = Verser(versage=versage)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.composable
+    assert verser.versage == versage
+
+    verser = Verser(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    verser = Verser(qb2=qb2)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    verser = Verser(qb64=qb64)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    verser = Verser(qb64b=qb64b)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
 
     """ Done Test """
 
@@ -7009,6 +7154,7 @@ if __name__ == "__main__":
     test_matter_class()
     test_matter()
     test_matter_special()
+    test_tagger()
     test_verser()
     #test_texter()
     #test_counter()
