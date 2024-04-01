@@ -29,7 +29,7 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          InvalidValueError, DeserializeError, ValidationError,
                          InvalidVarRawSizeError, ConversionError,
                          SoftMaterialError, InvalidSoftError)
-from keri.kering import Version, Versionage, VersionError
+from keri.kering import Version, Versionage, VersionError, Vrsn_1_0, Vrsn_2_0
 
 from keri.core import coring
 from keri.core import eventing
@@ -4261,50 +4261,139 @@ def test_verser():
     """
     Test Verser version primitive subclass of Matter
     """
-    code = MtrDex.Tag10
-    soft = 'KERICAACAA'
-    qb64 = '0OKERICAACAA'
-    qb2 = b'\xd0\xe2\x84D\x80\x80\x00 \x00'
+    # Test defaults
+    code = MtrDex.Tag7
+    soft = 'KERICAA'
+    tag = 'KERICAA'
+    qb64 = 'YKERICAA'
+    qb64b = qb64.encode()
+    qb2 = decodeB64(qb64b)
     raw = b''
+    versage = Versage(proto=Protocols.keri, vrsn=Vrsn_2_0, gvrsn=None)
 
     verser = Verser()  # defaults
     assert verser.code == verser.hard == code
     assert verser.soft == soft
+    assert verser.tag == tag
     assert verser.raw == raw
     assert verser.qb64 == qb64
     assert verser.qb2 == qb2
     assert verser.special
-    assert verser.versage == Versage(proto='KERI',
-                                     vrsn=Versionage(major=2, minor=0),
-                                     gvrsn=Versionage(major=2, minor=0))
+    assert verser.composable
+    assert verser.versage == versage
 
-    code = verser.code
-    soft = verser.soft
-    qb2 = verser.qb2
-    qb64 = verser.qb64
+    # test with default equivalent values
+    verser = Verser(versage=versage)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.composable
+    assert verser.versage == versage
+
+    verser = Verser(proto=Protocols.keri, vrsn=Vrsn_2_0)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
 
     verser = Verser(qb2=qb2)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
+    assert verser.tag == tag
     assert verser.raw == raw
     assert verser.qb64 == qb64
     assert verser.qb2 == qb2
     assert verser.special
-    assert verser.versage == Versage(proto='KERI',
-                                     vrsn=Versionage(major=2, minor=0),
-                                     gvrsn=Versionage(major=2, minor=0))
+    assert verser.versage == versage
 
     verser = Verser(qb64=qb64)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
+    assert verser.tag == tag
     assert verser.raw == raw
     assert verser.qb64 == qb64
     assert verser.qb2 == qb2
     assert verser.special
-    assert verser.versage == Versage(proto='KERI',
-                                     vrsn=Versionage(major=2, minor=0),
-                                     gvrsn=Versionage(major=2, minor=0))
+    assert verser.versage == versage
 
+    verser = Verser(qb64b=qb64b)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    # Test with gvrsn
+    code = MtrDex.Tag10
+    soft = 'ACDCCAACAA'
+    tag = 'ACDCCAACAA'
+    qb64 = '0OACDCCAACAA'
+    qb64b = qb64.encode()
+    qb2 = decodeB64(qb64b)
+    raw = b''
+    versage = Versage(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+
+    verser = Verser(versage=versage)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.composable
+    assert verser.versage == versage
+
+    verser = Verser(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    verser = Verser(qb2=qb2)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    verser = Verser(qb64=qb64)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
+
+    verser = Verser(qb64b=qb64b)
+    assert verser.code == verser.hard == code
+    assert verser.soft == soft
+    assert verser.tag == tag
+    assert verser.raw == raw
+    assert verser.qb64 == qb64
+    assert verser.qb2 == qb2
+    assert verser.special
+    assert verser.versage == versage
 
     """ Done Test """
 
