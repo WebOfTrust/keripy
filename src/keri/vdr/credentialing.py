@@ -279,7 +279,7 @@ class Registry(BaseRegistry):
         if vcp is None:
             baks = baks if baks is not None else []
 
-            self.cnfg = [TraitDex.NoRegistrarBackers] if noBackers else []
+            self.cnfg = [TraitDex.NoBackers] if noBackers else []
             if estOnly:
                 self.cnfg.append(TraitDex.EstOnly)
 

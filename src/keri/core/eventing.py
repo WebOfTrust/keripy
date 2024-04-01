@@ -33,7 +33,7 @@ from ..kering import (MissingEntryError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError)
-from ..kering import Version, Versionage
+from ..kering import Version, Versionage, TraitCodex, TraitDex
 
 from ..help import helping
 
@@ -42,25 +42,6 @@ logger = help.ogler.getLogger()
 EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
 MaxIntThold = 2 ** 32 - 1
-
-@dataclass(frozen=True)
-class TraitCodex:
-    """
-    TraitCodex is codex of inception configuration trait code strings
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    """
-    EstOnly: str = 'EO'  # Only allow establishment events
-    DoNotDelegate: str = 'DND'  # Dot not allow delegated identifiers
-    NoRegistrarBackers: str = 'NB'  #  Do not allow any registrar backers. This should be NRB in next version.
-    RegistrarBackers: str = 'RB' # Registrar backer provided in Registrar seal
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-TraitDex = TraitCodex()  # Make instance
 
 # Location of last establishment key event: sn is int, dig is qb64 digest
 LastEstLoc = namedtuple("LastEstLoc", 's d')
@@ -1852,8 +1833,8 @@ class Kever:
         self.cuts = state.ee.br
         self.adds = state.ee.ba
         self.estOnly = False
-        self.doNotDelegate = True if TraitCodex.DoNotDelegate in state.c else False
-        self.estOnly = True if TraitCodex.EstOnly in state.c else False
+        self.doNotDelegate = True if TraitDex.DoNotDelegate in state.c else False
+        self.estOnly = True if TraitDex.EstOnly in state.c else False
         self.lastEst = LastEstLoc(s=int(state.ee.s, 16),
                                   d=state.ee.d)
         self.delpre = state.di if state.di else None

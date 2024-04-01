@@ -6,10 +6,9 @@ keri.core.coring module
 import re
 import json
 from typing import Union
-from collections.abc import Sequence, Mapping
-
-from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
+from collections.abc import Sequence, Mapping
+from dataclasses import dataclass, astuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from fractions import Fraction

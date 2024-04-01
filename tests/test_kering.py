@@ -5,6 +5,7 @@ tests.test_kering module
 """
 import re
 import json
+from dataclasses import asdict, astuple
 
 import cbor2 as cbor
 import msgpack
@@ -15,6 +16,7 @@ from keri import kering
 from keri.kering import Protocolage, Protocols
 from keri.kering import Serialage,  Serials
 from keri.kering import Ilkage, Ilks
+from keri.kering import TraitCodex, TraitDex
 from keri.kering import (Versionage, Version, MAXVERFULLSPAN,
                          versify, deversify, Rever, Smellage, smell,
                          VER1FULLSPAN, VER1TERM, VEREX1,
@@ -27,7 +29,7 @@ from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
                          codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
 
 
-def test_protos():
+def test_protocols():
     """
     Test protocols namedtuple instance Protocols
     """
@@ -42,6 +44,31 @@ def test_protos():
 
     """End Test"""
 
+def test_traitdex():
+    """
+    Test TraitDex instance of TraitCodex dataclass
+    """
+
+    assert isinstance(TraitDex, TraitCodex)
+
+    assert asdict(TraitDex) == \
+        {
+            'EstOnly': 'EO',
+            'DoNotDelegate': 'DND',
+            'RegistrarBackers': 'RB',
+            'NoBackers': 'NB',
+            'NoRegistrarBackers': 'NRB',
+            'DelegateIsDelegator': 'DID',
+        }
+
+    assert 'EO' in TraitDex
+    assert 'DND' in TraitDex
+    assert 'RB' in TraitDex
+    assert 'NB' in TraitDex
+    assert 'NRB' in TraitDex
+    assert 'DID' in TraitDex
+
+    """End Test"""
 
 
 def test_version_regex():
@@ -774,7 +801,8 @@ def test_ilks():
 
 
 if __name__ == "__main__":
-    test_protos()
+    test_protocols()
+    test_traitdex()
     test_version_regex()
     test_smell()
     test_snuff()

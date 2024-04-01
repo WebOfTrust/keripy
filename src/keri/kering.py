@@ -413,6 +413,28 @@ Roles = Rolage(controller='controller', witness='witness', registrar='registrar'
                watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox", agent="agent")
 
 
+@dataclass(frozen=True)
+class TraitCodex:
+    """
+    TraitCodex is codex of inception configuration trait code strings
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    """
+    EstOnly: str = 'EO'  # Only allow establishment events. Inception only.
+    DoNotDelegate: str = 'DND'  # Dot not allow delegated identifiers. Inception only.
+    RegistrarBackers: str = 'RB' # Registrar backer provided in Registrar seal in this event
+    NoBackers: str = 'NB'  #  Do not allow any (registrar backers).
+                             # Inception and Rotation in v2.  This should be NRB in next version.
+    NoRegistrarBackers: str = 'NRB'  #  Do not allow any registrar backers. Inception and Rotation.
+    DelegateIsDelegator: str = 'DID'  # Treat delegate AIDs same as their delegator. Inception only
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+TraitDex = TraitCodex()  # Make instance
+
 
 # Exception Subclasses
 class KeriError(Exception):

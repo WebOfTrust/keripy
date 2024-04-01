@@ -423,7 +423,7 @@ class Habery:
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
             delpre (str): qb64 of delegator identifier prefix
-            estOnly (str): eventing.TraitCodex.EstOnly means only establishment
+            estOnly (str): eventing.TraitDex.EstOnly means only establishment
                 events allowed in KEL for this Hab
             data (list | None): seal dicts
         """
@@ -475,9 +475,9 @@ class Habery:
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
             delpre (str): qb64 of delegator identifier prefix
-            estOnly (str): eventing.TraitCodex.EstOnly means only establishment
+            estOnly (str): eventing.TraitDex.EstOnly means only establishment
                 events allowed in KEL for this Hab
-            DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
+            DnD (bool): eventing.TraitDex.DnD means do allow delegated identifiers from this identifier
 
         ToDo: NRR
         add midxs tuples for each group member or all in group multisig.
@@ -1083,10 +1083,10 @@ class BaseHab:
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+            DnD (bool): True means add trait of eventing.TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
 
@@ -1103,9 +1103,9 @@ class BaseHab:
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         cnfg = []
         if estOnly:
-            cnfg.append(eventing.TraitCodex.EstOnly)
+            cnfg.append(eventing.TraitDex.EstOnly)
         if DnD:
-            cnfg.append(eventing.TraitCodex.DoNotDelegate)
+            cnfg.append(eventing.TraitDex.DoNotDelegate)
         self.delpre = delpre
         keys = [verfer.qb64 for verfer in verfers]
         if self.delpre:
@@ -2282,10 +2282,10 @@ class Hab(BaseHab):
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+            DnD (bool): True means add trait of eventing.TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
 
@@ -2729,10 +2729,10 @@ class GroupHab(BaseHab):
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+            DnD (bool): True means add trait of eventing.TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
             merfers (list[Verfer] | None): group member Verfer instances of
