@@ -53,7 +53,7 @@ class TraitCodex:
     """
     EstOnly: str = 'EO'  # Only allow establishment events
     DoNotDelegate: str = 'DND'  # Dot not allow delegated identifiers
-    NoRegistrarBackers: str = 'NB'  #  This should be NRB in next versionDo not allow any registrar backers
+    NoRegistrarBackers: str = 'NB'  #  Do not allow any registrar backers. This should be NRB in next version.
     RegistrarBackers: str = 'RB' # Registrar backer provided in Registrar seal
 
     def __iter__(self):

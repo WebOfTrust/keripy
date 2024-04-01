@@ -28,15 +28,16 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
                          InvalidValueError, DeserializeError, ValidationError,
                          InvalidVarRawSizeError, ConversionError,
-                         SoftMaterialError, InvalidSoftError)
+                         SoftMaterialError, InvalidSoftError, InvalidCodeError)
 from keri.kering import Version, Versionage, VersionError, Vrsn_1_0, Vrsn_2_0
 
 from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
-                              Sadder, Tholder, Seqner,
-                              NumDex, Number, Siger, Dater, Bexter, Texter,
-                              Verser, Versage, TagDex, PadTagDex, Tagger)
+                              Sadder, Tholder, Seqner, NumDex, Number, Siger,
+                              Dater, Bexter, Texter,
+                              TagDex, PadTagDex, Tagger, Ilker,
+                              Verser, Versage, )
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
@@ -4174,9 +4175,6 @@ def test_tagger():
     """
     # Test TagCodex PadTagCodex and associated Sizes to be valid specials
 
-
-
-
     with pytest.raises(EmptyMaterialError):
         tagger = Tagger()  # defaults
 
@@ -4219,7 +4217,6 @@ def test_tagger():
     assert tagger.composable
     assert tagger.tag == tag
 
-
     tagger = Tagger(qb64b=qb64b)
     assert tagger.code == tagger.hard == code
     assert tagger.soft == soft
@@ -4255,6 +4252,101 @@ def test_tagger():
             10: ('abcdefghij', '0O')
          }
     """ Done Test """
+
+
+def test_ilker():
+    """
+    Test Ilker version primitive subclass of Tagger
+    """
+    with pytest.raises(EmptyMaterialError):
+        ilker = Ilker()  # defaults
+
+    # Tag1
+    ilk = Ilks.rot
+    tag = ilk
+    code = MtrDex.Tag3
+    soft = 'rot'
+    qb64 = 'Xrot'
+    qb64b = qb64.encode("utf-8")
+    qb2 = decodeB64(qb64b)
+    raw = b''
+
+    ilker = Ilker(ilk=ilk)  # defaults
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(qb2=qb2)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(qb64=qb64)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(qb64b=qb64b)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(tag=tag)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    # test error condition
+    with pytest.raises(InvalidSoftError):
+        ilker = Ilker(ilk='bad')
+
+    # ignores code
+    ilker = Ilker(ilk=ilk, code=MtrDex.Tag4)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    # test error using soft and code
+    with pytest.raises(InvalidCodeError):
+        ilker = Ilker(soft='bady', code=MtrDex.Tag4)
+
+    """End Test"""
 
 
 def test_verser():
@@ -7155,6 +7247,7 @@ if __name__ == "__main__":
     test_matter()
     test_matter_special()
     test_tagger()
+    test_ilker()
     test_verser()
     #test_texter()
     #test_counter()
