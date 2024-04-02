@@ -125,6 +125,15 @@ def migrate(tymth, tock=0.0, **opts):
 
             migrateKeys(hby.db)
 
+            # clear escrows
+            print("clearing escrows")
+            hby.db.gpwe.trim()
+            hby.db.gdee.trim()
+            hby.db.dpwe.trim()
+            hby.db.gpse.trim()
+            hby.db.epse.trim()
+            hby.db.dune.trim()
+
     except ConfigurationError:
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1
