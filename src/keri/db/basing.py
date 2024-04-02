@@ -883,7 +883,7 @@ class Baser(dbing.LMDBer):
         self.ends = koming.Komer(db=self, subkey='ends.',
                                  schema=EndpointRecord, )
 
-        # service endpont locations keyed by eid.scheme  (endpoint identifier)
+        # service endpoint locations keyed by eid.scheme  (endpoint identifier)
         # data extracted from reply loc
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
@@ -1015,12 +1015,14 @@ class Baser(dbing.LMDBer):
 
         # Global settings for the Habery environment
         self.hbys = subing.Suber(db=self, subkey='hbys.')
+
         # Signed contact data, keys by prefix
         self.cons = subing.Suber(db=self,
                                  subkey="cons.")
 
         # Transferable signatures on contact data
         self.ccigs = subing.CesrSuber(db=self, subkey='ccigs.', klas=coring.Cigar)
+
         # Chunked image data for contact information for remote identifiers
         self.imgs = self.env.open_db(key=b'imgs.')
 
