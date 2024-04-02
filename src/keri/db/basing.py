@@ -18,7 +18,7 @@ database will never have these flags set.
 So only need to set dupsort first time opened each other opening does not
 need to call it
 """
-
+import importlib
 import os
 import shutil
 from collections import namedtuple
@@ -30,11 +30,13 @@ import json
 import cbor2 as cbor
 import msgpack
 import lmdb
+import semver
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from . import dbing, koming, subing, migrating
+import keri
+from . import dbing, koming, subing
 from .. import kering
 
 from ..core import coring, eventing, parsing, serdering
@@ -45,6 +47,10 @@ from ..help import helping
 
 logger = help.ogler.getLogger()
 
+
+MIGRATIONS = [
+    ("1.1.0", ["rekey_habs"])
+]
 
 
 # ToDo XXXX maybe
@@ -1195,7 +1201,7 @@ class Baser(dbing.LMDBer):
 
         """
         # Check migrations to see if this database is up to date.  Error otherwise
-        if not migrating.Migrator(db=self).current(self.version):
+        if not self.current:
             raise kering.DatabaseError("Database migrations must be run.")
 
         removes = []
@@ -1218,6 +1224,70 @@ class Baser(dbing.LMDBer):
 
         for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
+
+    def migrate(self):
+        for (version, migrations) in MIGRATIONS:
+            # Check to see if this is for an older version
+            if self.version is not None and semver.compare(version, self.version) != 1:
+                continue
+
+            for migration in migrations:
+                modName = f"keri.db.migrations.{migration}"
+                if self.migs.get(keys=(migration,)) is not None:
+                    continue
+
+                mod = importlib.import_module(modName)
+                try:
+                    print(f"running migration {modName}")
+                    mod.migrate(self)
+                except Exception as e:
+                    print(f"\nAbandoning migration {migration} with error: {e}")
+                    return
+
+                self.migs.pin(keys=(migration,), val=coring.Dater())
+
+        self.version = keri.__version__
+
+    @property
+    def current(self):
+        """ Current property determines if we are at the current database migration state.
+
+         If the database version matches the library version return True
+         If the current database version is behind the current library version, check for migrations
+            - If there are migrations to run, return False
+            - If there are no migrations to run, reset database version to library version and return True
+         If the current database version is ahead of the current library version, raise exception
+
+         """
+        if self.version == keri.__version__:
+            return True
+
+        # If database version is ahead of library version, throw exception
+        if self.version is not None and semver.compare(self.version, keri.__version__) == 1:
+            raise kering.ConfigurationError(
+                f"Database version={self.version} is ahead of library version={keri.__version__}")
+
+        last = MIGRATIONS[-1]
+        # If we aren't at latest version, but there are no outstanding migrations, reset version to latest
+        if self.migs.get(keys=(last[1][0],)) is not None:
+            return True
+
+        # We have migrations to run
+        return False
+
+    def complete(self, name=None):
+        migrations = []
+        if not name:
+            for version, migs in MIGRATIONS:
+                for mig in migs:
+                    dater = self.migs.get(keys=(mig,))
+                    migrations.append((mig, dater))
+        else:
+            if name not in MIGRATIONS:
+                raise ValueError(f"No migration named {name}")
+            migrations.append((name, self.migs.get(keys=(name,))))
+
+        return migrations
 
     def clean(self):
         """

@@ -5,11 +5,13 @@ keri.kli.commands module
 """
 import argparse
 
+import keri
 from hio import help
 from hio.base import doing
+from keri import kering
 
 from keri.app.cli.common import existing
-from keri.db import migrating
+from keri.db import basing
 
 logger = help.ogler.getLogger()
 
@@ -21,7 +23,7 @@ def handler(args):
     Args:
         args(Namespace): arguments object from command line
     """
-    clean = CleanDoer(args)
+    clean = MigrateDoer(args)
     return [clean]
 
 
@@ -41,18 +43,25 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)
 
 
-class CleanDoer(doing.Doer):
+class MigrateDoer(doing.Doer):
 
     def __init__(self, args):
         self.args = args
-        super(CleanDoer, self).__init__()
+        super(MigrateDoer, self).__init__()
 
     def recur(self, tyme):
-        hby = existing.setupHby(name=self.args.name, base=self.args.base,
-                                bran=self.args.bran, temp=self.args.temp)
+        db = basing.Baser(name=self.args.name,
+                          base=self.args.base,
+                          temp=self.args.temp,
+                          reopen=False)
+
+        try:
+            db.reopen()
+        except kering.DatabaseError:
+            pass
+
         print("Migrating...")
-        migrator = migrating.Migrator(db=hby.db)
-        migrator.migrate()
+        db.migrate()
         print("Finished")
 
         return True

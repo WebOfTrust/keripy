@@ -10,7 +10,6 @@ from hio.base import doing
 from prettytable import PrettyTable
 
 from keri.app.cli.common import existing
-from keri.db import migrating
 
 logger = help.ogler.getLogger()
 
@@ -56,10 +55,10 @@ class ListDoer(doing.Doer):
         hby = existing.setupHby(name=self.args.name, base=self.args.base,
                                 bran=self.args.bran, temp=self.args.temp)
 
-        migrator = migrating.Migrator(db=hby.db)
-        for idx, (name, dater) in enumerate(migrator.complete()):
+        for idx, (name, dater) in enumerate(hby.db.complete()):
+            print(name, dater)
             date = dater.datetime.strftime("%Y-%m-%d %H:%M") if dater is not None else "Not Run"
-            tab.add_row((f"{idx+1}", f"{name}", date))
+            tab.add_row((f"{idx + 1}", f"{name}", date))
 
         print(tab)
         return True

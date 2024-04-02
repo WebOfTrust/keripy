@@ -9,7 +9,6 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.common import existing
-from keri.db import migrating
 
 logger = help.ogler.getLogger()
 
@@ -53,8 +52,7 @@ class CleanDoer(doing.Doer):
         hby = existing.setupHby(name=self.args.name, base=self.args.base,
                                 bran=self.args.bran, temp=self.args.temp)
 
-        migrator = migrating.Migrator(db=hby.db)
-        [(name, dater)] = migrator.complete(name=self.args.migration)
+        [(name, dater)] = hby.db.complete(name=self.args.migration)
         date = dater.datetime.strftime("%Y-%m-%d %H:%M") if dater is not None else "Not Run"
 
         print(f"{self.args.migration} -> {date}")

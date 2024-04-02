@@ -53,19 +53,13 @@ from contextlib import contextmanager
 from typing import Union
 
 import lmdb
-from hio.help.helping import ocfn
-from  ordered_set import OrderedSet as oset
-
-from hio.base import filing
-
+from ordered_set import OrderedSet as oset
 from hio.base import filing
 
 import keri
 from ..kering import MaxON  # maximum ordinal number for seqence or first seen
-
 from ..help import helping
 
-#MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
 ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
 SuffixSize = 32  # does not include trailing separator
@@ -310,7 +304,6 @@ class LMDBer(filing.Filer):
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     MaxNamedDBs = 96
 
-
     def __init__(self, readonly=False, **kwa):
         """
         Setup main database directory at .dirpath.
@@ -347,11 +340,11 @@ class LMDBer(filing.Filer):
                                 False means open database in read/write mode
 
         """
+
         self.env = None
-        self.version = None
+        self._version = None
         self.readonly = True if readonly else False
         super(LMDBer, self).__init__(**kwa)
-
 
     def reopen(self, readonly=False, **kwa):
         """
@@ -378,6 +371,7 @@ class LMDBer(filing.Filer):
             readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
         """
+        exists = self.exists(name=self.name, base=self.base, temp=self.temp)
         opened = super(LMDBer, self).reopen(**kwa)
         if readonly is not None:
             self.readonly = readonly
@@ -387,29 +381,56 @@ class LMDBer(filing.Filer):
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=104857600,
                              mode=self.perm, readonly=self.readonly)
 
-        self.version = self.getVersion()
-        if self.version is None:
-            self.version = keri.__version__
-            self.setVersion(keri.__version__)
-
         self.opened = True if opened and self.env else False
+
+        if self.opened and not self.readonly and not exists:
+            self.version = keri.__version__
+
         return self.opened
 
-    def getVersion(self):
-        with self.env.begin() as txn:
-            cursor = txn.cursor()
-            version = cursor.get(b'__version__')
-            return version.decode("utf-8") if version is not None else None
+    def exists(self, name="", base="", temp=None, headDirPath=None, clean=False, filed=False, fext=None):
+        temp = True if temp else False
 
-    def setVersion(self, val):
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
+        if temp:
+            return False
 
-        with self.env.begin(write=True) as txn:
-            cursor = txn.cursor()
-            version = cursor.replace(b'__version__', val)
-            return version
+        # use class defaults here so can use makePath for other dirs and files
+        if headDirPath is None:
+            headDirPath = self.HeadDirPath
 
+        if fext is None:
+            fext = self.Fext
+
+        tailDirPath = self.CleanTailDirPath if clean else self.TailDirPath
+
+        if filed:
+            root, ext = os.path.splitext(name)
+            if not ext:
+                name = f"{name}.{fext}"
+
+        path = os.path.abspath(
+            os.path.expanduser(
+                os.path.join(headDirPath,
+                             tailDirPath,
+                             base,
+                             name)))
+
+        return os.path.exists(path)
+
+    @property
+    def version(self):
+        if self._version is None:
+            self._version = self.getVer()
+
+        return self._version
+
+    @version.setter
+    def version(self, val):
+        if hasattr(val, "decode"):
+            val = val.decode("utf-8")  # convert bytes to str
+
+        self._version = val
+        self.setVer(self._version)
 
     def close(self, clear=False):
         """
@@ -425,8 +446,21 @@ class LMDBer(filing.Filer):
 
         self.env = None
 
-        return(super(LMDBer, self).close(clear=clear))
+        return super(LMDBer, self).close(clear=clear)
 
+    def getVer(self):
+        with self.env.begin() as txn:
+            cursor = txn.cursor()
+            version = cursor.get(b'__version__')
+            return version.decode("utf-8") if version is not None else None
+
+    def setVer(self, val):
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+
+        with self.env.begin(write=True) as txn:
+            cursor = txn.cursor()
+            cursor.replace(b'__version__', val)
 
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
     def putVal(self, db, key, val):

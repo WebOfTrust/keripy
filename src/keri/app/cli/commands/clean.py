@@ -9,7 +9,6 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.common import existing
-from keri.db import migrating
 
 logger = help.ogler.getLogger()
 
@@ -52,8 +51,7 @@ class CleanDoer(doing.Doer):
         hby = existing.setupHby(name=self.args.name, base=self.args.base,
                                 bran=self.args.bran, temp=self.args.temp)
         print("Migrating...")
-        migrator = migrating.Migrator(db=hby.db)
-        migrator.migrate()
+        hby.db.migrate()
         print("Finished")
 
         hby = existing.setupHby(name=self.args.name, base=self.args.base,
