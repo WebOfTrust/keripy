@@ -30,13 +30,13 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          InvalidVarRawSizeError, ConversionError,
                          SoftMaterialError, InvalidSoftError, InvalidCodeError)
 from keri.kering import Version, Versionage, VersionError, Vrsn_1_0, Vrsn_2_0
+from keri.kering import Protocols, Protocolage, Ilkage, Ilks, TraitDex
 
 from keri.core import coring
 from keri.core import eventing
-from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
-                              Sadder, Tholder, Seqner, NumDex, Number, Siger,
-                              Dater, Bexter, Texter,
-                              TagDex, PadTagDex, Tagger, Ilker,
+from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
+                              Siger, Dater, Bexter, Texter,
+                              TagDex, PadTagDex, Tagger, Ilker, Traitor,
                               Verser, Versage, )
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
@@ -4256,12 +4256,11 @@ def test_tagger():
 
 def test_ilker():
     """
-    Test Ilker version primitive subclass of Tagger
+    Test Ilker message type subclass of Tagger
     """
     with pytest.raises(EmptyMaterialError):
         ilker = Ilker()  # defaults
 
-    # Tag1
     ilk = Ilks.rot
     tag = ilk
     code = MtrDex.Tag3
@@ -4345,6 +4344,100 @@ def test_ilker():
     # test error using soft and code
     with pytest.raises(InvalidCodeError):
         ilker = Ilker(soft='bady', code=MtrDex.Tag4)
+
+    """End Test"""
+
+
+def test_traitor():
+    """
+    Test Traitor configuration trait subclass of Tagger
+    """
+    with pytest.raises(EmptyMaterialError):
+        traitor = Traitor()  # defaults
+
+    trait = TraitDex.EstOnly
+    tag = trait
+    code = MtrDex.Tag2
+    soft = 'EO'
+    qb64 = '0KEO'
+    qb64b = qb64.encode("utf-8")
+    qb2 = decodeB64(qb64b)
+    raw = b''
+
+    traitor = Traitor(trait=trait)  # defaults
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(qb2=qb2)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(qb64=qb64)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(qb64b=qb64b)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(tag=tag)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    # test error condition
+    with pytest.raises(InvalidSoftError):
+        traitor = Traitor(trait='bad')
+
+    # ignores code
+    traitor = Traitor(trait=trait, code=MtrDex.Tag4)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    # test error using soft and code
+    with pytest.raises(InvalidSoftError):
+        traitor = Traitor(soft='bady', code=MtrDex.Tag4)
 
     """End Test"""
 
@@ -7248,6 +7341,7 @@ if __name__ == "__main__":
     test_matter_special()
     test_tagger()
     test_ilker()
+    test_traitor()
     test_verser()
     #test_texter()
     #test_counter()

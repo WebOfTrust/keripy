@@ -23,6 +23,8 @@ from keri.core import coring
 from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
 
+from keri.core.eventing import (incept, )
+
 
 def test_fielddom():
     """Test FieldDom dataclass"""
@@ -2637,6 +2639,14 @@ def test_serdery():
     """End Test"""
 
 
+def test_cesr_native_dumps():
+    """Test Serder._dumps"""
+
+    keys = ["EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"]
+    serder = incept(keys, version=Vrsn_2_0)
+
+    """End Test"""
+
 
 
 if __name__ == "__main__":
@@ -2659,4 +2669,5 @@ if __name__ == "__main__":
     test_serderacdc()
     test_serder_v2()
     test_serdery()
+    test_cesr_native_dumps()
 

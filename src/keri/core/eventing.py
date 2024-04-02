@@ -34,6 +34,7 @@ from ..kering import (MissingEntryError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError)
 from ..kering import Version, Versionage, TraitCodex, TraitDex
+from ..kering import Coldage, Colds, ColdDex
 
 from ..help import helping
 
@@ -101,53 +102,6 @@ SealTrans = namedtuple("SealTrans", 's d')
 # d = SAID digest qb64 of latest event
 StateEvent = namedtuple("StateEvent", 's t d')
 
-
-@dataclass(frozen=True)
-class ColdCodex:
-    """
-    ColdCodex is codex of cold stream start tritets of first byte
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    First three bits:
-        0o0 = 000 free
-        0o1 = 001 cntcode B64
-        0o2 = 010 opcode B64
-        0o3 = 011 json
-        0o4 = 100 mgpk
-        0o5 = 101 cbor
-        0o6 = 110 mgpk
-        007 = 111 cntcode or opcode B2
-
-    status is one of ('evt', 'txt', 'bny' )
-    'evt' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
-    'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
-    'bny' if tritet in (ColdDex.CtOpB2,)
-
-    otherwise raise ColdStartError
-
-    x = bytearray([0x2d, 0x5f])
-    x == bytearray(b'-_')
-    x[0] >> 5 == 0o1
-    True
-    """
-    Free: int = 0o0  # not taken
-    CtB64: int = 0o1  # CountCode Base64
-    OpB64: int = 0o2  # OpCode Base64
-    JSON: int = 0o3  # JSON Map Event Start
-    MGPK1: int = 0o4  # MGPK Fixed Map Event Start
-    CBOR: int = 0o5  # CBOR Map Event Start
-    MGPK2: int = 0o6  # MGPK Big 16 or 32 Map Event Start
-    CtOpB2: int = 0o7  # CountCode or OpCode Base2
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-ColdDex = ColdCodex()  # Make instance
-
-Coldage = namedtuple("Coldage", 'msg txt bny')  # stream cold start status
-Colds = Coldage(msg='msg', txt='txt', bny='bny')
 
 
 # Future make Cues dataclasses  instead of dicts. Dataclasses so may be converted
@@ -799,32 +753,6 @@ def incept(keys,
     serder._verify()  # raises error if fails verifications
     return serder
 
-    #if delpre is not None:  # delegated inception with ilk = dip
-        #ked['di'] = delpre
-        #if code is None:
-            #code = MtrDex.Blake3_256  # force digestive
-
-    #if delpre is None and code is None and len(keys) == 1:
-        #prefixer = Prefixer(qb64=keys[0])  # defaults to not digestive code
-        #if prefixer.digestive:
-            #raise ValueError("Invalid code, digestive={}, must be derived from"
-                             #" ked.".format(prefixer.code))
-    #else:  # digestive
-        ## raises derivation error if non-empty nxt but ephemeral code
-        #prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
-
-        #if delpre is not None:
-            #if not prefixer.digestive:
-                #raise ValueError(f"Invalid derivation code = {prefixer.code} "
-                                 #f"for delegation. Must be digestive")
-
-    #ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
-    #if prefixer.digestive:
-        #ked["d"] = prefixer.qb64
-    #else:
-        #_, ked = coring.Saider.saidify(sad=ked)
-
-    #return Serder(ked=ked)  # return serialized ked
 
 def delcept(keys, delpre, **kwa):
     """

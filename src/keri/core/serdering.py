@@ -30,7 +30,8 @@ from ..kering import SMELLSIZE, Smellage, smell
 from ..kering import Protocols, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
-from .coring import Matter, Saider, Verfer, Diger, Number, Tholder, Verser
+from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
+                     Ilker, Traitor, Verser, )
 
 from ..core import counting
 from ..core.counting import GenDex, AllTags, Counter
@@ -1242,11 +1243,11 @@ class Serder:
 
                 # should dispatch or use match instead of big if else
                 match l:  # label
-                    case "v":  # protocol+version
+                    case "v":  # protocol+version  do not use version string itself
                         val = Verser(proto=self.proto, vrsn=self.vrsn).qb64b
 
-                    case "t":  # message type
-                        val = (MtrDex.Tag3 + ilk).encode("utf-8")  # add code
+                    case "t":  # message type (ilk), already got ilk
+                        val = Ilker(ilk=v).qb64b  # assumes same
 
                     case "d" | "i" | "p" | "di":  # said or aid
                         val = v.encode("utf-8")  # already primitive qb64 make qb6b
@@ -1270,30 +1271,39 @@ class Serder:
                     case "c":  # list of config traits strings
                         frame = bytearray()
                         for e in v:  # list
-                            pass
-                            #frame.extend(e.encode("utf-8"))
+                            frame.extend(Traitor(trait=e).qb64n)
 
                         val = bytearray(Counter(tag=AllTags.GenericListGroup,
-                                                count=len(frame) % 4,
-                                                version=self.gvrsn).qb64b)
+                                                count=len(frame) % 4).qb64b)
                         val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
                         frame = bytearray()
-                        if isinstance(v, Mapping):
-                            for l, e in v.items():
-                                pass
-                            val = bytearray(Counter(tag=AllTags.GenericMapGroup,
-                                                count=len(frame) % 4,
-                                                version=self.gvrsn).qb64b)
-                        else:
-                            for e in v:  # list
-                                pass
-                                #frame.extend(e.encode("utf-8"))
+                        for e in v:  # list of seal dicts
+                            pass
+                            #if tuple(v) == eventing.SealEvent._fields:
+                                #eseal = eventing.SealEvent(**v)  # convert to namedtuple
+                                #SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+                                #SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+                                #DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
+                                #MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+                                #BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
 
-                            val = bytearray(Counter(tag=AllTags.GenericListGroup,
-                                                count=len(frame) % 4,
-                                                version=self.gvrsn).qb64b)
+                                # SealMark == tuple of seal dict field names tuple(dict)
+                                #d = dict(a=1, b=2)
+                                #tuple(d)
+                                #('a', 'b')
+
+                            #frame.extend(Anchor(seal=e).qb64b)
+                            # else:  generic seal no count type (v, Mapping):
+                                #for l, e in v.items():
+                                    #pass
+                                #val = bytearray(Counter(tag=AllTags.GenericMapGroup,
+                                               # count=len(frame) % 4).qb64b)
+                                #val.extend(mapframe)
+
+                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) % 4).qb64b)
                         val.extend(frame)
 
 
@@ -1319,7 +1329,10 @@ class Serder:
 
         # prepend count code for message
         if fixed:
-            pass
+
+            val = bytearray(Counter(tag=AllTags.FixedMessageBodyGroup,
+                                    count=len(raw) % 4).qb64b)
+            val.extend(raw)
         else:
             pass
 
