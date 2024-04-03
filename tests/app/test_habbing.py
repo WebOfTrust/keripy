@@ -727,8 +727,7 @@ def test_namespaced_habs():
         nshab = hby.makeHab(name="test2", ns="agent")
         assert nshab.pre == "EErXOolQNmKrTMKfXdQ1sj8YsgZZe4wMXZwsX-j1V6Dd"
 
-        assert len(hby.habs) == 1
-        assert len(hby.namespaces) == 1
+        assert len(hby.habs) == 2
         assert len(hby.prefixes) == 2
 
         found = hby.habByName(name="test2")
@@ -742,11 +741,8 @@ def test_namespaced_habs():
         nshab = hby.makeHab(name="test.3", ns="agent")
         assert nshab.pre == "EG5FUOzW_KKVB8JGlNGoZAADDC8cZ6Jt079nLEaFnYcg"
 
-        assert len(hby.habs) == 1
-        assert len(hby.namespaces) == 1
+        assert len(hby.habs) == 3
         assert len(hby.prefixes) == 3
-        ns = hby.namespaces['agent']
-        assert len(ns) == 2
 
         # '.' characters not allowed in namespace names
         with pytest.raises(kering.ConfigurationError):
@@ -773,13 +769,8 @@ def test_namespaced_habs():
             assert pre in hby.db.kevers  # read through cache
             assert pre in hby.db.prefixes
 
-        assert len(hby.habs) == 2
+        assert len(hby.habs) == 5
         assert len(hby.db.prefixes) == 5
-
-        agent = hby.namespaces["agent"]
-        assert len(agent) == 2
-        ctrl = hby.namespaces["controller"]
-        assert len(ctrl) == 1
 
         found = hby.habByName(name=name)
         assert found.pre == opre
@@ -840,10 +831,10 @@ def test_hab_by_pre():
         # Only habs in default namespace are in hby.habs
         assert hab1.pre in hby.habs
         assert hab2.pre in hby.habs
-        assert hab3.pre not in hby.habs
-        assert hab4.pre not in hby.habs
-        assert hab5.pre not in hby.habs
-        assert hab6.pre not in hby.habs
+        assert hab3.pre in hby.habs
+        assert hab4.pre in hby.habs
+        assert hab5.pre in hby.habs
+        assert hab6.pre in hby.habs
 
         assert hby.habByPre("EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3") is None
 
@@ -853,17 +844,6 @@ def test_hab_by_pre():
         assert hby.habByPre(pre=hab4.pre) == hab4
         assert hby.habByPre(pre=hab5.pre) == hab5
         assert hby.habByPre(pre=hab6.pre) == hab6
-
-        assert "one" in hby.namespaces
-        assert hab3.pre in hby.namespaces["one"]
-        assert hab4.pre in hby.namespaces["one"]
-        assert hab1.pre not in hby.namespaces["one"]
-        assert hab2.pre not in hby.namespaces["one"]
-        assert "two" in hby.namespaces
-        assert hab5.pre in hby.namespaces["two"]
-        assert hab6.pre in hby.namespaces["two"]
-        assert hab1.pre not in hby.namespaces["two"]
-        assert hab2.pre not in hby.namespaces["two"]
 
 
 def test_postman_endsfor():

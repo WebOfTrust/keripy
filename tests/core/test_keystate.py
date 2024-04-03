@@ -163,9 +163,9 @@ def test_keystate(mockHelpingNowUTC):
         bamHab = bamHby.makeHab(name="bam", isith='1', icount=1, transferable=True)
 
         # Set Wes has Bam's watcher
-        habr = bamHab.db.habs.get("bam")
+        habr = bamHab.db.habs.get(bamHab.pre)
         habr.watchers = [wesHab.pre]
-        bamHab.db.habs.pin("bam", habr)
+        bamHab.db.habs.pin(bamHab.pre, habr)
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)

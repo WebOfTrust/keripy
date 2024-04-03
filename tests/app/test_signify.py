@@ -71,7 +71,7 @@ def test_remote_salty_hab():
         assert [verfer.qb64 for verfer in kever.verfers] == keys
         assert [diger.qb64 for diger in kever.ndigers] == nxt
 
-        habord = remote.db.habs.get(name)
+        habord = remote.db.habs.get(hab.pre)
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
         assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
@@ -113,7 +113,7 @@ def test_remote_salty_hab():
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
         assert [diger.qb64 for diger in kever.ndigers] == nxt1
 
-        habord = remote.db.habs.get(name)
+        habord = remote.db.habs.get(hab.pre)
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
         assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
