@@ -26,6 +26,18 @@ class OldHabitatRecord:  # baser.habs
 
 
 def migrate(db):
+    """ Re-key habs migration for changing the key for .habs and introducing the .names database
+
+    This migrations performs the following:
+    1.  Rekey .habs from name (alias) to the AID of the Hab
+    2.  Add Name and domain to the HabitatRecord for all Habs
+    3.  Populate the .names index as (ns, name) -> AID
+    4.  Remove the .nmsp namespaced Habs database (replaced within .habs and .names now)
+
+    Parameters:
+        db(Baser): Baser database object on which to run the migration
+
+    """
     habs = koming.Komer(db=db,
                         subkey='habs.',
                         schema=OldHabitatRecord, )
@@ -36,6 +48,7 @@ def migrate(db):
                         schema=OldHabitatRecord, )
 
     habords = dict()
+    # Update Hab records from .habs with name
     for name, habord in habs.getItemIter():
         name = ".".join(name)  # detupleize the database key name
         nhabord = basing.HabitatRecord(**asdict(habord))
@@ -44,6 +57,7 @@ def migrate(db):
 
     habs.trim()
 
+    # Update Hab records from .nmsp with name and domain (ns)
     for keys, habord in nmsp.getItemIter():
         ns = keys[0]
         name = ".".join(keys[1:])  # detupleize the database key name
@@ -52,13 +66,10 @@ def migrate(db):
         nhabord.domain = ns
         habords[habord.hid] = nhabord
 
-    nmsp.trim()
+    nmsp.trim()  # remove existing records
 
+    # Rekey .habs and create .names index
     for pre, habord in habords.items():
-        print(pre)
-        print(habord)
         db.habs.pin(keys=(pre,), val=habord)
         ns = "" if habord.domain is None else habord.domain
-        print(ns)
-        print(habord.name)
         db.names.pin(keys=(ns, habord.name), val=pre)

@@ -390,6 +390,14 @@ class LMDBer(filing.Filer):
 
     @property
     def version(self):
+        """ Return the version of database stored in __version__ key.
+
+        This value is read through cached in memory
+
+        Returns:
+            str: the version of the database or None if not set in the database
+
+        """
         if self._version is None:
             self._version = self.getVer()
 
@@ -397,6 +405,12 @@ class LMDBer(filing.Filer):
 
     @version.setter
     def version(self, val):
+        """  Set the version of the database in memory and in the __version__ key
+
+        Parameters:
+            val (str): The new semver formatted version of the database
+
+        """
         if hasattr(val, "decode"):
             val = val.decode("utf-8")  # convert bytes to str
 
@@ -420,12 +434,24 @@ class LMDBer(filing.Filer):
         return super(LMDBer, self).close(clear=clear)
 
     def getVer(self):
+        """ Returns the value of the the semver formatted version in the __version__ key in this database
+
+        Returns:
+            str: semver formatted version of the database
+
+        """
         with self.env.begin() as txn:
             cursor = txn.cursor()
             version = cursor.get(b'__version__')
             return version.decode("utf-8") if version is not None else None
 
     def setVer(self, val):
+        """  Set the version of the database in the __version__ key
+
+        Parameters:
+            val (str): The new semver formatted version of the database
+
+        """
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
 

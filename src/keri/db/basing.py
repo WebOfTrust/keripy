@@ -1226,6 +1226,15 @@ class Baser(dbing.LMDBer):
             self.habs.rem(keys=keys)
 
     def migrate(self):
+        """ Run all migrations required
+
+        Run all migrations  that are required from the current version of database up to the current version
+         of the software that have not already been run.
+
+         Sets the version of the database to the current version of the software after successful completion
+         of required migrations
+
+        """
         for (version, migrations) in MIGRATIONS:
             # Check to see if this is for an older version
             if self.version is not None and semver.compare(version, self.version) != 1:
@@ -1276,6 +1285,15 @@ class Baser(dbing.LMDBer):
         return False
 
     def complete(self, name=None):
+        """ Returns list of tuples of migrations completed with date of completion
+
+        Parameters:
+            name(str): optional name of migration to check completeness
+
+        Returns:
+            list: tuples of migration,date of completed migration names and the date of completion
+
+        """
         migrations = []
         if not name:
             for version, migs in MIGRATIONS:
@@ -1283,7 +1301,7 @@ class Baser(dbing.LMDBer):
                     dater = self.migs.get(keys=(mig,))
                     migrations.append((mig, dater))
         else:
-            if name not in MIGRATIONS:
+            if name not in MIGRATIONS or not self.migs.get(keys=(name,)):
                 raise ValueError(f"No migration named {name}")
             migrations.append((name, self.migs.get(keys=(name,))))
 
