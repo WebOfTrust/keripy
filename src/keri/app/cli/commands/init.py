@@ -96,15 +96,6 @@ class InitDoer(doing.DoDoer):
                 else:
                     break
 
-        db = basing.Baser(name=name,
-                          base=base,
-                          temp=temp,
-                          reopen=False)
-
-        if db.exists(name=name, base=base, temp=temp):
-            print("Database already exists, exiting")
-            sys.exit(-1)
-
         kwa = dict()
         kwa["salt"] = args.salt
         kwa["bran"] = bran

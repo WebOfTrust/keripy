@@ -68,16 +68,16 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.12.1',
+    python_requires='>=3.12.2',
     install_requires=[
                         'lmdb>=1.3.0',
                         'pysodium>=0.7.12',
                         'blake3>=0.3.1',
                         'msgpack>=1.0.4',
-                        'cbor2>=5.4.3',
+                        'cbor2>=5.6.2',
                         'multidict>=6.0.2',
                         'ordered-set>=4.1.0',
-                        'hio>=0.6.9',
+                        'hio>=0.6.11',
                         'multicommand>=1.0.0',
                         'jsonschema>=4.17.0',
                         'falcon>=3.1.0',
@@ -87,7 +87,8 @@ setup(
                         'mnemonic>=0.20',
                         'PrettyTable>=3.5.0',
                         'http_sfv>=0.9.8',
-                        'cryptography>=39.0.2'
+                        'cryptography>=42.0.5',
+                        'semver>=3.0.2'
     ],
     extras_require={
     },

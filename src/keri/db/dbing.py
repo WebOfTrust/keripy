@@ -371,7 +371,7 @@ class LMDBer(filing.Filer):
             readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
         """
-        exists = self.exists(name=self.name, base=self.base, temp=self.temp)
+        exists = self.exists(name=self.name, base=self.base)
         opened = super(LMDBer, self).reopen(**kwa)
         if readonly is not None:
             self.readonly = readonly
@@ -383,39 +383,10 @@ class LMDBer(filing.Filer):
 
         self.opened = True if opened and self.env else False
 
-        if self.opened and not self.readonly and not exists:
+        if self.opened and not self.readonly and (not exists or self.temp):
             self.version = keri.__version__
 
         return self.opened
-
-    def exists(self, name="", base="", temp=None, headDirPath=None, clean=False, filed=False, fext=None):
-        temp = True if temp else False
-
-        if temp:
-            return False
-
-        # use class defaults here so can use makePath for other dirs and files
-        if headDirPath is None:
-            headDirPath = self.HeadDirPath
-
-        if fext is None:
-            fext = self.Fext
-
-        tailDirPath = self.CleanTailDirPath if clean else self.TailDirPath
-
-        if filed:
-            root, ext = os.path.splitext(name)
-            if not ext:
-                name = f"{name}.{fext}"
-
-        path = os.path.abspath(
-            os.path.expanduser(
-                os.path.join(headDirPath,
-                             tailDirPath,
-                             base,
-                             name)))
-
-        return os.path.exists(path)
 
     @property
     def version(self):
