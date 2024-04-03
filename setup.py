@@ -88,7 +88,7 @@ setup(
                         'jsonschema>=4.21.1',
                         'falcon>=3.1.3',
                         'hjson>=3.1.0',
-                        'PyYaml>=6..1',
+                        'PyYaml>=6.0.1',
                         'apispec>=6.6.0',
                         'mnemonic>=0.21',
                         'PrettyTable>=3.10.0',
