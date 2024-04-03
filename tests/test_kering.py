@@ -16,13 +16,13 @@ from keri import kering
 from keri.kering import Protocolage, Protocols
 from keri.kering import Serialage,  Serials
 from keri.kering import Ilkage, Ilks
-from keri.kering import TraitCodex, TraitDex
+from keri.kering import ColdCodex, ColdDex, TraitCodex, TraitDex
 from keri.kering import (Versionage, Version, MAXVERFULLSPAN,
                          versify, deversify, Rever, Smellage, smell,
                          VER1FULLSPAN, VER1TERM, VEREX1,
                          VER2FULLSPAN, VER2TERM, VEREX2,
                          VEREX)
-from keri.kering import VFFULLSPAN, VFREX, Revfer
+
 
 from keri.kering import VersionError, ProtocolError, KindError
 from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
@@ -44,31 +44,6 @@ def test_protocols():
 
     """End Test"""
 
-def test_traitdex():
-    """
-    Test TraitDex instance of TraitCodex dataclass
-    """
-
-    assert isinstance(TraitDex, TraitCodex)
-
-    assert asdict(TraitDex) == \
-        {
-            'EstOnly': 'EO',
-            'DoNotDelegate': 'DND',
-            'RegistrarBackers': 'RB',
-            'NoBackers': 'NB',
-            'NoRegistrarBackers': 'NRB',
-            'DelegateIsDelegator': 'DID',
-        }
-
-    assert 'EO' in TraitDex
-    assert 'DND' in TraitDex
-    assert 'RB' in TraitDex
-    assert 'NB' in TraitDex
-    assert 'NRB' in TraitDex
-    assert 'DID' in TraitDex
-
-    """End Test"""
 
 
 def test_version_regex():
@@ -234,6 +209,83 @@ def test_snuff():
 
 
     """
+
+    # version field in CESR native serialization
+    VFFULLSPAN = 12  # number of characters in full version string
+    VFREX = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
+
+    Revfer = re.compile(VFREX)  # compile is faster
+
+
+    def snatch(match, size=0):
+        """ Returns:
+            smellage (Smellage): named tuple extracted from version string regex match
+                                (protocol, version, kind, size)
+
+        Parameters:
+            match (re.Match):  instance of Match class
+            size (int): provided size to substitute when missing
+
+        Notes:
+            regular expressions work with memoryview objects not just bytes or
+            bytearrays
+        """
+        full = match.group()  # full matched version string
+        if len(full) == VFFULLSPAN:
+            proto, major, minor, gmajor, gminor = match.group("proto0",
+                                                         "major0",
+                                                         "minor0",
+                                                         "gmajor0",
+                                                         "gminor0")
+            proto = proto.decode("utf-8")
+            if proto not in Protocols:
+                raise ProtocolError(f"Invalid protocol type = {proto}.")
+            vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
+            if vrsn.major < 2:  # version2 vs but major < 2
+                raise VersionError(f"Incompatible {vrsn=} with version string.")
+
+            gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
+            if gvrsn.major < 2:  # version2 vs but major < 2
+                raise VersionError(f"Incompatible {gvrsn=} with CESR native version"
+                                   f"field.")
+            kind = Serials.cesr
+            size = size
+        else:
+            raise VersionError(f"Bad snatch.")
+
+        return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size, gvrsn=gvrsn)
+
+
+    def snuff(raw, size=0):
+        """Extract and return instance of Smellage from version string inside
+        raw serialization.
+
+        Returns:
+            smellage (Smellage): named Tuple of (protocol, version, kind, size)
+
+        Parameters:
+            raw (bytearray) of serialized incoming message stream. Assumes start
+                of stream is JSON, CBOR, or MGPK field map with first field
+                is labeled 'v' and value is version string.
+            size (int): provided size to substitute when missing
+
+        """
+        if len(raw) < SMELLSIZE:
+            raise ShortageError(f"Need more raw bytes to smell full version string.")
+
+        match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
+        if not match or match.start() > MAXVSOFFSET:
+            raise VersionError(f"Invalid version string from smelled raw = "
+                               f"{raw[: SMELLSIZE]}.")
+
+        return snatch(match, size=size)
+
+
+
+
+
+
+
     #pattern = re.compile(VFREX)  # compile is faster
     pattern = Revfer
 
@@ -717,7 +769,35 @@ def test_versify_v2():
     """End Test"""
 
 
+def test_colddex():
+    """
+    Test ColdDex instance of ColdCodex dataclass
+    """
 
+    assert isinstance(ColdDex, ColdCodex)
+
+    assert asdict(ColdDex) == \
+        {
+            'AnB64': 0,
+            'CtB64': 1,
+            'OpB64': 2,
+            'JSON': 3,
+            'MGPK1': 4,
+            'CBOR': 5,
+            'MGPK2': 6,
+            'CtOpB2': 7
+        }
+
+    assert 0o0 in ColdDex
+    assert 0o1 in ColdDex
+    assert 0o2 in ColdDex
+    assert 0o3 in ColdDex
+    assert 0o4 in ColdDex
+    assert 0o5 in ColdDex
+    assert 0o6 in ColdDex
+    assert 0o7 in ColdDex
+
+    """End Test"""
 
 
 def test_ilks():
@@ -797,12 +877,37 @@ def test_ilks():
 
     """End Test """
 
+def test_traitdex():
+    """
+    Test TraitDex instance of TraitCodex dataclass
+    """
+
+    assert isinstance(TraitDex, TraitCodex)
+
+    assert asdict(TraitDex) == \
+        {
+            'EstOnly': 'EO',
+            'DoNotDelegate': 'DND',
+            'RegistrarBackers': 'RB',
+            'NoBackers': 'NB',
+            'NoRegistrarBackers': 'NRB',
+            'DelegateIsDelegator': 'DID',
+        }
+
+    assert 'EO' in TraitDex
+    assert 'DND' in TraitDex
+    assert 'RB' in TraitDex
+    assert 'NB' in TraitDex
+    assert 'NRB' in TraitDex
+    assert 'DID' in TraitDex
+
+    """End Test"""
 
 
 
 if __name__ == "__main__":
     test_protocols()
-    test_traitdex()
+
     test_version_regex()
     test_smell()
     test_snuff()
@@ -810,4 +915,5 @@ if __name__ == "__main__":
     test_versify_v1()
     test_versify_v2()
     test_ilks()
-
+    test_colddex()
+    test_traitdex()

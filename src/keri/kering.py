@@ -57,12 +57,6 @@ MAXVSOFFSET = 12
 SMELLSIZE = MAXVSOFFSET + MAXVERFULLSPAN  # min buffer size to inhale
 
 
-# version field in CESR native serialization
-VFFULLSPAN = 12  # number of characters in full version string
-VFREX = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
-
-Revfer = re.compile(VFREX)  # compile is faster
-
 
 """
 Smellage  (results of smelling a version string such as in a Serder)
@@ -209,69 +203,6 @@ def smell(raw):
 
     return rematch(match)
 
-def snatch(match, size=0):
-    """ Returns:
-        smellage (Smellage): named tuple extracted from version string regex match
-                            (protocol, version, kind, size)
-
-    Parameters:
-        match (re.Match):  instance of Match class
-        size (int): provided size to substitute when missing
-
-    Notes:
-        regular expressions work with memoryview objects not just bytes or
-        bytearrays
-    """
-    full = match.group()  # full matched version string
-    if len(full) == VFFULLSPAN:
-        proto, major, minor, gmajor, gminor = match.group("proto0",
-                                                     "major0",
-                                                     "minor0",
-                                                     "gmajor0",
-                                                     "gminor0")
-        proto = proto.decode("utf-8")
-        if proto not in Protocols:
-            raise ProtocolError(f"Invalid protocol type = {proto}.")
-        vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
-        if vrsn.major < 2:  # version2 vs but major < 2
-            raise VersionError(f"Incompatible {vrsn=} with version string.")
-
-        gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
-        if gvrsn.major < 2:  # version2 vs but major < 2
-            raise VersionError(f"Incompatible {gvrsn=} with CESR native version"
-                               f"field.")
-        kind = Serials.cesr
-        size = size
-    else:
-        raise VersionError(f"Bad snatch.")
-
-    return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size, gvrsn=gvrsn)
-
-
-def snuff(raw, size=0):
-    """Extract and return instance of Smellage from version string inside
-    raw serialization.
-
-    Returns:
-        smellage (Smellage): named Tuple of (protocol, version, kind, size)
-
-    Parameters:
-        raw (bytearray) of serialized incoming message stream. Assumes start
-            of stream is JSON, CBOR, or MGPK field map with first field
-            is labeled 'v' and value is version string.
-        size (int): provided size to substitute when missing
-
-    """
-    if len(raw) < SMELLSIZE:
-        raise ShortageError(f"Need more raw bytes to smell full version string.")
-
-    match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
-    if not match or match.start() > MAXVSOFFSET:
-        raise VersionError(f"Invalid version string from smelled raw = "
-                           f"{raw[: SMELLSIZE]}.")
-
-    return snatch(match, size=size)
-
 
 @dataclass(frozen=True)
 class ColdCodex:
@@ -281,19 +212,20 @@ class ColdCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
     First three bits:
-        0o0 = 000 free
+        0o0 = 000 annotated B64 (exhaustive)
         0o1 = 001 cntcode B64
         0o2 = 010 opcode B64
         0o3 = 011 json
-        0o4 = 100 mgpk
+        0o4 = 100 mgpk1
         0o5 = 101 cbor
-        0o6 = 110 mgpk
+        0o6 = 110 mgpk2
         007 = 111 cntcode or opcode B2
 
     status is one of ('evt', 'txt', 'bny' )
     'evt' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
     'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
     'bny' if tritet in (ColdDex.CtOpB2,)
+    'ann' if trited in (ColdDex.AnB64)
 
     otherwise raise ColdStartError
 
@@ -302,7 +234,7 @@ class ColdCodex:
     x[0] >> 5 == 0o1
     True
     """
-    Anno: int = 0o0  # Annotated CESR
+    AnB64: int = 0o0  # Annotated CESR
     CtB64: int = 0o1  # CountCode Base64
     OpB64: int = 0o2  # OpCode Base64
     JSON: int = 0o3  # JSON Map Event Start

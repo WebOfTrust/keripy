@@ -218,39 +218,6 @@ def generateSigners(raw=None, count=8, transferable=True):
     return signers
 
 
-#def generatePrivates(raw=None, count=8):
-    #"""Returns list of fully qualified Base64 secret Ed25519 seeds  i.e private keys
-
-    #Deprecated, use Salter.signers instead.
-
-
-    #Parameters:
-        #raw (bytes):  16 byte long salt cryptomatter from which seeds
-            #for Signers in list are derived
-            #random salt created if not provided
-        #count is number of signers in list
-    #"""
-    #signers = generateSigners(raw=raw, count=count)
-
-    #return [signer.qb64 for signer in signers]  # fetch sigkey as private key
-
-
-#def generatePublics(raw=None, count=8, transferable=True):
-    #"""Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
-
-    #Deprecated, use Salter.signers instead.
-
-    #Parameters:
-        #raw (bytes):  16 byte long salt cryptomatter from which seeds
-            #for Signers in list are derived
-            #random salt created if not provided
-        #count is number of signers in list
-    #"""
-    #signers = generateSigners(raw=raw, count=count, transferable=transferable)
-
-    #return [signer.verfer.qb64 for signer in signers]  # fetch verkey as public key
-
-
 # secret derivation security tier
 Tierage = namedtuple("Tierage", 'low med high')
 
