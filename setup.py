@@ -14,6 +14,12 @@ $ python3 setup.py sdist
 $ twine upload dist/keri-0.0.1.tar.gz
 
 Create release git:
+$ git tag # lists all tags
+$ git tag -a v0.6.11 -m "new feature"
+$ git show v0.6.11
+$ git push --tags # pushes tags to default remote
+$ git push wot --tags   # pushes tags to wot remote
+
 $ git tag -a v0.4.2 -m "bump version"
 $ git push --tags
 $ git checkout -b release_0.4.2
@@ -68,32 +74,32 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.12.1',
+    python_requires='>=3.12.2',
     install_requires=[
-                        'lmdb>=1.3.0',
-                        'pysodium>=0.7.12',
-                        'blake3>=0.3.1',
-                        'msgpack>=1.0.4',
-                        'cbor2>=5.4.3',
-                        'multidict>=6.0.2',
+                        'lmdb>=1.4.1',
+                        'pysodium>=0.7.17',
+                        'blake3>=0.4.1',
+                        'msgpack>=1.0.8',
+                        'cbor2>=5.6.2',
+                        'multidict>=6.0.5',
                         'ordered-set>=4.1.0',
-                        'hio>=0.6.9',
+                        'hio>=0.6.12',
                         'multicommand>=1.0.0',
-                        'jsonschema>=4.17.0',
-                        'falcon>=3.1.0',
-                        'hjson>=3.0.2',
-                        'PyYaml>=6.0',
-                        'apispec>=6.0.0',
-                        'mnemonic>=0.20',
-                        'PrettyTable>=3.5.0',
-                        'http_sfv>=0.9.8',
-                        'cryptography>=39.0.2'
+                        'jsonschema>=4.21.1',
+                        'falcon>=3.1.3',
+                        'hjson>=3.1.0',
+                        'PyYaml>=6..1',
+                        'apispec>=6.6.0',
+                        'mnemonic>=0.21',
+                        'PrettyTable>=3.10.0',
+                        'http_sfv>=0.9.9',
+                        'cryptography>=42.0.5'
     ],
     extras_require={
     },
     tests_require=[
-                    'coverage>=6.5.0',
-                    'pytest>=7.2.0',
+                    'coverage>=7.4.4',
+                    'pytest>=8.1.1',
                     'pytest-shell>=0.3.2'
                   ],
     setup_requires=[

@@ -45,7 +45,7 @@ from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
-from keri.core.coring import generateSigners, generatePrivates
+from keri.core.coring import generateSigners
 
 from keri.help import helping
 from keri.help.helping import (sceil, intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
@@ -5906,10 +5906,10 @@ def test_generatesigners():
     for signer in signers:
         assert signer.verfer.code == MtrDex.Ed25519N
 
-    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    assert len(salt) == 16
-    signers = generateSigners(salt=salt, count=4)  # default is transferable
+    # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)  # raw salt
+    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    assert len(raw) == 16
+    signers = generateSigners(raw=raw, count=4)  # default is transferable
     assert len(signers) == 4
     for signer in signers:
         assert signer.code == MtrDex.Ed25519_Seed
@@ -5920,9 +5920,6 @@ def test_generatesigners():
                        'AOs8-zNPPh0EhavdrCfCiTk9nGeO8e6VxUCzwdKXJAd0',
                        'AHMBU5PsIJN2U9m7j0SGyvs8YD8fkym2noELzxIrzfdG',
                        'AJZ7ZLd7unQ4IkMUwE69NXcvDO9rrmmRH_Xk3TPu9BpP']
-
-    secrets = generatePrivates(salt=salt, count=4)
-    assert secrets == sigkeys
 
     """ End Test """
 

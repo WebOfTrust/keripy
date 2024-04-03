@@ -25,6 +25,8 @@ from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
 
 from keri.core.eventing import (incept, )
 
+from keri.app import habbing
+
 
 def test_fielddom():
     """Test FieldDom dataclass"""
@@ -2642,8 +2644,89 @@ def test_serdery():
 def test_cesr_native_dumps():
     """Test Serder._dumps"""
 
+    # use same salter for all but different path
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = coring.Salter(raw=raw)
+
+    csigners = coring.generateSigners(raw=salter.raw, count=3)
+    wsigners = coring.generateSigners(raw=salter.raw, count=3, transferable=False)
+
+
     keys = ["EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"]
     serder = incept(keys, version=Vrsn_2_0)
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAAJSONAAD8.',
+        't': 'icp',
+        'd': 'EF_SoHnCdQ0N9Kivxl54u3l1-sKwDL0gs729_REO6koi',
+        'i': 'EF_SoHnCdQ0N9Kivxl54u3l1-sKwDL0gs729_REO6koi',
+        's': '0',
+        'kt': '1',
+        'k': ['EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J'],
+        'nt': '0',
+        'n': [],
+        'bt': '0',
+        'b': [],
+        'c': [],
+        'a': []
+    }
+
+    salt = salter.qb64
+    assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
+
+    # need to fix this so it uses different Kind and different Version
+    # makHab uses stem=name to make different names have differnt AID pre
+    with (habbing.openHby(name="wes", base="test", salt=salt) as wesHby,
+         habbing.openHby(name="wok", base="test", salt=salt) as wokHby,
+         habbing.openHby(name="wam", base="test", salt=salt) as wamHby,
+         habbing.openHby(name="cam", base="test", salt=salt) as camHby):
+
+        # witnesses first so can setup inception event for tam
+        wsith = '1'
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+
+        # setup Tam's habitat trans multisig
+        wits = [wesHab.pre, wokHab.pre, wamHab.pre]
+        tsith = '2'  # hex str of threshold int
+        camHab = camHby.makeHab(name='cam', isith=tsith, icount=3, toad=2, wits=wits,)
+
+        assert camHab.kever.prefixer.transferable
+        assert len(camHab.iserder.berfers) == len(wits)
+        for werfer in camHab.iserder.berfers:
+            assert werfer.qb64 in wits
+        assert camHab.kever.wits == wits
+        assert camHab.kever.toader.num == 2
+        assert camHab.kever.sn == 0
+        assert camHab.kever.tholder.thold == 2 == int(tsith, 16)
+
+        serder, _, _ = camHab.getOwnEvent(sn=0)
+
+        assert serder.sad == \
+        {
+            'v': 'KERI10JSON000273_',
+             't': 'icp',
+             'd': 'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+             'i': 'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+             's': '0',
+             'kt': '2',
+             'k': ['DJV4r5kpA-DuQGmDr3owzHvcWreg9fWetlS_hoznje4Q',
+                   'DHjp2Ewj88Url6d23i6myE-c3bSjOuNgjkZKnF8LkH7C',
+                   'DDjY_8DygjZg6F5-qWfZahKwPHjs1gSjzGU6nqikn1g0'],
+             'nt': '2',
+             'n': ['EHY_zOKIFva_iS1bGuu2etyuQOuq3tOrjaRIYHknRSSz',
+                   'ENlS_9WEDDgjpVRmux37ITU4O6UW8hOif-Gwa3Ch0I6t',
+                   'EJ67YtK72WQBmGSLS1ibDIVGM4hHtf2HrTPd1Mn51iWV'],
+             'bt': '2',
+             'b': ['BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom',
+                   'BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX',
+                   'BByq5Nfi0KgohEaJ8h9JrLqbhX_waySFSXKsgumxEYQp'],
+             'c': [],
+             'a': []
+        }
 
     """End Test"""
 

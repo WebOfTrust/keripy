@@ -183,23 +183,24 @@ def loads(raw, size=None, kind=Serials.json):
     return ked
 
 
-def generateSigners(salt=None, count=8, transferable=True):
-    """
-    Returns list of Signers for Ed25519
+def generateSigners(raw=None, count=8, transferable=True):
+    """Returns list of Signers for Ed25519
+
+    Deprecated, use Salter.signers instead.
 
     Use this when simply need valid AIDs but not when need valid controller
     contexts. In the latter case use openHby or openHab which create databases.
 
     Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
+        raw (bytes):  16 byte long salt cryptomatter from which seeds
+            for Signers in list are derived
             random salt created if not provided
         count is number of signers in list
         transferable is boolean true means signer.verfer code is transferable
                                 non-transferable otherwise
     """
-    if not salt:
-        salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    if not raw:
+        raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
 
     signers = []
     for i in range(count):
@@ -207,7 +208,7 @@ def generateSigners(salt=None, count=8, transferable=True):
         # algorithm default is argon2id
         seed = pysodium.crypto_pwhash(outlen=32,
                                       passwd=path,
-                                      salt=salt,
+                                      salt=raw,
                                       opslimit=2,  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
                                       memlimit=67108864,  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
                                       alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
@@ -217,34 +218,37 @@ def generateSigners(salt=None, count=8, transferable=True):
     return signers
 
 
-def generatePrivates(salt=None, count=8):
-    """
-    Returns list of fully qualified Base64 secret Ed25519 seeds  i.e private keys
+#def generatePrivates(raw=None, count=8):
+    #"""Returns list of fully qualified Base64 secret Ed25519 seeds  i.e private keys
 
-    Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
-            random salt created if not provided
-        count is number of signers in list
-    """
-    signers = generateSigners(salt=salt, count=count)
-
-    return [signer.qb64 for signer in signers]  # fetch sigkey as private key
+    #Deprecated, use Salter.signers instead.
 
 
-def generatePublics(salt=None, count=8, transferable=True):
-    """
-    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
+    #Parameters:
+        #raw (bytes):  16 byte long salt cryptomatter from which seeds
+            #for Signers in list are derived
+            #random salt created if not provided
+        #count is number of signers in list
+    #"""
+    #signers = generateSigners(raw=raw, count=count)
 
-    Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
-            random salt created if not provided
-        count is number of signers in list
-    """
-    signers = generateSigners(salt=salt, count=count, transferable=transferable)
+    #return [signer.qb64 for signer in signers]  # fetch sigkey as private key
 
-    return [signer.verfer.qb64 for signer in signers]  # fetch verkey as public key
+
+#def generatePublics(raw=None, count=8, transferable=True):
+    #"""Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
+
+    #Deprecated, use Salter.signers instead.
+
+    #Parameters:
+        #raw (bytes):  16 byte long salt cryptomatter from which seeds
+            #for Signers in list are derived
+            #random salt created if not provided
+        #count is number of signers in list
+    #"""
+    #signers = generateSigners(raw=raw, count=count, transferable=transferable)
+
+    #return [signer.verfer.qb64 for signer in signers]  # fetch verkey as public key
 
 
 # secret derivation security tier
@@ -4755,7 +4759,7 @@ IdxBthSigDex = IndexedBothSigCodex()  # Make instance
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
 # os is the other size int number of chars in other index part of soft
-#     ms = ss - os main index size computed
+# ms = ss - os main index size computed
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
 Xizage = namedtuple("Xizage", "hs ss os fs ls")
