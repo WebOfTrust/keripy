@@ -93,7 +93,8 @@ setup(
                         'mnemonic>=0.21',
                         'PrettyTable>=3.10.0',
                         'http_sfv>=0.9.9',
-                        'cryptography>=42.0.5'
+                        'cryptography>=42.0.5',
+                        'semver>=3.0.2'
     ],
     extras_require={
     },
