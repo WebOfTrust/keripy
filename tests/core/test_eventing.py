@@ -2451,7 +2451,7 @@ def test_keyeventsequence_0():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2721,7 +2721,7 @@ def test_keyeventsequence_1():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2818,7 +2818,7 @@ def test_multisig_digprefix():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2972,7 +2972,7 @@ def test_recovery():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = []  # list of event digs in sequence to verify against database

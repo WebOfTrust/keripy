@@ -37,7 +37,7 @@ def test_incept(mockCoringRandomNonce):
                         b'fpxIl1LcIkMhUSCCC8fgvkuX8gG9xK3SM-S8a8Y_U"}')
 
     # no backers allowed
-    serder = eventing.incept(pre, baks=[], cnfg=[keventing.TraitDex.NoRegistrarBackers], code=MtrDex.Blake3_256)
+    serder = eventing.incept(pre, baks=[], cnfg=[keventing.TraitDex.NoBackers], code=MtrDex.Blake3_256)
     assert serder.raw == (b'{"v":"KERI10JSON000113_","t":"vcp","d":"EBoBPh3N5nr1tItAUCkXNx3vShB_Be6iiQPX'
                         b'Bsg2LvxA","i":"EBoBPh3N5nr1tItAUCkXNx3vShB_Be6iiQPXBsg2LvxA","ii":"DAtNTPnDF'
                         b'BnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","c":["NB"],"bt":"0","b":[],"n":'
@@ -45,7 +45,7 @@ def test_incept(mockCoringRandomNonce):
 
     # no backers allows, one attempted
     with pytest.raises(ValueError):
-        eventing.incept(pre, cnfg=[keventing.TraitDex.NoRegistrarBackers],
+        eventing.incept(pre, cnfg=[keventing.TraitDex.NoBackers],
                         baks=[bak1])
 
     # with backer dupes
@@ -368,7 +368,7 @@ def test_prefixer():
                t=Ilks.vcp,
                bt=0,
                b=[],
-               c=[keventing.TraitDex.NoRegistrarBackers],
+               c=[keventing.TraitDex.NoBackers],
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == 'EDz0QmMxf4Dk0C9uiP-y3okN-Bej2IAXSj8UwQgb3NsL'

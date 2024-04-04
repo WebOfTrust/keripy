@@ -167,8 +167,8 @@ class ConfirmDoer(doing.DoDoer):
         inits["isith"] = ked["kt"]
         inits["nsith"] = ked["nt"]
 
-        inits["estOnly"] = eventing.TraitCodex.EstOnly in ked["c"]
-        inits["DnD"] = eventing.TraitCodex.DoNotDelegate in ked["c"]
+        inits["estOnly"] = eventing.TraitDex.EstOnly in ked["c"]
+        inits["DnD"] = eventing.TraitDex.DoNotDelegate in ked["c"]
 
         inits["toad"] = ked["bt"]
         inits["wits"] = ked["b"]
@@ -273,8 +273,8 @@ class ConfirmDoer(doing.DoDoer):
         if not thold.weighted:
             tab.add_row(["Signature Threshold", thold.num])
 
-        tab.add_row(["Establishment Only", eventing.TraitCodex.EstOnly in ked["c"]])
-        tab.add_row(["Do Not Delegate", eventing.TraitCodex.DoNotDelegate in ked["c"]])
+        tab.add_row(["Establishment Only", eventing.TraitDex.EstOnly in ked["c"]])
+        tab.add_row(["Do Not Delegate", eventing.TraitDex.DoNotDelegate in ked["c"]])
         tab.add_row(["Witness Threshold", ked["bt"]])
         tab.add_row(["Witnesses", "\n".join(ked["b"])])
 

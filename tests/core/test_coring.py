@@ -28,15 +28,16 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
                          InvalidValueError, DeserializeError, ValidationError,
                          InvalidVarRawSizeError, ConversionError,
-                         SoftMaterialError, InvalidSoftError)
+                         SoftMaterialError, InvalidSoftError, InvalidCodeError)
 from keri.kering import Version, Versionage, VersionError, Vrsn_1_0, Vrsn_2_0
+from keri.kering import Protocols, Protocolage, Ilkage, Ilks, TraitDex
 
 from keri.core import coring
 from keri.core import eventing
-from keri.core.coring import (Ilkage, Ilks, Saids, Protocols, Protocolage,
-                              Sadder, Tholder, Seqner,
-                              NumDex, Number, Siger, Dater, Bexter, Texter,
-                              Verser, Versage, TagDex, PadTagDex, Tagger)
+from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
+                              Siger, Dater, Bexter, Texter,
+                              TagDex, PadTagDex, Tagger, Ilker, Traitor,
+                              Verser, Versage, )
 from keri.core.coring import Serialage, Serials, Tiers
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
@@ -44,7 +45,7 @@ from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
-from keri.core.coring import generateSigners, generatePrivates
+from keri.core.coring import generateSigners
 
 from keri.help import helping
 from keri.help.helping import (sceil, intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
@@ -4174,9 +4175,6 @@ def test_tagger():
     """
     # Test TagCodex PadTagCodex and associated Sizes to be valid specials
 
-
-
-
     with pytest.raises(EmptyMaterialError):
         tagger = Tagger()  # defaults
 
@@ -4219,7 +4217,6 @@ def test_tagger():
     assert tagger.composable
     assert tagger.tag == tag
 
-
     tagger = Tagger(qb64b=qb64b)
     assert tagger.code == tagger.hard == code
     assert tagger.soft == soft
@@ -4255,6 +4252,194 @@ def test_tagger():
             10: ('abcdefghij', '0O')
          }
     """ Done Test """
+
+
+def test_ilker():
+    """
+    Test Ilker message type subclass of Tagger
+    """
+    with pytest.raises(EmptyMaterialError):
+        ilker = Ilker()  # defaults
+
+    ilk = Ilks.rot
+    tag = ilk
+    code = MtrDex.Tag3
+    soft = 'rot'
+    qb64 = 'Xrot'
+    qb64b = qb64.encode("utf-8")
+    qb2 = decodeB64(qb64b)
+    raw = b''
+
+    ilker = Ilker(ilk=ilk)  # defaults
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(qb2=qb2)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(qb64=qb64)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(qb64b=qb64b)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    ilker = Ilker(tag=tag)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    # test error condition
+    with pytest.raises(InvalidSoftError):
+        ilker = Ilker(ilk='bad')
+
+    # ignores code
+    ilker = Ilker(ilk=ilk, code=MtrDex.Tag4)
+    assert ilker.code == ilker.hard == code
+    assert ilker.soft == soft
+    assert ilker.raw == raw
+    assert ilker.qb64 == qb64
+    assert ilker.qb2 == qb2
+    assert ilker.special
+    assert ilker.composable
+    assert ilker.tag == tag
+    assert ilker.ilk == ilk
+
+    # test error using soft and code
+    with pytest.raises(InvalidCodeError):
+        ilker = Ilker(soft='bady', code=MtrDex.Tag4)
+
+    """End Test"""
+
+
+def test_traitor():
+    """
+    Test Traitor configuration trait subclass of Tagger
+    """
+    with pytest.raises(EmptyMaterialError):
+        traitor = Traitor()  # defaults
+
+    trait = TraitDex.EstOnly
+    tag = trait
+    code = MtrDex.Tag2
+    soft = 'EO'
+    qb64 = '0KEO'
+    qb64b = qb64.encode("utf-8")
+    qb2 = decodeB64(qb64b)
+    raw = b''
+
+    traitor = Traitor(trait=trait)  # defaults
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(qb2=qb2)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(qb64=qb64)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(qb64b=qb64b)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    traitor = Traitor(tag=tag)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    # test error condition
+    with pytest.raises(InvalidSoftError):
+        traitor = Traitor(trait='bad')
+
+    # ignores code
+    traitor = Traitor(trait=trait, code=MtrDex.Tag4)
+    assert traitor.code == traitor.hard == code
+    assert traitor.soft == soft
+    assert traitor.raw == raw
+    assert traitor.qb64 == qb64
+    assert traitor.qb2 == qb2
+    assert traitor.special
+    assert traitor.composable
+    assert traitor.tag == tag
+    assert traitor.trait == trait
+
+    # test error using soft and code
+    with pytest.raises(InvalidSoftError):
+        traitor = Traitor(soft='bady', code=MtrDex.Tag4)
+
+    """End Test"""
 
 
 def test_verser():
@@ -5721,10 +5906,10 @@ def test_generatesigners():
     for signer in signers:
         assert signer.verfer.code == MtrDex.Ed25519N
 
-    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    assert len(salt) == 16
-    signers = generateSigners(salt=salt, count=4)  # default is transferable
+    # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)  # raw salt
+    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    assert len(raw) == 16
+    signers = generateSigners(raw=raw, count=4)  # default is transferable
     assert len(signers) == 4
     for signer in signers:
         assert signer.code == MtrDex.Ed25519_Seed
@@ -5735,9 +5920,6 @@ def test_generatesigners():
                        'AOs8-zNPPh0EhavdrCfCiTk9nGeO8e6VxUCzwdKXJAd0',
                        'AHMBU5PsIJN2U9m7j0SGyvs8YD8fkym2noELzxIrzfdG',
                        'AJZ7ZLd7unQ4IkMUwE69NXcvDO9rrmmRH_Xk3TPu9BpP']
-
-    secrets = generatePrivates(salt=salt, count=4)
-    assert secrets == sigkeys
 
     """ End Test """
 
@@ -7155,6 +7337,8 @@ if __name__ == "__main__":
     test_matter()
     test_matter_special()
     test_tagger()
+    test_ilker()
+    test_traitor()
     test_verser()
     #test_texter()
     #test_counter()

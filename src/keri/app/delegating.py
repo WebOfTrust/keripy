@@ -19,8 +19,8 @@ from ..peer import exchanging
 logger = help.ogler.getLogger()
 
 
-class Sealer(doing.DoDoer):
-    """
+class Anchorer(doing.DoDoer):
+    """Anchorer subclass of DoDoer
     Sends messages to Delegator of an identifier and wait for the anchoring event to
     be processed to ensure the inception or rotation event has been approved by the delegator.
 
@@ -46,7 +46,7 @@ class Sealer(doing.DoDoer):
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.proxy = proxy
 
-        super(Sealer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
+        super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
                                      **kwa)
 
     def delegation(self, pre, sn=None, proxy=None):

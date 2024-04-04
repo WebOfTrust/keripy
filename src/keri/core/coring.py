@@ -6,10 +6,9 @@ keri.core.coring module
 import re
 import json
 from typing import Union
-from collections.abc import Sequence, Mapping
-
-from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
+from collections.abc import Sequence, Mapping
+from dataclasses import dataclass, astuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from fractions import Fraction
@@ -40,7 +39,8 @@ from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
-from ..kering import Serials, Serialage, Protocols, Protocolage, Ilkage, Ilks
+from ..kering import (Serials, Serialage, Protocols, Protocolage, Ilkage, Ilks,
+                      TraitDex, )
 
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable, nonStringSequence
@@ -182,22 +182,25 @@ def loads(raw, size=None, kind=Serials.json):
 
     return ked
 
-# deprecated don't use anymore need to fix demo tests that use
-# use with context instead
-def generateSigners(salt=None, count=8, transferable=True):
-    """
-    Returns list of Signers for Ed25519
+
+def generateSigners(raw=None, count=8, transferable=True):
+    """Returns list of Signers for Ed25519
+
+    Deprecated, use Salter.signers instead.
+
+    Use this when simply need valid AIDs but not when need valid controller
+    contexts. In the latter case use openHby or openHab which create databases.
 
     Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
+        raw (bytes):  16 byte long salt cryptomatter from which seeds
+            for Signers in list are derived
             random salt created if not provided
         count is number of signers in list
         transferable is boolean true means signer.verfer code is transferable
                                 non-transferable otherwise
     """
-    if not salt:
-        salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    if not raw:
+        raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
 
     signers = []
     for i in range(count):
@@ -205,7 +208,7 @@ def generateSigners(salt=None, count=8, transferable=True):
         # algorithm default is argon2id
         seed = pysodium.crypto_pwhash(outlen=32,
                                       passwd=path,
-                                      salt=salt,
+                                      salt=raw,
                                       opslimit=2,  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
                                       memlimit=67108864,  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
                                       alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
@@ -213,36 +216,6 @@ def generateSigners(salt=None, count=8, transferable=True):
         signers.append(Signer(raw=seed, transferable=transferable))
 
     return signers
-
-
-def generatePrivates(salt=None, count=8):
-    """
-    Returns list of fully qualified Base64 secret Ed25519 seeds  i.e private keys
-
-    Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
-            random salt created if not provided
-        count is number of signers in list
-    """
-    signers = generateSigners(salt=salt, count=count)
-
-    return [signer.qb64 for signer in signers]  # fetch sigkey as private key
-
-
-def generatePublics(salt=None, count=8, transferable=True):
-    """
-    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
-
-    Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
-            random salt created if not provided
-        count is number of signers in list
-    """
-    signers = generateSigners(salt=salt, count=count, transferable=transferable)
-
-    return [signer.verfer.qb64 for signer in signers]  # fetch verkey as public key
 
 
 # secret derivation security tier
@@ -1446,7 +1419,6 @@ class Matter:
 
         qb2 = qb2[:bfs]  # extract qb2 fully qualified primitive code plus material
 
-
         # check for nonzero trailing full code mid pad bits
         ps = cs % 4  # full code (both) net pad size for 24 bit alignment
         pbs = 2 * ps  # mid pad bits = 2 per net pad
@@ -2055,6 +2027,215 @@ class Tagger(Matter):
         return tag
 
 
+class Ilker(Tagger):
+    """
+    Ilker is subclass of Tagger, cryptographic material, for formatted
+    message types (ilks) in Base64. Leverages Tagger support compact special
+    fixed size primitives with non-empty soft part and empty raw part.
+
+    Ilker provides a more compact representation than would be obtained by
+    converting the raw ASCII representation to Base64.
+
+    Attributes:
+
+    Inherited Properties:  (See Tagger)
+        code (str): hard part of derivation code to indicate cypher suite
+        hard (str): hard part of derivation code. alias for code
+        soft (str): soft part of derivation code fs any.
+                    Empty when ss = 0.
+        both (str): hard + soft parts of full text code
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
+        fullSize (int): full size of primitive
+        raw (bytes): crypto material only. Not derivation code or lead bytes.
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
+        special (bool): True when soft is special raw is empty and fixed size
+        composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
+        tag (str): B64 primitive without prepad (strips prepad from soft)
+
+
+    Properties:
+        ilk (str):  message type from Ilks of Ilkage
+
+    Inherited Hidden:  (See Tagger)
+        _code (str): value for .code property
+        _soft (str): soft value of full code
+        _raw (bytes): value for .raw property
+        _rawSize():
+        _leadSize():
+        _special():
+        _infil(): creates qb64b from .raw and .code (fully qualified Base64)
+        _binfil(): creates qb2 from .raw and .code (fully qualified Base2)
+        _exfil(): extracts .code and .raw from qb64b (fully qualified Base64)
+        _bexfil(): extracts .code and .raw from qb2 (fully qualified Base2)
+
+    Hidden:
+
+
+    Methods:
+
+    """
+
+
+    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', ilk='', **kwa):
+        """
+        Inherited Parameters:  (see Tagger)
+            raw (bytes | bytearray | None): unqualified crypto material usable
+                    for crypto operations.
+            code (str): stable (hard) part of derivation code
+            soft (str | bytes): soft part for special codes
+            rize (int | None): raw size in bytes when variable sized material not
+                        including lead bytes if any
+                        Otherwise None
+            qb64b (bytes | None): fully qualified crypto material Base64
+            qb64 (str | bytes | None):  fully qualified crypto material Base64
+            qb2 (bytes | None): fully qualified crypto material Base2
+            strip (bool): True means strip (delete) matter from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
+            tag (str | bytes):  Base64 plain. Prepad is added as needed.
+
+        Parameters:
+            ilk (str):  message type from Ilks of Ilkage
+
+        """
+        if not (qb64b or qb64 or qb2):
+            if ilk:
+                tag = ilk
+
+
+        super(Ilker, self).__init__(qb64b=qb64b, qb64=qb64, qb2=qb2, tag=tag, **kwa)
+
+        if self.code not in (MtrDex.Tag3, ):
+            raise InvalidCodeError(f"Invalid code={self.code} for Ilker "
+                                   f"{self.ilk=}.")
+        if self.ilk not in Ilks:
+            raise InvalidSoftError(f"Ivalid ilk={self.ilk} for Ilker.")
+
+
+
+    @property
+    def ilk(self):
+        """Returns:
+                tag (str): B64 primitive without prepad (strips prepad from soft)
+
+        Alias for self.tag
+
+        """
+        return self.tag
+
+
+class Traitor(Tagger):
+    """
+    Traitor is subclass of Tagger, cryptographic material, for formatted
+    configuration traits for key events in Base64. Leverages Tagger support of
+    compact special fixed size primitives with non-empty soft part and empty raw part.
+
+    Traitor provides a more compact representation than would be obtained by
+    converting the raw ASCII representation to Base64.
+
+    Attributes:
+
+    Inherited Properties:  (See Tagger)
+        code (str): hard part of derivation code to indicate cypher suite
+        hard (str): hard part of derivation code. alias for code
+        soft (str): soft part of derivation code fs any.
+                    Empty when ss = 0.
+        both (str): hard + soft parts of full text code
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
+        fullSize (int): full size of primitive
+        raw (bytes): crypto material only. Not derivation code or lead bytes.
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
+        special (bool): True when soft is special raw is empty and fixed size
+        composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
+        tag (str): B64 primitive without prepad (strips prepad from soft)
+
+
+    Properties:
+        trait (str):  configuration trait B64 from TraitDex
+
+    Inherited Hidden:  (See Tagger)
+        _code (str): value for .code property
+        _soft (str): soft value of full code
+        _raw (bytes): value for .raw property
+        _rawSize():
+        _leadSize():
+        _special():
+        _infil(): creates qb64b from .raw and .code (fully qualified Base64)
+        _binfil(): creates qb2 from .raw and .code (fully qualified Base2)
+        _exfil(): extracts .code and .raw from qb64b (fully qualified Base64)
+        _bexfil(): extracts .code and .raw from qb2 (fully qualified Base2)
+
+    Hidden:
+
+
+    Methods:
+
+    """
+
+
+    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', trait='', **kwa):
+        """
+        Inherited Parameters:  (see Tagger)
+            raw (bytes | bytearray | None): unqualified crypto material usable
+                    for crypto operations.
+            code (str): stable (hard) part of derivation code
+            soft (str | bytes): soft part for special codes
+            rize (int | None): raw size in bytes when variable sized material not
+                        including lead bytes if any
+                        Otherwise None
+            qb64b (bytes | None): fully qualified crypto material Base64
+            qb64 (str | bytes | None):  fully qualified crypto material Base64
+            qb2 (bytes | None): fully qualified crypto material Base2
+            strip (bool): True means strip (delete) matter from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
+            tag (str | bytes):  Base64 plain. Prepad is added as needed.
+
+        Parameters:
+            trait (str):  configuration trait B64 from TraitDex
+
+        """
+        if not (qb64b or qb64 or qb2):
+            if trait:
+                tag = trait
+
+
+        super(Traitor, self).__init__(qb64b=qb64b, qb64=qb64, qb2=qb2, tag=tag, **kwa)
+
+
+        if self.trait not in TraitDex:
+            raise InvalidSoftError(f"Invalid trait={self.trait} for Traitor.")
+
+
+
+    @property
+    def trait(self):
+        """Returns:
+                trait (str): B64 primitive without prepad (strips prepad from soft)
+
+        Alias for self.tag
+
+        """
+        return self.tag
+
+
+
 
 # Versage namedtuple
 # proto (str): protocol element of Protocols
@@ -2147,8 +2328,6 @@ class Verser(Tagger):
             gvrsn (Versionage | None): instance genus version.
                namedtuple (major, minor) of ints
 
-        Notes:
-            prepad = 'A'
         """
         if not (qb64b or qb64 or qb2):
             if versage:
@@ -2162,8 +2341,8 @@ class Verser(Tagger):
         super(Verser, self).__init__(qb64b=qb64b, qb64=qb64, qb2=qb2, tag=tag, **kwa)
 
         if self.code not in (MtrDex.Tag7, MtrDex.Tag10, ):
-            raise InvalidCodeError(f"Invalid code={self.code} for Verser "
-                                   f"{self.tag=}.")
+            raise InvalidCodeError(f"Invalid code={self.code} for "
+                                   f"Verser={self.tag}.")
 
 
     @property
@@ -4547,7 +4726,7 @@ IdxBthSigDex = IndexedBothSigCodex()  # Make instance
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
 # os is the other size int number of chars in other index part of soft
-#     ms = ss - os main index size computed
+# ms = ss - os main index size computed
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
 Xizage = namedtuple("Xizage", "hs ss os fs ls")
