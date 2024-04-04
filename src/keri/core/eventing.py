@@ -2876,11 +2876,6 @@ class Kever:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkeys, val=esr)
 
-        val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
-        for verfer in (serder.verfers if serder.verfers is not None else []):
-            self.db.pubs.add(keys=(verfer.qb64,), val=val)
-        for diger in (serder.ndigers if serder.ndigers is not None else []):
-            self.db.digs.add(keys=(diger.qb64,), val=val)
         if first:  # append event dig to first seen database in order
             if seqner and saider:  # delegation for authorized delegated or issued event
                 couple = seqner.qb64b + saider.qb64b

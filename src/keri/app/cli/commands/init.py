@@ -5,13 +5,17 @@ keri.kli.commands module
 """
 import argparse
 import getpass
+import os
+import sys
 
 from hio import help
 from hio.base import doing
 
 import keri.app.oobiing
-from keri.app import habbing, configing, oobiing, connecting
+from keri import kering
+from keri.app import habbing, configing, oobiing
 from keri.app.keeping import Algos
+from keri.db import basing
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing
 

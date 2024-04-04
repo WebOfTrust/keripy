@@ -12,6 +12,8 @@ from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking, Hict
 
+from socket import gaierror
+
 from . import httping, forwarding
 from .. import help
 from .. import kering
@@ -74,10 +76,13 @@ class Receiptor(doing.DoDoer):
         clients = dict()
         doers = []
         for wit in wits:
-            client, clientDoer = httpClient(hab, wit)
-            clients[wit] = client
-            doers.append(clientDoer)
-            self.extend([clientDoer])
+            try:
+                client, clientDoer = httpClient(hab, wit)
+                clients[wit] = client
+                doers.append(clientDoer)
+                self.extend([clientDoer])
+            except (kering.MissingEntryError, gaierror) as e:
+                logger.error(f"unable to create http client for witness {wit}: {e}")
 
         rcts = dict()
         for wit, client in clients.items():

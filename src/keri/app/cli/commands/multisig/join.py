@@ -146,9 +146,6 @@ class ConfirmDoer(doing.DoDoer):
         """ Incept group multisig
 
         """
-        if True:
-            return True
-
         smids = attrs["smids"]  # change body mids for group member ids
         rmids = attrs["rmids"] if "rmids" in attrs else None
         ked = attrs["ked"]
