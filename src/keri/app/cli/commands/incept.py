@@ -139,7 +139,7 @@ class InceptDoer(doing.DoDoer):
         self.proxy = proxy
         hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.swain = delegating.Sealer(hby=hby)
+        self.swain = delegating.Anchorer(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]

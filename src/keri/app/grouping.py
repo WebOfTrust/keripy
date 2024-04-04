@@ -25,7 +25,7 @@ class Counselor(doing.DoDoer):
     def __init__(self, hby, swain=None, proxy=None, **kwa):
 
         self.hby = hby
-        self.swain = swain if swain is not None else delegating.Sealer(hby=self.hby)
+        self.swain = swain if swain is not None else delegating.Anchorer(hby=self.hby)
         self.proxy = proxy
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
