@@ -274,11 +274,11 @@ def test_snuff():
 
         """
         if len(raw) < SNUFFSIZE:
-            raise ShortageError(f"Need more raw bytes to smell full version string.")
+            raise kering.ShortageError(f"Need more raw bytes to smell full version string.")
 
         match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
         if not match or match.start() > MAXVFOFFSET:
-            raise VersionError(f"Invalid version string from smelled raw = "
+            raise kering.VersionError(f"Invalid version string from smelled raw = "
                                f"{raw[: SNUFFSIZE]}.")
 
         return snatch(match, size=size)
