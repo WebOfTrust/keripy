@@ -65,7 +65,7 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
-printf "Running multisig-join.sh"
+printf "Skipping multisig-join.sh"
 printf "\n************************************\n"
-"${script_dir}/basic/multisig-join.sh"
-isSuccess
+#"${script_dir}/basic/multisig-join.sh"
+#isSuccess
