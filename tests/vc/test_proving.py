@@ -6,8 +6,9 @@ tests.vc.proving module
 import pytest
 
 from keri.app import habbing
-from keri.core import coring, scheming, parsing, serdering
-from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
+from keri.core import coring, scheming, parsing, serdering, indexing
+from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger
+from keri.core.indexing import Siger
 from keri.core.scheming import CacheResolver
 from keri.kering import Versionage
 from keri.vc.proving import credential

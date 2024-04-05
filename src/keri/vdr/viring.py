@@ -15,7 +15,7 @@ from ..db import koming, subing, escrowing
 
 from .. import kering
 from ..app import signing
-from ..core import coring, serdering
+from ..core import coring, serdering, indexing
 from ..db import dbing, basing
 from ..db.dbing import snKey
 from ..help import helping
@@ -328,7 +328,7 @@ class Reger(dbing.LMDBer):
         # given by quintuple (saider.qb64, path, prefixer.qb64, seqner.q64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
         # signature.
-        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=coring.Siger)
+        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
 
         # all sad path scgs  (sad pathed non-indexed signature serializations) maps
         # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar

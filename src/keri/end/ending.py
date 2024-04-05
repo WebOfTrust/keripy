@@ -22,7 +22,7 @@ from hio.core import http, wiring
 from .. import help
 from .. import kering
 from ..app import habbing
-from ..core import coring
+from ..core import coring, indexing
 from ..help import helping
 
 logger = help.ogler.getLogger()
@@ -82,12 +82,12 @@ def signature(signages):
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
-                    either coring.Siger or coring.Cigar.
-                    When list each item is instance of either coring.Siger or
+                    either indexing.Siger or coring.Cigar.
+                    When list each item is instance of either indexing.Siger or
                     coring.Cigar.
                     All markers must be of same class
                 indexed (bool): True means marker values are indexed signatures
-                    using coring.Siger. False means marker values are unindexed
+                    using indexing.Siger. False means marker values are unindexed
                     signatures using coring.Cigar. None means auto detect from
                     first marker value class. All markers must be of same class.
                 signer (str): optional identifier of signage. May be a
@@ -188,12 +188,12 @@ def designature(value):
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
-                    either coring.Siger or coring.Cigar.
-                    When list each item is instance of either coring.Siger or
+                    either indexing.Siger or coring.Cigar.
+                    When list each item is instance of either indexing.Siger or
                     coring.Cigar.
                     All markers must be of same class
                 indexed (bool): True means marker values are indexed signatures
-                    using coring.Siger. False means marker values are unindexed
+                    using indexing.Siger. False means marker values are unindexed
                     signatures using coring.Cigar. None means auto detect from
                     first marker value class. All markers must be of same class.
                 signer (str): optional identifier of signage. May be a
@@ -250,7 +250,7 @@ def designature(value):
         if kind == "CESR":  # convert to Siger or Cigar instances
             for key, val in items.items():
                 if indexed:
-                    items[key] = coring.Siger(qb64=val)
+                    items[key] = indexing.Siger(qb64=val)
                 else:
                     items[key] = coring.Cigar(qb64=val)
 

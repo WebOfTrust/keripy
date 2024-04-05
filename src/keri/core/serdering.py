@@ -1264,8 +1264,7 @@ class Serder:
                             frame.extend(e.encode("utf-8"))
 
                         val = bytearray(Counter(tag=AllTags.GenericListGroup,
-                                                count=len(frame) % 4,
-                                                version=self.gvrsn).qb64b)
+                                                count=len(frame) % 4).qb64b)
                         val.extend(frame)
 
                     case "c":  # list of config traits strings

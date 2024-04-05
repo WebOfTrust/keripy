@@ -16,7 +16,7 @@ from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
-from ..core import coring, eventing, parsing, routing, serdering
+from ..core import coring, eventing, parsing, routing, serdering, indexing
 from ..db import dbing, basing
 from ..kering import MissingSignatureError, Roles
 
@@ -2011,7 +2011,7 @@ class BaseHab:
 
         sigs = []
         for sig in self.db.getSigsIter(key):
-            sigs.append(coring.Siger(qb64b=bytes(sig)))
+            sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
         couple = self.db.getAes(key)
 
@@ -2890,7 +2890,7 @@ class GroupHab(BaseHab):
         if not sigs:  # otherwise its a list of sigs
             return False
 
-        sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+        sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
         windex = min([siger.index for siger in sigers])
 
         # True if Elected to perform delegation and witnessing

@@ -9,10 +9,11 @@ import pytest
 
 import pysodium
 
-from keri.core import coring, eventing, serdering
+from keri.help import helping
+from keri.core import coring, eventing, serdering, indexing
 from keri.db import dbing, subing
 from keri.app import keeping
-from keri.help import helping
+
 
 
 
@@ -809,15 +810,15 @@ def test_cesr_suber():
                          (('b', '2'), val1.qb64)]
 
         # Try Siger Indexer Subclass
-        sdb = subing.CesrSuber(db=db, subkey='pigs.', klas=coring.Siger)
+        sdb = subing.CesrSuber(db=db, subkey='pigs.', klas=indexing.Siger)
         assert isinstance(sdb, subing.CesrSuber)
-        assert issubclass(sdb.klas, coring.Siger)
+        assert issubclass(sdb.klas, indexing.Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = coring.Siger(qb64=sig0)
+        val0 = indexing.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, val=val0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Siger)
+        assert isinstance(actual, indexing.Siger)
         assert actual.qb64 == val0.qb64
 
 
@@ -947,15 +948,15 @@ def test_cat_suber():
             assert isinstance(val, klas)
 
         # Try Siger Indexer Subclass
-        sdb = subing.CatCesrSuber(db=db, subkey='pigs.', klas=(coring.Siger, ))
+        sdb = subing.CatCesrSuber(db=db, subkey='pigs.', klas=(indexing.Siger, ))
         assert isinstance(sdb, subing.CatCesrSuber)
-        assert issubclass(sdb.klas[0], coring.Siger)
+        assert issubclass(sdb.klas[0], indexing.Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = coring.Siger(qb64=sig0)
+        val0 = indexing.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, val=[val0])
         actual = sdb.get(keys=keys)
-        assert isinstance(actual[0], coring.Siger)
+        assert isinstance(actual[0], indexing.Siger)
         assert actual[0].qb64 == val0.qb64
 
     assert not os.path.exists(db.path)
@@ -1154,15 +1155,15 @@ def test_cat__cesr_ioset_suber():
         assert sdb.cnt(keys=keys2) == 0
 
         # Try Siger Indexer Subclass
-        sdb = subing.CatCesrIoSetSuber(db=db, subkey='pigs.', klas=(coring.Siger, ))
+        sdb = subing.CatCesrIoSetSuber(db=db, subkey='pigs.', klas=(indexing.Siger, ))
         assert isinstance(sdb, subing.CatCesrIoSetSuber)
-        assert issubclass(sdb.klas[0], coring.Siger)
+        assert issubclass(sdb.klas[0], indexing.Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = coring.Siger(qb64=sig0)
+        val0 = indexing.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, vals=[[val0]])
         actuals = sdb.get(keys=keys)
-        assert isinstance(actuals[0][0], coring.Siger)
+        assert isinstance(actuals[0][0], indexing.Siger)
         assert actuals[0][0].qb64 == val0.qb64
 
     assert not os.path.exists(db.path)
@@ -1291,15 +1292,15 @@ def test_cesr_dup_suber():
         assert pres == [val2.qb64, val1.qb64]  # lexi order
 
         # Try Siger Indexer Subclass
-        sdb = subing.CesrDupSuber(db=db, subkey='pigs.', klas=coring.Siger)
+        sdb = subing.CesrDupSuber(db=db, subkey='pigs.', klas=indexing.Siger)
         assert isinstance(sdb, subing.CesrDupSuber)
-        assert issubclass(sdb.klas, coring.Siger)
+        assert issubclass(sdb.klas, indexing.Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = coring.Siger(qb64=sig0)
+        val0 = indexing.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, vals=[val0])
         actuals = sdb.get(keys=keys)
-        assert isinstance(actuals[0], coring.Siger)
+        assert isinstance(actuals[0], indexing.Siger)
         assert actuals[0].qb64 == val0.qb64
 
 

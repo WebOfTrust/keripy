@@ -17,7 +17,7 @@ from socket import gaierror
 from . import httping, forwarding
 from .. import help
 from .. import kering
-from ..core import eventing, parsing, coring, serdering
+from ..core import eventing, parsing, coring, serdering, indexing
 from ..core.coring import CtrDex
 from ..db import dbing
 from ..kering import Roles
@@ -360,7 +360,7 @@ class WitnessReceiptor(doing.DoDoer):
                     continue
 
                 # generate all rct msgs to send to all witnesses
-                awigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
+                awigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # make sure all witnesses have fully receipted KERL and know about each other
                 for witer in witers:

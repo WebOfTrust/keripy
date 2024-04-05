@@ -12,7 +12,7 @@ from hio.help import decking
 from .. import kering
 from .. import help
 from ..app import delegating, agenting
-from ..core import coring, routing, eventing, parsing, serdering
+from ..core import coring, routing, eventing, parsing, serdering, indexing
 from ..db import dbing
 from ..db.dbing import snKey
 from ..peer import exchanging
@@ -124,7 +124,7 @@ class Counselor(doing.DoDoer):
                 if not sigs:  # otherwise its a list of sigs
                     continue
 
-                sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+                sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
                 windex = min([siger.index for siger in sigers])
 
                 # True if Elected to perform delegation and witnessing
@@ -516,7 +516,7 @@ def getEscrowedEvent(db, pre, sn):
 
     sigs = []
     for sig in db.getSigsIter(key):
-        sigs.append(coring.Siger(qb64b=bytes(sig)))
+        sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
     couple = db.getAes(key)
 

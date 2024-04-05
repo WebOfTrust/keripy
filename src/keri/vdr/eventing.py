@@ -17,7 +17,7 @@ from hio.help import decking
 from keri import kering
 from .. import core
 from .. import help
-from ..core import serdering, coring
+from ..core import serdering, coring, indexing
 from ..core.coring import (MtrDex, Serials, versify, Prefixer,
                            Ilks, Seqner, Verfer, Number)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs
@@ -2059,7 +2059,7 @@ class Tevery:
 
                 bigers = None
                 if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [coring.Siger(qb64b=tib) for tib in tibs]
+                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
@@ -2126,7 +2126,7 @@ class Tevery:
 
                 bigers = None
                 if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [coring.Siger(qb64b=tib) for tib in tibs]
+                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
