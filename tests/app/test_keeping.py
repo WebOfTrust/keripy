@@ -18,8 +18,9 @@ from hio.base import doing
 
 from keri import kering
 from keri.help import helping
-from keri.core import coring
-from keri.core.coring import IdrDex
+
+from keri.core import coring, indexing
+from keri.core.indexing import IdrDex
 from keri.app import keeping
 
 
@@ -774,7 +775,7 @@ def test_manager():
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
-            assert isinstance(siger, coring.Siger)
+            assert isinstance(siger, indexing.Siger)
         vsigers = manager.sign(ser=ser, verfers=verfers)
         psigs = [siger.qb64 for siger in psigers]
         vsigs = [siger.qb64 for siger in vsigers]
@@ -787,7 +788,7 @@ def test_manager():
         # Test with pubs list
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
         for siger in psigers:
-            assert isinstance(siger, coring.Siger)
+            assert isinstance(siger, indexing.Siger)
         assert psigers[0].index == indices[0]
         psigs = [siger.qb64 for siger in psigers]
         assert psigs == ['ADAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
@@ -795,7 +796,7 @@ def test_manager():
         # Test with verfers list
         vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
         for siger in vsigers:
-            assert isinstance(siger, coring.Siger)
+            assert isinstance(siger, indexing.Siger)
         assert psigers[0].index == indices[0]
         vsigs = [siger.qb64 for siger in vsigers]
         assert vsigs == psigs
@@ -1626,7 +1627,7 @@ def test_manager_with_aeid():
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
-            assert isinstance(siger, coring.Siger)
+            assert isinstance(siger, indexing.Siger)
         vsigers = manager.sign(ser=ser, verfers=verfers)
         psigs = [siger.qb64 for siger in psigers]
         vsigs = [siger.qb64 for siger in vsigers]
@@ -1639,7 +1640,7 @@ def test_manager_with_aeid():
         # Test with pubs list
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
         for siger in psigers:
-            assert isinstance(siger, coring.Siger)
+            assert isinstance(siger, indexing.Siger)
         assert psigers[0].index == indices[0]
         psigs = [siger.qb64 for siger in psigers]
         assert psigs == ['ADAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
@@ -1647,7 +1648,7 @@ def test_manager_with_aeid():
         # Test with verfers list
         vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
         for siger in vsigers:
-            assert isinstance(siger, coring.Siger)
+            assert isinstance(siger, indexing.Siger)
         assert psigers[0].index == indices[0]
         vsigs = [siger.qb64 for siger in vsigers]
         assert vsigs == psigs

@@ -9,7 +9,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import existing
-from keri.core import coring
+from keri.core import coring, indexing
 
 parser = argparse.ArgumentParser(description='Verify signature(s) on arbitrary data')
 parser.set_defaults(handler=lambda args: handler(args))
@@ -49,7 +49,7 @@ def verify(tymth, tock=0.0, **opts):
     base = args.base
     bran = args.bran
 
-    sigers = [coring.Siger(qb64=sig) for sig in args.signature]
+    sigers = [indexing.Siger(qb64=sig) for sig in args.signature]
 
     try:
         with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):

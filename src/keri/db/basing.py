@@ -39,7 +39,7 @@ import keri
 from . import dbing, koming, subing
 from .. import kering
 
-from ..core import coring, eventing, parsing, serdering
+from ..core import coring, eventing, parsing, serdering, indexing
 
 from .. import help
 from ..help import helping
@@ -976,7 +976,7 @@ class Baser(dbing.LMDBer):
         # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
         #  of reply and trans signer's key state est evt to val Siger for each
         # signature.
-        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=coring.Siger)
+        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
 
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
@@ -1052,7 +1052,7 @@ class Baser(dbing.LMDBer):
 
         # exchange message signatures
         # TODO: clean
-        self.esigs = subing.CesrIoSetSuber(db=self, subkey='esigs.', klas=coring.Siger)
+        self.esigs = subing.CesrIoSetSuber(db=self, subkey='esigs.', klas=indexing.Siger)
 
         # exchange message signatures
         # TODO: clean

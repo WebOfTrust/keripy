@@ -9,7 +9,7 @@ import pytest
 from keri import kering
 from keri.app import habbing, signing
 from keri.core import eventing as ceventing, scheming
-from keri.core import parsing, coring
+from keri.core import parsing, coring, indexing
 from keri.core.eventing import SealEvent
 from keri.help import helping
 from keri.vc import proving
@@ -108,7 +108,7 @@ def test_verifier(seeder):
         assert saider[0].qb64 == creder.said
         saider = regery.reger.schms.get("EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC")
         assert saider[0].qb64 == creder.said
-        
+
         # also try it via the cloneCreds function
         creds = regery.reger.cloneCreds(saids=saider, db=hab.db)
 
@@ -175,7 +175,7 @@ def test_verifier(seeder):
 #         sigs.extend(hab2.db.getSigs(dgkey))
 #         sigs.extend(hab3.db.getSigs(dgkey))
 #
-#         sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+#         sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
 #
 #         evt = bytearray(eraw)
 #         evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
@@ -252,7 +252,7 @@ def test_verifier(seeder):
 #         sigs.extend(hab2.db.getSigs(dgkey))
 #         sigs.extend(hab3.db.getSigs(dgkey))
 #
-#         sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+#         sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
 #
 #         evt = bytearray(eraw)
 #         evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,

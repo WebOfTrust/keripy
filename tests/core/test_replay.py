@@ -7,9 +7,11 @@ import datetime
 import os
 
 from keri import help
-from keri.app import habbing
-from keri.core import coring, eventing, parsing, serdering
 from keri.help import helping
+
+from keri.app import habbing
+from keri.core import coring, eventing, parsing, serdering, indexing
+
 
 logger = help.ogler.getLogger()
 
@@ -349,7 +351,7 @@ def test_replay():
         assert len(msg) == 1068
 
         for i in range(counter.count):  # parse signatures
-            siger = coring.Siger(qb64b=msg)
+            siger = indexing.Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
         assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
 

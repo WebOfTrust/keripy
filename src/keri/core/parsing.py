@@ -10,8 +10,9 @@ import traceback
 from collections import namedtuple
 from dataclasses import dataclass, astuple
 
-from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar,
+from .coring import (Ilks, CtrDex, Counter, Seqner, Cigar,
                      Dater, Verfer, Prefixer, Saider, Pather, Protocols )
+from .indexing import (Siger, )
 from . import serdering
 from .. import help
 from .. import kering

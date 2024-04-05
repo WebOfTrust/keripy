@@ -635,7 +635,7 @@ def test_counter_v1():
 
     # test Counter instances
     with pytest.raises(kering.EmptyMaterialError):
-        counter = Counter(version=Vrsn_1_0)
+        counter = Counter(gvrsn=Vrsn_1_0)
 
     # create code manually
     count = 1
@@ -644,7 +644,7 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(tag="ControllerIdxSigs", count=count, version=Vrsn_1_0)
+    counter = Counter(tag="ControllerIdxSigs", count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs == counter.hard
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -655,7 +655,7 @@ def test_counter_v1():
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
-    counter = Counter(tag=AllTags.ControllerIdxSigs, count=count, version=Vrsn_1_0)
+    counter = Counter(tag=AllTags.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -667,7 +667,7 @@ def test_counter_v1():
     counter = Counter(tag=AllTags.ControllerIdxSigs,
                       code=CtrDex.WitnessIdxSigs,
                       count=count,
-                      version=Vrsn_1_0)
+                      gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -675,7 +675,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs, version=Vrsn_1_0)  # default count = 1
+    counter = Counter(code=CtrDex.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default count = 1
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -683,7 +683,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -691,7 +691,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -699,7 +699,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -709,24 +709,24 @@ def test_counter_v1():
 
     # test truncates extra bytes from qb64 parameter
     longqsc64 = qsc + "ABCD"
-    counter = Counter(qb64=longqsc64, version=Vrsn_1_0)
+    counter = Counter(qb64=longqsc64, gvrsn=Vrsn_1_0)
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb64=shortqsc64, version=Vrsn_1_0)
+        counter = Counter(qb64=shortqsc64, gvrsn=Vrsn_1_0)
 
     # test truncates extra bytes from qb2 parameter
     longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
-    counter = Counter(qb2=longqscb2, version=Vrsn_1_0)
+    counter = Counter(qb2=longqscb2, gvrsn=Vrsn_1_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb2=shortqscb2, version=Vrsn_1_0)
+        counter = Counter(qb2=shortqscb2, gvrsn=Vrsn_1_0)
 
     # test with non-zero count=5
     count = 5
@@ -735,7 +735,7 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, version=Vrsn_1_0)
+    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -743,7 +743,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -751,7 +751,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -759,7 +759,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -774,7 +774,7 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigAttachmentGroup, count=count, version=Vrsn_1_0)
+    counter = Counter(code=CtrDex.BigAttachmentGroup, count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -782,7 +782,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -790,7 +790,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -798,7 +798,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -807,7 +807,7 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     # Test ._bexfil
-    counter = Counter(qb64=qsc, version=Vrsn_1_0)  #
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  #
     code = counter.code
     count = counter.count
     qb2 = counter.qb2
@@ -831,7 +831,7 @@ def test_counter_v1():
     qscb2 = decodeB64(qscb)
 
     # strip ignored if qb64
-    counter = Counter(qb64=qsc, strip=True, version=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, strip=True, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -840,7 +840,7 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     ims = bytearray(qscb)  # test with qb64b
-    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # strip
+    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # strip
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
@@ -850,7 +850,7 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     ims = bytearray(qscb2)  # test with qb2
-    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
+    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
@@ -862,7 +862,7 @@ def test_counter_v1():
     # test with longer ims for qb64b
     extra = b"ABCD"
     ims = bytearray(qscb + b"ABCD")
-    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)
+    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)
     assert counter.qb64b == qscb
     assert len(counter.qb64b) == counter.sizes[counter.code].fs
     assert ims == extra
@@ -870,7 +870,7 @@ def test_counter_v1():
     # test with longer ims for qb2
     extra = bytearray([1, 2, 3, 4, 5])
     ims = bytearray(qscb2) + extra
-    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
+    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb2) == counter.sizes[counter.code].fs * 3 // 4
     assert ims == extra
@@ -879,11 +879,11 @@ def test_counter_v1():
 
     ims = bytes(qscb)  # test with qb64b
     with pytest.raises(TypeError):
-        counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # strip
+        counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # strip
 
     ims = bytes(qscb2)  # test with qb2
     with pytest.raises(TypeError):
-        counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
+        counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)
 
     # test with big codes index=1024
     count = 1024
@@ -893,7 +893,7 @@ def test_counter_v1():
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
-    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -904,7 +904,7 @@ def test_counter_v1():
     assert not ims
 
     ims = bytearray(qscb2)
-    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -927,7 +927,7 @@ def test_counter_v1():
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       count=genverint,
-                      version=Vrsn_1_0)
+                      gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
@@ -939,7 +939,7 @@ def test_counter_v1():
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       countB64=genver,
-                      version=Vrsn_1_0)
+                      gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
@@ -982,7 +982,7 @@ def test_counter_v2():
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
     # default count = 1
-    counter = Counter(code=CtrDex.ControllerIdxSigs, version=Vrsn_2_0)
+    counter = Counter(code=CtrDex.ControllerIdxSigs, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -990,7 +990,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -998,7 +998,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1006,7 +1006,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1016,24 +1016,24 @@ def test_counter_v2():
 
     # test truncates extra bytes from qb64 parameter
     longqsc64 = qsc + "ABCD"
-    counter = Counter(qb64=longqsc64, version=Vrsn_2_0)
+    counter = Counter(qb64=longqsc64, gvrsn=Vrsn_2_0)
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb64=shortqsc64, version=Vrsn_2_0)
+        counter = Counter(qb64=shortqsc64, gvrsn=Vrsn_2_0)
 
     # test truncates extra bytes from qb2 parameter
     longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
-    counter = Counter(qb2=longqscb2, version=Vrsn_2_0)
+    counter = Counter(qb2=longqscb2, gvrsn=Vrsn_2_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb2=shortqscb2, version=Vrsn_2_0)
+        counter = Counter(qb2=shortqscb2, gvrsn=Vrsn_2_0)
 
     # test with non-zero count=5
     count = 5
@@ -1042,7 +1042,7 @@ def test_counter_v2():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(tag="ControllerIdxSigs", count=count, version=Vrsn_2_0)
+    counter = Counter(tag="ControllerIdxSigs", count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1052,7 +1052,7 @@ def test_counter_v2():
 
     counter = Counter(tag=AllTags.ControllerIdxSigs,
                       count=count,
-                      version=Vrsn_2_0)
+                      gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1064,7 +1064,7 @@ def test_counter_v2():
     counter = Counter(tag=AllTags.ControllerIdxSigs,
                       code=CtrDex.WitnessIdxSigs,
                       count=count,
-                      version=Vrsn_2_0)
+                      gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1072,7 +1072,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, version=Vrsn_2_0)
+    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1080,7 +1080,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1088,7 +1088,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1096,7 +1096,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1105,7 +1105,7 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
 
     # Test ._bexfil
-    counter = Counter(qb64=qsc, version=Vrsn_2_0)
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)
     code = counter.code
     count = counter.count
     qb2 = counter.qb2
@@ -1129,7 +1129,7 @@ def test_counter_v2():
     qscb2 = decodeB64(qscb)
 
     # strip ignored if qb64
-    counter = Counter(qb64=qsc, strip=True, version=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, strip=True, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1138,7 +1138,7 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
 
     ims = bytearray(qscb)  # test with qb64b
-    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # strip
+    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # strip
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
@@ -1148,7 +1148,7 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
 
     ims = bytearray(qscb2)  # test with qb2
-    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
+    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
@@ -1160,7 +1160,7 @@ def test_counter_v2():
     # test with longer ims for qb64b
     extra = b"ABCD"
     ims = bytearray(qscb + b"ABCD")
-    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)
+    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)
     assert counter.qb64b == qscb
     assert len(counter.qb64b) == counter.sizes[counter.code].fs
     assert ims == extra
@@ -1168,7 +1168,7 @@ def test_counter_v2():
     # test with longer ims for qb2
     extra = bytearray([1, 2, 3, 4, 5])
     ims = bytearray(qscb2) + extra
-    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
+    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb2) == counter.sizes[counter.code].fs * 3 // 4
     assert ims == extra
@@ -1177,11 +1177,11 @@ def test_counter_v2():
 
     ims = bytes(qscb)  # test with qb64b
     with pytest.raises(TypeError):
-        counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # strip
+        counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # strip
 
     ims = bytes(qscb2)  # test with qb2
     with pytest.raises(TypeError):
-        counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
+        counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)
 
     # test with big codes count=1024
     count = 1024
@@ -1190,7 +1190,7 @@ def test_counter_v2():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigGenericGroup, count=count, version=Vrsn_2_0)
+    counter = Counter(code=CtrDex.BigGenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1198,7 +1198,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1206,7 +1206,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1214,7 +1214,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1230,7 +1230,7 @@ def test_counter_v2():
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
-    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1240,7 +1240,7 @@ def test_counter_v2():
     assert not ims
 
     ims = bytearray(qscb2)
-    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1256,7 +1256,7 @@ def test_counter_v2():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigGenericGroup, count=count, version=Vrsn_2_0)
+    counter = Counter(code=CtrDex.BigGenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup == counter.hard
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1267,7 +1267,7 @@ def test_counter_v2():
     assert counter.soft == 'AACAB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
-    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1275,7 +1275,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1283,7 +1283,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1299,7 +1299,7 @@ def test_counter_v2():
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
-    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1310,7 +1310,7 @@ def test_counter_v2():
     assert not ims
 
     ims = bytearray(qscb2)
-    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1326,7 +1326,7 @@ def test_counter_v2():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.GenericGroup, count=count, version=Vrsn_2_0)
+    counter = Counter(code=CtrDex.GenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup == counter.hard
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1336,7 +1336,7 @@ def test_counter_v2():
     assert counter.soft =='AACAB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
-    counter = Counter(tag=AllTags.GenericGroup, count=count, version=Vrsn_2_0)
+    counter = Counter(tag=AllTags.GenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1356,7 +1356,7 @@ def test_counter_v2():
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       count=genverint,
-                      version=Vrsn_2_0)
+                      gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
@@ -1369,7 +1369,7 @@ def test_counter_v2():
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       countB64=genver,
-                      version=Vrsn_2_0)
+                      gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver

@@ -7,7 +7,7 @@ import os
 
 from keri import help
 from keri.app import habbing
-from keri.core import coring, eventing, parsing, serdering
+from keri.core import coring, eventing, parsing, serdering, indexing
 from keri.db import dbing
 
 logger = help.ogler.getLogger()
@@ -116,7 +116,7 @@ def test_indexed_witness_replay():
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
-        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
+        wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    said=camHab.kever.serder.said)
@@ -166,7 +166,7 @@ def test_indexed_witness_replay():
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
-        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
+        wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    said=camHab.kever.serder.said)
@@ -235,7 +235,7 @@ def test_indexed_witness_replay():
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
-        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
+        wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    said=camHab.kever.serder.said)

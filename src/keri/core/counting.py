@@ -433,7 +433,7 @@ class Counter:
 
 
     def __init__(self, tag=None, *, code = None, count=None, countB64=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False, version=Vrsn_2_0):
+                 qb64b=None, qb64=None, qb2=None, strip=False, gvrsn=Vrsn_2_0):
         """
         Validate as fully qualified
         Parameters:
@@ -459,8 +459,7 @@ class Counter:
             strip (bool):  True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip.
                 default False
-            version (Versionage): instance of version of code tables to use
-                                  provides protocol genera version
+            gvrsn (Versionage): instance of genera version of CESR code tables
 
 
         Needs either code or qb64b or qb64 or qb2
@@ -470,19 +469,19 @@ class Counter:
         .code and .count
 
         """
-        if version.major not in self.Sizes:
+        if gvrsn.major not in self.Sizes:
             raise kering.InvalidVersionError(f"Unsupported major version="
-                                             f"{version.major}.")
+                                             f"{gvrsn.major}.")
 
-        latest = list(self.Sizes[version.major])[0]  # get latest minor version
-        if version.minor > latest:
-            raise kering.InvalidVersionError(f"Minor version={version.minor} "
+        latest = list(self.Sizes[gvrsn.major])[0]  # get latest minor version
+        if gvrsn.minor > latest:
+            raise kering.InvalidVersionError(f"Minor version={gvrsn.minor} "
                                              f" exceeds latest supported minor"
                                              f" version={latest}.")
 
-        self._codes = self.Codes[version.major][latest]  # use latest supported version codes
-        self._sizes = self.Sizes[version.major][latest]  # use latest supported version sizes
-        self._version = version  # provided version may be earlier than supported version
+        self._codes = self.Codes[gvrsn.major][latest]  # use latest supported version codes
+        self._sizes = self.Sizes[gvrsn.major][latest]  # use latest supported version sizes
+        self._version = gvrsn  # provided version may be earlier than supported version
 
 
         if tag:
