@@ -9,6 +9,7 @@ import json
 
 from hio import help
 from hio.base import doing
+from keri import kering
 
 from keri.app import connecting
 from keri.app.cli.common import existing
@@ -53,8 +54,14 @@ def list(tymth, tock=0.0, **opts):
 
                 challenges = []
                 for said in valid:
-                    exn = hby.db.exns.get(keys=(said,))
-                    challenges.append(dict(dt=exn.ked['dt'], words=exn.ked['a']['words']))
+                    try:
+                        exn = hby.db.exns.get(keys=(said,))
+                    except kering.ValidationError:
+                        val = hby.db.getVal(db=hby.db.exns.sdb, key=hby.db.exns._tokey((said,)))
+                        d = json.loads(bytes(val).decode("utf-8"))
+                        challenges.append(dict(dt=d['dt'], words=d['a']['words']))
+                    else:
+                        challenges.append(dict(dt=exn.ked['dt'], words=exn.ked['a']['words']))
 
                 c["challenges"] = challenges
 
