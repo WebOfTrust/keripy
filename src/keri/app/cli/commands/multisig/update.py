@@ -119,8 +119,8 @@ class UpdateDoer(doing.DoDoer):
         print("")
 
         witstate = self.hab.db.ksns.get((saider.qb64,))
-        if witstate.sn != self.sn and witstate.ked['d'] != self.said:
-            print(f"Witness state ({witstate.sn}, {witstate.ked['d']}) does not match requested state.")
+        if int(witstate.s, 16) != self.sn and witstate.d != self.said:
+            print(f"Witness state ({witstate.s}, {witstate.d}) does not match requested state.")
             self.remove(self.toRemove)
 
             return
