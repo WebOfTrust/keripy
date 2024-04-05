@@ -12,7 +12,7 @@ from hio.help import decking
 from .. import kering
 from .. import help
 from ..app import delegating, agenting
-from ..core import coring, routing, eventing, parsing, serdering
+from ..core import coring, routing, eventing, parsing, serdering, indexing
 from ..db import dbing
 from ..db.dbing import snKey
 from ..peer import exchanging
@@ -25,7 +25,7 @@ class Counselor(doing.DoDoer):
     def __init__(self, hby, swain=None, proxy=None, **kwa):
 
         self.hby = hby
-        self.swain = swain if swain is not None else delegating.Sealer(hby=self.hby)
+        self.swain = swain if swain is not None else delegating.Anchorer(hby=self.hby)
         self.proxy = proxy
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
@@ -124,7 +124,7 @@ class Counselor(doing.DoDoer):
                 if not sigs:  # otherwise its a list of sigs
                     continue
 
-                sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+                sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
                 windex = min([siger.index for siger in sigers])
 
                 # True if Elected to perform delegation and witnessing
@@ -138,9 +138,9 @@ class Counselor(doing.DoDoer):
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
                         if self.proxy:
-                            self.witq.query(hab=self.proxy, pre=kever.delegator, anchor=anchor)
+                            self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor)
                         else:
-                            self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
+                            self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor)
 
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
@@ -175,7 +175,7 @@ class Counselor(doing.DoDoer):
                     self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
-                if serder := self.hby.db.findAnchoringSealEvent(kever.delegator, seal=anchor):
+                if serder := self.hby.db.findAnchoringSealEvent(kever.delpre, seal=anchor):
                     aseq = coring.Seqner(sn=serder.sn)
                     couple = aseq.qb64b + serder.saidb
                     dgkey = dbing.dgKey(pre, saider.qb64b)
@@ -516,7 +516,7 @@ def getEscrowedEvent(db, pre, sn):
 
     sigs = []
     for sig in db.getSigsIter(key):
-        sigs.append(coring.Siger(qb64b=bytes(sig)))
+        sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
     couple = db.getAes(key)
 

@@ -7,12 +7,14 @@ import datetime
 import logging
 from typing import Type
 
-from keri.core import coring
-from keri import help
+
 from keri import kering
-from keri.core import eventing
-from keri.db import subing
+from keri import help
 from keri.help import helping
+
+from keri.core import coring, eventing, indexing
+from keri.db import subing
+
 
 logger = help.ogler.getLogger()
 
@@ -42,7 +44,7 @@ class Broker:
         # given by quadruple (saider.qb64, subkeyer.qb64, seqner.q64, diger.qb64)
         #  of reply and trans signer's key state est evt to val Siger for each
         # signature.
-        self.tigerdb = subing.CesrIoSetSuber(db=self.db, subkey=subkey + '-sgs.', klas=coring.Siger)
+        self.tigerdb = subing.CesrIoSetSuber(db=self.db, subkey=subkey + '-sgs.', klas=indexing.Siger)
 
         # all key state kcgs  (ksn non-indexed signature serializations) maps ksn SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar

@@ -111,7 +111,7 @@ class ConfirmDoer(doing.DoDoer):
                 elif ilk in (coring.Ilks.drt,):
                     typ = "rotation"
                     dkever = self.hby.kevers[eserder.pre]
-                    delpre = dkever.delegator
+                    delpre = dkever.delpre
 
                 else:
                     continue

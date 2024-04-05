@@ -168,7 +168,7 @@ def streamCESRRequests(client, ims, dest, path=None):
     """
     path = path if path is not None else "/"
 
-    cold = parsing.Parser.sniff(ims)  # check for spurious counters at front of stream
+    cold = kering.sniff(ims)  # check for spurious counters at front of stream
     if cold in (parsing.Colds.txt, parsing.Colds.bny):  # not message error out to flush stream
         # replace with pipelining here once CESR message format supported.
         raise kering.ColdStartError("Expecting message counter tritet={}"

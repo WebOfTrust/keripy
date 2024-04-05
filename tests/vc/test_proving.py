@@ -6,8 +6,9 @@ tests.vc.proving module
 import pytest
 
 from keri.app import habbing
-from keri.core import coring, scheming, parsing, serdering
-from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
+from keri.core import coring, scheming, parsing, serdering, indexing
+from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger
+from keri.core.indexing import Siger
 from keri.core.scheming import CacheResolver
 from keri.kering import Versionage
 from keri.vc.proving import credential
@@ -70,7 +71,7 @@ def test_proving(mockHelpingNowIso8601):
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True)
-        assert ctr.code == CtrDex.AttachedMaterialQuadlets
+        assert ctr.code == CtrDex.AttachmentGroup
         assert ctr.count == 52
 
         pags = ctr.count * 4
@@ -113,7 +114,7 @@ def test_credentialer():
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
-        v=coring.versify(proto=coring.Protos.acdc, kind=Serials.json, size=0),
+        v=coring.versify(protocol=coring.Protocols.acdc, kind=Serials.json, size=0),
         d="",
         i="EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi",
         s="abc",
@@ -136,10 +137,13 @@ def test_credentialer():
                           b'"i":"EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi","s":"abc","a":{"a":123,"b'
                           b'":"abc","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
 
-    raw1, ked1, knd1, ver1, knd1, size1 = creder._exhale(sad=d)
-    assert raw1 == creder.raw
+    raw1 = creder.raw
+    ver1 = creder.vrsn
+    knd1 = creder.kind
+    sad1 = creder.sad
+
     assert knd1 == Serials.json
-    assert ked1 == d
+    assert sad1 == d
     assert ver1 == Versionage(major=1, minor=0)
 
     creder = serdering.SerderACDC(raw=raw1)  # Creder(raw=raw1)
@@ -150,7 +154,7 @@ def test_credentialer():
 
     d2 = dict(d)
     d2['d'] = ""
-    d2["v"] = coring.versify(proto=coring.Protos.acdc, kind=Serials.cbor, size=0)
+    d2["v"] = coring.versify(protocol=coring.Protocols.acdc, kind=Serials.cbor, size=0)
     _, d2 = coring.Saider.saidify(sad=d2)
 
     creder = serdering.SerderACDC(sad=d2)  # Creder(ked=d2)
@@ -176,7 +180,7 @@ def test_credentialer():
     assert creder.sad == d2
 
     d3 = dict(d)
-    d3["v"] = coring.versify(proto=coring.Protos.acdc, kind=Serials.mgpk, size=0)
+    d3["v"] = coring.versify(protocol=coring.Protocols.acdc, kind=Serials.mgpk, size=0)
     _, d3 = coring.Saider.saidify(sad=d3)
     creder = serdering.SerderACDC(sad=d3)  # Creder(ked=d3)
 

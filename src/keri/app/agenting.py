@@ -12,10 +12,12 @@ from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking, Hict
 
+from socket import gaierror
+
 from . import httping, forwarding
 from .. import help
 from .. import kering
-from ..core import eventing, parsing, coring, serdering
+from ..core import eventing, parsing, coring, serdering, indexing
 from ..core.coring import CtrDex
 from ..db import dbing
 from ..kering import Roles
@@ -74,10 +76,13 @@ class Receiptor(doing.DoDoer):
         clients = dict()
         doers = []
         for wit in wits:
-            client, clientDoer = httpClient(hab, wit)
-            clients[wit] = client
-            doers.append(clientDoer)
-            self.extend([clientDoer])
+            try:
+                client, clientDoer = httpClient(hab, wit)
+                clients[wit] = client
+                doers.append(clientDoer)
+                self.extend([clientDoer])
+            except (kering.MissingEntryError, gaierror) as e:
+                logger.error(f"unable to create http client for witness {wit}: {e}")
 
         rcts = dict()
         for wit, client in clients.items():
@@ -98,8 +103,8 @@ class Receiptor(doing.DoDoer):
             else:
                 logger.error(f"invalid response {rep.status} from witnesses {wit}")
 
-        for wit in rcts.keys():
-            ewits = [w for w in rcts.keys() if w != wit]
+        for wit in rcts:
+            ewits = [w for w in rcts if w != wit]
             wigs = [sig for w, sig in rcts.items() if w != wit]
 
             msg = bytearray()
@@ -355,7 +360,7 @@ class WitnessReceiptor(doing.DoDoer):
                     continue
 
                 # generate all rct msgs to send to all witnesses
-                awigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
+                awigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # make sure all witnesses have fully receipted KERL and know about each other
                 for witer in witers:
@@ -718,7 +723,7 @@ class TCPMessenger(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield from self.parser.parsator()  # process messages continuously
+        yield from self.parser.parsator(local=True)  # process messages continuously
 
     @property
     def idle(self):
@@ -812,7 +817,7 @@ class TCPStreamMessenger(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield from self.parser.parsator()  # process messages continuously
+        yield from self.parser.parsator(local=True)  # process messages continuously
 
     @property
     def idle(self):

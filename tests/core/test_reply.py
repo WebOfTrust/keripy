@@ -689,20 +689,20 @@ def test_reply(mockHelpingNowUTC):
 
         # add tam kel to nel and process escrows
         tamicp = tamHab.makeOwnInception()
-        nelPrs.parse(bytearray(tamicp))
+        nelPrs.parse(bytearray(tamicp), local=True)
         assert tamHab.pre not in nelKvy.kevers
-        wesPrs.parse(bytearray(tamicp))
+        wesPrs.parse(bytearray(tamicp), local=True)
         assert tamHab.pre in wesKvy.kevers
-        wokPrs.parse(bytearray(tamicp))
+        wokPrs.parse(bytearray(tamicp), local=True)
         assert tamHab.pre in wokKvy.kevers
-        wamPrs.parse(bytearray(tamicp))
+        wamPrs.parse(bytearray(tamicp), local=True)
         assert tamHab.pre in wamKvy.kevers
         wittamicp = wesHab.witness(tamHab.iserder)
-        nelPrs.parse(bytearray(wittamicp))
+        nelPrs.parse(bytearray(wittamicp), local=True)
         wittamicp = wokHab.witness(tamHab.iserder)
-        nelPrs.parse(bytearray(wittamicp))
+        nelPrs.parse(bytearray(wittamicp), local=True)
         wittamicp = wamHab.witness(tamHab.iserder)
-        nelPrs.parse(bytearray(wittamicp))
+        nelPrs.parse(bytearray(wittamicp), local=True)
         nelKvy.processEscrows()
         assert tamHab.pre in nelHab.kevers
 

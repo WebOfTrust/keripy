@@ -300,7 +300,7 @@ class Verifier:
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.schms.add(keys=schema, val=saider)
 
-        if 'i' in creder.attrib:
+        if not isinstance(creder.attrib, str) and 'i' in creder.attrib:
             subject = creder.attrib["i"].encode("utf-8")
             self.reger.subjs.add(keys=subject, val=saider)
 

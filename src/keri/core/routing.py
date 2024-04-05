@@ -183,10 +183,10 @@ class Revery:
          Escrow process logic is route dependent and is dispatched by route,
          i.e. route is address of buffer with route specific handler of escrow.
         """
-        for k in eventing.RPY_LABELS:
-            if k not in serder.ked:
-                raise kering.ValidationError(f"Missing element={k} from {coring.Ilks.rpy}"
-                                             f" msg={serder.ked}.")
+        #for k in eventing.RPY_LABELS:
+            #if k not in serder.ked:
+                #raise kering.ValidationError(f"Missing element={k} from {coring.Ilks.rpy}"
+                                             #f" msg={serder.ked}.")
         # fetch from serder to process
         ked = serder.ked
 
@@ -197,6 +197,7 @@ class Revery:
                                          f"msg={ked}.")
 
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
+
 
     def acceptReply(self, serder, saider, route, aid, osaider=None,
                     cigars=None, tsgs=None):

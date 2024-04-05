@@ -13,10 +13,11 @@ from keri import kering
 from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
 from keri.core import coring, eventing, parsing, serdering
-from keri.core.coring import (Diger, MtrDex, Matter, IdrDex, Indexer,
-                              CtrDex, Counter, Salter, Siger, Cigar,
+from keri.core.coring import (Diger, MtrDex, Matter,
+                              CtrDex, Counter, Salter, Cigar,
                               Seqner, Verfer, Signer, Prefixer,
-                              generateSigners, IdxSigDex, DigDex)
+                              generateSigners,  DigDex)
+from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
@@ -2090,7 +2091,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-digestive prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519})
+                                      saids = {'i': coring.PreDex.Ed25519},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2233,7 +2235,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N})
+                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2244,7 +2247,7 @@ def test_kever(mockHelpingNowUTC):
         sad['n'] = nxt
         sad['bt'] = "{:x}".format(toad)
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EFsuiA86Q5gGuVOO3tou8KSU6LORSExIUxzWNrlnW7WP'
         assert serder.pre == skp0.verfer.qb64
         aid0 = serder.pre
@@ -2270,7 +2273,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N})
+                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2278,7 +2282,7 @@ def test_kever(mockHelpingNowUTC):
         sad['kt'] = "{:x}".format(sith)  # hex string
         sad['k'] = keys
         sad['nt'] = 0
-        sad['n'] = nxt
+        sad['n'] = nxt  # empty nxt
         sad['bt'] = "{:x}".format(toad)
 
         serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
@@ -2327,7 +2331,8 @@ def test_kever(mockHelpingNowUTC):
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
                                       ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N})
+                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      verify=False)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2339,7 +2344,7 @@ def test_kever(mockHelpingNowUTC):
         sad['bt'] = "{:x}".format(toad)
         sad['b'] = baks
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EKcREpfNupJ8oOqdnqDIyJVr1-GgIMBrVOtBUR9Gm6lO'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2362,7 +2367,7 @@ def test_kever(mockHelpingNowUTC):
         sad =serder.sad  # makes copy
         sad['bt'] = "{:x}".format(toad)
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EBKhptvqccp0KNBaS45bNPdTE4m19U1IvweHJW2PIEDI'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2391,7 +2396,7 @@ def test_kever(mockHelpingNowUTC):
         sad['b'] = baks
         sad['a'] = a
 
-        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        serder = serdering.SerderKERI(makify=True, verify=False, sad=sad)
         assert serder.said == 'EEu-cdj_9b_66XRJ5UuhgEvJxAPpn4RjyaHvRgDU3iyA'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2447,7 +2452,7 @@ def test_keyeventsequence_0():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2717,7 +2722,7 @@ def test_keyeventsequence_1():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2814,7 +2819,7 @@ def test_multisig_digprefix():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2968,7 +2973,7 @@ def test_recovery():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(salt=salt, count=8, transferable=True)
+    signers = generateSigners(raw=salt, count=8, transferable=True)
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = []  # list of event digs in sequence to verify against database
@@ -4726,7 +4731,7 @@ def test_reload_kever(mockHelpingNowUTC):
     Test reload Kever from keystate state message
     """
 
-    with habbing.openHby(name="nat", base="test") as natHby:
+    with habbing.openHby(name="nat", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as natHby:
         # setup Nat's habitat using default salt multisig already incepts
         natHab = natHby.makeHab(name="nat", isith='2', icount=3)
         assert natHab.name == 'nat'
@@ -4795,10 +4800,10 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 def test_load_event(mockHelpingNowUTC):
-    with habbing.openHby(name="tor", base="test") as torHby, \
-         habbing.openHby(name="wil", base="test") as wilHby, \
-         habbing.openHby(name="wan", base="test") as wanHby, \
-         habbing.openHby(name="tee", base="test") as teeHby:
+    with habbing.openHby(name="tor", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as torHby, \
+         habbing.openHby(name="wil", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wilHby, \
+         habbing.openHby(name="wan", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wanHby, \
+         habbing.openHby(name="tee", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as teeHby:
 
         wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
         torKvy = Kevery(db=torHby.db, lax=False, local=False)
@@ -4808,6 +4813,7 @@ def test_load_event(mockHelpingNowUTC):
         assert wanHab.pre == "BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP"
         msg = wanHab.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=msg, kvy=torKvy)
+        assert wanHab.pre in torKvy.kevers
 
         # Create Wil the witness, we'll use him later
         wilHab = wilHby.makeHab(name="wil", transferable=False)
@@ -4816,14 +4822,16 @@ def test_load_event(mockHelpingNowUTC):
         torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1', wits=[wanHab.pre], toad=1)
         assert torHab.pre == "EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP"
         torIcp = torHab.makeOwnEvent(sn=0)
+        assert torHab.pre in torHab.kvy.kevers
 
         # Try to load event before Wan has seen it
         with pytest.raises(ValueError):
             _ = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
 
-        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanKvy)
+        # tor events are locallyWitnessed by wan so must process as local
+        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True) # process as local
 
-        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
         assert evt == {'ked': {'a': [],
                                'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
@@ -4857,8 +4865,8 @@ def test_load_event(mockHelpingNowUTC):
 
         # Anchor Tee's inception event in Tor's KEL
         ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)])
-        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanKvy)
-        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)  # give to wan must be local
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
 
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.kever.serder.said)
         assert evt == {'ked': {'a': [{'d': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
@@ -4894,9 +4902,12 @@ def test_load_event(mockHelpingNowUTC):
         nrct = wilHab.receipt(serder=teeHab.kever.serder)
 
         # Now Wan should be ready for Tee's inception
-        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanKvy)
-        parsing.Parser().parse(ims=bytearray(rct), kvy=wanKvy)
-        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanKvy)
+        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)  # local
+        parsing.Parser().parse(ims=bytearray(rct), kvy=wanHab.kvy, local=True) # local
+        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanHab.kvy, local=True)  # local
+        # ToDo XXXX fix it so cues are durable in db so can process cues from
+        # both and remote sources
+        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
         wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
 
         # Endorse Tee's inception event with Wan's Hab just so we have non-trans receipts

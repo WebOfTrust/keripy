@@ -12,8 +12,10 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-          habbing.openHby(name="bam", base="test") as bamHby):
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+          habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
@@ -90,8 +92,9 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
 def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-          habbing.openHby(name="bam", base="test") as bamHby):
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+          habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
@@ -181,14 +184,11 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
-    #raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    #salter = coring.Salter(raw=raw)
-    #salt = salter.qb64
-    #assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # Habery.makeHab uses name as stem path for salt so different pre
-    with (habbing.openHby(name="wes", base="test") as wesHby,
-          habbing.openHby(name="bob", base="test") as bobHby,
-          habbing.openHby(name="bam", base="test") as bamHby):
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    with (habbing.openHby(name="wes", base="test", salt=default_salt) as wesHby,
+          habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+          habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1,transferable=False,)
@@ -214,7 +214,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
 
         for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy, local=True)
             iserder = serdering.SerderKERI(raw=bytearray(msg))
             wesHab.receipt(serder=iserder)
 
@@ -256,7 +256,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy, local=True)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, wesHab.pre))
         said = b'EMoqBJpoPJCkCejSUZ8IShTeGd_WQkF0zOQc2l0HQusn'
@@ -267,14 +267,14 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue['q']['pre'] == bobHab.pre
 
         wesIcp = wesHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(wesIcp), kvy=bamKvy)
+        parsing.Parser().parse(ims=bytearray(wesIcp), kvy=bamKvy, local=True)
         assert wesHab.pre in bamHby.db.kevers
 
         msgs = bytearray()
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy, local=True)
         assert bobHab.pre in bamHby.db.kevers
 
         bamTvy.processEscrows()
@@ -287,7 +287,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, wesHab.pre))
         assert saider[0].qb64b == said
 
-        parsing.Parser().parse(ims=bytearray(tmsgs), tvy=bamTvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(tmsgs), tvy=bamTvy, rvy=bamRvy, local=True)
 
         assert issuer.regk in bamReger.tevers
 
@@ -309,9 +309,10 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
     #salt = salter.qb64
     #assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # Habery.makeHab uses name as stem path for salt so different pre
-    with (habbing.openHby(name="wes", base="test") as wesHby,
-          habbing.openHby(name="bob", base="test") as bobHby,
-          habbing.openHby(name="bam", base="test") as bamHby):
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    with (habbing.openHby(name="wes", base="test", salt=default_salt) as wesHby,
+          habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+          habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1,transferable=False,)
@@ -401,8 +402,9 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-          habbing.openHby(name="bam", base="test") as bamHby):
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+          habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
@@ -528,9 +530,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
 
 def test_tever_reload(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIso8601):
-
-    with habbing.openHby(name="bob", base="test") as hby:
-
+    with habbing.openHby(name="bob", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         bobHab = hby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
 

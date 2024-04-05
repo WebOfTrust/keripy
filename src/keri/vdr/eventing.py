@@ -17,17 +17,15 @@ from hio.help import decking
 from keri import kering
 from .. import core
 from .. import help
-from ..core import serdering, coring
+from ..core import serdering, coring, indexing
 from ..core.coring import (MtrDex, Serials, versify, Prefixer,
-                           Ilks, Seqner, Verfer)
-from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
+                           Ilks, Seqner, Verfer, Number)
+from ..core.eventing import SealEvent, ample, TraitDex, verifySigs
 from ..db import basing, dbing
 from ..db.dbing import dgKey, snKey
 from ..help import helping
 from ..kering import (MissingWitnessSignatureError, Version,
                       MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
-from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
-                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 from ..vdr import viring
 
 logger = help.ogler.getLogger()
@@ -644,7 +642,7 @@ class Tever:
     Has the following public attributes and properties:
 
     Class Attributes:
-        .NoBackers is Boolean
+        .NoRegistrarBackers is Boolean
                 True means do not allow backers (default to witnesses of controlling KEL)
                 False means allow backers (ignore witnesses of controlling KEL)
 
@@ -666,7 +664,7 @@ class Tever:
         .noBackers is boolean trait True means do not allow backers
 
     """
-    NoBackers = False
+    NoRegistrarBackers = False
 
     def __init__(self, cues=None, rsr=None, serder=None, seqner=None, saider=None,
                  bigers=None, db=None, reger=None, noBackers=None, estOnly=None,
@@ -718,11 +716,11 @@ class Tever:
             raise ValidationError("Expected ilk {} got {} for evt: {}".format(Ilks.vcp, ilk, serder))
 
         self.ilk = ilk
-        labels = VCP_LABELS
-        for k in labels:
-            if k not in serder.ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, serder.ked))
+        #labels = VCP_LABELS
+        #for k in labels:
+            #if k not in serder.ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, serder.ked))
 
         self.incept(serder=serder)
         self.config(serder=serder, noBackers=noBackers, estOnly=estOnly)
@@ -826,8 +824,9 @@ class Tever:
             raise ValidationError("Invalid prefix = {} for registry inception evt = {}."
                                   .format(self.prefixer.qb64, ked))
 
-        sn = ked["s"]
-        self.sn = validateSN(sn, inceptive=True)
+        #sn = ked["s"]
+        #self.sn = validateSN(sn, inceptive=True)
+        self.sn = Number(numh=ked["s"]).validate(inceptive=True).sn
 
         self.cuts = []  # always empty at inception since no prev event
         self.adds = []  # always empty at inception since no prev event
@@ -864,7 +863,7 @@ class Tever:
         """
         # assign traits
         self.noBackers = (True if (noBackers if noBackers is not None
-                                   else self.NoBackers)
+                                   else self.NoRegistrarBackers)
                           else False)  # ensure default noBackers is boolean
 
         self.estOnly = (True if (estOnly if estOnly is not None
@@ -895,12 +894,13 @@ class Tever:
 
         ked = serder.ked
         ilk = ked["t"]
-        sn = ked["s"]
+        #sn = ked["s"]
 
         icp = ilk in (Ilks.iss, Ilks.bis)
 
         # validate SN for
-        sn = validateSN(sn, inceptive=icp)
+        #sn = validateSN(sn, inceptive=icp)
+        sn = Number(numh=ked["s"]).validate(inceptive=icp).sn
 
         if ilk in (Ilks.vrt,):
             if self.noBackers is True:
@@ -961,8 +961,8 @@ class Tever:
         ilk = ked["t"]
         dig = ked["p"]
 
-        # XXXX should there be validation of labels here
-        labels = VRT_LABELS  # assumes ilk == Ilks.vrt
+
+        #labels = VRT_LABELS  # assumes ilk == Ilks.vrt
         #for k in labels:
             #if k not in ked:
                 #raise ValidationError("Missing element = {} from {} event for "
@@ -1051,12 +1051,11 @@ class Tever:
         ilk = ked["t"]
         vci = vcpre
 
-        labels = ISS_LABELS if ilk == Ilks.iss else BIS_LABELS
-
-        for k in labels:
-            if k not in ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, ked))
+        #labels = ISS_LABELS if ilk == Ilks.iss else BIS_LABELS
+        #for k in labels:
+            #if k not in ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, ked))
 
         if ilk == Ilks.iss:  # simple issue
             if self.noBackers is False:
@@ -1118,12 +1117,11 @@ class Tever:
         vcpre = ked["i"]
         ilk = ked["t"]
 
-        labels = REV_LABELS if ilk == Ilks.rev else BRV_LABELS
-
-        for k in labels:
-            if k not in ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, ked))
+        #labels = REV_LABELS if ilk == Ilks.rev else BRV_LABELS
+        #for k in labels:
+            #if k not in ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, ked))
 
         # have to compare with VC issuance serder
         vci = vcpre
@@ -1543,13 +1541,14 @@ class Tevery:
         regk = self.registryKey(serder)
         pre = serder.pre
         ked = serder.ked
-        sn = ked["s"]
+        #sn = ked["s"]
         ilk = ked["t"]
 
         inceptive = ilk in (Ilks.vcp, Ilks.iss, Ilks.bis)
 
         # validate SN for
-        sn = validateSN(sn, inceptive=inceptive)
+        #sn = validateSN(sn, inceptive=inceptive)
+        sn = Number(numh=ked["s"]).validate(inceptive=inceptive).sn
 
         if not self.lax:
             if self.local:
@@ -2060,7 +2059,7 @@ class Tevery:
 
                 bigers = None
                 if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [coring.Siger(qb64b=tib) for tib in tibs]
+                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
@@ -2127,7 +2126,7 @@ class Tevery:
 
                 bigers = None
                 if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [coring.Siger(qb64b=tib) for tib in tibs]
+                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:

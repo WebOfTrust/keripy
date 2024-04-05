@@ -12,14 +12,14 @@ from keri.core import eventing, parsing, coring
 from keri.db import dbing
 
 
-def test_boatswain(seeder):
+def test_anchorer(seeder):
     with habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             habbing.openHby(name="del", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
         witDoer = agenting.Receiptor(hby=palHby)
-        bts = delegating.Sealer(hby=delHby)
+        bts = delegating.Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
@@ -33,7 +33,7 @@ def test_boatswain(seeder):
             bts=bts
         )
 
-        doers = wesDoers + [witDoer, bts, doing.doify(boatswain_test_do, **opts)]
+        doers = wesDoers + [witDoer, bts, doing.doify(anchorer_test_do, **opts)]
 
         limit = 1.0
         tock = 0.03125
@@ -60,7 +60,7 @@ def test_boatswain(seeder):
         assert bytes(delHby.db.getAes(dgkey)) == couple
 
 
-def boatswain_test_do(tymth=None, tock=0.0, **opts):
+def anchorer_test_do(tymth=None, tock=0.0, **opts):
     yield tock  # enter context
 
     wesHab = opts["wesHab"]
@@ -79,8 +79,8 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
 
     witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
-    kvy = eventing.Kevery(db=delHby.db, local=False)
-    parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy)
+    kvy = eventing.Kevery(db=delHby.db, local=True)
+    parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     while palHab.pre not in delHby.kevers:
         yield tock
@@ -107,8 +107,8 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     couple = coring.Seqner(sn=palHab.kever.sn).qb64b + palHab.kever.serder.saidb
 
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre, fn=1))
-    kvy = eventing.Kevery(db=delHby.db, local=False)
-    parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy)
+    kvy = eventing.Kevery(db=delHby.db, local=True)
+    parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
     while delHby.db.getAes(dgkey) != couple:
@@ -116,7 +116,7 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
 
 
 def test_delegation_request(mockHelpingNowUTC):
-    with habbing.openHab(name="test", temp=True) as (hby, hab):
+    with habbing.openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
 
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,

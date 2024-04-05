@@ -13,12 +13,9 @@ from hio.base import doing
 from keri import kering
 from keri import help
 from keri.app import habbing, keeping, configing
-from keri.core.coring import MtrDex
 from keri.db import basing
 from keri.core import coring, eventing, parsing
 from keri.help import helping
-from keri.peer import exchanging
-from keri.vdr.eventing import incept
 
 
 def test_habery():
@@ -27,7 +24,7 @@ def test_habery():
     """
     # test default
     default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
-    hby = habbing.Habery(temp=True)
+    hby = habbing.Habery(temp=True, salt=default_salt)
     assert hby.name == "test"
     assert hby.base == ""
     assert hby.temp
@@ -79,7 +76,7 @@ def test_habery():
     seed4bran = 'ALQVu9AjGW3JrIzX0UHm2awGCbDXcsLzy-vAE649Fz1j'
     aeid4seed = 'BHRYV_5a1AlibCrXFG_KDD9rC6aXx9cb0sR968NL80VI'
 
-    hby = habbing.Habery(bran=bran, temp=True)
+    hby = habbing.Habery(bran=bran, temp=True, salt=default_salt)
     assert hby.name == "test"
     assert hby.base == ""
     assert hby.temp
@@ -129,7 +126,7 @@ def test_habery():
 
     # setup habery
     hby = habbing.Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
-                         bran=bran)
+                         bran=bran, salt=default_salt)
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     assert hby.name == "main"
@@ -183,7 +180,7 @@ def test_habery():
     temp = True
 
     # setup habery with resources
-    hby = habbing.Habery(name=name, base=base, temp=temp, bran=bran, free=True)
+    hby = habbing.Habery(name=name, base=base, temp=temp, bran=bran, free=True, salt=default_salt)
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     conf = hby.cf.get()
@@ -237,7 +234,7 @@ def test_habery():
     assert not os.path.exists(hby.db.path)
     assert not os.path.exists(hby.ks.path)
 
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         assert hby.name == "test"
         assert hby.base == ""
         assert hby.temp
@@ -284,7 +281,7 @@ def test_habery():
     assert not os.path.exists(hby.ks.path)
 
     bran = "MyPasscodeARealSecret"
-    with habbing.openHby(bran=bran) as hby:
+    with habbing.openHby(bran=bran, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         assert hby.name == "test"
         assert hby.base == ""
         assert hby.temp
@@ -345,7 +342,7 @@ def test_make_load_hab_with_habery():
     name = "sue"
     suePre = 'ELF1S0jZkyQx8YtHaPLu-qyFmrkcykAiEW8twS-KPSO1'  # with temp=True
 
-    with habbing.openHby() as hby:  # default is temp=True on openHab
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True on openHab
         hab = hby.makeHab(name=name)
         assert isinstance(hab, habbing.Hab)
         assert hab.pre in hby.habs
@@ -389,7 +386,7 @@ def test_make_load_hab_with_habery():
     suePre = 'EAxe215BJ4Iy9r0mfoMEGVmHW8A4Avk3RYBC1A1_DZam'  # with temp=False
     bobPre = 'ENya5E5pvc6MVCe75huDK0QQhE4_64J55vCn4aKdXhR9'  # with temp=False
 
-    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
+    with habbing.openHby(base=base, temp=False, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
         assert hby.cf.path.endswith("keri/cf/hold/test.json")
         assert hby.db.path.endswith("keri/db/hold/test")
         assert hby.ks.path.endswith('keri/ks/hold/test')
@@ -563,7 +560,7 @@ def test_habery_reinitialization():
 
 
 def test_habery_signatory():
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         signer = hby.signator
 
         assert signer is not None
@@ -717,7 +714,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
 
 
 def test_namespaced_habs():
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -730,8 +727,7 @@ def test_namespaced_habs():
         nshab = hby.makeHab(name="test2", ns="agent")
         assert nshab.pre == "EErXOolQNmKrTMKfXdQ1sj8YsgZZe4wMXZwsX-j1V6Dd"
 
-        assert len(hby.habs) == 1
-        assert len(hby.namespaces) == 1
+        assert len(hby.habs) == 2
         assert len(hby.prefixes) == 2
 
         found = hby.habByName(name="test2")
@@ -745,11 +741,8 @@ def test_namespaced_habs():
         nshab = hby.makeHab(name="test.3", ns="agent")
         assert nshab.pre == "EG5FUOzW_KKVB8JGlNGoZAADDC8cZ6Jt079nLEaFnYcg"
 
-        assert len(hby.habs) == 1
-        assert len(hby.namespaces) == 1
+        assert len(hby.habs) == 3
         assert len(hby.prefixes) == 3
-        ns = hby.namespaces['agent']
-        assert len(ns) == 2
 
         # '.' characters not allowed in namespace names
         with pytest.raises(kering.ConfigurationError):
@@ -776,13 +769,8 @@ def test_namespaced_habs():
             assert pre in hby.db.kevers  # read through cache
             assert pre in hby.db.prefixes
 
-        assert len(hby.habs) == 2
+        assert len(hby.habs) == 5
         assert len(hby.db.prefixes) == 5
-
-        agent = hby.namespaces["agent"]
-        assert len(agent) == 2
-        ctrl = hby.namespaces["controller"]
-        assert len(ctrl) == 1
 
         found = hby.habByName(name=name)
         assert found.pre == opre
@@ -800,7 +788,7 @@ def test_namespaced_habs():
 
 
 def test_make_other_event():
-    with habbing.openHby() as hby:
+    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -843,10 +831,10 @@ def test_hab_by_pre():
         # Only habs in default namespace are in hby.habs
         assert hab1.pre in hby.habs
         assert hab2.pre in hby.habs
-        assert hab3.pre not in hby.habs
-        assert hab4.pre not in hby.habs
-        assert hab5.pre not in hby.habs
-        assert hab6.pre not in hby.habs
+        assert hab3.pre in hby.habs
+        assert hab4.pre in hby.habs
+        assert hab5.pre in hby.habs
+        assert hab6.pre in hby.habs
 
         assert hby.habByPre("EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3") is None
 
@@ -857,22 +845,11 @@ def test_hab_by_pre():
         assert hby.habByPre(pre=hab5.pre) == hab5
         assert hby.habByPre(pre=hab6.pre) == hab6
 
-        assert "one" in hby.namespaces
-        assert hab3.pre in hby.namespaces["one"]
-        assert hab4.pre in hby.namespaces["one"]
-        assert hab1.pre not in hby.namespaces["one"]
-        assert hab2.pre not in hby.namespaces["one"]
-        assert "two" in hby.namespaces
-        assert hab5.pre in hby.namespaces["two"]
-        assert hab6.pre in hby.namespaces["two"]
-        assert hab1.pre not in hby.namespaces["two"]
-        assert hab2.pre not in hby.namespaces["two"]
-
 
 def test_postman_endsfor():
-    with habbing.openHby(name="test", temp=True) as hby, \
-            habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
-            habbing.openHab(name="agent", temp=True) as (agentHby, agentHab):
+    with habbing.openHby(name="test", temp=True, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby, \
+            habbing.openHby(name="wes", temp=True, salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHab(name="agent", temp=True, salt=b'0123456789abcdef') as (agentHby, agentHab):
 
         wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
         assert not wesHab.kever.prefixer.transferable
@@ -892,7 +869,7 @@ def test_postman_endsfor():
         kvy = eventing.Kevery(db=hab.db, lax=False, local=False)
         icpMsg = hab.makeOwnInception()
         rctMsgs = []  # list of receipts from each witness
-        parsing.Parser().parse(ims=bytearray(icpMsg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(icpMsg), kvy=wesKvy, local=True)
         assert wesKvy.kevers[hab.pre].sn == 0  # accepted event
         assert len(wesKvy.cues) >= 1  # assunmes includes queued receipt cue
         # better to find cue in cues and confirm exactly
@@ -901,11 +878,11 @@ def test_postman_endsfor():
         rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=kvy, local=True)
         assert wesHab.pre in kvy.kevers
 
         agentIcpMsg = agentHab.makeOwnInception()
-        parsing.Parser().parse(ims=bytearray(agentIcpMsg), kvy=kvy)
+        parsing.Parser().parse(ims=bytearray(agentIcpMsg), kvy=kvy, local=True)
         assert agentHab.pre in kvy.kevers
 
         msgs = bytearray()

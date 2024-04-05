@@ -147,7 +147,7 @@ class RotateDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = delegating.Sealer(hby=self.hby)
+        self.swain = delegating.Anchorer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
@@ -187,7 +187,7 @@ class RotateDoer(doing.DoDoer):
                    cuts=list(self.cuts), adds=list(self.adds),
                    data=self.data)
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, proxy=self.hby.habByName(self.proxy))
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
@@ -211,7 +211,7 @@ class RotateDoer(doing.DoDoer):
 
                 self.remove([witDoer])
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
 
         print(f'Prefix  {hab.pre}')

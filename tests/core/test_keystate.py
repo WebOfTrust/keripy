@@ -57,13 +57,15 @@ def test_keystate(mockHelpingNowUTC):
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
     # Bob is the controller
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
 
     # default for openHby temp = True
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby,
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby,
          habbing.openHby(name="wes", base="test", salt=salt) as wesHby):
 
         # setup Wes's habitat nontrans
@@ -75,9 +77,9 @@ def test_keystate(mockHelpingNowUTC):
         assert bobHab.pre == 'EDotK23orLtF8GAU61_fNXRyFBTg49X50W0OUlP14YAK'
 
         # Create Bob's icp, pass to Wes.
-        wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
+        wesKvy = eventing.Kevery(db=wesHby.db)
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
         wesHab.receipt(serder=iserder)
@@ -100,9 +102,9 @@ def test_keystate(mockHelpingNowUTC):
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
-        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
+        bamKvy = eventing.Kevery(db=bamHby.db, rvy=bamRvy)
         bamKvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy, local=True)
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
@@ -113,7 +115,7 @@ def test_keystate(mockHelpingNowUTC):
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy, local=True)
         bamKvy.processEscrows()
 
         keys = (bobHab.pre, wesHab.pre)
@@ -124,8 +126,8 @@ def test_keystate(mockHelpingNowUTC):
     # Bam is verifying the key state for Bob from Wes
     # Wes is Bam's watcher
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby,
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby,
          habbing.openHby(name="wes", base="test",  salt=salt) as wesHby):
 
         # setup Wes's habitat nontrans
@@ -138,9 +140,9 @@ def test_keystate(mockHelpingNowUTC):
 
 
         # Create Bob's icp, pass to Wes.
-        wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
+        wesKvy = eventing.Kevery(db=wesHby.db)
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
         # Get ksr key state record from Bob and verify
@@ -148,7 +150,6 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.i == bobHab.pre
         assert ksr.s == '0'
         assert ksr.d == bobHab.kever.serder.said
-
 
         # Get ksr key state record from Wes and verify
         bobKeverFromWes = wesHab.kevers[bobHab.pre]
@@ -159,20 +160,18 @@ def test_keystate(mockHelpingNowUTC):
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict())
 
-        #bamHab = habbing.Habitat(name="bam", ks=bamKS, db=bamDB, isith='1', icount=1,
-                                 #transferable=True, temp=True)
         bamHab = bamHby.makeHab(name="bam", isith='1', icount=1, transferable=True)
 
         # Set Wes has Bam's watcher
-        habr = bamHab.db.habs.get("bam")
+        habr = bamHab.db.habs.get(bamHab.pre)
         habr.watchers = [wesHab.pre]
-        bamHab.db.habs.pin("bam", habr)
+        bamHab.db.habs.pin(bamHab.pre, habr)
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
-        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
+        bamKvy = eventing.Kevery(db=bamHby.db, rvy=bamRvy)
         bamKvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy, local=True)
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
@@ -183,7 +182,7 @@ def test_keystate(mockHelpingNowUTC):
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy, local=True)
         bamKvy.processEscrows()
 
         keys = (bobHab.pre, wesHab.pre)
@@ -195,8 +194,8 @@ def test_keystate(mockHelpingNowUTC):
     # Bam is verifying the key state for Bob from Wes
     # Wes is no one
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby,
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby,
          habbing.openHby(name="wes", base="test",  salt=salt) as wesHby):
 
         # setup Wes's habitat nontrans
@@ -207,9 +206,9 @@ def test_keystate(mockHelpingNowUTC):
         assert bobHab.pre == bobpre
 
         # Create Bob's icp, pass to Wes.
-        wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
+        wesKvy = eventing.Kevery(db=wesHby.db)
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
         # Get ksr key state record from Bob and verify
@@ -227,8 +226,8 @@ def test_keystate(mockHelpingNowUTC):
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict())
 
-        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
+        bamKvy = eventing.Kevery(db=bamHby.db)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         assert len(bamKvy.cues) == 0
         saider = bamHby.db.knas.get(keys=keys)
@@ -237,8 +236,8 @@ def test_keystate(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    with (habbing.openHby(name="bob", base="test") as bobHby,
-         habbing.openHby(name="bam", base="test") as bamHby):
+    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
+         habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
         assert bobHab.pre == bobpre
@@ -262,9 +261,9 @@ def test_keystate(mockHelpingNowUTC):
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
-        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
+        bamKvy = eventing.Kevery(db=bamHby.db, rvy=bamRvy)
         bamKvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         for _ in range(5):
             bobHab.rotate()
@@ -276,13 +275,13 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.d == bobHab.kever.serder.said
 
         liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict())
-        parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         msgs = bytearray()  # outgoing messages
         for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy, local=True)
 
         assert bobHab.pre in bamKvy.kevers
 
@@ -296,7 +295,3 @@ def test_keystate(mockHelpingNowUTC):
         assert latest.s == '8'
 
     """End Test"""
-
-
-if __name__ == "__main__":
-    test_keystate()

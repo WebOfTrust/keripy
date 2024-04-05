@@ -7,9 +7,11 @@ import datetime
 import os
 
 from keri import help
-from keri.app import habbing
-from keri.core import coring, eventing, parsing, serdering
 from keri.help import helping
+
+from keri.app import habbing
+from keri.core import coring, eventing, parsing, serdering, indexing
+
 
 logger = help.ogler.getLogger()
 
@@ -25,10 +27,11 @@ def test_replay():
     Compare replay of Deb's events with receipts by both Deb and Cam to confirm identical
     """
     artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-    with (habbing.openHby(name="deb", base="test") as debHby,
-         habbing.openHby(name="cam", base="test") as camHby,
-         habbing.openHby(name="bev", base="test") as bevHby,
+    with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
+         habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
+         habbing.openHby(name="bev", base="test", salt=default_salt) as bevHby,
          habbing.openHby(name="art", base="test", salt=artSalt) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts
@@ -336,7 +339,7 @@ def test_replay():
         assert len(msg) == 1076
 
         counter = coring.Counter(qb64b=msg)  # attachment length quadlets counter
-        assert counter.code == coring.CtrDex.AttachedMaterialQuadlets
+        assert counter.code == coring.CtrDex.AttachmentGroup
         assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 268
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1072 == 268 * 4
@@ -348,7 +351,7 @@ def test_replay():
         assert len(msg) == 1068
 
         for i in range(counter.count):  # parse signatures
-            siger = coring.Siger(qb64b=msg)
+            siger = indexing.Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
         assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
 
@@ -493,11 +496,11 @@ def test_replay_all():
 
     """
     artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-
-    with (habbing.openHby(name="deb", base="test") as debHby,
-         habbing.openHby(name="cam", base="test") as camHby,
-         habbing.openHby(name="bev", base="test") as bevHby,
+    with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
+         habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
+         habbing.openHby(name="bev", base="test", salt=default_salt) as bevHby,
          habbing.openHby(name="art", base="test", salt=artSalt) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts

@@ -139,7 +139,7 @@ class InceptDoer(doing.DoDoer):
         self.proxy = proxy
         hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.swain = delegating.Sealer(hby=hby)
+        self.swain = delegating.Anchorer(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
@@ -168,7 +168,7 @@ class InceptDoer(doing.DoDoer):
         receiptor = agenting.Receiptor(hby=self.hby)
         self.extend([witDoer, receiptor])
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=0, proxy=self.hby.habByName(self.proxy))
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
@@ -183,7 +183,7 @@ class InceptDoer(doing.DoDoer):
                 while not witDoer.cues:
                     _ = yield self.tock
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
 
         print(f'Prefix  {hab.pre}')

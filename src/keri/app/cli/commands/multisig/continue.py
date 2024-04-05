@@ -65,7 +65,7 @@ class ContinueDoer(doing.DoDoer):
         (seqner, saider) = esc[0]
         src = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre
         anchor = dict(i=hab.pre, s=seqner.snh, d=saider.qb64)
-        self.witq.query(src=src, pre=hab.kever.delegator, anchor=anchor)
+        self.witq.query(src=src, pre=hab.kever.delpre, anchor=anchor)
 
         print(f"Checking mailboxes for any events to process")
         while self.hby.db.cgms.get(keys=(hab.pre, seqner.qb64)) is None:

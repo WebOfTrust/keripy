@@ -12,7 +12,7 @@ from keri import kering
 from keri.app import habbing, keeping
 
 
-def setupHby(name, base="", bran=None, cf=None):
+def setupHby(name, base="", bran=None, cf=None, temp=False):
     """ Create Habery off of existing directory
 
     Parameters:
@@ -20,6 +20,7 @@ def setupHby(name, base="", bran=None, cf=None):
         base(str): optional base directory prefix
         bran(str): optional passcode if the Habery was created encrypted
         cf (Configer): optional configuration for loading reference data
+        temp (bool): True means create database in /tmp
 
     Returns:
           Habery:  the configured habery
@@ -27,7 +28,7 @@ def setupHby(name, base="", bran=None, cf=None):
     """
     ks = keeping.Keeper(name=name,
                         base=base,
-                        temp=False,
+                        temp=temp,
                         cf=cf,
                         reopen=True)
     aeid = ks.gbls.get('aeid')
@@ -46,7 +47,8 @@ def setupHby(name, base="", bran=None, cf=None):
             retries += 1
             hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf, free=True)
             break
-        except (kering.AuthError, ValueError):
+        except (kering.AuthError, ValueError) as e:
+            print(e)
             if retries >= 3:
                 raise kering.AuthError("too many attempts")
             print("Valid passcode required, try again...")

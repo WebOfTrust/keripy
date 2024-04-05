@@ -318,7 +318,7 @@ def exchange(route,
         pather = coring.Pather(path=["e", label])
         pathed.extend(pather.qb64b)
         pathed.extend(atc)
-        end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+        end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialGroup,
                                   count=(len(pathed) // 4)).qb64b)
         end.extend(pathed)
 
@@ -411,7 +411,7 @@ def serializeMessage(hby, said, pipelined=False):
 
     # Smash the pathed components on the end
     for p in hby.db.epath.get(keys=(exn.said,)):
-        atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+        atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialGroup,
                                   count=(len(p) // 4)).qb64b)
         atc.extend(p.encode("utf-8"))
 
@@ -421,7 +421,7 @@ def serializeMessage(hby, said, pipelined=False):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        msg.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+        msg.extend(coring.Counter(code=coring.CtrDex.AttachmentGroup,
                                   count=(len(atc) // 4)).qb64b)
 
     msg.extend(atc)

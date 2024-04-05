@@ -9,7 +9,7 @@ import pytest
 from keri import kering
 from keri.app import habbing, signing
 from keri.core import eventing as ceventing, scheming
-from keri.core import parsing, coring
+from keri.core import parsing, coring, indexing
 from keri.core.eventing import SealEvent
 from keri.help import helping
 from keri.vc import proving
@@ -17,7 +17,7 @@ from keri.vdr import verifying, credentialing, eventing
 
 
 def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+    with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         regery = credentialing.Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
@@ -175,7 +175,7 @@ def test_verifier(seeder):
 #         sigs.extend(hab2.db.getSigs(dgkey))
 #         sigs.extend(hab3.db.getSigs(dgkey))
 #
-#         sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+#         sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
 #
 #         evt = bytearray(eraw)
 #         evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
@@ -252,7 +252,7 @@ def test_verifier(seeder):
 #         sigs.extend(hab2.db.getSigs(dgkey))
 #         sigs.extend(hab3.db.getSigs(dgkey))
 #
-#         sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+#         sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
 #
 #         evt = bytearray(eraw)
 #         evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
@@ -310,8 +310,8 @@ def test_verifier_chained_credential(seeder):
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
-            habbing.openHab(name="han", transferable=True, temp=True) as (hanHby, han), \
-            habbing.openHab(name="vic", transferable=True, temp=True) as (vicHby, vic):
+            habbing.openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han), \
+            habbing.openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef') as (vicHby, vic):
         seeder.seedSchema(db=ronHby.db)
         seeder.seedSchema(db=ianHby.db)
         seeder.seedSchema(db=hanHby.db)

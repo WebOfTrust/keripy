@@ -21,7 +21,9 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
     assert wanSalt == '0AB3YW5uLXRoZS13aXRuZXNz'
 
-    with (habbing.openHby(name="red", base="test") as redHby,
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+    with (habbing.openHby(name="red", base="test", salt=default_salt) as redHby,
           habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby):
         seeder.seedSchema(redHby.db)
         seeder.seedSchema(sidHby.db)
@@ -90,6 +92,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
                        b'","a":{"d":"EF2__B6DiLQHpdJZ_C0bddxy2o6nXIHEwchO9yylr3xx","dt":"2021-06-27T2'
                        b'1:26:21.233257+00:00","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","LE'
                        b'I":"254900OPPU84GM83MG36"}}')
+
         atc = bytearray(msg)
         atc.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
         atc.extend(coring.Prefixer(qb64=iss.pre).qb64b)

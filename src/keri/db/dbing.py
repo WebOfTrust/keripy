@@ -53,18 +53,15 @@ from contextlib import contextmanager
 from typing import Union
 
 import lmdb
-from  ordered_set import OrderedSet as oset
-
+from ordered_set import OrderedSet as oset
 from hio.base import filing
 
-from hio.base import filing
-
+import keri
+from ..kering import MaxON  # maximum ordinal number for seqence or first seen
 from ..help import helping
 
 ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
-MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
-
 SuffixSize = 32  # does not include trailing separator
 MaxSuffix = int("f"*(SuffixSize), 16)
 
@@ -307,7 +304,6 @@ class LMDBer(filing.Filer):
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     MaxNamedDBs = 96
 
-
     def __init__(self, readonly=False, **kwa):
         """
         Setup main database directory at .dirpath.
@@ -344,10 +340,11 @@ class LMDBer(filing.Filer):
                                 False means open database in read/write mode
 
         """
+
         self.env = None
+        self._version = None
         self.readonly = True if readonly else False
         super(LMDBer, self).__init__(**kwa)
-
 
     def reopen(self, readonly=False, **kwa):
         """
@@ -374,6 +371,7 @@ class LMDBer(filing.Filer):
             readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
         """
+        exists = self.exists(name=self.name, base=self.base)
         opened = super(LMDBer, self).reopen(**kwa)
         if readonly is not None:
             self.readonly = readonly
@@ -382,9 +380,42 @@ class LMDBer(filing.Filer):
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=104857600,
                              mode=self.perm, readonly=self.readonly)
+
         self.opened = True if opened and self.env else False
+
+        if self.opened and not self.readonly and (not exists or self.temp):
+            self.version = keri.__version__
+
         return self.opened
 
+    @property
+    def version(self):
+        """ Return the version of database stored in __version__ key.
+
+        This value is read through cached in memory
+
+        Returns:
+            str: the version of the database or None if not set in the database
+
+        """
+        if self._version is None:
+            self._version = self.getVer()
+
+        return self._version
+
+    @version.setter
+    def version(self, val):
+        """  Set the version of the database in memory and in the __version__ key
+
+        Parameters:
+            val (str): The new semver formatted version of the database
+
+        """
+        if hasattr(val, "decode"):
+            val = val.decode("utf-8")  # convert bytes to str
+
+        self._version = val
+        self.setVer(self._version)
 
     def close(self, clear=False):
         """
@@ -400,8 +431,33 @@ class LMDBer(filing.Filer):
 
         self.env = None
 
-        return(super(LMDBer, self).close(clear=clear))
+        return super(LMDBer, self).close(clear=clear)
 
+    def getVer(self):
+        """ Returns the value of the the semver formatted version in the __version__ key in this database
+
+        Returns:
+            str: semver formatted version of the database
+
+        """
+        with self.env.begin() as txn:
+            cursor = txn.cursor()
+            version = cursor.get(b'__version__')
+            return version.decode("utf-8") if version is not None else None
+
+    def setVer(self, val):
+        """  Set the version of the database in the __version__ key
+
+        Parameters:
+            val (str): The new semver formatted version of the database
+
+        """
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+
+        with self.env.begin(write=True) as txn:
+            cursor = txn.cursor()
+            cursor.replace(b'__version__', val)
 
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
     def putVal(self, db, key, val):

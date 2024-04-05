@@ -50,16 +50,6 @@ following 2 subcommands are available for starting witnesses:
 
 For most of the scripts that require witnesses you will use `kli witness demo` to start the 3 known witnesses.
 
-### Running Agents
-Agents can be started in several ways using the `kli agent` subcommands or the shell script `demo/basic/start-agent.sh` for the 
-scripts that execute `curl` commands against running agents.  The following 3 subcommands are available for starting
-agents:
-
-* `kli agent start` - starts a single agent (used inside the start-agent.sh scripts)
-* `kli agent demo` - starts 4 agents running on known ports (ports that are expected from many of the scripts)
-* `kli agent vlei` - starts 10 agents running on known ports for the vLEI ecosystem scripts.
-
-Each directory details how to run agents for the scripts it contains and what parameters need to be passed.
 
 ### Additional Software
 Some scripts require addition services from other repositories.  Those requirements are listed in the README.md files 

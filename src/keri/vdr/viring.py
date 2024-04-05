@@ -15,7 +15,7 @@ from ..db import koming, subing, escrowing
 
 from .. import kering
 from ..app import signing
-from ..core import coring, serdering
+from ..core import coring, serdering, indexing
 from ..db import dbing, basing
 from ..db.dbing import snKey
 from ..help import helping
@@ -328,7 +328,7 @@ class Reger(dbing.LMDBer):
         # given by quintuple (saider.qb64, path, prefixer.qb64, seqner.q64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
         # signature.
-        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=coring.Siger)
+        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
 
         # all sad path scgs  (sad pathed non-indexed signature serializations) maps
         # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
@@ -440,7 +440,7 @@ class Reger(dbing.LMDBer):
             )
 
             ctr = coring.Counter(qb64b=iss, strip=True)
-            if ctr.code == coring.CtrDex.AttachedMaterialQuadlets:
+            if ctr.code == coring.CtrDex.AttachmentGroup:
                 ctr = coring.Counter(qb64b=iss, strip=True)
 
             if ctr.code == coring.CtrDex.SealSourceCouples:
@@ -541,7 +541,7 @@ class Reger(dbing.LMDBer):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+        pcnt = coring.Counter(code=coring.CtrDex.AttachmentGroup,
                               count=(len(atc) // 4)).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
@@ -1009,7 +1009,7 @@ def messagize(creder, proof):
     if len(proof) % 4:
         raise ValueError("Invalid attachments size={}, nonintegral"
                          " quadlets.".format(len(proof)))
-    craw.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+    craw.extend(coring.Counter(code=coring.CtrDex.AttachmentGroup,
                                count=(len(proof) // 4)).qb64b)
     craw.extend(proof)
 

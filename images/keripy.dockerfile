@@ -1,5 +1,5 @@
 # Builder layer
-FROM python:3.10-alpine as builder
+FROM python:3.12-alpine as builder
 
 # Install compilation dependencies
 RUN apk --no-cache add \
@@ -32,7 +32,7 @@ RUN . ${HOME}/.cargo/env && \
     pip install -r requirements.txt
 
 # Runtime layer
-FROM python:3.10.13-alpine3.18
+FROM python:3.12.2-alpine3.18
 
 RUN apk --no-cache add \
     bash \

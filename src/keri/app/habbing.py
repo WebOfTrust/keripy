@@ -16,7 +16,7 @@ from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
-from ..core import coring, eventing, parsing, routing, serdering
+from ..core import coring, eventing, parsing, routing, serdering, indexing
 from ..db import dbing, basing
 from ..kering import MissingSignatureError, Roles
 
@@ -68,7 +68,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
 
     """
     habery = None
-    salt = salt if not None else coring.Salter(raw=b'0123456789abcdef').qb64
+    salt = salt if salt is not None else coring.Salter().qb64
     try:
         habery = Habery(name=name, base=base, temp=temp, salt=salt, **kwa)
         yield habery
@@ -79,7 +79,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
 
 
 @contextmanager
-def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, cf=None, **kwa):
+def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
     """
     Context manager wrapper for Hab instance.
     Defaults to temporary resources
@@ -129,8 +129,10 @@ class Habery:
         psr (parsing.Parser):  parses local messages for .kvy .rvy
 
         habs (dict): Hab instances keyed by prefix.
-            To look up Hab by name get prefix from db.habs .prefix field using
-            .habByName
+            To look up Hab by name use use .habByName
+            To look up Hab by prefix us .habByPrefix
+            to get hab from db need name for key
+            hab prefix in db.habs record .hid field
 
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
@@ -221,9 +223,9 @@ class Habery:
         self.exc = exchanging.Exchanger(hby=self, handlers=[])
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                                  exc=self.exc, local=True)
         self.habs = {}  # empty .habs
-        self.namespaces = {}  # empty .namespaces
         self._signator = None
         self.inited = False
 
@@ -234,6 +236,7 @@ class Habery:
 
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
+
 
     def setup(self, *, seed=None, aeid=None, bran=None, pidx=None, algo=None,
               salt=None, tier=None, free=False, temp=None, ):
@@ -293,7 +296,7 @@ class Habery:
                 aeid = signer.verfer.qb64  # lest it remove encryption
 
         if salt is None:  # salt for signing keys not aeid seed
-            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+            salt = coring.Salter().qb64
         else:
             salt = coring.Salter(qb64=salt).qb64
 
@@ -322,78 +325,39 @@ class Habery:
         self.reconfigure()  # pre hab load reconfiguration
 
         groups = []
-        for name, habord in self.db.habs.getItemIter():
-            name = ".".join(name)  # detupleize the database key name
+        for prefix, habord in self.db.habs.getItemIter():
             pre = habord.hid
 
             # create Hab instance and inject dependencies
             if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                               name=name, pre=pre, temp=self.temp, smids=habord.smids)
+                               name=habord.name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
             elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                 name=name, pre=habord.sid)
+                                 name=habord.name, pre=habord.sid)
             elif habord.sid and habord.mid:
                 hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=pre)
+                                      name=habord.name, pre=pre)
                 groups.append(habord)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                          name=name, pre=pre, temp=self.temp)
+                          name=habord.name, pre=pre, temp=self.temp)
 
-            # Rules for acceptance
-            #  if its delegated its accepted into its own local KEL even if the
-            #    delegator has not sealed it
+            # Rules for acceptance:
+            # It is accepted into its own local KEL even if it has not been fully
+            # witnessed and if delegated, its delegator has not yet sealed it
             if not hab.accepted and not habord.mid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
-                                                f"{pre} name={name} from db.")
+                                                f"{pre} name={habord.name} from db.")
 
             # read in config file and process any oobis or endpoints for hab
             hab.inited = True
             self.habs[hab.pre] = hab
-
-        for keys, habord in self.db.nmsp.getItemIter():
-            ns = keys[0]
-            name = ".".join(keys[1:])  # detupleize the database key name
-            pre = habord.hid
-
-            # create Hab instance and inject dependencies
-            if habord.mid and not habord.sid:
-                hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                               name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
-                groups.append(habord)
-            elif habord.sid and not habord.mid:
-                hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                 rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                 name=name, ns=ns, pre=habord.sid)
-            elif habord.sid and habord.mid:
-                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=habord.sid)
-                groups.append(habord)
-            else:
-                hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                          rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                          name=name, ns=ns, pre=pre, temp=self.temp)
-
-            # Rules for acceptance
-            #  if its delegated its accepted into its own local KEL even if the
-            #    delegator has not sealed it
-            if not hab.accepted and not habord.mid:
-                raise kering.ConfigurationError(f"Problem loading Hab pre="
-                                                f"{pre} name={name} from db.")
-
-            # read in config file and process any oobis or endpoints for hab
-            hab.inited = True
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
 
         # Populate the participant hab after loading all habs
         for habord in groups:
@@ -417,7 +381,7 @@ class Habery:
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
             delpre (str): qb64 of delegator identifier prefix
-            estOnly (str): eventing.TraitCodex.EstOnly means only establishment
+            estOnly (str): eventing.TraitDex.EstOnly means only establishment
                 events allowed in KEL for this Hab
             data (list | None): seal dicts
         """
@@ -431,13 +395,7 @@ class Habery:
 
         hab.make(**kwa)
 
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
     def makeGroupHab(self, group, mhab, smids, rmids=None, ns=None, **kwa):
@@ -469,9 +427,9 @@ class Habery:
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
             delpre (str): qb64 of delegator identifier prefix
-            estOnly (str): eventing.TraitCodex.EstOnly means only establishment
+            estOnly (str): eventing.TraitDex.EstOnly means only establishment
                 events allowed in KEL for this Hab
-            DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
+            DnD (bool): eventing.TraitDex.DnD means do allow delegated identifiers from this identifier
 
         ToDo: NRR
         add midxs tuples for each group member or all in group multisig.
@@ -508,13 +466,7 @@ class Habery:
                        name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
     def joinGroupHab(self, pre, group, mhab, smids, rmids=None, ns=None):
@@ -562,6 +514,8 @@ class Habery:
 
         hab.pre = pre
         habord = basing.HabitatRecord(hid=hab.pre,
+                                      name=self.name,
+                                      domain=ns,
                                       mid=mhab.pre,
                                       smids=smids,
                                       rmids=rmids)
@@ -570,13 +524,7 @@ class Habery:
         hab.prefixes.add(pre)
         hab.inited = True
 
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
     def makeSignifyHab(self, name, ns=None, **kwa):
@@ -586,29 +534,18 @@ class Habery:
                          name=name, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
-    def makeSignifyGroupHab(self, name, mhab, ns=None, **kwa):
+    def makeSignifyGroupHab(self, name, mhab, smids, rmids=None,  ns=None, **kwa):
         # create group Hab in this Habery
         hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                              name=name, mhab=mhab, ns=ns, temp=self.temp)
+                              name=name, mhab=mhab, smids=smids, rmids=rmids, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
 
+        self.habs[hab.pre] = hab
         return hab
 
     def joinSignifyGroupHab(self, pre, name, mhab, smids, rmids=None, ns=None):
@@ -652,11 +589,13 @@ class Habery:
         # create group Hab in this Habery
         hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                              name=name, mhab=mhab, ns=ns, temp=self.temp)
+                              name=name, mhab=mhab, smids=smids, rmids=rmids, ns=ns, temp=self.temp)
 
         hab.pre = pre
         habord = basing.HabitatRecord(hid=hab.pre,
                                       sid=mhab.pre,
+                                      name=name,
+                                      domain=ns,
                                       smids=smids,
                                       rmids=rmids)
 
@@ -664,25 +603,25 @@ class Habery:
         hab.prefixes.add(pre)
         hab.inited = True
 
-        if ns is None:
-            self.habs[hab.pre] = hab
-        else:
-            if ns not in self.namespaces:
-                self.namespaces[ns] = dict()
-            self.namespaces[ns][hab.pre] = hab
-
+        self.habs[hab.pre] = hab
         return hab
 
-    def deleteHab(self, name):
-        hab = self.habByName(name)
+    def deleteHab(self, name, ns=None):
+        hab = self.habByName(name, ns=ns)
         if not hab:
             return False
 
-        if not self.db.habs.rem(keys=(name,)):
+        if not self.db.habs.rem(keys=(hab.pre,)):
+            return False
+
+        ns = "" if ns is None else ns
+        if not self.db.names.rem(keys=(ns, name)):
             return False
 
         del self.habs[hab.pre]
         self.db.prefixes.remove(hab.pre)
+        if hab.pre in self.db.groups:
+            self.db.groups.remove(hab.pre)
 
         return True
 
@@ -752,7 +691,8 @@ class Habery:
 
     def habByPre(self, pre):
         """
-        Returns the Hab from and namespace including the default namespace.
+        Returns the Hab instance from .habs or None
+        including the default namespace.
 
         Args:
             pre (str): qb64 aid of hab to find
@@ -760,33 +700,26 @@ class Habery:
         Returns:
             Hab: Hab instance for the aid pre or None
         """
-        hab = None
         if pre in self.habs:
-            hab = self.habs[pre]
-        else:
-            for nsp in self.namespaces.values():
-                if pre in nsp:
-                    hab = nsp[pre]
+            return self.habs[pre]
 
-        return hab
+        return None
 
     def habByName(self, name, ns=None):
         """
         Returns:
-            hab (Hab): instance from .habs by name if any otherwise None
+            hab (Hab): instance by name from .habs or .namspaces
+            if any otherwise None
 
         Parameters:
            name (str): alias of Hab
            ns (str): optional namespace of hab
 
         """
-        if ns is not None:
-            if (habord := self.db.nmsp.get(keys=(ns, name))) is not None:
-                habs = self.namespaces[ns]
-                return habs[habord.hid] if habord.hid in habs else None
-
-        elif (habord := self.db.habs.get(name)) is not None:
-            return self.habs[habord.hid] if habord.hid in self.habs else None
+        ns = "" if ns is None else ns
+        if (pre := self.db.names.get(keys=(ns, name))) is not None:
+            if pre in self.habs:
+                return self.habs[pre]
 
         return None
 
@@ -794,12 +727,33 @@ class Habery:
         """Apply configuration from config file managed by .cf. to this Habery
         Process any oobis or endpoints
 
-        conf
+        config file  json or hjon
+
         {
-          dt: "isodatetime",
-          curls: ["tcp://localhost:5620/"],
-          iurls: ["tcp://localhost:5621/?name=eve"],
+          "dt": "2021-01-01T00:00:00.000000+00:00",
+          "nel":
+          {
+            "dt": "2021-01-01T00:00:00.000000+00:00",
+            "curls":
+            [
+              "tcp://localhost:5621/"
+            ]
+          },
+          "iurls":
+          [
+            "tcp://localhost:5620/?role=peer&name=tam"
+          ],
+          "durls":
+          [
+            "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
+            "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi",
+          ],
+          "wurls":
+          [
+            "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
+          ]
         }
+
 
         Config file is meant to be read only at init not changed by app at
         run time. Any dynamic app changes must go in database not config file
@@ -1026,7 +980,7 @@ class BaseHab:
         self.psr = psr  # injected
 
         self.name = name
-        self.ns = ns
+        self.ns = ns  # what is this?
         self.pre = pre  # wait to setup until after db is known to be opened
         self.temp = True if temp else False
 
@@ -1052,10 +1006,10 @@ class BaseHab:
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+            DnD (bool): True means add trait of eventing.TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
 
@@ -1072,9 +1026,9 @@ class BaseHab:
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         cnfg = []
         if estOnly:
-            cnfg.append(eventing.TraitCodex.EstOnly)
+            cnfg.append(eventing.TraitDex.EstOnly)
         if DnD:
-            cnfg.append(eventing.TraitCodex.DoNotDelegate)
+            cnfg.append(eventing.TraitDex.DoNotDelegate)
         self.delpre = delpre
         keys = [verfer.qb64 for verfer in verfers]
         if self.delpre:
@@ -1100,24 +1054,48 @@ class BaseHab:
         return serder
 
     def save(self, habord):
-        if self.ns is None:
-            self.db.habs.pin(keys=self.name,
-                             val=habord)
-        else:
-            self.db.nmsp.put(keys=(self.ns, self.name),
-                             val=habord)
+        self.db.habs.pin(keys=self.pre,
+                         val=habord)
+        ns = "" if self.ns is None else self.ns
+        if self.db.names.get(keys=(ns, self.name)) is not None:
+            raise ValueError("AID already exists with that name")
+
+        self.db.names.pin(keys=(ns, self.name),
+                          val=self.pre)
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.
         Assumes that .pre and signing keys have been setup in order to create
         own endpoint auth when provided in .cf.
 
-        conf
+        config file  json or hjon
+
         {
-          dt: "isodatetime",
-          curls: ["tcp://localhost:5620/"],
-          iurls: ["tcp://localhost:5621/?name=eve"]
+          "dt": "2021-01-01T00:00:00.000000+00:00",
+          "nel":
+          {
+            "dt": "2021-01-01T00:00:00.000000+00:00",
+            "curls":
+            [
+              "tcp://localhost:5621/"
+            ]
+          },
+          "iurls":
+          [
+            "tcp://localhost:5620/?role=peer&name=tam"
+          ],
+          "durls":
+          [
+            "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
+            "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi",
+          ],
+          "wurls":
+          [
+            "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
+          ]
         }
+
+
 
         Config file is meant to be read only at init not changed by app at
         run time. Any dynamic app changes must go in database not config file
@@ -1239,7 +1217,7 @@ class BaseHab:
         if not kever.ntholder.satisfy(indices):
             raise kering.ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
 
-        if kever.delegator is not None:  # delegator only shows up in delcept
+        if kever.delpre is not None:  # delegator only shows up in delcept
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
                                       dig=kever.serder.said,
@@ -1493,8 +1471,10 @@ class BaseHab:
         indexed receipt signatures if key state of serder.pre shows that own pre
         is a current witness of event in serder
 
-        Before calling this must check that serder being witnessed has been
-        accepted as valid event into controller's KEL
+        ToDo XXXX add parameter to force check that serder as been accepted
+        as valid. Otherwise must assume that before calling this that serder
+        being witnessed has been accepted as valid event into this hab
+        controller's KEL
 
         """
         if self.kever.prefixer.transferable:  # not non-transferable prefix
@@ -2031,7 +2011,7 @@ class BaseHab:
 
         sigs = []
         for sig in self.db.getSigsIter(key):
-            sigs.append(coring.Siger(qb64b=bytes(sig)))
+            sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
         couple = self.db.getAes(key)
 
@@ -2144,6 +2124,7 @@ class BaseHab:
             # ToDo XXXX cue for kin = "psUnescrow"
             # ToDo XXXX cue for kin = "stream"
             # ToDo XXXX cue for kin = "invalid"
+            # ToDo XXXX cue for kin=""remoteMemberedSig""
 
 
     def witnesser(self):
@@ -2226,10 +2207,10 @@ class Hab(BaseHab):
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+            DnD (bool): True means add trait of eventing.TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
 
@@ -2293,7 +2274,7 @@ class Hab(BaseHab):
         self.mgr.move(old=opre, new=self.pre)  # move to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        habord = basing.HabitatRecord(hid=self.pre)
+        habord = basing.HabitatRecord(hid=self.pre, name=self.name, domain=self.ns)
 
         if not hidden:
             self.save(habord)
@@ -2381,7 +2362,7 @@ class SignifyHab(BaseHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre)
+        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
         self.inited = True
@@ -2530,8 +2511,11 @@ class SignifyHab(BaseHab):
 
 
 class SignifyGroupHab(SignifyHab):
-    def __init__(self, mhab=None, **kwa):
+    def __init__(self, smids, mhab=None, rmids=None, **kwa):
         self.mhab = mhab
+        self.smids = smids  # group signing member aids in this group hab
+        self.rmids = rmids or smids # group rotating member aids in this group hab
+
         super(SignifyGroupHab, self).__init__(**kwa)
 
     def make(self, *, serder, sigers, **kwargs):
@@ -2540,7 +2524,8 @@ class SignifyGroupHab(SignifyHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, sid=self.pre)
+        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, smids=self.smids, rmids=self.rmids,
+                                      sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
         self.inited = True
@@ -2565,6 +2550,20 @@ class SignifyGroupHab(SignifyHab):
         except Exception:
             raise kering.ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
                                          f"pre={self.pre}.")
+
+    def rotate(self, *, smids=None, rmids=None, serder=None, sigers=None, **kwargs):
+
+        if (habord := self.db.habs.get(keys=(self.pre,))) is None:
+            raise kering.ValidationError(f"Missing HabitatRecord for pre={self.pre}")
+
+        super(SignifyGroupHab, self).rotate(serder=serder, sigers=sigers, **kwargs)
+
+        self.smids = smids
+        self.rmids = rmids
+        habord.smids = smids
+        habord.rmids = rmids
+
+        self.db.habs.pin(keys=(self.pre,), val=habord)
 
 
 class GroupHab(BaseHab):
@@ -2647,7 +2646,7 @@ class GroupHab(BaseHab):
         """
         self.mhab = mhab  # local participant Hab of this group hab
         self.smids = smids  # group signing member aids in this group hab
-        self.rmids = rmids  # group rotating member aids in this group hab
+        self.rmids = rmids or smids  # group rotating member aids in this group hab
 
         super(GroupHab, self).__init__(**kwa)
 
@@ -2672,10 +2671,10 @@ class GroupHab(BaseHab):
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+            DnD (bool): True means add trait of eventing.TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
             merfers (list[Verfer] | None): group member Verfer instances of
@@ -2728,6 +2727,8 @@ class GroupHab(BaseHab):
 
         habord = basing.HabitatRecord(hid=self.pre,
                                       mid=self.mhab.pre,
+                                      name=self.name,
+                                      domain=self.ns,
                                       smids=self.smids,
                                       rmids=self.rmids)
 
@@ -2736,10 +2737,13 @@ class GroupHab(BaseHab):
 
         self.inited = True
 
-    def rotate(self, serder=None, **kwargs):
+    def rotate(self, smids=None, rmids=None, serder=None, **kwargs):
 
         if serder is None:
             return super(GroupHab, self).rotate(**kwargs)
+
+        if (habord := self.db.habs.get(keys=(self.pre,))) is None:
+            raise kering.ValidationError(f"Missing HabitatRecord for pre={self.pre}")
 
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
@@ -2754,6 +2758,12 @@ class GroupHab(BaseHab):
         except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={self.pre}.") from ex
+
+        self.smids = smids
+        self.rmids = rmids
+        habord.smids = smids
+        habord.rmids = rmids
+        self.db.habs.pin(keys=(self.pre,), val=habord)
 
         return msg
 
@@ -2880,7 +2890,7 @@ class GroupHab(BaseHab):
         if not sigs:  # otherwise its a list of sigs
             return False
 
-        sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+        sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
         windex = min([siger.index for siger in sigers])
 
         # True if Elected to perform delegation and witnessing
