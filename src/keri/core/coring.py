@@ -242,6 +242,68 @@ Tierage = namedtuple("Tierage", 'low med high')
 Tiers = Tierage(low='low', med='med', high='high')
 
 
+
+@dataclass
+class MapDom:
+    """Base class for dataclasses that support map syntax
+    Adds support for dunder methods for map syntax dc[name].
+    Converts exceptions from attribute syntax to raise map syntax when using
+    map syntax.
+    """
+
+    def __getitem__(self, name):
+        try:
+            return getattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __setitem__(self, name, value):
+        try:
+            return setattr(self, name, value)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __delitem__(self, name):
+        try:
+            return delattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+@dataclass(frozen=True)
+class MapCodex:
+    """Base class for frozen dataclasses (codexes) that support map syntax
+    Adds support for dunder methods for map syntax dc[name].
+    Converts exceptions from attribute syntax to raise map syntax when using
+    map syntax.
+
+    Enables Mapping item syntas for dataclasses
+    """
+
+    def __getitem__(self, name):
+        try:
+            return getattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __setitem__(self, name, value):
+        try:
+            return setattr(self, name, value)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __delitem__(self, name):
+        try:
+            return delattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+
 @dataclass(frozen=True)
 class MatterCodex:
     """

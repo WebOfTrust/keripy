@@ -16,7 +16,7 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
 from .. import kering
 from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
 
-from ..core.coring import Sizage
+from ..core.coring import Sizage, MapCodex
 
 
 
@@ -41,65 +41,6 @@ class GenusCodex:
 GenDex = GenusCodex()  # Make instance
 
 
-
-@dataclass
-class MapDom:
-    """Base class for dataclasses that support map syntax
-    Adds support for dunder methods for map syntax dc[name].
-    Converts exceptions from attribute syntax to raise map syntax when using
-    map syntax.
-    """
-
-    def __getitem__(self, name):
-        try:
-            return getattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __setitem__(self, name, value):
-        try:
-            return setattr(self, name, value)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __delitem__(self, name):
-        try:
-            return delattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-@dataclass(frozen=True)
-class MapCodex:
-    """Base class for frozen dataclasses (codexes) that support map syntax
-    Adds support for dunder methods for map syntax dc[name].
-    Converts exceptions from attribute syntax to raise map syntax when using
-    map syntax.
-
-    Enables Mapping item syntas for dataclasses
-    """
-
-    def __getitem__(self, name):
-        try:
-            return getattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __setitem__(self, name, value):
-        try:
-            return setattr(self, name, value)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __delitem__(self, name):
-        try:
-            return delattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
 
 
 

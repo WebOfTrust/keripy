@@ -33,16 +33,17 @@ def test_structor():
     with pytest.raises(kering.InvalidValueError):
         structor = Structor()  # test default
 
-    dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
-    diger = Diger(qb64=dig)
-    aid = ""
-    #verfer = Verfer()
+
+    aid = 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
+    verfer = Verfer(qb64=aid)
     num = 14
     number = Number(num=num)
+    snq = number.qb64
+    dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    diger = Diger(qb64=dig)
 
 
-    qb64 = diger.qb64
-    qb2 = diger.qb2
+    # Test with single field namedtuple for data
 
     data = SealDigest(d=diger)
     clan = SealDigest
@@ -55,6 +56,9 @@ def test_structor():
     assert data._fields == SealDigest._fields
     klas = data.__class__
     assert klas == clan
+
+    qb64 = diger.qb64
+    qb2 = diger.qb2
 
     # Test data
     structor = Structor(data=data)
@@ -180,6 +184,130 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+
+    # Test with multiple field namedtuple for data
+
+    data = SealEvent(i=verfer, s=number, d=diger)
+    clan = SealEvent
+    cast = SealEvent(i=Verfer, s=Number, d=Diger)
+    crew = SealEvent(i=aid, s=snq, d=dig)
+
+    dcast = cast._asdict()
+    dcrew = crew._asdict()
+
+    assert data._fields == SealEvent._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = verfer.qb64 + number.qb64 + diger.qb64  # ''.join(crew)
+    qb2 = verfer.qb2 + number.qb2 + diger.qb2
+
+    # Test data
+    structor = Structor(data=data)
+    assert structor.data == data
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.asdict == data._asdict()
+    assert structor.asdict == \
+    {
+        'i': verfer,
+        's': number,
+        'd': diger,
+    }
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    # Test cast
+    structor = Structor(cast=cast, crew=crew)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb64=qb64)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb64=qb64.encode())
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb64=qb64.encode(), strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    ba = bytearray(qb64.encode())
+    structor = Structor(cast=cast, qb64=ba, strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert not ba  # stripped so empty
+
+    structor = Structor(cast=cast, qb2=qb2)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb2=qb2, strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    ba = bytearray(qb2)
+    structor = Structor(cast=cast, qb2=ba, strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert not ba  # stripped so empty
+
+    # Test clan and cast
+    structor = Structor(clan=clan, cast=cast, crew=crew)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(clan=clan, cast=cast, qb64=qb64)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(clan=clan, cast=cast, qb64=qb64.encode())
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(clan=clan, cast=cast, qb2=qb2)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
 
     # Test clan with cast and crew as dicts
 
