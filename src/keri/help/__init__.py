@@ -16,4 +16,5 @@ from hio.help import ogling
 #  want help.ogler always defined by default
 ogler = ogling.initOgler(prefix='keri', syslogged=False)  # inits once only on first import
 
-from .helping import nowIso8601, toIso8601, fromIso8601
+from .helping import (nowIso8601, toIso8601, fromIso8601,
+                      nonStringSequence, nonStringIterable)

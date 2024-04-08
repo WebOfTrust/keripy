@@ -16,7 +16,7 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
 from .. import kering
 from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
 
-from ..core.coring import Sizage
+from ..core.coring import Sizage, MapCodex
 
 
 
@@ -42,63 +42,6 @@ GenDex = GenusCodex()  # Make instance
 
 
 
-@dataclass
-class MapDom:
-    """Base class for dataclasses that support map syntax
-    Adds support for dunder methods for map syntax dc[name].
-    Converts exceptions from attribute syntax to raise map syntax when using
-    map syntax.
-    """
-
-    def __getitem__(self, name):
-        try:
-            return getattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __setitem__(self, name, value):
-        try:
-            return setattr(self, name, value)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __delitem__(self, name):
-        try:
-            return delattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-@dataclass(frozen=True)
-class MapCodex:
-    """Base class for frozen dataclasses (codexes) that support map syntax
-    Adds support for dunder methods for map syntax dc[name].
-    Converts exceptions from attribute syntax to raise map syntax when using
-    map syntax.
-    """
-
-    def __getitem__(self, name):
-        try:
-            return getattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __setitem__(self, name, value):
-        try:
-            return setattr(self, name, value)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
-
-    def __delitem__(self, name):
-        try:
-            return delattr(self, name)
-        except AttributeError as ex:
-            raise IndexError(ex.args) from ex
-
 
 
 @dataclass(frozen=True)
@@ -107,6 +50,9 @@ class CounterCodex_1_0(MapCodex):
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
     """
     ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
     WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
@@ -136,6 +82,9 @@ class CounterCodex_2_0(MapCodex):
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '-0A'  # Big Generic Group (Universal with Override).
@@ -165,18 +114,18 @@ class CounterCodex_2_0(MapCodex):
     BigTransReceiptQuadruples: str = '-0M'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
     FirstSeenReplayCouples: str = '-N'  # First Seen Replay Couple(s), fnu+dts.
     BigFirstSeenReplayCouples: str = '-0N'  # First Seen Replay Couple(s), fnu+dts.
-    TransIdxSigGroups: str = '-O'  # Trans Indexed Signature Group(s), pre+snu+dig+ControllerIdxSigs of qb64.
-    TransIdxSigGroups: str = '-0O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+ControllerIdxSigs of qb64.
-    TransLastIdxSigGroups: str = '-P'  # Trans Last Est Evt Indexed Signature Group(s), pre+ControllerIdxSigs of qb64.
-    BigTransLastIdxSigGroups: str = '-0P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+ControllerIdxSigs of qb64.
+    TransIdxSigGroups: str = '-O'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    TransIdxSigGroups: str = '-0O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    TransLastIdxSigGroups: str = '-P'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
+    BigTransLastIdxSigGroups: str = '-0P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
     SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
     BigSealSourceCouples: str = '-0Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
     SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
     BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
     PathedMaterialGroup: str = '-S'  # Pathed Material Group.
     BigPathedMaterialGroup: str = '-0S'  # Big Pathed Material Group.
-    SadPathSigGroups: str = '-T'  # SAD Path Group(s) sadpath+TransIdxSigGroup(s) of SAID qb64 of content.
-    BigSadPathSigGroups: str = '-0T'  # Big SAD Path Group(s) sadpath+TransIdxSigGroup(s) of SAID qb64 of content.
+    SadPathSigGroups: str = '-T'  # SAD Path Group(s) sadpath+CtrTransIdxSigGroup(s) of SAID qb64 of content.
+    BigSadPathSigGroups: str = '-0T'  # Big SAD Path Group(s) sadpath+CtrTransIdxSigGroup(s) of SAID qb64 of content.
     RootSadPathSigGroups: str = '-U'  # Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
     BigRootSadPathSigGroups: str = '-0U'  # Big Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
     DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
@@ -188,8 +137,6 @@ class CounterCodex_2_0(MapCodex):
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
-
-
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"

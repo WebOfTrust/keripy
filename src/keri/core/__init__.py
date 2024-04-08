@@ -7,7 +7,7 @@ keri.core Package
 #__all__ = ["coring", "eventing", "parsing", "scheming"]
 
 # Matter class and its subclasses
-from .coring import (Matter, MtrDex, Number, NumDex, Dater,Texter,
+from .coring import (Matter, MtrDex, Number, NumDex, Dater, Texter,
                     Bexter, Pather, Verfer, Cigar, Signer, Salter,
                     Cipher, Encrypter, Decrypter, Diger, DigDex,
                     Prefixer, PreDex, )

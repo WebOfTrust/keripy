@@ -16,7 +16,7 @@ from  ordered_set import OrderedSet as oset
 from keri import kering
 from keri.kering import (Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT,
-                      MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
+                      MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN,)
 
 from keri.core import coring
 
@@ -100,7 +100,7 @@ def test_serder():
                 assert set(fields.saids) <= set(fields.alls)
 
 
-    with pytest.raises(ValueError):
+    with pytest.raises(kering.InvalidValueError):
         serder = Serder()
 
     #Test Serder bare makify bootstrap for ACDC JSON
@@ -2403,7 +2403,7 @@ def test_serderkeri_vcp():
 def test_serderacdc():
     """Test SerderACDC"""
 
-    with pytest.raises(ValueError):
+    with pytest.raises(kering.InvalidValueError):
         serder = SerderACDC()
 
     serder = SerderACDC(makify=True, proto=Protocols.acdc, verify=False)  # make defaults for ACDC
@@ -2487,7 +2487,7 @@ def test_serder_v2():
 
 
 
-    with pytest.raises(ValueError):
+    with pytest.raises(kering.InvalidValueError):
         serder = Serder()
 
     #Test Serder bare makify bootstrap for ACDC JSON
