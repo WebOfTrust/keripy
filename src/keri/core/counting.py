@@ -77,6 +77,8 @@ class MapCodex:
     Adds support for dunder methods for map syntax dc[name].
     Converts exceptions from attribute syntax to raise map syntax when using
     map syntax.
+
+    Enables Mapping item syntas for dataclasses
     """
 
     def __getitem__(self, name):
@@ -107,6 +109,9 @@ class CounterCodex_1_0(MapCodex):
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
     """
     ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
     WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
@@ -136,6 +141,9 @@ class CounterCodex_2_0(MapCodex):
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '-0A'  # Big Generic Group (Universal with Override).
@@ -188,8 +196,6 @@ class CounterCodex_2_0(MapCodex):
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
-
-
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"

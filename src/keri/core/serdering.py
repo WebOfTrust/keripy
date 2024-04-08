@@ -19,7 +19,7 @@ from  ordered_set import OrderedSet as oset
 
 from .. import kering
 from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
-                      AlternateFieldError,
+                      AlternateFieldError, InvalidValueError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
@@ -642,7 +642,8 @@ class Serder:
                                               f"{self._sad}.") from ex
 
         else:
-            raise ValueError("Improper initialization need raw or sad or makify.")
+            raise InvalidValueError("Improper initialization need raw or sad "
+                                    f"or makify.")
 
 
 
@@ -840,7 +841,7 @@ class Serder:
         if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
                 sproto, svrsn, skind, _, _ = deversify(sad["v"])
-            except ValueError as ex:
+            except VersionError as ex:
                 pass
             else:
                 silk = sad.get('t')  # if 't' not in sad .get returns None which may be valid
