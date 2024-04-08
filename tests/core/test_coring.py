@@ -293,12 +293,12 @@ def test_matter_class():
         'X25519_Cipher_QB64_Big_L0': '7AAD',
         'X25519_Cipher_QB64_Big_L1': '8AAD',
         'X25519_Cipher_QB64_Big_L2': '9AAD',
-        'X25519_Cipher_QB2_L0': '4D',
-        'X25519_Cipher_QB2_L1': '5D',
-        'X25519_Cipher_QB2_L2': '6D',
-        'X25519_Cipher_QB2_Big_L0': '7AAD',
-        'X25519_Cipher_QB2_Big_L1': '8AAD',
-        'X25519_Cipher_QB2_Big_L2': '9AAD'
+        'X25519_Cipher_QB2_L0': '4E',
+        'X25519_Cipher_QB2_L1': '5E',
+        'X25519_Cipher_QB2_L2': '6E',
+        'X25519_Cipher_QB2_Big_L0': '7AAE',
+        'X25519_Cipher_QB2_Big_L1': '8AAE',
+        'X25519_Cipher_QB2_Big_L2': '9AAE'
     }
 
 

@@ -9,6 +9,7 @@ Provides versioning support for Indexer classes and codes
 from typing import NamedTuple
 from collections import namedtuple
 from collections.abc import Mapping
+from dataclasses import dataclass, astuple, asdict
 
 from ..kering import (EmptyMaterialError, InvalidValueError,)
 
@@ -16,7 +17,7 @@ from .. import help
 from ..help import nonStringSequence
 
 from . import coring
-from .coring import (Matter, )
+from .coring import (MapCodex, Matter, Diger, Prefixer, Number)
 
 
 # ToDo Change seal namedtuple definitions to NamedTuple subclasses so can
@@ -66,12 +67,122 @@ SealLast = namedtuple("SealLast", 'i')
 # use SealSourceCouples count code for attachment
 SealTrans = namedtuple("SealTrans", 's d')
 
+
+# Following are not seals only used in database
+
 # State Establishment Event (latest current) : quadruple (s, d, br, ba)
 # s = sn of latest est event as lowercase hex string  no leading zeros,
 # d = SAID digest qb64  of latest establishment event
 # br = backer (witness) remove list (cuts) from latest est event
 # ba = backer (witness) add list (adds) from latest est event
 StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
+
+# not used should this be depricated?
+# State Event (latest current) : triple (s, t, d)
+# s = sn of latest event as lowercase hex string  no leading zeros,
+# t = message type of latest event (ilk)
+# d = SAID digest qb64 of latest event
+StateEvent = namedtuple("StateEvent", 's t d')
+
+
+@dataclass(frozen=True)
+class EmptyClanCodex(MapCodex):
+    """
+    SealClanDom is dataclass of namedtuple seal class references (clans) each
+    indexed by its class name.
+
+    Only provide defined classes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get class reference with item syntax using
+    name variables.
+
+    Example: EmptyClanDex[name]
+    """
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+EmptyClanDex = EmptyClanCodex()  # create instance
+
+
+@dataclass(frozen=True)
+class EmptyCastCodex(MapCodex):
+    """
+    SealCastCodex is dataclass of namedtuple instances (seal casts) whose values
+    are named primitive class references
+
+    indexed by its namedtuple class name.
+
+    Only provide defined namedtuples casts.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get namedtuple instance with item syntax using
+    name variables.
+
+    Example: EmptyCastDex[name]
+    """
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+EmptyCastDex = EmptyCastCodex()  # create instance
+
+
+@dataclass(frozen=True)
+class SealClanCodex(MapCodex):
+    """
+    SealClanCodex is dataclass of namedtuple seal class references (clans) each
+    indexed by its class name.
+
+    Only provide defined classes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get class reference with item syntax using
+    name variables.
+
+    Example: SealClanDex[name]
+    """
+    SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference
+    SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference
+    SealBacker: type[NamedTuple] = SealBacker  # SealBacker class reference
+    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference
+    SealLast: type[NamedTuple] = SealLast  # SealLast class reference
+    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+SealClanDex = SealClanCodex()  # create instance
+
+
+@dataclass(frozen=True)
+class SealCastCodex(MapCodex):
+    """
+    SealCastCodex is dataclass of namedtuple instances (seal casts) whose values
+    are named primitive class references
+
+    indexed by its namedtuple class name.
+
+    Only provide defined namedtuples casts.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get namedtuple instance with item syntax using
+    name variables.
+
+    Example: SealCastDom[name]
+    """
+    SealDigest: NamedTuple = SealDigest(d=Diger)  # SealDigest class reference
+    SealRoot: NamedTuple = SealRoot(rd=Diger)  # SealRoot class reference
+    SealBacker: NamedTuple = SealBacker(bi=Prefixer, d=Diger)  # SealBacker class reference
+    SealEvent: NamedTuple = SealEvent(i=Prefixer, s=Number, d=Diger)  # SealEvent class reference
+    SealLast: NamedTuple = SealLast(i=Prefixer)  # SealLast class reference
+    SealTrans: NamedTuple = SealTrans(s=Number, d=Diger)  # SealTrans class reference
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+SealCastDex = SealCastCodex()  # create instance
 
 
 
@@ -127,6 +238,7 @@ class Structor:
         clan (type[NamedTuple]): class reference of .data's class
         cast (NamedTuple): CESR primitive class references of .data's primitive
                            instances
+        crew (NamedTuple): named qb64 values of .data's primitive instances
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
@@ -140,8 +252,12 @@ class Structor:
 
 
     """
-    Clans = {}  # each value is known namedtuple class keyed by own fields (tuple)
-    Casts = {}  # each value is cast primitive class for its .Clans keyed by fields
+    Clans = EmptyClanDex  # known namedtuple clans. Override in subclass with non-empty
+    Casts = EmptyCastDex  # known namedtuple casts. Override in subclass with non-empty
+    # Create .Names dict that maps clan/cast fields names to its namedtuple
+    # class type name so can look up a know clan or cast given a matching set
+    # of either field names from a namedtuple or keys from a dict.
+    Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
 
 
     def __init__(self, data=None, clan=None, cast=None, crew=None,
@@ -246,23 +362,23 @@ class Structor:
 
                 if not clan and isinstance(cast, Mapping):  # get clan from cast
                     names = tuple(cast)  # create custom clan based on cast
-                    if names in self.Clans:  # get known clan and cast
-                        clan = self.Clans[names]
-                        cast = self.Casts[names]  # same keys as self.Clans
+                    #if names in self.Clans:  # get known clan and cast
+                    if (cname := self.Names.get(names)):  # get known else None
+                        clan = self.Clans[cname]
+                        cast = self.Casts[cname]
 
                     else:  # create custom clan from cast
-                        clan = namedtuple("_".join(names), names)  # custom clan from cast keys
-                        cast = clan(**cast)  # convert to clan
+                        clan = namedtuple("_".join(names), names)  # custom clan
 
                 if not clan and isinstance(crew, Mapping):  # get clan from crew
                     names = tuple(crew)  # create custom clan based on cast
-                    if names in self.Clans:  # get known clan and cast
-                        clan = self.Clans[names]
-                        crew = clan(**crew)  # convert to clan
+                    #if names in self.Clans:  # get known clan and cast
+                    if (cname := self.Names.get(names)):  # get known else None
+                        clan = self.Clans[cname]
+                        cast = self.Casts[cname]
 
                     else:  # create custom clan from crew
                         clan = namedtuple("_".join(names), names)  # custom clan from cast keys
-                        crew = clan(**crew)  # convert to clan
 
             if clan:
                 if not (issubclass(clan, tuple) and hasattr(clan, "_fields")):
@@ -272,35 +388,38 @@ class Structor:
 
             # have clan but may not have cast
             if cast:
-                if isinstance(cast, tuple) and hasattr(cast, "_fields"):
-                    if cast._fields != clan._fields:
-                        raise InvalidValueError(f"Mismatching fields clan="
-                                                f"{clan._fields} and cast="
-                                                f"{cast._fields}.")
+                if not isinstance(cast, clan):
+                    if isinstance(cast, tuple) and hasattr(cast, "_fields"):
+                        if cast._fields != clan._fields:
+                            raise InvalidValueError(f"Mismatching fields clan="
+                                                    f"{clan._fields} and cast="
+                                                    f"{cast._fields}.")
 
-                    if not isinstance(cast, clan):
                         cast = clan(**cast._asdict())  # convert to clan
 
-                elif isinstance(cast, Mapping):
-                    if tuple(cast) != clan._fields:
-                        raise InvalidValueError(f"Mismatching fields clan="
-                                                f"{clan._fields} and keys cast="
-                                                f"{tuple(cast)}.")
 
-                    cast = clan(**cast)  # convert to clan
 
-                elif isinstance(cast, nonStringSequence):
-                    cast = clan(*cast)  # convert to clan assumes elements in correct order
+                    elif isinstance(cast, Mapping):
+                        if tuple(cast) != clan._fields:
+                            raise InvalidValueError(f"Mismatching fields clan="
+                                                    f"{clan._fields} and keys cast="
+                                                    f"{tuple(cast)}.")
 
-                else:
-                    raise InvalidValueError(f"Invalid {cast=}.")
+                        cast = clan(**cast)  # convert to clan
 
-            else:  # get cast from .Casts if possible
-                if clan._fields in self.Casts:  # same keys for self.Clans
-                    cast = self.Casts[clan._fields]  # get known cast
+                    elif isinstance(cast, nonStringSequence):
+                        cast = clan(*cast)  # convert to clan assumes elements in correct order
+
+                    else:
+                        raise InvalidValueError(f"Invalid {cast=}.")
+
+            else:  # get cast from known .Casts if possible
+                #if clan._fields in self.Casts:  # same keys for self.Clans
+                if (cname := self.Names.get(clan._fields)):
+                    cast = self.Casts[cname]  # get known cast
                 else:  # cast missing or unobtainable
-                    raise InvalidValueError(f"Missing or unobtainable "
-                                            f"{cast=}.")
+                    raise InvalidValueError(f"Missing or unobtainable cast.")
+
             # have cast now
             for klas in cast:
                 if not (hasattr(klas, "qb64") and hasattr(klas, "qb2")):
@@ -309,28 +428,28 @@ class Structor:
 
             # have clan and cast but may not have crew
             if crew:
-                if isinstance(crew, tuple) and hasattr(crew, "_fields"):
-                    if crew._fields != clan._fields:
-                        raise InvalidValueError(f"Mismatching fields clan="
-                                                f"{clan._fields} and crew="
-                                                f"{crew._fields}.")
+                if not isinstance(crew, clan):
+                    if isinstance(crew, tuple) and hasattr(crew, "_fields"):
+                        if crew._fields != clan._fields:
+                            raise InvalidValueError(f"Mismatching fields clan="
+                                                    f"{clan._fields} and crew="
+                                                    f"{crew._fields}.")
 
-                    if not isinstance(crew, clan):
                         crew = clan(**crew._asdict())  # convert to clan
 
-                elif isinstance(crew, Mapping):
-                    if tuple(crew) != clan._fields:
-                        raise InvalidValueError(f"Mismatching fields clan="
-                                                f"{clan._fields} and keys crew="
-                                                f"{tuple(crew)}.")
+                    elif isinstance(crew, Mapping):
+                        if tuple(crew) != clan._fields:
+                            raise InvalidValueError(f"Mismatching fields clan="
+                                                    f"{clan._fields} and keys crew="
+                                                    f"{tuple(crew)}.")
 
-                    crew = clan(**crew)  # convert to clan
+                        crew = clan(**crew)  # convert to clan
 
-                elif isinstance(crew, nonStringSequence):
-                    crew = clan(*crew)  # convert to clan assumes elements in correct order
+                    elif isinstance(crew, nonStringSequence):
+                        crew = clan(*crew)  # convert to clan assumes elements in correct order
 
-                else:
-                    raise InvalidValueError(f"Invalid {crew=}.")
+                    else:
+                        raise InvalidValueError(f"Invalid {crew=}.")
 
                 data = clan(*(klas(qb64=val) for klas, val in zip(cast, crew)))
 
@@ -402,6 +521,14 @@ class Structor:
 
         """
         return self.clan(*(val.__class__ for val in self.data))
+
+    @property
+    def crew(self):
+        """Return:
+            crew (NamedTuple): named qb64 field values from .data
+
+        """
+        return self.clan(*(val.qb64 for val in self.data))
 
 
     @property

@@ -87,13 +87,6 @@ SealEvent = namedtuple("SealEvent", 'i s d')
 # used to indicate to get the latest keys available from KEL for 'i'
 SealLast = namedtuple("SealLast", 'i')
 
-# State Establishment Event (latest current) : quadruple (s, d, br, ba)
-# s = sn of latest est event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64  of latest establishment event
-# br = backer (witness) remove list (cuts) from latest est event
-# ba = backer (witness) add list (adds) from latest est event
-StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
-
 # Transaction Event Seal for Transaction Event: duple (s, d)
 # s = sn of transaction event as lowercase hex string  no leading zeros,
 # d = SAID digest qb64 of transaction event
@@ -102,7 +95,16 @@ StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
 # use SealSourceCouples count code for attachment
 SealTrans = namedtuple("SealTrans", 's d')
 
-# not used should this be depricated
+# Following are not seals only used in database
+
+# State Establishment Event (latest current) : quadruple (s, d, br, ba)
+# s = sn of latest est event as lowercase hex string  no leading zeros,
+# d = SAID digest qb64  of latest establishment event
+# br = backer (witness) remove list (cuts) from latest est event
+# ba = backer (witness) add list (adds) from latest est event
+StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
+
+# not used should this be depricated?
 # State Event (latest current) : triple (s, t, d)
 # s = sn of latest event as lowercase hex string  no leading zeros,
 # t = message type of latest event (ilk)

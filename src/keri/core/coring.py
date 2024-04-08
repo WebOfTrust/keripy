@@ -249,6 +249,8 @@ class MapDom:
     Adds support for dunder methods for map syntax dc[name].
     Converts exceptions from attribute syntax to raise map syntax when using
     map syntax.
+
+    Enables dataclass instances to use Mapping item syntax
     """
 
     def __getitem__(self, name):
@@ -279,7 +281,7 @@ class MapCodex:
     Converts exceptions from attribute syntax to raise map syntax when using
     map syntax.
 
-    Enables Mapping item syntas for dataclasses
+    Enables dataclass instances to use Mapping item syntax
     """
 
     def __getitem__(self, name):
@@ -397,12 +399,12 @@ class MatterCodex:
     X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
     X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
     X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
-    X25519_Cipher_QB2_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
-    X25519_Cipher_QB2_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
-    X25519_Cipher_QB2_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
-    X25519_Cipher_QB2_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
-    X25519_Cipher_QB2_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
-    X25519_Cipher_QB2_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+    X25519_Cipher_QB2_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_QB2_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_QB2_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_QB2_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_QB2_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_QB2_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
 
 
     def __iter__(self):
