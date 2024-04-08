@@ -408,6 +408,30 @@ def test_structor():
 
     """End Test"""
 
+def test_seal_dexes():
+    """
+    test Seal Codexes
+    """
+
+    assert asdict(SealClanDex) == \
+    {
+        'SealDigest': SealDigest,
+        'SealRoot': SealRoot,
+        'SealBacker': SealBacker,
+        'SealEvent': SealEvent,
+        'SealLast': SealLast,
+        'SealTrans': SealTrans
+    }
+
+    assert asdict(SealCastDex) == \
+    {
+        'SealDigest': SealDigest(d=Diger),
+        'SealRoot': SealRoot(rd=Diger),
+        'SealBacker': SealBacker(bi=Prefixer, d=Diger),
+        'SealEvent': SealEvent(i=Prefixer, s=Number, d=Diger),
+        'SealLast': SealLast(i=Prefixer),
+        'SealTrans': SealTrans(s=Number, d=Diger)
+    }
 
 def test_sealer_class():
     """
@@ -503,6 +527,7 @@ def test_sealer():
 if __name__ == "__main__":
     test_structor_class()
     test_structor()
+    test_seal_dexes()
     test_sealer_class()
     test_sealer()
 
