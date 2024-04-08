@@ -22,7 +22,8 @@ from keri.core import (Matter, Diger, Prefixer, Number)
 from keri.core import structing
 from keri.core.structing import (SealDigest, SealRoot, SealBacker, SealEvent,
                                  SealLast, SealTrans)
-from keri.core.structing import Structor, EmptyClanDex, EmptyCastDex
+from keri.core.structing import (Structor, EmptyClanDex, EmptyCastDex,
+                                 Sealer, SealClanDex, SealCastDex, )
 
 
 def test_structor_class():
@@ -398,14 +399,112 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
+    # Test no clan and cast or crew as dict
+    with pytest.raises(kering.EmptyMaterialError):
+        structor = Structor(cast=dcast)  # missing crew
 
-
+    with pytest.raises(kering.InvalidValueError):
+        structor = Structor(crew=crew)  # missing cast
 
     """End Test"""
 
 
+def test_sealer_class():
+    """
+    test sealer class variables etc
+    """
+    assert Sealer.Clans == SealClanDex
+    assert Sealer.Casts == SealCastDex
+    assert Sealer.Names == \
+    {
+        ('d',): 'SealDigest',
+        ('rd',): 'SealRoot',
+        ('bi', 'd'): 'SealBacker',
+        ('i', 's', 'd'): 'SealEvent',
+        ('i',): 'SealLast',
+        ('s', 'd'): 'SealTrans'
+    }
+
+    """End Test"""
+
+
+def test_sealer():
+    """
+    test sealer instance
+    """
+
+    with pytest.raises(kering.InvalidValueError):
+        sealer = Sealer()  # test default
+
+
+    aid = 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
+    prefixer = Prefixer(qb64=aid)
+    num = 14
+    number = Number(num=num)
+    snq = number.qb64
+    dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    diger = Diger(qb64=dig)
+
+    # Test with single field namedtuple for data
+
+    data = SealDigest(d=diger)
+    clan = SealDigest
+    cast = SealDigest(d=Diger)
+    crew = SealDigest(d=dig)
+
+    dcast = cast._asdict()
+    dcrew = crew._asdict()
+
+    assert data._fields == SealDigest._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = diger.qb64
+    qb2 = diger.qb2
+
+    # Test data
+    sealer = Sealer(data=data)
+    assert sealer.data == data
+    assert sealer.clan == clan
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.asdict == data._asdict()
+    assert sealer.asdict == {'d': diger}
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
+    # Test no clan but with one or the other of cast and crew as dict or namedtuple
+    sealer = Sealer(crew=crew)  # uses known cast
+    assert sealer.clan == clan
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
+    sealer = Sealer(crew=dcrew)  # uses known cast
+    assert sealer.clan == clan
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
+    # uses known class
+    sealer = Sealer(cast=dcast, crew=dcrew)
+    assert sealer.clan == clan
+    assert sealer.cast == cast  # tuple compare is by field value not type
+    assert sealer.crew == crew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
 if __name__ == "__main__":
     test_structor_class()
     test_structor()
+    test_sealer_class()
+    test_sealer()
+
 
 

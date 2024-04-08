@@ -260,7 +260,7 @@ class Structor:
     Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
 
 
-    def __init__(self, data=None, clan=None, cast=None, crew=None,
+    def __init__(self, data=None, *, clan=None, cast=None, crew=None,
                  qb64=None, qb2=None, strip=False):
         """Initialize instance
 
@@ -288,59 +288,6 @@ class Structor:
                             to extract data fields from front of CESR stream.
 
 
-        if not nonStringIterable(val):  # not iterable
-        val = (val, )  # make iterable
-        return (b''.join(obj.qb64b for obj in val))
-
-
-        if not isinstance(val, bytearray):  # is memoryview or bytes
-            val = bytearray(val)  # convert so may strip
-        return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
-
-        >>> T = namedtuple("a_b_c", ["a", "b", "c"])
-        >>> T
-        <class '__main__.a_b_c'>
-
-
-
-        from collections import namedtuple
-        T = namedtuple("Test", "a b c")
-        issubclass(T, tuple)
-        True
-        hasattr(T, "_fields")
-        True
-        T._fields
-        ('a', 'b', 'c')
-        T.__name__
-        'Test'
-        t = T(a=1, b=2, c=3)
-        t
-        Test(a=1, b=2, c=3)
-        t.__class__
-        <class '__main__.Test'>
-        issubclass(t.__class__, T)
-        True
-
-
-        Test for namedtuple subclass
-
-        issubclass(T, tuple) and hasattr(T, "_fields")
-        T._feilds
-
-        def FuncA(arg: type[CustomClass]):
-
-
-        ba = bytearray(b'abcdefg')
-        mv = memoryview(ba)
-        mv[0:2] == ba[0:2]
-        True
-        b = bytes(ba)
-        b[0:2] == ba[0:2]
-        True
-        b[0:2] == mv[0:2]
-        True
-
-
         """
         if data:
             if not (isinstance(data, tuple) and hasattr(data, "_fields")):
@@ -362,7 +309,6 @@ class Structor:
 
                 if not clan and isinstance(cast, Mapping):  # get clan from cast
                     names = tuple(cast)  # create custom clan based on cast
-                    #if names in self.Clans:  # get known clan and cast
                     if (cname := self.Names.get(names)):  # get known else None
                         clan = self.Clans[cname]
                         cast = self.Casts[cname]
@@ -372,7 +318,6 @@ class Structor:
 
                 if not clan and isinstance(crew, Mapping):  # get clan from crew
                     names = tuple(crew)  # create custom clan based on cast
-                    #if names in self.Clans:  # get known clan and cast
                     if (cname := self.Names.get(names)):  # get known else None
                         clan = self.Clans[cname]
                         cast = self.Casts[cname]
@@ -414,7 +359,6 @@ class Structor:
                         raise InvalidValueError(f"Invalid {cast=}.")
 
             else:  # get cast from known .Casts if possible
-                #if clan._fields in self.Casts:  # same keys for self.Clans
                 if (cname := self.Names.get(clan._fields)):
                     cast = self.Casts[cname]  # get known cast
                 else:  # cast missing or unobtainable
@@ -568,57 +512,85 @@ class Structor:
 
 
 class Sealer(Structor):
-    """Sealer is Structor subclass that holds a KERI namedtuple representation
-    of a KERI seal where its values are CESR primitive instances.
+    """Sealer is Structor subclass each instance holds a namedtuple .data of
+    named values belonging to KERI Seals for anchoring in messages or adding
+    to message attachments.
 
-    Its primitives can be serialized and deserialized as a concatenation of
-    their qb64 or qb2 representations.
-    A Structor can also construct a dict version of its .fields suitable for
-    serialization by using each field name as item key and each named value's
-    qb64 as item value. Structor may have only one field.
+    See Structor class for more details.
 
-    Has the following public properties:
 
-    Properties:
+    Inherited Class Attributes:
+        Clans (type[Namedtuple]): each value is known NamedTuple class keyed
+            by its own field names (tuple). Enables easy query of its values() to
+            find known data types given field names tuple.
+
+        Casts (NamedTuple): each value is primitive class of cast keyed by fields
+            names of the associated NamedTuple class in .Clans. Enables finding
+            known primitive classes given NamedTuple class of clan or instance
+            of cast or crew.
+
+    When known casts or provided in .Clans/.Casts then more flexible creation
+    is supported for different types of provided cast and crew.
+    When no clan is provided and an unknown cast and/or crew are provided as
+    Mappings then Structor may create custom clan from the names given by the
+    cast and/or crew keys(). Subclasses may override this behavior by raising
+    an exception for unknown or custom clans.
+
+
+    Inherited Properties:
+        data (NamedTuple): fields are named instances of CESR primitives
+        clan (type[NamedTuple]): class reference of .data's class
+        cast (NamedTuple): CESR primitive class references of .data's primitive
+                           instances
+        crew (NamedTuple): named qb64 values of .data's primitive instances
+        qb64 (str): concatenated data values as qb64 str of data's primitives
+        qb64b (bytes): concatenated data values as qb64b  of data's primitives
+        qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
 
 
     Methods:
 
 
     Hidden:
-
+        _data (NamedTuple): named CESR primitive instances
 
 
     """
+    Clans = SealClanDex  # known namedtuple clans. Override in subclass with non-empty
+    Casts = SealCastDex  # known namedtuple casts. Override in subclass with non-empty
+    # Create .Names dict that maps clan/cast fields names to its namedtuple
+    # class type name so can look up a know clan or cast given a matching set
+    # of either field names from a namedtuple or keys from a dict.
+    Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
 
-    def __init__(self, fields):
+
+    def __init__(self, *pa, **kwa):
         """Initialize instance
 
 
-        Parameters:
-            stream (bytes | bytearray): sniffable CESR stream
-
-
-        """
-        self._stream = bytes(stream)
-
-
-    @property
-    def qb64(self):
-        """
-        """
-        return
-
-    @property
-    def qb2(self):
-        """
-
-        """
-        return
-
-    @property
-    def asdict(self):
-        """
+        Inherited Parameters:
+            data (NamedTuple): fields are named primitive instances for .data
+                Given data can derive clan, cast, crew, qb64, and qb2
+            clan (type[NamedTuple]): provides class reference for generated .data
+                when data missing.
+            cast (NamedTuple | dict | Iterable): each value provides CESR
+                primitive subclass reference used to create primitive instances
+                for generating .data. Can be used to infer namedtuple type of
+                .data when data and clan missing. Takes precendence over crew.
+            crew (NamedTuple | dict | Iterable): each value provides qb64 value
+                of primitive for generating .data with .cast when data missing.
+                Can be used to infer namedtuple type of .data when data and clan
+                missing.
+            qb64 (str | bytes | bytearray): concatenation of qb64 data values to
+                generate .data with data and crew missing.
+            qb2 (bytes | bytearray): concatenation of qb2 data values to generate
+                .data when data and crew and qb64 missing.
+            strip (bool): False means do not strip each value from qb64 or qb2.
+                            Default is False.
+                          True means if qb64 or qb2 are bytearray then strip
+                            contained concatenated data values. Enables parser
+                            to extract data fields from front of CESR stream.
 
         """
-        return
+
+        super(Sealer, self).__init__(*pa, **kwa)
