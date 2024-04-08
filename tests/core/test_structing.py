@@ -95,6 +95,26 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
+    structor = Structor(cast=cast, qb64=qb64.encode(), strip=True)
+    #assert structor.data == data  # not same diger object so no ==
+    assert structor.clan == clan
+    assert structor.cast == cast
+    # assert structor.asdict == {'d': diger} # not same diger object so no ==
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    ba = bytearray(qb64.encode())
+    structor = Structor(cast=cast, qb64=ba, strip=True)
+    #assert structor.data == data  # not same diger object so no ==
+    assert structor.clan == clan
+    assert structor.cast == cast
+    # assert structor.asdict == {'d': diger} # not same diger object so no ==
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert not ba  # stripped so empty
+
     structor = Structor(cast=cast, qb2=qb2)
     #assert structor.data == data  # not same diger object so no ==
     assert structor.clan == clan
@@ -103,6 +123,26 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb2=qb2, strip=True)
+    #assert structor.data == data  # not same diger object so no ==
+    assert structor.clan == clan
+    assert structor.cast == cast
+    # assert structor.asdict == {'d': diger} # not same diger object so no ==
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    ba = bytearray(qb2)
+    structor = Structor(cast=cast, qb2=ba, strip=True)
+    #assert structor.data == data  # not same diger object so no ==
+    assert structor.clan == clan
+    assert structor.cast == cast
+    # assert structor.asdict == {'d': diger} # not same diger object so no ==
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert not ba  # stripped so empty
 
     # Test clan and cast
     structor = Structor(clan=clan, cast=cast, crew=crew)
