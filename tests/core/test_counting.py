@@ -1242,8 +1242,6 @@ def test_counter_v2():
 
 if __name__ == "__main__":
     test_genus_codex()
-    test_mapdom()
-    test_mapcodex()
     test_codexes_tags()
     test_counter_class()
     test_counter_v1()
