@@ -139,21 +139,6 @@ class Structor:
         _data (NamedTuple): named CESR primitive instances
 
 
-    if not nonStringIterable(val):  # not iterable
-        val = (val, )  # make iterable
-    return (b''.join(obj.qb64b for obj in val))
-
-
-    if not isinstance(val, bytearray):  # is memoryview or bytes
-        val = bytearray(val)  # convert so may strip
-    return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
-
-    >>> T = namedtuple("a_b_c", ["a", "b", "c"])
-    >>> T
-        <class '__main__.a_b_c'>
-
-
-
     """
     Clans = {}  # each value is known namedtuple class keyed by own fields (tuple)
     Casts = {}  # each value is cast primitive class for its .Clans keyed by fields
@@ -187,6 +172,21 @@ class Structor:
                             to extract data fields from front of CESR stream.
 
 
+        if not nonStringIterable(val):  # not iterable
+        val = (val, )  # make iterable
+        return (b''.join(obj.qb64b for obj in val))
+
+
+        if not isinstance(val, bytearray):  # is memoryview or bytes
+            val = bytearray(val)  # convert so may strip
+        return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
+
+        >>> T = namedtuple("a_b_c", ["a", "b", "c"])
+        >>> T
+        <class '__main__.a_b_c'>
+
+
+
         from collections import namedtuple
         T = namedtuple("Test", "a b c")
         issubclass(T, tuple)
@@ -213,14 +213,26 @@ class Structor:
 
         def FuncA(arg: type[CustomClass]):
 
+
+        ba = bytearray(b'abcdefg')
+        mv = memoryview(ba)
+        mv[0:2] == ba[0:2]
+        True
+        b = bytes(ba)
+        b[0:2] == ba[0:2]
+        True
+        b[0:2] == mv[0:2]
+        True
+
+
         """
         if data:
             if not (isinstance(data, tuple) and hasattr(data, "_fields")):
                 raise InvalidValueError(f"Not namedtuple subclass {data=}.")
 
-            for val in data:  # check for primitive interface
-                if not (hasattr(val, "qb64") and hasattr(val, "qb2")):
-                    raise InvalidValueError(f"Non-primitive data member={val}.")
+            for pi in data:  # check for primitive interface
+                if not (hasattr(pi, "qb64") and hasattr(pi, "qb2")):
+                    raise InvalidValueError(f"Non-primitive data member={pi}.")
 
 
         else:
@@ -326,24 +338,38 @@ class Structor:
                 if hasattr(qb64, "encode"):
                     qb64 = qb64.encode()
 
+                if strip:
+                    if not isinstance(qb64, bytearray):
+                        qb64 = bytearray(qb64)
 
+                    data = clan(*(klas(qb64b=qb64, strip=strip) for klas in cast))
 
-
-                # if strip then make bytearray if not and strip
-
-                if not isinstance(qb64, bytearray):
-                    qb64 = bytearray(qb64)
-
-                data = clan(*(klas(qb64=qb64, strip=strip) for klas in cast))
-
-                # if not strip then must count and offset qb64
-                #data = clan(*(klas(qb64=qb64, strip=strip) for klas in cast))
+                else:
+                    o = 0  # offset into memoryview of qb64
+                    pis = []  # primitive instances
+                    mv = memoryview(qb64)
+                    for klas in cast:
+                        pi = klas(qb64b=mv[o:])
+                        pis.append(pi)
+                        o += len(pi.qb64b)
+                    data = clan(*pis)
 
             elif qb2:
-                if not isinstance(qb2, bytearray):
-                    qb64 = bytearray(qb2)
+                if strip:
+                    if not isinstance(qb2, bytearray):
+                        qb2 = bytearray(qb2)
 
-                data = clan(*(klas(qb2=qb2, strip=strip) for klas in cast))
+                    data = clan(*(klas(qb2=qb2, strip=strip) for klas in cast))
+
+                else:
+                    o = 0  # offset into memoryview of qb2
+                    pis = []  # primitive instances
+                    mv = memoryview(qb2)
+                    for klas in cast:
+                        pi = klas(qb2=mv[o:])
+                        pis.append(pi)
+                        o += len(pi.qb2)
+                    data = clan(*pis)
 
             else:
                 raise EmptyMaterialError("Need crew or qb64 or qb2.")
