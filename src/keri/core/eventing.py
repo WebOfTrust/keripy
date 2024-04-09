@@ -4198,6 +4198,8 @@ class Kevery:
         aid = cid  # authorizing attribution id
         keys = (aid, role, eid)
         osaider = self.db.eans.get(keys=keys)  # get old said if any
+        if osaider is not None and osaider.qb64b == saider.qb64b: # check idempotent
+            osaider = None
         # BADA Logic
         accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
                                         aid=aid, osaider=osaider, cigars=cigars,
