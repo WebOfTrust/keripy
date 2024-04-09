@@ -114,7 +114,7 @@ def migrate(tymth, tock=0.0, **opts):
                 # ksr = stateFromKever(kever)
                 rgy.states.pin(sad['i'], val=rsr)
 
-            for (said,), _ in rgy.creds.getItemIter():
+            for (said,), _ in rgy.saved.getItemIter():
                 snkey = dbing.snKey(said, 0)
                 dig = rgy.getTel(key=snkey)
 
@@ -151,7 +151,8 @@ def migrateKeys(db):
     for pre, fn, dig in db.getFelItemAllPreIter(key=b''):
         dgkey = dbing.dgKey(pre, dig)  # get message
         if not (raw := db.getEvt(key=dgkey)):
-            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+            print(f"Migrate keys: missing event for dig={dig}, skipped.")
+            continue
         serder = serdering.SerderKERI(raw=bytes(raw))
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
         verfers = serder.verfers or []
