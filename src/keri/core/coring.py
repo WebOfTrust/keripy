@@ -242,6 +242,70 @@ Tierage = namedtuple("Tierage", 'low med high')
 Tiers = Tierage(low='low', med='med', high='high')
 
 
+
+@dataclass
+class MapDom:
+    """Base class for dataclasses that support map syntax
+    Adds support for dunder methods for map syntax dc[name].
+    Converts exceptions from attribute syntax to raise map syntax when using
+    map syntax.
+
+    Enables dataclass instances to use Mapping item syntax
+    """
+
+    def __getitem__(self, name):
+        try:
+            return getattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __setitem__(self, name, value):
+        try:
+            return setattr(self, name, value)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __delitem__(self, name):
+        try:
+            return delattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+@dataclass(frozen=True)
+class MapCodex:
+    """Base class for frozen dataclasses (codexes) that support map syntax
+    Adds support for dunder methods for map syntax dc[name].
+    Converts exceptions from attribute syntax to raise map syntax when using
+    map syntax.
+
+    Enables dataclass instances to use Mapping item syntax
+    """
+
+    def __getitem__(self, name):
+        try:
+            return getattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __setitem__(self, name, value):
+        try:
+            return setattr(self, name, value)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+    def __delitem__(self, name):
+        try:
+            return delattr(self, name)
+        except AttributeError as ex:
+            raise IndexError(ex.args) from ex
+
+
+
 @dataclass(frozen=True)
 class MatterCodex:
     """
@@ -335,12 +399,12 @@ class MatterCodex:
     X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
     X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
     X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
-    X25519_Cipher_QB2_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
-    X25519_Cipher_QB2_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
-    X25519_Cipher_QB2_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
-    X25519_Cipher_QB2_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
-    X25519_Cipher_QB2_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
-    X25519_Cipher_QB2_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+    X25519_Cipher_QB2_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_QB2_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_QB2_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_QB2_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_QB2_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_QB2_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
 
 
     def __iter__(self):
@@ -1336,19 +1400,23 @@ class Matter:
 
     def _exfil(self, qb64b):
         """
-        Extracts self.code and self.raw from qualified base64 str or bytes qb64b
-        Detects is str and converts to bytes
+        Extracts self.code and self.raw from qualified base64 qb64b of type
+        str or bytes or bytearray or memoryview
+
+        Detects if str and converts to bytes
 
         Parameters:
-            qb64b (str | bytes | bytearray): fully qualified base64 from stream
+            qb64b (str | bytes | bytearray | memoryview): fully qualified base64 from stream
 
         """
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material.")
 
         first = qb64b[:1]  # extract first char code selector
+        if isinstance(first, memoryview):
+            first = bytes(first)
         if hasattr(first, "decode"):
-            first = first.decode("utf-8")
+            first = first.decode()  # converts bytes/bytearray to str
         if first not in self.Hards:
             if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
@@ -1364,8 +1432,10 @@ class Matter:
             raise ShortageError(f"Need {hs - len(qb64b)} more characters.")
 
         hard = qb64b[:hs]  # extract hard code
+        if isinstance(hard, memoryview):
+            hard = bytes(hard)
         if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")  # converts bytes/bytearray to str
+            hard = hard.decode()  # converts bytes/bytearray to str
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -1376,8 +1446,10 @@ class Matter:
         # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
 
         soft = qb64b[hs:hs + ss]  # extract soft chars, empty when ss==0
+        if isinstance(soft, memoryview):
+            soft = bytes(soft)
         if hasattr(soft, "decode"):
-            soft = soft.decode("utf-8")
+            soft = soft.decode()  # converts bytes/bytearray to str
 
         if not fs:  # compute fs from soft from ss part which provides size B64
             # compute variable size as int may have value 0
@@ -1387,8 +1459,10 @@ class Matter:
             raise ShortageError(f"Need {fs - len(qb64b)} more chars.")
 
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+        if isinstance(qb64b, memoryview):
+            qb64b = bytes(qb64b)
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
-            qb64b = qb64b.encode("utf-8")
+            qb64b = qb64b.encode()  # converts str to bytes
 
         # check for non-zeroed pad bits and/or lead bytes
         # net prepad ps == cs % 4 (remainer).  Assumes ps != 3 i.e ps in (0,1,2)
@@ -1407,8 +1481,8 @@ class Matter:
         if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
 
-        self._code = hard  # hard only
-        self._soft = soft  # soft only
+        self._code = hard  # hard only str
+        self._soft = soft  # soft only str
         self._raw = raw  # ensure bytes for crypto ops, may be empty
 
 
@@ -1417,7 +1491,7 @@ class Matter:
         Extracts self.code and self.raw from qualified base2 qb2
 
         Parameters:
-            qb2 (bytes | bytearray): fully qualified base2 from stream
+            qb2 (bytes | bytearray | memoryview): fully qualified base2 from stream
         """
         if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more bytes.")

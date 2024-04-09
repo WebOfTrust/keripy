@@ -354,7 +354,7 @@ def nabSextets(b, l):
     b is bytes or str
     """
     if hasattr(b, 'encode'):
-        b = b.encode("utf-8")  # convert to bytes
+        b = b.encode()  # convert to bytes
     n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))

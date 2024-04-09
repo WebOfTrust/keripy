@@ -5,6 +5,7 @@ tests.vc.proving module
 """
 import pytest
 
+from keri import kering
 from keri.app import habbing
 from keri.core import coring, scheming, parsing, serdering, indexing
 from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger
@@ -109,7 +110,7 @@ def test_proving(mockHelpingNowIso8601):
 def test_credentialer():
     """Test SerderACDC as credential"""
 
-    with pytest.raises(ValueError):
+    with pytest.raises(kering.InvalidValueError):
         serdering.SerderACDC()  # Creder()
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
