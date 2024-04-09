@@ -8,14 +8,18 @@ import os
 import pytest
 from hio.help import decking
 
-from keri.app import habbing
+
 from keri.kering import ValidationError
-from keri.core import parsing, coring
-from keri.core.coring import (CtrDex, Counter, Signer, Salter)
-from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
-from keri.db.basing import openDB
 
 from keri import help
+
+from keri import core
+from keri.core import parsing, coring
+from keri.core.coring import (CtrDex, Counter,)
+from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
+
+from keri.db.basing import openDB
+from keri.app import habbing
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -29,7 +33,7 @@ def test_parser():
 
     #  create signers
     raw = b"ABCDEFGH01234567"
-    signers = Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
         event_digs = []  # list of event digs in sequence

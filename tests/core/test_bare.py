@@ -8,12 +8,16 @@ routes:
 """
 from keri import kering
 
+from keri import help
+
+from keri import core
 from keri.core import eventing
-from keri.core.coring import MtrDex, Salter, Diger
+
+from keri.core.coring import MtrDex, Diger
 
 from keri.core.eventing import (SealEvent, messagize)
 
-from keri import help
+
 
 logger = help.ogler.getLogger()
 
@@ -45,7 +49,7 @@ def test_bare():
     # use same salter for all but different path
     # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = Salter(raw=raw)
+    salter = core.Salter(raw=raw)
 
     # create transferable key pair for controller of service endpoint designation
     signerC = salter.signer(path="C", temp=True)

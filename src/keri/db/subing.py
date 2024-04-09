@@ -43,6 +43,7 @@ from collections.abc import Iterable, Iterator
 
 from .. import help
 from ..help.helping import nonStringIterable
+from .. import core
 from ..core import coring, scheming, serdering
 from . import dbing
 
@@ -855,16 +856,16 @@ class SignerSuber(CesrSuber):
     Signer instance to have its .transferable property set correctly.
     """
 
-    def __init__(self, *pa, klas: Type[coring.Signer] = coring.Signer, **kwa):
+    def __init__(self, *pa, klas: Type[core.Signer] = core.Signer, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
-        if not (issubclass(klas, coring.Signer)):
+        if not (issubclass(klas, core.Signer)):
             raise ValueError("Invalid klas type={}, expected {}."
-                             "".format(klas, coring.Signer))
+                             "".format(klas, core.Signer))
         super(SignerSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
@@ -933,7 +934,7 @@ class CryptSignerSuber(SignerSuber):
     """
 
     def put(self, keys: Union[str, Iterable], val: coring.Matter,
-            encrypter: coring.Encrypter = None):
+            encrypter: core.Encrypter = None):
         """
         Puts qb64 of Matter instance val at key made from keys. Does not overwrite
         If encrypter provided then encrypts first
@@ -941,7 +942,7 @@ class CryptSignerSuber(SignerSuber):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Signer): instance of self.klas
-            encrypter (coring.Encrypter): optional
+            encrypter (core.Encrypter): optional
 
         Returns:
             result (bool): True If successful, False otherwise, such as key
@@ -955,7 +956,7 @@ class CryptSignerSuber(SignerSuber):
 
 
     def pin(self, keys: Union[str, Iterable], val: coring.Matter,
-            encrypter: coring.Encrypter = None):
+            encrypter: core.Encrypter = None):
         """
         Pins (sets) qb64 of Matter instance val at key made from keys. Overwrites.
         If encrypter provided then encrypts first
@@ -963,7 +964,7 @@ class CryptSignerSuber(SignerSuber):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Signer): instance of self.klas
-            encrypter (coring.Encrypter): optional
+            encrypter (core.Encrypter): optional
 
         Returns:
             result (bool): True If successful. False otherwise.
@@ -976,7 +977,7 @@ class CryptSignerSuber(SignerSuber):
 
 
 
-    def get(self, keys: Union[str, Iterable], decrypter: coring.Decrypter = None):
+    def get(self, keys: Union[str, Iterable], decrypter: core.Decrypter = None):
         """
         Gets Signer instance at keys. If decrypter then assumes value in db was
         encrypted and so decrypts value in db before converting to Signer.
@@ -990,7 +991,7 @@ class CryptSignerSuber(SignerSuber):
             keys (Union[str, iterable]): key strs to be combined in order to
                 form key. Last element of keys is verkey used to determin
                 .transferable for Signer
-            decrypter (coring.Decrypter): optional. If provided assumes value in
+            decrypter (core.Decrypter): optional. If provided assumes value in
                 db was encrypted and so decrypts before converting to Signer.
 
         Usage:
@@ -1014,7 +1015,7 @@ class CryptSignerSuber(SignerSuber):
 
 
     def getItemIter(self, keys: Union[str, Iterable]=b"",
-                       decrypter: coring.Decrypter = None):
+                       decrypter: core.Decrypter = None):
         """
         Returns:
             iterator (Iterator): of tuples (key, val) over the all the items in
@@ -1022,7 +1023,7 @@ class CryptSignerSuber(SignerSuber):
             prefix to return branches of key space. When keys is empty then
             returns all items in subdb
 
-        decrypter (coring.Decrypter): optional. If provided assumes value in
+        decrypter (core.Decrypter): optional. If provided assumes value in
                 db was encrypted and so decrypts before converting to Signer.
 
         Parameters:

@@ -6,8 +6,12 @@ Test key state notification reply messages
 routes: /ksn
 
 """
+
+from keri import core
+from keri.core import eventing, parsing, routing, serdering
+
 from keri.app import habbing
-from keri.core import coring, eventing, parsing, routing, serdering
+
 
 
 def test_keystate(mockHelpingNowUTC):
@@ -53,11 +57,11 @@ def test_keystate(mockHelpingNowUTC):
 
     """
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = coring.Salter(raw=raw)
+    salter = core.Salter(raw=raw)
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
-    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
 
     # Bob is the controller
     # Wes is his witness

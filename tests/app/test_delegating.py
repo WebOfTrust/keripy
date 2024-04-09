@@ -7,15 +7,19 @@ import time
 from hio.base import doing, tyming
 
 from keri import kering
-from keri.app import habbing, delegating, indirecting, agenting, notifying
+
+from keri import core
 from keri.core import eventing, parsing, coring
+
+from keri.app import habbing, delegating, indirecting, agenting, notifying
+
 from keri.db import dbing
 
 
 def test_anchorer(seeder):
-    with habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
-            habbing.openHby(name="del", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
+    with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
+            habbing.openHby(name="del", salt=core.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
         witDoer = agenting.Receiptor(hby=palHby)

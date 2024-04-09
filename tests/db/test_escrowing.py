@@ -4,8 +4,12 @@ tests.db.escrowing module
 
 """
 from keri import kering
-from keri.app import habbing
+
+from keri import core
 from keri.core import coring, eventing, serdering
+
+from keri.app import habbing
+
 from keri.core.eventing import SealEvent
 from keri.db import escrowing, dbing, subing
 from keri.help import helping
@@ -27,7 +31,7 @@ def test_broker():
 
 def test_broker_nontrans():
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = coring.Salter(raw=raw)
+    salter = core.Salter(raw=raw)
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 

@@ -2,11 +2,15 @@
 
 import os
 
-from keri.core.coring import Salter, MtrDex
-from keri.core.coring import Seqner
-from keri.app.keeping import Manager, openKS
+from keri import core
 from keri.core import  eventing, parsing
+from keri.core import MtrDex
+from keri.core.coring import Seqner
+
 from keri.core.eventing import (incept, rotate, interact, messagize, SealEvent, receipt)
+
+from keri.app.keeping import Manager, openKS
+
 from keri.db.dbing import dgKey, snKey
 from keri.db.basing import  openDB
 
@@ -24,10 +28,10 @@ def test_direct_mode_with_manager():
     # but goes both ways once initiated.
 
     # set of secrets  (seeds for private keys)
-    coeSalt = Salter(raw=b'0123456789abcdea').qb64
+    coeSalt = core.Salter(raw=b'0123456789abcdea').qb64
 
     # set of secrets (seeds for private keys)
-    valSalt = Salter(raw=b'1123456789abcdea').qb64
+    valSalt = core.Salter(raw=b'1123456789abcdea').qb64
 
 
     with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger, \

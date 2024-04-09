@@ -12,11 +12,12 @@ import pytest
 from keri import kering
 from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
+from keri import core
+from keri.core import Signer
 from keri.core import coring, eventing, parsing, serdering
 from keri.core.coring import (Diger, MtrDex, Matter,
-                              CtrDex, Counter, Salter, Cigar,
-                              Seqner, Verfer, Signer, Prefixer,
-                              generateSigners,  DigDex)
+                              CtrDex, Counter, Cigar,
+                              Seqner, Verfer, Prefixer, DigDex)
 from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
@@ -1521,7 +1522,7 @@ def test_state(mockHelpingNowUTC):
     # use same salter for all but different path
     # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = Salter(raw=raw)
+    salter = core.Salter(raw=raw)
 
     # State NonDelegated (key state notification)
     # create transferable key pair for controller of KEL
@@ -1802,7 +1803,7 @@ def test_messagize():
     """
     Test messagize utility function
     """
-    salter = Salter(raw=b'0123456789abcdef')
+    salter = core.Salter(raw=b'0123456789abcdef')
     with openDB(name="edy") as db, openKS(name="edy") as ks:
         # Init key pair manager
         mgr = Manager(ks=ks, salt=salter.qb64)
@@ -2063,7 +2064,7 @@ def test_kever(mockHelpingNowUTC):
     with openDB() as db:  # Transferable case
         # Setup inception key event dict
         raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-        salter = Salter(raw=raw)
+        salter = core.Salter(raw=raw)
         # create current key
         sith = 1  # one signer
         #  original signing keypair transferable default
@@ -2146,7 +2147,7 @@ def test_kever(mockHelpingNowUTC):
         # test exposeds
         raw = b"raw salt to test"
         #  create signers with verfers
-        signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+        signers = core.Salter(raw=raw).signers(count=3, path="next", temp=True)
 
         # create something to sign
         ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -2452,7 +2453,7 @@ def test_keyeventsequence_0():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(raw=salt, count=8, transferable=True)
+    signers = core.generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2722,7 +2723,7 @@ def test_keyeventsequence_1():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(raw=salt, count=8, transferable=True)
+    signers = core.generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2819,7 +2820,7 @@ def test_multisig_digprefix():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(raw=salt, count=8, transferable=True)
+    signers = core.generateSigners(raw=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2973,7 +2974,7 @@ def test_recovery():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = generateSigners(raw=salt, count=8, transferable=True)
+    signers = core.generateSigners(raw=salt, count=8, transferable=True)
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = []  # list of event digs in sequence to verify against database
@@ -3204,7 +3205,7 @@ def test_receipt():
     """
 
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=raw)
+    salter = core.Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -3501,7 +3502,7 @@ def test_direct_mode():
     #  but goes both ways once initiated.
 
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=raw)
+    salter = core.Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -3967,7 +3968,7 @@ def test_direct_mode_cbor_mgpk():
     #  but goes both ways once initiated.
 
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=raw)
+    salter = core.Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -4731,7 +4732,7 @@ def test_reload_kever(mockHelpingNowUTC):
     Test reload Kever from keystate state message
     """
 
-    with habbing.openHby(name="nat", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as natHby:
+    with habbing.openHby(name="nat", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as natHby:
         # setup Nat's habitat using default salt multisig already incepts
         natHab = natHby.makeHab(name="nat", isith='2', icount=3)
         assert natHab.name == 'nat'
@@ -4800,10 +4801,10 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 def test_load_event(mockHelpingNowUTC):
-    with habbing.openHby(name="tor", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as torHby, \
-         habbing.openHby(name="wil", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wilHby, \
-         habbing.openHby(name="wan", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wanHby, \
-         habbing.openHby(name="tee", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as teeHby:
+    with habbing.openHby(name="tor", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as torHby, \
+         habbing.openHby(name="wil", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as wilHby, \
+         habbing.openHby(name="wan", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as wanHby, \
+         habbing.openHby(name="tee", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as teeHby:
 
         wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
         torKvy = Kevery(db=torHby.db, lax=False, local=False)

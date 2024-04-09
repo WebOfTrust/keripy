@@ -7,9 +7,12 @@ tests.core.test_eventing module
 from hio.help import decking
 
 from keri import help
-from keri.app import habbing
-from keri.core import parsing, coring, serdering
+
+from keri import core
+from keri.core import parsing, coring
 from keri.peer import exchanging
+from keri.app import habbing
+
 
 logger = help.ogler.getLogger()
 
@@ -27,8 +30,8 @@ def test_pathed_material(mockHelpingNowUTC):
             self.msgs.append(serder)
             self.atcs.append(attachments)
 
-    with (habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby,
-          habbing.openHby(name="deb", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as debHby):
+    with (habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby,
+          habbing.openHby(name="deb", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as debHby):
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         palHab = hby.makeHab(name="pal")
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3)

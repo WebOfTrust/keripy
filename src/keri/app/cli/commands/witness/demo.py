@@ -11,9 +11,12 @@ import logging
 
 from hio.base import doing
 
-from keri.app import habbing, indirecting, configing
-from keri.core.coring import Salter
 from keri import help
+
+from keri.app import habbing, indirecting, configing
+
+from keri.core import Salter
+
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
 parser.set_defaults(handler=lambda args: demo(args))
@@ -57,7 +60,7 @@ class InitDoer(doing.DoDoer):
         self.wit = wit
         self.wub = wub
         self.wyz = wyz
-        
+
         super(InitDoer, self).__init__(doers=[doing.doify(self.initialize)])
 
     def initialize(self, tymth, tock=0.0):

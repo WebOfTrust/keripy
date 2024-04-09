@@ -3,11 +3,13 @@
 tests.app.signing module
 
 """
+from keri import core
+from keri.core import coring, parsing, eventing
+from keri.core.eventing import SealEvent
 
 from keri.app import habbing, configing, keeping
 from keri.app import signing
-from keri.core import coring, parsing, eventing
-from keri.core.eventing import SealEvent
+
 from keri.db import basing
 from keri.vc import proving
 from keri.vdr import verifying, credentialing
@@ -126,7 +128,7 @@ def test_sad_signature(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
     # Test multisig identifier
     with configing.openCF(name="mel", base="mel", temp=True) as cf, \
-            habbing.openHby(name="mel", temp=True, salt=coring.Salter(raw=b'0123456789abcdef').qb64b,
+            habbing.openHby(name="mel", temp=True, salt=core.Salter(raw=b'0123456789abcdef').qb64b,
                             base="mel", cf=cf) as hby:
         hab = hby.makeHab(name="mel", icount=3, isith='3', ncount=3, nsith='3')
         seeder.seedSchema(hby.db)
@@ -176,8 +178,8 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
     seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
              b'\x98Y\xdd\xe8')
 
-    signer0 = coring.Signer(raw=seed, transferable=True)  # original signing keypair non transferable
-    signer1 = coring.Signer(raw=seed1)  # next signing keypair transferable is default
+    signer0 = core.Signer(raw=seed, transferable=True)  # original signing keypair non transferable
+    signer1 = core.Signer(raw=seed1)  # next signing keypair transferable is default
     keys0 = [signer0.verfer.qb64]
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     serder = eventing.incept(keys=keys0, ndigs=nxt1, code=coring.MtrDex.Blake3_256, intive=True)
@@ -313,7 +315,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
 
 
 def test_signatory():
-    salt = coring.Salter(raw=b'0123456789abcdef')  # init sig Salter
+    salt = core.Salter(raw=b'0123456789abcdef')  # init sig Salter
 
     with basing.openDB(name="sig") as db, keeping.openKS(name="sig") as ks, \
             habbing.openHab(name="sig", salt=salt.raw) as (sigHby, sigHab):

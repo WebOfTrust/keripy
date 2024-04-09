@@ -7,13 +7,19 @@ import argparse
 import getpass
 
 from hio import help
+
 from hio.base import doing
 
-from keri.app.cli.common import existing
-from keri.core import coring
 from keri.kering import ConfigurationError
 
-logger = help.ogler.getLogger()
+from keri import core
+from keri.core import coring
+
+from keri.app.cli.common import existing
+
+
+
+logger = help.ogler.getLogger()  # I think this should be keri.help not hio.help
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
 parser.set_defaults(handler=lambda args: set_passcode(args),
@@ -61,7 +67,7 @@ def set_passcode(tymth, tock=0.0, **opts):
                         break
 
             bran = coring.MtrDex.Salt_128 + newpasscode[:22]  # qb64 salt for seed
-            signer = coring.Salter(qb64=bran).signer(transferable=False,
+            signer = core.Salter(qb64=bran).signer(transferable=False,
                                                      temp=False)
             seed = signer.qb64
             aeid = signer.verfer.qb64

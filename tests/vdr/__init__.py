@@ -2,7 +2,10 @@
 """
 Test utilities for vdr
 """
-from keri.core import coring
+
+from keri import core
+
+from keri import app
 from keri.app import habbing
 
 def buildHab(db, ks, name="test"):
@@ -15,7 +18,7 @@ def buildHab(db, ks, name="test"):
 
     #  create secrecies
     secrecies = [[signer.qb64] for signer in
-                    coring.Salter(raw=raw).signers(count=8,
+                    core.Salter(raw=raw).signers(count=8,
                                                    path="name",
                                                    temp=True)]
 

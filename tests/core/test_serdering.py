@@ -18,7 +18,7 @@ from keri.kering import (Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN,)
 
-from keri.core import coring
+from keri import core
 
 from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
@@ -451,7 +451,7 @@ def test_serder():
     # Test with non-digestive code for 'i' saidive field no sad
     serder = Serder(makify=True,
                     ilk=kering.Ilks.icp,
-                    saids = {'i': coring.PreDex.Ed25519},
+                    saids = {'i': core.PreDex.Ed25519},
                     verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
@@ -892,7 +892,7 @@ def test_serderkeri_icp():
     # Test with non-digestive code for 'i' saidive field no sad
     serder = SerderKERI(makify=True,
                     ilk=kering.Ilks.icp,
-                    saids = {'i': coring.PreDex.Ed25519},
+                    saids = {'i': core.PreDex.Ed25519},
                     verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
@@ -1391,7 +1391,7 @@ def test_serderkeri_dip():
     # Test with non-digestive code for 'i' saidive field no sad
     serder = SerderKERI(makify=True,
                     ilk=kering.Ilks.dip,
-                    saids = {'i': coring.PreDex.Ed25519},
+                    saids = {'i': core.PreDex.Ed25519},
                     verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000ab_',
@@ -1449,7 +1449,7 @@ def test_serderkeri_dip():
 
     serder = SerderKERI(sad=sad,
                         makify=True,
-                        saids = {'i': coring.PreDex.Blake3_256})
+                        saids = {'i': core.PreDex.Blake3_256})
 
     assert serder.sad == {'v': 'KERI10JSON000103_',
                         't': 'dip',
@@ -2647,10 +2647,10 @@ def test_cesr_native_dumps():
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = coring.Salter(raw=raw)
+    salter = core.Salter(raw=raw)
 
-    csigners = coring.generateSigners(raw=salter.raw, count=3)
-    wsigners = coring.generateSigners(raw=salter.raw, count=3, transferable=False)
+    csigners = core.generateSigners(raw=salter.raw, count=3)
+    wsigners = core.generateSigners(raw=salter.raw, count=3, transferable=False)
 
 
     keys = ["EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"]

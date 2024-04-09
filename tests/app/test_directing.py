@@ -11,8 +11,11 @@ from hio.base import doing
 from hio.core.tcp import clienting, serving
 
 from keri import help  # logger support
-from keri.app import habbing, directing
+from keri import core
 from keri.core import eventing, coring
+
+from keri.app import habbing, directing
+
 from keri.demo import demoing
 
 
@@ -25,7 +28,7 @@ def test_directing_basic():
     raw = b"raw salt to test"
 
     #  create bob signers and secrecies
-    bobSigners = coring.Salter(raw=raw).signers(count=8, path="bob", temp=True)
+    bobSigners = core.Salter(raw=raw).signers(count=8, path="bob", temp=True)
     bobSecrecies = [[signer.qb64] for signer in bobSigners]
 
     # bob inception transferable (nxt digest not empty)
@@ -38,7 +41,7 @@ def test_directing_basic():
 
 
     #  create eve signers and secrecies
-    eveSigners = coring.Salter(raw=raw).signers(count=8, path="eve", temp=True)
+    eveSigners = core.Salter(raw=raw).signers(count=8, path="eve", temp=True)
     eveSecrecies = [[signer.qb64] for signer in eveSigners]
 
     # eve inception transferable (nxt digest not empty)
@@ -172,7 +175,7 @@ def test_runcontroller_demo():
 
     #  create secrecies
     secrecies = [[signer.qb64] for signer in
-                 coring.Salter(raw=raw).signers(count=8,
+                 core.Salter(raw=raw).signers(count=8,
                                                 path=name,
                                                 temp=True)]
 

@@ -30,6 +30,7 @@ import pysodium
 from hio.base import doing
 
 from .. import kering
+from .. import core
 from ..core import coring
 from ..db import dbing, subing, koming
 from ..help import helping
@@ -267,10 +268,10 @@ class Keeper(dbing.LMDBer):
         self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
         self.prxs = subing.CesrSuber(db=self,
                                      subkey='prxs.',
-                                     klas=coring.Cipher)
+                                     klas=core.Cipher)
         self.nxts = subing.CesrSuber(db=self,
                                      subkey='nxts.',
-                                     klas=coring.Cipher)
+                                     klas=core.Cipher)
         self.smids = subing.CatCesrIoSetSuber(db=self,
                                               subkey='smids.',
                                               klas=(coring.Prefixer, coring.Seqner))
@@ -444,7 +445,7 @@ class RandyCreator(Creator):
             codes = [code for i in range(count)]
 
         for code in codes:
-            signers.append(coring.Signer(code=code, transferable=transferable))
+            signers.append(core.Signer(code=code, transferable=transferable))
         return signers
 
 
@@ -477,7 +478,7 @@ class SaltyCreator(Creator):
 
         """
         super(SaltyCreator, self).__init__(**kwa)
-        self.salter = coring.Salter(qb64=salt, tier=tier)
+        self.salter = core.Salter(qb64=salt, tier=tier)
         self._stem = stem if stem is not None else ''
 
     @property
@@ -596,9 +597,9 @@ class Manager:
 
     Attributes:
         ks (Keeper): key store LMDB database instance for storing public and private keys
-        encrypter (coring.Encrypter): instance for encrypting secrets. Public
+        encrypter (core.Encrypter): instance for encrypting secrets. Public
             encryption key is derived from aeid (public signing key)
-        decrypter (coring.Decrypter): instance for decrypting secrets. Private
+        decrypter (core.Decrypter): instance for decrypting secrets. Private
             decryption key is derived seed (private signing key seed)
         inited (bool): True means fully initialized wrt database.
                           False means not yet fully initialized
@@ -724,13 +725,13 @@ class Manager:
         if algo is None:
             algo = Algos.salty
         if salt is None:
-            salt = coring.Salter().qb64
+            salt = core.Salter().qb64
         else:
-            if coring.Salter(qb64=salt).qb64 != salt:
+            if core.Salter(qb64=salt).qb64 != salt:
                 raise ValueError(f"Invalid qb64 for salt={salt}.")
 
         if tier is None:
-            tier = coring.Tiers.low
+            tier = core.Tiers.low
 
         # update  database if never before initialized
         if self.pidx is None:  # never before initialized
@@ -749,13 +750,13 @@ class Manager:
         if not self.aeid:  # never before initialized
             self.updateAeid(aeid, self.seed)
         else:
-            self.encrypter = coring.Encrypter(verkey=self.aeid)  # derive encrypter from aeid
+            self.encrypter = core.Encrypter(verkey=self.aeid)  # derive encrypter from aeid
             if not self.seed or not self.encrypter.verifySeed(self.seed):
                 raise kering.AuthError("Last seed missing or provided last seed "
                                        "not associated with last aeid={}."
                                        "".format(self.aeid))
 
-            self.decrypter = coring.Decrypter(seed=self.seed)
+            self.decrypter = core.Decrypter(seed=self.seed)
 
         self.inited = True
 
@@ -781,7 +782,7 @@ class Manager:
 
         if aeid:  # aeid provided
             if aeid != self.aeid:  # changing to a new aeid so update .encrypter
-                self.encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
+                self.encrypter = core.Encrypter(verkey=aeid)  # derive encrypter from aeid
                 # verifies new seed belongs to new aeid
                 if not seed or not self.encrypter.verifySeed(seed):
                     raise kering.AuthError("Seed missing or provided seed not associated"
@@ -817,7 +818,7 @@ class Manager:
         self._seed = seed  # set .seed in memory
 
         # update .decrypter
-        self.decrypter = coring.Decrypter(seed=seed) if seed else None
+        self.decrypter = core.Decrypter(seed=seed) if seed else None
 
 
     @property
@@ -1185,7 +1186,7 @@ class Manager:
                     raise kering.DecryptError("Unauthorized decryption. Aeid but no decrypter.")
                 salt = self.decrypter.decrypt(ser=salt).qb64
             else:
-                salt = coring.Salter(qb64=salt).qb64  # ensures salt was unencrypted
+                salt = core.Salter(qb64=salt).qb64  # ensures salt was unencrypted
 
         creator = Creatory(algo=pp.algo).make(salt=salt, stem=pp.stem, tier=pp.tier)
 
@@ -1531,7 +1532,7 @@ class Manager:
         secrecies = deque(secrecies)
         while secrecies:
             csecrets = secrecies.popleft()  # current
-            csigners = [coring.Signer(qb64=secret, transferable=transferable)
+            csigners = [core.Signer(qb64=secret, transferable=transferable)
                                                       for secret in csecrets]
             csize = len(csigners)
             verferies.append([signer.verfer for signer in csigners])

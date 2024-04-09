@@ -10,10 +10,14 @@ import argparse
 import logging
 
 from keri import __version__
+from keri import help  # logger support
+
+from keri import core
+
 from keri.app import directing
 from keri.demo import demoing
-from keri.core import coring
-from keri import help  # logger support
+
+
 
 def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
     """
@@ -24,7 +28,7 @@ def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
 
     #  create secrecies
     secrecies = [[signer.qb64] for signer in
-                 coring.Salter(raw=raw).signers(count=8,
+                 core.Salter(raw=raw).signers(count=8,
                                                 path=name,
                                                 temp=True)]
 

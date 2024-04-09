@@ -16,6 +16,7 @@ from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
+from .. import core
 from ..core import coring, eventing, parsing, routing, serdering, indexing
 from ..db import dbing, basing
 from ..kering import MissingSignatureError, Roles
@@ -69,7 +70,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
 
     """
     habery = None
-    salt = salt if salt is not None else coring.Salter().qb64
+    salt = salt if salt is not None else core.Salter().qb64
     try:
         habery = Habery(name=name, base=base, temp=temp, salt=salt, **kwa)
         yield habery
@@ -96,7 +97,7 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
 
     """
 
-    salt = coring.Salter(raw=salt).qb64
+    salt = core.Salter(raw=salt).qb64
 
     with openHby(name=name, base=base, salt=salt, temp=temp, cf=cf) as hby:
         if (hab := hby.habByName(name)) is None:
@@ -290,7 +291,7 @@ class Habery:
             if len(bran) < 21:
                 raise ValueError(f"Bran (passcode seed material) too short.")
             bran = coring.MtrDex.Salt_128 + 'A' + bran[:21]  # qb64 salt for seed
-            signer = coring.Salter(qb64=bran).signer(transferable=False,
+            signer = core.Salter(qb64=bran).signer(transferable=False,
                                                      tier=tier,
                                                      temp=temp)
             seed = signer.qb64
@@ -298,9 +299,9 @@ class Habery:
                 aeid = signer.verfer.qb64  # lest it remove encryption
 
         if salt is None:  # salt for signing keys not aeid seed
-            salt = coring.Salter().qb64
+            salt = core.Salter().qb64
         else:
-            salt = coring.Salter(qb64=salt).qb64
+            salt = core.Salter(qb64=salt).qb64
 
         try:
             self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,

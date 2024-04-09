@@ -11,8 +11,12 @@ from hio.base import doing
 from hio.core.tcp import clienting, serving
 
 from keri import help  # logger support
-from keri.app import habbing, directing
+
+from keri import core
 from keri.core import eventing, coring
+
+from keri.app import habbing, directing
+
 from keri.demo import demoing
 
 
@@ -25,7 +29,7 @@ def test_direct_mode_bob_eve_demo():
     raw = b"raw salt to test"
 
     #  create bob signers and secrecies
-    bobSigners = coring.Salter(raw=raw).signers(count=8, path="bob", temp=True)
+    bobSigners = core.Salter(raw=raw).signers(count=8, path="bob", temp=True)
     bobSecrecies = [[signer.qb64] for signer in bobSigners]
 
     # bob inception transferable (nxt digest not empty)
@@ -37,7 +41,7 @@ def test_direct_mode_bob_eve_demo():
     assert bob == 'EFa1wAk_coghxxGCID6jEN79Kmvyj0Y1wWN_ndUv3LjW'
 
     #  create eve signers and secrecies
-    eveSigners = coring.Salter(raw=raw).signers(count=8, path="eve", temp=True)
+    eveSigners = core.Salter(raw=raw).signers(count=8, path="eve", temp=True)
     eveSecrecies = [[signer.qb64] for signer in eveSigners]
 
     # eve inception transferable (nxt digest not empty)
@@ -156,7 +160,7 @@ def test_direct_mode_sam_eve_demo():
     raw = b"raw salt to test"
 
     #  create sam signers and secrecies
-    samSigners = coring.Salter(raw=raw).signers(count=8, path="sam", temp=True)
+    samSigners = core.Salter(raw=raw).signers(count=8, path="sam", temp=True)
     samSecrecies = [[signer.qb64] for signer in samSigners]
 
     # sam inception transferable (nxt digest not empty)
@@ -168,7 +172,7 @@ def test_direct_mode_sam_eve_demo():
     assert sam == 'EDkU2U_TPKca14VElEItpj7twohQL60GIaUPvSHAghga'
 
     #  create eve signers and secrecies
-    eveSigners = coring.Salter(raw=raw).signers(count=8, path="eve", temp=True)
+    eveSigners = core.Salter(raw=raw).signers(count=8, path="eve", temp=True)
     eveSecrecies = [[signer.qb64] for signer in eveSigners]
 
     # eve inception transferable (nxt digest not empty)
@@ -309,7 +313,7 @@ def test_run_bob_eve_demo():
 
     #  create bob secrecies
     secrecies = [[signer.qb64] for signer in
-                    coring.Salter(raw=raw).signers(count=8,
+                    core.Salter(raw=raw).signers(count=8,
                                                    path="bob",
                                                    temp=True)]
 
@@ -325,7 +329,7 @@ def test_run_bob_eve_demo():
 
     #  create eve secrecies
     secrecies = [[signer.qb64] for signer in
-                       coring.Salter(raw=raw).signers(count=8,
+                       core.Salter(raw=raw).signers(count=8,
                                                       path="eve",
                                                       temp=True)]
 
@@ -363,7 +367,7 @@ def test_run_sam_eve_demo():
 
     #  create sam secrecies
     secrecies = [[signer.qb64] for signer in
-                    coring.Salter(raw=raw).signers(count=8,
+                    core.Salter(raw=raw).signers(count=8,
                                                    path="sam",
                                                    temp=True)]
 
@@ -380,7 +384,7 @@ def test_run_sam_eve_demo():
 
      #  create eve secrecies
     secrecies = [[signer.qb64] for signer in
-                       coring.Salter(raw=raw).signers(count=8,
+                       core.Salter(raw=raw).signers(count=8,
                                                       path="eve",
                                                       temp=True)]
 
@@ -410,16 +414,16 @@ def test_indirect_mode_sam_cam_wit_demo():
     raw = b"raw salt to test"
 
     #  create sam signers and secrecies
-    samSigners = coring.Salter(raw=raw).signers(count=8, path="sam", temp=True)
+    samSigners = core.Salter(raw=raw).signers(count=8, path="sam", temp=True)
     samSecrecies = [[signer.qb64] for signer in samSigners]
 
     #  create cam signers and secrecies
-    camSigners = coring.Salter(raw=raw).signers(count=8, path="cam", temp=True)
+    camSigners = core.Salter(raw=raw).signers(count=8, path="cam", temp=True)
     camSecrecies = [[signer.qb64] for signer in camSigners]
 
-    with (habbing.openHby(name="cam", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as camHby,
-          habbing.openHby(name="sam", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as samHby,
-          habbing.openHby(name="wit", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as witHby):
+    with (habbing.openHby(name="cam", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as camHby,
+          habbing.openHby(name="sam", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as samHby,
+          habbing.openHby(name="wit", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as witHby):
 
         samPort = 5620  # sam's TCP listening port for server
         witPort = 5621  # wit' TCP listening port for server

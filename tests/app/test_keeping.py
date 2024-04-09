@@ -19,8 +19,11 @@ from hio.base import doing
 from keri import kering
 from keri.help import helping
 
+from keri import core
+
 from keri.core import coring, indexing
 from keri.core.indexing import IdrDex
+
 from keri.app import keeping
 
 
@@ -391,20 +394,20 @@ def test_keeper():
         key = b'tier'
         assert keeper.gbls.get(key) == None
         assert keeper.gbls.rem(key) == False
-        assert keeper.gbls.put(key, val=coring.Tiers.low) == True
-        assert keeper.gbls.get(key) == coring.Tiers.low
-        assert keeper.gbls.put(key, val=coring.Tiers.med) == False
-        assert keeper.gbls.get(key) == coring.Tiers.low
-        assert keeper.gbls.pin(key, val=coring.Tiers.med) == True
-        assert keeper.gbls.get(key) == coring.Tiers.med
+        assert keeper.gbls.put(key, val=core.Tiers.low) == True
+        assert keeper.gbls.get(key) == core.Tiers.low
+        assert keeper.gbls.put(key, val=core.Tiers.med) == False
+        assert keeper.gbls.get(key) == core.Tiers.low
+        assert keeper.gbls.pin(key, val=core.Tiers.med) == True
+        assert keeper.gbls.get(key) == core.Tiers.med
         assert keeper.gbls.rem(key) == True
         assert keeper.gbls.get(key) == None
 
         #  test .pris sub db methods
         key = puba
-        signera = coring.Signer(qb64b=pria)
+        signera = core.Signer(qb64b=pria)
         assert signera.qb64b == pria
-        signerb = coring.Signer(qb64b=prib)
+        signerb = core.Signer(qb64b=prib)
         assert signerb.qb64b == prib
         assert keeper.pris.get(key) == None
         assert keeper.pris.rem(key) == False
@@ -603,7 +606,7 @@ def test_creator():
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, coring.Signer)
+    assert isinstance(signer, core.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.verfer.code == coring.MtrDex.Ed25519
     assert signer.verfer.code not in coring.NonTransDex
@@ -611,7 +614,7 @@ def test_creator():
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
     for signer in signers:
-        assert isinstance(signer, coring.Signer)
+        assert isinstance(signer, core.Signer)
         assert signer.code == coring.MtrDex.Ed25519_Seed
         assert signer.verfer.code == coring.MtrDex.Ed25519N
         assert signer.verfer.code in coring.NonTransDex
@@ -619,7 +622,7 @@ def test_creator():
     creator = keeping.SaltyCreator()
     assert isinstance(creator, keeping.SaltyCreator)
     assert isinstance(creator, keeping.Creator)
-    assert isinstance(creator.salter, coring.Salter)
+    assert isinstance(creator.salter, core.Salter)
     assert creator.salter.code == coring.MtrDex.Salt_128
     assert creator.salt == creator.salter.qb64
     assert creator.stem == ''
@@ -627,7 +630,7 @@ def test_creator():
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, coring.Signer)
+    assert isinstance(signer, core.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.verfer.code == coring.MtrDex.Ed25519
     assert signer.verfer.code not in coring.NonTransDex
@@ -635,25 +638,25 @@ def test_creator():
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
     for signer in signers:
-        assert isinstance(signer, coring.Signer)
+        assert isinstance(signer, core.Signer)
         assert signer.code == coring.MtrDex.Ed25519_Seed
         assert signer.verfer.code == coring.MtrDex.Ed25519N
         assert signer.verfer.code in coring.NonTransDex
 
     raw = b'0123456789abcdef'
-    salt = coring.Salter(raw=raw).qb64
+    salt = core.Salter(raw=raw).qb64
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     creator = keeping.SaltyCreator(salt=salt)
     assert isinstance(creator, keeping.SaltyCreator)
     assert isinstance(creator, keeping.Creator)
-    assert isinstance(creator.salter, coring.Salter)
+    assert isinstance(creator.salter, core.Salter)
     assert creator.salter.code == coring.MtrDex.Salt_128
     assert creator.salter.raw == raw
     assert creator.salter.qb64 == salt
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, coring.Signer)
+    assert isinstance(signer, core.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.qb64 == 'APMJe0lwOpwnX9PkvX1mh26vlzGYl6RWgWGclc8CAQJ9'
     assert signer.verfer.code == coring.MtrDex.Ed25519
@@ -663,7 +666,7 @@ def test_creator():
     signers = creator.create(count=1, transferable=False, temp=True)
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, coring.Signer)
+    assert isinstance(signer, core.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.qb64 == 'AMGrAM0noxLpRteO9mxGT-yzYSrKFwJMuNI4KlmSk26e'
     assert signer.verfer.code == coring.MtrDex.Ed25519N
@@ -694,7 +697,7 @@ def test_manager():
     assert not manager.ks.opened
 
     raw = b'0123456789abcdef'
-    salt = coring.Salter(raw=raw).qb64
+    salt = core.Salter(raw=raw).qb64
     stem = "red"
 
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
@@ -717,7 +720,7 @@ def test_manager():
         manager = keeping.Manager(ks=keeper, salt=salt)
         assert manager.ks.opened
         assert manager.pidx == 0
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
         assert manager.salt == salt
         assert manager.aeid == ""
         assert manager.seed == ""
@@ -738,7 +741,7 @@ def test_manager():
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == ''
-        assert pp.tier == coring.Tiers.low
+        assert pp.tier == core.Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
@@ -821,7 +824,7 @@ def test_manager():
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == ''
-        assert pp.tier == coring.Tiers.low
+        assert pp.tier == core.Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
@@ -954,7 +957,7 @@ def test_manager():
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == stem == 'red'
-        assert pp.tier == coring.Tiers.low
+        assert pp.tier == core.Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
@@ -1021,7 +1024,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 6
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
         iridx =  0
         ipre, verferies = manager.ingest(secrecies=secrecies)  # use default iridx
         assert ipre == 'DNsGfyf7JArtQgioD7BdVwRulGAsQk5REIKSTjFJqE0a'
@@ -1095,7 +1098,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 7
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
 
         iridx = 3
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
@@ -1169,7 +1172,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 8
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
 
         iridx = 7
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
@@ -1251,7 +1254,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 9
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
 
         iridx = 0
         ipre, verferies = manager.ingest(secrecies=secrecies, ncount=3)  # default iridx
@@ -1345,7 +1348,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 10
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
         iridx = 1
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
         assert ipre == 'DHc6ZvVpAjLq_digYYZMhq0OlEnnbCrgSvcxPJQY_oAE'
@@ -1438,7 +1441,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 11
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
         iridx =  3
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
         assert ipre == 'DO1mU48dTzyFtHjqH744gl0QoEIMxphSC4qbgMoEuyq7'
@@ -1518,7 +1521,7 @@ def test_manager_with_aeid():
     """
     # rawsalt =pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     rawsalt = b'0123456789abcdef'
-    salter = coring.Salter(raw=rawsalt)
+    salter = core.Salter(raw=rawsalt)
     salt = salter.qb64
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     stem = "blue"
@@ -1526,25 +1529,25 @@ def test_manager_with_aeid():
 
     # cryptseed0 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed0 = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
-    cryptsigner0 = coring.Signer(raw=cryptseed0, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner0 = core.Signer(raw=cryptseed0, code=coring.MtrDex.Ed25519_Seed,
                            transferable=False)
     seed0 = cryptsigner0.qb64
     aeid0 = cryptsigner0.verfer.qb64
     assert aeid0 == 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'
-    decrypter0 = coring.Decrypter(seed=seed0)
-    encrypter0 = coring.Encrypter(verkey=aeid0)
+    decrypter0 = core.Decrypter(seed=seed0)
+    encrypter0 = core.Encrypter(verkey=aeid0)
     assert encrypter0.verifySeed(seed=seed0)
 
     # cryptseed1 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed1 = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
                b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
-    cryptsigner1 = coring.Signer(raw=cryptseed1, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner1 = core.Signer(raw=cryptseed1, code=coring.MtrDex.Ed25519_Seed,
                            transferable=False)
     seed1 = cryptsigner1.qb64
     aeid1 = cryptsigner1.verfer.qb64
     assert aeid1 == 'BEcOrMrG_7r_NWaLl6h8UJapwIfQWIkjrIPXkCZm2fFM'
-    decrypter1 = coring.Decrypter(seed=seed1)
-    encrypter1 = coring.Encrypter(verkey=aeid1)
+    decrypter1 = core.Decrypter(seed=seed1)
+    encrypter1 = core.Encrypter(verkey=aeid1)
     assert encrypter1.verifySeed(seed=seed1)
 
     # something to sign doesn't matter what for testing purposes
@@ -1572,8 +1575,8 @@ def test_manager_with_aeid():
         assert manager.algo == keeping.Algos.salty
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
-        assert manager.tier == coring.Tiers.low
-        saltCipher0 = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
+        assert manager.tier == core.Tiers.low
+        saltCipher0 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert saltCipher0.decrypt(seed=seed0).qb64 == salt
 
         # salty algorithm incept
@@ -1590,7 +1593,7 @@ def test_manager_with_aeid():
         assert pp.algo == keeping.Algos.salty
         assert manager.decrypter.decrypt(ser=pp.salt).qb64 == salt
         assert pp.stem == ''
-        assert pp.tier == coring.Tiers.low
+        assert pp.tier == core.Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
@@ -1673,7 +1676,7 @@ def test_manager_with_aeid():
         assert pp.algo == keeping.Algos.salty
         assert manager.decrypter.decrypt(ser=pp.salt).qb64 == salt
         assert pp.stem == ''
-        assert pp.tier == coring.Tiers.low
+        assert pp.tier == core.Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
@@ -1703,8 +1706,8 @@ def test_manager_with_aeid():
         assert manager.algo == keeping.Algos.salty
         assert manager.salt == salt
         assert manager.pidx == 1
-        assert manager.tier == coring.Tiers.low
-        saltCipher1 = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
+        assert manager.tier == core.Tiers.low
+        saltCipher1 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert saltCipher1.decrypt(seed=seed1).qb64 == salt
         assert not saltCipher0.qb64 == saltCipher1.qb64  # old cipher different
 
@@ -1802,7 +1805,7 @@ def test_manager_sign_dual_indices():
             When  ondices is not provided then all sigers .ondex is None.
     """
     raw = b'0123456789abcdef'
-    salt = coring.Salter(raw=raw).qb64
+    salt = core.Salter(raw=raw).qb64
 
     # the particular serialization does not matter for test purposes
     ser = (b"See ya later Alligator. In a while Crocodile. "
@@ -1814,7 +1817,7 @@ def test_manager_sign_dual_indices():
         manager = keeping.Manager(ks=keeper, salt=salt)
         assert manager.ks.opened
         assert manager.pidx == 0
-        assert manager.tier == coring.Tiers.low
+        assert manager.tier == core.Tiers.low
         assert manager.salt == salt
         assert manager.aeid == ""
         assert manager.seed == ""
@@ -1842,7 +1845,7 @@ def test_manager_sign_dual_indices():
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == stem
-        assert pp.tier == coring.Tiers.low
+        assert pp.tier == core.Tiers.low
 
         ps = manager.ks.sits.get(pre)
         assert len(ps.old.pubs) == 0
@@ -1951,7 +1954,7 @@ def test_manager_sign_dual_indices():
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == stem
-        assert pp.tier == coring.Tiers.low
+        assert pp.tier == core.Tiers.low
 
         ps = manager.ks.sits.get(pre)
         assert len(ps.old.pubs) == ocount
