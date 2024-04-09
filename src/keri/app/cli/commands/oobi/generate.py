@@ -28,7 +28,7 @@ parser.add_argument("--role", "-r", help="role of oobis to generate", required=T
 
 # Parameters for Manager access
 # passcode => bran
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)
 
 

@@ -27,7 +27,7 @@ parser.add_argument('--name', '-n', help='Human readable reference', required=Tr
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--smids", "-s", help="List of other participant qb64 identifiers with signing authority in "
                                           "rotation event",
