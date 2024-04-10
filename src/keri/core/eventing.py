@@ -2259,7 +2259,6 @@ class Kever:
         if (not local and
                 (self.locallyOwned() or
                  self.locallyWitnessed(wits=wits))):
-
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
                                    seqner=delseqner, saider=delsaider, local=local)
             raise MisfitEventSourceError(f"Nonlocal source for locally owned"
@@ -2944,7 +2943,8 @@ class Kever:
         if seqner and saider:
             couple = seqner.qb64b + saider.qb64b
             self.db.putPde(dgkey, couple)  # idempotent
-        self.db.misfits.add(snKey(serder.preb, serder.sn), serder.saidb)
+
+        res = self.db.misfits.add(keys=(serder.pre, serder.snh), val=coring.Saider(qb64b=serder.saidb))
         # log escrowed
         logger.info("Kever state: escrowed misfit event=\n%s\n",
                     json.dumps(serder.ked, indent=1))

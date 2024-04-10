@@ -152,7 +152,7 @@ def createCESRRequest(msg, client, dest, path=None):
     )
 
 
-def streamCESRRequests(client, ims, dest, path=None):
+def streamCESRRequests(client, ims, dest, path=None, headers=None):
     """
     Turns a stream of KERI messages into CESR http requests against the provided hio http Client
 
@@ -191,17 +191,19 @@ def streamCESRRequests(client, ims, dest, path=None):
 
         body = serder.raw
 
-        headers = Hict([
+        headers = headers if headers is not None else Hict()
+        heads = (Hict([
             ("Content-Type", CESR_CONTENT_TYPE),
             ("Content-Length", len(body)),
             (CESR_ATTACHMENT_HEADER, attachment),
             (CESR_DESTINATION_HEADER, dest)
-        ])
+        ]))
+        heads.update(headers)
 
         client.request(
             method="POST",
             path=path,
-            headers=headers,
+            headers=heads,
             body=body
         )
         cnt += 1
