@@ -27,18 +27,22 @@ from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
 from ..kering import SMELLSIZE, Smellage, smell
 
-from ..kering import Protocols, Serials, Rever, versify, deversify, Ilks
-from ..core import coring
+from ..kering import Protocols, Serials, versify, deversify, Ilks
+
+from .. import help
+from ..help import helping
+
+
+from . import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
                      Ilker, Traitor, Verser, )
 
-from ..core import counting
-from ..core.counting import GenDex, AllTags, Counter
+from .counting import GenDex, AllTags, Counter
 
-from .. import help
-from ..help import helping
-from ..help.helping import nonStringSequence
+from .structing import Sealer
+
+
 
 logger = help.ogler.getLogger()
 
@@ -1280,6 +1284,13 @@ class Serder:
                     case "a":  # list of seals or field map of attributes
                         frame = bytearray()
                         for e in v:  # list of seal dicts
+                            try:
+                                sealer = Sealer(crew=e)
+                                frame.extend(sealer.qb64b)
+                            except kering.InvalidValueError:
+                                pass
+                                #unknown seal type so serialize as field map
+
                             pass
                             #if tuple(v) == eventing.SealEvent._fields:
                                 #eseal = eventing.SealEvent(**v)  # convert to namedtuple

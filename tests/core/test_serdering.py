@@ -2649,6 +2649,7 @@ def test_cesr_native_dumps():
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = core.Salter(raw=raw)
 
+    # replace with Salter.signers()
     csigners = core.generateSigners(raw=salter.raw, count=3)
     wsigners = core.generateSigners(raw=salter.raw, count=3, transferable=False)
 
