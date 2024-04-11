@@ -2944,7 +2944,7 @@ class Kever:
             couple = seqner.qb64b + saider.qb64b
             self.db.putPde(dgkey, couple)  # idempotent
 
-        res = self.db.misfits.add(keys=(serder.pre, serder.snh), val=coring.Saider(qb64b=serder.saidb))
+        res = self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
         logger.info("Kever state: escrowed misfit event=\n%s\n",
                     json.dumps(serder.ked, indent=1))
@@ -4657,7 +4657,7 @@ class Kevery:
         if seqner and saider:
             couple = seqner.qb64b + saider.qb64b
             self.db.putPde(dgkey, couple)  # idempotent
-        self.db.misfits.add(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
         logger.info("Kevery process: escrowed misfit event=\n%s\n",
                     json.dumps(serder.ked, indent=1))
