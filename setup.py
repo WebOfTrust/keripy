@@ -94,7 +94,8 @@ setup(
                         'PrettyTable>=3.10.0',
                         'http_sfv>=0.9.9',
                         'cryptography>=42.0.5',
-                        'semver>=3.0.2'
+                        'semver>=3.0.2',
+                        'qrcode>=7.4.2'
     ],
     extras_require={
     },

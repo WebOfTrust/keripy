@@ -11,6 +11,7 @@ from hio.base import doing
 from keri import kering
 from keri.app.cli.common import rotating, existing, config
 from keri.core import coring
+from keri.help import helping
 from ... import habbing, agenting, indirecting, delegating, forwarding
 
 parser = argparse.ArgumentParser(description='Rotate keys')
@@ -26,6 +27,8 @@ parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signi
                     default=None, type=int, required=False)
 parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
                     dest="endpoint", action='store_true')
+parser.add_argument("--authenticate", '-z', help="Prompt the controller for authentication codes for each witness",
+                    action='store_true')
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
 rotating.addRotationArgs(parser)
@@ -60,7 +63,7 @@ def rotate(args):
                          cuts=opts.witsCut, adds=opts.witsAdd,
                          isith=opts.isith, nsith=opts.nsith,
                          count=opts.ncount, toad=opts.toad,
-                         data=opts.data, proxy=args.proxy)
+                         data=opts.data, proxy=args.proxy, authenticate=args.authenticate)
 
     doers = [rotDoer]
 
@@ -115,7 +118,7 @@ class RotateDoer(doing.DoDoer):
     """
 
     def __init__(self, name, base, bran, alias, endpoint=False, isith=None, nsith=None, count=None,
-                 toad=None, wits=None, cuts=None, adds=None, data: list = None, proxy=None):
+                 toad=None, wits=None, cuts=None, adds=None, data: list = None, proxy=None, authenticate=False):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
 
@@ -140,6 +143,7 @@ class RotateDoer(doing.DoDoer):
         self.data = data
         self.endpoint = endpoint
         self.proxy = proxy
+        self.authenticate = authenticate
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
@@ -194,8 +198,13 @@ class RotateDoer(doing.DoDoer):
                 yield self.tock
 
         elif hab.kever.wits:
-            if self.endpoint:
-                yield from receiptor.receipt(hab.pre, sn=hab.kever.sn)
+            if self.endpoint or self.authenticate:
+                auths = {}
+                if self.authenticate:
+                    for wit in hab.kever.wits:
+                        code = input(f"Entire code for {wit}: ")
+                        auths[wit] = f"{code}#{helping.nowIso8601()}"
+                yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
             else:
                 for wit in self.adds:
                     self.mbx.addPoller(hab, witness=wit)

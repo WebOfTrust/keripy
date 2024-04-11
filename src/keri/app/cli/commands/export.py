@@ -15,7 +15,7 @@ from keri.core import coring, serdering
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials')
+parser = argparse.ArgumentParser(description='Export key events in CESR stream format')
 parser.set_defaults(handler=lambda args: export(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
