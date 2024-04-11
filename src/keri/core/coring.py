@@ -210,8 +210,8 @@ Tiers = Tierage(low='low', med='med', high='high')
 
 
 @dataclass
-class MapDom:
-    """Base class for dataclasses that support map syntax
+class MapHood:
+    """Base class for mutable dataclasses that support map syntax
     Adds support for dunder methods for map syntax dc[name].
     Converts exceptions from attribute syntax to raise map syntax when using
     map syntax.
@@ -241,7 +241,7 @@ class MapDom:
 
 
 @dataclass(frozen=True)
-class MapCodex:
+class MapDom:
     """Base class for frozen dataclasses (codexes) that support map syntax
     Adds support for dunder methods for map syntax dc[name].
     Converts exceptions from attribute syntax to raise map syntax when using

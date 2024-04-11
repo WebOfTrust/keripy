@@ -38,9 +38,9 @@ from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
                      Ilker, Traitor, Verser, )
 
-from .counting import GenDex, AllTags, Counter
+from .counting import GenDex, AllTags, Counter, SealDex_2_0
 
-from .structing import Sealer
+from .structing import Sealer, ClanDom
 
 
 
@@ -347,8 +347,10 @@ class Serder:
     # Spans dict keyed by version (Versionage instance) of version string span (size)
     Spans = {Vrsn_1_0: VER1FULLSPAN, Vrsn_2_0: VER2FULLSPAN}
 
-    # should be same set of codes as in coring.DigestCodex coring.DigDex so
-    # .digestive property works. Use unit tests to ensure codex sets match
+    # Maps digest codes to Digestages of algorithms for computing digest.
+    # Should be based on the same set of codes as in coring.DigestCodex
+    # coring.DigDex so .digestive property works.
+    # Use unit tests to ensure codex elements sets match
     Digests = {
         DigDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
         DigDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
@@ -360,6 +362,18 @@ class Serder:
         DigDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
         DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
     }
+
+    # map seal clan names to seal counter code for grouping seals in anchor list
+    ClanSeals = dict()
+    ClanSeals[ClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
+    ClanSeals[ClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
+    ClanSeals[ClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
+    ClanSeals[ClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
+    ClanSeals[ClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
+    ClanSeals[ClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
+
+    # map seal counter code to seal clan name for parsing seal groups in anchor list
+    SealClans = {}
 
     #override in subclass to enforce specific protocol
     Protocol = None  # class based message protocol, None means any in Protocols is ok
@@ -1284,14 +1298,17 @@ class Serder:
                     case "a":  # list of seals or field map of attributes
                         frame = bytearray()
                         for e in v:  # list of seal dicts
+                            # need support for grouping consecutive seals of same type with same counter
+
                             try:
                                 sealer = Sealer(crew=e)
                                 frame.extend(sealer.qb64b)
+                                # lookup counter type by sealer.clan.name
                             except kering.InvalidValueError:
                                 pass
                                 #unknown seal type so serialize as field map
 
-                            pass
+
                             #if tuple(v) == eventing.SealEvent._fields:
                                 #eseal = eventing.SealEvent(**v)  # convert to namedtuple
                                 #SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
@@ -1305,7 +1322,7 @@ class Serder:
                                 #tuple(d)
                                 #('a', 'b')
 
-                            #frame.extend(Anchor(seal=e).qb64b)
+                            #frame.extend(Sealer(seal=e).qb64b)
                             # else:  generic seal no count type (v, Mapping):
                                 #for l, e in v.items():
                                     #pass

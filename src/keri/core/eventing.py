@@ -76,12 +76,6 @@ SealRoot = namedtuple("SealRoot", 'rd')
 # d = digest qb64 of backer metadata anchored to event usually SAID of data
 SealBacker = namedtuple("SealBacker", 'bi d')
 
-# Event Seal: triple (i, s, d)
-# i = pre is qb64 of identifier prefix of KEL for event,
-# s = sn of event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64 of event
-SealEvent = namedtuple("SealEvent", 'i s d')
-
 # Last Estalishment Event Seal: uniple (i,)
 # i = pre is qb64 of identifier prefix of KEL from which to get last est, event
 # used to indicate to get the latest keys available from KEL for 'i'
@@ -94,6 +88,12 @@ SealLast = namedtuple("SealLast", 'i')
 # key event that this seal appears.
 # use SealSourceCouples count code for attachment
 SealTrans = namedtuple("SealTrans", 's d')
+
+# Event Seal: triple (i, s, d)
+# i = pre is qb64 of identifier prefix of KEL for event,
+# s = sn of event as lowercase hex string  no leading zeros,
+# d = SAID digest qb64 of event
+SealEvent = namedtuple("SealEvent", 'i s d')
 
 # Following are not seals only used in database
 

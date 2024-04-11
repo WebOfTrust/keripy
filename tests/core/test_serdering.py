@@ -2649,11 +2649,11 @@ def test_cesr_native_dumps():
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = core.Salter(raw=raw)
 
-    # replace with Salter.signers()
-    csigners = core.generateSigners(raw=salter.raw, count=3)
-    wsigners = core.generateSigners(raw=salter.raw, count=3, transferable=False)
+    csigners = salter.signers(count=3, transferable=True, temp=True)
+    wsigners = salter.signers(count=3, transferable=False, temp=True)
 
 
+    keys = [csigners[0].qb64]
     keys = ["EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"]
     serder = incept(keys, version=Vrsn_2_0)
 

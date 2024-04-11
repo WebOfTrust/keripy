@@ -364,6 +364,27 @@ class Salter(Matter):
     Salter is Matter subclass to maintain random salt for secrets (private keys)
     Its .raw is random salt, .code as cipher suite for salt
 
+    To initialize with deterministic salt pass in 16 bytes for raw:
+        salter = Salter(raw=b'0123456789abcdef')
+
+    To create a deterministic secret, seed, or private key from salt
+    call .signer:
+        signer = salter.signer(code=MtrDex.Ed25519_Seed,
+                               transferable=True,
+                               path="",
+                               tier=None,
+                               temp=False)
+
+    To create a deterministic set of secrets or seeds or private keys from salt
+    call signers:
+        signers = salter.signers(count=1,
+                                 start=0,
+                                 path="",
+                                 code=MtrDex.Ed25519_Seed,
+                                 transferable=True,
+                                 tier=None,
+                                 temp=False)
+
     Attributes:
         .level is str security level code. Provides default level
 

@@ -52,7 +52,7 @@ from keri.core.indexing import (Siger, Xizage, IdrDex, IdxSigDex,
                                 IdxCrtSigDex, IdxBthSigDex, Indexer)
 
 
-from keri.core.coring import MapDom, MapCodex
+from keri.core.coring import MapHood, MapDom
 
 
 
@@ -60,7 +60,7 @@ def test_mapdom():
     """Test MapDom base dataclass"""
 
     @dataclass
-    class TestMapDom(MapDom):
+    class TestMapDom(MapHood):
         """
 
         """
@@ -151,7 +151,7 @@ def test_mapcodex():
 
 
     @dataclass(frozen=True)
-    class TestMapCodex(MapCodex):
+    class TestMapCodex(MapDom):
         """
 
         """
