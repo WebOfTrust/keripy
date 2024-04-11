@@ -198,7 +198,7 @@ class RotateDoer(doing.DoDoer):
                 yield self.tock
 
         elif hab.kever.wits:
-            if self.endpoint:
+            if self.endpoint or self.authenticate:
                 auths = {}
                 if self.authenticate:
                     for wit in hab.kever.wits:

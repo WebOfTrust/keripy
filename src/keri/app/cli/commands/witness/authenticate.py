@@ -87,7 +87,9 @@ class AuthDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        body = self.hab.makeOwnEvent(sn=self.hab.kever.sn)
+        body = bytearray()
+        for msg in self.hab.db.clonePreIter(pre=self.hab.pre):
+            body.extend(msg)
 
         headers = (Hict([
             ("Content-Type", "application/cesr"),
@@ -99,9 +101,9 @@ class AuthDoer(doing.DoDoer):
 
         client.request(
             method="POST",
-            path="/aids",
+            path=f"{client.requester.path}/aids",
             headers=headers,
-            body=body
+            body=bytes(body)
         )
         while not client.responses:
             yield self.tock
@@ -122,6 +124,6 @@ class AuthDoer(doing.DoDoer):
             print(otpurl)
 
         else:
-            raise ValueError(rep.status)
+            raise ValueError(rep.body)
 
         self.remove([clientDoer, self.clienter])

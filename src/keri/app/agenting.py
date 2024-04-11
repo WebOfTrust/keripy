@@ -91,7 +91,8 @@ class Receiptor(doing.DoDoer):
             headers = dict()
             if wit in auths:
                 headers["Authorization"] = auths[wit]
-            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="/receipts", headers=headers)
+
+            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="receipts", headers=headers)
             while not client.responses:
                 yield self.tock
 
@@ -106,7 +107,7 @@ class Receiptor(doing.DoDoer):
                 coring.Counter(qb64b=rct, strip=True)
                 rcts[wit] = rct
             else:
-                logger.error(f"invalid response {rep.status} from witnesses {wit}")
+                print(f"invalid response {rep.status} from witnesses {wit}")
 
         for wit in rcts:
             ewits = [w for w in rcts if w != wit]
@@ -1062,7 +1063,7 @@ def httpClient(hab, wit):
 
     url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
     up = urlparse(url)
-    client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
+    client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port, path=up.path)
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer
