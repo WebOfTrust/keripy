@@ -38,7 +38,7 @@ parser.add_argument('--migration', '-m', help='migration name', required=True)
 
 # Parameters for Manager creation
 # passcode => bran
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)
 
 

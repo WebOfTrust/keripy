@@ -19,7 +19,7 @@ parser.add_argument('--name', '-n', help='keystore name and file location of KER
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--file', '-f', help='file path of config options (JSON) for rotation', default="", required=False)
 parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).',

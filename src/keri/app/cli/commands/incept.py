@@ -29,7 +29,7 @@ parser.add_argument("--proxy", help="alias for delegation communication proxy", 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
 
 # Authentication for keystore
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
