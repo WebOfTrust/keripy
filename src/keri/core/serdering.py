@@ -364,16 +364,16 @@ class Serder:
     }
 
     # map seal clan names to seal counter code for grouping seals in anchor list
-    ClanSeals = dict()
-    ClanSeals[ClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
-    ClanSeals[ClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
-    ClanSeals[ClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
-    ClanSeals[ClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
-    ClanSeals[ClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
-    ClanSeals[ClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
+    ClanCodes = dict()
+    ClanCodes[ClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
+    ClanCodes[ClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
+    ClanCodes[ClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
+    ClanCodes[ClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
+    ClanCodes[ClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
+    ClanCodes[ClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
 
     # map seal counter code to seal clan name for parsing seal groups in anchor list
-    SealClans = {}
+    CodeClans = { val: key for key, val in ClanCodes.items()}  # invert dict
 
     #override in subclass to enforce specific protocol
     Protocol = None  # class based message protocol, None means any in Protocols is ok
@@ -1296,7 +1296,9 @@ class Serder:
                         val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
-                        frame = bytearray()
+                        frame = bytearray()  # whole list
+                        gctr = None  # counter for consecutive same type seals
+                        gframe = bytearray()  # consecutive same type seals
                         for e in v:  # list of seal dicts
                             # need support for grouping consecutive seals of same type with same counter
 

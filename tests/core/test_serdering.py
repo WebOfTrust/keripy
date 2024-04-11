@@ -60,12 +60,31 @@ def test_spans():
     """End Test"""
 
 
-def test_serder():
-    """
-    Test Serder
-    """
+def test_serder_class():
+    """Test Serder class"""
 
-    # Test Serder
+    assert Serder.ClanCodes
+    assert Serder.ClanCodes == \
+    {
+        'SealDigest': '-V',
+        'SealRoot': '-W',
+        'SealBacker': '-X',
+        'SealLast': '-Y',
+        'SealTrans': '-Q',
+        'SealEvent': '-R'
+    }
+
+    assert Serder.CodeClans
+    assert Serder.CodeClans == \
+    {
+        '-V': 'SealDigest',
+        '-W': 'SealRoot',
+        '-X': 'SealBacker',
+        '-Y': 'SealLast',
+        '-Q': 'SealTrans',
+        '-R': 'SealEvent'
+    }
+
 
     assert Serder.Fields
 
@@ -98,6 +117,16 @@ def test_serder():
         for vrsn, ilks in vrsns.items():
             for ilk, fields in ilks.items():
                 assert set(fields.saids) <= set(fields.alls)
+
+
+    """End Test"""
+
+
+def test_serder():
+    """Test Serder instances"""
+
+    # Test Serder
+
 
 
     with pytest.raises(kering.InvalidValueError):
@@ -2736,6 +2765,7 @@ def test_cesr_native_dumps():
 if __name__ == "__main__":
     test_fielddom()
     test_spans()
+    test_serder_class()
     test_serder()
     test_serderkeri()
     test_serderkeri_icp()
