@@ -4,24 +4,26 @@ tests.vc.protocoling module
 
 """
 
-from keri.app import habbing, notifying
+from keri import core
 from keri.core import coring, scheming, parsing
 from keri.core.eventing import SealEvent
+
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vc.proving import credential
 from keri.vdr import credentialing, verifying
+from keri.app import habbing, notifying
 
 
 def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingNowUTC):
     """ Test IPEX exchange protocol """
 
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+    sidSalt = core.Salter(raw=b'0123456789abcdef').qb64
     assert sidSalt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-    wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
+    wanSalt = core.Salter(raw=b'wann-the-witness').qb64
     assert wanSalt == '0AB3YW5uLXRoZS13aXRuZXNz'
 
-    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
 
     with (habbing.openHby(name="red", base="test", salt=default_salt) as redHby,
           habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby):

@@ -9,9 +9,13 @@ import datetime
 
 from keri import help
 from keri.help import helping
+
+from keri import core
+from keri.core import coring, eventing, parsing
+
 from keri.db import dbing, basing
 from keri.app import keeping
-from keri.core import coring, eventing, parsing
+
 
 logger = help.ogler.getLogger()
 
@@ -21,7 +25,7 @@ def test_partial_signed_escrow():
     Test partially signed escrow
 
     """
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
     psr = parsing.Parser()
 
     # init event DB and keep DB
@@ -348,8 +352,8 @@ def test_missing_delegator_escrow():
     """
     # bob is the delegator del is bob's delegate
 
-    bobSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    delSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    bobSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    delSalt = core.Salter(raw=b'abcdef0123456789').qb64
 
     psr = parsing.Parser()
 
@@ -592,7 +596,7 @@ def test_misfit_escrow():
     Test misfit escrow
 
     """
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # stub for now
 
@@ -605,7 +609,7 @@ def test_out_of_order_escrow():
     Test out of order escrow
 
     """
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
     psr = parsing.Parser()
 
     # init event DB and keep DB
@@ -801,7 +805,7 @@ def test_unverified_receipt_escrow():
     Test unverified receipt escrow
 
     """
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
     psr = parsing.Parser()
 
     # init event DB and keep DB
@@ -1086,7 +1090,7 @@ def test_unverified_trans_receipt_escrow():
     Test unverified transferable receipt escrow
 
     """
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
     psr = parsing.Parser()
 
     # init event DB and keep DB

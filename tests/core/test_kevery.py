@@ -2,16 +2,22 @@ import os
 
 import pytest
 
+from keri.kering import (ValidationError)
+
 from keri import help
-from keri.app import habbing
+
+from keri import core
 from keri.core import parsing, eventing, coring, serdering
 from keri.core.coring import CtrDex, Counter
-from keri.core.coring import Salter
+
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (incept, rotate, interact)
+
+from keri.app import habbing
+
 from keri.db import dbing
 from keri.db.basing import openDB
-from keri.kering import (ValidationError)
+
 
 logger = help.ogler.getLogger()
 
@@ -25,7 +31,7 @@ def test_kevery():
 
     #  create signers
     raw = b"ABCDEFGH01234567"
-    signers = Salter(raw=raw).signers(count=8, path='kev', temp=True)
+    signers = core.Salter(raw=raw).signers(count=8, path='kev', temp=True)
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = []  # list of event digs in sequence
@@ -246,7 +252,7 @@ def test_witness_state():
     """
 
     # with basing.openDB(name="controller") as bobDB, keeping.openKS(name="controller") as bobKS:
-    with habbing.openHby(name="controller", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with habbing.openHby(name="controller", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
 
         wits = [
             "BAMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ",
@@ -336,11 +342,11 @@ def test_stale_event_receipts():
     Bam is verifying the key events with receipts from Bob
     """
     # openHby default temp=True
-    with (habbing.openHby(name="bob", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as bobHby,
-            habbing.openHby(name="bam", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as bamHby,
-            habbing.openHby(name="wes", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wesHby,
-            habbing.openHby(name="wan", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wanHby,
-            habbing.openHby(name="wil", base="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as wilHby):
+    with (habbing.openHby(name="bob", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as bobHby,
+            habbing.openHby(name="bam", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as bamHby,
+            habbing.openHby(name="wes", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as wesHby,
+            habbing.openHby(name="wan", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as wanHby,
+            habbing.openHby(name="wil", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as wilHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)

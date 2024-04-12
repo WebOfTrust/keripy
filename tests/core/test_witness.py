@@ -6,8 +6,12 @@ tests delegation primaily from keri.core.eventing
 import os
 
 from keri import help
+
+from keri import core
+from keri.core import eventing, parsing, serdering, indexing
+
 from keri.app import habbing
-from keri.core import coring, eventing, parsing, serdering, indexing
+
 from keri.db import dbing
 
 logger = help.ogler.getLogger()
@@ -24,7 +28,7 @@ def test_indexed_witness_replay():
     wam is a witness
 
     """
-    salt = coring.Salter(raw=b'abcdef0123456789').qb64
+    salt = core.Salter(raw=b'abcdef0123456789').qb64
 
     with habbing.openHby(name="cam", base="test", salt=salt) as camHby, \
          habbing.openHby(name="van", base="test", salt=salt) as vanHby, \
@@ -291,7 +295,7 @@ def test_nonindexed_witness_receipts():
     wam is a witness
 
     """
-    salt = coring.Salter(raw=b'abcdef0123456789').qb64
+    salt = core.Salter(raw=b'abcdef0123456789').qb64
 
     with habbing.openHby(name="cam", base="test", salt=salt) as camHby, \
          habbing.openHby(name="van", base="test", salt=salt) as vanHby, \
@@ -576,7 +580,7 @@ def test_out_of_order_witnessed_events():
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
 
-    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
     with habbing.openHby(name="wes", base="test", salt=default_salt) as wesHby, \
          habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby, \
          habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby:

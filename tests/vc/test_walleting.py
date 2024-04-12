@@ -3,16 +3,18 @@
 tests.vc.walleting module
 
 """
-
-from keri.app import habbing, signing
+from keri import core
 from keri.core import coring, parsing
 from keri.core.eventing import SealEvent
+
+from keri.app import habbing
+
 from keri.vc.proving import credential
 from keri.vdr import verifying, credentialing
 
 
 def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+    sidSalt = core.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test")

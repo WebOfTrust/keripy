@@ -8,6 +8,8 @@ from collections.abc import Iterable
 from typing import Union
 
 from .. import help
+
+from .. import core
 from ..core import coring, serdering
 from ..core.coring import (Serials, versify)
 from ..db import subing
@@ -62,8 +64,8 @@ def credential(schema,
     )
 
     if private:
-        vc["u"] = salt if salt is not None else coring.Salter().qb64
-        subject["u"] = salt if salt is not None else coring.Salter().qb64
+        vc["u"] = salt if salt is not None else core.Salter().qb64
+        subject["u"] = salt if salt is not None else core.Salter().qb64
 
     if recipient is not None:
         subject['i'] = recipient

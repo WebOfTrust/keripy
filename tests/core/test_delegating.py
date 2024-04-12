@@ -6,8 +6,12 @@ tests delegation primaily from keri.core.eventing
 import os
 
 from keri import help
-from keri.app import keeping, habbing
+
+from keri import core
 from keri.core import coring, eventing, parsing
+
+from keri.app import keeping, habbing
+
 from keri.db import dbing, basing
 
 logger = help.ogler.getLogger()
@@ -20,8 +24,8 @@ def test_delegation():
     """
     # bob is the delegator del is bob's delegate
 
-    bobSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    delSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    bobSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    delSalt = core.Salter(raw=b'abcdef0123456789').qb64
 
     with (basing.openDB(name="bob") as bobDB, \
             keeping.openKS(name="bob") as bobKS, \
@@ -313,12 +317,12 @@ def test_delegation_supersede():
 
 
     """
-    topSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    wopSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    midSalt = coring.Salter(raw=b'abcdef0123456789').qb64
-    widSalt = coring.Salter(raw=b'abcdef0123456789').qb64
-    botSalt = coring.Salter(raw=b'zyxwvutsrponmlkj').qb64
-    wotSalt = coring.Salter(raw=b'zyxwvutsrponmlkj').qb64
+    topSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    wopSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    midSalt = core.Salter(raw=b'abcdef0123456789').qb64
+    widSalt = core.Salter(raw=b'abcdef0123456789').qb64
+    botSalt = core.Salter(raw=b'zyxwvutsrponmlkj').qb64
+    wotSalt = core.Salter(raw=b'zyxwvutsrponmlkj').qb64
 
     with (habbing.openHby(name="top", base="test", salt=topSalt) as topHby,
             habbing.openHby(name="wop", base="test", salt=wopSalt) as wopHby,

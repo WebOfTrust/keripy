@@ -21,7 +21,7 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
 
 
 from keri.core import counting
-from keri.core.counting import GenDex, Sizage, MapCodex, Counter
+from keri.core.counting import GenDex, Sizage, MapDom, Counter
 from keri.core.counting import Versionage, Vrsn_1_0, Vrsn_2_0, AllTags
 
 
@@ -130,6 +130,8 @@ def test_codexes_tags():
         'BigMerkleRootSealSingles': '-0W',
         'BackerRegistrarSealCouples': '-X',
         'BigBackerRegistrarSealCouples': '-0X',
+        'SealSourceLastSingles': '-Y',
+        'BigSealSourceLastSingles': '-0Y',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '-0Z',
         'KERIACDCGenusVersion': '--AAA'
@@ -206,6 +208,8 @@ def test_codexes_tags():
         'BigMerkleRootSealSingles': 'BigMerkleRootSealSingles',
         'BackerRegistrarSealCouples': 'BackerRegistrarSealCouples',
         'BigBackerRegistrarSealCouples': 'BigBackerRegistrarSealCouples',
+        'SealSourceLastSingles': 'SealSourceLastSingles',
+        'BigSealSourceLastSingles': 'BigSealSourceLastSingles',
         'ESSRPayloadGroup': 'ESSRPayloadGroup',
         'BigESSRPayloadGroup': 'BigESSRPayloadGroup',
         'KERIACDCGenusVersion': 'KERIACDCGenusVersion'
@@ -263,12 +267,32 @@ def test_codexes_tags():
         'BigMerkleRootSealSingles': 'BigMerkleRootSealSingles',
         'BackerRegistrarSealCouples': 'BackerRegistrarSealCouples',
         'BigBackerRegistrarSealCouples': 'BigBackerRegistrarSealCouples',
+        'SealSourceLastSingles': 'SealSourceLastSingles',
+        'BigSealSourceLastSingles': 'BigSealSourceLastSingles',
         'ESSRPayloadGroup': 'ESSRPayloadGroup',
         'BigESSRPayloadGroup': 'BigESSRPayloadGroup',
         'KERIACDCGenusVersion': 'KERIACDCGenusVersion'
     }
 
     assert counting.AllTags.ControllerIdxSigs == 'ControllerIdxSigs'
+
+    assert asdict(counting.SealDex_2_0) == \
+    {
+        'SealSourceCouples': '-Q',
+        'BigSealSourceCouples': '-0Q',
+        'SealSourceTriples': '-R',
+        'BigSealSourceTriples': '-0R',
+        'DigestSealSingles': '-V',
+        'BigDigestSealSingles': '-0V',
+        'MerkleRootSealSingles': '-W',
+        'BigMerkleRootSealSingles': '-0W',
+        'BackerRegistrarSealCouples': '-X',
+        'BigBackerRegistrarSealCouples': '-0X',
+        'SealSourceLastSingles': '-Y',
+        'BigSealSourceLastSingles': '-0Y',
+    }
+
+
 
     """End Test"""
 
@@ -388,6 +412,8 @@ def test_counter_class():
                 '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
             },
         },

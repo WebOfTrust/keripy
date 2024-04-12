@@ -16,7 +16,7 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
 from .. import kering
 from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
 
-from ..core.coring import Sizage, MapCodex
+from ..core.coring import Sizage, MapDom
 
 
 
@@ -45,7 +45,7 @@ GenDex = GenusCodex()  # Make instance
 
 
 @dataclass(frozen=True)
-class CounterCodex_1_0(MapCodex):
+class CounterCodex_1_0(MapDom):
     """
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
@@ -77,7 +77,7 @@ class CounterCodex_1_0(MapCodex):
 CtrDex_1_0 = CounterCodex_1_0()
 
 @dataclass(frozen=True)
-class CounterCodex_2_0(MapCodex):
+class CounterCodex_2_0(MapDom):
     """
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
@@ -134,6 +134,8 @@ class CounterCodex_2_0(MapCodex):
     BigMerkleRootSealSingles: str = '-0W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
     BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
     BigBackerRegistrarSealCouples: str = '-0X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing or sealed event.
+    BigSealSourceLastSingles: str = '-0Y'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
@@ -155,6 +157,35 @@ Tags_2_0 = Tagage_2_0()  # uses defaults
 CodictAll = Codict2 | Codict1
 AllTagage = namedtuple("AllTagage", list(CodictAll), defaults=list(CodictAll))
 AllTags = AllTagage()  # uses defaults
+
+
+@dataclass(frozen=True)
+class SealCodex_2_0(MapDom):
+    """
+    SealCodex_2_0 is codex of seal counter derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '-0Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '-0V'  # Big Digest Seal Single(s), dig of sealed data.
+    MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '-0W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '-0X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing event.
+    BigSealSourceLastSingles: str = '-0Y'  # Big Seal Source Couple(s), pre of last source sealing event.
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+SealDex_2_0 = SealCodex_2_0()
 
 
 class Counter:
@@ -181,25 +212,25 @@ class Counter:
         .version (Versionage): current CESR code table protocol genus version
         .codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
         .sizes (dict): version specific sizes table
-        .code (str) derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .pad  is int number of pad chars given raw
-        .count is int count of quadlets/triplets of following framed material
-            (not including code)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
+        .code (str): hard part of derivation code to indicate cypher suite
+        .raw (bytes): crypto material only without code
+        .pad  (int): number of pad chars given raw
+        .count (int): count of quadlets/triplets of following framed material
+                      (not including code)
+        .qb64 (str | bytes | bytearray): in Base64 fully qualified with
+                                          derivation code + crypto mat
+        .qb64b (bytes | bytearray): in Base64 fully qualified with
+                                    derivation code + crypto mat
+        .qb2  (bytes | bytearray): in binary with derivation code +
+                                  crypto material
 
     Hidden:
         ._version (Versionage): value for .version property
         ._codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
         ._sizes (dict): version specific sizes table
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._pad is method to compute  .pad property
-        ._count is int value for .count property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+        ._code (str): value for .code property
+        ._raw (bytes): value for .raw property
+        ._count (int): value for .count property
 
 
     Versioning:
@@ -373,6 +404,8 @@ class Counter:
                 '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
             },
         },
@@ -390,13 +423,12 @@ class Counter:
             code (str | None):  stable (hard) part of derivation code
                             if tag provided lookup code from tag
                             else if tag is None and code provided use code
-            count (int | None): count of framed material for composition
-                Count does not include code.
-                Count represents quadlets/triplets
-                When both count and countB64 are None then count defaults to 1
-            countB64 (str | None): count of framed material for composition
-                as Base64
-                countB64 represents quadlets/triplets
+            count (int | None): count of framed material in quadlets/triplets
+                               for composition. Count does not include code.
+                               When both count and countB64 are None then count
+                               defaults to 1
+            countB64 (str | None): count of framed material in quadlets/triplets
+                                for composition as Base64 representation of int.
             qb64b (bytes | bytearray | None): fully qualified crypto material text domain
                 if code nor tag is provided
             qb64 (str | None) fully qualified crypto material text domain

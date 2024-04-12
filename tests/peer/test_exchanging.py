@@ -3,8 +3,11 @@
 tests.peer.test_exchanging module
 
 """
-from keri.app import habbing, forwarding, storing, signing
+from keri import core
 from keri.core import coring, serdering
+
+from keri.app import habbing, forwarding, storing, signing
+
 from keri.peer import exchanging
 from keri.vdr.eventing import incept
 
@@ -76,7 +79,7 @@ def test_exchanger():
 
 
 def test_hab_exchange(mockHelpingNowUTC):
-    with habbing.openHby(salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 

@@ -11,20 +11,24 @@ import lmdb
 import pytest
 from hio.base import doing
 
-from tests.app import openMultiSig
-from keri.kering import Versionage
-from keri.app import habbing
+from keri.help.helping import datify, dictify
+
+from keri import core
 from keri.core import coring, eventing, serdering
-from keri.core.coring import MtrDex
+
 from keri.core.coring import Serials, versify
-from keri.core.coring import Salter
+
 from keri.core.eventing import incept, rotate, interact, Kever
+
+from keri.app import habbing
+
 from keri.db import basing
 from keri.db import dbing
 from keri.db.basing import openDB, Baser, KeyStateRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
-from keri.help.helping import datify, dictify
+
+from tests.app import openMultiSig
 
 
 def test_baser():
@@ -1707,7 +1711,7 @@ def test_clean_baser():
     """
     name = "nat"
     # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
-    with habbing.openHby(name=name, salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
+    with habbing.openHby(name=name, salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
         natHab = hby.makeHab(name=name, isith='2', icount=3)  # default Hab
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
@@ -1937,7 +1941,7 @@ def test_usebaser():
     Test using Baser
     """
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=raw)
+    salter = core.Salter(raw=raw)
 
     #  create coe's signers
     signers = salter.signers(count=8, path='db', temp=True)
@@ -1949,7 +1953,7 @@ def test_usebaser():
         count = len(keys)
         nxtkeys = [signers[3].verfer.qb64b, signers[4].verfer.qb64b, signers[5].verfer.qb64b]
         sith = "2"
-        code = MtrDex.Blake3_256  # Blake3 digest of incepting data
+        code = core.MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
                         isith=sith,

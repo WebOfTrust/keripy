@@ -9,8 +9,10 @@ import os
 from keri import help
 from keri.help import helping
 
-from keri.app import habbing
+from keri import core
 from keri.core import coring, eventing, parsing, serdering, indexing
+
+from keri.app import habbing
 
 
 logger = help.ogler.getLogger()
@@ -26,8 +28,8 @@ def test_replay():
     Deb replays Deb's events with both Cam's and  Bev's receipts to Cam
     Compare replay of Deb's events with receipts by both Deb and Cam to confirm identical
     """
-    artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
-    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    artSalt = core.Salter(raw=b'abcdef0123456789').qb64
+    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
 
     with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
          habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
@@ -495,8 +497,8 @@ def test_replay_all():
     Replay all the events in database.
 
     """
-    artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
-    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    artSalt = core.Salter(raw=b'abcdef0123456789').qb64
+    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
 
     with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
          habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,

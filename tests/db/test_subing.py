@@ -9,8 +9,11 @@ import pytest
 
 import pysodium
 
-from keri.help import helping
+from keri import help
+
+from keri import core
 from keri.core import coring, eventing, serdering, indexing
+
 from keri.db import dbing, subing
 from keri.app import keeping
 
@@ -1320,13 +1323,13 @@ def test_signer_suber():
 
         sdb = subing.SignerSuber(db=db, subkey='bags.')  # default klas is Signer
         assert isinstance(sdb, subing.SignerSuber)
-        assert issubclass(sdb.klas, coring.Signer)
+        assert issubclass(sdb.klas, core.Signer)
         assert not sdb.sdb.flags()["dupsort"]
 
         # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
         seed0 = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
                            b'\xde\x06\xc0+')
-        signer0 = coring.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
+        signer0 = core.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
         assert signer0.verfer.code == coring.MtrDex.Ed25519
         assert signer0.verfer.transferable  # default
         assert signer0.qb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
@@ -1336,7 +1339,7 @@ def test_signer_suber():
         seed1 = (b'`\x05\x93\xb9\x9b6\x1e\xe0\xd7\x98^\x94\xc8Et\xf2\xc4\xcd\x94\x18'
                  b'\xc6\xae\xb9\xb6m\x12\xc4\x80\x03\x07\xfc\xf7')
 
-        signer1 = coring.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
+        signer1 = core.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
         assert signer1.verfer.code == coring.MtrDex.Ed25519
         assert signer1.verfer.transferable  # default
         assert signer1.qb64b == b'AGAFk7mbNh7g15helMhFdPLEzZQYxq65tm0SxIADB_z3'
@@ -1345,7 +1348,7 @@ def test_signer_suber():
         keys = (signer0.verfer.qb64, )  # must be verfer as key to get transferable
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -1355,14 +1358,14 @@ def test_signer_suber():
 
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
         #  try put different val when already put
         result = sdb.put(keys=keys, val=signer1)
         assert not result
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -1371,7 +1374,7 @@ def test_signer_suber():
         result = sdb.pin(keys=keys, val=signer1)
         assert result
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer1.qb64
         assert actual.verfer.qb64 == signer1.verfer.qb64
 
@@ -1380,7 +1383,7 @@ def test_signer_suber():
 
         sdb.pin(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -1423,7 +1426,7 @@ def test_crypt_signer_suber():
     # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed0 = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
                        b'\xde\x06\xc0+')
-    signer0 = coring.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
+    signer0 = core.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
     assert signer0.verfer.code == coring.MtrDex.Ed25519
     assert signer0.verfer.transferable  # default
     assert signer0.qb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
@@ -1433,7 +1436,7 @@ def test_crypt_signer_suber():
     seed1 = (b'`\x05\x93\xb9\x9b6\x1e\xe0\xd7\x98^\x94\xc8Et\xf2\xc4\xcd\x94\x18'
              b'\xc6\xae\xb9\xb6m\x12\xc4\x80\x03\x07\xfc\xf7')
 
-    signer1 = coring.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
+    signer1 = core.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
     assert signer1.verfer.code == coring.MtrDex.Ed25519
     assert signer1.verfer.transferable  # default
     assert signer1.qb64b == b'AGAFk7mbNh7g15helMhFdPLEzZQYxq65tm0SxIADB_z3'
@@ -1442,27 +1445,27 @@ def test_crypt_signer_suber():
 
     # rawsalt =pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     rawsalt = b'0123456789abcdef'
-    salter = coring.Salter(raw=rawsalt)
+    salter = core.Salter(raw=rawsalt)
     salt = salter.qb64
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     stem = "blue"
 
     # cryptseed0 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed0 = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
-    cryptsigner0 = coring.Signer(raw=cryptseed0, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner0 = core.Signer(raw=cryptseed0, code=coring.MtrDex.Ed25519_Seed,
                            transferable=False)
     seed0 = cryptsigner0.qb64
     aeid0 = cryptsigner0.verfer.qb64
     assert aeid0 == 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'
 
-    decrypter = coring.Decrypter(seed=seed0)
-    encrypter = coring.Encrypter(verkey=aeid0)
+    decrypter = core.Decrypter(seed=seed0)
+    encrypter = core.Encrypter(verkey=aeid0)
     assert encrypter.verifySeed(seed=seed0)
 
     # cryptseed1 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed1 = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
                b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
-    cryptsigner1 = coring.Signer(raw=cryptseed1, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner1 = core.Signer(raw=cryptseed1, code=coring.MtrDex.Ed25519_Seed,
                            transferable=False)
 
 
@@ -1473,14 +1476,14 @@ def test_crypt_signer_suber():
 
         sdb = subing.CryptSignerSuber(db=db, subkey='bags.')  # default klas is Signer
         assert isinstance(sdb, subing.CryptSignerSuber)
-        assert issubclass(sdb.klas, coring.Signer)
+        assert issubclass(sdb.klas, core.Signer)
         assert not sdb.sdb.flags()["dupsort"]
 
         # Test without encrypter or decrypter
         keys = (signer0.verfer.qb64, )  # must be verfer as key to get transferable
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -1490,14 +1493,14 @@ def test_crypt_signer_suber():
 
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
         #  try put different val when already put
         result = sdb.put(keys=keys, val=signer1)
         assert not result
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -1506,7 +1509,7 @@ def test_crypt_signer_suber():
         result = sdb.pin(keys=keys, val=signer1)
         assert result
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer1.qb64
         assert actual.verfer.qb64 == signer1.verfer.qb64
 
@@ -1515,7 +1518,7 @@ def test_crypt_signer_suber():
 
         sdb.pin(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Signer)
+        assert isinstance(actual, core.Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -1538,8 +1541,8 @@ def test_crypt_signer_suber():
 
 
         # now test with encrypter and decrypter
-        encrypter0 = coring.Encrypter(verkey=cryptsigner0.verfer.qb64)
-        decrypter0 = coring.Decrypter(seed=cryptsigner0.qb64b)
+        encrypter0 = core.Encrypter(verkey=cryptsigner0.verfer.qb64)
+        decrypter0 = core.Decrypter(seed=cryptsigner0.qb64b)
 
         # first pin with encrypter
         assert sdb.pin(keys=signer0.verfer.qb64b, val=signer0, encrypter=encrypter0)
@@ -1547,12 +1550,12 @@ def test_crypt_signer_suber():
 
         # now get
         actual0 = sdb.get(keys=signer0.verfer.qb64b, decrypter=decrypter0)
-        assert isinstance(actual0, coring.Signer)
+        assert isinstance(actual0, core.Signer)
         assert actual0.qb64 == signer0.qb64
         assert actual0.verfer.qb64 == signer0.verfer.qb64
 
         actual1 = sdb.get(keys=signer1.verfer.qb64b, decrypter=decrypter0)
-        assert isinstance(actual1, coring.Signer)
+        assert isinstance(actual1, core.Signer)
         assert actual1.qb64 == signer1.qb64
         assert actual1.verfer.qb64 == signer1.verfer.qb64
 
@@ -1589,8 +1592,8 @@ def test_crypt_signer_suber():
 
 
         # test re-encrypt
-        encrypter1 = coring.Encrypter(verkey=cryptsigner1.verfer.qb64)
-        decrypter1 = coring.Decrypter(seed=cryptsigner1.qb64b)
+        encrypter1 = core.Encrypter(verkey=cryptsigner1.verfer.qb64)
+        decrypter1 = core.Decrypter(seed=cryptsigner1.qb64b)
         for keys, sgnr in sdb.getItemIter(decrypter=decrypter0):
             sdb.pin(keys, sgnr, encrypter=encrypter1)
 
@@ -1618,15 +1621,15 @@ def test_crypt_signer_suber():
         assert manager.algo == keeping.Algos.salty
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
-        assert manager.tier == coring.Tiers.low
-        saltCipher0 = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
+        assert manager.tier == core.Tiers.low
+        saltCipher0 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert saltCipher0.decrypt(seed=seed0).qb64 == salt
 
 
         manager.updateAeid(aeid=cryptsigner1.verfer.qb64, seed=cryptsigner1.qb64)
         assert manager.aeid == cryptsigner1.verfer.qb64 == 'BEcOrMrG_7r_NWaLl6h8UJapwIfQWIkjrIPXkCZm2fFM'
         assert manager.salt == salt
-        saltCipher1 = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
+        saltCipher1 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert not saltCipher0.qb64 == saltCipher1.qb64  # old cipher different
 
     """End Test"""

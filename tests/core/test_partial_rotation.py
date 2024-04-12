@@ -6,8 +6,10 @@ tests.core.test_partial_rotation module
 import pytest
 
 from keri import kering
+
+from keri import core
 from keri.core import coring, eventing
-from keri.core.coring import Salter
+
 from keri.db.basing import openDB
 
 
@@ -16,7 +18,7 @@ def test_partial_rotation():
 
     #  create signers
     raw = b"ABCDEFGH01234567"
-    signers = Salter(raw=raw).signers(count=18, path='rot', temp=True)
+    signers = core.Salter(raw=raw).signers(count=18, path='rot', temp=True)
 
     # partial rotation with numeric thresholds
     with openDB(name="controller") as db:

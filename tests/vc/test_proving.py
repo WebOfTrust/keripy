@@ -6,12 +6,15 @@ tests.vc.proving module
 import pytest
 
 from keri import kering
-from keri.app import habbing
-from keri.core import coring, scheming, parsing, serdering, indexing
+from keri.kering import Versionage
+
+from keri import core
+from keri.core import coring, scheming, parsing, serdering
 from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger
 from keri.core.indexing import Siger
 from keri.core.scheming import CacheResolver
-from keri.kering import Versionage
+
+from keri.app import habbing
 from keri.vc.proving import credential
 from keri.vdr import verifying, credentialing
 
@@ -19,7 +22,7 @@ from keri.vdr import verifying, credentialing
 def test_proving(mockHelpingNowIso8601):
     """Test credential proof with SerderACDC"""
 
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+    sidSalt = core.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test", )
@@ -249,7 +252,7 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
         engagementContextRole="Project Manager",
     )
 
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    salt = core.Salter(raw=b'0123456789abcdef').qb64
     cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       recipient="EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB",
                       private=True,

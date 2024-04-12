@@ -23,7 +23,7 @@ from keri.core import structing
 from keri.core.structing import (SealDigest, SealRoot, SealBacker, SealEvent,
                                  SealLast, SealTrans)
 from keri.core.structing import (Structor, EmptyClanDex, EmptyCastDex,
-                                 Sealer, SealClanDex, SealCastDex, )
+                                 Sealer, ClanDom, CastDom, )
 
 
 def test_structor_class():
@@ -59,6 +59,7 @@ def test_structor():
     clan = SealDigest
     cast = SealDigest(d=Diger)
     crew = SealDigest(d=dig)
+    name = SealDigest.__name__
 
     dcast = cast._asdict()
     dcrew = crew._asdict()
@@ -76,6 +77,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.asdict == data._asdict()
     assert structor.asdict == {'d': diger}
     assert structor.qb64 == qb64
@@ -87,6 +89,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -95,6 +98,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -103,6 +107,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -111,6 +116,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -120,6 +126,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -129,6 +136,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -137,6 +145,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -146,6 +155,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -156,6 +166,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -164,6 +175,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -172,6 +184,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -180,6 +193,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -189,6 +203,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -198,6 +213,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -206,6 +222,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -214,7 +231,7 @@ def test_structor():
     structor = Structor(cast=dcast, crew=dcrew)
     assert structor.data.__class__.__name__ == "d"
     assert structor.clan != clan
-    assert structor.clan.__name__ == "d"
+    assert structor.name == "d"
     assert structor.cast == cast  # tuple compare is by field value not type
     assert structor.cast.__class__.__name__ == "d"
     assert structor.crew == crew
@@ -229,6 +246,7 @@ def test_structor():
     clan = SealEvent
     cast = SealEvent(i=Prefixer, s=Number, d=Diger)
     crew = SealEvent(i=aid, s=snq, d=dig)
+    name = SealEvent.__name__
 
     dcast = cast._asdict()
     dcrew = crew._asdict()
@@ -246,6 +264,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.asdict == data._asdict()
     assert structor.asdict == \
     {
@@ -262,6 +281,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -270,6 +290,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -278,6 +299,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -286,6 +308,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -295,6 +318,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -304,6 +328,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -312,6 +337,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -321,6 +347,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -331,6 +358,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -339,6 +367,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -347,6 +376,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -355,6 +385,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -365,6 +396,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -375,6 +407,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -383,6 +416,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -391,7 +425,7 @@ def test_structor():
     structor = Structor(cast=dcast, crew=dcrew)
     assert structor.data.__class__.__name__ == "i_s_d"
     assert structor.clan != clan
-    assert structor.clan.__name__ == "i_s_d"
+    assert structor.name == "i_s_d"
     assert structor.cast == cast  # tuple compare is by field value not type
     assert structor.cast.__class__.__name__ == "i_s_d"
     assert structor.crew == crew
@@ -413,40 +447,40 @@ def test_seal_dexes():
     test Seal Codexes
     """
 
-    assert asdict(SealClanDex) == \
+    assert asdict(ClanDom) == \
     {
         'SealDigest': SealDigest,
         'SealRoot': SealRoot,
         'SealBacker': SealBacker,
-        'SealEvent': SealEvent,
         'SealLast': SealLast,
-        'SealTrans': SealTrans
+        'SealTrans': SealTrans,
+        'SealEvent': SealEvent,
     }
 
-    assert asdict(SealCastDex) == \
+    assert asdict(CastDom) == \
     {
         'SealDigest': SealDigest(d=Diger),
         'SealRoot': SealRoot(rd=Diger),
         'SealBacker': SealBacker(bi=Prefixer, d=Diger),
-        'SealEvent': SealEvent(i=Prefixer, s=Number, d=Diger),
         'SealLast': SealLast(i=Prefixer),
-        'SealTrans': SealTrans(s=Number, d=Diger)
+        'SealTrans': SealTrans(s=Number, d=Diger),
+        'SealEvent': SealEvent(i=Prefixer, s=Number, d=Diger),
     }
 
 def test_sealer_class():
     """
     test sealer class variables etc
     """
-    assert Sealer.Clans == SealClanDex
-    assert Sealer.Casts == SealCastDex
+    assert Sealer.Clans == ClanDom
+    assert Sealer.Casts == CastDom
     assert Sealer.Names == \
     {
         ('d',): 'SealDigest',
         ('rd',): 'SealRoot',
         ('bi', 'd'): 'SealBacker',
-        ('i', 's', 'd'): 'SealEvent',
         ('i',): 'SealLast',
-        ('s', 'd'): 'SealTrans'
+        ('s', 'd'): 'SealTrans',
+        ('i', 's', 'd'): 'SealEvent',
     }
 
     """End Test"""

@@ -6,9 +6,10 @@ tests.vdr.eventing module
 import pytest
 
 from keri.app import habbing, keeping
+from keri.core import Signer
 from keri.core import coring, serdering
 from keri.core import eventing as keventing
-from keri.core.coring import versify, Serials, Ilks, MtrDex, Prefixer, Signer, Seqner, Saider
+from keri.core.coring import versify, Serials, Ilks, MtrDex, Prefixer, Seqner, Saider
 from keri.db import basing
 from keri.db.dbing import snKey, dgKey
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \

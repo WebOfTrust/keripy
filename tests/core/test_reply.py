@@ -14,13 +14,16 @@ from hio.help.hicting import Mict
 
 from keri import kering
 
+from keri import help
+
+from keri import core
 from keri.core import eventing, parsing, routing
-from keri.core.coring import MtrDex, Salter
+from keri.core.coring import MtrDex
 
 from keri.db import basing
 from keri.app import habbing, keeping
 
-from keri import help
+
 
 logger = help.ogler.getLogger()
 
@@ -63,7 +66,7 @@ def test_reply(mockHelpingNowUTC):
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salt =  Salter(raw=raw).qb64
+    salt =  core.Salter(raw=raw).qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # makHab uses stem=name to make different names have differnt AID pre
     with (habbing.openHby(name="wes", base="test", salt=salt) as wesHby,

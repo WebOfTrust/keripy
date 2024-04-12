@@ -8,9 +8,13 @@ import os
 import pytest
 
 from keri import help
-from keri.db import dbing, basing
-from keri.app import keeping
+
+from keri import core
 from keri.core import coring, eventing, parsing
+
+from keri.db import basing
+from keri.app import keeping
+
 
 logger = help.ogler.getLogger()
 
@@ -20,7 +24,7 @@ def test_weighted():
     Test multisig with weighted threshold
 
     """
-    wesSalt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    wesSalt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
     with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:

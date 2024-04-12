@@ -6,16 +6,20 @@ tests.app.habbing remote module
 import pytest
 
 from keri import kering
+
+from keri import core
+from keri.core import coring, eventing
+
 from keri.app import habbing
 from keri.app.keeping import SaltyCreator
-from keri.core import coring, eventing
+
 
 
 def test_remote_salty_hab():
     name = "test"
-    tier = coring.Tiers.low
+    tier = core.Tiers.low
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = coring.Salter(raw=raw, tier=tier)
+    salter = core.Salter(raw=raw, tier=tier)
 
     with habbing.openHby(name="remoteSalty") as remote, \
             habbing.openHby(name="local", salt=salter.qb64, temp=True, tier=tier) as local:

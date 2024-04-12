@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.core.test_coring module
+tests.core.test_indexing module
 
 """
 from dataclasses import dataclass, astuple, asdict

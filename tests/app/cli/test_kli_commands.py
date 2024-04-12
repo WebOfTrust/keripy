@@ -3,11 +3,17 @@ import os
 import multicommand
 import pytest
 
-from keri.app import directing, habbing
+
+from keri.kering import ValidationError
+
+from keri import core
+from keri.core import coring
+
+from keri.app import directing
+
 from keri.app.cli import commands
 from keri.app.cli.common import existing
-from keri.core import coring
-from keri.kering import ValidationError
+
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -17,7 +23,7 @@ def test_standalone_kli_commands(helpers, capsys):
     assert os.path.isdir("/usr/local/var/keri/ks/test") is False
 
     parser = multicommand.create_parser(commands)
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    salt = core.Salter(raw=b'0123456789abcdef').qb64
     args = parser.parse_args(["init", "--name", "test", "--nopasscode", "--salt", salt])
     assert args.handler is not None
     doers = args.handler(args)
@@ -257,7 +263,7 @@ def test_incept_and_rotate_opts(helpers, capsys):
     assert os.path.isdir("/usr/local/var/keri/ks/test-opts") is False
 
     parser = multicommand.create_parser(commands)
-    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    salt = core.Salter(raw=b'0123456789abcdef').qb64
     args = parser.parse_args(["init", "--name", "test-opts", "--nopasscode", "--salt", salt])
     assert args.handler is not None
     doers = args.handler(args)
