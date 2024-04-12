@@ -191,6 +191,12 @@ class RotateDoer(doing.DoDoer):
                    cuts=list(self.cuts), adds=list(self.adds),
                    data=self.data)
 
+        auths = {}
+        if self.authenticate:
+            for wit in hab.kever.wits:
+                code = input(f"Entire code for {wit}: ")
+                auths[wit] = f"{code}#{helping.nowIso8601()}"
+
         if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, proxy=self.hby.habByName(self.proxy))
             print("Waiting for delegation approval...")
@@ -198,19 +204,14 @@ class RotateDoer(doing.DoDoer):
                 yield self.tock
 
         elif hab.kever.wits:
-            if self.endpoint or self.authenticate:
-                auths = {}
-                if self.authenticate:
-                    for wit in hab.kever.wits:
-                        code = input(f"Entire code for {wit}: ")
-                        auths[wit] = f"{code}#{helping.nowIso8601()}"
+            if self.endpoint:
                 yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
             else:
                 for wit in self.adds:
                     self.mbx.addPoller(hab, witness=wit)
 
                 print("Waiting for witness receipts...")
-                witDoer = agenting.WitnessReceiptor(hby=self.hby)
+                witDoer = agenting.WitnessReceiptor(hby=self.hby, auths=auths)
                 self.extend(doers=[witDoer])
                 yield self.tock
 
