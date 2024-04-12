@@ -212,25 +212,25 @@ class Counter:
         .version (Versionage): current CESR code table protocol genus version
         .codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
         .sizes (dict): version specific sizes table
-        .code (str) derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .pad  is int number of pad chars given raw
-        .count is int count of quadlets/triplets of following framed material
-            (not including code)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
+        .code (str): hard part of derivation code to indicate cypher suite
+        .raw (bytes): crypto material only without code
+        .pad  (int): number of pad chars given raw
+        .count (int): count of quadlets/triplets of following framed material
+                      (not including code)
+        .qb64 (str | bytes | bytearray): in Base64 fully qualified with
+                                          derivation code + crypto mat
+        .qb64b (bytes | bytearray): in Base64 fully qualified with
+                                    derivation code + crypto mat
+        .qb2  (bytes | bytearray): in binary with derivation code +
+                                  crypto material
 
     Hidden:
         ._version (Versionage): value for .version property
         ._codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
         ._sizes (dict): version specific sizes table
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._pad is method to compute  .pad property
-        ._count is int value for .count property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+        ._code (str): value for .code property
+        ._raw (bytes): value for .raw property
+        ._count (int): value for .count property
 
 
     Versioning:
@@ -423,13 +423,12 @@ class Counter:
             code (str | None):  stable (hard) part of derivation code
                             if tag provided lookup code from tag
                             else if tag is None and code provided use code
-            count (int | None): count of framed material for composition
-                Count does not include code.
-                Count represents quadlets/triplets
-                When both count and countB64 are None then count defaults to 1
-            countB64 (str | None): count of framed material for composition
-                as Base64
-                countB64 represents quadlets/triplets
+            count (int | None): count of framed material in quadlets/triplets
+                               for composition. Count does not include code.
+                               When both count and countB64 are None then count
+                               defaults to 1
+            countB64 (str | None): count of framed material in quadlets/triplets
+                                for composition as Base64 representation of int.
             qb64b (bytes | bytearray | None): fully qualified crypto material text domain
                 if code nor tag is provided
             qb64 (str | None) fully qualified crypto material text domain

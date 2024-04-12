@@ -4285,7 +4285,7 @@ class Tholder:
                     when unweighted is size of int thold since don't have anyway
                         to know size of keys list in this case
 
-        .limen is qualified b64 signing threshold suitable for CESR serialization.
+        .limen is qualified b64b signing threshold suitable for CESR serialization.
             either Number.qb64b or Bexter.qb64b.
             The b64 portion of limen  with code stripped (Bexter.bext) of
               [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]

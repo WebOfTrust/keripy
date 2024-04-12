@@ -6,6 +6,8 @@ tests.core.test_serdering module
 import dataclasses
 import json
 from collections import namedtuple
+from base64 import urlsafe_b64encode as encodeB64
+from base64 import urlsafe_b64decode as decodeB64
 
 import cbor2 as cbor
 import msgpack
@@ -19,6 +21,8 @@ from keri.kering import (Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN,)
 
 from keri import core
+
+from keri.core.structing import Sealer, SealEvent, SealTrans
 
 from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
@@ -2675,26 +2679,28 @@ def test_cesr_native_dumps():
 
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = core.Salter(raw=raw)
+    rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = core.Salter(raw=rawsalt)
 
     csigners = salter.signers(count=3, transferable=True, temp=True)
     wsigners = salter.signers(count=3, transferable=False, temp=True)
 
 
-    keys = [csigners[0].qb64]
-    keys = ["EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"]
+    # simple event
+
+    keys = [csigners[0].verfer.qb64]
+    assert keys == ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ']
     serder = incept(keys, version=Vrsn_2_0)
 
     assert serder.sad == \
     {
         'v': 'KERICAAJSONAAD8.',
         't': 'icp',
-        'd': 'EF_SoHnCdQ0N9Kivxl54u3l1-sKwDL0gs729_REO6koi',
-        'i': 'EF_SoHnCdQ0N9Kivxl54u3l1-sKwDL0gs729_REO6koi',
+        'd': 'EP9O8aDcloRpvTmk8pnfq3KE2eH_-_wDYWqwOsSgpPws',
+        'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
         's': '0',
         'kt': '1',
-        'k': ['EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J'],
+        'k': ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ'],
         'nt': '0',
         'n': [],
         'bt': '0',
@@ -2703,6 +2709,134 @@ def test_cesr_native_dumps():
         'a': []
     }
 
+    rawqb64 = serder._dumps()  # default is it dumps self.sad
+    assert rawqb64 == (b'-FAtYKERICAAXicpEP9O8aDcloRpvTmk8pnfq3KE2eH_-_wDYWqwOsSgpPwsDG9X'
+                   b'hvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-LALDG9XhvcVryHj'
+                   b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAA-LAAMAAA-LAA-LAA-LAA')
+    assert len(rawqb64) == 184
+
+    rawqb2 = decodeB64(rawqb64)
+    assert len(rawqb2) == 138
+    assert rawqb64 == encodeB64(rawqb2)  # round trips
+
+    rawjson = serder.dumps(serder.sad)
+    assert len(rawjson) == 252
+
+    rawcbor = serder.dumps(serder.sad, kind=kering.Serials.cbor)
+    assert len(rawcbor) == 202
+
+    rawmgpk = serder.dumps(serder.sad, kind=kering.Serials.mgpk)
+    assert len(rawmgpk) == 202
+
+    raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
+    ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
+
+    assert ratios == [1.0, 1.33, 1.46, 1.46, 1.83]
+
+    # more complex event
+
+    keys = [signer.verfer.qb64 for signer in csigners]
+    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys]
+    wits = [signer.verfer.qb64 for signer in wsigners]
+    data = [dict(i=keys[0], s=core.Number(num=0).qb64, d=ndigs[0]),
+            dict(i=keys[1], s=core.Number(num=1).qb64, d=ndigs[1]),
+            dict(s=core.Number(num=15).qb64, d=ndigs[2])]
+
+
+    serder = incept(keys,
+                    ndigs=ndigs,
+                    wits=wits,
+                    cnfg=['DND'],
+                    data=data,
+                    code=core.MtrDex.Blake3_256,
+                    version=Vrsn_2_0)
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAAJSONAAOc.',
+        't': 'icp',
+        'd': 'EO1m0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8',
+        'i': 'EO1m0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8',
+        's': '0',
+        'kt': '2',
+        'k': [
+                'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+             ],
+        'nt': '2',
+        'n': [
+                'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_',
+                'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG',
+                'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+             ],
+        'bt': '3',
+        'b': [
+                'BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                'BK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                'BMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+             ],
+        'c': ['DND'],
+        'a': [
+                {
+                    'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                    's': 'MAAA',
+                    'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+                },
+                {
+                    'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                    's': 'MAAB',
+                    'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
+                },
+                {
+                    's': 'MAAP',
+                    'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+                }
+             ]
+    }
+
+    rawqb64 = serder._dumps()  # default is it dumps self.sad
+    assert rawqb64 == (b'-FDCYKERICAAXicpEO1m0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8EO1m'
+                    b'0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8MAAAMAAC-LAhDG9XhvcVryHj'
+                    b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
+                    b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-LAh'
+                    b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
+                    b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
+                    b'ZEyPMAAD-LAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
+                    b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
+                    b'gXZ2WYbr3AiPY1M0-LABXDND-LA8-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+                    b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
+                    b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
+                    b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+                    b'ZJGJqQZpZEyP')
+
+    assert len(rawqb64) == 780
+
+    rawqb2 = decodeB64(rawqb64)
+    assert len(rawqb2) == 585
+    assert rawqb64 == encodeB64(rawqb2)  # round trips
+
+    rawjson = serder.dumps(serder.sad)
+    assert len(rawjson) == 924
+
+    rawcbor = serder.dumps(serder.sad, kind=kering.Serials.cbor)
+    assert len(rawcbor) == 838
+
+    rawmgpk = serder.dumps(serder.sad, kind=kering.Serials.mgpk)
+    assert len(rawmgpk) == 838
+
+    raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
+    ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
+
+    assert ratios == [1.0, 1.33, 1.43, 1.43, 1.58]
+
+    """End Test"""
+
+def test_cesr_native_dumps_hby():
+    """Test Serder._dumps with habery"""
+
+    rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = core.Salter(raw=rawsalt)
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
@@ -2760,8 +2894,6 @@ def test_cesr_native_dumps():
 
     """End Test"""
 
-
-
 if __name__ == "__main__":
     test_fielddom()
     test_spans()
@@ -2784,4 +2916,5 @@ if __name__ == "__main__":
     test_serder_v2()
     test_serdery()
     test_cesr_native_dumps()
+    test_cesr_native_dumps_hby()
 

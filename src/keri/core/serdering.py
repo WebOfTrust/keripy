@@ -1199,14 +1199,14 @@ class Serder:
         return raw
 
 
-    def _dumps(self, sad):
+    def _dumps(self, sad=None):
         """CESR native serialization of sad
 
         Returns:
             raw (bytes): CESR native serialization of sad dict
 
         Parameters:
-            sad (dict | list)): serializable dict or list to serialize
+            sad (dict | None)): serializable dict to serialize
 
         Versioning:
             CESR native serialization includes in its fixed version field
@@ -1220,6 +1220,8 @@ class Serder:
             tables are backwards compatible across major versions.
 
         """
+        sad = sad if sad else self.sad
+
         if (self.gvrsn.major < Vrsn_2_0.major or
             self.vrsn.major < Vrsn_2_0.major):
                 raise SerializeError(f"Invalid major genus version={self.gvrsn}"
@@ -1234,9 +1236,10 @@ class Serder:
                                  f"genus={self.genus}.")
 
 
-        fixed = True  # True = use fixed field, False= use field map
 
-        raw = bytearray()
+
+        raw = bytearray()  # message as qb64
+        bdy = bytearray()  # message body as qb64
         ilks = self.Fields[self.proto][self.vrsn]  # get fields keyed by ilk
 
         ilk = sad.get('t')  # returns None if missing message type (ilk)
@@ -1249,6 +1252,8 @@ class Serder:
 
         if fields.opts or not fields.strict:  # optional or extra fields allowed
             fixed = False  # so must use field map
+        else:
+            fixed = True  #fixed field
 
 
         # assumes that sad's field ordering and field inclusion is correct
@@ -1256,11 +1261,10 @@ class Serder:
         # need to fix ._verify and .makify to account for CESR native serialization
 
         if self.proto == Protocols.keri:
-            for l, v in sad.items():  # assumes valid field order & presence
-                if not fixed:  # prepend label
-                    pass
+            if not fixed:  # prepend label
+                pass  # raise error
 
-                # should dispatch or use match instead of big if else
+            for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
                     case "v":  # protocol+version  do not use version string itself
                         val = Verser(proto=self.proto, vrsn=self.vrsn).qb64b
@@ -1283,67 +1287,69 @@ class Serder:
                             frame.extend(e.encode("utf-8"))
 
                         val = bytearray(Counter(tag=AllTags.GenericListGroup,
-                                                count=len(frame) % 4).qb64b)
+                                                count=len(frame) // 4).qb64b)
                         val.extend(frame)
 
                     case "c":  # list of config traits strings
                         frame = bytearray()
                         for e in v:  # list
-                            frame.extend(Traitor(trait=e).qb64n)
+                            frame.extend(Traitor(trait=e).qb64b)
 
                         val = bytearray(Counter(tag=AllTags.GenericListGroup,
-                                                count=len(frame) % 4).qb64b)
+                                                count=len(frame) // 4).qb64b)
                         val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
                         frame = bytearray()  # whole list
-                        gctr = None  # counter for consecutive same type seals
+                        gcode = None  # code for counter for consecutive same type seals
                         gframe = bytearray()  # consecutive same type seals
                         for e in v:  # list of seal dicts
                             # need support for grouping consecutive seals of same type with same counter
 
                             try:
                                 sealer = Sealer(crew=e)
-                                frame.extend(sealer.qb64b)
-                                # lookup counter type by sealer.clan.name
+                                code = self.ClanCodes[sealer.name]
+                                if gcode and gcode == code:
+                                    gframe.extend(sealer.qb64b)
+                                else:
+                                    if gframe:  # not same so close off and rotate group
+                                        counter = Counter(code=gcode, count=len(gframe) // 4)
+                                        frame.extend(counter.qb64b + gframe)
+                                        gframe = bytearray()  # new group
+                                    gcode = code  # new group or keep same group
+                                    gframe.extend(sealer.qb64b)  # extend in new group
+
                             except kering.InvalidValueError:
-                                pass
+                                if gframe:
+                                    counter = Counter(code=gcode, count=len(gframe) // 4)
+                                    frame.extend(counter.qb64b + gframe)
+                                    gframe = bytearray()
+                                    gcode = None
+
                                 #unknown seal type so serialize as field map
-
-
-                            #if tuple(v) == eventing.SealEvent._fields:
-                                #eseal = eventing.SealEvent(**v)  # convert to namedtuple
-                                #SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-                                #SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-                                #DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
-                                #MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-                                #BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-
-                                # SealMark == tuple of seal dict field names tuple(dict)
-                                #d = dict(a=1, b=2)
-                                #tuple(d)
-                                #('a', 'b')
-
-                            #frame.extend(Sealer(seal=e).qb64b)
-                            # else:  generic seal no count type (v, Mapping):
+                                #generic seal no count type (v, Mapping):
                                 #for l, e in v.items():
                                     #pass
                                 #val = bytearray(Counter(tag=AllTags.GenericMapGroup,
-                                               # count=len(frame) % 4).qb64b)
+                                               # count=len(frame) // 4).qb64b)
                                 #val.extend(mapframe)
 
-                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
-                                                count=len(frame) % 4).qb64b)
-                        val.extend(frame)
+                        if gframe:  # close off last group if any
+                            counter = Counter(code=gcode, count=len(gframe) // 4)
+                            frame.extend(counter.qb64b + gframe)
+                            gframe = bytearray()
+                            gcode = None
 
+                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                                                count=len(frame) // 4).qb64b)
+                        val.extend(frame)
 
                     case _:  # if extra fields this is where logic would be
                         raise SerializeError(f"Unsupported protocol field label"
                                              f"='{l}' for protocol={self.proto}"
                                              f" version={self.vrsn}.")
 
-
-                raw.extend(val)
+                bdy.extend(val)
 
 
         elif self.protocol == Protocols.acdc:
@@ -1360,9 +1366,9 @@ class Serder:
         # prepend count code for message
         if fixed:
 
-            val = bytearray(Counter(tag=AllTags.FixedMessageBodyGroup,
-                                    count=len(raw) % 4).qb64b)
-            val.extend(raw)
+            raw = bytearray(Counter(tag=AllTags.FixedMessageBodyGroup,
+                                    count=len(bdy) // 4).qb64b)
+            raw.extend(bdy)
         else:
             pass
 

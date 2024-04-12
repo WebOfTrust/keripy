@@ -643,7 +643,8 @@ def state(pre,
                )
     return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
 
-
+# should remove intive as its not standard KERI so confusing and leads to errors
+# this is an old feature that is now deprecated.
 
 def incept(keys,
            *,
