@@ -946,7 +946,7 @@ class Baser(dbing.LMDBer):
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
-        self.misfits = subing.CesrIoSetSuber(db=self, subkey='mfes.', klas=coring.Diger)
+        self.misfits = subing.IoSetSuber(db=self, subkey='mfes.')
 
         # delegable events escrows. events with local delegator that need approval
         self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)

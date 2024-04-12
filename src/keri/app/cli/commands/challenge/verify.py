@@ -28,7 +28,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the identifi
                     default=None)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
 parser.add_argument('--words', '-d', help='JSON formatted array of words to verfiy, \'@\' allowed to load from a file',

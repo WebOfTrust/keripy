@@ -39,21 +39,23 @@ class Receiptor(doing.DoDoer):
 
         super(Receiptor, self).__init__(doers=doers)
 
-    def receipt(self, pre, sn=None):
+    def receipt(self, pre, sn=None, auths=None):
         """ Returns a generator for witness receipting
 
         The returns a generator that will submit the designated event to witnesses for receipts using
-        the synchronous witness API, the propogate the receipts to each of the other witnesses.
+        the synchronous witness API, then propogate the receipts to each of the other witnesses.
 
 
         Parameters:
             pre (str): qualified base64 identifier to gather receipts for
             sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
+            auths: (Options[dict]): map of witness AIDs to (time,auth) tuples for providing TOTP auth for witnessing
 
         Returns:
             list: identifiers of witnesses that returned receipts.
 
         """
+        auths = auths if auths is not None else dict()
         if pre not in self.hby.prefixes:
             raise kering.MissingEntryError(f"{pre} not a valid AID")
 
@@ -86,7 +88,11 @@ class Receiptor(doing.DoDoer):
 
         rcts = dict()
         for wit, client in clients.items():
-            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="/receipts")
+            headers = dict()
+            if wit in auths:
+                headers["Authorization"] = auths[wit]
+
+            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="receipts", headers=headers)
             while not client.responses:
                 yield self.tock
 
@@ -101,7 +107,7 @@ class Receiptor(doing.DoDoer):
                 coring.Counter(qb64b=rct, strip=True)
                 rcts[wit] = rct
             else:
-                logger.error(f"invalid response {rep.status} from witnesses {wit}")
+                print(f"invalid response {rep.status} from witnesses {wit}")
 
         for wit in rcts:
             ewits = [w for w in rcts if w != wit]
@@ -1057,7 +1063,7 @@ def httpClient(hab, wit):
 
     url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
     up = urlparse(url)
-    client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
+    client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port, path=up.path)
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer

@@ -52,7 +52,7 @@ parser.add_argument('--config-file',
 
 # Parameters for Manager creation
 # passcode => bran
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)
 parser.add_argument('--nopasscode', help='create an unencrypted keystore', action='store_true')
 parser.add_argument('--aeid', '-a', help='qualified base64 of non-transferable identifier prefix for  authentication '
@@ -86,7 +86,7 @@ class InitDoer(doing.DoDoer):
         configDir = args.configDir
 
         if not args.nopasscode and not bran:
-            print("Creating encrypted keystore, please enter your 22 character passcode:")
+            print("Creating encrypted keystore, please enter your 21 character passcode:")
             while True:
                 bran = getpass.getpass("Passcode: ")
                 retry = getpass.getpass("Re-enter passcode: ")

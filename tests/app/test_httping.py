@@ -56,10 +56,15 @@ def test_parse_cesr_request():
     assert cr.attachments == "-H000000000"
 
 
+class MockRequester:
+    path = '/'
+
+
 class MockClient:
 
     def __init__(self):
         self.args = []
+        self.requester = MockRequester()
 
     def request(self, **kwargs):
         self.args.append(kwargs)

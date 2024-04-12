@@ -37,7 +37,7 @@ parser.add_argument('--temp', '-t', help='create a temporary keystore, used for 
 
 # Parameters for Manager creation
 # passcode => bran
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)
 
 

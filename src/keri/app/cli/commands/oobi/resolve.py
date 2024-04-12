@@ -34,7 +34,7 @@ parser.add_argument('--force', action="store_true", required=False,
 
 # Parameters for Manager access
 # passcode => bran
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)
 
 

@@ -24,11 +24,11 @@ logger = help.ogler.getLogger()  # I think this should be keri.help not hio.help
 parser = argparse.ArgumentParser(description='Initialize a prefix')
 parser.set_defaults(handler=lambda args: set_passcode(args),
                     transferable=True)
-parser.add_argument("--new", help="new  22 character encryption passcode for keystore", required=False, default=None)
+parser.add_argument("--new", help="new  21 character encryption passcode for keystore", required=False, default=None)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--passcode', '-p', help='existing 22 character encryption passcode for keystore',
+parser.add_argument('--passcode', '-p', help='existing 21 character encryption passcode for keystore',
                     dest="bran", default=None)  # passcode => bran
 
 
@@ -56,7 +56,7 @@ def set_passcode(tymth, tock=0.0, **opts):
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
 
             if newpasscode is None:
-                print("Re-encrypting keystore, please enter the new 22 character passcode:")
+                print("Re-encrypting keystore, please enter the new 21 character passcode:")
                 while True:
                     newpasscode = getpass.getpass("New passcode: ")
                     retry = getpass.getpass("Re-enter new passcode: ")

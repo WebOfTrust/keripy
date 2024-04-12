@@ -7,7 +7,7 @@ import datetime
 import json
 from dataclasses import dataclass
 from urllib import parse
-from urllib.parse import urlparse
+from pathlib import Path
 
 import falcon
 from hio.base import doing
@@ -152,7 +152,7 @@ def createCESRRequest(msg, client, dest, path=None):
     )
 
 
-def streamCESRRequests(client, ims, dest, path=None):
+def streamCESRRequests(client, ims, dest, path=None, headers=None):
     """
     Turns a stream of KERI messages into CESR http requests against the provided hio http Client
 
@@ -167,6 +167,7 @@ def streamCESRRequests(client, ims, dest, path=None):
 
     """
     path = path if path is not None else "/"
+    path = str(Path(client.requester.path) / path)
 
     cold = kering.sniff(ims)  # check for spurious counters at front of stream
     if cold in (parsing.Colds.txt, parsing.Colds.bny):  # not message error out to flush stream
@@ -191,17 +192,19 @@ def streamCESRRequests(client, ims, dest, path=None):
 
         body = serder.raw
 
-        headers = Hict([
+        headers = headers if headers is not None else Hict()
+        heads = (Hict([
             ("Content-Type", CESR_CONTENT_TYPE),
             ("Content-Length", len(body)),
             (CESR_ATTACHMENT_HEADER, attachment),
             (CESR_DESTINATION_HEADER, dest)
-        ])
+        ]))
+        heads.update(headers)
 
         client.request(
             method="POST",
             path=path,
-            headers=headers,
+            headers=heads,
             body=body
         )
         cnt += 1
