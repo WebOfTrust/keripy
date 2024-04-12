@@ -40,7 +40,7 @@ from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
 
 from .counting import GenDex, AllTags, Counter, SealDex_2_0
 
-from .structing import Sealer, ClanDom
+from .structing import Sealer, SClanDom
 
 
 
@@ -365,12 +365,12 @@ class Serder:
 
     # map seal clan names to seal counter code for grouping seals in anchor list
     ClanCodes = dict()
-    ClanCodes[ClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
-    ClanCodes[ClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
-    ClanCodes[ClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
-    ClanCodes[ClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
-    ClanCodes[ClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
-    ClanCodes[ClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
+    ClanCodes[SClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
+    ClanCodes[SClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
+    ClanCodes[SClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
+    ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
+    ClanCodes[SClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
+    ClanCodes[SClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
 
     # map seal counter code to seal clan name for parsing seal groups in anchor list
     CodeClans = { val: key for key, val in ClanCodes.items()}  # invert dict

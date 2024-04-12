@@ -85,8 +85,14 @@ StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
 StateEvent = namedtuple("StateEvent", 's t d')
 
 
+# Cast conversion: duple (c, k)
+# s = cast as appropriate namedtuple with values as primitive classes
+# k = keyword parameter name to use when casting
+Castage = namedtuple('Castage', "c k")
+
+
 @dataclass(frozen=True)
-class EmptyClanCodex(MapDom):
+class EmptyClanDom(MapDom):
     """
     SealClanDom is dataclass of namedtuple seal class references (clans) each
     indexed by its class name.
@@ -103,11 +109,11 @@ class EmptyClanCodex(MapDom):
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-EmptyClanDex = EmptyClanCodex()  # create instance
+EClanDom = EmptyClanDom()  # create instance
 
 
 @dataclass(frozen=True)
-class EmptyCastCodex(MapDom):
+class EmptyCastDom(MapDom):
     """
     SealCastCodex is dataclass of namedtuple instances (seal casts) whose values
     are named primitive class references
@@ -126,7 +132,7 @@ class EmptyCastCodex(MapDom):
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-EmptyCastDex = EmptyCastCodex()  # create instance
+ECastDom = EmptyCastDom()  # create instance
 
 
 @dataclass(frozen=True)
@@ -153,7 +159,9 @@ class SealClanDom(MapDom):
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-ClanDom = SealClanDom()  # create instance
+SClanDom = SealClanDom()  # create instance
+
+
 
 
 @dataclass(frozen=True)
@@ -182,7 +190,7 @@ class SealCastDom(MapDom):
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-CastDom = SealCastDom()  # create instance
+SCastDom = SealCastDom()  # create instance
 
 
 
@@ -252,8 +260,8 @@ class Structor:
 
 
     """
-    Clans = EmptyClanDex  # known namedtuple clans. Override in subclass with non-empty
-    Casts = EmptyCastDex  # known namedtuple casts. Override in subclass with non-empty
+    Clans = EClanDom  # known namedtuple clans. Override in subclass with non-empty
+    Casts = ECastDom  # known namedtuple casts. Override in subclass with non-empty
     # Create .Names dict that maps tuple of clan/cast fields names to its namedtuple
     # class type name so can look up a know clan or cast given a matching tuple
     # of either field names from a namedtuple or keys from a dict. The tuple of
@@ -563,8 +571,8 @@ class Sealer(Structor):
 
 
     """
-    Clans = ClanDom  # known namedtuple clans. Override in subclass with non-empty
-    Casts = CastDom  # known namedtuple casts. Override in subclass with non-empty
+    Clans = SClanDom  # known namedtuple clans. Override in subclass with non-empty
+    Casts = SCastDom  # known namedtuple casts. Override in subclass with non-empty
     # Create .Names dict that maps clan/cast fields names to its namedtuple
     # class type name so can look up a know clan or cast given a matching set
     # of either field names from a namedtuple or keys from a dict.

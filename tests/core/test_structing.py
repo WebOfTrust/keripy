@@ -22,16 +22,16 @@ from keri.core import (Matter, Diger, Prefixer, Number)
 from keri.core import structing
 from keri.core.structing import (SealDigest, SealRoot, SealBacker, SealEvent,
                                  SealLast, SealTrans)
-from keri.core.structing import (Structor, EmptyClanDex, EmptyCastDex,
-                                 Sealer, ClanDom, CastDom, )
+from keri.core.structing import (Structor, EClanDom, ECastDom,
+                                 Sealer, SClanDom, SCastDom, )
 
 
 def test_structor_class():
     """
     test Structor class variables etc
     """
-    assert Structor.Clans == EmptyClanDex
-    assert Structor.Casts == EmptyCastDex
+    assert Structor.Clans == EClanDom
+    assert Structor.Casts == ECastDom
     assert Structor.Names == {}
 
     """End Test"""
@@ -447,7 +447,7 @@ def test_seal_dexes():
     test Seal Codexes
     """
 
-    assert asdict(ClanDom) == \
+    assert asdict(SClanDom) == \
     {
         'SealDigest': SealDigest,
         'SealRoot': SealRoot,
@@ -457,7 +457,7 @@ def test_seal_dexes():
         'SealEvent': SealEvent,
     }
 
-    assert asdict(CastDom) == \
+    assert asdict(SCastDom) == \
     {
         'SealDigest': SealDigest(d=Diger),
         'SealRoot': SealRoot(rd=Diger),
@@ -471,8 +471,8 @@ def test_sealer_class():
     """
     test sealer class variables etc
     """
-    assert Sealer.Clans == ClanDom
-    assert Sealer.Casts == CastDom
+    assert Sealer.Clans == SClanDom
+    assert Sealer.Casts == SCastDom
     assert Sealer.Names == \
     {
         ('d',): 'SealDigest',
