@@ -38,7 +38,7 @@ from hio.base import doing
 import keri
 from . import dbing, koming, subing
 from .. import kering
-
+from .. import core
 from ..core import coring, eventing, parsing, serdering, indexing
 
 from .. import help
@@ -952,7 +952,7 @@ class Baser(dbing.LMDBer):
         self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)
 
         # events as ordered by first seen ordinals
-        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=core.Number)
         # Kever state made of KeyStateRecord key states
         # TODO: clean
         self.states = koming.Komer(db=self,
@@ -1024,15 +1024,15 @@ class Baser(dbing.LMDBer):
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
-                                             klas=(coring.Seqner, coring.Saider))
+                                             klas=(core.Number, coring.Saider))
 
         # group delegate escrow
         self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.',
-                                             klas=(coring.Seqner, coring.Saider))
+                                             klas=(core.Number, coring.Saider))
 
         # group partial witness escrow
         self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.',
-                                             klas=(coring.Seqner, coring.Saider))
+                                             klas=(core.Number, coring.Saider))
 
         # completed group multisig
         # TODO: clean
@@ -1522,7 +1522,7 @@ class Baser(dbing.LMDBer):
             raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
         atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
                                   count=1).qb64b)
-        atc.extend(coring.Seqner(sn=fn).qb64b)
+        atc.extend(core.Number(num=fn, code=core.NumDex.Huge).qb64b)  # may not need to be Huge
         atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
 
         # prepend pipelining counter to attachments

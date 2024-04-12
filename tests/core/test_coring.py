@@ -2639,6 +2639,8 @@ def test_number():
     assert number.numh == '0'
     assert number.sn == 0
     assert number.snh == '0'
+    assert number.huge == '0AAAAAAAAAAAAAAAAAAAAAAA'
+    assert len(number.huge) == 24
     assert not number.positive
     assert number.inceptive
     assert hex(int.from_bytes(number.qb2, 'big')) == '0x300000'
@@ -2714,9 +2716,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
-
 
     number = Number(num=numh)  # num can be hext str too
     assert number.code == code
@@ -2729,8 +2728,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
 
     number = Number(numh=numh)
@@ -2744,8 +2741,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2758,8 +2753,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2772,8 +2765,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2786,8 +2777,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     num = (256 ** 5 - 1)
     assert num == 1099511627775
@@ -2809,8 +2798,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2823,8 +2810,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2837,8 +2822,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2849,8 +2832,6 @@ def test_number():
     assert number.num == num
     assert number.numh == numh
     assert number.positive
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2863,8 +2844,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     num = (256 ** 8 - 1)
     assert num == 18446744073709551615
@@ -2886,8 +2865,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2900,8 +2877,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2914,8 +2889,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2928,8 +2901,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2942,8 +2913,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     num = (256 ** 11 - 1)
     assert num == 309485009821345068724781055
@@ -2965,8 +2934,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2979,8 +2946,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2993,8 +2958,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -3007,8 +2970,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -3021,8 +2982,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     num = (256 ** 14 - 1)
     assert num == 5192296858534827628530496329220095
@@ -3045,8 +3004,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(numh=numh)
     assert number.code == code
@@ -3059,8 +3016,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -3073,8 +3028,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -3087,9 +3040,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
-
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -3102,8 +3052,6 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    assert isinstance(number.seqner, Seqner)
-    assert number.seqner.sn == number.sn
 
     num = (256 ** 17 - 1)
     assert num == 87112285931760246646623899502532662132735
@@ -3126,9 +3074,8 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    with pytest.raises(ValidationError):  # too big to be ordinal
-        number.seqner
-
+    with pytest.raises(InvalidValueError):
+        number.huge  # too big for huge
 
     number = Number(numh=numh)
     assert number.code == code
@@ -3141,8 +3088,8 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    with pytest.raises(ValidationError):  # too big to be ordinal
-        number.seqner
+    with pytest.raises(InvalidValueError):
+        number.huge  # too big for huge
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -3155,8 +3102,8 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    with pytest.raises(ValidationError):  # too big to be ordinal
-        number.seqner
+    with pytest.raises(InvalidValueError):
+        number.huge  # too big for huge
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -3169,8 +3116,9 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    with pytest.raises(ValidationError):  # too big to be ordinal
-        number.seqner
+    with pytest.raises(InvalidValueError):
+        number.huge  # too big for huge
+
 
 
     number = Number(raw=raw, code=code)
@@ -3184,9 +3132,8 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
-    with pytest.raises(ValidationError):  # too big to be ordinal
-        number.seqner
-
+    with pytest.raises(InvalidValueError):
+        number.huge  # too big for huge
 
     # tests with wrong size raw for code short
     num = (256 ** 2 - 1)
@@ -3368,7 +3315,7 @@ def test_number():
         number = Number(raw=raw2bad, code=code)
 
 
-    # tests with wrong size raw for code huge
+    # tests with wrong size raw for code Vast
     num = (256 ** 17 - 1)
     assert num == 87112285931760246646623899502532662132735
     numh = f"{num:x}"
@@ -6085,7 +6032,7 @@ if __name__ == "__main__":
     #test_counter()
     #test_prodex()
     #test_indexer()
-    #test_number()
+    test_number()
     #test_seqner()
     #test_siger()
     #test_nexter()

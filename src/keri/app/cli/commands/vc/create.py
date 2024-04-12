@@ -5,9 +5,11 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
+from keri import core
+from keri.core import coring, eventing, serdering
+
 from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
-from keri.core import coring, eventing, serdering
 from keri.help import helping
 from keri.peer import exchanging
 from keri.vdr import credentialing, verifying
@@ -207,9 +209,9 @@ class CredentialIssuer(doing.DoDoer):
         dt = self.creder.attrib["dt"] if "dt" in self.creder.attrib else helping.nowIso8601()
         iserder = registry.issue(said=self.creder.said, dt=dt)
 
-        vcid = iserder.ked["i"]
-        rseq = coring.Seqner(snh=iserder.ked["s"])
-        rseal = eventing.SealEvent(vcid, rseq.snh, iserder.said)
+        #vcid = iserder.ked["i"]
+        #rseq = coring.Seqner(snh=iserder.ked["s"])
+        rseal = eventing.SealEvent(iserder.pre, iserder.snh, iserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if registry.estOnly:
@@ -222,7 +224,8 @@ class CredentialIssuer(doing.DoDoer):
         self.credentialer.issue(self.creder, iserder)
         self.registrar.issue(self.creder, iserder, aserder)
 
-        acdc = signing.serialize(self.creder, coring.Prefixer(qb64=iserder.pre), coring.Seqner(sn=iserder.sn),
+        acdc = signing.serialize(self.creder, coring.Prefixer(qb64=iserder.pre),
+                                 core.Number(num=iserder.sn, code=core.NumDex.Huge),
                                  coring.Saider(qb64=iserder.said))
 
         if isinstance(self.hab, habbing.GroupHab):

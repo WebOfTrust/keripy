@@ -1676,8 +1676,14 @@ class Number(Matter):
     Properties:
         num  (int): int representation of number
         humh (str): hex string representation of number with no leading zeros
+        sn (int): alias for num
+        snh (str): alias for numh
+        huge (str): qb64 of num but with code NumDex.Huge so 24 char compatible
+                    with fixed size seq num for lexicographic lmdb key space
         positive (bool): True if .num  > 0, False otherwise. Because .num must be
-            non-negative, .positive == False means .num == 0
+                         non-negative, .positive == False means .num == 0
+        inceptive (bool): True means .num == 0 False otherwise.
+
 
     Hidden:
         _code (str): value for .code property
@@ -1851,6 +1857,21 @@ class Number(Matter):
 
 
     @property
+    def huge(self):
+        """Provides number value as qb64 but with code NumDex.huge. This is the
+        same as Seqner.qb64. Raises error if too big.
+
+        Returns:
+            huge (str): qb64 of num coded as NumDex.Huge
+        """
+        num = self.num
+        if num > MaxON:  # too big for ordinal 256 ** 16 - 1
+            raise InvalidValueError(f"Non-ordinal {num} exceeds {MaxON}.")
+
+        return Number(num=num, code=NumDex.Huge).qb64
+
+
+    @property
     def positive(self):
         """
         Returns True if .num is strictly positive non-zero False otherwise.
@@ -1864,19 +1885,10 @@ class Number(Matter):
     def inceptive(self):
         """
         Returns True if .num == 0 False otherwise.
-        Valid number .num must be non-negative,
+
         """
         return True if self.num == 0 else False
 
-
-    @property
-    def seqner(self):
-        """Seqner getter.
-
-        Returns:
-            seqner (Seqner): instance made from number
-        """
-        return Seqner(sn=self.sn)
 
 
 class Dater(Matter):

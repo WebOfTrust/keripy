@@ -28,7 +28,11 @@ from keri.db.basing import openDB, Baser, KeyStateRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
 
-from tests.app import openMultiSig
+# this breaks when running as __main__ better to do a custom import call to
+# walk the directory tree and import explicity rather than depend on it
+# being a known package. Works with pytest because pytest contructs a path
+# its test runner and imports the tests explicity
+from tests.app import openMultiSig  # this breaks when running as __main__
 
 
 def test_baser():
