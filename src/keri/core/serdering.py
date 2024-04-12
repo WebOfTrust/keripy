@@ -1164,7 +1164,7 @@ class Serder:
         self._size = size
 
 
-    def dumps(self, sad, kind=Serials.json):
+    def dumps(self, sad=None, kind=Serials.json):
         """Method to handle serialization by kind
         Assumes sad fields are properly filled out for serialization kind.
 
@@ -1172,7 +1172,7 @@ class Serder:
            raw (bytes): serialization of sad dict using serialization kind
 
         Parameters:
-           sad (dict | list)): serializable dict or list to serialize
+           sad (dict | list | None)): serializable dict or list to serialize
            kind (str): value of Serials (Serialage) serialization kind
                 "JSON", "MGPK", "CBOR", "CSER"
 
@@ -1180,6 +1180,8 @@ class Serder:
             dumps of json uses str whereas dumps of cbor and msgpack use bytes
             crypto opts want bytes not bytearray
         """
+        sad = sad if sad is not None else self.sad
+
         if kind == Serials.json:
             raw = json.dumps(sad, separators=(",", ":"),
                              ensure_ascii=False).encode("utf-8")
@@ -1190,7 +1192,7 @@ class Serder:
         elif kind == Serials.cbor:
             raw = cbor.dumps(sad)
 
-        elif kind == Serials.cser:
+        elif kind == Serials.cser:  # does not support list only dict
             raw = self._dumps(sad)
 
         else:
@@ -1220,7 +1222,7 @@ class Serder:
             tables are backwards compatible across major versions.
 
         """
-        sad = sad if sad else self.sad
+        sad = sad if sad is not None else self.sad
 
         if (self.gvrsn.major < Vrsn_2_0.major or
             self.vrsn.major < Vrsn_2_0.major):

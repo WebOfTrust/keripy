@@ -2615,14 +2615,21 @@ def test_number():
         'Vast': 'U'
     }
 
+    with pytest.raises(EmptyMaterialError):
+        number = Number(raw=b'')  # missing code
 
     with pytest.raises(RawMaterialError):
-        number = Number(raw=b'')
+        number = Number(raw=b'', code=MtrDex.Short)  # empty raw
 
     with pytest.raises(InvalidValueError):
-        number = Number(num=-1)
+        number = Number(num=-1)  # negative
 
-    number = Number()  # test None defaults to zero
+    # when code provided does not dynamically size code
+    with pytest.raises(InvalidValueError):
+        number = Number(num=256 ** 2, code=MtrDex.Short)  # wrong code for num
+
+
+    number = Number()  # test defaults, num is None forces to zero, code dynamic
     assert number.code == NumDex.Short
     assert number.raw == b'\x00\x00'
     assert number.qb64 == 'MAAA'
@@ -2663,6 +2670,15 @@ def test_number():
 
     with pytest.raises(InvalidValueError):
         number = Number(num=" :")
+
+    # force bigger code for smaller number like for lexicographic namespace
+    # which must be fixed length no matter the numeric value such as sequence
+    # numbers in namespaces for lmdb
+    number = Number(num=1, code=NumDex.Huge)
+    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAAAB'
+    assert len(number.raw) == 16
+    assert NumDex.Huge == MtrDex.Salt_128
+
 
     num = (256 ** 18 - 1)  # too big to represent
     assert num == 22300745198530623141535718272648361505980415
