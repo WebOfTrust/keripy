@@ -29,7 +29,7 @@ from keri.core.structing import Sealer, SealEvent, SealTrans
 from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
 
-from keri.core.eventing import (incept, )
+from keri.core.eventing import (incept, interact, rotate, delcept, deltate)
 
 from keri.app import habbing
 
@@ -2684,11 +2684,11 @@ def test_cesr_native_dumps():
     rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = core.Salter(raw=rawsalt)
 
-    csigners = salter.signers(count=3, transferable=True, temp=True)
-    wsigners = salter.signers(count=3, transferable=False, temp=True)
+    csigners = salter.signers(count=12, transferable=True, temp=True)
+    wsigners = salter.signers(count=12, transferable=False, temp=True)
 
 
-    # simple event
+    # simple inception event
 
     keys = [csigners[0].verfer.qb64]
     assert keys == ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ']
@@ -2741,11 +2741,11 @@ def test_cesr_native_dumps():
 
     assert ratios == [1.0, 1.33, 1.46, 1.46, 1.83]
 
-    # more complex event
+    # more complex inception event
 
-    keys = [signer.verfer.qb64 for signer in csigners]
-    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys]
-    wits = [signer.verfer.qb64 for signer in wsigners]
+    keys = [signer.verfer.qb64 for signer in csigners][:3]
+    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys][:3]
+    wits = [signer.verfer.qb64 for signer in wsigners][:3]
     data = [dict(i=keys[0], s=core.Number(num=0).numh, d=ndigs[0]),
             dict(i=keys[1], s=core.Number(num=1).numh, d=ndigs[1]),
             dict(s=core.Number(num=15).numh, d=ndigs[2])]
@@ -2777,6 +2777,11 @@ def test_cesr_native_dumps():
                     code=core.MtrDex.Blake3_256,
                     version=Vrsn_2_0,
                     kind=kering.Serials.cesr)
+
+    pre = serder.pre
+    assert pre == 'EMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6'
+    said = serder.said
+    assert said == pre
 
     assert serder.sad == \
     {
@@ -2846,6 +2851,7 @@ def test_cesr_native_dumps():
     assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 780
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
+    assert rawqb64 == serder.raw
     assert rawqb64 == (b'-FDCYKERICAAXicpEMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6EMEv'
           b'Sn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6MAAAMAAC-LAhDG9XhvcVryHj'
           b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
@@ -2880,6 +2886,213 @@ def test_cesr_native_dumps():
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
     assert ratios == [1.0, 1.33, 1.42, 1.42, 1.56]
+
+    # complex interaction event
+
+    prior = said
+
+    data = \
+        [
+            dict(i=keys[0], s=core.Number(num=2).numh, d=ndigs[0]),
+            dict(i=keys[1], s=core.Number(num=34).numh, d=ndigs[1]),
+            dict(s=core.Number(num=67).numh, d=ndigs[2]),
+            dict(i=keys[2], s=core.Number(num=128).numh, d=ndigs[0])
+        ]
+
+    assert data == \
+    [
+        {
+            'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+            's': '2',
+            'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+        },
+        {
+            'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+            's': '22',
+            'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
+        },
+        {
+            's': '43',
+            'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+        },
+        {
+            'i': 'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0',
+            's': '80',
+            'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+        },
+    ]
+
+
+    serder = interact(pre=pre,
+                      dig=prior,
+                      sn=1,
+                      data=data,
+                      version=Vrsn_2_0,
+                      kind=kering.Serials.cesr)
+
+    said = serder.said
+    assert said == 'EHeLJVa4LLNRRYVkLQsXHIDvllcmhDaahe5a_oMvXKeP'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACESRAAAA.',
+        't': 'ixn',
+        'd': 'EHeLJVa4LLNRRYVkLQsXHIDvllcmhDaahe5a_oMvXKeP',
+        'i': 'EMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6',
+        's': '1',
+        'p': 'EMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6',
+        'a':
+        [
+            {
+                'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                's': '2',
+                'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+            },
+            {
+                'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                's': '22',
+                'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
+            },
+            {
+                's': '43',
+                'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+            },
+            {
+                'i': 'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0',
+                's': '80',
+                'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+            }
+        ]
+    }
+
+    assert serder.raw == (b'-FB6YKERICAAXixnEHeLJVa4LLNRRYVkLQsXHIDvllcmhDaahe5a_oMvXKePEMEv'
+          b'Sn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6MAABEMEvSn0o6Iv2-3gInTDM'
+          b'MDTV0qQEfooM-yTzkj6Kynn6-LBU-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+          b'4fBJre3NGwTQMAACEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
+          b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAAiEMrowWRk6u1imR32ZNHn'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMABDEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'ZJGJqQZpZEyP-RAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACA'
+          b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_')
+
+    assert len(serder.raw) == serder.size == 492
+    sizeh = serder.raw[2:4]
+    assert sizeh == b"B6"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 492
+
+    rawqb64 = serder._dumps()  # default is it dumps self.sad
+    assert rawqb64 == serder.raw
+    assert len(rawqb64) == 492
+
+    rawqb2 = decodeB64(rawqb64)
+    assert len(rawqb2) == 369
+    assert rawqb64 == encodeB64(rawqb2)  # round trips
+
+    rawjson = serder.dumps(serder.sad)
+    assert len(rawjson) == 601
+
+    rawcbor = serder.dumps(serder.sad, kind=kering.Serials.cbor)
+    assert len(rawcbor) == 536
+
+    rawmgpk = serder.dumps(serder.sad, kind=kering.Serials.mgpk)
+    assert len(rawmgpk) == 536
+
+    raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
+    ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
+
+    assert ratios ==[1.0, 1.33, 1.45, 1.45, 1.63]
+
+    # complex rotation event
+
+    prior = said
+
+    keys = [signer.verfer.qb64 for signer in csigners][3:6]
+    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys]
+    cuts = [wits[0]]
+    adds = [signer.verfer.qb64 for signer in wsigners][3:4]
+    data = {}  # no anchors
+
+
+    serder = rotate(pre=pre,
+                    keys=keys,
+                      dig=prior,
+                      sn=2,
+                      ndigs=ndigs,
+                      wits=wits, #prior
+                      cuts=cuts,
+                      adds=adds,
+                      data=data,
+                      version=Vrsn_2_0,
+                      kind=kering.Serials.cesr)
+
+    said = serder.said
+    assert said == 'EDtBwgOB0uGrSMBJhOmnkRoCupjg-4sJApvOx04ujhKs'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACESRAAAA.',
+        't': 'rot',
+        'd': 'EDtBwgOB0uGrSMBJhOmnkRoCupjg-4sJApvOx04ujhKs',
+        'i': 'EMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6',
+        's': '2',
+        'p': 'EHeLJVa4LLNRRYVkLQsXHIDvllcmhDaahe5a_oMvXKeP',
+        'kt': '2',
+        'k': ['DH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68',
+              'DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQ',
+              'DKhYdMBeP6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMER'],
+        'nt': '2',
+        'n':
+        [
+            'EBvDSpcj3y0y9W2-1GzYJ85KEkDIPxu4y_TxAK49k7ci',
+            'EEb97lh2oOd_yM3meBaRX5xSs8mIeBoPdhOTgVkd31jb',
+            'ECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStga'
+        ],
+        'bt': '3',
+        'br': ['BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ'],
+        'ba': ['BH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68'],
+        'c': [],
+        'a': {}
+    }
+
+
+    assert serder.raw == (b'-FCGYKERICAAXrotEDtBwgOB0uGrSMBJhOmnkRoCupjg-4sJApvOx04ujhKsEMEv'
+          b'Sn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6MAACEHeLJVa4LLNRRYVkLQsX'
+          b'HIDvllcmhDaahe5a_oMvXKePMAAC-LAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1'
+          b'k4t2nm1C1A68DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQDKhYdMBe'
+          b'P6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-LAhEBvDSpcj3y0y9W2-1GzY'
+          b'J85KEkDIPxu4y_TxAK49k7ciEEb97lh2oOd_yM3meBaRX5xSs8mIeBoPdhOTgVkd'
+          b'31jbECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStgaMAAD-LALBG9XhvcV'
+          b'ryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ-LALBH7p14xo09rob5cEupmo8jSD'
+          b'i35ZOGt1k4t2nm1C1A68-LAA-LAA')
+
+    assert len(serder.raw) == serder.size == 540
+    sizeh = serder.raw[2:4]
+    assert sizeh == b"CG"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 540
+
+    rawqb64 = serder._dumps()  # default is it dumps self.sad
+    assert rawqb64 == serder.raw
+    assert len(rawqb64) == 540
+
+    rawqb2 = decodeB64(rawqb64)
+    assert len(rawqb2) == 405
+    assert rawqb64 == encodeB64(rawqb2)  # round trips
+
+    rawjson = serder.dumps(serder.sad)
+    assert len(rawjson) == 638
+
+    rawcbor = serder.dumps(serder.sad, kind=kering.Serials.cbor)
+    assert len(rawcbor) == 577
+
+    rawmgpk = serder.dumps(serder.sad, kind=kering.Serials.mgpk)
+    assert len(rawmgpk) == 577
+
+    raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
+    ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
+
+    assert ratios == [1.0, 1.33, 1.42, 1.42, 1.58]
+
+
+
 
     """End Test"""
 
