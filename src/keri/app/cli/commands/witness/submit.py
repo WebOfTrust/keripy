@@ -10,6 +10,7 @@ from hio.base import doing
 
 from keri.app import habbing, agenting, indirecting
 from keri.app.cli.common import existing, displaying
+from keri.help import helping
 
 logger = help.ogler.getLogger()
 
@@ -30,6 +31,10 @@ parser.add_argument('--aeid', help='qualified base64 of non-transferable identif
 parser.add_argument('--force', action="store_true", required=False,
                     help='True means to send witnesses all receipts even if we have a full compliment of receipts for '
                          'the current event')
+parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
+                    dest="endpoint", action='store_true')
+parser.add_argument("--authenticate", '-z', help="Prompt the controller for authentication codes for each witness",
+                    action='store_true')
 
 
 def handler(args):
@@ -46,17 +51,18 @@ def handler(args):
     alias = args.alias
     force = args.force
 
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, force=force)
+    subDoer = SubmitDoer(name=name, base=base, alias=alias, bran=bran, force=force, authenticate=args.authenticate,
+                         endpoint=args.endpoint)
 
-    doers = [icpDoer]
+    doers = [subDoer]
     return doers
 
 
-class InceptDoer(doing.DoDoer):
+class SubmitDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, force):
+    def __init__(self, name, base, alias, bran, force, endpoint=False, authenticate=False):
 
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
@@ -64,13 +70,14 @@ class InceptDoer(doing.DoDoer):
         self.alias = alias
         self.hby = hby
         self.force = force
+        self.endpoint = endpoint
+        self.authenticate = authenticate
 
-        self.witDoer = None
-        doers = [self.hbyDoer, self.mbx, doing.doify(self.inceptDo)]
+        doers = [self.hbyDoer, self.mbx, doing.doify(self.submitDo)]
 
-        super(InceptDoer, self).__init__(doers=doers)
+        super(SubmitDoer, self).__init__(doers=doers)
 
-    def inceptDo(self, tymth, tock=0.0):
+    def submitDo(self, tymth, tock=0.0):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
@@ -85,18 +92,34 @@ class InceptDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(name=self.alias)
-        self.witDoer = agenting.WitnessReceiptor(hby=self.hby, force=self.force)
-        self.extend([self.witDoer])
+        auths = {}
+        if self.authenticate:
+            for wit in hab.kever.wits:
+                code = input(f"Entire code for {wit}: ")
+                auths[wit] = f"{code}#{helping.nowIso8601()}"
 
-        if hab.kever.wits:
-            print("Waiting for witness receipts...")
-            self.witDoer.msgs.append(dict(pre=hab.pre))
-            while not self.witDoer.cues:
-                _ = yield self.tock
+        if self.endpoint:
+            receiptor = agenting.Receiptor(hby=self.hby)
+            self.extend([receiptor])
+
+            yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
+            self.remove([receiptor])
+
+        else:
+            witDoer = agenting.WitnessReceiptor(hby=self.hby, force=self.force, auths=auths)
+            self.extend([witDoer])
+
+            if hab.kever.wits:
+                print("Waiting for witness receipts...")
+                witDoer.msgs.append(dict(pre=hab.pre))
+                while not witDoer.cues:
+                    _ = yield self.tock
+
+            self.remove([witDoer])
 
         displaying.printIdentifier(self.hby, hab.pre)
 
-        toRemove = [self.hbyDoer, self.witDoer, self.mbx]
+        toRemove = [self.hbyDoer, self.mbx]
         self.remove(toRemove)
 
         return

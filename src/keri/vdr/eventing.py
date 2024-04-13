@@ -1265,8 +1265,9 @@ class Tever:
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
         self.reger.putTvt(key, serder.raw)
         self.reger.putTel(snKey(pre, sn), dig)
-        logger.info("Tever state: %s Added to TEL valid event=\n%s\n",
-                    pre, json.dumps(serder.ked, indent=1))
+        logger.info("Tever state: %s Added to TEL valid said=%s",
+                    pre, serder.said)
+        logger.debug(f"event=\n{serder.pretty()}\n")
 
     def valAnchorBigs(self, serder, seqner, saider, bigers, toad, baks):
         """ Validate anchor and backer signatures (bigers) when provided.
@@ -1394,8 +1395,8 @@ class Tever:
         self.reger.putTibs(dgkey, [biger.qb64b for biger in bigers])
         self.reger.putTvt(dgkey, serder.raw)
         self.reger.putTwe(snKey(serder.preb, serder.sn), serder.saidb)
-        logger.info("Tever state: Escrowed partially witnessed "
-                    "event = %s\n", serder.ked)
+        logger.debug("Tever state: Escrowed partially witnessed "
+                     "event = %s", serder.ked)
 
     def escrowALEvent(self, serder, seqner, saider, bigers=None, baks=None):
         """ Update associated logs for escrow of anchorless event
@@ -1421,8 +1422,8 @@ class Tever:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
         self.reger.putTvt(key, serder.raw)
-        logger.info("Tever state: Escrowed anchorless event "
-                    "event = %s\n", serder.ked)
+        logger.debug("Tever state: Escrowed anchorless event "
+                     "event = %s", serder.ked)
         return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
 
     def getBackerState(self, ked):
@@ -2005,8 +2006,8 @@ class Tevery:
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
         self.reger.putOot(snKey(serder.preb, serder.sn), serder.saidb)
-        logger.info("Tever state: Escrowed our of order TEL event "
-                    "event = %s\n", serder.ked)
+        logger.debug("Tever state: Escrowed our of order TEL event "
+                     "event = %s", serder.ked)
 
     def processEscrows(self):
         """ Loop through escrows and process and events that may now be finalized """
@@ -2027,9 +2028,9 @@ class Tevery:
 
         except Exception as ex:  # log diagnostics errors etc
             if logger.isEnabledFor(logging.DEBUG):
-                logger.exception("Tevery escrow process error: %s\n", ex.args[0])
+                logger.exception("Tevery escrow process error: %s", ex.args[0])
             else:
-                logger.error("Tevery escrow process error: %s\n", ex.args[0])
+                logger.error("Tevery escrow process error: %s", ex.args[0])
 
     def processEscrowOutOfOrders(self):
         """ Loop through out of order escrow:
@@ -2050,7 +2051,7 @@ class Tevery:
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
                     logger.info("Tevery unescrow error: Missing event at."
-                                "dig = %s\n", bytes(digb))
+                                "dig = %s", bytes(digb))
 
                     raise ValidationError("Missing escrowed evt at dig = {}."
                                           "".format(bytes(digb)))
@@ -2064,7 +2065,7 @@ class Tevery:
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
                     logger.info("Tevery unescrow error: Missing anchor at."
-                                "dig = %s\n", bytes(digb))
+                                "dig = %s", bytes(digb))
 
                     raise ValidationError("Missing escrowed anchor at dig = {}."
                                           "".format(bytes(digb)))
@@ -2077,17 +2078,17 @@ class Tevery:
             except OutOfOrderError as ex:
                 # still waiting on missing prior event to validate
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrow failed: %s\n", ex.args[0])
+                    logger.exception("Tevery unescrow failed: %s", ex.args[0])
                 else:
-                    logger.error("Tevery unescrow failed: %s\n", ex.args[0])
+                    logger.error("Tevery unescrow failed: %s", ex.args[0])
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
                 self.reger.delOot(snKey(pre, sn))  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrowed: %s\n", ex.args[0])
+                    logger.exception("Tevery unescrowed: %s", ex.args[0])
                 else:
-                    logger.error("Tevery unescrowed: %s\n", ex.args[0])
+                    logger.error("Tevery unescrowed: %s", ex.args[0])
 
             else:  # unescrow succeeded, remove from escrow
                 # We don't remove all escrows at pre,sn because some might be
@@ -2095,7 +2096,8 @@ class Tevery:
                 # valid event escrow.
                 self.reger.delOot(snKey(pre, sn))  # removes from escrow
                 logger.info("Tevery unescrow succeeded in valid event: "
-                            "event=\n%s\n", json.dumps(tserder.ked, indent=1))
+                            "said=%s", tserder.said)
+                logger.debug(f"event=\n{tserder.pretty()}\n")
 
     def processEscrowAnchorless(self):
         """ Process escrow of TEL events received before the anchoring KEL event.
@@ -2117,7 +2119,7 @@ class Tevery:
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
                     logger.info("Tevery unescrow error: Missing event at."
-                                "dig = %s\n", bytes(digb))
+                                "dig = %s", bytes(digb))
 
                     raise ValidationError("Missing escrowed evt at dig = {}."
                                           "".format(bytes(digb)))
@@ -2131,7 +2133,7 @@ class Tevery:
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
                     logger.info("Tevery unescrow error: Missing anchor at."
-                                "dig = %s\n", bytes(digb))
+                                "dig = %s", bytes(digb))
 
                     raise MissingAnchorError("Missing escrowed anchor at dig = {}."
                                              "".format(bytes(digb)))
@@ -2144,17 +2146,17 @@ class Tevery:
             except MissingAnchorError as ex:
                 # still waiting on missing prior event to validate
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrow failed: %s\n", ex.args[0])
+                    logger.exception("Tevery unescrow failed: %s", ex.args[0])
                 else:
-                    logger.error("Tevery unescrow failed: %s\n", ex.args[0])
+                    logger.error("Tevery unescrow failed: %s", ex.args[0])
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
                 self.reger.delTae(snKey(pre, sn))  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrowed: %s\n", ex.args[0])
+                    logger.exception("Tevery unescrowed: %s", ex.args[0])
                 else:
-                    logger.error("Tevery unescrowed: %s\n", ex.args[0])
+                    logger.error("Tevery unescrowed: %s", ex.args[0])
 
             else:  # unescrow succeeded, remove from escrow
                 # We don't remove all escrows at pre,sn because some might be
@@ -2162,4 +2164,5 @@ class Tevery:
                 # valid event escrow.
                 self.reger.delTae(snKey(pre, sn))  # removes from escrow
                 logger.info("Tevery unescrow succeeded in valid event: "
-                            "event=\n%s\n", json.dumps(tserder.ked, indent=1))
+                            "said=%s", tserder.said)
+                logger.debug(f"event=\n{tserder.pretty()}\n")

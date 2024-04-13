@@ -51,7 +51,7 @@ class Counselor(doing.DoDoer):
         serder = serdering.SerderKERI(raw=evt)
         del evt[:serder.size]
 
-        print(f"Waiting for other signatures for {serder.pre}:{seqner.sn}...")
+        logger.info(f"Waiting for other signatures for {serder.pre}:{seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
     def complete(self, prefixer, seqner, saider=None):
@@ -133,7 +133,7 @@ class Counselor(doing.DoDoer):
                 if kever.delegated and kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witered:  # We are elected to perform delegation and witnessing messaging
-                        print(f"We are the witnesser, sending {pre} to delegator")
+                        logger.info(f"We are the witnesser, sending {pre} to delegator")
                         self.swain.delegation(pre=pre, sn=seqner.sn)
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
@@ -142,15 +142,15 @@ class Counselor(doing.DoDoer):
                         else:
                             self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor)
 
-                    print("Waiting for delegation approval...")
+                    logger.info("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
                 else:  # Non-delegation, move on to witnessing
                     if witered:  # We are elected witnesser, send off event to witnesses
-                        print(f"We are the fully signed witnesser {seqner.sn}, sending to witnesses")
+                        logger.info(f"We are the fully signed witnesser {seqner.sn}, sending to witnesses")
                         self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
 
                     # Move to escrow waiting for witness receipts
-                    print(f"Waiting for fully signed witness receipts for {seqner.sn}")
+                    logger.info(f"Waiting for fully signed witness receipts for {seqner.sn}")
                     self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
 
     def processDelegateEscrow(self):
@@ -170,7 +170,7 @@ class Counselor(doing.DoDoer):
             if witer:  # We are elected witnesser, We've already done out part in Boatswain, we are done.
                 if self.swain.complete(prefixer=kever.prefixer, seqner=coring.Seqner(sn=kever.sn)):
                     self.hby.db.gdee.rem(keys=(pre,))
-                    print(f"Delegation approval for {pre} received.")
+                    logger.info(f"Delegation approval for {pre} received.")
 
                     self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
@@ -181,10 +181,10 @@ class Counselor(doing.DoDoer):
                     dgkey = dbing.dgKey(pre, saider.qb64b)
                     self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
-                    print(f"Delegation approval for {pre} received.")
+                    logger.info(f"Delegation approval for {pre} received.")
 
                     # Move to escrow waiting for witness receipts
-                    print(f"Waiting for witness receipts for {pre}")
+                    logger.info(f"Waiting for witness receipts for {pre}")
                     self.hby.db.gdee.rem(keys=(pre,))
                     self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
 
@@ -212,7 +212,7 @@ class Counselor(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                print(f"Witness receipts complete, {pre} confirmed.")
+                logger.info(f"Witness receipts complete, {pre} confirmed.")
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
             elif not witer:

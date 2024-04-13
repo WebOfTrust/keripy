@@ -55,7 +55,7 @@ parser.add_argument("--logfile", action="store", required=False, default=None,
 
 def launch(args):
     help.ogler.level = logging.getLevelName(args.loglevel)
-    if(args.logfile != None):
+    if args.logfile is not None:
         help.ogler.headDirPath = args.logfile
         help.ogler.reopen(name=args.name, temp=False, clear=True)
     logger = help.ogler.getLogger()

@@ -104,7 +104,7 @@ class Broker:
                             datetime.timedelta(seconds=self.timeout)):
                         # escrow stale so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Stale txn state escrow "
-                                    " at pre = %s\n", pre)
+                                    " at pre = %s", pre)
 
                         raise kering.ValidationError(f"Stale txn state escrow at pre = {pre}.")
 
@@ -114,29 +114,30 @@ class Broker:
                 except extype as ex:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                        logger.exception("Kevery unescrow attempt failed: %s", ex.args[0])
                     else:
-                        logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                        logger.error("Kevery unescrow attempt failed: %s", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
                     self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
+                        logger.exception("Kevery unescrowed due to error: %s", ex.args[0])
                     else:
-                        logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+                        logger.error("Kevery unescrowed due to error: %s", ex.args[0])
 
                 else:  # unescrow succeded
                     self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow only
-                    logger.info("Kevery unescrow succeeded for txn state=\n%s\n",
-                                serder.pretty())
+                    logger.info("Kevery unescrow succeeded for txn state=%s",
+                                serder.said)
+                    logger.debug(f"event=\n{serder.pretty()}\n")
 
             except Exception as ex:  # log diagnostics errors etc
                 self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
                 self.removeState(saider)
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
+                    logger.exception("Kevery unescrowed due to error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+                    logger.error("Kevery unescrowed due to error: %s", ex.args[0])
 
     def escrowStateNotice(self, *, typ, pre, aid, serder, saider, dater, cigars=None, tsgs=None):
         """

@@ -12,7 +12,7 @@ from hio.base import doing
 from . import agenting, forwarding
 from .habbing import GroupHab
 from .. import kering
-from ..core import coring, eventing, serdering
+from ..core import coring, serdering
 from ..db import dbing
 from ..peer import exchanging
 
@@ -162,7 +162,7 @@ class Anchorer(doing.DoDoer):
                 self.witDoer.msgs.append(dict(pre=pre, sn=serder.sn))
 
                 # Move to escrow waiting for witness receipts
-                print(f"Waiting for fully signed witness receipts for {serder.sn}")
+                logger.info(f"Waiting for fully signed witness receipts for {serder.sn}")
                 self.hby.db.dpwe.pin(keys=(pre, said), val=serder)
                 self.hby.db.dune.rem(keys=(pre, said))
 
@@ -188,7 +188,7 @@ class Anchorer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                print(f"Witness receipts complete, {pre} confirmed.")
+                logger.info(f"Witness receipts complete, {pre} confirmed.")
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.cdel.put(keys=(pre, seqner.qb64), val=coring.Saider(qb64=serder.said))
 

@@ -121,11 +121,13 @@ class Exchanger:
         # Perform behavior specific verification, think IPEX chaining requirements
         try:
             if not behavior.verify(serder=serder, attachments=attachments):
-                logger.info(f"exn event for route {route} failed behavior verfication.  exn={serder.ked}")
+                logger.info(f"exn event for route {route} failed behavior verfication.  said={serder.said}")
+                logger.debug(f"event=\n{serder.pretty()}\n")
                 return
 
         except AttributeError:
-            logger.info(f"Behavior for {route} missing or does not have verify for exn={serder.ked}")
+            logger.info(f"Behavior for {route} missing or does not have verify for said={serder.said}")
+            logger.debug(f"event=\n{serder.pretty()}\n")
 
         # Always persis events
         self.logEvent(serder, pathed, tsgs, cigars)
@@ -135,7 +137,8 @@ class Exchanger:
         try:
             behavior.handle(serder=serder, attachments=attachments)
         except AttributeError:
-            logger.info(f"Behavior for {route} missing or does not have handle for exn={serder.ked}")
+            logger.info(f"Behavior for {route} missing or does not have handle for said={serder.said}")
+            logger.debug(f"event=\n{serder.pretty()}\n")
 
     def processEscrow(self):
         """ Process all escrows for `exn` messages
@@ -190,21 +193,22 @@ class Exchanger:
 
             except MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.info("Exchange partially signed unescrow failed: %s\n", ex.args[0])
+                    logger.info("Exchange partially signed unescrow failed: %s", ex.args[0])
                 else:
-                    logger.info("Exchange partially signed failed: %s\n", ex.args[0])
+                    logger.info("Exchange partially signed failed: %s", ex.args[0])
             except Exception as ex:
                 self.hby.db.epse.rem(dig)
                 self.hby.db.esigs.rem(dig)
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
+                    logger.info("Exchange partially signed unescrowed: %s", ex.args[0])
                 else:
-                    logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
+                    logger.info("Exchange partially signed unescrowed: %s", ex.args[0])
             else:
                 self.hby.db.epse.rem(dig)
                 self.hby.db.esigs.rem(dig)
                 logger.info("Exchanger unescrow succeeded in valid exchange: "
-                            "creder=\n%s\n", serder.pretty())
+                            "creder=%s", serder.said)
+                logger.debug(f"event=\n{serder.pretty()}\n")
 
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None):
         dig = serder.said

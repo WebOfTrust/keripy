@@ -255,7 +255,7 @@ class Verifier:
                 if (dtnow - dte) > datetime.timedelta(seconds=timeout):
                     # escrow stale so raise ValidationError which unescrows below
                     logger.info("Verifier unescrow error: Stale event escrow "
-                                " at said = %s\n", said)
+                                " at said = %s", said)
 
                     raise kering.ValidationError("Stale event escrow "
                                                  "at said = {}.".format(said))
@@ -264,20 +264,21 @@ class Verifier:
 
             except etype as ex:
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Verifiery unescrow failed: %s\n", ex.args[0])
+                    logger.exception("Verifiery unescrow failed: %s", ex.args[0])
                 else:
-                    logger.error("Verifier unescrow failed: %s\n", ex.args[0])
+                    logger.error("Verifier unescrow failed: %s", ex.args[0])
             except Exception as ex:  # log diagnostics errors etc
                 # error other than missing sigs so remove from PA escrow
                 db.rem(said)
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Verifier unescrowed: %s\n", ex.args[0])
+                    logger.exception("Verifier unescrowed: %s", ex.args[0])
                 else:
-                    logger.error("Verifier unescrowed: %s\n", ex.args[0])
+                    logger.error("Verifier unescrowed: %s", ex.args[0])
             else:
                 db.rem(said)
                 logger.info("Verifier unescrow succeeded in valid group op: "
-                            "creder=\n%s\n", creder.pretty())
+                            "creder=%s", creder.said)
+                logger.debug(f"event=\n{creder.pretty()}\n")
 
     def saveCredential(self, creder, prefixer, seqner, saider):
         """ Write the credential and associated indicies to the database
