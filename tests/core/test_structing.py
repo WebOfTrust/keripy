@@ -22,8 +22,50 @@ from keri.core import (Matter, Diger, Prefixer, Number)
 from keri.core import structing
 from keri.core.structing import (SealDigest, SealRoot, SealBacker, SealEvent,
                                  SealLast, SealTrans)
-from keri.core.structing import (Structor, EClanDom, ECastDom,
+from keri.core.structing import (Castage,
+                                 Structor, EClanDom, ECastDom,
                                  Sealer, SClanDom, SCastDom, )
+
+
+def test_structor_doms():
+    """
+    test doms in structure
+    """
+    assert EClanDom == structing.EmptyClanDom()
+    assert ECastDom == structing.EmptyCastDom()
+    assert SClanDom == structing.SealClanDom()
+    assert SCastDom == structing.SealCastDom()
+
+    assert asdict(EClanDom) == {}
+    assert asdict(ECastDom) == {}
+
+    assert asdict(SClanDom) == \
+    {
+        'SealDigest': SealDigest,
+        'SealRoot': SealRoot,
+        'SealBacker': SealBacker,
+        'SealLast': SealLast,
+        'SealTrans': SealTrans,
+        'SealEvent': SealEvent,
+    }
+
+    assert asdict(SCastDom) == \
+    {
+        'SealDigest': SealDigest(d=Castage(kls=Diger, prm=None)),
+        'SealRoot': SealRoot(rd=Castage(kls=Diger, prm=None)),
+        'SealBacker': SealBacker(bi=Castage(Prefixer, prm=None),
+                                 d=Castage(kls=Diger, prm=None)),
+        'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
+        'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
+                               d=Castage(kls=Diger, prm=None)),
+        'SealEvent': SealEvent(i=Castage(kls=Prefixer, prm=None),
+                               s=Castage(kls=Number, prm='numh'),
+                               d=Castage(kls=Diger, prm=None))
+    }
+
+
+    """End Test"""
+
 
 
 def test_structor_class():
@@ -50,6 +92,7 @@ def test_structor():
     num = 14
     number = Number(num=num)
     snq = number.qb64
+    snh = number.numh
     dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
     diger = Diger(qb64=dig)
 
@@ -57,7 +100,7 @@ def test_structor():
 
     data = SealDigest(d=diger)
     clan = SealDigest
-    cast = SealDigest(d=Diger)
+    cast = SealDigest(d=Castage(Diger))
     crew = SealDigest(d=dig)
     name = SealDigest.__name__
 
@@ -75,9 +118,9 @@ def test_structor():
     structor = Structor(data=data)
     assert structor.data == data
     assert structor.clan == clan
+    assert structor.name == name
     assert structor.cast == cast
     assert structor.crew == crew
-    assert structor.name == name
     assert structor.asdict == data._asdict()
     assert structor.asdict == {'d': diger}
     assert structor.qb64 == qb64
@@ -86,19 +129,20 @@ def test_structor():
 
     # Test cast
     structor = Structor(cast=cast, crew=crew)
+    #assert structor.data == data different instances so not ==
     assert structor.clan == clan
+    assert structor.name == name
     assert structor.cast == cast
     assert structor.crew == crew
-    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
     structor = Structor(cast=cast, qb64=qb64)
     assert structor.clan == clan
+    assert structor.name == name
     assert structor.cast == cast
     assert structor.crew == crew
-    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -242,10 +286,21 @@ def test_structor():
 
     # Test with multiple field namedtuple for data
 
+
     data = SealEvent(i=prefixer, s=number, d=diger)
     clan = SealEvent
-    cast = SealEvent(i=Prefixer, s=Number, d=Diger)
-    crew = SealEvent(i=aid, s=snq, d=dig)
+    cast = SealEvent(i=Castage(Prefixer),
+                     s=Castage(Number, 'numh'),
+                     d=Castage(Diger))
+
+    #naive cast doesn't know about prm for Number
+    ncast = SealEvent(i=Castage(Prefixer),
+                     s=Castage(Number),
+                     d=Castage(Diger))
+    crew = SealEvent(i=aid, s=snh, d=dig)
+
+    # naive crew does't know about prm for Number
+    ncrew = SealEvent(i=aid, s=snq, d=dig)
     name = SealEvent.__name__
 
     dcast = cast._asdict()
@@ -262,8 +317,8 @@ def test_structor():
     structor = Structor(data=data)
     assert structor.data == data
     assert structor.clan == clan
-    assert structor.cast == cast
-    assert structor.crew == crew
+    assert structor.cast == ncast
+    assert structor.crew == ncrew
     assert structor.name == name
     assert structor.asdict == data._asdict()
     assert structor.asdict == \
@@ -442,30 +497,7 @@ def test_structor():
 
     """End Test"""
 
-def test_seal_dexes():
-    """
-    test Seal Codexes
-    """
 
-    assert asdict(SClanDom) == \
-    {
-        'SealDigest': SealDigest,
-        'SealRoot': SealRoot,
-        'SealBacker': SealBacker,
-        'SealLast': SealLast,
-        'SealTrans': SealTrans,
-        'SealEvent': SealEvent,
-    }
-
-    assert asdict(SCastDom) == \
-    {
-        'SealDigest': SealDigest(d=Diger),
-        'SealRoot': SealRoot(rd=Diger),
-        'SealBacker': SealBacker(bi=Prefixer, d=Diger),
-        'SealLast': SealLast(i=Prefixer),
-        'SealTrans': SealTrans(s=Number, d=Diger),
-        'SealEvent': SealEvent(i=Prefixer, s=Number, d=Diger),
-    }
 
 def test_sealer_class():
     """
@@ -500,6 +532,7 @@ def test_sealer():
     num = 14
     number = Number(num=num)
     snq = number.qb64
+    snh = number.snh
     dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
     diger = Diger(qb64=dig)
 
@@ -507,8 +540,9 @@ def test_sealer():
 
     data = SealDigest(d=diger)
     clan = SealDigest
-    cast = SealDigest(d=Diger)
+    cast = SealDigest(d=Castage(Diger))
     crew = SealDigest(d=dig)
+    name = SealDigest.__name__
 
     dcast = cast._asdict()
     dcrew = crew._asdict()
@@ -524,6 +558,7 @@ def test_sealer():
     sealer = Sealer(data=data)
     assert sealer.data == data
     assert sealer.clan == clan
+    assert sealer.name == name
     assert sealer.cast == cast
     assert sealer.crew == crew
     assert sealer.asdict == data._asdict()
@@ -535,6 +570,7 @@ def test_sealer():
     # Test no clan but with one or the other of cast and crew as dict or namedtuple
     sealer = Sealer(crew=crew)  # uses known cast
     assert sealer.clan == clan
+    assert sealer.name == name
     assert sealer.cast == cast
     assert sealer.crew == crew
     assert sealer.qb64 == qb64
@@ -543,6 +579,7 @@ def test_sealer():
 
     sealer = Sealer(crew=dcrew)  # uses known cast
     assert sealer.clan == clan
+    assert sealer.name == name
     assert sealer.cast == cast
     assert sealer.crew == crew
     assert sealer.qb64 == qb64
@@ -552,16 +589,91 @@ def test_sealer():
     # uses known class
     sealer = Sealer(cast=dcast, crew=dcrew)
     assert sealer.clan == clan
+    assert sealer.name == name
     assert sealer.cast == cast  # tuple compare is by field value not type
     assert sealer.crew == crew
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
+    # Test with multiple field namedtuple for data
+
+    data = SealEvent(i=prefixer, s=number, d=diger)
+    clan = SealEvent
+    cast = SealEvent(i=Castage(Prefixer),
+                     s=Castage(Number, "numh"),
+                     d=Castage(Diger))
+    # naive cast since data does not provide prm for number
+    ncast = SealEvent(i=Castage(Prefixer),
+                     s=Castage(Number),
+                     d=Castage(Diger))
+
+    crew = SealEvent(i=aid, s=snh, d=dig)
+    # naive crew since data does not provide prm for number
+    ncrew = SealEvent(i=aid, s=snq, d=dig)
+
+    name = SealEvent.__name__
+
+    dcast = cast._asdict()
+    dcrew = crew._asdict()
+
+    assert data._fields == SealEvent._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = prefixer.qb64 + number.qb64 + diger.qb64  # ''.join(crew)
+    qb2 = prefixer.qb2 + number.qb2 + diger.qb2
+
+    # Test data
+    sealer = Sealer(data=data)
+    assert sealer.data == data
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == ncast
+    assert sealer.crew == ncrew
+    assert sealer.asdict == data._asdict()
+    assert sealer.asdict == {'i': prefixer,
+                             's': number,
+                             'd': diger}
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
+    # Test no clan but with one or the other of cast and crew as dict or namedtuple
+    sealer = Sealer(crew=crew)  # uses known cast
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
+    sealer = Sealer(crew=dcrew)  # uses known cast
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
+    # uses known class
+    sealer = Sealer(cast=dcast, crew=dcrew)
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast  # tuple compare is by field value not type
+    assert sealer.crew == crew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
+
+
 if __name__ == "__main__":
+    test_structor_doms()
     test_structor_class()
     test_structor()
-    test_seal_dexes()
     test_sealer_class()
     test_sealer()
 

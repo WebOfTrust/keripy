@@ -86,9 +86,11 @@ StateEvent = namedtuple("StateEvent", 's t d')
 
 
 # Cast conversion: duple (c, k)
-# s = cast as appropriate namedtuple with values as primitive classes
-# k = keyword parameter name to use when casting
-Castage = namedtuple('Castage', "c k")
+# kls = primitive class reference in order to cast as appropriate
+#       namedtuple with values as primitive classes
+# prm = primitive __init__ keyword parameter name to use when casting
+#        default None. When default then use qb64 or qb64b as appropriate.
+Castage = namedtuple('Castage', "kls prm", defaults=(None, ))
 
 
 @dataclass(frozen=True)
@@ -180,12 +182,16 @@ class SealCastDom(MapDom):
 
     Example: CastDom[name]
     """
-    SealDigest: NamedTuple = SealDigest(d=Diger)  # SealDigest class reference
-    SealRoot: NamedTuple = SealRoot(rd=Diger)  # SealRoot class reference
-    SealBacker: NamedTuple = SealBacker(bi=Prefixer, d=Diger)  # SealBacker class reference
-    SealLast: NamedTuple = SealLast(i=Prefixer)  # SealLast class reference single
-    SealTrans: NamedTuple = SealTrans(s=Number, d=Diger)  # SealTrans class reference couple
-    SealEvent: NamedTuple = SealEvent(i=Prefixer, s=Number, d=Diger)  # SealEvent class reference triple
+    SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
+    SealRoot: NamedTuple = SealRoot(rd=Castage(Diger))  # SealRoot class reference
+    SealBacker: NamedTuple = SealBacker(bi=Castage(Prefixer),
+                                        d=Castage(Diger))  # SealBacker class reference
+    SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
+    SealTrans: NamedTuple = SealTrans(s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealTrans class reference couple
+    SealEvent: NamedTuple = SealEvent(i=Castage(Prefixer),
+                                      s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealEvent class reference triple
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -244,8 +250,9 @@ class Structor:
     Properties:
         data (NamedTuple): fields are named instances of CESR primitives
         clan (type[NamedTuple]): class reference of .data's class
-        cast (NamedTuple): CESR primitive class references of .data's primitive
-                           instances
+        cast (NamedTuple | None): values are Castage instances that each provide
+                    CESR primitive class references and primitive init parameter
+                    used to .data's primitive instances.
         crew (NamedTuple): named qb64 values of .data's primitive instances
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
@@ -274,21 +281,26 @@ class Structor:
         """Initialize instance
 
         Parameters:
-            data (NamedTuple): fields are named primitive instances for .data
+            data (NamedTuple | None): fields are named primitive instances for .data
                 Given data can derive clan, cast, crew, qb64, and qb2
             clan (type[NamedTuple]): provides class reference for generated .data
                 when data missing.
-            cast (NamedTuple | dict | Iterable): each value provides CESR
+            cast (NamedTuple | dict | Iterable | None):  values are Castage
+                    instances that each provide CESR primitive class references
+                    and primitive init parameter used to .data's primitive
+                    instances. None means .data provided directly not generated
+                    from cast
+            each value provides CESR
                 primitive subclass reference used to create primitive instances
                 for generating .data. Can be used to infer namedtuple type of
                 .data when data and clan missing. Takes precendence over crew.
-            crew (NamedTuple | dict | Iterable): each value provides qb64 value
+            crew (NamedTuple | dict | Iterable | None): each value provides qb64 value
                 of primitive for generating .data with .cast when data missing.
                 Can be used to infer namedtuple type of .data when data and clan
                 missing.
-            qb64 (str | bytes | bytearray): concatenation of qb64 data values to
+            qb64 (str | bytes | bytearray | None): concatenation of qb64 data values to
                 generate .data with data and crew missing.
-            qb2 (bytes | bytearray): concatenation of qb2 data values to generate
+            qb2 (bytes | bytearray | None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
             strip (bool): False means do not strip each value from qb64 or qb2.
                             Default is False.
@@ -305,6 +317,8 @@ class Structor:
             for pi in data:  # check for primitive interface
                 if not (hasattr(pi, "qb64") and hasattr(pi, "qb2")):
                     raise InvalidValueError(f"Non-primitive data member={pi}.")
+
+            cast = None  # ensure cast is None since not used to generate data
 
 
         else:
@@ -372,9 +386,9 @@ class Structor:
                     raise InvalidValueError(f"Missing or unobtainable cast.")
 
             # have cast now
-            for klas in cast:
-                if not (hasattr(klas, "qb64") and hasattr(klas, "qb2")):
-                    raise InvalidValueError(f"Cast member {klas=} not CESR"
+            for cstg in cast:
+                if not (hasattr(cstg.kls, "qb64") and hasattr(cstg.kls, "qb2")):
+                    raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
                                             " Primitive.")
 
             # have clan and cast but may not have crew
@@ -402,7 +416,9 @@ class Structor:
                     else:
                         raise InvalidValueError(f"Invalid {crew=}.")
 
-                data = clan(*(klas(qb64=val) for klas, val in zip(cast, crew)))
+                data = clan(*(cstg.kls(**{cstg.prm if cstg.prm is not None else 'qb64': val})
+                              for cstg, val in zip(cast, crew)))
+                # data = clan(*(klas(qb64=val) for klas, val in zip(cast, crew)))
 
             elif qb64:
                 if hasattr(qb64, "encode"):
@@ -412,14 +428,14 @@ class Structor:
                     if not isinstance(qb64, bytearray):
                         qb64 = bytearray(qb64)
 
-                    data = clan(*(klas(qb64b=qb64, strip=strip) for klas in cast))
+                    data = clan(*(cstg.kls(qb64b=qb64, strip=strip) for cstg in cast))
 
                 else:
                     o = 0  # offset into memoryview of qb64
                     pis = []  # primitive instances
                     mv = memoryview(qb64)
-                    for klas in cast:
-                        pi = klas(qb64b=mv[o:])
+                    for cstg in cast:  # Castage
+                        pi = cstg.kls(qb64b=mv[o:])
                         pis.append(pi)
                         o += len(pi.qb64b)
                     data = clan(*pis)
@@ -429,14 +445,14 @@ class Structor:
                     if not isinstance(qb2, bytearray):
                         qb2 = bytearray(qb2)
 
-                    data = clan(*(klas(qb2=qb2, strip=strip) for klas in cast))
+                    data = clan(*(cstg.kls(qb2=qb2, strip=strip) for cstg in cast))
 
                 else:
                     o = 0  # offset into memoryview of qb2
                     pis = []  # primitive instances
                     mv = memoryview(qb2)
-                    for klas in cast:
-                        pi = klas(qb2=mv[o:])
+                    for cstg in cast:  # Castage
+                        pi = cstg.kls(qb2=mv[o:])
                         pis.append(pi)
                         o += len(pi.qb2)
                     data = clan(*pis)
@@ -444,7 +460,12 @@ class Structor:
             else:
                 raise EmptyMaterialError("Need crew or qb64 or qb2.")
 
+
         self._data = data
+        self._cast = (cast if cast is not None else
+                      self.clan(*(Castage(val.__class__) for val in self.data)))
+
+
 
 
     @property
@@ -478,8 +499,9 @@ class Structor:
         """Return:
             cast (NamedTuple): named primitive classes in .data
 
+        Getter for ._cast makes it read only when not None
         """
-        return self.clan(*(val.__class__ for val in self.data))
+        return self._cast
 
     @property
     def crew(self):
@@ -487,7 +509,9 @@ class Structor:
             crew (NamedTuple): named qb64 field values from .data
 
         """
-        return self.clan(*(val.qb64 for val in self.data))
+        return (self.clan(*(getattr(val, cstg.prm if cstg.prm is not None else "qb64")
+                    for cstg, val in zip(self.cast, self.data))))
+        # return self.clan(*(val.qb64 for val in self.data))
 
 
     @property
