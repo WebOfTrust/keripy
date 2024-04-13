@@ -267,25 +267,30 @@ class Revery:
             if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own cig
                 if not self.local:  # own cig when not local so ignore
                     logger.info("Kevery process: skipped own attachment"
-                                " on nonlocal reply msg=\n%s\n", serder.pretty())
+                                " on nonlocal reply said=", serder.said)
+                    logger.debug(f"event=\n{serder.pretty()}\n")
+
                     continue  # skip own cig attachment on non-local reply msg
 
             if aid != cigar.verfer.qb64:  # cig not by aid
                 logger.info("Kevery process: skipped cig not from aid="
-                            "%s on reply msg=\n%s\n", aid, serder.pretty())
+                            "%s on reply said=%s", aid, serder.said)
+                logger.debug(f"event=\n{serder.pretty()}\n")
                 continue  # skip invalid cig's verfer is not aid
 
             if odater:  # get old compare datetimes to see if later
                 if dater.datetime <= odater.datetime:
                     logger.info("Kevery process: skipped stale update from "
-                                "%s of reply msg=\n%s\n", aid, serder.pretty())
+                                "%s of reply said=%s", aid, serder.said)
+                    logger.debug(f"event=\n{serder.pretty()}\n")
                     continue  # skip if not later
                     # raise ValidationError(f"Stale update of {route} from {aid} "
                     # f"via {Ilks.rpy}={serder.ked}.")
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
-                            "%s on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
+                            "%s on reply said=%s", cigar.verfer.qb64, serder.said)
+                logger.debug(f"event=\n{serder.pretty()}\n")
                 continue  # skip if cig not verify
 
             # All constraints satisfied so update
@@ -298,13 +303,15 @@ class Revery:
             if not self.lax and prefixer.qb64 in self.prefixes:  # own sig
                 if not self.local:  # own sig when not local so ignore
                     logger.info("Kevery process: skipped own attachment"
-                                " on nonlocal reply msg=\n%s\n", serder.pretty())
+                                " on nonlocal reply said=%s", serder.said)
+                    logger.debug(f"event=\n{serder.pretty()}\n")
                     continue  # skip own sig attachment on non-local reply msg
 
             spre = prefixer.qb64
             if aid != spre:  # sig not by aid
                 logger.info("Kevery process: skipped signature not from aid="
-                            "%s on reply msg=\n%s\n", aid, serder.pretty())
+                            "%s on reply said=%s", aid, serder.said)
+                logger.debug(f"event=\n{serder.pretty()}\n")
                 continue  # skip invalid signature is not from aid
 
             if osaider:  # check if later logic  sn > or sn == and dt >
@@ -313,16 +320,18 @@ class Revery:
 
                     if seqner.sn < osqr.sn:  # sn earlier
                         logger.info("Kevery process: skipped stale key state sig"
-                                    "from %s sn=%s<%s on reply msg=\n%s\n",
-                                    aid, seqner.sn, osqr.sn, serder.pretty())
+                                    "from %s sn=%s<%s on reply said=%s",
+                                    aid, seqner.sn, osqr.sn, serder.said)
+                        logger.debug(f"event=\n{serder.pretty()}\n")
                         continue  # skip if sn earlier
 
                     if seqner.sn == osqr.sn:  # sn same so check datetime
                         if odater:
                             if dater.datetime <= odater.datetime:
                                 logger.info("Kevery process: skipped stale key"
-                                            "state sig datetime from %s on reply msg=\n%s\n",
-                                            aid, serder.pretty())
+                                            "state sig datetime from %s on reply said=%s",
+                                            aid, serder.said)
+                                logger.debug(f"event=\n{serder.pretty()}\n")
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
@@ -475,7 +484,7 @@ class Revery:
                             datetime.timedelta(seconds=self.TimeoutRPE)):
                         # escrow stale so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Stale reply escrow "
-                                    " at route = %s\n", route)
+                                    " at route = %s", route)
 
                         raise kering.ValidationError(f"Stale reply escrow at route = {route}.")
 
@@ -484,30 +493,31 @@ class Revery:
                 except kering.UnverifiedReplyError as ex:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                        logger.exception("Kevery unescrow attempt failed: %s", ex.args[0])
                     else:
-                        logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                        logger.error("Kevery unescrow attempt failed: %s", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
                     self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
                     self.removeReply(saider)  # remove escrow reply artifacts
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
+                        logger.exception("Kevery unescrowed due to error: %s", ex.args[0])
                     else:
-                        logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+                        logger.error("Kevery unescrowed due to error: %s", ex.args[0])
 
                 else:  # unescrow succeded
                     self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
-                    logger.info("Kevery unescrow succeeded for reply=\n%s\n",
-                                serder.pretty())
+                    logger.info("Kevery unescrow succeeded for reply said=%s",
+                                serder.said)
+                    logger.debug(f"event=\n{serder.pretty()}\n")
 
             except Exception as ex:  # log diagnostics errors etc
                 self.db.rpes.rem(keys=(route,), val=saider)  # remove escrow only
                 self.removeReply(saider)  # remove escrow reply artifacts
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
+                    logger.exception("Kevery unescrowed due to error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+                    logger.error("Kevery unescrowed due to error: %s", ex.args[0])
 
 
 class Route:
