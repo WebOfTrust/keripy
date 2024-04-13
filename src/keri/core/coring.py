@@ -1676,8 +1676,14 @@ class Number(Matter):
     Properties:
         num  (int): int representation of number
         humh (str): hex string representation of number with no leading zeros
+        sn (int): alias for num
+        snh (str): alias for numh
+        huge (str): qb64 of num but with code NumDex.Huge so 24 char compatible
+                    with fixed size seq num for lexicographic lmdb key space
         positive (bool): True if .num  > 0, False otherwise. Because .num must be
-            non-negative, .positive == False means .num == 0
+                         non-negative, .positive == False means .num == 0
+        inceptive (bool): True means .num == 0 False otherwise.
+
 
     Hidden:
         _code (str): value for .code property
@@ -1696,11 +1702,13 @@ class Number(Matter):
     """
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=NumDex.Short, num=None, numh=None, **kwa):
+                 code=None, num=None, numh=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw (bytes): unqualified crypto material usable for crypto operations
-            code (str): stable (hard) part of derivation code
+            code (str | None): stable (hard) part of derivation code.
+                               None means pick code based on value of num or numh
+                               otherwise raise error
             rize (int): raw size in bytes when variable sized material else None
             qb64b (bytes): fully qualified crypto material Base64
             qb64 (str, bytes):  fully qualified crypto material Base64
@@ -1733,33 +1741,40 @@ class Number(Matter):
             except ValueError as ex:
                 raise InvalidValueError(f"Not whole number={num} .") from ex
 
-            if not isinstance(num, int) or num < 0:
-                raise InvalidValueError(f"Not whole number={num}.")
+            if code is None:  # dynamically size code
+                if not isinstance(num, int) or num < 0:
+                    raise InvalidValueError(f"Not whole number={num}.")
 
-            if num <= (256 ** 2 - 1):  # make short version of code
-                code = NumDex.Short
+                if num <= (256 ** 2 - 1):  # make short version of code
+                    code = NumDex.Short
 
-            elif num <= (256 ** 5 - 1):  # make tall version of code
-                code = code = NumDex.Tall
+                elif num <= (256 ** 5 - 1):  # make tall version of code
+                    code = code = NumDex.Tall
 
-            elif num <= (256 ** 8 - 1):  # make big version of code
-                code = code = NumDex.Big
+                elif num <= (256 ** 8 - 1):  # make big version of code
+                    code = code = NumDex.Big
 
-            elif num <= (256 ** 11 - 1):  # make large version of code
-                code = code = NumDex.Large
+                elif num <= (256 ** 11 - 1):  # make large version of code
+                    code = code = NumDex.Large
 
-            elif num <= (256 ** 14 - 1):  # make great version of code
-                code = code = NumDex.Great
+                elif num <= (256 ** 14 - 1):  # make great version of code
+                    code = code = NumDex.Great
 
-            elif num <= (256 ** 17 - 1):  # make vast version of code
-                code = code = NumDex.Vast
+                elif num <= (256 ** 17 - 1):  # make vast version of code
+                    code = code = NumDex.Vast
 
-            else:
-                raise InvalidValueError(f"Invalid num = {num}, too large to encode.")
+                else:
+                    raise InvalidValueError(f"Invalid num = {num}, too large to encode.")
 
             # default to_bytes parameter signed is False. If negative raises
             # OverflowError: can't convert negative int to unsigned
-            raw = num.to_bytes(Matter._rawSize(code), 'big')  # big endian unsigned
+            try:
+                raw = num.to_bytes(Matter._rawSize(code), 'big')  # big endian unsigned
+            except Exception as ex:
+                raise InvalidValueError(f"Not convertable to bytes {num=}.") from ex
+
+            if len(raw) > Matter._rawSize(code):
+                raise InvalidValueError(f"To big {num=} for {code=}.")
 
         super(Number, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
@@ -1842,6 +1857,21 @@ class Number(Matter):
 
 
     @property
+    def huge(self):
+        """Provides number value as qb64 but with code NumDex.huge. This is the
+        same as Seqner.qb64. Raises error if too big.
+
+        Returns:
+            huge (str): qb64 of num coded as NumDex.Huge
+        """
+        num = self.num
+        if num > MaxON:  # too big for ordinal 256 ** 16 - 1
+            raise InvalidValueError(f"Non-ordinal {num} exceeds {MaxON}.")
+
+        return Number(num=num, code=NumDex.Huge).qb64
+
+
+    @property
     def positive(self):
         """
         Returns True if .num is strictly positive non-zero False otherwise.
@@ -1855,19 +1885,10 @@ class Number(Matter):
     def inceptive(self):
         """
         Returns True if .num == 0 False otherwise.
-        Valid number .num must be non-negative,
+
         """
         return True if self.num == 0 else False
 
-
-    @property
-    def seqner(self):
-        """Seqner getter.
-
-        Returns:
-            seqner (Seqner): instance made from number
-        """
-        return Seqner(sn=self.sn)
 
 
 class Dater(Matter):

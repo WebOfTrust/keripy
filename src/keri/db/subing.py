@@ -317,7 +317,7 @@ class CesrSuberBase(SuberBase):
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
-        return self.klas(qb64b=val)  # converts to bytes
+        return self.klas(qb64b=val)
 
 
 class CesrSuber(CesrSuberBase, Suber):

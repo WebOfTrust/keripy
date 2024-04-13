@@ -2738,9 +2738,27 @@ def test_cesr_native_dumps():
     keys = [signer.verfer.qb64 for signer in csigners]
     ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys]
     wits = [signer.verfer.qb64 for signer in wsigners]
-    data = [dict(i=keys[0], s=core.Number(num=0).qb64, d=ndigs[0]),
-            dict(i=keys[1], s=core.Number(num=1).qb64, d=ndigs[1]),
-            dict(s=core.Number(num=15).qb64, d=ndigs[2])]
+    data = [dict(i=keys[0], s=core.Number(num=0).numh, d=ndigs[0]),
+            dict(i=keys[1], s=core.Number(num=1).numh, d=ndigs[1]),
+            dict(s=core.Number(num=15).numh, d=ndigs[2])]
+
+    assert data == \
+    [
+        {
+            'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+            's': '0',
+            'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+        },
+        {
+            'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+            's': '1',
+            'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
+        },
+        {
+            's': 'f',
+            'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+        }
+    ]
 
 
     serder = incept(keys,
@@ -2753,51 +2771,54 @@ def test_cesr_native_dumps():
 
     assert serder.sad == \
     {
-        'v': 'KERICAAJSONAAOc.',
+        'v': 'KERICAAJSONAAOT.',
         't': 'icp',
-        'd': 'EO1m0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8',
-        'i': 'EO1m0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8',
+        'd': 'ECdA32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXY',
+        'i': 'ECdA32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXY',
         's': '0',
         'kt': '2',
-        'k': [
-                'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-                'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-                'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-             ],
+        'k':
+        [
+            'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+            'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+            'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+        ],
         'nt': '2',
-        'n': [
-                'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_',
-                'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG',
-                'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
-             ],
+        'n':
+        [
+            'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_',
+            'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG',
+            'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+        ],
         'bt': '3',
-        'b': [
-                'BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-                'BK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-                'BMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-             ],
+        'b':
+        [
+            'BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+            'BK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+            'BMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+        ],
         'c': ['DND'],
-        'a': [
-                {
-                    'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-                    's': 'MAAA',
-                    'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
-                },
-                {
-                    'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-                    's': 'MAAB',
-                    'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
-                },
-                {
-                    's': 'MAAP',
-                    'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
-                }
-             ]
+        'a':
+        [
+            {
+                'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                's': '0',
+                'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+            },
+            {
+                'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                's': '1',
+                'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'},
+            {
+                's': 'f',
+                'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+            }
+        ]
     }
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
-    assert rawqb64 == (b'-FDCYKERICAAXicpEO1m0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8EO1m'
-                    b'0X8audpEosDBc65cpXzSPDCxZ1HnYXQRwM-AivK8MAAAMAAC-LAhDG9XhvcVryHj'
+    assert rawqb64 == (b'-FDCYKERICAAXicpECdA32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXYECdA'
+                    b'32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXYMAAAMAAC-LAhDG9XhvcVryHj'
                     b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
                     b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-LAh'
                     b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
@@ -2810,6 +2831,7 @@ def test_cesr_native_dumps():
                     b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
                     b'ZJGJqQZpZEyP')
 
+
     assert len(rawqb64) == 780
 
     rawqb2 = decodeB64(rawqb64)
@@ -2817,18 +2839,18 @@ def test_cesr_native_dumps():
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 924
+    assert len(rawjson) == 915
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Serials.cbor)
-    assert len(rawcbor) == 838
+    assert len(rawcbor) == 829
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Serials.mgpk)
-    assert len(rawmgpk) == 838
+    assert len(rawmgpk) == 829
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.43, 1.43, 1.58]
+    assert ratios == [1.0, 1.33, 1.42, 1.42, 1.56]
 
     """End Test"""
 

@@ -13,6 +13,7 @@ from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
+from keri import core
 from keri.core import coring, serdering
 from keri.db import dbing
 from keri.peer import exchanging
@@ -130,8 +131,8 @@ class ConfirmDoer(doing.DoDoer):
 
                     if isinstance(hab, GroupHab):
                         aids = hab.smids
-                        seqner = coring.Seqner(sn=eserder.sn)
-                        anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
+                        #seqner = coring.Seqner(sn=eserder.sn)
+                        anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
                             msg = hab.interact(data=[anchor])
                         else:
@@ -148,12 +149,12 @@ class ConfirmDoer(doing.DoDoer):
                                               attachment=atc)
 
                         prefixer = coring.Prefixer(qb64=hab.pre)
-                        seqner = coring.Seqner(sn=serder.sn)
+                        sner = core.Number(num=serder.sn, code=core.NumDex.Huge)  # maybe serder.sner instead so not Huge
                         saider = coring.Saider(qb64b=serder.saidb)
-                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=seqner, saider=saider)
+                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=sner, saider=saider)
 
                         while True:
-                            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+                            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, sner.qb64))
                             if saider is not None:
                                 break
 
@@ -166,8 +167,8 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         cur = hab.kever.sner.num
-                        seqner = coring.Seqner(sn=eserder.sn)
-                        anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
+                        #seqner = coring.Seqner(sn=eserder.sn)
+                        anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
                             hab.interact(data=[anchor])
                         else:

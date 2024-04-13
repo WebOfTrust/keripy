@@ -40,7 +40,7 @@ from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
 
 from .counting import GenDex, AllTags, Counter, SealDex_2_0
 
-from .structing import Sealer, ClanDom
+from .structing import Sealer, SClanDom
 
 
 
@@ -365,12 +365,12 @@ class Serder:
 
     # map seal clan names to seal counter code for grouping seals in anchor list
     ClanCodes = dict()
-    ClanCodes[ClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
-    ClanCodes[ClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
-    ClanCodes[ClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
-    ClanCodes[ClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
-    ClanCodes[ClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
-    ClanCodes[ClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
+    ClanCodes[SClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
+    ClanCodes[SClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
+    ClanCodes[SClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
+    ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
+    ClanCodes[SClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
+    ClanCodes[SClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
 
     # map seal counter code to seal clan name for parsing seal groups in anchor list
     CodeClans = { val: key for key, val in ClanCodes.items()}  # invert dict
@@ -1164,7 +1164,7 @@ class Serder:
         self._size = size
 
 
-    def dumps(self, sad, kind=Serials.json):
+    def dumps(self, sad=None, kind=Serials.json):
         """Method to handle serialization by kind
         Assumes sad fields are properly filled out for serialization kind.
 
@@ -1172,7 +1172,7 @@ class Serder:
            raw (bytes): serialization of sad dict using serialization kind
 
         Parameters:
-           sad (dict | list)): serializable dict or list to serialize
+           sad (dict | list | None)): serializable dict or list to serialize
            kind (str): value of Serials (Serialage) serialization kind
                 "JSON", "MGPK", "CBOR", "CSER"
 
@@ -1180,6 +1180,8 @@ class Serder:
             dumps of json uses str whereas dumps of cbor and msgpack use bytes
             crypto opts want bytes not bytearray
         """
+        sad = sad if sad is not None else self.sad
+
         if kind == Serials.json:
             raw = json.dumps(sad, separators=(",", ":"),
                              ensure_ascii=False).encode("utf-8")
@@ -1190,7 +1192,7 @@ class Serder:
         elif kind == Serials.cbor:
             raw = cbor.dumps(sad)
 
-        elif kind == Serials.cser:
+        elif kind == Serials.cser:  # does not support list only dict
             raw = self._dumps(sad)
 
         else:
@@ -1220,7 +1222,7 @@ class Serder:
             tables are backwards compatible across major versions.
 
         """
-        sad = sad if sad else self.sad
+        sad = sad if sad is not None else self.sad
 
         if (self.gvrsn.major < Vrsn_2_0.major or
             self.vrsn.major < Vrsn_2_0.major):
