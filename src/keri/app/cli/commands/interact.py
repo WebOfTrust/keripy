@@ -103,21 +103,22 @@ class InteractDoer(doing.DoDoer):
         hab = self.hby.habByName(name=self.alias)
         hab.interact(data=self.data)
 
-        if self.endpoint or self.authenticate:
+        auths = {}
+        if self.authenticate:
+            for wit in hab.kever.wits:
+                code = input(f"Entire code for {wit}: ")
+                auths[wit] = f"{code}#{helping.nowIso8601()}"
+
+        if self.endpoint:
             receiptor = agenting.Receiptor(hby=self.hby)
             self.extend([receiptor])
 
-            auths = {}
-            if self.authenticate:
-                for wit in hab.kever.wits:
-                    code = input(f"Entire code for {wit}: ")
-                    auths[wit] = f"{code}#{helping.nowIso8601()}"
             yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
             self.remove([receiptor])
 
         else:
 
-            witDoer = agenting.WitnessReceiptor(hby=self.hby)
+            witDoer = agenting.WitnessReceiptor(hby=self.hby, auths=auths)
             self.extend(doers=[witDoer])
 
             if hab.kever.wits:

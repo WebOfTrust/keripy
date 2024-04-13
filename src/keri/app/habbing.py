@@ -2084,8 +2084,9 @@ class BaseHab:
                 cuedSerder = cue["serder"]  # Serder of received event for other pre
                 cuedKed = cuedSerder.ked
                 cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-                logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
-                            json.dumps(cuedKed, indent=1))
+                logger.info("%s got cue: kin=%s%s", self.pre, cueKin,
+                            cuedSerder.said)
+                logger.debug(f"event=\n{cuedSerder.pretty()}\n")
 
                 if cuedKed["t"] == coring.Ilks.icp:
                     dgkey = dbing.dgKey(self.pre, self.iserder.said)

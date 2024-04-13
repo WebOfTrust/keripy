@@ -6,17 +6,14 @@ message stream parsing support
 """
 
 import logging
-import traceback
-from collections import namedtuple
-from dataclasses import dataclass, astuple
 
 from .coring import (Ilks, CtrDex, Counter, Seqner, Cigar,
-                     Dater, Verfer, Prefixer, Saider, Pather, Protocols )
+                     Dater, Verfer, Prefixer, Saider, Pather)
 from .indexing import (Siger, )
 from . import serdering
 from .. import help
 from .. import kering
-from ..kering import ColdDex, Colds, sniff
+from ..kering import Colds, sniff
 
 logger = help.ogler.getLogger()
 
@@ -430,25 +427,25 @@ class Parser:
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg extraction error: %s", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Parser msg non-extraction error: %s\n", ex)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg non-extraction error: %s", ex)
                 else:
-                    logger.error("Parser msg non-extraction error: %s\n", ex)
+                    logger.error("Parser msg non-extraction error: %s", ex)
             yield
 
         return True
@@ -515,25 +512,25 @@ class Parser:
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                    logger.error("Kevery msg extraction error: %s", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                    logger.error("Kevery msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Kevery msg non-extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg non-extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery msg non-extraction error: %s\n", ex.args[0])
+                    logger.error("Kevery msg non-extraction error: %s", ex.args[0])
             finally:
                 done = True
 
@@ -605,25 +602,25 @@ class Parser:
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg extraction error: %s", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.ERROR):
-                    logger.exception("Parser msg non-extraction error: %s\n", ex.args[0])
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg non-extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg non-extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg non-extraction error: %s", ex.args[0])
             yield
 
         return True  # should never return

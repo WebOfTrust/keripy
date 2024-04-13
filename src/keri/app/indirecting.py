@@ -192,7 +192,7 @@ class WitnessStart(doing.DoDoer):
         _ = (yield self.tock)
 
         if self.parser.ims:
-            logger.info("Client %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
+            logger.debug("Client %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
@@ -381,7 +381,7 @@ class Indirector(doing.DoDoer):
         _ = (yield self.tock)
 
         if self.parser.ims:
-            logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
+            logger.debug("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
@@ -444,7 +444,7 @@ class Indirector(doing.DoDoer):
         Sends message msg and loggers label if any
         """
         self.client.tx(msg)  # send to remote
-        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
+        logger.debug("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
 
 class MailboxDirector(doing.DoDoer):

@@ -273,7 +273,7 @@ class WitnessReceiptor(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, msgs=None, cues=None, force=False, **kwa):
+    def __init__(self, hby, msgs=None, cues=None, force=False, auths=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -289,6 +289,7 @@ class WitnessReceiptor(doing.DoDoer):
         self.force = force
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.auths = auths if auths is not None else dict()
 
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
@@ -332,7 +333,8 @@ class WitnessReceiptor(doing.DoDoer):
 
                 witers = []
                 for wit in wits:
-                    witer = messenger(hab, wit)
+                    auth = self.auths[wit] if wit in self.auths else None
+                    witer = messenger(hab, wit, auth=auth)
                     witers.append(witer)
                     self.extend([witer])
 
@@ -836,7 +838,7 @@ class HTTPMessenger(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
+    def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, auth=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -851,6 +853,7 @@ class HTTPMessenger(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
+        self.auth = auth
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo), doing.doify(self.responseDo)])
 
@@ -881,7 +884,11 @@ class HTTPMessenger(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            self.posted += httping.streamCESRRequests(client=self.client, dest=self.wit, ims=msg)
+            headers = dict()
+            if self.auth is not None:
+                headers["Authorization"] = self.auth
+
+            self.posted += httping.streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
             while self.client.requests:
                 yield self.tock
 
@@ -983,34 +990,36 @@ def mailbox(hab, cid):
     return mbx
 
 
-def messenger(hab, pre):
+def messenger(hab, pre, auth=None):
     """ Create a Messenger (tcp or http) based on available endpoints
 
     Parameters:
         hab (Habitat): Environment to use to look up witness URLs
         pre (str): qb64 identifier prefix of recipient to create a messanger for
+        auth (str): optional auth code to send with any request for messenger
 
     Returns:
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
     urls = hab.fetchUrls(eid=pre)
-    return messengerFrom(hab, pre, urls)
+    return messengerFrom(hab, pre, urls, auth)
 
 
-def messengerFrom(hab, pre, urls):
+def messengerFrom(hab, pre, urls, auth=None):
     """ Create a Witnesser (tcp or http) based on provided endpoints
 
     Parameters:
         hab (Habitat): Environment to use to look up witness URLs
         pre (str): qb64 identifier prefix of recipient to create a messanger for
         urls (dict): map of schemes to urls of available endpoints
+        auth (str): optional auth code to send with any request for messenger
 
     Returns:
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
     if kering.Schemes.http in urls or kering.Schemes.https in urls:
         url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-        witer = HTTPMessenger(hab=hab, wit=pre, url=url)
+        witer = HTTPMessenger(hab=hab, wit=pre, url=url, auth=auth)
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
         witer = TCPMessenger(hab=hab, wit=pre, url=url)
