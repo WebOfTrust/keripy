@@ -20,6 +20,8 @@ from keri.kering import (Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN,)
 
+from keri.help import helping
+
 from keri import core
 
 from keri.core.structing import Sealer, SealEvent, SealTrans
@@ -2690,13 +2692,13 @@ def test_cesr_native_dumps():
 
     keys = [csigners[0].verfer.qb64]
     assert keys == ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ']
-    serder = incept(keys, version=Vrsn_2_0)
+    serder = incept(keys, version=Vrsn_2_0, kind=kering.Serials.cesr)
 
     assert serder.sad == \
     {
-        'v': 'KERICAAJSONAAD8.',
+        'v': 'KERICAACESRAAAA.',
         't': 'icp',
-        'd': 'EP9O8aDcloRpvTmk8pnfq3KE2eH_-_wDYWqwOsSgpPws',
+        'd': 'EO6lMLcTbUhdpbQVXCh78MShuT_69th6tiZhEbAfPCj4',
         'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
         's': '0',
         'kt': '1',
@@ -2709,10 +2711,16 @@ def test_cesr_native_dumps():
         'a': []
     }
 
+    assert serder.raw == (b'-FAtYKERICAAXicpEO6lMLcTbUhdpbQVXCh78MShuT_69th6tiZhEbAfPCj4DG9X'
+                          b'hvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-LALDG9XhvcVryHj'
+                          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAA-LAAMAAA-LAA-LAA-LAA')
+    assert len(serder.raw) == serder.size == 184
+    sizeh = serder.raw[2:4]
+    assert sizeh == b"At"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 184
+
     rawqb64 = serder._dumps()  # default is it dumps self.sad
-    assert rawqb64 == (b'-FAtYKERICAAXicpEP9O8aDcloRpvTmk8pnfq3KE2eH_-_wDYWqwOsSgpPwsDG9X'
-                   b'hvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-LALDG9XhvcVryHj'
-                   b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAA-LAAMAAA-LAA-LAA-LAA')
+    assert rawqb64 == serder.raw
     assert len(rawqb64) == 184
 
     rawqb2 = decodeB64(rawqb64)
@@ -2767,14 +2775,15 @@ def test_cesr_native_dumps():
                     cnfg=['DND'],
                     data=data,
                     code=core.MtrDex.Blake3_256,
-                    version=Vrsn_2_0)
+                    version=Vrsn_2_0,
+                    kind=kering.Serials.cesr)
 
     assert serder.sad == \
     {
-        'v': 'KERICAAJSONAAOT.',
+        'v': 'KERICAACESRAAAA.',
         't': 'icp',
-        'd': 'ECdA32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXY',
-        'i': 'ECdA32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXY',
+        'd': 'EMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6',
+        'i': 'EMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6',
         's': '0',
         'kt': '2',
         'k':
@@ -2808,7 +2817,8 @@ def test_cesr_native_dumps():
             {
                 'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
                 's': '1',
-                'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'},
+                'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
+            },
             {
                 's': 'f',
                 'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
@@ -2816,20 +2826,39 @@ def test_cesr_native_dumps():
         ]
     }
 
+    assert serder.raw == (b'-FDCYKERICAAXicpEMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6EMEv'
+          b'Sn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6MAAAMAAC-LAhDG9XhvcVryHj'
+          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
+          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-LAh'
+          b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
+          b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
+          b'ZEyPMAAD-LAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
+          b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
+          b'gXZ2WYbr3AiPY1M0-LABXDND-LA8-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+          b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
+          b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'ZJGJqQZpZEyP')
+
+    assert len(serder.raw) == serder.size == 780
+    sizeh = serder.raw[2:4]
+    assert sizeh == b"DC"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 780
+
     rawqb64 = serder._dumps()  # default is it dumps self.sad
-    assert rawqb64 == (b'-FDCYKERICAAXicpECdA32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXYECdA'
-                    b'32v8SkQ2ZFpliiK0RBcfNERaVtxk4pmaulKsakXYMAAAMAAC-LAhDG9XhvcVryHj'
-                    b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
-                    b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-LAh'
-                    b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
-                    b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
-                    b'ZEyPMAAD-LAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
-                    b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
-                    b'gXZ2WYbr3AiPY1M0-LABXDND-LA8-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
-                    b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
-                    b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
-                    b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
-                    b'ZJGJqQZpZEyP')
+    assert rawqb64 == (b'-FDCYKERICAAXicpEMEvSn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6EMEv'
+          b'Sn0o6Iv2-3gInTDMMDTV0qQEfooM-yTzkj6Kynn6MAAAMAAC-LAhDG9XhvcVryHj'
+          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
+          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-LAh'
+          b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
+          b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
+          b'ZEyPMAAD-LAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
+          b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
+          b'gXZ2WYbr3AiPY1M0-LABXDND-LA8-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+          b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
+          b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'ZJGJqQZpZEyP')
 
 
     assert len(rawqb64) == 780
