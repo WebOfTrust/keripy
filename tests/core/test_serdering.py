@@ -2999,7 +2999,7 @@ def test_cesr_native_dumps():
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios ==[1.0, 1.33, 1.45, 1.45, 1.63]
+    assert ratios == [1.0, 1.33, 1.45, 1.45, 1.63]
 
     # complex rotation event
 
