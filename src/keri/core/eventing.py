@@ -770,7 +770,7 @@ def delcept(keys, delpre, **kwa):
 
     Parameters:
         keys  (list): current signing keys qb64
-        sith (int | str | list | None): current signing threshold input to Tholder
+        isith (int | str | list | None): current signing threshold input to Tholder
         ndigs (list | None): current signing key digests qb64
         nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
@@ -948,7 +948,7 @@ def deltate(pre,
         dig (str): said of previous event qb64
         ilk (str): ilk of event. Must be in (Ilks.rot, Ilks.drt)
         sn (int | str): sequence number int or hex str
-        sith (int | str | list): current signing threshold input to Tholder
+        isith (int | str | list): current signing threshold input to Tholder
         ndigs (list): current signing key digests qb64
         nsith int | str | list): next signing threshold input to Tholder
         toad (int | str ): witness threshold number if str then hex str
