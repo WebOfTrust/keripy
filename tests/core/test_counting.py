@@ -436,8 +436,7 @@ def test_counter_class():
             for key, val in vminor.items(): # size table items
                 assert Counter.Hards[key[:2]] == val.hs
 
-    ##  verify all Codes have hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
-    ## if hs < 2 or ss <= 0 or fs != cs or cs % 4   cs = hs + ss
+    #  verify all Codes have hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
     for vmajor in Counter.Sizes.values():
         for vminor in vmajor.values():
             for val in vminor.values():  # size table values
@@ -507,10 +506,6 @@ def test_counter_class():
         Counter.verToB64(minor=-1)
 
 
-
-
-
-
     """ Done Test """
 
 def test_counter_v1():
@@ -533,6 +528,7 @@ def test_counter_v1():
 
     counter = Counter(tag="ControllerIdxSigs", count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs == counter.hard
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -541,9 +537,13 @@ def test_counter_v1():
     assert counter.fullSize == 4
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
+    assert counter.codes == counting.CtrDex_1_0
+    assert counter.tags == counting.Tags_1_0
+    assert counter.sizes == Counter.Sizes[1][0]
 
     counter = Counter(tag=AllTags.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -556,6 +556,7 @@ def test_counter_v1():
                       count=count,
                       gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -564,6 +565,7 @@ def test_counter_v1():
 
     counter = Counter(code=CtrDex.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default count = 1
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -572,6 +574,7 @@ def test_counter_v1():
 
     counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -580,6 +583,7 @@ def test_counter_v1():
 
     counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -588,6 +592,7 @@ def test_counter_v1():
 
     counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -624,6 +629,7 @@ def test_counter_v1():
 
     counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -632,6 +638,7 @@ def test_counter_v1():
 
     counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -640,6 +647,7 @@ def test_counter_v1():
 
     counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -648,6 +656,7 @@ def test_counter_v1():
 
     counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -663,6 +672,7 @@ def test_counter_v1():
 
     counter = Counter(code=CtrDex.BigAttachmentGroup, count=count, gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.BigAttachmentGroup
+    assert counter.tag == AllTags.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -671,6 +681,7 @@ def test_counter_v1():
 
     counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
+    assert counter.tag == AllTags.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -679,6 +690,7 @@ def test_counter_v1():
 
     counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.BigAttachmentGroup
+    assert counter.tag == AllTags.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -687,6 +699,7 @@ def test_counter_v1():
 
     counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
+    assert counter.tag == AllTags.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -700,6 +713,7 @@ def test_counter_v1():
     qb2 = counter.qb2
     counter._bexfil(qb2)
     assert counter.code == code
+    assert counter.tag == AllTags.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64 == qsc
     assert counter.qb2 == qb2
@@ -720,6 +734,7 @@ def test_counter_v1():
     # strip ignored if qb64
     counter = Counter(qb64=qsc, strip=True, gvrsn=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -730,6 +745,7 @@ def test_counter_v1():
     counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # strip
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -740,6 +756,7 @@ def test_counter_v1():
     counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -782,6 +799,7 @@ def test_counter_v1():
     ims = bytearray(qscb)
     counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
+    assert counter.tag == AllTags.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -793,6 +811,7 @@ def test_counter_v1():
     ims = bytearray(qscb2)
     counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
+    assert counter.tag == AllTags.BigAttachmentGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -816,6 +835,7 @@ def test_counter_v1():
                       count=genverint,
                       gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
+    assert counter.tag == AllTags.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
     assert counter.countToB64() == genver  # default length
@@ -823,11 +843,16 @@ def test_counter_v1():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
+    assert counter.codes == counting.CtrDex_1_0
+    assert counter.tags == counting.Tags_1_0
+    assert counter.sizes == Counter.Sizes[1][0]
+
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       countB64=genver,
                       gvrsn=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
+    assert counter.tag == AllTags.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
     assert counter.countToB64() == genver  # default length
@@ -859,6 +884,7 @@ def test_counter_v2():
     # default version and default count = 1
     counter = Counter(code=CtrDex.ControllerIdxSigs)
     assert counter.code == CtrDex.ControllerIdxSigs == counter.hard
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -867,10 +893,16 @@ def test_counter_v2():
     assert counter.fullSize == 4
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
+    assert counter.codes == counting.CtrDex_2_0
+    assert counter.tags == counting.Tags_2_0
+    assert counter.sizes == Counter.Sizes[2][0]
+
+
 
     # default count = 1
     counter = Counter(code=CtrDex.ControllerIdxSigs, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -879,6 +911,7 @@ def test_counter_v2():
 
     counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -887,6 +920,7 @@ def test_counter_v2():
 
     counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -895,6 +929,7 @@ def test_counter_v2():
 
     counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -931,6 +966,7 @@ def test_counter_v2():
 
     counter = Counter(tag="ControllerIdxSigs", count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -941,6 +977,7 @@ def test_counter_v2():
                       count=count,
                       gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -953,6 +990,7 @@ def test_counter_v2():
                       count=count,
                       gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -961,6 +999,7 @@ def test_counter_v2():
 
     counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -969,6 +1008,7 @@ def test_counter_v2():
 
     counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -977,6 +1017,7 @@ def test_counter_v2():
 
     counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -985,6 +1026,7 @@ def test_counter_v2():
 
     counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -998,6 +1040,7 @@ def test_counter_v2():
     qb2 = counter.qb2
     counter._bexfil(qb2)
     assert counter.code == code
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64 == qsc
     assert counter.qb2 == qb2
@@ -1018,6 +1061,7 @@ def test_counter_v2():
     # strip ignored if qb64
     counter = Counter(qb64=qsc, strip=True, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1028,6 +1072,7 @@ def test_counter_v2():
     counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # strip
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1038,6 +1083,7 @@ def test_counter_v2():
     counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.tag == AllTags.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1079,6 +1125,7 @@ def test_counter_v2():
 
     counter = Counter(code=CtrDex.BigGenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1087,6 +1134,7 @@ def test_counter_v2():
 
     counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1095,6 +1143,7 @@ def test_counter_v2():
 
     counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1103,6 +1152,7 @@ def test_counter_v2():
 
     counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1119,6 +1169,7 @@ def test_counter_v2():
     ims = bytearray(qscb)
     counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1129,6 +1180,7 @@ def test_counter_v2():
     ims = bytearray(qscb2)
     counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1145,6 +1197,7 @@ def test_counter_v2():
 
     counter = Counter(code=CtrDex.BigGenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup == counter.hard
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1156,6 +1209,7 @@ def test_counter_v2():
 
     counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1164,6 +1218,7 @@ def test_counter_v2():
 
     counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1172,6 +1227,7 @@ def test_counter_v2():
 
     counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1188,6 +1244,7 @@ def test_counter_v2():
     ims = bytearray(qscb)
     counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1199,6 +1256,7 @@ def test_counter_v2():
     ims = bytearray(qscb2)
     counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1215,6 +1273,7 @@ def test_counter_v2():
 
     counter = Counter(code=CtrDex.GenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup == counter.hard
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1225,6 +1284,7 @@ def test_counter_v2():
 
     counter = Counter(tag=AllTags.GenericGroup, count=count, gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup
+    assert counter.tag == AllTags.BigGenericGroup
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1245,6 +1305,7 @@ def test_counter_v2():
                       count=genverint,
                       gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
+    assert counter.tag == AllTags.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
     assert counter.countToB64() == genver  # default length
@@ -1253,11 +1314,15 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
     assert counter.fullSize == 8
+    assert counter.codes == counting.CtrDex_2_0
+    assert counter.tags == counting.Tags_2_0
+    assert counter.sizes == Counter.Sizes[2][0]
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       countB64=genver,
                       gvrsn=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
+    assert counter.tag == AllTags.KERIACDCGenusVersion
     assert counter.count == genverint
     assert counter.countToB64(l=3) == genver
     assert counter.countToB64() == genver  # default length

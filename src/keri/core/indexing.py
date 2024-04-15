@@ -192,7 +192,6 @@ class Indexer:
         ._bexfil is method to extract .code and .raw from fully qualified Base2
 
     """
-    Codex = IdrDex
     # Hards table maps from bytes Base64 first code char to int of hard size, hs,
     # (stable) of code. The soft size, ss, (unstable) is always > 0 for Indexer.
     Hards = ({chr(c): 1 for c in range(65, 65 + 26)})
@@ -227,6 +226,11 @@ class Indexer:
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
+
+    Codes = asdict(IdrDex)  # map code name to code
+    Names = {val : key for key, val in Codes.items()} # invert map code to code name
+
+
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0, ondex=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
@@ -340,6 +344,17 @@ class Indexer:
         Makes .code read only
         """
         return self._code
+
+
+    @property
+    def name(self):
+        """
+        Returns:
+            name (str): code name for self.code. Used for annotation for
+            primitives like Matter
+
+        """
+        return self.Names[self.code]
 
     @property
     def raw(self):

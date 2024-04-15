@@ -205,7 +205,7 @@ def test_matter_class():
     Test Matter class attributes
     """
 
-    assert asdict(MtrDex) == \
+    assert Matter.Codes == \
     {
         'Ed25519_Seed': 'A',
         'Ed25519N': 'B',
@@ -298,6 +298,101 @@ def test_matter_class():
         'X25519_Cipher_QB2_Big_L0': '7AAE',
         'X25519_Cipher_QB2_Big_L1': '8AAE',
         'X25519_Cipher_QB2_Big_L2': '9AAE'
+    }
+
+    assert Matter.Names == \
+    {
+        'A': 'Ed25519_Seed',
+        'B': 'Ed25519N',
+        'C': 'X25519',
+        'D': 'Ed25519',
+        'E': 'Blake3_256',
+        'F': 'Blake2b_256',
+        'G': 'Blake2s_256',
+        'H': 'SHA3_256',
+        'I': 'SHA2_256',
+        'J': 'ECDSA_256k1_Seed',
+        'K': 'Ed448_Seed',
+        'L': 'X448',
+        'M': 'Short',
+        'N': 'Big',
+        'O': 'X25519_Private',
+        'P': 'X25519_Cipher_Seed',
+        'Q': 'ECDSA_256r1_Seed',
+        'R': 'Tall',
+        'S': 'Large',
+        'T': 'Great',
+        'U': 'Vast',
+        'V': 'Label1',
+        'W': 'Label2',
+        'X': 'Tag3',
+        'Y': 'Tag7',
+        'Z': 'Blind',
+        '0A': 'Salt_128',
+        '0B': 'Ed25519_Sig',
+        '0C': 'ECDSA_256k1_Sig',
+        '0D': 'Blake3_512',
+        '0E': 'Blake2b_512',
+        '0F': 'SHA3_512',
+        '0G': 'SHA2_512',
+        '0H': 'Long',
+        '0I': 'ECDSA_256r1_Sig',
+        '0J': 'Tag1',
+        '0K': 'Tag2',
+        '0L': 'Tag5',
+        '0M': 'Tag6',
+        '0N': 'Tag9',
+        '0O': 'Tag10',
+        '1AAA': 'ECDSA_256k1N',
+        '1AAB': 'ECDSA_256k1',
+        '1AAC': 'Ed448N',
+        '1AAD': 'Ed448',
+        '1AAE': 'Ed448_Sig',
+        '1AAF': 'Tag4',
+        '1AAG': 'DateTime',
+        '1AAH': 'X25519_Cipher_Salt',
+        '1AAI': 'ECDSA_256r1N',
+        '1AAJ': 'ECDSA_256r1',
+        '1AAK': 'Null',
+        '1AAL': 'No',
+        '1AAM': 'Yes',
+        '1AAN': 'Tag8',
+        '1__-': 'TBD0S',
+        '1___': 'TBD0',
+        '2__-': 'TBD1S',
+        '2___': 'TBD1',
+        '3__-': 'TBD2S',
+        '3___': 'TBD2',
+        '4A': 'StrB64_L0',
+        '5A': 'StrB64_L1',
+        '6A': 'StrB64_L2',
+        '7AAA': 'StrB64_Big_L0',
+        '8AAA': 'StrB64_Big_L1',
+        '9AAA': 'StrB64_Big_L2',
+        '4B': 'Bytes_L0',
+        '5B': 'Bytes_L1',
+        '6B': 'Bytes_L2',
+        '7AAB': 'Bytes_Big_L0',
+        '8AAB': 'Bytes_Big_L1',
+        '9AAB': 'Bytes_Big_L2',
+        '4C': 'X25519_Cipher_L0',
+        '5C': 'X25519_Cipher_L1',
+        '6C': 'X25519_Cipher_L2',
+        '7AAC': 'X25519_Cipher_Big_L0',
+        '8AAC': 'X25519_Cipher_Big_L1',
+        '9AAC': 'X25519_Cipher_Big_L2',
+        '4D': 'X25519_Cipher_QB64_L0',
+        '5D': 'X25519_Cipher_QB64_L1',
+        '6D': 'X25519_Cipher_QB64_L2',
+        '7AAD': 'X25519_Cipher_QB64_Big_L0',
+        '8AAD': 'X25519_Cipher_QB64_Big_L1',
+        '9AAD': 'X25519_Cipher_QB64_Big_L2',
+        '4E': 'X25519_Cipher_QB2_L0',
+        '5E': 'X25519_Cipher_QB2_L1',
+        '6E': 'X25519_Cipher_QB2_L2',
+        '7AAE': 'X25519_Cipher_QB2_Big_L0',
+        '8AAE': 'X25519_Cipher_QB2_Big_L1',
+        '9AAE': 'X25519_Cipher_QB2_Big_L2'
     }
 
 
@@ -536,6 +631,7 @@ def test_matter():
     matter = Matter(raw=verkey)  # default code is MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.code == MtrDex.Ed25519N == matter.hard
+    assert matter.name == 'Ed25519N'
     assert matter.soft == ""
     assert matter.both == MtrDex.Ed25519N
     assert matter.size == None
@@ -850,6 +946,7 @@ def test_matter():
     matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
     assert matter.code == code
+    assert matter.name == 'TBD1'
     assert matter.both == code
     assert matter.size == None
     assert matter.fullSize == 8
@@ -2614,6 +2711,32 @@ def test_number():
         'Huge': '0A',
         'Vast': 'U'
     }
+
+    assert Number.Codes == \
+    {
+        'Short': 'M',
+        'Long': '0H',
+        'Tall': 'R',
+        'Big': 'N',
+        'Large': 'S',
+        'Great': 'T',
+        'Huge': '0A',
+        'Vast': 'U'
+    }
+
+
+    assert Number.Names == \
+    {
+        'M': 'Short',
+        '0H': 'Long',
+        'R': 'Tall',
+        'N': 'Big',
+        'S': 'Large',
+        'T': 'Great',
+        '0A': 'Huge',
+        'U': 'Vast'
+    }
+
 
     with pytest.raises(EmptyMaterialError):
         number = Number(raw=b'')  # missing code
