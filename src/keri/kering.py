@@ -833,6 +833,13 @@ class KindError(ExtractionError):
         raise KindError("error message")
     """
 
+class IlkError(ExtractionError):
+    """
+    Bad or Unsupported Message Type (Ilk)
+
+    Usage:
+        raise IlkError("error message")
+    """
 
 class ConversionError(ExtractionError):
     """
