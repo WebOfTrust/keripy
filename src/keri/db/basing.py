@@ -1261,6 +1261,9 @@ class Baser(dbing.LMDBer):
             atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
                                       count=1).qb64b)
             atc.extend(couple)
+        elif self.kevers[pre].delegated:
+            if coring.SerderKERI(raw=raw).estive:
+                raise kering.MissingEntryError("Missing delegator anchor seal for dig={}.".format(dig))
 
         # add trans receipts quadruples to attachments
         if quads := self.getVrcs(key=dgkey):
