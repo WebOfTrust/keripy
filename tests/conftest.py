@@ -13,7 +13,7 @@ import pytest
 from hio.base import doing
 
 from keri import kering
-from keri.core import scheming, coring, routing, eventing, parsing
+from keri.core import scheming, coring, routing, eventing, parsing, signing
 from keri.db import basing
 from keri.help import helping
 from keri import help
@@ -68,7 +68,12 @@ def mockCoringRandomNonce(monkeypatch):
     def mockRandomNonce():
         return "A9XfpxIl1LcIkMhUSCCC8fgvkuX8gG9xK3SM-S8a8Y_U"
 
+    @property
+    def mockRandomSalt(self):
+        return "0AAUiJMii_rPXXCiLTEEaDT7"
+
     monkeypatch.setattr(coring, "randomNonce", mockRandomNonce)
+    monkeypatch.setattr(signing.Salter, "qb64", mockRandomSalt)
 
 
 @pytest.fixture
