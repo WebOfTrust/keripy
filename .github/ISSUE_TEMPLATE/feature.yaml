@@ -1,0 +1,12 @@
+name: "Feature request"
+description: Feature request template
+title: "A concise description"
+labels: ["feature request"]
+body:
+  - type: textarea
+    id: desired-behavior
+    attributes:
+      label:  Feature request description/rationale
+    validations:
+      required: true
+       
