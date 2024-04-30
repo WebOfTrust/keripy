@@ -577,7 +577,7 @@ class OOBIEnd:
             rep.status = falcon.HTTP_NOT_FOUND
             return
 
-        if kever.delegated and kever.delegator not in self.hby.kevers:
+        if kever.delegated and kever.delpre not in self.hby.kevers:
             rep.status = falcon.HTTP_NOT_FOUND
             return
 

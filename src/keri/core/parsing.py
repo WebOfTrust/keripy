@@ -1038,8 +1038,8 @@ class Parser:
                         rvy.processReply(serder, tsgs=tsgs)  # trans
 
                 except AttributeError as e:
-                    raise kering.ValidationError("No kevery to process so dropped msg"
-                                                 "= {}.".format(serder.pretty()))
+                    raise kering.ValidationError("No revery to process so dropped msg"
+                                                 "= {}.".format(serder.pretty())) from e
 
             elif ilk in (Ilks.qry,):  # query message
                 args = dict(serder=serder)
@@ -1059,9 +1059,9 @@ class Parser:
                 if route in ["logs", "ksn", "mbx"]:
                     try:
                         kvy.processQuery(**args)
-                    except AttributeError:
+                    except AttributeError as e:
                         raise kering.ValidationError("No kevery to process so dropped msg"
-                                                     "= {}.".format(serder.pretty()))
+                                                     "= {} from e = {}".format(serder.pretty(), e))
 
                 elif route in ["tels", "tsn"]:
                     try:

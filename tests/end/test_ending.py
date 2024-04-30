@@ -445,7 +445,7 @@ def test_get_oobi():
         hab = hby.makeHab(name=name, delpre=delhab.pre)
 
         assert hab.pre == "EPERMS4wKU7ejhCdhI2qQR8snEx1cislR9C9bSEs0kS5"
-        assert hab.kever.delegator == delhab.pre
+        assert hab.kever.delpre == delhab.pre
 
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=kering.Roles.controller,

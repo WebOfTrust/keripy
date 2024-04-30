@@ -2077,7 +2077,7 @@ class BaseHab:
         """
         while cues:  # iteratively process each cue in cues
             msgs = bytearray()
-            cue = cues.pull() #cues.popleft()
+            cue = cues.pull()  # cues.popleft()
             cueKin = cue["kin"]  # type or kind of cue
 
             if cueKin in ("receipt",):  # cue to receipt a received event from other pre
