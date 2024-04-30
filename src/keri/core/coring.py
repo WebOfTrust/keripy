@@ -184,22 +184,19 @@ def loads(raw, size=None, kind=Serials.json):
     return ked
 
 
-# ToDo: nonces only need 128 bits of entropy. a Salt is enough
-# Just use Salter().qb64.
 # Deprecated
+# randomNonce() refactored to match Salter().qb64 and only used in coring to avoid circular dependencies
+# use Salter().qb64 in other places
 
 def randomNonce():
-    """ Generate a random ed25519 seed and encode as qb64
+    """ Generate a random 128 bits salt and encode as qb64
 
     Returns:
-        str: qb64 encoded ed25519 random seed
+        str: qb64 encoded 128 bits random salt
     """
-    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
+    preseed = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    seedqb64 = Matter(raw=preseed, code=MtrDex.Salt_128).qb64
     return seedqb64
-
-
-
 
 
 # secret derivation security tier

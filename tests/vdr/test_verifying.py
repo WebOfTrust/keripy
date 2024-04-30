@@ -25,13 +25,13 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
-        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EHraBkp-XMf1x_bo70O2x3br'
-                       b'BCHlJHa7q_MzsBNeYz2_","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EFa6oMZA5bgpALIc7yykT6O6'
+                       b'ovdbDQnRFeTPDI4zaOhr","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"tels","rr":"","q":{"i":"EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                       b'KXqgcX4","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4"}}-V'
-                       b'Aj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABUWETZTw'
-                       b'TVuh0mNvN5KsJ_9V1epoP5wqgW32x8nUnGB20aI8xQBAhQ-aVP61ZEq97BDGSnxO'
-                       b'hU6tGCfDmvtugI')
+                       b'KXqgcX4","ri":"EB-u4VAF7A7_GR8PXJoAVHv5X9vjtXew8Yo6Z3w9mQUQ"}}-V'
+                       b'Aj-HABEMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl-AABAABGnrnayV'
+                       b'yK1siivaffGHpWWhcVThPN_dsePQvMXrlsOYNf0UdT0e6ch-0bN-UuOJCd1behue'
+                       b'Zs_0V9FQ9vw0wK')
 
 
 def test_verifier(seeder):
