@@ -102,8 +102,8 @@ class CounterCodex_2_0(MapDom):
     BigMapMessageBodyGroup: str = '-0G'  # Big Field Map Message Body Group (Universal).
     GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
     BigGenericMapGroup: str = '-0H'  # Big Generic Field Map Group (Universal).
-    GenericListGroup: str = '-L'  # Generic List Group (Universal).
-    BigGenericListGroup: str = '-0L'  # Big Generic List Group (Universal).
+    GenericListGroup: str = '-I'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '-0I'  # Big Generic List Group (Universal).
     ControllerIdxSigs: str = '-J'  # Controller Indexed Signature(s) of qb64.
     BigControllerIdxSigs: str = '-0J'  # Big Controller Indexed Signature(s) of qb64.
     WitnessIdxSigs: str = '-K'  # Witness Indexed Signature(s) of qb64.
@@ -419,10 +419,10 @@ class Counter:
         Parameters:
             tag (str | None):  label of stable (hard) part of derivation code
                                to lookup in codex so it can depend on version.
-                               takes precedence over tag
+                               takes precedence over code.
             code (str | None):  stable (hard) part of derivation code
                             if tag provided lookup code from tag
-                            else if tag is None and code provided use code
+                            else if tag is None and code provided use code.
             count (int | None): count of framed material in quadlets/triplets
                                for composition. Count does not include code.
                                When both count and countB64 are None then count
@@ -517,6 +517,9 @@ class Counter:
                                      "(code and count) or qb64b or "
                                      "qb64 or qb2.")
 
+        codenames = { val: key for key, val in asdict(self.codes).items()} # map codes to code names
+        self._tag = codenames[self.code]
+
     @property
     def version(self):
         """
@@ -524,6 +527,14 @@ class Counter:
         Makes .version read only
         """
         return self._version
+
+    @property
+    def gvrsn(self):
+        """
+        Returns .version alias for .version
+
+        """
+        return self.version
 
     @property
     def codes(self):
@@ -536,10 +547,10 @@ class Counter:
     @property
     def tags(self):
         """
-        Returns ._tags
+        Returns tags for current .version
         Makes .tags read only
         """
-        return self._tags
+        return self.Tags[self.version]  # use own version
 
     @property
     def sizes(self):
@@ -559,6 +570,26 @@ class Counter:
         Soft part is count
         """
         return self._code
+
+    @property
+    def tag(self):
+        """
+        Returns:
+            tag (str): code name for self.code
+
+        Getter for ._tag. Makes .tag read only
+        """
+        return self._tag
+
+    @property
+    def name(self):
+        """
+        Returns:
+            name (str): code name for self.code alias of .tag. Match interface
+            for annotation for primitives like Matter
+
+        """
+        return self.tag
 
 
     @property

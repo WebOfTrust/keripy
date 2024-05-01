@@ -8,7 +8,7 @@ import json
 from typing import Union
 from collections import namedtuple, deque
 from collections.abc import Sequence, Mapping
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass, astuple, asdict
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from fractions import Fraction
@@ -903,6 +903,9 @@ class Matter:
         '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
 
+    Codes = asdict(MtrDex)  # map code name to code
+    Names = {val : key for key, val in Codes.items()} # invert map code to code name
+
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
@@ -1111,6 +1114,17 @@ class Matter:
         matter or for special codes that are code only (raw is empty)
         """
         return self._code
+
+
+    @property
+    def name(self):
+        """
+        Returns:
+            name (str): code name for self.code. Used for annotation for
+            primitives like Matter
+
+        """
+        return self.Names[self.code]
 
 
     @property
@@ -1697,6 +1711,10 @@ class Number(Matter):
 
     Methods:
     """
+    Codes = asdict(NumDex)  # map code name to code
+    Names = {val : key for key, val in Codes.items()} # invert map code to code name
+
+
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=None, num=None, numh=None, **kwa):

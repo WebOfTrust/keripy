@@ -20,6 +20,7 @@ from . import coring
 from .coring import (MapDom, Matter, Diger, Prefixer, Number)
 
 
+
 # ToDo Change seal namedtuple definitions to NamedTuple subclasses so can
 # use typehints on field values which type hints are the primitive types. Use
 # union | on type hints to allow qb64, qb2, primitive instance, primitive class

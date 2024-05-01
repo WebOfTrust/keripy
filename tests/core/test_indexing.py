@@ -27,15 +27,12 @@ from keri.core.indexing import (IdrDex, IdxSigDex, IdxCrtSigDex, IdxBthSigDex,
 
 from keri.core.coring import (Verfer,)
 
-
-
-def test_indexer():
+def test_indexer_class():
     """
     Test Indexer class
     """
-    assert Indexer.Codex == IdrDex
 
-    assert asdict(IdrDex) == {
+    assert Indexer.Codes == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
@@ -56,6 +53,30 @@ def test_indexer():
         'TBD1': '1z',
         'TBD4': '4z',
     }
+
+    assert Indexer.Names == \
+    {
+        'A': 'Ed25519_Sig',
+        'B': 'Ed25519_Crt_Sig',
+        'C': 'ECDSA_256k1_Sig',
+        'D': 'ECDSA_256k1_Crt_Sig',
+        'E': 'ECDSA_256r1_Sig',
+        'F': 'ECDSA_256r1_Crt_Sig',
+        '0A': 'Ed448_Sig',
+        '0B': 'Ed448_Crt_Sig',
+        '2A': 'Ed25519_Big_Sig',
+        '2B': 'Ed25519_Big_Crt_Sig',
+        '2C': 'ECDSA_256k1_Big_Sig',
+        '2D': 'ECDSA_256k1_Big_Crt_Sig',
+        '2E': 'ECDSA_256r1_Big_Sig',
+        '2F': 'ECDSA_256r1_Big_Crt_Sig',
+        '3A': 'Ed448_Big_Sig',
+        '3B': 'Ed448_Big_Crt_Sig',
+        '0z': 'TBD0',
+        '1z': 'TBD1',
+        '4z': 'TBD4'
+    }
+
 
     assert IdrDex.Ed25519_Sig == 'A'
     assert IdrDex.Ed25519_Crt_Sig == 'B'
@@ -216,6 +237,15 @@ def test_indexer():
     for skey, sval in Indexer.Hards.items():
         ckey = codeB64ToB2(skey)
         assert Indexer.Bards[ckey] == sval
+
+    """End Test"""
+
+
+def test_indexer():
+    """
+    Test Indexer instance
+    """
+
 
     with pytest.raises(EmptyMaterialError):
         indexer = Indexer()
@@ -776,6 +806,7 @@ def test_siger():
 
 
 if __name__ == "__main__":
+    test_indexer_class()
     test_indexer()
     test_siger()
 

@@ -250,7 +250,7 @@ class ColdCodex:
 ColdDex = ColdCodex()  # Make instance
 
 Coldage = namedtuple("Coldage", 'msg txt bny')  # stream cold start status
-Colds = Coldage(msg='msg', txt='txt', bny='bny')
+Colds = Coldage(msg='msg', txt='txt', bny='bny') # add 'ant' for annotated
 
 
 def sniff(ims):
@@ -290,6 +290,8 @@ def sniff(ims):
         return Colds.txt
     if tritet in (ColdDex.CtOpB2,):
         return Colds.bny
+    #if tritet in (ColdDex.AnB64, ):
+
 
     raise ColdStartError("Unexpected tritet={} at stream start.".format(tritet))
 
@@ -831,6 +833,13 @@ class KindError(ExtractionError):
         raise KindError("error message")
     """
 
+class IlkError(ExtractionError):
+    """
+    Bad or Unsupported Message Type (Ilk)
+
+    Usage:
+        raise IlkError("error message")
+    """
 
 class ConversionError(ExtractionError):
     """
