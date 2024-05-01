@@ -102,8 +102,8 @@ class CounterCodex_2_0(MapDom):
     BigMapMessageBodyGroup: str = '-0G'  # Big Field Map Message Body Group (Universal).
     GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
     BigGenericMapGroup: str = '-0H'  # Big Generic Field Map Group (Universal).
-    GenericListGroup: str = '-L'  # Generic List Group (Universal).
-    BigGenericListGroup: str = '-0L'  # Big Generic List Group (Universal).
+    GenericListGroup: str = '-I'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '-0I'  # Big Generic List Group (Universal).
     ControllerIdxSigs: str = '-J'  # Controller Indexed Signature(s) of qb64.
     BigControllerIdxSigs: str = '-0J'  # Big Controller Indexed Signature(s) of qb64.
     WitnessIdxSigs: str = '-K'  # Witness Indexed Signature(s) of qb64.

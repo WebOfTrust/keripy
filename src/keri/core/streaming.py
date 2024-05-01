@@ -304,19 +304,21 @@ def denot(ams):
     """De-annotate CESR stream
 
     Returns:
-        deannotation (bytes):  deannotation of input annotated CESR stream
+        dms (bytes):  deannotation of input annotated CESR message stream
 
     Parameters:
         ams (str):  CESR annotated message stream text
     """
+    dms = bytearray()  # deannotated message stream
+    lines = ams.splitlines()
+    for line in lines:
+        line = line.strip()
+        front, sep, back = line.partition('#') # finde comment if any
+        front = front.strip()  # non-commented portion strip white space
+        if front:
+            dms.extend(front.encode())
 
-    oms = bytearray()
-
-
-
-
-    return bytes(oms)
-
+    return bytes(dms)
 
 
 class Streamer:
