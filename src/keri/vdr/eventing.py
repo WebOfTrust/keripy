@@ -20,6 +20,7 @@ from .. import help
 from ..core import serdering, coring, indexing
 from ..core.coring import (MtrDex, Serials, versify, Prefixer,
                            Ilks, Seqner, Verfer, Number)
+from ..core.signing import (Salter,)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs
 from ..db import basing, dbing
 from ..db.dbing import dgKey, snKey
@@ -90,7 +91,7 @@ def incept(
         if toad != 0:  # invalid toad
             raise ValueError("Invalid toad = {} for baks = {}".format(toad, baks))
 
-    nonce = nonce if nonce is not None else coring.randomNonce()
+    nonce = nonce if nonce is not None else Salter().qb64
     ked = dict(v=vs,  # version string
                t=ilk,
                d="",

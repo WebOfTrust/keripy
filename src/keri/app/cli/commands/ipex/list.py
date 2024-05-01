@@ -8,6 +8,7 @@ keri.kli.commands module
 import argparse
 import datetime
 import os
+import json
 import sys
 
 from hio import help
@@ -198,6 +199,12 @@ class ListDoer(doing.DoDoer):
         print(f"    Already responded? {accepted}")
         if response is not None:
             print(f"    Response: {responseType} ({response.qb64})")
+
+        if self.verbose:
+            bsad = json.dumps(sad, indent=2)
+            print("    Full Credential:")
+            for line in bsad.splitlines():
+                print(f"\t{line}")
 
     def apply(self, note, exn, pathed):
         pass

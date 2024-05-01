@@ -701,14 +701,14 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
                                                       usage="Issue vLEI Credentials")
 
         assert exn.ked["r"] == '/multisig/vcp'
-        assert exn.saidb == b'ECKiNFo7fpG4vS5tUeja3EvOqT8ctq4AW8E3HKsP7dJo'
-        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABh6d0m'
-                       b'lebT57L8o2si7DfEvPCoXJP0ekPiBqkzQns3-P7dz36MPXhjNFW6xRRdUstDLAZe'
-                       b'BEqBxBCltMpTZGsD-LAa5AACAA-e-anc-AABAAD2mK9ICW9x1-0NZGkEDOcAbZ58'
-                       b'VWK9LOTwyN2lSfHr2zY638P1SBStoh8mjgy7nOTGMyujOXMKvF_ZDeQ_ISYA')
+        assert exn.saidb == b'EJN27EYqgxTS2NCHdnjE-CU0UikV5a1Cw5OZdv-g0jQ6'
+        assert atc == (b'-FABEDEf72ZZ9mhpT1Xz-_YkXl7cg93sjZUFLIsxaFNTbXQO0AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEDEf72ZZ9mhpT1Xz-_YkXl7cg93sjZUFLIsxaFNTbXQO-AABAABsPiWf'
+                       b'UE9L7D9KBVOYMg1rt88gK9DBkiBYb21xMR0YH7sCT0hqwX9y8CM5Y6jQwzz3NqqN'
+                       b'-aJWShzz1mbtb5AG-LAa5AACAA-e-anc-AABAABXlwkzbp_tC4MEbx1Uyny1o7dB'
+                       b'GHrYjU3u90Mhv2GtrIGG-7va1jZnlXef2R_LM4TRN8_XjmpLv1skcJaM90UB')
         data = exn.ked["a"]
-        assert data == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
+        assert data == {'gid': 'EEVG5a8c88Fg9vH-6zQP6gJdc4LxVbUTRydx-JhpDcob',
                         'usage': 'Issue vLEI Credentials'}
         assert "vcp" in exn.ked["e"]
         assert "anc" in exn.ked["e"]

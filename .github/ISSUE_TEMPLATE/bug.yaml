@@ -1,0 +1,34 @@
+name: "Bug report"
+description: Bug report template
+title: "A concise description"
+labels: ["bug", "triage"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+    validations:
+      required: true
+  - type: input
+    id: Evnironment
+    attributes:
+      label: Environment
+      description: (OS, Python version, deployment environment)
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true            

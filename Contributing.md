@@ -81,7 +81,7 @@ Adapted from the Rust Code of Conduct: [https://www.rust-lang.org/policies/code-
 ## Getting Help
 
 For questions or clarifications, reach out via:
-- Discord: [https://discord.gg/edGDD632tP](https://discord.gg/edGDD632tP)
+- Discord: [See KERI repo] (https://github.com/WebOfTrust/keri)
 - KERI Development Meetings: [https://github.com/WebOfTrust/keri#implementors-call]
 - ACDC Standards Meeting@TOIP (technically must be a member of ToIP to contribute): [https://github.com/WebOfTrust/keri#specification-call]
 

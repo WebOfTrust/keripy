@@ -19,7 +19,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test")
         seeder.seedSchema(db=sidHby.db)
-        assert sidHab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+        assert sidHab.pre == "EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl"
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
         credSubject = dict(
@@ -43,7 +43,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                             schema=schema,
                             data=credSubject,
                             status=issuer.regk)
-        assert creder.said == "EOavcpdGvk4sTXjOQiNxHeNf3HYMjMINMhar4R5a3OfB"
+        assert creder.said == "EAP1MTFwoSZ7P9Ym9yIqBvihjqZYpilpFpZj2oPTc7vM"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -61,21 +61,21 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         msg.extend(coring.Seqner(sn=0).qb64b)
         msg.extend(iss.saidb)
 
-        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EOavcpdGvk4sTXjOQiNxHeNf3HYMjMINMh'
-                       b'ar4R5a3OfB","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
-                       b'ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCn'
-                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFKsAdq9CZF_w9yv'
-                       b'ia8RiRdDeXLMjR6q7Lp7FKKIgJx-","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIy'
-                       b'ge6mBl2QV8dDjI3","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
-                       b'254900OPPU84GM83MG36"}}-IABEOavcpdGvk4sTXjOQiNxHeNf3HYMjMINMhar4'
-                       b'R5a3OfB0AAAAAAAAAAAAAAAAAAAAAAAEIMoFDXHR3cNF0fADC5nLPme34n-ZsMEu'
-                       b'n6eDFvN8Jgc')
+        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EAP1MTFwoSZ7P9Ym9yIqBvihjqZYpilpFp'
+                       b'Zj2oPTc7vM","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","'
+                       b'ri":"EB-u4VAF7A7_GR8PXJoAVHv5X9vjtXew8Yo6Z3w9mQUQ","s":"EMQWEcCn'
+                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EMyHBc5ZujkNFm9t'
+                       b'nrwBU2nmp_qodcV4aDW28pwbDdgb","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ov'
+                       b'vn9Xya8AN-tiUbl","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
+                       b'254900OPPU84GM83MG36"}}-IABEAP1MTFwoSZ7P9Ym9yIqBvihjqZYpilpFpZj2'
+                       b'oPTc7vM0AAAAAAAAAAAAAAAAAAAAAAAEAOV3Ie3yAvGU1MwbIHr816qewYzRLlvX'
+                       b'NreKmXtJShe')
 
-        ser = (b'{"v":"ACDC10JSON000197_","d":"EOavcpdGvk4sTXjOQiNxHeNf3HYMjMINMhar4R5a3OfB",'
-               b'"i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","ri":"EO0_SyqPS1-EVYSITak'
-               b'YpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
-               b'","a":{"d":"EFKsAdq9CZF_w9yvia8RiRdDeXLMjR6q7Lp7FKKIgJx-","i":"EIaGMMWJFPmtX'
-               b'znY1IIiKDIrg-vIyge6mBl2QV8dDjI3","dt":"2021-06-27T21:26:21.233257+00:00","LE'
+        ser = (b'{"v":"ACDC10JSON000197_","d":"EAP1MTFwoSZ7P9Ym9yIqBvihjqZYpilpFpZj2oPTc7vM",'
+               b'"i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","ri":"EB-u4VAF7A7_GR8PXJo'
+               b'AVHv5X9vjtXew8Yo6Z3w9mQUQ","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
+               b'","a":{"d":"EMyHBc5ZujkNFm9tnrwBU2nmp_qodcV4aDW28pwbDdgb","i":"EMl4RhuR_Jxpi'
+               b'Md1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","dt":"2021-06-27T21:26:21.233257+00:00","LE'
                b'I":"254900OPPU84GM83MG36"}}')
 
         parsing.Parser().parse(ims=msg, vry=verifier)

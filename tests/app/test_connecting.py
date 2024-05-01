@@ -9,7 +9,7 @@ import pytest
 
 from keri import kering
 from keri.app import connecting, habbing
-from keri.core import coring
+from keri.core import signing
 
 
 def test_organizer():
@@ -144,7 +144,7 @@ def test_organizer():
                      'zip': '08807'}
 
         # Update the Jen's data signature by signing garbage
-        nonce = coring.randomNonce()
+        nonce = signing.Salter().qb64
         cigar = hby.signator.sign(ser=nonce.encode("utf-8"))
         hby.db.ccigs.pin(keys=(jen,), val=cigar)
         with pytest.raises(kering.ValidationError):
