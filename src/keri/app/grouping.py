@@ -47,11 +47,7 @@ class Counselor(doing.DoDoer):
             saider (Saider): saider of event of group identifier
 
         """
-        evt = ghab.makeOwnEvent(sn=seqner.sn, allowPartiallySigned=True)
-        serder = serdering.SerderKERI(raw=evt)
-        del evt[:serder.size]
-
-        logger.info(f"Waiting for other signatures for {serder.pre}:{seqner.sn}...")
+        print(f"Waiting for other signatures for {prefixer.qb64}:{seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
     def complete(self, prefixer, seqner, saider=None):
