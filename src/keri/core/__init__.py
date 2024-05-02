@@ -4,9 +4,6 @@ KERI
 keri.core Package
 """
 
-#__all__ = ["coring", "eventing", "parsing", "scheming"]
-
-
 # Constants etc
 from .coring import (Tiers, )
 

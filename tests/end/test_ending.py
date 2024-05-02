@@ -438,6 +438,49 @@ def test_get_oobi():
         assert serder.ked['t'] == coring.Ilks.icp
         assert serder.ked['i'] == "EOaICQwhOy3wMwecjAuHQTbv_Cmuu1azTMnHi4QtUmEU"
 
+    delname = "delegator"
+    with habbing.openHby(name=name, base=base, salt=salt) as hby, \
+            habbing.openHby(name=delname, base=base, salt=salt) as delhby:
+        delhab = delhby.makeHab(name=delname)
+        hab = hby.makeHab(name=name, delpre=delhab.pre)
+
+        assert hab.pre == "EPERMS4wKU7ejhCdhI2qQR8snEx1cislR9C9bSEs0kS5"
+        assert hab.kever.delpre == delhab.pre
+
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=kering.Roles.controller,
+                                    stamp=help.nowIso8601()))
+
+        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
+                                      scheme=kering.Schemes.http,
+                                      stamp=help.nowIso8601()))
+        hab.psr.parse(ims=msgs)
+
+        # must do it here to inject into Falcon endpoint resource instances
+        tymist = tyming.Tymist(tyme=0.0)
+
+        app = falcon.App()  # falcon.App instances are callable WSGI apps
+        ending.loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+
+        client = testing.TestClient(app=app)
+
+        # This should fail with 404 because we haven't been approved yet so we don't exist
+        rep = client.simulate_get('/oobi', )
+        assert rep.status == falcon.HTTP_NOT_FOUND
+
+        # Approve the delegation manually
+        delhab.interact(data=[dict(i=hab.pre, s="0", d=hab.pre)])
+        for msg in delhab.db.clonePreIter(pre=delhab.pre, fn=0):
+            hab.psr.parse(ims=msg)
+
+        rep = client.simulate_get('/oobi', )
+        assert rep.status == falcon.HTTP_OK
+
+        # We'll get the delegator first
+        serder = serdering.SerderKERI(raw=rep.text.encode("utf-8"))
+        assert serder.ked['t'] == coring.Ilks.icp
+        assert serder.ked['i'] == "EKL3to0Q059vtxKi7wWmaNFJ3NKE1nQsOPasRXqPzpjS"
+
     """Done Test"""
 
 

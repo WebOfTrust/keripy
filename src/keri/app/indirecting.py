@@ -40,6 +40,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     Setup witness controller and doers
 
     """
+    host = "0.0.0.0"
     cues = decking.Deck()
     doers = []
 
@@ -87,7 +88,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
 
-    server = createHttpServer(httpPort, app, keypath, certpath, cafilepath)
+    server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
     if not server.reopen():
         raise RuntimeError(f"cannot create http server on port {httpPort}")
     httpServerDoer = http.ServerDoer(server=server)
@@ -112,10 +113,11 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     return doers
 
 
-def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
+def createHttpServer(host, port, app, keypath=None, certpath=None, cafilepath=None):
     """
     Create an HTTP or HTTPS server depending on whether TLS key material is present
     Parameters:
+        host(str)          : host to bind to for this server, or None for default of '0.0.0.0', all ifaces
         port (int)         : port to listen on for all HTTP(s) server instances
         app (falcon.App)   : application instance to pass to the http.Server instance
         keypath (string)   : the file path to the TLS private key
@@ -130,9 +132,9 @@ def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
                                 certpath=certpath,
                                 cafilepath=cafilepath,
                                 port=port)
-        server = http.Server(port=port, app=app, servant=servant)
+        server = http.Server(host=host, port=port, app=app, servant=servant)
     else:
-        server = http.Server(port=port, app=app)
+        server = http.Server(host=host, port=port, app=app)
     return server
 
 
@@ -246,7 +248,7 @@ class WitnessStart(doing.DoDoer):
 
         while True:
             while self.cues:
-                cue = self.cues.pull() # self.cues.popleft()
+                cue = self.cues.pull()  # self.cues.popleft()
                 cueKin = cue["kin"]
                 if cueKin == "stream":
                     self.queries.append(cue)

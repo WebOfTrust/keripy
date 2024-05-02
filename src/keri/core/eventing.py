@@ -1162,15 +1162,6 @@ def reply(route="",
     serder._verify()  # raises error if fails verifications
     return serder
 
-    #_, sad = coring.Saider.saidify(sad=sad, kind=kind, label=label)
-
-    #saider = coring.Saider(qb64=sad[label])
-    #if not saider.verify(sad=sad, kind=kind, label=label, prefixed=True):
-        #raise ValidationError("Invalid said = {} for reply msg={}."
-                              #"".format(saider.qb64, sad))
-
-    #return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
-
 
 def prod(route="",
           replyRoute="",
@@ -4115,7 +4106,6 @@ class Kevery:
         """
         pass
 
-
     def registerReplyRoutes(self, router):
         """ Register the routes for processing messages embedded in `rpy` event messages
 
@@ -4127,9 +4117,7 @@ class Kevery:
         router.addRoute("/loc/scheme", self, suffix="LocScheme")
         router.addRoute("/ksn/{aid}", self, suffix="KeyStateNotice")
 
-
-    def processReplyEndRole(self, *, serder, saider, route,
-                            cigars=None, tsgs=None, **kwargs):
+    def processReplyEndRole(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
         """
         Process one reply message for route = /end/role/add or /end/role/cut
         with either attached nontrans receipt couples in cigars or attached trans
@@ -4532,6 +4520,11 @@ class Kevery:
         # do signature validation and replay attack prevention logic here
         # src, dt, route
 
+        if source is None and cigars:
+            dest = cigars[0].verfer.qb64
+        else:
+            dest = source.qb64
+
         if route == "logs":
             pre = qry["i"]
             src = qry["src"]
@@ -4563,7 +4556,7 @@ class Kevery:
                     msgs.append(msg)
 
             if msgs:
-                self.cues.push(dict(kin="replay", src=src, msgs=msgs, dest=source.qb64))
+                self.cues.push(dict(kin="replay", pre=pre, src=src, msgs=msgs, dest=dest))
 
         elif route == "ksn":
             pre = qry["i"]
@@ -4585,7 +4578,7 @@ class Kevery:
 
             rserder = reply(route=f"/ksn/{src}", data=kever.state()._asdict())
             self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=rserder,
-                                dest=source.qb64))
+                                dest=dest))
 
         elif route == "mbx":
             pre = qry["i"]

@@ -13,18 +13,18 @@ from urllib.parse import urlparse
 import falcon
 from hio.base import doing
 from hio.help import decking
-from keri.core import coring
 
+from keri.core import coring
 from . import httping
-from .habbing import GroupHab
 from .. import help
 from .. import kering
-from ..app import forwarding, connecting
+from ..app import connecting
 from ..core import routing, eventing, parsing, scheming, serdering
 from ..db import basing
 from ..end import ending
 from ..end.ending import OOBI_RE, DOOBI_RE
 from ..help import helping
+from ..kering import Ilks, ValidationError, UnverifiedReplyError, ConfigurationError
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -276,7 +276,7 @@ class Oobiery:
 
     RetryDelay = 30
 
-    def __init__(self, hby, clienter=None, cues=None):
+    def __init__(self, hby, rvy=None, clienter=None, cues=None):
         """  DoDoer to handle the request and parsing of OOBIs
 
         Parameters:
@@ -286,8 +286,14 @@ class Oobiery:
         """
 
         self.hby = hby
+        self.rvy = rvy
+        if self.rvy is not None:
+            self.registerReplyRoutes(self.rvy.rtr)
+
         self.clienter = clienter or httping.Clienter()
         self.org = connecting.Organizer(hby=self.hby)
+
+        # Set up a local parser for returned events from OOBI queries.
         rtr = routing.Router()
         rvy = routing.Revery(db=self.hby.db, rtr=rtr)
         kvy = eventing.Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
@@ -297,6 +303,89 @@ class Oobiery:
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()
         self.doers = [self.clienter, doing.doify(self.scoobiDo)]
+
+    def registerReplyRoutes(self, router):
+        """ Register the routes for processing messages embedded in `rpy` event messages
+
+        The Oobiery handles rpy messages with the /introduce route by processing the contained oobi
+
+        Parameters:
+            router(Router): reply message router
+
+        """
+        router.addRoute("/introduce", self)
+
+    def processReply(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+        """
+        Process one reply message for route = /introduce
+        with either attached nontrans receipt couples in cigars or attached trans
+        indexed sig groups in tsgs.
+        Assumes already validated saider, dater, and route from serder.ked
+
+        Parameters:
+            serder (SerderKERI): instance of reply msg (SAD)
+            saider (Saider): instance  from said in serder (SAD)
+            route (str): reply route
+            cigars (list): of Cigar instances that contain nontrans signing couple
+                          signature in .raw and public key in .verfer
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where:
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+        OobiRecord:
+            date: str = date time of reply message of the introduction
+
+        Reply Message:
+        {
+          "v" : "KERI10JSON00011c_",
+          "t" : "rpy",
+          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+          "dt": "2020-08-22T17:50:12.988921+00:00",
+          "r" : "/introduce",
+          "a" :
+          {
+             "cid": "ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On",
+             "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness",
+          }
+        }
+
+        """
+        if route != "/introduce":
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
+                                  f"msg={serder.ked}.")
+
+        data = serder.ked['a']
+        dt = serder.ked["dt"]
+
+        for k in ("cid", "oobi"):
+            if k not in data:
+                raise ValidationError(f"Missing element={k} from attributes in"
+                                      f" {Ilks.rpy} msg={serder.ked}.")
+
+        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
+        cid = cider.qb64  # controller authorizing eid at role
+        aid = cid  # authorizing attribution id
+
+        oobi = data["oobi"]
+        url = urlparse(oobi)
+        if url.scheme not in ("http", "https"):
+            raise ValidationError(f"Invalid url scheme for introduced OOBI scheme={url.scheme}")
+
+        if self.rvy is None:
+            raise ConfigurationError("this oobiery is not configured to handle rpy introductions")
+
+        # Process BADA RUN but with no previous reply message, always process introductions
+        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+                                        aid=aid, osaider=None, cigars=cigars,
+                                        tsgs=tsgs)
+        if not accepted:
+            raise UnverifiedReplyError(f"Unverified introduciton reply. {serder.ked}")
+
+        obr = basing.OobiRecord(cid=cid, date=dt)
+        self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0):
         """

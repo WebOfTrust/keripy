@@ -35,7 +35,10 @@ parser.add_argument("--witness", '-w', help="the witness AID or alias to authent
 
 
 def auth(args):
-    """ Command line list credential registries handler
+    """ Command line handler for authenticating  against a witness by retrieving the secret or a TOTP
+
+    Parameters:
+        args(Namespace): parsed command line arguments
 
     """
 
@@ -65,7 +68,7 @@ class AuthDoer(doing.DoDoer):
         if not wit:
             raise ValueError(f"unknown witness {witness}")
 
-        self.witness = witness
+        self.witness = wit
         self.clienter = httping.Clienter()
         doers = [doing.doify(self.authDo), self.clienter]
 

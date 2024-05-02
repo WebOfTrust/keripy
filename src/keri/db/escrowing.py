@@ -115,8 +115,6 @@ class Broker:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrow attempt failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow attempt failed: %s", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
                     self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
