@@ -4556,7 +4556,7 @@ class Kevery:
                     msgs.append(msg)
 
             if msgs:
-                self.cues.push(dict(kin="replay", src=src, msgs=msgs, dest=dest))
+                self.cues.push(dict(kin="replay", pre=pre, src=src, msgs=msgs, dest=dest))
 
         elif route == "ksn":
             pre = qry["i"]

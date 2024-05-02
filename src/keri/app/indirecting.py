@@ -248,7 +248,7 @@ class WitnessStart(doing.DoDoer):
 
         while True:
             while self.cues:
-                cue = self.cues.pull() # self.cues.popleft()
+                cue = self.cues.pull()  # self.cues.popleft()
                 cueKin = cue["kin"]
                 if cueKin == "stream":
                     self.queries.append(cue)

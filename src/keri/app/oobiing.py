@@ -24,7 +24,7 @@ from ..db import basing
 from ..end import ending
 from ..end.ending import OOBI_RE, DOOBI_RE
 from ..help import helping
-from ..kering import Ilks, ValidationError, UnverifiedReplyError
+from ..kering import Ilks, ValidationError, UnverifiedReplyError, ConfigurationError
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -276,7 +276,7 @@ class Oobiery:
 
     RetryDelay = 30
 
-    def __init__(self, hby, rvy, clienter=None, cues=None):
+    def __init__(self, hby, rvy=None, clienter=None, cues=None):
         """  DoDoer to handle the request and parsing of OOBIs
 
         Parameters:
@@ -287,8 +287,13 @@ class Oobiery:
 
         self.hby = hby
         self.rvy = rvy
+        if self.rvy is not None:
+            self.registerReplyRoutes(self.rvy.rtr)
+
         self.clienter = clienter or httping.Clienter()
         self.org = connecting.Organizer(hby=self.hby)
+
+        # Set up a local parser for returned events from OOBI queries.
         rtr = routing.Router()
         rvy = routing.Revery(db=self.hby.db, rtr=rtr)
         kvy = eventing.Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
@@ -369,6 +374,9 @@ class Oobiery:
         if url.scheme not in ("http", "https"):
             raise ValidationError(f"Invalid url scheme for introduced OOBI scheme={url.scheme}")
 
+        if self.rvy is None:
+            raise ConfigurationError("this oobiery is not configured to handle rpy introductions")
+
         # Process BADA RUN but with no previous reply message, always process introductions
         accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
                                         aid=aid, osaider=None, cigars=cigars,
@@ -376,7 +384,7 @@ class Oobiery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified introduciton reply. {serder.ked}")
 
-        obr = basing.OobiRecord(cid=cid, date=help.toIso8601(dt))
+        obr = basing.OobiRecord(cid=cid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0):
