@@ -4,6 +4,7 @@
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 source "${script_dir}"/demo-scripts.sh
+source "${script_dir}"/basic/script-utils.sh
 
 # Launch witnesses in background
 kli witness demo &
@@ -50,6 +51,12 @@ printf "\n************************************\n"
 printf "Running multisig.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/multisig.sh"
+isSuccess
+
+printf "\n************************************\n"
+printf "Running multisig-rotate-three-stooges.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/multisig-rotate-three-stooges.sh"
 isSuccess
 
 printf "\n************************************\n"
