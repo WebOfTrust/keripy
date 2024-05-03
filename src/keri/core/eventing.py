@@ -1709,7 +1709,6 @@ class Kever:
         pre = pre if pre is not None else self.prefixer.qb64
         return pre in self.groups  # groups
 
-
     def locallyContributedIndices(self, verfers: list[Verfer]):
         """Returns list of indices of public keys contributed by local members
         to the KEL with current signing keys represented by verfers
@@ -1723,19 +1722,11 @@ class Kever:
             indices list[int]: list of indices of keys contributed by local members
 
         """
-        indices = []
+        habord = self.db.habs.get(keys=(self.prefixer.qb64,))
+        kever = self.kevers[habord.mid]
 
-        for i, verfer in enumerate(verfers):
-            if (couples := self.pubs.get(keys=(verfer.qb64,))) is None:
-                continue
-
-            for (prefixer, seqner) in couples:
-                if self.locallyOwned(prefixer.qb64):  # only member not group aid
-                    indices.append(i)
-                    break  # only need one local member to exclude signature
-
-        return indices
-
+        idx = [verfer.qb64 for verfer in verfers].index(kever.verfers[0].qb64)
+        return [idx]
 
     def reload(self, state):
         """
@@ -2227,13 +2218,15 @@ class Kever:
         # compromised signature remotely to satisfy threshold.
 
         if not local and self.locallyMembered():  # is this Kever's pre a local group
-            if (indices := self.locallyContributedIndices(verfers)):
+            if indices := self.locallyContributedIndices(verfers):
                 for siger in list(sigers):  # copy so clean del on original elements
                     if siger.index in indices:
-                        del sigers[siger.index]
-                        self.cues.push(dict(kin="remoteMemberedSig",
-                                            serder=serder,
-                                              index=siger.index))
+                        sigers.remove(siger)
+                        if self.cues:
+                            self.cues.push(dict(kin="remoteMemberedSig",
+                                                serder=serder,
+                                                index=siger.index))
+
 
         # get unique verified sigers and indices lists from sigers list
         sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
@@ -2255,7 +2248,6 @@ class Kever:
                                              f"or locally witnessed event"
                                                  f" = {serder.ked}.")
 
-
         werfers = [Verfer(qb64=wit) for wit in wits]  # get witness public key verifiers
         # get unique verified wigers and windices lists from wigers list
         wigers, windices = verifySigs(raw=serder.raw, sigers=wigers, verfers=werfers)
@@ -2269,6 +2261,7 @@ class Kever:
             raise MissingSignatureError(f"Failure satisfying sith = {tholder.sith}"
                                         f" on sigs for {[siger.qb64 for siger in sigers]}"
                                         f" for evt = {serder.ked}.")
+
 
         # escrow if not fully signed vs prior next rotation threshold
         if serder.ilk in (Ilks.rot, Ilks.drt):  # rotation so check prior next threshold
@@ -2306,7 +2299,7 @@ class Kever:
 
         # short circuit witness validation when either locallyOwned or locallyWitnessed
         # otherwise must validate fully witnessed
-        if not (self.locallyOwned() or self.locallyWitnessed(wits=wits)):
+        if not (self.locallyOwned() or self.locallyMembered() or self.locallyWitnessed(wits=wits)):
             if wits:  # is witnessed
                 if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
                     raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")

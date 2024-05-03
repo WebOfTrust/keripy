@@ -41,7 +41,7 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
-printf "Running delegate.sh"
+printf "Skipping delegate.sh"
 printf "\n************************************\n"
 #"${script_dir}/basic/delegate.sh"
 #isSuccess
@@ -65,7 +65,7 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
-printf "Skipping multisig-join.sh"
+printf "Running multisig-join.sh"
 printf "\n************************************\n"
-#"${script_dir}/basic/multisig-join.sh"
-#isSuccess
+"${script_dir}/basic/multisig-join.sh"
+isSuccess
