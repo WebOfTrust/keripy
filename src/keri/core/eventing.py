@@ -2221,7 +2221,7 @@ class Kever:
             if indices := self.locallyContributedIndices(verfers):
                 for siger in list(sigers):  # copy so clean del on original elements
                     if siger.index in indices:
-                        del sigers[siger.index]
+                        sigers.remove(siger)
                         if self.cues:
                             self.cues.push(dict(kin="remoteMemberedSig",
                                                 serder=serder,
@@ -2247,7 +2247,6 @@ class Kever:
             raise MisfitEventSourceError(f"Nonlocal source for locally owned"
                                              f"or locally witnessed event"
                                                  f" = {serder.ked}.")
-
 
         werfers = [Verfer(qb64=wit) for wit in wits]  # get witness public key verifiers
         # get unique verified wigers and windices lists from wigers list

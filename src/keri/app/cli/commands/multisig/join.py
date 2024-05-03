@@ -405,7 +405,7 @@ class ConfirmDoer(doing.DoDoer):
                 ghab = self.hby.joinGroupHab(pre, group=alias, mhab=mhab, smids=smids, rmids=rmids)
 
             try:
-                ghab.rotate(serder=orot)
+                ghab.rotate(serder=orot, smids=smids, rmids=rmids)
             except ValueError:
                 return False
 
