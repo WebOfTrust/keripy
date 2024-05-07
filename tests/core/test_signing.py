@@ -6,20 +6,14 @@ tests.core.test_indexing module
 
 
 import pysodium
-
 import pytest
 
 from keri import kering
-
-from keri.help import helping
-
-from keri import core
-from keri.core import (Tiers, )
-from keri.core import (Matter, MtrDex, Cigar, Verfer, Prefixer)
 from keri.core import (Indexer, IdrDex, )
-from keri.core import (Signer, generateSigners, Salter,
+from keri.core import (Matter, MtrDex, Cigar, Verfer, Prefixer)
+from keri.core import (Signer, Salter,
                        Cipher, Encrypter, Decrypter, )
-
+from keri.core import (Tiers, )
 
 
 def test_signer():
@@ -381,13 +375,12 @@ def test_signer():
     """ Done Test """
 
 
-# deprecated uses Salter.signers() instead
 def test_generatesigners():
     """
     Test the support function genSigners
 
     """
-    signers = generateSigners(count=2, transferable=False)
+    signers = Salter().signers(count=2, temp=True, transferable=False)
     assert len(signers) == 2
     for signer in signers:
         assert signer.verfer.code == MtrDex.Ed25519N
@@ -395,7 +388,7 @@ def test_generatesigners():
     # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)  # raw salt
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
     assert len(raw) == 16
-    signers = generateSigners(raw=raw, count=4)  # default is transferable
+    signers = Salter(raw=raw).signers(count=4)
     assert len(signers) == 4
     for signer in signers:
         assert signer.code == MtrDex.Ed25519_Seed
