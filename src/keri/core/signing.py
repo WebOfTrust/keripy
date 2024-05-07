@@ -25,44 +25,6 @@ ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
 
 
-# deprecated use Salter.signers instead
-def generateSigners(raw=None, count=8, transferable=True):
-    """Returns list of Signers for Ed25519
-
-    Deprecated, use Salter.signers instead.
-
-    Use this when simply need valid AIDs but not when need valid controller
-    contexts. In the latter case use openHby or openHab which create databases.
-
-    Parameters:
-        raw (bytes):  16 byte long salt cryptomatter from which seeds
-            for Signers in list are derived
-            random salt created if not provided
-        count is number of signers in list
-        transferable is boolean true means signer.verfer code is transferable
-                                non-transferable otherwise
-    """
-    if not raw:
-        raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-
-    signers = []
-    for i in range(count):
-        path = f"{i:x}"
-        # algorithm default is argon2id
-        seed = pysodium.crypto_pwhash(outlen=32,
-                                      passwd=path,
-                                      salt=raw,
-                                      opslimit=2,  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-                                      memlimit=67108864,  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
-                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
-
-        signers.append(Signer(raw=seed, transferable=transferable))
-
-    return signers
-
-
-
-
 class Signer(Matter):
     """
     Signer is Matter subclass with method to create signature of serialization
