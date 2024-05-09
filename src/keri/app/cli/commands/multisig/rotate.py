@@ -53,9 +53,9 @@ def rotateGroupIdentifier(args):
     """
 
     data = config.parseData(args.data) if args.data is not None else None
-
-    rotDoer = GroupMultisigRotate(name=args.name, base=args.base, alias=args.alias, smids=args.smids, rmids=args.rmids,
-                                  bran=args.bran, wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
+    hby = existing.setupHby(name=args.name, base=args.base, bran=args.bran)
+    rotDoer = GroupMultisigRotate(hby=hby, alias=args.alias, smids=args.smids, rmids=args.rmids,
+                                  wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
                                   isith=args.isith, nsith=args.nsith, toad=args.toad, data=data)
 
     doers = [rotDoer]
@@ -70,7 +70,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, alias, smids=None, rmids=None, isith=None, nsith=None,
+    def __init__(self, hby, alias, smids=None, rmids=None, isith=None, nsith=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None):
 
         self.alias = alias
@@ -80,12 +80,12 @@ class GroupMultisigRotate(doing.DoDoer):
         self.smids = smids
         self.rmids = rmids
         self.data = data
+        self.hby = hby
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
