@@ -21,47 +21,52 @@ from keri.vdr import verifying, credentialing
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.')
-parser.set_defaults(handler=lambda args: confirm(args))
+parser.set_defaults(handler=lambda args: join(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument('--group', '-a', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
 
 
-def confirm(args):
-    """  Wait for and provide interactive confirmation of group multisig inception, rotation or interaction events
+def join(args):
+    """ Wait for and provide interactive confirmation of group multisig inception, rotation or interaction events
 
     Parameters:
-        args(Namespace): parsed arguements namespace object
+        args(Namespace): parsed arguments namespace object
 
     """
     name = args.name
     base = args.base
     bran = args.bran
     auto = args.auto
+    group = args.group
 
-    confirmDoer = ConfirmDoer(name=name, base=base, bran=bran, auto=auto)
+    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto)
 
-    doers = [confirmDoer]
+    doers = [joinDoer]
     return doers
 
 
-class ConfirmDoer(doing.DoDoer):
-    """  Doist doer capable of polling for group multisig events and prompting user for action
+class JoinDoer(doing.DoDoer):
+    """ Doist doer capable of polling for group multisig events and prompting user for action
 
     """
 
-    def __init__(self, name, base, bran, auto=False):
+    def __init__(self, name, base, bran, group, auto=False):
         """ Create doer for polling for group multisig events and either approve automatically or prompt user
 
         Parameters:
             name (str): database environment name
             base (str): database directory prefix
             bran (str): passcode to unlock keystore
-
+            group (str): human-readable name for the multisig identifier prefix
+            auto (bool): non-interactively auto approve any inception, rotation, interaction, or other event
+                         while using the default group of "default-group"
         """
+        self.group = group
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
@@ -88,11 +93,11 @@ class ConfirmDoer(doing.DoDoer):
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
-        doers.extend([doing.doify(self.confirmDo)])
+        doers.extend([doing.doify(self.joinDo)])
         self.auto = auto
-        super(ConfirmDoer, self).__init__(doers=doers)
+        super(JoinDoer, self).__init__(doers=doers)
 
-    def confirmDo(self, tymth, tock=0.0):
+    def joinDo(self, tymth, tock=0.0):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
@@ -146,7 +151,7 @@ class ConfirmDoer(doing.DoDoer):
         self.remove(self.toRemove)
 
     def incept(self, attrs):
-        """ Incept group multisig
+        """ Join a group multisig inception event
 
         """
         said = attrs["d"]
@@ -196,17 +201,20 @@ class ConfirmDoer(doing.DoDoer):
 
         if approve:
             if self.auto:
-                alias = "test alias"
+                if self.group is None:
+                    group = "default-group"
+                else:
+                    group = self.group
             else:
                 while True:
-                    alias = input(f"\nEnter alias for new AID: ")
-                    if self.hby.habByName(alias) is not None:
-                        print(f"AID alias {alias} is already in use, please try again")
+                    group = input(f"\nEnter group name for new AID: ")
+                    if self.hby.habByName(group) is not None:
+                        print(f"AID group name {group} is already in use, please try again")
                     else:
                         break
 
             try:
-                ghab = self.hby.makeGroupHab(group=alias, mhab=mhab,
+                ghab = self.hby.makeGroupHab(group=group, mhab=mhab,
                                              smids=smids, rmids=rmids, **inits)
             except ValueError as e:
                 return False
@@ -393,16 +401,19 @@ class ConfirmDoer(doing.DoDoer):
                 ghab = self.hby.habs[pre]
             else:
                 if self.auto:
-                    alias = "test alias"
+                    if self.group is None:
+                        group = "default-group"
+                    else:
+                        group = self.group
                 else:
                     while True:
-                        alias = input(f"\nEnter alias for new AID: ")
-                        if self.hby.habByName(alias) is not None:
-                            print(f"AID alias {alias} is already in use, please try again")
+                        group = input(f"\nEnter group name for new AID: ")
+                        if self.hby.habByName(group) is not None:
+                            print(f"AID group name {group} is already in use, please try again")
                         else:
                             break
 
-                ghab = self.hby.joinGroupHab(pre, group=alias, mhab=mhab, smids=smids, rmids=rmids)
+                ghab = self.hby.joinGroupHab(pre, group=group, mhab=mhab, smids=smids, rmids=rmids)
 
             try:
                 ghab.rotate(serder=orot, smids=smids, rmids=rmids)
