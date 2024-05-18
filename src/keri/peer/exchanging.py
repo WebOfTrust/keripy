@@ -129,7 +129,7 @@ class Exchanger:
             logger.info(f"Behavior for {route} missing or does not have verify for said={serder.said}")
             logger.debug(f"event=\n{serder.pretty()}\n")
 
-        # Always persis events
+        # Always persist events
         self.logEvent(serder, pathed, tsgs, cigars)
         self.cues.append(dict(kin="saved", said=serder.said))
 

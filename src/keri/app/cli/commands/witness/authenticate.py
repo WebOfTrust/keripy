@@ -16,7 +16,6 @@ from hio.help import Hict
 from keri.app import httping, connecting
 from keri.app.agenting import httpClient
 from keri.app.cli.common import existing
-from keri.app.httping import CESR_CONTENT_TYPE
 from keri.core import coring
 
 logger = help.ogler.getLogger()
