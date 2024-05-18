@@ -42,10 +42,10 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
-printf "Skipping delegate.sh"
+printf "Running delegate.sh"
 printf "\n************************************\n"
-#"${script_dir}/basic/delegate.sh"
-#isSuccess
+"${script_dir}/basic/delegate.sh"
+isSuccess
 
 printf "\n************************************\n"
 printf "Running multisig.sh"

@@ -96,9 +96,8 @@ class ConfirmDoer(doing.DoDoer):
 
         while True:
             esc = self.escrowed()
-            for ekey, edig in esc:
-                pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
-                dgkey = dbing.dgKey(pre, bytes(edig))
+            for pre, sn, edig in esc:
+                dgkey = dbing.dgKey(pre, edig)
                 eraw = self.hby.db.getEvt(dgkey)
                 if eraw is None:
                     continue
@@ -204,6 +203,7 @@ class ConfirmDoer(doing.DoDoer):
 
                             print(f"Delegate {eserder.pre} {typ} event committed.")
 
+                        self.hby.db.delegables.rem(keys=(pre, sn))
                         self.remove(self.toRemove)
                         return True
 
@@ -213,12 +213,6 @@ class ConfirmDoer(doing.DoDoer):
 
     def escrowed(self):
         esc = []
-        key = ekey = b''  # both start same. when not same means escrows found
-        while True:  # break when done
-            for ekey, edig in self.hby.db.getPseItemsNextIter(key=key):
-                esc.append((ekey, edig))
-            if ekey == key:  # still same so no escrows found on last while iteration
-                break
-            key = ekey  # setup next while iteration, with key after ekey
-
+        for (pre, sn), edig in self.hby.db.delegables.getItemIter():
+            esc.append((pre, sn, edig))
         return esc
