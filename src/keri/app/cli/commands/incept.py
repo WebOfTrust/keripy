@@ -137,16 +137,15 @@ class InceptDoer(doing.DoDoer):
                                     clear=False)
         self.endpoint = endpoint
         self.proxy = proxy
-        hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.swain = delegating.Anchorer(hby=hby)
-        self.postman = forwarding.Poster(hby=hby)
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
+        self.hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
+        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.hby.habByName(self.proxy))
+        self.postman = forwarding.Poster(hby=self.hby)
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
         self.alias = alias
-        self.hby = hby
         super(InceptDoer, self).__init__(doers=doers)
 
     def inceptDo(self, tymth, tock=0.0):
@@ -169,7 +168,7 @@ class InceptDoer(doing.DoDoer):
         self.extend([witDoer, receiptor])
 
         if hab.kever.delpre:
-            self.swain.delegation(pre=hab.pre, sn=0, proxy=self.hby.habByName(self.proxy))
+            self.swain.delegation(pre=hab.pre, sn=0)
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock

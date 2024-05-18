@@ -2632,38 +2632,16 @@ class Kever:
                                                     f" delegation by {delpre} of"
                                                          f"event = {serder.ked}.")
 
-                # ToDo XXXX This logic moves to the Delegable escrow processing
-                # ToDo XXXX create process escrow for delegable events "dees."
-                #in order to get delegator approval
-                # any virtual delegation or sandboxing logic happens there
-                # create virtual anchor seal so local delegator can evaluate
-                # superseding logic with provisional virtual seal
-                #dkever = self.kevers[delpre]
-                #dseal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)
-                #dserder = interact(pre=dkever.prefixer.qb64,
-                                           #dig=dkever.serder.said,
-                                           #sn=dkever.sner.num + 1,
-                                           #data=[dseal._asdict()])
-                #delseqner = coring.Seqner(snh=dserder.snh)
-                #delsaider = coring.Saider(qb64=dserder.said)
-                # ToDo XXXX  need to cue task here  to approve delegation by generating
-                # an anchoring SealEvent of serder in delegators KEL
-                # may include MFA and or business logic for the delegator i.e. is local
-                # event that designates this controller as delegator triggers
-                # this cue to approave delegation
                 #self.cues.push(dict(kin="approveDelegation",
                                         #delegator=kever.delpre,
                                         #serder=serder))
-
 
             else:  # not local delegator so escrow
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
                 raise MissingDelegationError(f"No delegation seal for delegator "
                                          "{delpre} of evt = {serder.ked}.")
 
-        #ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
         ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
-        #ssn = sner.num sner is Number seqner is Seqner
         # ToDo XXXX need to replace Seqners with Numbers
 
         # get the dig of the delegating event. Using getKeLast ensures delegating

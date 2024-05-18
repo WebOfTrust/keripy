@@ -949,7 +949,7 @@ class Baser(dbing.LMDBer):
         self.misfits = subing.IoSetSuber(db=self, subkey='mfes.')
 
         # delegable events escrows. events with local delegator that need approval
-        self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)
+        self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=core.Number)
@@ -1500,9 +1500,6 @@ class Baser(dbing.LMDBer):
             atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
                                       count=1).qb64b)
             atc.extend(couple)
-        elif self.kevers[pre].delegated:
-            if coring.SerderKERI(raw=raw).estive:
-                raise kering.MissingEntryError("Missing delegator anchor seal for dig={}.".format(dig))
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements

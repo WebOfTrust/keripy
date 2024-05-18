@@ -994,10 +994,10 @@ class Parser:
 
                     if cigars:
                         kvy.processAttachedReceiptCouples(serder, cigars,
-                                                    firner=firner, local=local)
+                                                          firner=firner, local=local)
                     if trqs:
                         kvy.processAttachedReceiptQuadruples(serder, trqs,
-                                                    firner=firner, local=local)
+                                                             firner=firner, local=local)
 
                 except AttributeError as ex:
                     raise kering.ValidationError("No kevery to process so dropped msg"

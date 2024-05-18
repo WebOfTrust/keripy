@@ -47,11 +47,14 @@ class Anchorer(doing.DoDoer):
         self.proxy = proxy
 
         super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
-                                     **kwa)
+                                       **kwa)
 
     def delegation(self, pre, sn=None, proxy=None):
         if pre not in self.hby.habs:
             raise kering.ValidationError(f"{pre} is not a valid local AID for delegation")
+
+        if proxy is not None:
+            self.proxy = proxy
 
         # load the hab of the delegated identifier to anchor
         hab = self.hby.habs[pre]
@@ -59,38 +62,15 @@ class Anchorer(doing.DoDoer):
         if delpre not in hab.kevers:
             raise kering.ValidationError(f"delegator {delpre} not found, unable to process delegation")
 
-        dkever = hab.kevers[delpre]  # and the delegator's kever
         sn = sn if sn is not None else hab.kever.sner.num
 
         # load the event and signatures
         evt = hab.makeOwnEvent(sn=sn)
 
-        smids = []
-        if isinstance(hab, GroupHab):
-            phab = hab.mhab
-            smids = hab.smids
-        elif proxy is not None:
-            phab = proxy
-        elif hab.kever.sn > 0:
-            phab = hab
-        elif self.proxy is not None:
-            phab = self.proxy
-        else:
-            raise kering.ValidationError("no proxy to send messages for delegation")
-
         # Send exn message for notification purposes
-        exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
-
-        self.postman.send(hab=phab, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)
-
         srdr = serdering.SerderKERI(raw=evt)
-        del evt[:srdr.size]
-        self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
-
-        seal = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
-        self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=seal)
-
-        self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
+        self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn))
+        self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed delegation protocol for the specific event
@@ -139,8 +119,8 @@ class Anchorer(doing.DoDoer):
             yield 0.5
 
     def processEscrows(self):
-        self.processUnanchoredEscrow()
         self.processPartialWitnessEscrow()
+        self.processUnanchoredEscrow()
 
     def processUnanchoredEscrow(self):
         """
@@ -159,11 +139,10 @@ class Anchorer(doing.DoDoer):
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                self.witDoer.msgs.append(dict(pre=pre, sn=serder.sn))
 
                 # Move to escrow waiting for witness receipts
-                logger.info(f"Waiting for fully signed witness receipts for {serder.sn}")
-                self.hby.db.dpwe.pin(keys=(pre, said), val=serder)
+                logger.info(f"Delegation approval received, {serder.pre} confirmed")
+                self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
                 self.hby.db.dune.rem(keys=(pre, said))
 
     def processPartialWitnessEscrow(self):
@@ -188,9 +167,33 @@ class Anchorer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                logger.info(f"Witness receipts complete, {pre} confirmed.")
+                logger.info(f"Witness receipts complete, waiting for delegation approval.")
+                hab = self.hby.habs[pre]
+                delpre = hab.kever.delpre  # get the delegator identifier
+                dkever = hab.kevers[delpre]  # and the delegator's kever
+                smids = []
+                if isinstance(hab, GroupHab):
+                    phab = hab.mhab
+                    smids = hab.smids
+                elif self.proxy is not None:
+                    phab = self.proxy
+                else:
+                    raise kering.ValidationError("no proxy to send messages for delegation")
+
+                evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
+
+                self.postman.send(hab=phab, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)
+
+                srdr = serdering.SerderKERI(raw=evt)
+                del evt[:srdr.size]
+                self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
+
+                seal = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
+                self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=seal)
+
                 self.hby.db.dpwe.rem(keys=(pre, said))
-                self.hby.db.cdel.put(keys=(pre, seqner.qb64), val=coring.Saider(qb64=serder.said))
+                self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
 
 def loadHandlers(hby, exc, notifier):

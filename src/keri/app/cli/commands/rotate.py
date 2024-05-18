@@ -151,7 +151,7 @@ class RotateDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = delegating.Anchorer(hby=self.hby)
+        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.hby.habByName(self.proxy))
         self.postman = forwarding.Poster(hby=self.hby)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
@@ -198,7 +198,7 @@ class RotateDoer(doing.DoDoer):
                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 
         if hab.kever.delpre:
-            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, proxy=self.hby.habByName(self.proxy))
+            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn)
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock
