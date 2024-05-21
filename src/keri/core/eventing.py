@@ -5714,6 +5714,124 @@ class Kevery:
                 break
             key = ekey  # setup next while iteration, with key after ekey
 
+    def processEscrowDelegables(self):
+        """
+        Process events escrowed by Kever that require delegation.
+
+        Escrowed items are indexed in database table keyed by prefix and
+        sn with duplicates given by different dig inserted in insertion order.
+        This allows FIFO processing of events with same prefix and sn but different
+        digest.
+
+        Uses  .db.delegables.add(key, val) which is IOVal with dups.
+
+        Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
+
+        Steps:
+            Each pass  (walk index table)
+                For each prefix,sn
+                    For each escrow item dup at prefix,sn:
+                        Get Event
+                        Get and Attach Signatures
+                        Process event as if it came in over the wire
+                        If successful then remove from escrow table
+        """
+
+        for (pre, sn), dig in self.db.delegables.getItemIter():
+            try:
+                edig = dig.encode("utf-8")
+                dgkey = dgKey(pre.encode("utf-8"), edig)
+                if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
+                    # no local sourde so raise ValidationError which unescrows below
+                    raise ValidationError("Missing escrowed event source "
+                                          "at dig = {}.".format(bytes(edig)))
+
+                # check date if expired then remove escrow.
+                dtb = self.db.getDts(dgkey)
+                if dtb is None:  # othewise is a datetime as bytes
+                    # no date time so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event datetime"
+                                " at dig = %s", bytes(edig))
+
+                    raise ValidationError("Missing escrowed event datetime "
+                                          "at dig = {}.".format(bytes(edig)))
+
+                # do date math here and discard if stale nowIso8601() bytes
+                dtnow = helping.nowUTC()
+                dte = helping.fromIso8601(bytes(dtb))
+                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Stale event escrow "
+                                " at dig = %s", bytes(edig))
+
+                    raise ValidationError("Stale event escrow "
+                                          "at dig = {}.".format(bytes(edig)))
+
+                # get the escrowed event using edig
+                eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
+                if eraw is None:
+                    # no event so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event at."
+                                "dig = %s", bytes(edig))
+
+                    raise ValidationError("Missing escrowed evt at dig = {}."
+                                          "".format(bytes(edig)))
+
+                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
+
+                #  get sigs and attach
+                sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
+                if not sigs:  # otherwise its a list of sigs
+                    # no sigs so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event sigs at."
+                                "dig = %s", bytes(edig))
+
+                    raise ValidationError("Missing escrowed evt sigs at "
+                                          "dig = {}.".format(bytes(edig)))
+
+                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+
+                #  get wigs
+                wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
+                wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+
+                # get delgate seal
+                couple = self.db.getAes(dgkey)
+                if couple is not None:  # Only try to parse the event if we have the del seal
+                    raw = bytearray(couple)
+                    seqner = coring.Seqner(qb64b=raw, strip=True)
+                    saider = coring.Saider(qb64b=raw)
+
+                    # process event
+                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
+                                      delsaider=saider, local=esr.local)
+                else:
+                    raise MissingDelegableApprovalError()
+
+            except MissingDelegableApprovalError as ex:
+                # still waiting on missing delegation approval
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrow failed: %s", ex.args[0])
+                else:
+                    logger.error("Kevery unescrow failed: %s", ex.args[0])
+
+            except Exception as ex:  # log diagnostics errors etc
+                # error other than out of order so remove from OO escrow
+                self.db.delegables.rem(keys=(pre, sn,), val=edig)  # removes one escrow at key val
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrowed: %s", ex.args[0])
+                else:
+                    logger.error("Kevery unescrowed: %s", ex.args[0])
+
+            else:  # unescrow succeeded, remove from escrow
+                # We don't remove all escrows at pre,sn because some might be
+                # duplicitous so we process remaining escrows in spite of found
+                # valid event escrow.
+                self.db.delegables.rem(keys=(pre, sn,), val=edig)  # removes one escrow at key val
+                logger.info("Kevery unescrow succeeded in valid event: "
+                            "event=%s", eserder.said)
+                logger.debug(f"event=\n{eserder.pretty()}\n")
+
     def processQueryNotFound(self):
         """
         Process qry events escrowed by Kevery for KELs that have not yet met the criteria of the query.
