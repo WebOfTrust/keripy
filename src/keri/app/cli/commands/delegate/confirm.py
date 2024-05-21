@@ -130,7 +130,7 @@ class ConfirmDoer(doing.DoDoer):
 
                     if isinstance(hab, GroupHab):
                         aids = hab.smids
-                        #seqner = coring.Seqner(sn=eserder.sn)
+
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
                             msg = hab.interact(data=[anchor])
@@ -166,7 +166,7 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         cur = hab.kever.sner.num
-                        #seqner = coring.Seqner(sn=eserder.sn)
+
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
                             hab.interact(data=[anchor])

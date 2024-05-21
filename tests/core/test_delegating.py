@@ -13,6 +13,7 @@ from keri.core import coring, eventing, parsing
 from keri.app import keeping, habbing
 
 from keri.db import dbing, basing
+from keri.db.dbing import snKey
 
 logger = help.ogler.getLogger()
 
@@ -723,6 +724,56 @@ def test_delegation_supersede():
     """End Test"""
 
 
+def test_delegables_escrow():
+    gateSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    torSalt = core.Salter(raw=b'0123456789defabc').raw
+
+    with habbing.openHby(name="delegate", temp=True, salt=gateSalt) as gateHby, \
+            habbing.openHab(name="delegator", temp=True, salt=torSalt) as (torHby, torHab):
+
+        gateHab = gateHby.makeHab(name="repTest", transferable=True, delpre=torHab.pre)
+        assert gateHab.pre == "EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"
+
+        gateIcp = gateHab.makeOwnEvent(sn=0)
+        torKvy = eventing.Kevery(db=torHab.db, lax=False, local=False)
+        parsing.Parser().parse(ims=bytearray(gateIcp), kvy=torKvy, local=True)
+        assert gateHab.pre not in torKvy.kevers
+        assert len(torHab.db.delegables.get(keys=snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn))) == 1
+
+        # Now create delegating interaction event
+        seal = eventing.SealEvent(i=gateHab.pre,
+                                  s="0",
+                                  d=gateHab.pre)
+        ixn = torHab.interact(data=[seal._asdict()])
+        assert ixn == (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EPUCIjCibL-VeT3n6PYIkbyP'
+                       b'qpioIFT79NRqxboFv0Os","i":"EJTtW40aDl0aKDZ09v-o6uDz_VwLJGplp6WTI'
+                       b'BGCoVog","s":"1","p":"EJTtW40aDl0aKDZ09v-o6uDz_VwLJGplp6WTIBGCoV'
+                       b'og","a":[{"i":"EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd","s"'
+                       b':"0","d":"EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"}]}-AABAA'
+                       b'BRR9HDRx_7KdWJ7uokLzREP3c1Hg7Grq5fwoGl_EXA-reR05aYPjDdZ4CIZTnqDo'
+                       b'EN2hqNbHfq4zMaDlR8Ja4D')
+
+        # Make sure that our anchoring ixn event is in our own KEL
+        assert torHab.kever.sn == 1
+
+        # Place the anchor seal in the database... this will be retrieved from the fully committed delegate event
+        serder = torHab.kever.serder
+        seqner = coring.Seqner(sn=serder.sn)
+        couple = seqner.qb64b + serder.saidb
+        dgkey = dbing.dgKey(gateHab.kever.prefixer.qb64b, gateHab.kever.serder.saidb)
+        torHab.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+
+        # delegate still not kevers
+        assert gateHab.pre not in torKvy.kevers
+        assert len(torHab.db.delegables.get(keys=snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn))) == 1
+
+        # run the delegables escrow processor to make get delegate in our Kevers
+        torKvy.processEscrowDelegables()
+        assert len(torHab.db.delegables.get(keys=snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn))) == 0
+        assert gateHab.pre in torKvy.kevers
+
+
 if __name__ == "__main__":
     test_delegation()
     test_delegation_supersede()
+
