@@ -11,9 +11,8 @@ from hio.base import doing
 
 from keri.app import habbing, forwarding, grouping
 from keri.app.cli.common import existing
-from keri.core import coring
 from keri.core.coring import Ilks
-from src.keri.core import serdering
+from keri.core import serdering
 
 logger = help.ogler.getLogger()
 
