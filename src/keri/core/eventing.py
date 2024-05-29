@@ -5806,7 +5806,7 @@ class Kevery:
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
                                       delsaider=saider, local=esr.local)
                 else:
-                    raise MissingDelegableApprovalError()
+                    raise MissingDelegableApprovalError("No delegation seal found for event.")
 
             except MissingDelegableApprovalError as ex:
                 # still waiting on missing delegation approval

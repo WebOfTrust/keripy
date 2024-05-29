@@ -739,6 +739,8 @@ def test_delegables_escrow():
         parsing.Parser().parse(ims=bytearray(gateIcp), kvy=torKvy, local=True)
         assert gateHab.pre not in torKvy.kevers
         assert len(torHab.db.delegables.get(keys=snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn))) == 1
+        # Exercise the MissingDelegableApprovalError case
+        torKvy.processEscrowDelegables()
 
         # Now create delegating interaction event
         seal = eventing.SealEvent(i=gateHab.pre,
