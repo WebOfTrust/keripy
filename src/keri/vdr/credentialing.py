@@ -985,7 +985,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
             postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=creder.said):
-        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
@@ -999,16 +999,16 @@ def sendRegistry(hby, reger, postman, creder, sender, recp):
 
     ikever = hby.db.kevers[issr]
     for msg in hby.db.cloneDelegation(ikever):
-        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in hby.db.clonePreIter(pre=issr):
-        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=regk):
-        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)

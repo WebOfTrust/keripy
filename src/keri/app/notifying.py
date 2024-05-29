@@ -181,7 +181,7 @@ class DicterSuber(subing.Suber):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            iterator: of tuples of keys tuple and val coring.Serder for
+            iterator: of tuples of keys tuple and val serdering.SerderKERI for
             each entry in db
 
         """

@@ -96,7 +96,7 @@ class RequestDoer(doing.DoDoer):
         exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, evt=bytes(evt), aids=hab.smids)
 
         # delegate AID ICP and exn of delegation request EXN
-        srdr = serdering.SerderKERI(raw=evt) # coring.Serder(raw=evt)
+        srdr = serdering.SerderKERI(raw=evt)
         del evt[:srdr.size]
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
         self.postman.send(src=phab.pre, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)
