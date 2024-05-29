@@ -13,6 +13,7 @@ from keri.app import habbing, forwarding, grouping
 from keri.app.cli.common import existing
 from keri.core import coring
 from keri.core.coring import Ilks
+from src.keri.core import serdering
 
 logger = help.ogler.getLogger()
 
@@ -86,7 +87,7 @@ class NoticeDoer(doing.DoDoer):
             (smids, rmids) = hab.members()
             serder = hab.kever.serder
             rot = hab.makeOwnEvent(sn=hab.kever.sn)
-            eserder = coring.Serder(raw=rot)
+            eserder = serdering.SerderKERI(raw=rot)
             del rot[:eserder.size]
 
             ilk = serder.ked['t']
