@@ -942,7 +942,7 @@ class BaseHab:
         kevers (dict): of eventing.Kever instances from KELs in local db
             keyed by qb64 prefix. Read through cache of of kevers of states for
             KELs in db.states
-        iserder (coring.Serder): own inception event
+        iserder (serdering.SerderKERI): own inception event
         prefixes (OrderedSet): local prefixes for .db
         accepted (bool): True means accepted into local KEL.
                           False otherwise

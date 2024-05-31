@@ -132,7 +132,7 @@ class RegistryInceptor(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
-        aserder = serdering.SerderKERI(raw=bytes(anc))  # coring.Serder(raw=bytes(anc))
+        aserder = serdering.SerderKERI(raw=bytes(anc))
         self.registrar.incept(iserder=registry.vcp, anc=aserder)
 
         if isinstance(hab, GroupHab):

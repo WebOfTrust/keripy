@@ -275,7 +275,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
 
     """
     rmids = rmids if rmids is not None else smids
-    serder = serdering.SerderKERI(raw=icp) # coring.Serder(raw=icp)
+    serder = serdering.SerderKERI(raw=icp)
     data = dict(
         gid=serder.pre,
         smids=smids,
@@ -585,7 +585,7 @@ class Multiplexor:
         events so that any addition signatures can be processed.
 
         Parameters:
-            serder (coring.Serder): peer-to-peer exn "/multisig" message to coordinate from other participants
+            serder (serdering.SerderKERI): peer-to-peer exn "/multisig" message to coordinate from other participants
 
         Returns:
 

@@ -220,7 +220,7 @@ class CredentialIssuer(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
-        aserder = serdering.SerderKERI(raw=anc)  # coring.Serder(raw=anc)
+        aserder = serdering.SerderKERI(raw=anc)
         self.credentialer.issue(self.creder, iserder)
         self.registrar.issue(self.creder, iserder, aserder)
 

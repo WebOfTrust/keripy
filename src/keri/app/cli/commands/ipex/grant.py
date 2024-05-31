@@ -108,7 +108,7 @@ class GrantDoer(doing.DoDoer):
 
         iss = self.rgy.reger.cloneTvtAt(creder.said)
 
-        iserder = serdering.SerderKERI(raw=bytes(iss))  # coring.Serder(raw=bytes(iss))
+        iserder = serdering.SerderKERI(raw=bytes(iss))
         seqner = coring.Seqner(sn=iserder.sn)
 
         serder = self.hby.db.findAnchoringSealEvent(creder.sad['i'],
