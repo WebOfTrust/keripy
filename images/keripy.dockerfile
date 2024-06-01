@@ -1,18 +1,24 @@
-# Builder layer
-FROM python:3.10-alpine as builder
+# Use the official Alpine base image
+FROM python:3.10.14-alpine3.20 as builder
 
-# Install compilation dependencies
-RUN apk --no-cache add \
-    bash \
+# Install bash
+RUN apk add --no-cache bash
+
+# Set the default shell to bash
+SHELL ["/bin/bash", "-c"]
+
+# Install dependencies
+RUN apk add --no-cache \
+    curl \
+    build-base \
     alpine-sdk \
     libffi-dev \
     libsodium \
-    libsodium-dev
+    libsodium-dev    
 
-SHELL ["/bin/bash", "-c"]
-
-# Setup Rust for blake3 dependency build
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+# Install Rust using rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /keripy
 
@@ -20,19 +26,16 @@ RUN python -m venv venv
 
 ENV PATH=/keripy/venv/bin:${PATH}
 
-RUN pip install --upgrade pip && \
-    mkdir /keripy/src
+RUN pip install --upgrade pip
+RUN mkdir /keripy/src
 
-# Copy Python dependency files in
 COPY requirements.txt setup.py ./
-# Set up Rust environment and install Python dependencies
-# Must source the Cargo environment for the blake3 library to see
-# the Rust intallation during requirements install
-RUN . ${HOME}/.cargo/env && \
-    pip install -r requirements.txt
+
+RUN . ${HOME}/.cargo/env
+RUN pip install -r requirements.txt
 
 # Runtime layer
-FROM python:3.10.13-alpine3.18
+FROM python:3.10.14-alpine3.20
 
 RUN apk --no-cache add \
     bash \
@@ -44,7 +47,6 @@ WORKDIR /keripy
 COPY --from=builder /keripy /keripy
 COPY src/ src/
 
-ENV PATH=/keripy/venv/bin:${PATH}
-
+ENV PATH="/keripy/venv/bin:${PATH}"
 
 ENTRYPOINT [ "kli" ]
