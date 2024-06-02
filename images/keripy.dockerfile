@@ -1,13 +1,11 @@
-# Use the official Alpine base image
-FROM python:3.10.14-alpine3.20 as builder
+ARG BASE=python:3.10.14-alpine3.20
 
-# Install bash
+FROM ${BASE} as builder
+
 RUN apk add --no-cache bash
 
-# Set the default shell to bash
 SHELL ["/bin/bash", "-c"]
 
-# Install dependencies
 RUN apk add --no-cache \
     curl \
     build-base \
@@ -16,7 +14,6 @@ RUN apk add --no-cache \
     libsodium \
     libsodium-dev    
 
-# Install Rust using rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
@@ -35,7 +32,7 @@ RUN . ${HOME}/.cargo/env
 RUN pip install -r requirements.txt
 
 # Runtime layer
-FROM python:3.10.14-alpine3.20
+FROM ${BASE}
 
 RUN apk --no-cache add \
     bash \
