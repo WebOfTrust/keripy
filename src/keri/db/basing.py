@@ -1262,7 +1262,7 @@ class Baser(dbing.LMDBer):
                                       count=1).qb64b)
             atc.extend(couple)
         elif self.kevers[pre].delegated:
-            if serdering.SerderKERI(raw=raw).estive:
+            if serdering.SerderKERI(raw=bytes(raw)).estive:
                 raise kering.MissingEntryError("Missing delegator anchor seal for dig={}.".format(dig))
 
         # add trans receipts quadruples to attachments
