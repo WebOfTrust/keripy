@@ -4696,7 +4696,6 @@ class Kevery:
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.qnfs.put(keys=(prefixer.qb64b, serder.saidb), val=serder.saidb)
-        # self.db.addQnf(dgkey, serder.saidb)
 
         for cigar in cigars:
             self.db.addRct(key=dgkey, val=cigar.verfer.qb64b + cigar.qb64b)
@@ -5863,7 +5862,6 @@ class Kevery:
         sn = 0
         while True:  # break when done
             for ekey, edig in self.db.qnfs.getItemIter(keys=key,):
-            # for ekey, edig in self.db.getQnfItemsNextIter(key=key):
                 try:
                     pre, _ = splitKey(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
@@ -5937,7 +5935,6 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
-                    # self.db.delQnf(dgKey(pre, edig), edig)  # removes one escrow at key val
                     self.db.qnfs.rem(keys=(pre, edig))
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed: %s", ex.args[0])
@@ -5947,7 +5944,6 @@ class Kevery:
                     # We don't remove all escrows at pre,sn because some might be
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
-                    # self.db.delQnf(dgKey(pre, edig), edig)  # removes one escrow at key val
                     self.db.qnfs.rem(keys=(pre, edig))
                     logger.info("Kevery unescrow succeeded in valid event: "
                                 "event=%s", eserder.said)
