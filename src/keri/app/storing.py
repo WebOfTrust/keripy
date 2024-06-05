@@ -219,65 +219,70 @@ class Respondant(doing.DoDoer):
         _ = (yield self.tock)
 
         while True:
-            while self.cues:  # iteratively process each cue in cues
-                cue = self.cues.pull() # self.cues.popleft()
-                cueKin = cue["kin"]  # type or kind of cue
-                if cueKin in ("receipt",):  # cue to receipt a received event from other pre
-                    serder = cue["serder"]  # Serder of received event for other pre
-                    cuedKed = serder.ked
-                    cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+            while not self.cues:
+                yield self.tock
 
-                    # If respondant configured with list of acceptable AIDs to witness for, check them here
-                    if self.aids is not None and cuedPrefixer.qb64 not in self.aids:
-                        continue
+            cue = self.cues.pull() # self.cues.popleft()
+            cueKin = cue["kin"]  # type or kind of cue
+            if cueKin in ("receipt",):  # cue to receipt a received event from other pre
+                serder = cue["serder"]  # Serder of received event for other pre
+                cuedKed = serder.ked
+                cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
 
-                    if cuedPrefixer.qb64 in self.hby.kevers:
-                        kever = self.hby.kevers[cuedPrefixer.qb64]
-                        owits = oset(kever.wits)
-                        if match := owits.intersection(self.hby.prefixes):
-                            pre = match.pop()
-                            hab = self.hby.habByPre(pre)
-                            if hab is None:
-                                continue
+                # If respondant configured with list of acceptable AIDs to witness for, check them here
+                if self.aids is not None and cuedPrefixer.qb64 not in self.aids:
+                    continue
 
-                            raw = hab.receipt(serder)
-                            rserder = serdering.SerderKERI(raw=raw)
-                            del raw[:rserder.size]
-                            self.postman.send(serder.pre, topic="receipt", serder=rserder, hab=hab, attachment=raw)
+                if cuedPrefixer.qb64 in self.hby.kevers:
+                    kever = self.hby.kevers[cuedPrefixer.qb64]
+                    owits = oset(kever.wits)
+                    if match := owits.intersection(self.hby.prefixes):
+                        pre = match.pop()
+                        hab = self.hby.habByPre(pre)
+                        if hab is None:
+                            continue
 
-                elif cueKin in ("replay",):
-                    src = cue["src"]
-                    dest = cue["dest"]
-                    msgs = cue["msgs"]
+                        raw = hab.receipt(serder)
+                        rserder = serdering.SerderKERI(raw=raw)
+                        del raw[:rserder.size]
+                        self.postman.send(serder.pre, topic="receipt", serder=rserder, hab=hab, attachment=raw)
 
-                    hab = self.hby.habByPre(src)
-                    if hab is None:
-                        continue
+            elif cueKin in ("replay",):
+                src = cue["src"]
+                dest = cue["dest"]
+                msgs = cue["msgs"]
 
-                    if dest not in self.hby.kevers:
-                        continue
+                hab = self.hby.habByPre(src)
+                if hab is None:
+                    continue
 
-                    for msg in msgs:
-                        raw = bytearray(msg)
-                        serder = serdering.SerderKERI(raw=raw)
-                        del raw[:serder.size]
-                        self.postman.send(dest, topic="replay", serder=serder, hab=hab, attachment=raw)
+                if dest not in self.hby.kevers:
+                    continue
 
-                elif cueKin in ("reply",):
-                    src = cue["src"]
-                    serder = cue["serder"]
+                for msg in msgs:
+                    raw = bytearray(msg)
+                    serder = serdering.SerderKERI(raw=raw)
+                    del raw[:serder.size]
+                    self.postman.send(dest, topic="replay", serder=serder, hab=hab, attachment=raw)
 
-                    dest = cue["dest"]
+            elif cueKin in ("reply",):
+                src = cue["src"]
+                serder = cue["serder"]
 
-                    if dest not in self.hby.kevers:
-                        continue
+                dest = cue["dest"]
 
-                    hab = self.hby.habByPre(src)
-                    if hab is None:
-                        continue
+                if dest not in self.hby.kevers:
+                    continue
 
-                    atc = hab.endorse(serder)
-                    del atc[:serder.size]
-                    self.postman.send(hab=hab, dest=dest, topic="reply", serder=serder, attachment=atc)
+                hab = self.hby.habByPre(src)
+                if hab is None:
+                    continue
+
+                atc = hab.endorse(serder)
+                del atc[:serder.size]
+                self.postman.send(hab=hab, dest=dest, topic="reply", serder=serder, attachment=atc)
+
+            else:
+                self.cues.push(cue)
 
             yield self.tock
