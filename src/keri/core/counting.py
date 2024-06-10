@@ -66,8 +66,10 @@ class CounterCodex_1_0(MapDom):
     SadPathSigGroups: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
     RootSadPathSigGroups: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
     PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialGroup: str = '-0L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group, dig of content+Texter group
     KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
 
 
@@ -345,6 +347,7 @@ class Counter:
                 '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
