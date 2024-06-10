@@ -233,6 +233,9 @@ class Clienter(doing.DoDoer):
             print(f"error establishing client connection={e}")
             return None
 
+        if hasattr(body, "encode"):
+            body = body.encode("utf-8")
+
         client.request(
             method=method,
             path=f"{purl.path}?{purl.query}",

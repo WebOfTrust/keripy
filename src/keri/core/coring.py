@@ -989,8 +989,8 @@ class Matter:
                         code = f"{s}{code[1:hs]}"
                         ss = 4
                     else:
-                        raise InvalidVarRawSizeError(f"Unsupported raw size for "
-                                                     f"{code=}.")
+                        raise InvalidVarRawSizeError(f"Unsupported raw size for large "
+                                                     f"{code=}. {size} <= {64 ** 4 - 1}")
                 else:
                     raise InvalidVarRawSizeError(f"Unsupported variable raw size "
                                                  f"{code=}.")

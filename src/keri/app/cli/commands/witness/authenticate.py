@@ -31,6 +31,8 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--witness", '-w', help="the witness AID or alias to authenticate against", required=True)
+parser.add_argument("--url-only", '-u', dest="url", help="display only the URL (no QR Code).", required=False,
+                    action="store_true")
 
 
 def auth(args):
@@ -45,16 +47,18 @@ def auth(args):
                   alias=args.alias,
                   base=args.base,
                   bran=args.bran,
-                  witness=args.witness)
+                  witness=args.witness,
+                  urlOnly=args.url)
     return [ed]
 
 
 class AuthDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, witness):
+    def __init__(self, name, alias, base, bran, witness, urlOnly):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.org = connecting.Organizer(hby=self.hby)
+        self.urlOnly = urlOnly
 
         if witness in self.hby.kevers:
             wit = witness
@@ -119,10 +123,12 @@ class AuthDoer(doing.DoDoer):
             d = coring.Matter(qb64=self.hab.decrypt(m.raw))
             otpurl = f"otpauth://totp/KERIpy:{self.witness}?secret={d.raw.decode('utf-8')}&issuer=KERIpy"
 
-            qr = qrcode.QRCode()
-            qr.add_data(otpurl)
+            if not self.urlOnly:
+                qr = qrcode.QRCode()
+                qr.add_data(otpurl)
 
-            qr.print_ascii()
+                qr.print_ascii()
+
             print(otpurl)
 
         else:

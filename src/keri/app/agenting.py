@@ -227,8 +227,9 @@ class Receiptor(doing.DoDoer):
                 msg = self.msgs.popleft()
                 pre = msg["pre"]
                 sn = msg["sn"] if "sn" in msg else None
+                auths = msg["auths"] if "auths" in msg else None
 
-                yield from self.receipt(pre, sn)
+                yield from self.receipt(pre, sn, auths)
                 self.cues.push(msg)
 
             yield self.tock

@@ -122,19 +122,18 @@ class Exchanger:
                 attachments.append((np, pattach))
 
         kwargs["attachments"] = attachments
+        if essrs:
+            kwargs["essr"] = b''.join([texter.raw for texter in essrs])
 
         if isinstance(serder.seals, str):
-            if len(essrs) != 1:
-                raise ValidationError("one and only one essr attachment allowed")
+            if 'essr' not in kwargs:
+                raise ValidationError("at least one essr attachment is required")
 
-            texter = essrs[0]
+            essr = kwargs['essr']
             dig = serder.seals
             diger = coring.Diger(qb64=dig)
-            if not diger.verify(ser=texter.qb64b):
+            if not diger.verify(ser=essr):
                 raise ValidationError(f"essr diger={diger.qb64} is invalid against content")
-
-        if essrs:
-            kwargs["essrs"] = essrs
 
         # Perform behavior specific verification, think IPEX chaining requirements
         try:
@@ -205,9 +204,13 @@ class Exchanger:
                 tsgs.append((prefixer, seqner, saider, sigers))
 
             pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
+            essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
 
             try:
-                self.processEvent(serder=serder, tsgs=tsgs, pathed=pathed)
+                kwargs = dict()
+                if essrs:
+                    kwargs["essrs"] = essrs
+                self.processEvent(serder=serder, tsgs=tsgs, pathed=pathed, **kwargs)
 
             except MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.DEBUG):
@@ -246,7 +249,7 @@ class Exchanger:
         saider = coring.Saider(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         for texter in essrs:
-            self.hby.db.essrs.pin(keys=(serder.seals,), val=texter)
+            self.hby.db.essrs.add(keys=(dig,), val=texter)
         if pdig:
             self.hby.db.erpy.pin(keys=(pdig,), val=saider)
 
@@ -371,6 +374,8 @@ def exchange(route,
     else:
         attrs = diger.qb64
 
+    # Attr field 'a' can be either a said or a nested block and the fields
+    # of the nested block can be saids of further nested block or nested blocks
     ked = dict(v=vs,
                t=ilk,
                d="",

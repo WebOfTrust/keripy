@@ -120,7 +120,7 @@ class AddDoer(doing.DoDoer):
 
         rep = client.respond()
         if rep.status == 200:
-            print("I can't believe it worked!")
+            print(f"Mailbox {self.mailbox} added for {self.hab.name}")
 
         else:
             print(rep.status, rep.data)

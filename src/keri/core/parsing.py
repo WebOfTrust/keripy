@@ -445,7 +445,7 @@ class Parser:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg non-extraction error: %s", ex)
                 else:
-                    logger.error("Parser msg non-extraction error: %s", ex)
+                    logger.exception("Parser msg non-extraction error: %s", ex)
             yield
 
         return True
@@ -530,7 +530,7 @@ class Parser:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg non-extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery msg non-extraction error: %s", ex.args[0])
+                    logger.exception("Kevery msg non-extraction error: %s", ex.args[0])
             finally:
                 done = True
 
@@ -620,7 +620,7 @@ class Parser:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg non-extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg non-extraction error: %s", ex.args[0])
+                    logger.exception("Parser msg non-extraction error: %s", ex.args[0])
             yield
 
         return True  # should never return
