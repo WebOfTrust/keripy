@@ -2719,6 +2719,15 @@ class GroupHab(BaseHab):
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers)
 
+        habord = basing.HabitatRecord(hid=self.pre,
+                                      mid=self.mhab.pre,
+                                      name=self.name,
+                                      domain=self.ns,
+                                      smids=self.smids,
+                                      rmids=self.rmids)
+        self.save(habord)
+        self.prefixes.add(self.pre)
+        
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
         # MissingSignatureError
         try:
@@ -2729,15 +2738,6 @@ class GroupHab(BaseHab):
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
-        habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=self.mhab.pre,
-                                      name=self.name,
-                                      domain=self.ns,
-                                      smids=self.smids,
-                                      rmids=self.rmids)
-
-        self.save(habord)
-        self.prefixes.add(self.pre)
 
         self.inited = True
 

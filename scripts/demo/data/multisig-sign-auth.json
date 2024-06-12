@@ -1,0 +1,16 @@
+{
+    "aids": [
+      "EI0jXuw_V_zjj_mFgJLJWgFtbpVRNdUmv01WoM4na1ek",
+      "EDC4X7ia6uAGGLQ20UgUdcIix_YgWlkNK_wC8e3ShTAC"
+    ],
+    "transferable": true,
+    "wits": [
+      "BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha",
+      "BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM",
+      "BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX"
+    ],
+    "toad": 2,
+    "isith": ["1", "0"],
+    "nsith": ["0", "1"]
+  }
+  
