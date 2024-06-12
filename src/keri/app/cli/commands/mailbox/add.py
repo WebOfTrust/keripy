@@ -12,7 +12,7 @@ from hio.help import Hict
 
 from keri import kering
 from keri.app import connecting, habbing, forwarding
-from keri.app.agenting import httpClient
+from keri.app.agenting import httpClient, WitnessPublisher
 from keri.app.cli.common import existing
 from keri.core import serdering
 
@@ -53,6 +53,7 @@ class AddDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.org = connecting.Organizer(hby=self.hby)
+        self.witpub = WitnessPublisher(hby=self.hby)
 
         if mailbox in self.hby.kevers:
             mbx = mailbox
@@ -67,7 +68,7 @@ class AddDoer(doing.DoDoer):
 
         self.mailbox = mbx
 
-        doers = [doing.doify(self.addDo)]
+        doers = [doing.doify(self.addDo), self.witpub]
 
         super(AddDoer, self).__init__(doers=doers)
 
@@ -120,9 +121,15 @@ class AddDoer(doing.DoDoer):
 
         rep = client.respond()
         if rep.status == 200:
+            msg = self.hab.replyEndRole(cid=self.hab.pre, role=kering.Roles.mailbox)
+            self.witpub.msgs.append(dict(pre=self.hab.pre, msg=bytes(msg)))
+
+            while not self.witpub.cues:
+                yield self.tock
+
             print(f"Mailbox {self.mailbox} added for {self.hab.name}")
 
         else:
             print(rep.status, rep.data)
 
-        self.remove([clientDoer])
+        self.remove([clientDoer, self.witpub])

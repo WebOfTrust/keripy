@@ -97,9 +97,17 @@ class AuthDoer(doing.DoDoer):
         for msg in self.hab.db.clonePreIter(pre=self.hab.pre):
             body.extend(msg)
 
+        fargs = dict([("kel", body.decode("utf-8"))])
+
+        if self.hab.kever.delegated:
+            delkel = bytearray()
+            for msg in self.hab.db.clonePreIter(self.hab.kever.delpre):
+                delkel.extend(msg)
+
+            fargs['delkel'] = delkel.decode("utf-8")
+
         headers = (Hict([
-            ("Content-Type", "application/cesr"),
-            ("Content-Length", len(body)),
+            ("Content-Type", "multipart/form-data")
         ]))
 
         client, clientDoer = httpClient(self.hab, self.witness)
@@ -109,7 +117,7 @@ class AuthDoer(doing.DoDoer):
             method="POST",
             path=f"{client.requester.path}/aids",
             headers=headers,
-            body=bytes(body)
+            fargs=fargs
         )
         while not client.responses:
             yield self.tock

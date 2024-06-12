@@ -117,6 +117,8 @@ def mergeArgsWithFile(args):
         incept_opts.estOnly = args.est_only
     if args.data is not None:
         incept_opts.data = config.parseData(args.data)
+    if args.delpre is not None:
+        incept_opts.delpre = args.delpre
 
     return incept_opts
 

@@ -617,12 +617,10 @@ class WitnessPublisher(doing.DoDoer):
 
                     _ = (yield self.tock)
 
-                total = len(witers)
-                count = 0
-                while count < total:
-                    for witer in witers:
-                        count += len(witer.sent)
-                    _ = (yield self.tock)
+                while witers:
+                    witer = witers.pop()
+                    while not witer.idle:
+                        _ = (yield self.tock)
 
                 self.remove(witers)
                 self.cues.push(evt)

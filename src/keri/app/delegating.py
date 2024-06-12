@@ -71,7 +71,7 @@ class Anchorer(doing.DoDoer):
 
         # Send exn message for notification purposes
         srdr = serdering.SerderKERI(raw=evt)
-        self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn))
+        self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn, auths=self.auths))
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def complete(self, prefixer, seqner, saider=None):
