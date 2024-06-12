@@ -25,7 +25,7 @@ parser.set_defaults(handler=lambda args: join(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--group', '-a', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
+parser.add_argument('--group', '-g', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
