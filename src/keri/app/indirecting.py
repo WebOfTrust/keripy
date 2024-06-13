@@ -971,7 +971,7 @@ class QryRpyMailboxIterable:
     def __next__(self):
         if self.iter is None:
             if self.cues:
-                cue = self.cues.pull() # self.cues.popleft()
+                cue = self.cues.pull()
                 serder = cue["serder"]
                 if serder.said == self.said:
                     kin = cue["kin"]

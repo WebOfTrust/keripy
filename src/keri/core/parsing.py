@@ -8,7 +8,7 @@ message stream parsing support
 import logging
 
 from .coring import (Ilks, CtrDex, Counter, Seqner, Cigar,
-                     Dater, Verfer, Prefixer, Saider, Pather)
+                     Dater, Verfer, Prefixer, Saider, Pather, Texter)
 from .indexing import (Siger, )
 from . import serdering
 from .. import help
@@ -445,7 +445,7 @@ class Parser:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg non-extraction error: %s", ex)
                 else:
-                    logger.error("Parser msg non-extraction error: %s", ex)
+                    logger.exception("Parser msg non-extraction error: %s", ex)
             yield
 
         return True
@@ -530,7 +530,7 @@ class Parser:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg non-extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery msg non-extraction error: %s", ex.args[0])
+                    logger.exception("Kevery msg non-extraction error: %s", ex.args[0])
             finally:
                 done = True
 
@@ -620,7 +620,7 @@ class Parser:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg non-extraction error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg non-extraction error: %s", ex.args[0])
+                    logger.exception("Parser msg non-extraction error: %s", ex.args[0])
             yield
 
         return True  # should never return
@@ -721,6 +721,7 @@ class Parser:
         # List of tuples from extracted SAD path sig groups from non-trans identifiers
         sadcigs = []  # each converted group is path plus list of non-trans sigs
         pathed = []  # grouped attachments targetting a subpath
+        essrs = []  # group texter
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
@@ -919,16 +920,6 @@ class Parser:
                                 else:
                                     sadcigs.append(sigs)
 
-                    elif ctr.code == CtrDex.SadPathSigGroups:
-                        for code, sigs in self._sadPathSigGroup(ctr=ctr,
-                                                                ims=ims,
-                                                                cold=cold,
-                                                                pipelined=pipelined):
-                            if code == CtrDex.TransIdxSigGroups:
-                                sadtsgs.append(sigs)
-                            else:
-                                sadcigs.append(sigs)
-
                     elif ctr.code == CtrDex.PathedMaterialGroup:  # pathed ctr?
                         # compute pipelined attached group size based on txt or bny
                         pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
@@ -938,6 +929,25 @@ class Parser:
                         pims = ims[:pags]  # copy out substream pipeline group
                         del ims[:pags]  # strip off from ims
                         pathed.append(pims)
+
+                    elif ctr.code == CtrDex.BigPathedMaterialGroup:  # pathed ctr?
+                        # compute pipelined attached group size based on txt or bny
+                        pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+                        while len(ims) < pags:  # wait until rx full pipelned group
+                            yield
+
+                        pims = ims[:pags]  # copy out substream pipeline group
+                        del ims[:pags]  # strip off from ims
+                        pathed.append(pims)
+
+                    elif ctr.code == CtrDex.ESSRPayloadGroup:
+                        for i in range(ctr.count):
+                            texter = yield from self._extractor(ims,
+                                                                klas=Texter,
+                                                                cold=cold,
+                                                                abort=pipelined)
+                            essrs.append(texter)
+
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
@@ -1078,6 +1088,9 @@ class Parser:
                 args = dict(serder=serder)
                 if pathed:
                     args["pathed"] = pathed
+
+                if essrs:
+                    args["essrs"] = essrs
 
                 try:
                     if cigars:

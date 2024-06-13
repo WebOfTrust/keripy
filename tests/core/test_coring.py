@@ -2179,7 +2179,9 @@ def test_counter():
         'SadPathSigGroups': '-J',
         'RootSadPathSigGroups': '-K',
         'PathedMaterialGroup': '-L',
+        'BigPathedMaterialGroup': '-0L',
         'AttachmentGroup': '-V',
+        'ESSRPayloadGroup': '-Z',
         'BigAttachmentGroup': '-0V',
         'KERIACDCGenusVersion': '--AAA',
     }
@@ -2215,7 +2217,9 @@ def test_counter():
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
         '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
     }
@@ -2333,10 +2337,10 @@ def test_counter():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
-    # test with big codes index=1024
-    count = 1024
+    # test with big codes index=1024000
+    count = 1024000
     qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
-    assert qsc == '-0VAAAQA'
+    assert qsc == '-0VAD6AA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -2382,6 +2386,42 @@ def test_counter():
     # Test ._binfil
     test = counter._binfil()
     assert test == qb2
+
+    # Test limits of PathedMaterialGroup
+    count = 255
+    qsc = CtrDex.PathedMaterialGroup + intToB64(count, l=2)
+    assert qsc == '-LD_'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.PathedMaterialGroup, count=count)
+    assert counter.code == CtrDex.PathedMaterialGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64='-L__')
+    assert counter.count == 4095
+
+    with pytest.raises(kering.InvalidVarIndexError):
+        Counter(code=CtrDex.PathedMaterialGroup, count=4096)  # Too big
+
+    # Test BigPathedMaterialGroup
+    # test with big codes index=1024000
+    count = 1024000
+    qsc = CtrDex.BigPathedMaterialGroup + intToB64(count, l=5)
+    assert qsc == '-0LAD6AA'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.BigPathedMaterialGroup, count=count)
+    assert counter.code == CtrDex.BigPathedMaterialGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
 
     # Test with strip
     # create code manually

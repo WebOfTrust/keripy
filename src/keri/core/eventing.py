@@ -5065,8 +5065,6 @@ class Kevery:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
@@ -5221,8 +5219,6 @@ class Kevery:
                     # still waiting on missing sigs or missing seal to validate
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than waiting on sigs or seal so remove from escrow
@@ -5393,8 +5389,6 @@ class Kevery:
                     # still waiting on missing witness sigs
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than waiting on sigs or seal so remove from escrow
@@ -5518,8 +5512,6 @@ class Kevery:
                     # only happens if we process above
                     if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
@@ -5691,8 +5683,6 @@ class Kevery:
                     # only happens if we process above
                     if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
@@ -5812,8 +5802,6 @@ class Kevery:
                 # still waiting on missing delegation approval
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                else:
-                    logger.error("Kevery unescrow failed: %s", ex.args[0])
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
@@ -5930,8 +5918,6 @@ class Kevery:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
@@ -6221,8 +6207,6 @@ class Kevery:
                     # only happens if we process above
                     if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
@@ -6355,8 +6339,6 @@ class Kevery:
                     # still can't determine if duplicitous
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrow failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow failed: %s", ex.args[0])
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than likely duplicitous so remove from escrow

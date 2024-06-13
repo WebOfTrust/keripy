@@ -227,8 +227,9 @@ class Receiptor(doing.DoDoer):
                 msg = self.msgs.popleft()
                 pre = msg["pre"]
                 sn = msg["sn"] if "sn" in msg else None
+                auths = msg["auths"] if "auths" in msg else None
 
-                yield from self.receipt(pre, sn)
+                yield from self.receipt(pre, sn, auths)
                 self.cues.push(msg)
 
             yield self.tock
@@ -616,12 +617,10 @@ class WitnessPublisher(doing.DoDoer):
 
                     _ = (yield self.tock)
 
-                total = len(witers)
-                count = 0
-                while count < total:
-                    for witer in witers:
-                        count += len(witer.sent)
-                    _ = (yield self.tock)
+                while witers:
+                    witer = witers.pop()
+                    while not witer.idle:
+                        _ = (yield self.tock)
 
                 self.remove(witers)
                 self.cues.push(evt)

@@ -28,7 +28,7 @@ class Anchorer(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, proxy=None, **kwa):
+    def __init__(self, hby, proxy=None, auths=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -45,11 +45,12 @@ class Anchorer(doing.DoDoer):
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.proxy = proxy
+        self.auths = auths
 
         super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
                                        **kwa)
 
-    def delegation(self, pre, sn=None, proxy=None):
+    def delegation(self, pre, sn=None, proxy=None, auths=None):
         if pre not in self.hby.habs:
             raise kering.ValidationError(f"{pre} is not a valid local AID for delegation")
 
@@ -63,13 +64,14 @@ class Anchorer(doing.DoDoer):
             raise kering.ValidationError(f"delegator {delpre} not found, unable to process delegation")
 
         sn = sn if sn is not None else hab.kever.sner.num
+        self.auths = auths if auths is not None else self.auths
 
         # load the event and signatures
         evt = hab.makeOwnEvent(sn=sn)
 
         # Send exn message for notification purposes
         srdr = serdering.SerderKERI(raw=evt)
-        self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn))
+        self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn, auths=self.auths))
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def complete(self, prefixer, seqner, saider=None):

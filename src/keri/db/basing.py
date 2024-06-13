@@ -1063,6 +1063,8 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.epath = subing.IoSetSuber(db=self, subkey=".epath")
 
+        self.essrs = subing.CesrIoSetSuber(db=self, subkey=".essrs", klass=coring.Texter)
+
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
         self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Saider)

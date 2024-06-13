@@ -16,6 +16,7 @@ from keri.app.habbing import GroupHab
 from keri import core
 from keri.core import coring, serdering
 from keri.db import dbing
+from keri.help import helping
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -32,6 +33,10 @@ parser.add_argument('--passcode', '-p', help='21 character encryption passcode f
 parser.add_argument("--interact", "-i", help="anchor the delegation approval in an interaction event.  "
                                              "Default is to use a rotation event.", action="store_true")
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
+parser.add_argument("--authenticate", '-z', help="Prompt the controller for authentication codes for each witness",
+                    action='store_true')
+parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
+                    default=[], action="append", required=False)
 
 
 def confirm(args):
@@ -47,15 +52,18 @@ def confirm(args):
     alias = args.alias
     interact = args.interact
     auto = args.auto
+    authenticate = args.authenticate
+    codes = args.code
 
-    confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto)
+    confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto,
+                              authenticate=authenticate, codes=codes)
 
     doers = [confirmDoer]
     return doers
 
 
 class ConfirmDoer(doing.DoDoer):
-    def __init__(self, name, base, alias, bran, interact=False, auto=False):
+    def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
@@ -63,6 +71,8 @@ class ConfirmDoer(doing.DoDoer):
         self.counselor = grouping.Counselor(hby=hby)
         self.notifier = notifying.Notifier(hby=hby)
         self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
+        self.authenticate = authenticate
+        self.codes = codes if codes is not None else []
 
         exc = exchanging.Exchanger(hby=hby, handlers=[])
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
@@ -173,7 +183,19 @@ class ConfirmDoer(doing.DoDoer):
                         else:
                             hab.rotate(data=[anchor])
 
-                        witDoer = agenting.WitnessReceiptor(hby=self.hby)
+                        auths = {}
+                        if self.authenticate:
+                            for arg in self.codes:
+                                (wit, code) = arg.split(":")
+                                auths[wit] = f"{code}#{helping.nowIso8601()}"
+
+                            for wit in hab.kever.wits:
+                                if wit in auths:
+                                    continue
+                                code = input(f"Entire code for {wit}: ")
+                                auths[wit] = f"{code}#{helping.nowIso8601()}"
+
+                        witDoer = agenting.WitnessReceiptor(hby=self.hby, auths=auths)
                         self.extend(doers=[witDoer])
                         self.toRemove.append(witDoer)
                         yield self.tock

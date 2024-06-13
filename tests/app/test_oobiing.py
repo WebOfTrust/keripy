@@ -53,19 +53,20 @@ def test_oobi_share(mockHelpingNowUTC):
                                           oobi="http://127.0.0.1/oobi")
         assert exn.ked == {'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
                                  'oobi': 'http://127.0.0.1/oobi'},
-                           'd': 'EMAhEMPbBU2B-Ha-yLxMEZk49KHYkzZgMv9aZS8gDl1m',
+                           'd': 'EII7EvdWFqv0jkjRv10t01zAUcRYbjVhZ_yo3VPZEbpS',
                            'dt': '2021-01-01T00:00:00.000000+00:00',
                            'e': {},
                            'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
                            'p': '',
                            'q': {},
                            'r': '/oobis',
+                           'rp': '',
                            't': 'exn',
-                           'v': 'KERI10JSON00012e_'}
+                           'v': 'KERI10JSON000136_'}
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACsgmsu'
-                       b'VJoY5a7vicZQ7pT_MZqCe-0psgReRxyoBfFaAPxZ7Vss2eteFuvwDWBeyKc1B-yc'
-                       b'p-2QZzIZJ94_9hIP')
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABdw3eS'
+                       b'w_7BW2o3z1ufxxs1CPgX1TgtJzn-MxvMjLYTidUd8KSxNKbPU9M3A4orYJDMGMIz'
+                       b'habHJmKA4ZIGbcgK')
 
 
 def test_oobiery():
