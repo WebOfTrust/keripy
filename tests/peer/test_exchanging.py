@@ -62,10 +62,9 @@ def test_essrs():
         rkever = recHab.kever
         pubkey = pysodium.crypto_sign_pk_to_box_pk(rkever.verfers[0].raw)
         raw = pysodium.crypto_box_seal(msg.encode("utf-8"), pubkey)
-        b64 = encodeB64(raw)
 
-        texter = coring.Texter(raw=b64)
-        diger = coring.Diger(ser=texter.qb64b, code=MtrDex.Blake3_256)
+        texter = coring.Texter(raw=raw)
+        diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
         essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
@@ -80,8 +79,8 @@ def test_essrs():
         assert serder.ked['a'] == diger.qb64
 
         # Pull the logged ESSR attachment and verify it is the one attached
-        texter = recHby.db.essrs.get(keys=(diger.qb64,))
-        raw = recHab.decrypt(decodeB64(texter.raw))
+        texter = recHby.db.essrs.get(keys=(serder.said,))
+        raw = recHab.decrypt(texter[0].raw)
         assert raw.decode("utf-8") == msg
 
         # Test with invalid diger
@@ -90,7 +89,7 @@ def test_essrs():
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(coring.Counter(code=CtrDex.ESSRPayloadGroup, count=1).qb64b)
-        ims.extend(texter.qb64b)
+        ims.extend(texter[0].qb64b)
 
         parsing.Parser().parse(ims=ims, kvy=recHby.kvy, exc=exc)
         assert recHby.db.exns.get(keys=(essr.said,)) is None
