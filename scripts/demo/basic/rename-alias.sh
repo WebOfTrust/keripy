@@ -3,14 +3,13 @@
 # CREATE DATABASE AND KEYSTORE
 kli init --name rename-test --base "${KERI_TEMP_DIR}" --nopasscode
 
-echo ${KERI_DEMO_SCRIPT_DIR}
 # Incept with the initial alias "sabbir"
 kli incept --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
 
 # Rename the alias from "sabbir" to "irfan"
 kli rename --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir irfan
 
-# Extract aliases from status 
+# Extract alias from status 
 irfan_alias=$(kli status --name rename-test --base "${KERI_TEMP_DIR}" --alias irfan  | grep -Eo 'Alias:\s+(.+)' | awk '{print $2}')
 
 
