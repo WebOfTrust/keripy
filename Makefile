@@ -16,3 +16,10 @@ publish-keri:
 .PHONY: publish-keri-witness-demo
 publish-keri-witness-demo:
 	@docker push weboftrust/keri-witness-demo --all-tags
+
+.PHONY: docs
+docs: 
+	pushd docs; \
+	find . -name 'source/*.rst' ! -name 'index.rst' -delete; \
+	sphinx-apidoc -o ./source ../src; \
+	make html
