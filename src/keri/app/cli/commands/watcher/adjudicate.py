@@ -8,12 +8,11 @@ import argparse
 import datetime
 import random
 import sys
-from dataclasses import asdict
 
 from hio import help
 from hio.base import doing
 
-from keri.app import connecting, indirecting, querying
+from keri.app import connecting, indirecting, querying, watching
 from keri.app.cli.common import existing
 from keri.app.watching import diffState, States
 from keri.help import helping
@@ -105,69 +104,56 @@ class AdjudicationDoer(doing.DoDoer):
             if hab is None:
                 raise ValueError(f"unknown alias {self.alias}")
 
-            watchers = set()
-            for (cid, aid, oid), observed in hab.db.obvs.getItemIter(keys=(hab.pre,)):
-                if observed.enabled:
-                    watchers.add(aid)
+            adj = watching.Adjudicator(hby=self.hby, hab=hab)
+            adjDoer = watching.AdjudicationDoer(adj)
+            self.extend([adjDoer])
 
-            toad = int(self.toad) if self.toad else len(watchers)
-            if toad > len(watchers):
-                raise ValueError(f"Threshold of {toad} is greater than number watchers {len(watchers)}")
+            adj.msgs.append(dict(oid=self.watched, toad=self.toad))
 
-            states = []
-            mystate = hab.kever.state()
-            for watcher in watchers:
-                saider = hab.db.knas.get(keys=(self.watched, watcher))
-                if saider is None:
-                    print(f"No key state from watcher {watcher} for {self.watched}")
-                    continue
+            while not adj.cues:
+                yield self.tock
 
-                ksn = hab.db.ksns.get(keys=(saider.qb64,))
-                states.append(diffState(watcher, mystate, ksn))
+            cue = adj.cues.pull()
+            kin = cue['kin']
 
-            dups = [state for state in states if state.state == States.duplicitous]
-            ahds = [state for state in states if state.state == States.ahead]
-            bhds = [state for state in states if state.state == States.behind]
+            match kin:
+                case "keyStateConsistent":
+                    states = cue['states']
+                    wids = cue["wids"]
+                    print(f"Local key state is consistent with the {len(states)} (out of "
+                          f"{len(wids)} total) watchers that responded")
 
-            if len(dups) > 0:
-                logger.error(f"Duplicity detected for AID {self.watched}, local key state remains intact.")
-                for state in dups:
-                    logger.error(f"\tWatcher {state.wit} at seq No. {state.sn} with digest: {state.dig}")
+                case "keyStateLagging":
+                    bhds = cue["behinds"]
+                    print("The following watchers are behind the local KEL:")
+                    for state in bhds:
+                        print(f"\tWatcher {state.wit} at seq No. {state.sn} with digest: {state.dig}")
 
-            elif len(ahds) > 0:
-                # Only group habs can be behind their witnesses
-                # First check for duplicity among the witnesses that are ahead (possible only if toad is below
-                # super majority)
-                digs = set([state.dig for state in ahds])
-                if len(digs) > 1:  # Duplicity across witness sets
-                    logger.error(f"There are multiple duplicitous events on watcher for {self.watched}")
-                    for state in ahds:
-                        logger.error(f"\tWatcher {state.wit} at seq No. {state.sn} with digest: {state.dig}")
-                elif len(ahds) >= self.toad:  # all witnesses that are ahead agree on the event
+                    print(f"Recommend the checking those watchers for access to {self.watched} witnesses")
+
+                case "keyStateUpdate":
+                    ahds = cue["aheads"]
                     logger.info(f"Threshold ({self.toad}) satisfying number of watchers ({len(ahds)}) are ahead")
                     for state in ahds:
                         logger.info(f"\tWatcher {state.wit} at Seq No. {state.sn} with digest: {state.dig}")
 
-                state = random.choice(ahds)
-                querier = querying.SeqNoQuerier(hby=self.hby, hab=hab, pre=self.watched, sn=state.sn, wits=[state.wit])
-                self.extend([querier])
+                    state = random.choice(ahds)
+                    querier = querying.SeqNoQuerier(hby=self.hby, hab=hab, pre=self.watched, sn=state.sn,
+                                                    wits=[state.wit])
+                    self.extend([querier])
 
-                while not querier.done:
-                    yield self.tock
+                    while not querier.done:
+                        yield self.tock
 
-            elif len(bhds) > 0:
-                logger.info("The following watchers are behind the local KEL:")
-                for state in bhds:
-                    logger.info(f"\tWatcher {state.wit} at seq No. {state.sn} with digest: {state.dig}")
+                case "keyStateDuplicitous":
+                    dups = cue["dups"]
+                    print(f"Duplicity detected for AID {self.watched}, local key state remains intact.")
+                    for state in dups:
+                        print(f"\tWatcher {state.wit} at seq No. {state.sn} with digest: {state.dig}")
 
-                logger.info(f"Recommend the checking those watchers for access to {self.watched} witnesses")
-
-            else:
-                logger.info(f"Local key state is consistent with the {len(states)} (out of "
-                            f"{len(hab.kever.wits)} total) watchers that responded")
+            self.remove([self.mbx, adjDoer])
 
         except ConfigurationError as e:
             print(f"identifier prefix for {self.name} does not exist, incept must be run first", )
             return -1
 
-        self.remove([self.mbx])
