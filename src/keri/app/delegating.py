@@ -44,11 +44,11 @@ class Anchorer(doing.DoDoer):
         self.postman = forwarding.Poster(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
+        self.publishers = dict()
         self.proxy = proxy
         self.auths = auths
 
-        super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
-                                       **kwa)
+        super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)], **kwa)
 
     def delegation(self, pre, sn=None, proxy=None, auths=None):
         if pre not in self.hby.habs:
@@ -57,6 +57,7 @@ class Anchorer(doing.DoDoer):
         if proxy is not None:
             self.proxy = proxy
 
+        self.publishers[pre] = agenting.WitnessPublisher(hby=self.hby)
         # load the hab of the delegated identifier to anchor
         hab = self.hby.habs[pre]
         delpre = hab.kever.delpre  # get the delegator identifier
@@ -123,6 +124,7 @@ class Anchorer(doing.DoDoer):
     def processEscrows(self):
         self.processPartialWitnessEscrow()
         self.processUnanchoredEscrow()
+        self.processWitnessPublication()
 
     def processUnanchoredEscrow(self):
         """
@@ -143,8 +145,9 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
                 # Move to escrow waiting for witness receipts
-                logger.info(f"Delegation approval received, {serder.pre} confirmed")
-                self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
+                logger.info(f"Delegation approval received, {serder.pre} confirmed, publishing to my witnesses")
+                self.publishDelegator(pre)
+                self.hby.db.dpub.put(keys=(pre, said), val=serder)
                 self.hby.db.dune.rem(keys=(pre, said))
 
     def processPartialWitnessEscrow(self):
@@ -196,6 +199,32 @@ class Anchorer(doing.DoDoer):
 
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
+
+    def processWitnessPublication(self):
+        """
+        Process escrow of partially signed multisig group KEL events.  Message
+        processing will send this local controllers signature to all other participants
+        then this escrow waits for signatures from all other participants
+
+        """
+        for (pre, said), serder in self.hby.db.dpub.getItemIter():  # group partial witness escrow
+            publisher = self.publishers[pre]
+
+            if not publisher.idle:
+                continue
+
+            self.remove([publisher])
+            del self.publishers[pre]
+
+            self.hby.db.dpub.rem(keys=(pre, said))
+            self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
+
+    def publishDelegator(self, pre):
+        hab = self.hby.habs[pre]
+        publisher = self.publishers[pre]
+        self.extend([publisher])
+        for msg in hab.db.cloneDelegation(hab.kever):
+            publisher.msgs.append(dict(pre=hab.pre, msg=bytes(msg)))
 
 
 def loadHandlers(hby, exc, notifier):

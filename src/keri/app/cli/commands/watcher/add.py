@@ -11,7 +11,8 @@ from hio.base import doing
 
 from keri.app import connecting, habbing, forwarding
 from keri.app.cli.common import existing
-from keri.core import eventing, serdering
+from keri.core import serdering
+from keri.kering import Roles
 
 logger = help.ogler.getLogger()
 
@@ -91,7 +92,7 @@ class AddDoer(doing.DoDoer):
         super(AddDoer, self).__init__(doers=doers)
 
     def addDo(self, tymth, tock=0.0):
-        """ Grant credential by creating /ipex/grant exn message
+        """ Add an AID to a watcher's list of AIDs to watch
 
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
@@ -109,17 +110,28 @@ class AddDoer(doing.DoDoer):
         if isinstance(self.hab, habbing.GroupHab):
             raise ValueError("watchers for multisig AIDs not currently supported")
 
+        ender = self.hab.db.ends.get(keys=(self.hab.pre, Roles.watcher, self.watcher))
+        if not ender or not ender.allowed:
+            msg = self.hab.reply(route="/end/role/add",
+                                 data=dict(cid=self.hab.pre, role=Roles.watcher, eid=self.watcher))
+            self.hab.psr.parseOne(ims=msg)
+
         postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=self.watcher, topic="reply")
+        for msg in self.hab.db.cloneDelegation(self.hab.kever):
+            serder = serdering.SerderKERI(raw=msg)
+            postman.send(serder=serder, attachment=msg[serder.size:])
+
         for msg in self.hab.db.clonePreIter(pre=self.hab.pre):
             serder = serdering.SerderKERI(raw=msg)
             postman.send(serder=serder, attachment=msg[serder.size:])
 
         data = dict(cid=self.hab.pre,
-                    wid=self.watched,
+                    oid=self.watched,
                     oobi=self.oobi)
 
-        route = "/watcher/aid/add"
+        route = f"/watcher/{self.watcher}/add"
         msg = self.hab.reply(route=route, data=data)
+        self.hab.psr.parseOne(ims=bytes(msg))
         rpy = serdering.SerderKERI(raw=msg)
         postman.send(serder=rpy, attachment=msg[rpy.size:])
 

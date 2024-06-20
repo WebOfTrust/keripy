@@ -31,6 +31,7 @@ parser.add_argument("--authenticate", '-z', help="Prompt the controller for auth
                     action='store_true')
 parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
                     default=[], action="append", required=False)
+parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
 
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
@@ -66,7 +67,8 @@ def rotate(args):
                          cuts=opts.witsCut, adds=opts.witsAdd,
                          isith=opts.isith, nsith=opts.nsith,
                          count=opts.ncount, toad=opts.toad,
-                         data=opts.data, proxy=args.proxy, authenticate=args.authenticate, codes=args.code)
+                         data=opts.data, proxy=args.proxy, authenticate=args.authenticate,
+                         codes=args.code, codeTime=args.code_time)
 
     doers = [rotDoer]
 
@@ -122,7 +124,7 @@ class RotateDoer(doing.DoDoer):
 
     def __init__(self, name, base, bran, alias, endpoint=False, isith=None, nsith=None, count=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None, proxy=None, authenticate=False,
-                 codes=None):
+                 codes=None, codeTime=None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
 
@@ -149,6 +151,7 @@ class RotateDoer(doing.DoDoer):
         self.proxy = proxy
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
+        self.codeTime = codeTime
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
@@ -198,9 +201,10 @@ class RotateDoer(doing.DoDoer):
 
         auths = {}
         if self.authenticate:
+            codeTime = helping.fromIso8601(self.codeTime) if self.codeTime is not None else helping.nowIso8601()
             for arg in self.codes:
                 (wit, code) = arg.split(":")
-                auths[wit] = f"{code}#{helping.nowIso8601()}"
+                auths[wit] = f"{code}#{codeTime}"
 
             for wit in hab.kever.wits:
                 if wit in auths:
