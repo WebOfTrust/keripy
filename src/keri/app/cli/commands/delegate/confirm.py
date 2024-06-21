@@ -37,6 +37,7 @@ parser.add_argument("--authenticate", '-z', help="Prompt the controller for auth
                     action='store_true')
 parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
                     default=[], action="append", required=False)
+parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
 
 
 def confirm(args):
@@ -54,16 +55,18 @@ def confirm(args):
     auto = args.auto
     authenticate = args.authenticate
     codes = args.code
+    codeTime = args.code_time
 
     confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto,
-                              authenticate=authenticate, codes=codes)
+                              authenticate=authenticate, codes=codes, codeTime=codeTime)
 
     doers = [confirmDoer]
     return doers
 
 
 class ConfirmDoer(doing.DoDoer):
-    def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None):
+    def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None,
+                 codeTime=None):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
@@ -73,6 +76,7 @@ class ConfirmDoer(doing.DoDoer):
         self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
+        self.codeTime = codeTime
 
         exc = exchanging.Exchanger(hby=hby, handlers=[])
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
@@ -185,9 +189,11 @@ class ConfirmDoer(doing.DoDoer):
 
                         auths = {}
                         if self.authenticate:
+                            codeTime = helping.fromIso8601(
+                                self.codeTime) if self.codeTime is not None else helping.nowIso8601()
                             for arg in self.codes:
                                 (wit, code) = arg.split(":")
-                                auths[wit] = f"{code}#{helping.nowIso8601()}"
+                                auths[wit] = f"{code}#{codeTime}"
 
                             for wit in hab.kever.wits:
                                 if wit in auths:

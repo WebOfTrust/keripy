@@ -7,6 +7,7 @@ import datetime
 import json
 import logging
 from collections import namedtuple
+from dataclasses import asdict
 from urllib.parse import urlsplit
 from math import ceil
 from ordered_set import OrderedSet as oset
@@ -39,7 +40,7 @@ from .indexing import Siger
 from . import serdering
 
 from ..db import basing, dbing
-from ..db.basing import KeyStateRecord, StateEERecord
+from ..db.basing import KeyStateRecord, StateEERecord, OobiRecord
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
 
 
@@ -2098,8 +2099,6 @@ class Kever:
             raise ValidationError(f"Invalid sith = {serder.tholder} for keys = "
                                   f"{keys} for evt = {ked}.")
 
-
-
         # compute wits from existing .wits with new cuts and adds from event
         # use ordered set math ops to verify and ensure strict ordering of wits
         # cuts and add to ensure that indexed signatures on indexed witness
@@ -2117,7 +2116,6 @@ class Kever:
                                  "(wits)={wits} for event={ked}.")
 
         return tholder, toader, wits, cuts, adds
-
 
     def deriveBacks(self, serder):
         """Derives and return tuple of (wits, cuts, adds) for backers  given
@@ -2243,10 +2241,10 @@ class Kever:
                 (self.locallyOwned() or
                  self.locallyWitnessed(wits=wits))):
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   seqner=delseqner, saider=delsaider, local=local)
+                               seqner=delseqner, saider=delsaider, local=local)
             raise MisfitEventSourceError(f"Nonlocal source for locally owned"
-                                             f"or locally witnessed event"
-                                                 f" = {serder.ked}.")
+                                         f" or locally witnessed event"
+                                         f" = {serder.ked}, {wits}, {self.prefixes}")
 
         werfers = [Verfer(qb64=wit) for wit in wits]  # get witness public key verifiers
         # get unique verified wigers and windices lists from wigers list
@@ -2627,19 +2625,15 @@ class Kever:
                 # misfit escrow first. Mistfit escrow must first
                 # promote to local and reprocess event before we get to here
                 self.escrowDelegableEvent(serder=serder, sigers=sigers,
-                                          wigers=wigers,local=local)
+                                          wigers=wigers, local=local)
                 raise MissingDelegableApprovalError(f"Missing approval for "
                                                     f" delegation by {delpre} of"
-                                                         f"event = {serder.ked}.")
-
-                #self.cues.push(dict(kin="approveDelegation",
-                                        #delegator=kever.delpre,
-                                        #serder=serder))
+                                                    f"event = {serder.ked}.")
 
             else:  # not local delegator so escrow
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
                 raise MissingDelegationError(f"No delegation seal for delegator "
-                                         "{delpre} of evt = {serder.ked}.")
+                                             f"{delpre} of evt = {serder.ked}.")
 
         ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
         # ToDo XXXX need to replace Seqners with Numbers
@@ -2949,8 +2943,7 @@ class Kever:
         self.db.delegables.add(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.debug("Kever state: escrowed delegable event=\n%s\n",
-                    json.dumps(serder.ked, indent=1))
-
+                     json.dumps(serder.ked, indent=1))
 
     def escrowPSEvent(self, serder, sigers, wigers=None, local=True):
         """
@@ -2985,9 +2978,9 @@ class Kever:
             self.db.esrs.put(keys=dgkey, val=esr)
 
         snkey = snKey(serder.preb, serder.sn)
-        self.db.addPse(snkey, serder.saidb)  # b'EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk.00000000000000000000000000000001'
+        self.db.addPse(snkey, serder.saidb)
         logger.debug("Kever state: Escrowed partially signed or delegated "
-                    "event = %s\n", serder.ked)
+                     "event = %s\n", serder.ked)
 
 
     def escrowPACouple(self, serder, seqner, saider, local=True):
@@ -4087,6 +4080,7 @@ class Kevery:
         router.addRoute("/end/role/{action}", self, suffix="EndRole")
         router.addRoute("/loc/scheme", self, suffix="LocScheme")
         router.addRoute("/ksn/{aid}", self, suffix="KeyStateNotice")
+        router.addRoute("/watcher/{aid}/{action}", self, suffix="AddWatched")
 
     def processReplyEndRole(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
         """
@@ -4406,7 +4400,7 @@ class Kevery:
 
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, ksr=ksr, saider=ksaider, dater=dater)
-        self.cues.push(dict(kin="keyStateSaved", ksn=ksr._asdict()))
+        self.cues.push(dict(kin="keyStateSaved", ksn=asdict(ksr)))
 
     def updateEnd(self, keys, saider, allowed=None):
         """
@@ -4469,6 +4463,100 @@ class Kevery:
 
             self.db.ksns.rem(keys=keys)
             self.db.kdts.rem(keys=keys)
+
+    def processReplyAddWatched(self, *, serder, saider, route,
+                               cigars=None, tsgs=None, **kwargs):
+        """ Process one reply message for adding an AID for a watcher to watch
+
+        Process one reply message for adding an AID for a watcher to watch = /watcher/{aid}/add
+        with either attached nontrans receipt couples in cigars or attached trans
+        indexed sig groups in tsgs.
+        Assumes already validated saider, dater, and route from serder.ked
+
+        Parameters:
+            serder (SerderKERI): instance of reply msg (SAD)
+            saider (Saider): instance  from said in serder (SAD)
+            route (str): reply route
+            cigars (list): of Cigar instances that contain nontrans signing couple
+                          signature in .raw and public key in .verfer
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where:
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+        Reply Message:
+        {
+          "v" : "KERI10JSON00011c_",
+          "t" : "rpy",
+          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+          "dt": "2020-08-22T17:50:12.988921+00:00",
+          "r" : "/watcher/BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE/add",
+          "a" :
+          {
+            "cid": "EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
+            "oid": "EM0-i05TNZJZAoH3UR2nmLaU6JwyvPzhzS6YAfSVbMC5"
+            "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
+          }
+        }
+
+        """
+        aid = kwargs["aid"]
+        action = kwargs["action"]
+        # reply specific logic
+        if not route.startswith("/watcher"):
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
+                                  f"msg={serder.ked}.")
+
+        # reply specific logic
+        if action == "add":
+            enabled = True
+        elif action == "cut":
+            enabled = False
+        else:  # unsupported route
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
+                                  f"msg={serder.ked}.")
+        route = f"/watcher/{aid}"  # escrow based on route base
+        cigars = cigars if cigars is not None else []
+        tsgs = tsgs if tsgs is not None else []
+
+        data = serder.ked["a"]
+        cid = data["cid"]
+        oid = data["oid"]
+        oobi = data["oobi"] if "oobi" in data else None
+
+        keys = (cid, aid, oid)
+
+        osaider = self.db.wwas.get(keys=keys)  # get old said if any
+
+        # BADA Logic
+        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+                                        aid=cid, osaider=osaider, cigars=cigars,
+                                        tsgs=tsgs)
+        if not accepted:
+            raise UnverifiedReplyError(f"Unverified watcher add reply. {serder.ked}")
+
+        if oobi:
+            self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=help.nowIso8601()))
+        self.updateWatched(keys=keys, saider=saider, enabled=enabled)
+
+    def updateWatched(self, keys, saider, enabled=None):
+        """
+        Update loc auth database .lans and loc database .locs.
+
+        Parameters:
+            keys (tuple): of key strs for databases (eid, scheme)
+            saider (Saider): instance from said in reply serder (SAD)
+            enabled (bool): True means add observed to watcher, False means remove (cut)
+        """
+        self.db.wwas.pin(keys=keys, val=saider)  # overwrite
+        if observed := self.db.obvs.get(keys=keys):  # preexisting record
+            observed.enabled = enabled  # update preexisting record
+        else:  # no preexisting record
+            observed = basing.ObservedRecord(enabled=enabled, datetime=helping.nowIso8601())  # create new record
+
+        self.db.obvs.pin(keys=keys, val=observed)  # overwrite
 
     def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """
@@ -5175,6 +5263,14 @@ class Kevery:
 
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
+                    wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
+                    if not wigs:  # empty list
+                        # wigs maybe empty while waiting for first witness signature
+                        # which may not arrive until some time after event is fully signed
+                        # so just log for debugging but do not unescrow by raising
+                        # ValidationError
+                        logger.debug("Kevery unescrow wigs: No event wigs yet at."
+                                     "dig = %s", bytes(edig))
 
                     # seal source (delegator issuer if any)
                     delseqner = delsaider = None
@@ -5197,7 +5293,8 @@ class Kevery:
 
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
-                    self.processEvent(serder=eserder, sigers=sigers,
+                    wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
                                       delseqner=delseqner, delsaider=delsaider, local=esr.local)
 
                     # If process does NOT validate sigs or delegation seal (when delegated),

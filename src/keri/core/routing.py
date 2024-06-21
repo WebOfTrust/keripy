@@ -198,7 +198,6 @@ class Revery:
 
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
 
-
     def acceptReply(self, serder, saider, route, aid, osaider=None,
                     cigars=None, tsgs=None):
         """ Applies Best Available Data Acceptance policy to reply and signatures
@@ -494,8 +493,6 @@ class Revery:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrow attempt failed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow attempt failed: %s", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
                     self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only

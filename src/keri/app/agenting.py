@@ -581,6 +581,7 @@ class WitnessPublisher(doing.DoDoer):
 
         """
         self.hby = hby
+        self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
@@ -599,6 +600,7 @@ class WitnessPublisher(doing.DoDoer):
         while True:
             while self.msgs:
                 evt = self.msgs.popleft()
+                self.posted += 1
                 pre = evt["pre"]
                 msg = evt["msg"]
 
@@ -641,6 +643,10 @@ class WitnessPublisher(doing.DoDoer):
                 return True
 
         return False
+
+    @property
+    def idle(self):
+        return len(self.msgs) == 0 and self.posted == len(self.cues)
 
 
 class TCPMessenger(doing.DoDoer):

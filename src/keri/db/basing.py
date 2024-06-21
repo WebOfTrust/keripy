@@ -347,7 +347,6 @@ class OobiRecord:
     urls: list = None
 
 
-
 @dataclass
 class EndpointRecord:  # baser.ends
     """
@@ -494,6 +493,56 @@ class LocationRecord:  # baser.locs
     url: str  # full url including host:port/path?query scheme is optional
 
     # cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
+class ObservedRecord:  # baser.obvs
+    """
+    Watched Record with fields and keys to manage OIDs (Observed IDs) being watched by a watcher, keyed by
+    cid (controller ID), aid (watcher ID), and oid (observed ID).
+
+    The namespace is a tree of branches with each leaf at a
+    specific (cid, aid, oid). Retrieval by branch returns groups of leaves as
+    appropriate for a cid braanch or cid.aid branch.
+    Database Keys are (cid, aid, oid) where cid is attributable controller identifier
+    (qb64 prefix).
+
+    Attributes:
+        enabled (bool): AuthZ via expose message
+                        True means oid is enabled as being observed
+                        False means eid is disenabled being observed
+                        None means eid is neither enabled or disenabled
+        name (str): user friendly name for eid in role
+        datetime (str): Date time this record was last observed
+
+
+    A watcher end reply message is required from which the field values
+    for this record are extracted. A routes of /watcher/{aid}/add  /watcher/{aid}/cut
+    Uses add-cut model with allowed field
+    enabled==True oid is allowed (add) as being observed
+    enabled==False oid is disallowed (cut) as being observed
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rpy",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/watcher/BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE/add",
+      "a" :
+      {
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "oid": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      }
+    }
+
+    """
+    enabled: bool = None  # True eid enabled (add), False eid disenabled (cut), None neither
+    name: str = ""  # optional user friendly name of endpoint
+    datetime: str = None
 
     def __iter__(self):
         return iter(asdict(self))
@@ -1015,6 +1064,11 @@ class Baser(dbing.LMDBer):
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
                                  schema=LocationRecord, )
+        # observed oids by watcher by cid.aid.oid  (endpoint identifier)
+        # data extracted from reply loc
+        self.obvs = koming.Komer(db=self,
+                                 subkey='obvs.',
+                                 schema=ObservedRecord, )
 
         # index of last retrieved message from witness mailbox
         # TODO: clean
@@ -1094,6 +1148,11 @@ class Baser(dbing.LMDBer):
         # maps key=(prefix, aid) to val=said of key state
         # TODO: clean
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+
+        # Watcher watched SAID database for successfully saved watched AIDs for a watcher
+        # maps key=(cid, aid, oid) to val=said of rpy message
+        # TODO: clean
+        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Saider)
 
         # config loaded oobis to be processed asynchronously, keyed by oobi URL
         # TODO: clean
@@ -1181,6 +1240,9 @@ class Baser(dbing.LMDBer):
 
         # delegated unanchored escrow
         self.dune = subing.SerderSuber(db=self, subkey='dune.')
+
+        # delegate publication escrow for sending delegator info to my witnesses
+        self.dpub = subing.SerderSuber(db=self, subkey='dpub.')
 
         # completed group delegated AIDs
         # TODO: clean
@@ -1537,7 +1599,6 @@ class Baser(dbing.LMDBer):
         msg.extend(atc)
         return msg
 
-
     def cloneDelegation(self, kever):
         """
         Recursively clone delegation chain from AID of Kever if one exits.
@@ -1552,7 +1613,6 @@ class Baser(dbing.LMDBer):
 
             for dmsg in self.clonePreIter(pre=kever.delpre, fn=0):
                 yield dmsg
-
 
     def findAnchoringSealEvent(self, pre, seal, sn=0):
         """

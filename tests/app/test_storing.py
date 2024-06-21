@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.peer.mailboxing
+tests.app.storing
 
 """
 import os
