@@ -6,6 +6,7 @@ keri.app.watching module
 """
 import random
 from collections import namedtuple
+from dataclasses import dataclass
 
 from hio.base import doing
 from hio.help import decking
@@ -19,6 +20,7 @@ Stateage = namedtuple("Stateage", 'even ahead behind duplicitous')
 States = Stateage(even="even", ahead="ahead", behind="behind", duplicitous="duplicitous")
 
 
+@dataclass
 class DiffState:
     """ Difference between a remote KeyStateRecord and local for the same AID.
 
@@ -191,27 +193,25 @@ def diffState(wit, preksn, witksn):
         state (WitnessState): record indicating the differenced between the two provided KSN records
 
     """
-    witstate = DiffState()
-    witstate.wit = wit
     mysn = int(preksn.s, 16)
     mydig = preksn.d
-    witstate.sn = int(witksn.f, 16)
-    witstate.dig = witksn.d
+    sn = int(witksn.s, 16)
+    dig = witksn.d
 
     # At the same sequence number, check the DIGs
-    if mysn == witstate.sn:
-        if mydig == witstate.dig:
-            witstate.state = States.even
+    if mysn == sn:
+        if mydig == dig:
+            state = States.even
         else:
-            witstate.state = States.duplicitous
+            state = States.duplicitous
 
     # This witness is behind and will need to be caught up.
-    elif mysn > witstate.sn:
-        witstate.state = States.behind
+    elif mysn > sn:
+        state = States.behind
 
     # mysn < witstate.sn - We are behind this witness (multisig or restore situation).
     # Must ensure that controller approves this event or a recovery rotation is needed
     else:
-        witstate.state = States.ahead
+        state = States.ahead
 
-    return witstate
+    return DiffState(wit, state, sn, dig)
