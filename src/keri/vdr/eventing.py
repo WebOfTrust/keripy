@@ -1559,8 +1559,7 @@ class Tevery:
                                      "".format(regk, self.registries))
             else:
                 if regk in self.registries:  # local event when not in local mode
-                    raise ValueError("Local event regk={} when nonlocal mode."
-                                     "".format(regk))
+                    pass
 
         if regk not in self.tevers:  # first seen for this registry
             if ilk in [Ilks.vcp]:
