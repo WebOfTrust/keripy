@@ -54,24 +54,26 @@ class AddDoer(doing.DoDoer):
         self.hab = self.hby.habByName(alias)
         self.org = connecting.Organizer(hby=self.hby)
 
+        wat = None
         if watcher in self.hby.kevers:
             wat = watcher
         else:
-            wat = self.org.find("alias", watcher)
-            if len(wat) != 1:
-                raise ValueError(f"invalid recipient {watcher}")
-            wat = wat[0]['id']
+            contacts = self.org.find("alias", watcher)
+            for contact in contacts:
+                if contact['alias'] == watcher:
+                    wat = contact['id']
 
         if not wat:
             raise ValueError(f"unknown watcher {watcher}")
 
+        watd = None
         if watched in self.hby.kevers:
             watd = watched
         else:
-            watd = self.org.find("alias", watched)
-            if len(watd) != 1:
-                raise ValueError(f"invalid recipient {watched}")
-            watd = watd[0]['id']
+            contacts = self.org.find("alias", watched)
+            for contact in contacts:
+                if contact['alias'] == watched:
+                    watd = contact['id']
 
         if not watd:
             raise ValueError(f"unknown watched {watched}")
