@@ -473,7 +473,7 @@ class SignifyRegistry(BaseRegistry):
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
         ievt = self.reger.getTvt(dgKey(pre=vci, dig=vcser))
-        iserder = serdering.serderACDC(raw=bytes(ievt))  # Serder(raw=bytes(ievt))
+        iserder = serdering.SerderACDC(raw=bytes(ievt))  # Serder(raw=bytes(ievt))
 
         if self.noBackers:
             serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)

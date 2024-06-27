@@ -67,13 +67,16 @@ def test_diffstate():
     diffstate = watching.diffState(wat, ksr0, ksr1)
 
     # Sequence numbers are the same, digest different == duplicitous
-    assert asdict(diffstate) == {'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s',
+    assert asdict(diffstate) == {'dig': 'Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc',
+                                 'pre': 'EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
+                                 'sn': 0,
                                  'state': 'duplicitous',
-                                 'sn': 0, 'dig': 'Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc'}
+                                 'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}
 
     # Same state == event
     diffstate = watching.diffState(wat, ksr0, ksr0)
     assert asdict(diffstate) == {'dig': 'EBiIFxr_o1b4x1YR21PblAFpFG61qDghqFBDyVSOXYW0',
+                                 'pre': 'EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
                                  'sn': 0,
                                  'state': 'even',
                                  'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}
@@ -83,6 +86,7 @@ def test_diffstate():
 
     # Sequence numbers are the same, digest different == duplicitous
     assert asdict(diffstate) == {'dig': 'Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc',
+                                 'pre': 'EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
                                  'sn': 2,
                                  'state': 'ahead',
                                  'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}
@@ -92,6 +96,7 @@ def test_diffstate():
 
     # Sequence numbers are the same, digest different == duplicitous
     assert asdict(diffstate) == {'dig': 'Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc',
+                                 'pre': 'EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
                                  'sn': 2,
                                  'state': 'behind',
                                  'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}
@@ -121,7 +126,8 @@ def test_adjudicator():
         assert cue == {'cid': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
                        'kin': 'keyStateConsistent',
                        'oid': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                       'states': [DiffState(wit='BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s',
+                       'states': [DiffState(pre="EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3",
+                                            wit='BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s',
                                             state='even',
                                             sn=0,
                                             dig='EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3')],
@@ -132,7 +138,8 @@ def test_adjudicator():
         adj.adjudicate(hab.pre, 1)
         assert len(adj.cues) == 1
         cue = adj.cues.pull()
-        assert cue == {'behind': [DiffState(wit='BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s',
+        assert cue == {'behind': [DiffState(pre="EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3",
+                                            wit='BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s',
                                             state='behind',
                                             sn=0,
                                             dig='EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3')],
@@ -147,7 +154,8 @@ def test_adjudicator():
         assert len(adj.cues) == 1
         cue = adj.cues.pull()
         assert cue == {'cid': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                       'dups': [DiffState(wit='BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s',
+                       'dups': [DiffState(pre="EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3",
+                                          wit='BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s',
                                           state='duplicitous',
                                           sn=1,
                                           dig='EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3')],

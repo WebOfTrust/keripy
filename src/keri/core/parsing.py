@@ -528,9 +528,9 @@ class Parser:
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg non-extraction error: %s", ex.args[0])
+                    logger.exception("Kevery msg non-extraction error: %s", ex)
                 else:
-                    logger.exception("Kevery msg non-extraction error: %s", ex.args[0])
+                    logger.exception("Kevery msg non-extraction error: %s", ex)
             finally:
                 done = True
 

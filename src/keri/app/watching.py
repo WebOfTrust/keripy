@@ -27,6 +27,7 @@ class DiffState:
     Uses Stateage to represent whether the remote KSR is even, ahead, behind or duplicitous
 
     """
+    pre: str  # The AID of the KSR
     wit: str  # The entity reporting the KSR (non-local)
     state: Stateage  # The state of the remote KSR relative to local
     sn: int  # The sequence number of the remote KSR
@@ -193,10 +194,15 @@ def diffState(wit, preksn, witksn):
         state (WitnessState): record indicating the differenced between the two provided KSN records
 
     """
+    mypre = preksn.i
+    pre = witksn.i
     mysn = int(preksn.s, 16)
     mydig = preksn.d
     sn = int(witksn.s, 16)
     dig = witksn.d
+
+    if pre != mypre:
+        raise ValueError(f"can't compare key states from different AIDs {mypre}/{pre}")
 
     # At the same sequence number, check the DIGs
     if mysn == sn:
@@ -214,4 +220,4 @@ def diffState(wit, preksn, witksn):
     else:
         state = States.ahead
 
-    return DiffState(wit, state, sn, dig)
+    return DiffState(pre, wit, state, sn, dig)

@@ -119,7 +119,7 @@ def createHttpServer(host, port, app, keypath=None, certpath=None, cafilepath=No
     Parameters:
         host(str)          : host to bind to for this server, or None for default of '0.0.0.0', all ifaces
         port (int)         : port to listen on for all HTTP(s) server instances
-        app (falcon.App)   : application instance to pass to the http.Server instance
+        app (Any)          : WSGI application instance to pass to the http.Server instance
         keypath (string)   : the file path to the TLS private key
         certpath (string)  : the file path to the TLS signed certificate (public key)
         cafilepath (string): the file path to the TLS CA certificate chain file
@@ -506,7 +506,7 @@ class MailboxDirector(doing.DoDoer):
     """
 
     def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None,
-                 tvy=None, **kwa):
+                 tvy=None, witnesses=True, **kwa):
         """
         Initialize instance.
 
@@ -530,6 +530,7 @@ class MailboxDirector(doing.DoDoer):
         self.pollers = list()
         self.prefixes = oset()
         self.cues = cues if cues is not None else decking.Deck()
+        self.witnesses = witnesses
 
         self.ims = ims if ims is not None else bytearray()
 
@@ -622,11 +623,12 @@ class MailboxDirector(doing.DoDoer):
                 self.pollers.append(poller)
                 self.extend([poller])
 
-        wits = hab.kever.wits
-        for wit in wits:
-            poller = Poller(hab=hab, topics=self.topics, witness=wit)
-            self.pollers.append(poller)
-            self.extend([poller])
+        if self.witnesses:
+            wits = hab.kever.wits
+            for wit in wits:
+                poller = Poller(hab=hab, topics=self.topics, witness=wit)
+                self.pollers.append(poller)
+                self.extend([poller])
 
         self.prefixes.add(hab.pre)
 
