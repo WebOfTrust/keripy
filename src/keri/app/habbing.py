@@ -342,7 +342,7 @@ class Habery:
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                  name=habord.name, pre=habord.sid)
             elif habord.sid and habord.mid:
-                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                hab = SignifyGroupHab(smids=habord.smids, ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                       name=habord.name, pre=pre)
                 groups.append(habord)
