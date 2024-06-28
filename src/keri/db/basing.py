@@ -593,6 +593,9 @@ def reopenDB(db, clear=False, **kwa):
         db.close(clear=clear)
 
 
+KERIBaserMapSizeKey = "KERI_BASER_MAP_SIZE"
+
+
 class Baser(dbing.LMDBer):
     """
     Baser sets up named sub databases with Keri Event Logs within main database
@@ -934,6 +937,9 @@ class Baser(dbing.LMDBer):
         self.groups = oset()  # group hab ids
         self._kevers = dbdict()
         self._kevers.db = self  # assign db for read through cache of kevers
+
+        if (mapSize := os.getenv(KERIBaserMapSizeKey)) is not None:
+            self.MapSize = int(mapSize)
 
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
