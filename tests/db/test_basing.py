@@ -2338,6 +2338,16 @@ def test_group_members():
 
     """End Test"""
 
+def test_KERI_BASER_MAP_SIZE_handles_bad_values():
+    # Base case works because of above tests, they will all break if happy path
+    # is broken.  We'll just test some unhappy values.
+
+    # Pytest will fail if any exceptions raised here.
+    os.putenv("KERI_BASER_MAP_SIZE", "foo") # Not an int
+    baser = Baser(reopen=False)
+    os.putenv("KERI_BASER_MAP_SIZE", "1.0") # Not an int
+    baser = Baser(reopen=False)
+
 
 if __name__ == "__main__":
     test_baser()
