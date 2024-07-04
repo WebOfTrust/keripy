@@ -26,7 +26,7 @@ to get a version string similar to the following:
 ### Local installation - Docker build
 Run `make build-keri` to build your docker image.
 
-Then run `docker run --pull=never -it --entrypoint /bin/bash weboftrust/keri:1.1.15` and you can run `kli version` from within the running container to play with KERIpy.
+Then run `docker run --pull=never -it --entrypoint /bin/bash weboftrust/keri:1.1.16` and you can run `kli version` from within the running container to play with KERIpy.
 
 Make sure the image tag matches the version used in the `Makefile`.
 We use `--pull=never` to ensure that docker does not implicitly pull a remote image and relies on the local image tagged during `make build-keri`.
