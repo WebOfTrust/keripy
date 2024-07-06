@@ -942,7 +942,8 @@ class Baser(dbing.LMDBer):
             try:
                 self.MapSize = int(mapSize)
             except ValueError:
-                logger.exception("KERI_BASER_MAP_SIZE must be an integer value!  Will continue to use default keripy value of 104857600!")
+                logger.error("KERI_BASER_MAP_SIZE must be an integer value >1!")
+                raise
 
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
