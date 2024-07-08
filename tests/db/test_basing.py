@@ -2338,6 +2338,22 @@ def test_group_members():
 
     """End Test"""
 
+def test_KERI_BASER_MAP_SIZE_handles_bad_values(caplog):
+    # Base case works because of above tests, they will all break if happy path
+    # is broken.  We'll just test some unhappy values.
+
+    # Pytest will fail if any exceptions raised here.
+    os.environ["KERI_BASER_MAP_SIZE"] = "foo" # Not an int
+    err_msg = "KERI_BASER_MAP_SIZE must be an integer value > 1!"
+    with pytest.raises(ValueError):
+        Baser(reopen=False, temp=True)
+        assert err_msg in caplog.messages
+    os.environ["KERI_BASER_MAP_SIZE"] = "1.0" # Not an int
+    with pytest.raises(ValueError):
+        Baser(reopen=False, temp=True)
+        assert err_msg in caplog.messages
+    os.environ.pop("KERI_BASER_MAP_SIZE")
+
 
 if __name__ == "__main__":
     test_baser()
