@@ -188,6 +188,20 @@ class DicterSuber(subing.Suber):
         for key, val in self.db.getAllItemIter(db=self.sdb, key=self._tokey(keys), split=False):
             yield self._tokeys(key), self.klas(raw=bytes(val))
 
+    def getItemRvsdIter(self, keys: Union[str, Iterable] = b""):
+        """ Return reversed iterator over the all the items in subdb
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            iterator: of tuples of keys tuple and val serdering.SerderKERI for
+            each entry in db
+
+        """
+        for key, val in self.db.getAllItemRvsdIter(db=self.sdb, key=self._tokey(keys), split=False):
+            yield self._tokeys(key), self.klas(raw=bytes(val))
+
     def cntAll(self):
         """
         Return count over the all the items in subdb
@@ -323,7 +337,7 @@ class Noter(dbing.LMDBer):
 
         """
         return self.notes.cntAll()
-
+    
     def getNotes(self, start=0, end=25):
         """
         Returns list of tuples (note, cigar) of notes for controller of agent
@@ -353,7 +367,49 @@ class Noter(dbing.LMDBer):
                 break
 
         return notes
+    
+    def getFltNotes(self, start=0, end=25, rvsd=False, read=None, route=None):
+        """
+        Returns list of tuples (note, cigar) of filtered notes for controller of agent
 
+        Parameters:
+            start (int): number of item to start
+            end (int): number of last item to return
+            reversed (bool): reverse order of notes
+            read (bool): filter by read status
+            route (str): filter by route if provided in attrs
+
+        """
+        if hasattr(start, "isoformat"):
+            start = start.isoformat()
+
+        notes = []
+        it = self.notes.getItemIter(keys=()) if not rvsd else self.notes.getItemRvsdIter(keys=())
+        idx = 0 
+
+        for ((_, _), note) in it:
+            if (read is None or note.read == read) and (route is None or ('r' in  note.attrs and note.attrs['r'] == route)):
+                if idx >= start and (end == -1 or idx <= end):
+                    cig = self.ncigs.get(keys=(note.rid,))
+                    notes.append((note, cig))
+                idx += 1
+
+        return notes
+    
+    def getFltNoteCnt(self, read=None, route=None):
+        """
+        Return count over filtered Notes
+
+        Returns:
+            int: count of all filtered items
+
+        """
+        it = self.notes.getItemIter(keys=())
+        count = 0 
+        for ((_, _), note) in it:
+            if (read is None or note.read == read) and (route is None or ('r' in  note.attrs and note.attrs['r'] == route)):
+                count += 1
+        return count
 
 class Notifier:
     """ Class for sending notifications to the controller of an agent.
@@ -497,3 +553,31 @@ class Notifier:
             notes.append(note)
 
         return notes
+    
+    def getFltNotes(self, start=0, end=24, rvsd=False, read=None, route=None):
+        """
+        Returns list of tuples (note, cigar) of notes for controller of agent
+
+        Parameters:
+            start (int): number of item to start
+            end (int): number of last item to return
+
+        """
+        notesigs = self.noter.getFltNotes(start, end, rvsd, read, route)
+        notes = []
+        for note, cig in notesigs:
+            if not self.hby.signator.verify(ser=note.raw, cigar=cig):
+                raise kering.ValidationError("note stored without valid signature")
+
+            notes.append(note)
+
+        return notes
+    def getFltNoteCnt(self, read=None, route=None):
+        """
+        Return count over the all Notes
+
+        Returns:
+            int: count of all items
+
+        """
+        return self.noter.getFltNoteCnt(read, route)

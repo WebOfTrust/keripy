@@ -581,6 +581,37 @@ class LMDBer(filing.Filer):
                     splits = (bytes(key), val)
                 yield tuple(splits)
 
+    def getAllItemRvsdIter(self, db, key=b'', split=True, sep=b'.'):
+        """
+        Returns iterator of item duple (key, val), at each key over all
+        keys in db in reverser order. If split is true then the key is split at sep and instead
+        of returing duple it results tuple with one entry for each key split
+        as well as the value.
+
+        Works for both dupsort==False and dupsort==True
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is key location in db to resume replay,
+                   If empty then last key in database
+            split (bool): True means split key at sep before returning
+            sep (bytes): separator char for key
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if key == b'' or not cursor.set_key(key):  #  moves to val at key = key, first if empty
+                cursor.last()
+
+            for key, val in cursor.iterprev():  # return key, val at cursor
+                if split:
+                    splits = bytes(key).split(sep)
+                    splits.append(val)
+                else:
+                    splits = (bytes(key), val)
+                yield tuple(splits)
+
 
     def getTopItemIter(self, db, key=b''):
         """
