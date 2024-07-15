@@ -261,6 +261,8 @@ class Revery:
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
+                logger.info("Kevery process: skipped invalid transferable verfers"
+                            " on reply said=", serder.said)
                 continue  # skip invalid transferable
 
             if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own cig
@@ -338,6 +340,8 @@ class Revery:
             if sdig is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
+                logger.info("Kevery process: escrowing without key state for signer"
+                            " on reply said=", serder.said)
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  ssaider=ssaider, sigers=sigers)

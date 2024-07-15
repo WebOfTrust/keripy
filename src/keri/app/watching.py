@@ -101,7 +101,7 @@ class Adjudicator:
             raise ValueError(f"Threshold of {toad} is greater than number watchers {len(watchers)}")
 
         states = []
-        mystate = self.hab.kever.state()
+        mystate = self.hab.kevers[watched].state()
         for watcher in watchers:
             saider = self.hab.db.knas.get(keys=(watched, watcher))
             if saider is None:

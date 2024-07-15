@@ -382,7 +382,7 @@ class Oobiery:
                                         aid=aid, osaider=None, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise UnverifiedReplyError(f"Unverified introduciton reply. {serder.ked}")
+            raise UnverifiedReplyError(f"Unverified introduction reply. {serder.ked}")
 
         obr = basing.OobiRecord(cid=cid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)

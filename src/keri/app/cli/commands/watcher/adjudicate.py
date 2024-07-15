@@ -133,10 +133,11 @@ class AdjudicationDoer(doing.DoDoer):
 
                 case "keyStateUpdate":
                     ahds = cue["aheads"]
-                    logger.info(f"Threshold ({self.toad}) satisfying number of watchers ({len(ahds)}) are ahead")
+                    print(f"Threshold ({self.toad}) satisfying number of watchers ({len(ahds)}) are ahead")
                     for state in ahds:
-                        logger.info(f"\tWatcher {state.wit} at Seq No. {state.sn} with digest: {state.dig}")
+                        print(f"\tWatcher {state.wit} at Seq No. {state.sn} with digest: {state.dig}")
 
+                    print("Submitting query to update local copy of latest events.")
                     state = random.choice(ahds)
                     querier = querying.SeqNoQuerier(hby=self.hby, hab=hab, pre=self.watched, sn=state.sn,
                                                     wits=[state.wit])
