@@ -2130,8 +2130,8 @@ class Kever:
         Parameters:
             serder (SerderKeri): instance of current event
         """
-        if serder.ilk not in (Ilks.rot, Ilks.drt):  # no changes
-            return (self.wits, self.cuts, self.adds)
+        if serder.ilk not in (Ilks.rot, Ilks.drt) or self.sn >= serder.sn:  # no changes
+            return self.wits, self.cuts, self.adds
 
         witset = oset(self.wits)
         cuts = serder.cuts
@@ -4170,7 +4170,8 @@ class Kevery:
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise UnverifiedReplyError(f"Unverified end role reply. {serder.ked}")
+            logger.debug(f"Unverified end role reply ked={serder.ked}")
+            raise UnverifiedReplyError(f"Unverified end role reply. {serder.said}")
 
         self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
 

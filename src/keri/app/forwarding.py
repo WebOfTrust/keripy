@@ -85,7 +85,7 @@ class Poster(doing.DoDoer):
                     elif Roles.witness in ends:
                         yield from self.forwardToWitness(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
                     else:
-                        logger.info(f"No end roles for {recp} to send evt={recp}")
+                        logger.info(f"No end roles for {recp} to send evt={srdr.said}")
                         continue
                 except kering.ConfigurationError as e:
                     logger.error(f"Error sending to {recp} with ends={ends}.  Err={e}")
