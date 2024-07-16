@@ -11,6 +11,7 @@ from keri.core import coring, eventing, parsing, serdering
 from keri.vdr import eventing as veventing
 from keri.db import dbing
 from keri.peer import exchanging
+from keri.kering import Roles
 
 
 def test_counselor():
@@ -806,3 +807,89 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         prefixers = hby1.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 1
         assert prefixers[0].qb64 == ghab2.mhab.pre
+
+def test_multisig_reply(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+        assert ghab1.pre == "EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy"
+        assert ghab2.pre == "EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy"
+        assert ghab3.pre == "EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy"
+
+        assert ghab3.kever.tholder.thold == 3
+
+        eid = "EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ26c0dUsS5p766q"
+        msg = ghab1.makeEndRole(eid, role=Roles.agent)
+        assert msg == (b'{"v":"KERI10JSON000111_","t":"rpy","d":"EDRqljKSfw4948zVq-NJ16kP'
+                       b'jnrQl6YKLloSDR_mSGZ1","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"/end/role/add","a":{"cid":"EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQS'
+                       b'RskH3BZZiy","role":"agent","eid":"EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ'
+                       b'26c0dUsS5p766q"}}-VA0-FABEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3'
+                       b'BZZiy0AAAAAAAAAAAAAAAAAAAAAAAEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSR'
+                       b'skH3BZZiy-AABBADkAXvMC0F0kPDahcMVlzbcMhWi96vSjPMsx17MESoy4TzZfNp'
+                       b'WGDjm8fcyhe5Nh_Eqc6-jLI0tvQfAUgp2HHEB')
+
+        ghab1.psr.parseOne(ims=bytes(msg))
+        serder = serdering.SerderKERI(raw=bytes(msg))
+
+        route = "/end/role"
+        assert ghab1.db.sdts.get(keys=(serder.said,)).dts == "2021-01-01T00:00:00.000000+00:00"
+        assert ghab1.db.rpys.get(keys=(serder.said,)).said == serder.said
+        assert ghab1.db.rpes.get(keys=(route,))[0].qb64 == serder.said
+
+        msg = ghab2.makeEndRole(eid, role=Roles.agent)
+        assert msg == (b'{"v":"KERI10JSON000111_","t":"rpy","d":"EDRqljKSfw4948zVq-NJ16kP'
+                       b'jnrQl6YKLloSDR_mSGZ1","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"/end/role/add","a":{"cid":"EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQS'
+                       b'RskH3BZZiy","role":"agent","eid":"EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ'
+                       b'26c0dUsS5p766q"}}-VA0-FABEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3'
+                       b'BZZiy0AAAAAAAAAAAAAAAAAAAAAAAEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSR'
+                       b'skH3BZZiy-AABBBDcXYcNf6xrJX0ziLLMzuNpBN-kubJv9ZjdUCYwZIaqG8RWcy3'
+                       b'Lv0897bSiGuam6Yh1bxmg9lxwwdYVWqIvagUL')
+
+        ghab1.psr.parseOne(ims=bytes(msg))
+
+        endRole = ghab1.loadEndRole(cid=ghab1.pre, eid=eid, role=Roles.agent)
+        assert len(endRole) == 0
+
+        msg = ghab3.makeEndRole(eid, role=Roles.agent)
+        assert msg == (b'{"v":"KERI10JSON000111_","t":"rpy","d":"EDRqljKSfw4948zVq-NJ16kP'
+                       b'jnrQl6YKLloSDR_mSGZ1","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"/end/role/add","a":{"cid":"EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQS'
+                       b'RskH3BZZiy","role":"agent","eid":"EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ'
+                       b'26c0dUsS5p766q"}}-VA0-FABEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3'
+                       b'BZZiy0AAAAAAAAAAAAAAAAAAAAAAAEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSR'
+                       b'skH3BZZiy-AABBCBR-YODIoQxmoCbageJFteUXJS5-18SpKbC8vIyuLAbKrv2Wg1'
+                       b'lUpXbaRaejCfknSZSRtfvTB4T_SBKC3KU8YkD')
+        ghab1.psr.parseOne(ims=bytes(msg))
+
+        assert ghab1.db.rpes.get(keys=(route,))[0].qb64 == serder.said
+
+        ghab1.psr.rvy.processEscrowReply()
+
+        assert len(ghab1.db.rpes.get(keys=(route,))) == 0
+        endRole = ghab1.loadEndRole(cid=ghab1.pre, eid=eid, role=Roles.agent)
+        assert endRole == (b'{"v":"KERI10JSON000111_","t":"rpy","d":"EDRqljKSfw4948zVq-NJ16kP'
+                           b'jnrQl6YKLloSDR_mSGZ1","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                           b'":"/end/role/add","a":{"cid":"EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQS'
+                           b'RskH3BZZiy","role":"agent","eid":"EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ'
+                           b'26c0dUsS5p766q"}}-VBg-FABEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3'
+                           b'BZZiy0AAAAAAAAAAAAAAAAAAAAAAAEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSR'
+                           b'skH3BZZiy-AADBADkAXvMC0F0kPDahcMVlzbcMhWi96vSjPMsx17MESoy4TzZfNp'
+                           b'WGDjm8fcyhe5Nh_Eqc6-jLI0tvQfAUgp2HHEBBBDcXYcNf6xrJX0ziLLMzuNpBN-'
+                           b'kubJv9ZjdUCYwZIaqG8RWcy3Lv0897bSiGuam6Yh1bxmg9lxwwdYVWqIvagULBCB'
+                           b'R-YODIoQxmoCbageJFteUXJS5-18SpKbC8vIyuLAbKrv2Wg1lUpXbaRaejCfknSZ'
+                           b'SRtfvTB4T_SBKC3KU8YkD')
+
+        ghab1.psr.parseOne(ims=bytes(msg))
+        ghab1.psr.rvy.processEscrowReply()
+        endRole = ghab1.loadEndRole(cid=ghab1.pre, eid=eid, role=Roles.agent)
+        assert endRole == (b'{"v":"KERI10JSON000111_","t":"rpy","d":"EDRqljKSfw4948zVq-NJ16kP'
+                           b'jnrQl6YKLloSDR_mSGZ1","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                           b'":"/end/role/add","a":{"cid":"EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQS'
+                           b'RskH3BZZiy","role":"agent","eid":"EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ'
+                           b'26c0dUsS5p766q"}}-VBg-FABEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3'
+                           b'BZZiy0AAAAAAAAAAAAAAAAAAAAAAAEERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSR'
+                           b'skH3BZZiy-AADBADkAXvMC0F0kPDahcMVlzbcMhWi96vSjPMsx17MESoy4TzZfNp'
+                           b'WGDjm8fcyhe5Nh_Eqc6-jLI0tvQfAUgp2HHEBBBDcXYcNf6xrJX0ziLLMzuNpBN-'
+                           b'kubJv9ZjdUCYwZIaqG8RWcy3Lv0897bSiGuam6Yh1bxmg9lxwwdYVWqIvagULBCB'
+                           b'R-YODIoQxmoCbageJFteUXJS5-18SpKbC8vIyuLAbKrv2Wg1lUpXbaRaejCfknSZ'
+                           b'SRtfvTB4T_SBKC3KU8YkD')
