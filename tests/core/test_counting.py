@@ -74,7 +74,9 @@ def test_codexes_tags():
         'SadPathSigGroups': '-J',
         'RootSadPathSigGroups': '-K',
         'PathedMaterialGroup': '-L',
+        'BigPathedMaterialGroup': '-0L',
         'AttachmentGroup': '-V',
+        'ESSRPayloadGroup': '-Z',
         'BigAttachmentGroup': '-0V',
         'KERIACDCGenusVersion': '--AAA'
     }
@@ -151,8 +153,10 @@ def test_codexes_tags():
         'SadPathSigGroups': 'SadPathSigGroups',
         'RootSadPathSigGroups': 'RootSadPathSigGroups',
         'PathedMaterialGroup': 'PathedMaterialGroup',
+        'BigPathedMaterialGroup': 'BigPathedMaterialGroup',
         'AttachmentGroup': 'AttachmentGroup',
         'BigAttachmentGroup': 'BigAttachmentGroup',
+        'ESSRPayloadGroup': 'ESSRPayloadGroup',
         'KERIACDCGenusVersion': 'KERIACDCGenusVersion'
     }
 
@@ -353,6 +357,7 @@ def test_counter_class():
                 '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
@@ -663,10 +668,10 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    # test with big codes index=1024
-    count = 1024
+    # test with big codes index=100024000
+    count = 100024000
     qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
-    assert qsc == '-0VAAAQA'
+    assert qsc == '-0VF9j7A'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -714,6 +719,66 @@ def test_counter_v1():
     counter._bexfil(qb2)
     assert counter.code == code
     assert counter.tag == AllTags.BigAttachmentGroup
+    assert counter.count == count
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qb2
+    assert counter.version == Vrsn_1_0
+
+    # Test ._binfil
+    test = counter._binfil()
+    assert test == qb2
+
+    # test BigPathedMaterialGroup with big codes index=100024000
+    count = 100024000
+    qsc = CtrDex.BigPathedMaterialGroup + intToB64(count, l=5)
+    assert qsc == '-0LF9j7A'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.BigPathedMaterialGroup, count=count, gvrsn=Vrsn_1_0)
+    assert counter.code == CtrDex.BigPathedMaterialGroup
+    assert counter.tag == AllTags.BigPathedMaterialGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
+
+    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
+    assert counter.code == CtrDex.BigPathedMaterialGroup
+    assert counter.tag == AllTags.BigPathedMaterialGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
+
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
+    assert counter.code == CtrDex.BigPathedMaterialGroup
+    assert counter.tag == AllTags.BigPathedMaterialGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
+
+    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
+    assert counter.code == CtrDex.BigPathedMaterialGroup
+    assert counter.tag == AllTags.BigPathedMaterialGroup
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
+
+    # Test ._bexfil
+    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  #
+    code = counter.code
+    count = counter.count
+    qb2 = counter.qb2
+    counter._bexfil(qb2)
+    assert counter.code == code
+    assert counter.tag == AllTags.BigPathedMaterialGroup
     assert counter.count == count
     assert counter.qb64 == qsc
     assert counter.qb2 == qb2

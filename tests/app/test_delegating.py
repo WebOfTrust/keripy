@@ -129,16 +129,16 @@ def test_delegation_request(mockHelpingNowUTC):
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADECnBl'
-                       b'0c14SVi7Keh__sd1PVhinSy-itPr33ZxvSjJYFastqXw9ZTFGNKsY6iALUk5xP3S'
-                       b'399tJrPFe7PtuNAN')
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP'
+                       b'6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J'
+                       b'_oOixLET3mFZUu0A')
 
         assert exn.ked["r"] == '/delegate/request'
-        assert exn.saidb == b'EOiDc2wEmhHc7sbLG64y2gveCIRlFe4BuISaz0mlOuZz'
+        assert exn.saidb == b'EHPkcmdLGql9_1WD0wl0OalYk8PcF4HMMd7gGi-iqfSe'
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADECnBl'
-                       b'0c14SVi7Keh__sd1PVhinSy-itPr33ZxvSjJYFastqXw9ZTFGNKsY6iALUk5xP3S'
-                       b'399tJrPFe7PtuNAN')
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP'
+                       b'6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J'
+                       b'_oOixLET3mFZUu0A')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         embeds = exn.ked['e']

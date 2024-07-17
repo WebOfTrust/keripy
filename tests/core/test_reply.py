@@ -22,8 +22,7 @@ from keri.core.coring import MtrDex
 
 from keri.db import basing
 from keri.app import habbing, keeping
-
-
+from keri.kering import Roles
 
 logger = help.ogler.getLogger()
 
@@ -1281,6 +1280,166 @@ def test_reply(mockHelpingNowUTC):
     assert not os.path.exists(tamHby.ks.path)
     assert not os.path.exists(tamHby.db.path)
     """Done Test"""
+
+
+def test_watcher_add_cut():
+    salt = core.Salter(raw=b'abcdef0123456789').qb64
+
+    with habbing.openHby(name="con", base="test", salt=salt) as conHby, \
+            habbing.openHby(name="wat0", base="test", salt=salt) as wat0hby, \
+            habbing.openHby(name="wat1", base="test", salt=salt) as wat1hby, \
+            habbing.openHby(name="wat2", base="test", salt=salt) as wat2hby, \
+            habbing.openHby(name="obv0", base="test", salt=salt) as obv0hby, \
+            habbing.openHby(name="obv1", base="test", salt=salt) as obv1hby, \
+            habbing.openHby(name="obv2", base="test", salt=salt) as obv2hby:
+
+        conHab = conHby.makeHab(name="con", isith="1", icount=1, transferable=True)
+        assert conHab.kever.prefixer.transferable
+        conKvy = eventing.Kevery(db=conHab.db, lax=False, local=False)
+
+        wat0hab = wat0hby.makeHab(name='wat0', isith="1", icount=1, transferable=False)
+        assert not wat0hab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        wat0kvy = eventing.Kevery(db=wat0hab.db, lax=False, local=False)
+
+        wat1hab = wat1hby.makeHab(name='wat1', isith="1", icount=1, transferable=False)
+        assert not wat1hab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        wat1kvy = eventing.Kevery(db=wat1hab.db, lax=False, local=False)
+
+        wat2hab = wat2hby.makeHab(name='wat2', isith="1", icount=1, transferable=False)
+        assert not wat2hab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        wat2kvy = eventing.Kevery(db=wat2hab.db, lax=False, local=False)
+        
+        obv0hab = obv0hby.makeHab(name='obv0', isith="1", icount=1, transferable=True)
+        assert obv0hab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        obv0kvy = eventing.Kevery(db=obv0hab.db, lax=False, local=False)
+
+        obv1hab = obv1hby.makeHab(name='obv1', isith="1", icount=1, transferable=True)
+        assert obv1hab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        obv1kvy = eventing.Kevery(db=obv1hab.db, lax=False, local=False)
+
+        obv2hab = obv2hby.makeHab(name='obv2', isith="1", icount=1, transferable=True)
+        assert obv2hab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        obv2kvy = eventing.Kevery(db=obv2hab.db, lax=False, local=False)
+
+        for hab in [wat0hab, wat1hab, wat2hab, obv0hab, obv1hab, obv2hab]:
+            msg = hab.makeOwnInception()
+            parsing.Parser().parseOne(ims=msg, kvy=conKvy)
+
+        conIcp = conHab.makeOwnInception()
+        for kvy in [wat0kvy, wat1kvy, wat2kvy, obv0kvy, obv1kvy, obv2kvy]:
+            parsing.Parser().parseOne(ims=bytes(conIcp), kvy=kvy)  # make copy so we don't clobber it
+
+        assert wat0hab.pre in conHab.kevers
+        assert wat1hab.pre in conHab.kevers
+        assert wat2hab.pre in conHab.kevers
+        assert obv0hab.pre in conHab.kevers
+        assert obv1hab.pre in conHab.kevers
+        assert obv2hab.pre in conHab.kevers
+
+        data = dict(cid=conHab.pre, role=Roles.watcher, eid=wat0hab.pre)
+        rpy = conHab.reply(route="/end/role/add", data=data)
+        conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
+        wat0hab.psr.parseOne(ims=rpy)
+
+        ender = conHab.db.ends.get(keys=(conHab.pre, Roles.watcher, wat0hab.pre))
+        assert ender.allowed is True
+        ender = wat0hab.db.ends.get(keys=(conHab.pre, Roles.watcher, wat0hab.pre))
+        assert ender.allowed is True
+
+        for hab in [obv0hab, obv1hab, obv2hab]:
+            icp = hab.makeOwnInception()
+            conHab.psr.parseOne(ims=bytes(icp))
+            wat0hab.psr.parseOne(ims=bytes(icp))
+            wat1hab.psr.parseOne(ims=bytes(icp))
+            wat2hab.psr.parseOne(ims=bytes(icp))
+
+        assert obv0hab.pre in conHab.kevers
+        assert obv1hab.pre in conHab.kevers
+        assert obv2hab.pre in conHab.kevers
+        assert obv2hab.pre in wat0hab.kevers
+
+        route = f"/watcher/{wat0hab.pre}/add"
+        data = dict(cid=conHab.pre, oid=obv0hab.pre)
+        rpy = conHab.reply(route=route, data=data)
+        conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
+        wat0hab.psr.parseOne(ims=rpy)
+
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv0hab.pre))
+        assert observed.enabled is True
+        observed = wat0hab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv0hab.pre))
+        assert observed.enabled is True
+
+        route = f"/watcher/{wat0hab.pre}/add"
+        data = dict(cid=conHab.pre, oid=obv1hab.pre)
+        rpy = conHab.reply(route=route, data=data)
+        conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
+        wat0hab.psr.parseOne(ims=rpy)
+
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv1hab.pre))
+        assert observed.enabled is True
+        observed = wat0hab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv1hab.pre))
+        assert observed.enabled is True
+
+        route = f"/watcher/{wat0hab.pre}/add"
+        data = dict(cid=conHab.pre, oid=obv2hab.pre)
+        rpy = conHab.reply(route=route, data=data)
+        conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
+        wat0hab.psr.parseOne(ims=rpy)
+
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv2hab.pre))
+        assert observed.enabled is True
+        observed = wat0hab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv2hab.pre))
+        assert observed.enabled is True
+
+        route = f"/watcher/{wat0hab.pre}/cut"
+        data = dict(cid=conHab.pre, oid=obv1hab.pre)
+        rpy = conHab.reply(route=route, data=data)
+        conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
+        wat0hab.psr.parseOne(ims=rpy)
+
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv1hab.pre))
+        assert observed.enabled is False
+        observed = wat0hab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv1hab.pre))
+        assert observed.enabled is False
+
+        route = f"/watcher/{wat1hab.pre}/add"
+        data = dict(cid=conHab.pre, oid=obv0hab.pre)
+        rpy = conHab.reply(route=route, data=data)
+        conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
+        wat1hab.psr.parseOne(ims=rpy)
+
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat1hab.pre, obv0hab.pre))
+        assert observed.enabled is True
+        observed = wat1hab.db.obvs.get(keys=(conHab.pre, wat1hab.pre, obv0hab.pre))
+        assert observed.enabled is True
+
+        route = f"/watcher/{wat1hab.pre}/add"
+        data = dict(cid=conHab.pre, oid=obv2hab.pre, oobi=f"http://example.com/oobi/{obv2hab.pre}")
+        rpy = conHab.reply(route=route, data=data)
+        conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
+        wat1hab.psr.parseOne(ims=rpy)
+
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat1hab.pre, obv0hab.pre))
+        assert observed.enabled is True
+        assert conHab.db.oobis.get(keys=(f"http://example.com/oobi/{obv2hab.pre}",)) is not None
+        observed = wat1hab.db.obvs.get(keys=(conHab.pre, wat1hab.pre, obv2hab.pre))
+        assert observed.enabled is True
+        observed = wat1hab.db.obvs.get(keys=(conHab.pre, wat1hab.pre, obv1hab.pre))
+        assert observed is None
+
+        # Make sure nothing was changed for Wat0
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv0hab.pre))
+        assert observed.enabled is True
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv1hab.pre))
+        assert observed.enabled is False
+        observed = conHab.db.obvs.get(keys=(conHab.pre, wat0hab.pre, obv2hab.pre))
+        assert observed.enabled is True
 
 
 if __name__ == "__main__":

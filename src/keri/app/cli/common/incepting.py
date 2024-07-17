@@ -28,4 +28,6 @@ def addInceptingArgs(parser):
                         help='only allow establishment events in KEL for this prefix')
     parser.add_argument('--data',         '-d', default=None, required=False, action="store",
                         help='Anchor data, \'@\' allowed',)
+    parser.add_argument('--delpre',       '-di', default=None, required=False, action="store",
+                        help='Delegator AID for delegated identfiers',)
 

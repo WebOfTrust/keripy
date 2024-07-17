@@ -29,6 +29,10 @@ parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness re
                     dest="endpoint", action='store_true')
 parser.add_argument("--authenticate", '-z', help="Prompt the controller for authentication codes for each witness",
                     action='store_true')
+parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
+                    default=[], action="append", required=False)
+parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
+
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
 rotating.addRotationArgs(parser)
@@ -63,7 +67,8 @@ def rotate(args):
                          cuts=opts.witsCut, adds=opts.witsAdd,
                          isith=opts.isith, nsith=opts.nsith,
                          count=opts.ncount, toad=opts.toad,
-                         data=opts.data, proxy=args.proxy, authenticate=args.authenticate)
+                         data=opts.data, proxy=args.proxy, authenticate=args.authenticate,
+                         codes=args.code, codeTime=args.code_time)
 
     doers = [rotDoer]
 
@@ -118,7 +123,8 @@ class RotateDoer(doing.DoDoer):
     """
 
     def __init__(self, name, base, bran, alias, endpoint=False, isith=None, nsith=None, count=None,
-                 toad=None, wits=None, cuts=None, adds=None, data: list = None, proxy=None, authenticate=False):
+                 toad=None, wits=None, cuts=None, adds=None, data: list = None, proxy=None, authenticate=False,
+                 codes=None, codeTime=None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
 
@@ -144,6 +150,8 @@ class RotateDoer(doing.DoDoer):
         self.endpoint = endpoint
         self.proxy = proxy
         self.authenticate = authenticate
+        self.codes = codes if codes is not None else []
+        self.codeTime = codeTime
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
@@ -193,12 +201,19 @@ class RotateDoer(doing.DoDoer):
 
         auths = {}
         if self.authenticate:
+            codeTime = helping.fromIso8601(self.codeTime) if self.codeTime is not None else helping.nowIso8601()
+            for arg in self.codes:
+                (wit, code) = arg.split(":")
+                auths[wit] = f"{code}#{codeTime}"
+
             for wit in hab.kever.wits:
+                if wit in auths:
+                    continue
                 code = input(f"Entire code for {wit}: ")
                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 
         if hab.kever.delpre:
-            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn)
+            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, auths=auths)
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock

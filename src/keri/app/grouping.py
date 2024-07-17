@@ -662,7 +662,7 @@ class Multiplexor:
                         ims.extend(atc)
 
                 # ... and parse
-                self.psr.parse(ims=ims)
+                self.psr.parse(ims=ims, local=True)
 
             else:
                 # Should we prod the user with another submission if we haven't already approved it?

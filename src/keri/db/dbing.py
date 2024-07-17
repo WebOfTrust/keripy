@@ -303,6 +303,7 @@ class LMDBer(filing.Filer):
     TempSuffix = "_test"
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     MaxNamedDBs = 96
+    MapSize = 104857600
 
     def __init__(self, readonly=False, **kwa):
         """
@@ -378,7 +379,7 @@ class LMDBer(filing.Filer):
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
-        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=104857600,
+        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=self.MapSize,
                              mode=self.perm, readonly=self.readonly)
 
         self.opened = True if opened and self.env else False

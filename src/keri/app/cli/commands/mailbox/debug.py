@@ -85,7 +85,7 @@ class ReadDoer(doing.DoDoer):
 
         hab = self.hby.habByName(name=self.alias)
         topics = {"/receipt": 0, "/replay": 0, "/multisig": 0, "/credential": 0, "/delegate": 0, "/challenge": 0,
-                  "/oobi": 0}
+                  "/oobi": 0, "/reply": 0}
         try:
             client, clientDoer = agenting.httpClient(hab, self.witness)
         except kering.MissingEntryError as e:
@@ -95,8 +95,11 @@ class ReadDoer(doing.DoDoer):
 
         print("Local Index per Topic")
         witrec = hab.db.tops.get((hab.pre, self.witness))
-        for topic in witrec.topics:
-            print(f"   Topic {topic}:   {witrec.topics[topic]}")
+        if witrec:
+            for topic in witrec.topics:
+                print(f"   Topic {topic}:   {witrec.topics[topic]}")
+        else:
+            print("\tNo local index")
         print()
 
         q = dict(pre=hab.pre, topics=topics)
@@ -107,7 +110,7 @@ class ReadDoer(doing.DoDoer):
 
         httping.createCESRRequest(msg, client, dest=self.witness)
 
-        while client.requests:
+        while client.requests or (not client.events and not client.requests):
             yield self.tock
 
         yield 1.0

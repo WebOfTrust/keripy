@@ -227,8 +227,9 @@ class Receiptor(doing.DoDoer):
                 msg = self.msgs.popleft()
                 pre = msg["pre"]
                 sn = msg["sn"] if "sn" in msg else None
+                auths = msg["auths"] if "auths" in msg else None
 
-                yield from self.receipt(pre, sn)
+                yield from self.receipt(pre, sn, auths)
                 self.cues.push(msg)
 
             yield self.tock
@@ -580,6 +581,7 @@ class WitnessPublisher(doing.DoDoer):
 
         """
         self.hby = hby
+        self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
@@ -598,6 +600,7 @@ class WitnessPublisher(doing.DoDoer):
         while True:
             while self.msgs:
                 evt = self.msgs.popleft()
+                self.posted += 1
                 pre = evt["pre"]
                 msg = evt["msg"]
 
@@ -616,12 +619,10 @@ class WitnessPublisher(doing.DoDoer):
 
                     _ = (yield self.tock)
 
-                total = len(witers)
-                count = 0
-                while count < total:
-                    for witer in witers:
-                        count += len(witer.sent)
-                    _ = (yield self.tock)
+                while witers:
+                    witer = witers.pop()
+                    while not witer.idle:
+                        _ = (yield self.tock)
 
                 self.remove(witers)
                 self.cues.push(evt)
@@ -642,6 +643,10 @@ class WitnessPublisher(doing.DoDoer):
                 return True
 
         return False
+
+    @property
+    def idle(self):
+        return len(self.msgs) == 0 and self.posted == len(self.cues)
 
 
 class TCPMessenger(doing.DoDoer):

@@ -71,6 +71,7 @@ class Exchanger:
         route = serder.ked["r"]
         sender = serder.ked["i"]
         pathed = kwargs["pathed"] if "pathed" in kwargs else []
+        essrs = kwargs["essrs"] if "essrs" in kwargs else []
 
         behavior = self.routes[route] if route in self.routes else None
         if tsgs is not None:
@@ -110,6 +111,8 @@ class Exchanger:
                                         " for evt = {}.".format(serder.ked))
 
         e = coring.Pather(path=["e"])
+
+        kwargs = dict()
         attachments = []
         for p in pathed:
             pattach = bytearray(p)
@@ -118,9 +121,23 @@ class Exchanger:
                 np = pather.strip(e)
                 attachments.append((np, pattach))
 
+        kwargs["attachments"] = attachments
+        if essrs:
+            kwargs["essr"] = b''.join([texter.raw for texter in essrs])
+
+        if isinstance(serder.seals, str):
+            if 'essr' not in kwargs:
+                raise ValidationError("at least one essr attachment is required")
+
+            essr = kwargs['essr']
+            dig = serder.seals
+            diger = coring.Diger(qb64=dig)
+            if not diger.verify(ser=essr):
+                raise ValidationError(f"essr diger={diger.qb64} is invalid against content")
+
         # Perform behavior specific verification, think IPEX chaining requirements
         try:
-            if not behavior.verify(serder=serder, attachments=attachments):
+            if not behavior.verify(serder=serder, **kwargs):
                 logger.info(f"exn event for route {route} failed behavior verfication.  said={serder.said}")
                 logger.debug(f"event=\n{serder.pretty()}\n")
                 return
@@ -129,13 +146,13 @@ class Exchanger:
             logger.info(f"Behavior for {route} missing or does not have verify for said={serder.said}")
             logger.debug(f"event=\n{serder.pretty()}\n")
 
-        # Always persis events
-        self.logEvent(serder, pathed, tsgs, cigars)
+        # Always persist events
+        self.logEvent(serder, pathed, tsgs, cigars, essrs)
         self.cues.append(dict(kin="saved", said=serder.said))
 
         # Execute any behavior specific handling, not sure if this should be different than verify
         try:
-            behavior.handle(serder=serder, attachments=attachments)
+            behavior.handle(serder=serder, **kwargs)
         except AttributeError:
             logger.info(f"Behavior for {route} missing or does not have handle for said={serder.said}")
             logger.debug(f"event=\n{serder.pretty()}\n")
@@ -187,9 +204,13 @@ class Exchanger:
                 tsgs.append((prefixer, seqner, saider, sigers))
 
             pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
+            essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
 
             try:
-                self.processEvent(serder=serder, tsgs=tsgs, pathed=pathed)
+                kwargs = dict()
+                if essrs:
+                    kwargs["essrs"] = essrs
+                self.processEvent(serder=serder, tsgs=tsgs, pathed=pathed, **kwargs)
 
             except MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.DEBUG):
@@ -210,12 +231,13 @@ class Exchanger:
                             "creder=%s", serder.said)
                 logger.debug(f"event=\n{serder.pretty()}\n")
 
-    def logEvent(self, serder, pathed=None, tsgs=None, cigars=None):
+    def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None):
         dig = serder.said
         pdig = serder.ked['p']
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
+        essrs = essrs or []
 
         for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
             quadkeys = (serder.said, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
@@ -226,6 +248,8 @@ class Exchanger:
 
         saider = coring.Saider(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
+        for texter in essrs:
+            self.hby.db.essrs.add(keys=(dig,), val=texter)
         if pdig:
             self.hby.db.erpy.pin(keys=(pdig,), val=saider)
 
@@ -278,8 +302,9 @@ class Exchanger:
 
 
 def exchange(route,
-             payload,
              sender,
+             payload=None,
+             diger=None,
              recipient=None,
              date=None,
              dig=None,
@@ -292,6 +317,7 @@ def exchange(route,
     Parameters:
         route (str): to destination route of the message
         payload (list | dict): body of message to deliver to route
+        diger (Diger): qb64 digest of payload
         sender (str): qb64 AID of sender of the exn
         recipient (str) optional qb64 AID recipient of exn
         date (str): Iso8601 formatted date string to use for this request
@@ -307,6 +333,7 @@ def exchange(route,
     ilk = eventing.Ilks.exn
     dt = date if date is not None else helping.nowIso8601()
     p = dig if dig is not None else ""
+    rp = recipient if recipient is not None else ""
     embeds = embeds if embeds is not None else {}
 
     e = dict()
@@ -322,26 +349,38 @@ def exchange(route,
         pather = coring.Pather(path=["e", label])
         pathed.extend(pather.qb64b)
         pathed.extend(atc)
-        end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialGroup,
-                                  count=(len(pathed) // 4)).qb64b)
+        if len(pathed) // 4 < 4096:
+            end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialGroup,
+                                      count=(len(pathed) // 4)).qb64b)
+        else:
+            end.extend(coring.Counter(code=coring.CtrDex.BigPathedMaterialGroup,
+                                      count=(len(pathed) // 4)).qb64b)
         end.extend(pathed)
 
     if e:
         e["d"] = ""
         _, e = coring.Saider.saidify(sad=e, label=coring.Saids.d)
 
-    attrs = dict(
-    )
+    modifiers = modifiers if modifiers is not None else {}
 
-    if recipient is not None:
-        attrs['i'] = recipient
+    if diger is None:
+        attrs = dict()
 
-    attrs |= payload
+        if recipient is not None:
+            attrs['i'] = recipient
 
+        attrs |= payload
+
+    else:
+        attrs = diger.qb64
+
+    # Attr field 'a' can be either a said or a nested block and the fields
+    # of the nested block can be saids of further nested block or nested blocks
     ked = dict(v=vs,
                t=ilk,
                d="",
                i=sender,
+               rp=rp,
                p=p,
                dt=dt,
                r=route,

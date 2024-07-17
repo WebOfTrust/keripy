@@ -81,3 +81,16 @@ def generate(tymth, tock=0.0, **opts):
             url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
             up = urlparse(url)
             print(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+        elif role in (kering.Roles.mailbox,):
+            for (_, _, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, kering.Roles.mailbox, )):
+                if not (end.allowed and end.enabled is not False):
+                    continue
+
+                urls = hab.fetchUrls(eid=eid, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=kering.Schemes.https)
+                if not urls:
+                    print(f"{alias} identifier {hab.pre} does not have any mailbox endpoints")
+                    return
+                url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+                up = urlparse(url)
+                print(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/mailbox/{eid}")

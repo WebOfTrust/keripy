@@ -76,3 +76,9 @@ printf "Running multisig-join.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/multisig-join.sh"
 isSuccess
+
+printf "\n************************************\n"
+printf "Running rename.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/rename-alias.sh"
+isSuccess

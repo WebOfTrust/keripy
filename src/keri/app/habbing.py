@@ -342,7 +342,7 @@ class Habery:
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                  name=habord.name, pre=habord.sid)
             elif habord.sid and habord.mid:
-                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                hab = SignifyGroupHab(smids=habord.smids, ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                       name=habord.name, pre=pre)
                 groups.append(habord)
@@ -2719,6 +2719,15 @@ class GroupHab(BaseHab):
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers)
 
+        habord = basing.HabitatRecord(hid=self.pre,
+                                      mid=self.mhab.pre,
+                                      name=self.name,
+                                      domain=self.ns,
+                                      smids=self.smids,
+                                      rmids=self.rmids)
+        self.save(habord)
+        self.prefixes.add(self.pre)
+        
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
         # MissingSignatureError
         try:
@@ -2729,15 +2738,6 @@ class GroupHab(BaseHab):
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
-        habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=self.mhab.pre,
-                                      name=self.name,
-                                      domain=self.ns,
-                                      smids=self.smids,
-                                      rmids=self.rmids)
-
-        self.save(habord)
-        self.prefixes.add(self.pre)
 
         self.inited = True
 

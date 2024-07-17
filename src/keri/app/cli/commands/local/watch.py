@@ -7,14 +7,13 @@ import argparse
 import random
 import sys
 import time
-from collections import namedtuple
 
 from hio import help
 from hio.base import doing
 from keri.app import agenting, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, terming
 from keri.app.habbing import GroupHab
-from keri.core import coring
+from keri.app.watching import States, diffState
 
 logger = help.ogler.getLogger()
 
@@ -30,17 +29,6 @@ parser.add_argument('--passcode', '-p', help='21 character encryption passcode f
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
-
-Stateage = namedtuple("Stateage", 'even ahead behind duplicitous')
-
-States = Stateage(even="even", ahead="ahead", behind="behind", duplicitous="duplicitous")
-
-
-class WitnessState:
-    wit: str
-    state: Stateage
-    sn: int
-    dig: str
 
 
 def watch(args):
@@ -135,7 +123,7 @@ class WatchDoer(doing.DoDoer):
                 mystate = hab.kever.state()
                 witstate = hab.db.ksns.get((saider.qb64,))
 
-                states.append(self.diffState(wit, mystate, witstate))
+                states.append(diffState(wit, mystate, witstate))
 
             # First check for any duplicity, if so get out of here
             dups = [state for state in states if state.state == States.duplicitous]
@@ -213,31 +201,3 @@ class WatchDoer(doing.DoDoer):
 
                 yield self.tock
             yield self.tock
-
-    @staticmethod
-    def diffState(wit, preksn, witksn):
-
-        witstate = WitnessState()
-        witstate.wit = wit
-        mysn = int(preksn.s, 16)
-        mydig = preksn.d
-        witstate.sn = int(witksn.f, 16)
-        witstate.dig = witksn.d
-
-        # At the same sequence number, check the DIGs
-        if mysn == witstate.sn:
-            if mydig == witstate.dig:
-                witstate.state = States.even
-            else:
-                witstate.state = States.duplicitous
-
-        # This witness is behind and will need to be caught up.
-        elif mysn > witstate.sn:
-            witstate.state = States.behind
-
-        # mysn < witstate.sn - We are behind this witness (multisig or restore situation).
-        # Must ensure that controller approves this event or a recovery rotation is needed
-        else:
-            witstate.state = States.ahead
-
-        return witstate

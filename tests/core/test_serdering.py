@@ -2225,20 +2225,20 @@ def test_serderkeri_exn():
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
     serder = SerderKERI(makify=True, ilk=kering.Ilks.exn)  # make with defaults
-    assert serder.sad == {'v': 'KERI10JSON000088_',
-                            't': 'exn',
-                            'd': 'EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0cFC4e-bU',
-                            'i': '',
-                            'p': '',
-                            'dt': '',
-                            'r': '',
-                            'q': {},
-                            'a': [],
-                            'e': {}}
+    assert serder.sad == {'a': [],
+                          'd': 'EPx9pShQTfv2FoISZJAZ4dlUcekG8-CSkgJh0i0q_iJn',
+                          'dt': '',
+                          'e': {},
+                          'i': '',
+                          'p': '',
+                          'q': {},
+                          'r': '',
+                          'rp': '',
+                          't': 'exn',
+                          'v': 'KERI10JSON000090_'}
 
-    assert serder.raw == (b'{"v":"KERI10JSON000088_","t":"exn",'
-                           b'"d":"EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0'
-                           b'cFC4e-bU","i":"","p":"","dt":"","r":"","q":{},"a":[],"e":{}}')
+    assert serder.raw == (b'{"v":"KERI10JSON000090_","t":"exn","d":"EPx9pShQTfv2FoISZJAZ4dlUcekG8-CSkgJh'
+                          b'0i0q_iJn","i":"","rp":"","p":"","dt":"","r":"","q":{},"a":[],"e":{}}')
 
 
 
