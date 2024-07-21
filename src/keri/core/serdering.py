@@ -38,7 +38,7 @@ from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
                      Ilker, Traitor, Verser, )
 
-from .counting import GenDex, AllTags, Counter, SealDex_2_0
+from .counting import GenDex, Counter, Codens, SealDex_2_0
 
 from .structing import Sealer, SClanDom
 
@@ -1298,7 +1298,7 @@ class Serder:
                         for e in v:  # list
                             frame.extend(e.encode("utf-8"))
 
-                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                        val = bytearray(Counter(Codens.GenericListGroup,
                                                 count=len(frame) // 4).qb64b)
                         val.extend(frame)
 
@@ -1307,7 +1307,7 @@ class Serder:
                         for e in v:  # list
                             frame.extend(Traitor(trait=e).qb64b)
 
-                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                        val = bytearray(Counter(Codens.GenericListGroup,
                                                 count=len(frame) // 4).qb64b)
                         val.extend(frame)
 
@@ -1342,7 +1342,7 @@ class Serder:
                                 #generic seal no count type (v, Mapping):
                                 #for l, e in v.items():
                                     #pass
-                                #val = bytearray(Counter(tag=AllTags.GenericMapGroup,
+                                #val = bytearray(Counter(tag=""GenericMapGroup"",
                                                # count=len(frame) // 4).qb64b)
                                 #val.extend(mapframe)
 
@@ -1352,7 +1352,7 @@ class Serder:
                             gframe = bytearray()
                             gcode = None
 
-                        val = bytearray(Counter(tag=AllTags.GenericListGroup,
+                        val = bytearray(Counter(Codens.GenericListGroup,
                                                 count=len(frame) // 4).qb64b)
                         val.extend(frame)
 
@@ -1378,7 +1378,7 @@ class Serder:
         # prepend count code for message
         if fixed:
 
-            raw = bytearray(Counter(tag=AllTags.FixedMessageBodyGroup,
+            raw = bytearray(Counter(Codens.FixedMessageBodyGroup,
                                     count=len(bdy) // 4).qb64b)
             raw.extend(bdy)
         else:

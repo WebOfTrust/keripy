@@ -17,6 +17,7 @@ from socket import gaierror
 from . import httping, forwarding
 from .. import help
 from .. import kering
+from .. import core
 from ..core import eventing, parsing, coring, serdering, indexing
 from ..core.coring import CtrDex
 from ..db import dbing
@@ -104,7 +105,7 @@ class Receiptor(doing.DoDoer):
                 del rct[:rserder.size]
 
                 # pull off the count code
-                coring.Counter(qb64b=rct, strip=True)
+                core.Counter(qb64b=rct, strip=True, gvrsn=kering.Vrsn_1_0)
                 rcts[wit] = rct
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
@@ -124,7 +125,8 @@ class Receiptor(doing.DoDoer):
                                        sn=sn,
                                        said=ser.said)
             msg.extend(rserder.raw)
-            msg.extend(coring.Counter(code=CtrDex.NonTransReceiptCouples, count=len(wigs)).qb64b)
+            msg.extend(core.Counter(core.Codens.NonTransReceiptCouples,
+                                    count=len(wigs), gvrsn=kering.Vrsn_1_0).qb64b)
             for wig in wigs:
                 msg.extend(wig)
 

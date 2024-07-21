@@ -15,4 +15,4 @@ from .coring import (Matter, MtrDex, Number, NumDex, Dater, Texter,
 from .coring import Tholder
 from .indexing import Indexer, Siger, IdrDex, IdxSigDex
 from .signing import Signer, Salter, Cipher, Encrypter, Decrypter
-from .counting import Counter
+from .counting import Counter, Codens
