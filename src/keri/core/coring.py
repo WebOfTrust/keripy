@@ -909,7 +909,7 @@ class Matter:
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
+                 qb64b=None, qb64=None, qb2=None, strip=False, **kwa):
         """
         Validate as fully qualified
         Parameters:

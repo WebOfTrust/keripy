@@ -9,7 +9,7 @@ from hio.base import doing, tyming
 
 from keri import kering, core
 from keri.core import coring, serdering
-from keri.core.coring import Counter, CtrDex, Seqner
+from keri.core.coring import Seqner
 from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting, directing
 from keri.db import dbing

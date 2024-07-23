@@ -357,6 +357,7 @@ class Counter:
                 '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
             },
         },
@@ -423,7 +424,8 @@ class Counter:
 
 
     def __init__(self, code=None, *, count=None, countB64=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False, gvrsn=Vrsn_2_0):
+                 qb64b=None, qb64=None, qb2=None, strip=False,
+                 gvrsn=Vrsn_2_0, **kwa):
         """
         Validate as fully qualified
         Parameters:

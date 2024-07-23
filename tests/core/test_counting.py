@@ -403,6 +403,7 @@ def test_counter_class():
                 '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
             },
         },
@@ -466,6 +467,8 @@ def test_counter_class():
             },
         },
     }
+
+    # add test that ensures there is an entry in Sizes for each entry in Codes
 
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].hs == 2  # hard size
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ss == 2 # soft size

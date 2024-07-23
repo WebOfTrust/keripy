@@ -233,7 +233,7 @@ class Indexer:
 
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0, ondex=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
+                 qb64b=None, qb64=None, qb2=None, strip=False, **kwa):
         """
         Validate as fully qualified
         Parameters:
