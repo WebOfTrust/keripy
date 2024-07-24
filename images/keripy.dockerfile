@@ -1,4 +1,4 @@
-ARG BASE=python:3.10.14-alpine3.20
+ARG BASE=python:3.12.2-alpine3.19
 
 FROM ${BASE} as builder
 
