@@ -22,7 +22,8 @@ import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
 from .habbing import GroupHab
 from .. import help, kering
-from ..core import eventing, parsing, routing, coring, serdering
+from ..core import (eventing, parsing, routing, coring, serdering,
+                    Counter, Codens)
 from ..core.coring import Ilks
 from ..db import basing, dbing
 from ..end import ending
@@ -1142,8 +1143,8 @@ class ReceiptEnd(doing.DoDoer):
                                    said=said.decode("utf-8"))
         rct = bytearray(rserder.raw)
         if wigs := self.hab.db.getWigs(key=dgkey):
-            rct.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                      count=len(wigs)).qb64b)
+            rct.extend(Counter(Codens.CtrDex.WitnessIdxSigs, count=len(wigs),
+                               gvrsn=kering.Vrsn_1_0).qb64b)
             for wig in wigs:
                 rct.extend(wig)
 
