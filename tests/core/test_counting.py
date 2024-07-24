@@ -468,7 +468,15 @@ def test_counter_class():
         },
     }
 
-    # add test that ensures there is an entry in Sizes for each entry in Codes
+    # Ensure there is an entry in Sizes for each entry in Codes
+    assert Counter.Codes.keys() == Counter.Sizes.keys()
+    for majorc, majors in zip(Counter.Codes.items(), Counter.Sizes.items(), strict=True):
+        assert majorc[0] == majors[0]  # major version, keys match
+        for minorc, minors in zip(majorc[1].items(), majors[1].items(), strict=True):
+            assert minorc[0] == minors[0]  # minor version keys match
+            for code, size in zip(asdict(minorc[1]).items(), minors[1].items(), strict=True):
+                code[0] == size[0]  # code and size keys match
+
 
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].hs == 2  # hard size
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ss == 2 # soft size
