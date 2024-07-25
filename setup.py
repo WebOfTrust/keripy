@@ -83,7 +83,7 @@ setup(
                         'cbor2>=5.6.2',
                         'multidict>=6.0.5',
                         'ordered-set>=4.1.0',
-                        'hio>=0.6.13',
+                        'hio>=0.6.14',
                         'multicommand>=1.0.0',
                         'jsonschema>=4.21.1',
                         'falcon>=3.1.3',
