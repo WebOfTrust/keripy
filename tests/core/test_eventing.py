@@ -13,10 +13,10 @@ from keri import kering
 from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
 from keri import core
-from keri.core import Signer
+from keri.core import Signer, Counter, Codens
 from keri.core import coring, eventing, parsing, serdering
 from keri.core.coring import (Diger, MtrDex, Matter,
-                              CtrDex, Counter, Cigar,
+                              CtrDex, Cigar,
                               Seqner, Verfer, Prefixer, DigDex)
 from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
 from keri.core.eventing import Kever, Kevery
