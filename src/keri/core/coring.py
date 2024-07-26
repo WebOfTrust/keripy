@@ -727,9 +727,10 @@ PreDex = PreCodex()  # Make instance
 # namedtuple for size entries in Matter  and Counter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
+# xs is the xtra size into number of xtra (pre-pad) chars as part of soft
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
-Sizage = namedtuple("Sizage", "hs ss fs ls")
+Sizage = namedtuple("Sizage", "hs ss xs fs ls")
 
 
 class Matter:
@@ -810,97 +811,97 @@ class Matter:
     # soft size, ss, should always be 0 for Matter unless fs is None which allows
     # for variable size multiple of 4, i.e. not (hs + ss) % 4.
     Sizes = {
-        'A': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'B': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'C': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'D': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'E': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'F': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'G': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'H': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'I': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'J': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'K': Sizage(hs=1, ss=0, fs=76, ls=0),
-        'L': Sizage(hs=1, ss=0, fs=76, ls=0),
-        'M': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'N': Sizage(hs=1, ss=0, fs=12, ls=0),
-        'O': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'P': Sizage(hs=1, ss=0, fs=124, ls=0),
-        'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'R': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'S': Sizage(hs=1, ss=0, fs=16, ls=0),
-        'T': Sizage(hs=1, ss=0, fs=20, ls=0),
-        'U': Sizage(hs=1, ss=0, fs=24, ls=0),
-        'V': Sizage(hs=1, ss=0, fs=4, ls=1),
-        'W': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'X': Sizage(hs=1, ss=3, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=7, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
-        '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
-        '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=6, fs=8, ls=0),
-        '0M': Sizage(hs=2, ss=6, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=10, fs=12, ls=0),
-        '0O': Sizage(hs=2, ss=10, fs=12, ls=0),
-        '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
-        '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
-        '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-        '1AAF': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
-        '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
-        '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=8, fs=12, ls=0),
-        '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
-        '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
-        '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
-        '2___': Sizage(hs=4, ss=0, fs=8, ls=1),
-        '3__-': Sizage(hs=4, ss=2, fs=12, ls=2),
-        '3___': Sizage(hs=4, ss=0, fs=8, ls=2),
-        '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4C': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5C': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4D': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5D': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6D': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAD': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAD': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAD': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4E': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5E': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6E': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAE': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2),
+        'A': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'B': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'C': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'D': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'E': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'F': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'G': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'H': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'I': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'J': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'K': Sizage(hs=1, ss=0, xs=0, fs=76, ls=0),
+        'L': Sizage(hs=1, ss=0, xs=0, fs=76, ls=0),
+        'M': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
+        'N': Sizage(hs=1, ss=0, xs=0, fs=12, ls=0),
+        'O': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'P': Sizage(hs=1, ss=0, xs=0, fs=124, ls=0),
+        'Q': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'R': Sizage(hs=1, ss=0, xs=0, fs=8, ls=0),
+        'S': Sizage(hs=1, ss=0, xs=0, fs=16, ls=0),
+        'T': Sizage(hs=1, ss=0, xs=0, fs=20, ls=0),
+        'U': Sizage(hs=1, ss=0, xs=0, fs=24, ls=0),
+        'V': Sizage(hs=1, ss=0, xs=0, fs=4, ls=1),
+        'W': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
+        'X': Sizage(hs=1, ss=3, xs=0, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
+        'Z': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
+        '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0D': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0E': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0F': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0G': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0H': Sizage(hs=2, ss=0, xs=0, fs=8, ls=0),
+        '0I': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0J': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
+        '1AAD': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
+        '1AAE': Sizage(hs=4, ss=0, xs=0, fs=56, ls=0),
+        '1AAF': Sizage(hs=4, ss=4, xs=0, fs=8, ls=0),
+        '1AAG': Sizage(hs=4, ss=0, xs=0, fs=36, ls=0),
+        '1AAH': Sizage(hs=4, ss=0, xs=0, fs=100, ls=0),
+        '1AAI': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAJ': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
+        '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
+        '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
+        '2__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=1),
+        '2___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=1),
+        '3__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=2),
+        '3___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=2),
+        '4A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
     Codes = asdict(MtrDex)  # map code name to code
@@ -953,7 +954,7 @@ class Matter:
             if code not in self.Sizes:
                 raise InvalidCodeError(f"Unsupported {code=}.")
 
-            hs, ss, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
+            hs, ss, xs, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
 
             if fs is None:  # variable sized assumes code[0] in SmallVrzDex or LargeVrzDex
                 if rize:  # use rsize to determine length of raw to extract
@@ -1021,7 +1022,7 @@ class Matter:
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif soft and code:  # fixed size and special when raw None
-            hs, ss, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
+            hs, ss, xs, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
             if not fs:  # variable sized code so can't be soft
                 raise InvalidSoftError(f"Unsupported variable sized {code=} "
                                        f" with {fs=} for special {soft=}.")
@@ -1069,7 +1070,7 @@ class Matter:
         Parameters:
             code (str): derivation code Base64
         """
-        hs, ss, fs, ls = cls.Sizes[code]  # get sizes
+        hs, ss, xs, fs, ls = cls.Sizes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
         if fs is None:
             raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
@@ -1084,7 +1085,7 @@ class Matter:
         Parameters:
             code (str): derivation code Base64
         """
-        _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
+        _, _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
         return ls
 
 
@@ -1097,7 +1098,7 @@ class Matter:
                 False otherwise
 
         """
-        hs, ss, fs, ls = cls.Sizes[code]
+        hs, ss, xs, fs, ls = cls.Sizes[code]
 
         return (fs is not None and ss > 0)
 
@@ -1188,7 +1189,7 @@ class Matter:
         Fixed size codes returns fs from .Sizes
         Variable size codes where fs==None computes fs from .size and sizes
         """
-        hs, ss, fs, _ = self.Sizes[self.code]  # get sizes
+        hs, ss, _, fs, _ = self.Sizes[self.code]  # get sizes
 
         if fs is None:  # compute fs from ss characters in code
             fs = hs + ss + (self.size * 4)
@@ -1295,7 +1296,7 @@ class Matter:
         both = self.both  # code + soft, soft may be empty
         raw = self.raw  # bytes or bytearray, raw may be empty
         rs = len(raw)  # raw size
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, xs, fs, ls = self.Sizes[code]
         cs = hs + ss
         # assumes unit tests on Matter.Sizes ensure valid size entries
 
@@ -1357,7 +1358,7 @@ class Matter:
         both = self.both  # code + soft, soft may be empty
         raw = self.raw  # bytes or bytearray may be empty
 
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, xs, fs, ls = self.Sizes[code]
         cs = hs + ss
         # assumes unit tests on Matter.Sizes ensure valid size entries
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
@@ -1416,7 +1417,7 @@ class Matter:
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs in both tables match
+        hs, ss, xs, fs, ls = self.Sizes[hard]  # assumes hs in both tables match
         cs = hs + ss  # both hs and ss
         # assumes that unit tests on Matter .Sizes .Hards and .Bards ensure that
         # these are well formed.
@@ -1493,7 +1494,7 @@ class Matter:
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[hard]
+        hs, ss, xs, fs, ls = self.Sizes[hard]
         cs = hs + ss  # both hs and ss
         # assumes that unit tests on Matter .Sizes .Hards and .Bards ensure that
         # these are well formed.
@@ -2735,7 +2736,7 @@ class Bexter(Matter):
         Property bext: Base64 text value portion of qualified b64 str
         Returns the value portion of .qb64 with text code and leader removed
         """
-        _, _, _, ls = self.Sizes[self.code]
+        _, _, _, _, ls = self.Sizes[self.code]
         bext = encodeB64(bytes([0] * ls) + self.raw)
         ws = 0
         if ls == 0 and bext:

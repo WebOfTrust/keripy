@@ -17,7 +17,7 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
 from .. import kering
 from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
 
-from ..core.coring import Sizage, MapDom
+from ..core.coring import MapDom
 
 
 
