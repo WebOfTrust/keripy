@@ -21,7 +21,7 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
 
 
 from keri.core import counting
-from keri.core.counting import GenDex, Sizage, MapDom, Counter, Codens
+from keri.core.counting import GenDex, Cizage, Counter, Codens
 from keri.core.counting import Versionage, Vrsn_1_0, Vrsn_2_0
 
 
@@ -383,90 +383,90 @@ def test_counter_class():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Counter.Sizes == \
-    {
-        Vrsn_1_0.major: \
         {
-            Vrsn_1_0.minor: \
+            1:
             {
-                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
+                0:
+                {
+                    '-A': Cizage(hs=2, ss=2, fs=4),
+                    '-B': Cizage(hs=2, ss=2, fs=4),
+                    '-C': Cizage(hs=2, ss=2, fs=4),
+                    '-D': Cizage(hs=2, ss=2, fs=4),
+                    '-E': Cizage(hs=2, ss=2, fs=4),
+                    '-F': Cizage(hs=2, ss=2, fs=4),
+                    '-G': Cizage(hs=2, ss=2, fs=4),
+                    '-H': Cizage(hs=2, ss=2, fs=4),
+                    '-I': Cizage(hs=2, ss=2, fs=4),
+                    '-J': Cizage(hs=2, ss=2, fs=4),
+                    '-K': Cizage(hs=2, ss=2, fs=4),
+                    '-L': Cizage(hs=2, ss=2, fs=4),
+                    '-0L': Cizage(hs=3, ss=5, fs=8),
+                    '-V': Cizage(hs=2, ss=2, fs=4),
+                    '-0V': Cizage(hs=3, ss=5, fs=8),
+                    '-Z': Cizage(hs=2, ss=2, fs=4),
+                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                }
             },
-        },
-        Vrsn_2_0.major: \
-        {
-            Vrsn_2_0.minor: \
+            2:
             {
-                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0A': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0B': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0C': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0D': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0E': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0F': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0G': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0H': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0I': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0J': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0K': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-M': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0M': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-N': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0N': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-O': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0O': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-P': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0P': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-Q': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0Q': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-R': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0R': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-S': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0S': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0T': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
-            },
-        },
-    }
+                0:
+                {
+                    '-A': Cizage(hs=2, ss=2, fs=4),
+                    '-0A': Cizage(hs=3, ss=5, fs=8),
+                    '-B': Cizage(hs=2, ss=2, fs=4),
+                    '-0B': Cizage(hs=3, ss=5, fs=8),
+                    '-C': Cizage(hs=2, ss=2, fs=4),
+                    '-0C': Cizage(hs=3, ss=5, fs=8),
+                    '-D': Cizage(hs=2, ss=2, fs=4),
+                    '-0D': Cizage(hs=3, ss=5, fs=8),
+                    '-E': Cizage(hs=2, ss=2, fs=4),
+                    '-0E': Cizage(hs=3, ss=5, fs=8),
+                    '-F': Cizage(hs=2, ss=2, fs=4),
+                    '-0F': Cizage(hs=3, ss=5, fs=8),
+                    '-G': Cizage(hs=2, ss=2, fs=4),
+                    '-0G': Cizage(hs=3, ss=5, fs=8),
+                    '-H': Cizage(hs=2, ss=2, fs=4),
+                    '-0H': Cizage(hs=3, ss=5, fs=8),
+                    '-I': Cizage(hs=2, ss=2, fs=4),
+                    '-0I': Cizage(hs=3, ss=5, fs=8),
+                    '-J': Cizage(hs=2, ss=2, fs=4),
+                    '-0J': Cizage(hs=3, ss=5, fs=8),
+                    '-K': Cizage(hs=2, ss=2, fs=4),
+                    '-0K': Cizage(hs=3, ss=5, fs=8),
+                    '-L': Cizage(hs=2, ss=2, fs=4),
+                    '-0L': Cizage(hs=3, ss=5, fs=8),
+                    '-M': Cizage(hs=2, ss=2, fs=4),
+                    '-0M': Cizage(hs=3, ss=5, fs=8),
+                    '-N': Cizage(hs=2, ss=2, fs=4),
+                    '-0N': Cizage(hs=3, ss=5, fs=8),
+                    '-O': Cizage(hs=2, ss=2, fs=4),
+                    '-0O': Cizage(hs=3, ss=5, fs=8),
+                    '-P': Cizage(hs=2, ss=2, fs=4),
+                    '-0P': Cizage(hs=3, ss=5, fs=8),
+                    '-Q': Cizage(hs=2, ss=2, fs=4),
+                    '-0Q': Cizage(hs=3, ss=5, fs=8),
+                    '-R': Cizage(hs=2, ss=2, fs=4),
+                    '-0R': Cizage(hs=3, ss=5, fs=8),
+                    '-S': Cizage(hs=2, ss=2, fs=4),
+                    '-0S': Cizage(hs=3, ss=5, fs=8),
+                    '-T': Cizage(hs=2, ss=2, fs=4),
+                    '-0T': Cizage(hs=3, ss=5, fs=8),
+                    '-U': Cizage(hs=2, ss=2, fs=4),
+                    '-0U': Cizage(hs=3, ss=5, fs=8),
+                    '-V': Cizage(hs=2, ss=2, fs=4),
+                    '-0V': Cizage(hs=3, ss=5, fs=8),
+                    '-W': Cizage(hs=2, ss=2, fs=4),
+                    '-0W': Cizage(hs=3, ss=5, fs=8),
+                    '-X': Cizage(hs=2, ss=2, fs=4),
+                    '-0X': Cizage(hs=3, ss=5, fs=8),
+                    '-Y': Cizage(hs=2, ss=2, fs=4),
+                    '-0Y': Cizage(hs=3, ss=5, fs=8),
+                    '-Z': Cizage(hs=2, ss=2, fs=4),
+                    '-0Z': Cizage(hs=3, ss=5, fs=8),
+                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                }
+            }
+        }
 
     # Ensure there is an entry in Sizes for each entry in Codes
     assert Counter.Codes.keys() == Counter.Sizes.keys()
@@ -481,13 +481,10 @@ def test_counter_class():
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].hs == 2  # hard size
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ss == 2 # soft size
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].fs == 4  # full size
-    assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ls == 0  # lead size
 
     assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].hs == 3  # hard size
     assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].ss == 5  # soft size
     assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].fs == 8  # full size
-    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].ls == 0  # lead size
-
 
     # first character of code with hard size of code
     assert Counter.Hards == \
