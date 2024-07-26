@@ -5,7 +5,7 @@ tests.app.grouping module
 """
 from contextlib import contextmanager
 
-
+from keri import kering, core
 from keri.app import habbing, grouping, notifying
 from keri.core import coring, eventing, parsing, serdering
 from keri.vdr import eventing as veventing
@@ -616,8 +616,8 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         sigs.extend(bytes(hab3.db.getSigs(dgkey)[0]))
 
         evt = bytearray(eraw)
-        evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=3).qb64b)  # attach cnt
+        evt.extend(core.Counter(core.Codens.ControllerIdxSigs,
+                                count=3, gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
         evt.extend(sigs)
 
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev3, local=True)

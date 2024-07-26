@@ -19,7 +19,6 @@ from .. import help
 from .. import kering
 from .. import core
 from ..core import eventing, parsing, coring, serdering, indexing
-from ..core.coring import CtrDex
 from ..db import dbing
 from ..kering import Roles
 

@@ -6,11 +6,12 @@ tests.vc.proving module
 import pytest
 
 from keri import kering
-from keri.kering import Versionage
+from keri.kering import Versionage, Vrsn_1_0
 
 from keri import core
 from keri.core import coring, scheming, parsing, serdering
-from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger
+from keri.core import counting, Counter, Codens
+from keri.core.coring import Serials, Prefixer, Seqner, Diger
 from keri.core.indexing import Siger
 from keri.core.scheming import CacheResolver
 
@@ -74,15 +75,15 @@ def test_proving(mockHelpingNowIso8601):
         creder = serdering.SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
-        ctr = Counter(qb64b=proof, strip=True)
-        assert ctr.code == CtrDex.AttachmentGroup
+        ctr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        assert ctr.code == counting.CtrDex_1_0.AttachmentGroup
         assert ctr.count == 52
 
         pags = ctr.count * 4
         assert len(proof) == pags
 
-        ctr = Counter(qb64b=proof, strip=True)
-        assert ctr.code == CtrDex.TransIdxSigGroups
+        ctr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        assert ctr.code == counting.CtrDex_1_0.TransIdxSigGroups
         assert ctr.count == 1
 
         prefixer = Prefixer(qb64b=proof, strip=True)
@@ -94,8 +95,8 @@ def test_proving(mockHelpingNowIso8601):
         diger = Diger(qb64b=proof, strip=True)
         assert diger.qb64 == sidHab.kever.serder.said
 
-        ictr = Counter(qb64b=proof, strip=True)
-        assert ictr.code == CtrDex.ControllerIdxSigs
+        ictr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        assert ictr.code == counting.CtrDex_1_0.ControllerIdxSigs
 
         isigers = []
         for i in range(ictr.count):
@@ -292,7 +293,7 @@ def test_credential_parsator():
                             status=issuer.regk)
 
         msg = bytearray(creder.raw)
-        msg.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        msg.extend(Counter(Codens.SealSourceTriples, count=1, gvrsn=Vrsn_1_0).qb64b)
         msg.extend(hab.kever.prefixer.qb64b)
         msg.extend(coring.Seqner(sn=hab.kever.sn).qb64b)
         msg.extend(hab.kever.serder.said.encode("utf-8"))

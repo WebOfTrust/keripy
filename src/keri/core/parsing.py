@@ -8,9 +8,9 @@ message stream parsing support
 import logging
 
 from ..kering import Vrsn_1_0, Vrsn_2_0
-from .coring import (Ilks, CtrDex, Seqner, Cigar,
+from .coring import (Ilks, Seqner, Cigar,
                      Dater, Verfer, Prefixer, Saider, Pather, Texter)
-from .counting import Counter, Codens
+from .counting import Counter, Codens, CtrDex_1_0
 from .indexing import (Siger, )
 from . import serdering
 from .. import help
@@ -147,10 +147,10 @@ class Parser:
         Returns:
 
         """
-        if ctr.code != CtrDex.SadPathSigGroups:
+        if ctr.code != CtrDex_1_0.SadPathSigGroups:
             raise kering.UnexpectedCountCodeError("Wrong "
                                                   "count code={}.Expected code={}."
-                                                  "".format(ctr.code, CtrDex.ControllerIdxSigs))
+                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
 
         subpath = yield from self._extractor(ims,
                                              klas=Pather,
@@ -163,10 +163,10 @@ class Parser:
                                           klas=Counter,
                                           cold=cold,
                                           abort=pipelined)
-        if sctr.code == CtrDex.TransIdxSigGroups:
+        if sctr.code == CtrDex_1_0.TransIdxSigGroups:
             for prefixer, seqner, saider, isigers in self._transIdxSigGroups(sctr, ims, cold=cold, pipelined=pipelined):
                 yield sctr.code, (subpath, prefixer, seqner, saider, isigers)
-        elif sctr.code == CtrDex.ControllerIdxSigs:
+        elif sctr.code == CtrDex_1_0.ControllerIdxSigs:
             isigers = []
             for i in range(sctr.count):  # extract each attached signature
                 isiger = yield from self._extractor(ims=ims,
@@ -175,13 +175,13 @@ class Parser:
                                                     abort=pipelined)
                 isigers.append(isiger)
             yield sctr.code, (subpath, isigers)
-        elif sctr.code == CtrDex.NonTransReceiptCouples:
+        elif sctr.code == CtrDex_1_0.NonTransReceiptCouples:
             for cigar in self._nonTransReceiptCouples(ctr=sctr, ims=ims, cold=cold, pipelined=pipelined):
                 yield sctr.code, (subpath, cigar)
         else:
             raise kering.UnexpectedCountCodeError("Wrong "
                                                   "count code={}.Expected code={}."
-                                                  "".format(ctr.code, CtrDex.ControllerIdxSigs))
+                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
 
 
     def _transIdxSigGroups(self, ctr, ims, cold=Colds.txt, pipelined=False):
@@ -224,10 +224,10 @@ class Parser:
                                               klas=Counter,
                                               cold=cold,
                                               abort=pipelined)
-            if ictr.code != CtrDex.ControllerIdxSigs:
+            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
                 raise kering.UnexpectedCountCodeError("Wrong "
                                                       "count code={}.Expected code={}."
-                                                      "".format(ictr.code, CtrDex.ControllerIdxSigs))
+                                                      "".format(ictr.code, CtrDex_1_0.ControllerIdxSigs))
             isigers = []
             for i in range(ictr.count):  # extract each attached signature
                 isiger = yield from self._extractor(ims=ims,
@@ -748,7 +748,7 @@ class Parser:
             cold = sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-                if ctr.code == CtrDex.AttachmentGroup:  # pipeline ctr?
+                if ctr.code == CtrDex_1_0.AttachmentGroup:  # pipeline ctr?
                     pipelined = True
                     # compute pipelined attached group size based on txt or bny
                     pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
@@ -770,7 +770,7 @@ class Parser:
 
                 # iteratively process attachment counters (all non pipelined)
                 while True:  # do while already extracted first counter is ctr
-                    if ctr.code == CtrDex.ControllerIdxSigs:
+                    if ctr.code == CtrDex_1_0.ControllerIdxSigs:
                         for i in range(ctr.count):  # extract each attached signature
                             siger = yield from self._extractor(ims=ims,
                                                                klas=Siger,
@@ -778,7 +778,7 @@ class Parser:
                                                                abort=pipelined)
                             sigers.append(siger)
 
-                    elif ctr.code == CtrDex.WitnessIdxSigs:
+                    elif ctr.code == CtrDex_1_0.WitnessIdxSigs:
                         for i in range(ctr.count):  # extract each attached signature
                             wiger = yield from self._extractor(ims=ims,
                                                                klas=Siger,
@@ -786,7 +786,7 @@ class Parser:
                                                                abort=pipelined)
                             wigers.append(wiger)
 
-                    elif ctr.code == CtrDex.NonTransReceiptCouples:
+                    elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
                         # extract attached rct couplets into list of sigvers
                         # verfer property of cigar is the identifier prefix
                         # cigar itself has the attached signature
@@ -796,7 +796,7 @@ class Parser:
                                                         pipelined=pipelined):
                             cigars.append(cigar)
 
-                    elif ctr.code == CtrDex.TransReceiptQuadruples:
+                    elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
                         # extract attaced trans receipt vrc quadruple
                         # spre+ssnu+sdig+sig
                         # spre is pre of signer of vrc
@@ -823,7 +823,7 @@ class Parser:
                                                                abort=pipelined)
                             trqs.append((prefixer, seqner, saider, siger))
 
-                    elif ctr.code == CtrDex.TransIdxSigGroups:
+                    elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
                         # triple pre+snu+dig plus indexed sig group
                         # pre is pre of signer (endorser) of msg
@@ -836,7 +836,7 @@ class Parser:
                                                         pipelined=pipelined):
                             tsgs.append((prefixer, seqner, saider, isigers))
 
-                    elif ctr.code == CtrDex.TransLastIdxSigGroups:
+                    elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
                         # identifier pre plus indexed sig group
                         # pre is pre of signer (endorser) of msg
@@ -851,10 +851,10 @@ class Parser:
                                                                     klas=Counter,
                                                                     cold=cold,
                                                                     abort=pipelined)
-                            if ictr.code != CtrDex.ControllerIdxSigs:
+                            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
                                 raise kering.UnexpectedCountCodeError("Wrong "
                                                                       "count code={}.Expected code={}."
-                                                                      "".format(ictr.code, CtrDex.ControllerIdxSigs))
+                                                                      "".format(ictr.code, CtrDex_1_0.ControllerIdxSigs))
                             isigers = []
                             for i in range(ictr.count):  # extract each attached signature
                                 isiger = yield from self._extractor(ims=ims,
@@ -864,7 +864,7 @@ class Parser:
                                 isigers.append(isiger)
                             ssgs.append((prefixer, isigers))
 
-                    elif ctr.code == CtrDex.FirstSeenReplayCouples:
+                    elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
                         # extract attached first seen replay couples
                         # snu+dtm
                         # snu is fn (first seen ordinal) of event
@@ -880,7 +880,7 @@ class Parser:
                                                                abort=pipelined)
                             frcs.append((firner, dater))
 
-                    elif ctr.code == CtrDex.SealSourceCouples:
+                    elif ctr.code == CtrDex_1_0.SealSourceCouples:
                         # extract attached first seen replay couples
                         # snu+dig
                         # snu is sequence number  of event
@@ -896,7 +896,7 @@ class Parser:
                                                                 abort=pipelined)
                             sscs.append((seqner, saider))
 
-                    elif ctr.code == CtrDex.SealSourceTriples:
+                    elif ctr.code == CtrDex_1_0.SealSourceTriples:
                         # extract attached anchoring source event information
                         # pre+snu+dig
                         # pre is prefix of event
@@ -917,7 +917,7 @@ class Parser:
                                                                 abort=pipelined)
                             ssts.append((prefixer, seqner, saider))
 
-                    elif ctr.code == CtrDex.SadPathSigGroups:
+                    elif ctr.code == CtrDex_1_0.SadPathSigGroups:
                         path = yield from self._extractor(ims,
                                                           klas=Pather,
                                                           cold=cold,
@@ -932,12 +932,12 @@ class Parser:
                                                                     root=path,
                                                                     cold=cold,
                                                                     pipelined=pipelined):
-                                if code == CtrDex.TransIdxSigGroups:
+                                if code == CtrDex_1_0.TransIdxSigGroups:
                                     sadtsgs.append(sigs)
                                 else:
                                     sadcigs.append(sigs)
 
-                    elif ctr.code == CtrDex.PathedMaterialGroup:  # pathed ctr?
+                    elif ctr.code == CtrDex_1_0.PathedMaterialGroup:  # pathed ctr?
                         # compute pipelined attached group size based on txt or bny
                         pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
                         while len(ims) < pags:  # wait until rx full pipelned group
@@ -947,7 +947,7 @@ class Parser:
                         del ims[:pags]  # strip off from ims
                         pathed.append(pims)
 
-                    elif ctr.code == CtrDex.BigPathedMaterialGroup:  # pathed ctr?
+                    elif ctr.code == CtrDex_1_0.BigPathedMaterialGroup:  # pathed ctr?
                         # compute pipelined attached group size based on txt or bny
                         pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
                         while len(ims) < pags:  # wait until rx full pipelned group
@@ -957,7 +957,7 @@ class Parser:
                         del ims[:pags]  # strip off from ims
                         pathed.append(pims)
 
-                    elif ctr.code == CtrDex.ESSRPayloadGroup:
+                    elif ctr.code == CtrDex_1_0.ESSRPayloadGroup:
                         for i in range(ctr.count):
                             texter = yield from self._extractor(ims,
                                                                 klas=Texter,

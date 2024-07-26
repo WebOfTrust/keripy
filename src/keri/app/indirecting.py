@@ -1143,7 +1143,7 @@ class ReceiptEnd(doing.DoDoer):
                                    said=said.decode("utf-8"))
         rct = bytearray(rserder.raw)
         if wigs := self.hab.db.getWigs(key=dgkey):
-            rct.extend(Counter(Codens.CtrDex.WitnessIdxSigs, count=len(wigs),
+            rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigs),
                                gvrsn=kering.Vrsn_1_0).qb64b)
             for wig in wigs:
                 rct.extend(wig)

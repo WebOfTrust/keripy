@@ -448,7 +448,7 @@ def serializeMessage(hby, said, pipelined=False):
                 atc.extend(siger.qb64b)
 
     if len(cigars) > 0:
-        atc.extend(core.Counter(core.Codens.CtrDex.NonTransReceiptCouples,
+        atc.extend(core.Counter(core.Codens.NonTransReceiptCouples,
                                 count=len(cigars), gvrsn=kering.Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in coring.NonTransDex:

@@ -4,7 +4,7 @@ tests.vc.protocoling module
 
 """
 
-from keri import core
+from keri import core, kering
 from keri.core import coring, scheming, parsing
 from keri.core.eventing import SealEvent
 
@@ -96,7 +96,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
                        b'I":"254900OPPU84GM83MG36"}}')
 
         atc = bytearray(msg)
-        atc.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        atc.extend(core.Counter(core.Codens.SealSourceTriples, count=1, gvrsn=kering.Vrsn_1_0).qb64b)
         atc.extend(coring.Prefixer(qb64=iss.pre).qb64b)
         atc.extend(coring.Seqner(sn=0).qb64b)
         atc.extend(iss.saidb)

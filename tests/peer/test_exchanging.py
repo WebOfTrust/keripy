@@ -12,7 +12,6 @@ from keri import core
 from keri.core import coring, serdering, MtrDex, parsing
 
 from keri.app import habbing, forwarding, storing, signing
-from keri.core.coring import CtrDex
 
 from keri.peer import exchanging
 from keri.vdr.eventing import incept
@@ -93,7 +92,8 @@ def test_essrs():
         essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
-        ims.extend(coring.Counter(code=CtrDex.ESSRPayloadGroup, count=1).qb64b)
+        ims.extend(core.Counter(core.Codens.ESSRPayloadGroup, count=1,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
         ims.extend(texter[0].qb64b)
 
         parsing.Parser().parse(ims=ims, kvy=recHby.kvy, exc=exc)

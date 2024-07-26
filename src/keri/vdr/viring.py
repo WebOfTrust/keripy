@@ -15,7 +15,7 @@ from ..db import koming, subing, escrowing
 
 from .. import kering, core
 from ..app import signing
-from ..core import coring, serdering, indexing
+from ..core import coring, serdering, indexing, counting
 from ..db import dbing, basing
 from ..db.dbing import snKey
 from ..help import helping
@@ -440,10 +440,10 @@ class Reger(dbing.LMDBer):
             )
 
             ctr = core.Counter(qb64b=iss, strip=True, gvrsn=kering.Vrsn_1_0)
-            if ctr.code == coring.CtrDex.AttachmentGroup:
+            if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
                 ctr = core.Counter(qb64b=iss, strip=True, gvrsn=kering.Vrsn_1_0)
 
-            if ctr.code == coring.CtrDex.SealSourceCouples:
+            if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
                 coring.Seqner(qb64b=iss, strip=True)
                 saider = coring.Saider(qb64b=iss)
 
