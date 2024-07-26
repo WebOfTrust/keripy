@@ -23,7 +23,7 @@ from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
-from keri.core.eventing import (TraitDex, LastEstLoc, Serials, versify,
+from keri.core.eventing import (TraitDex, LastEstLoc, Kinds, versify,
                                 simple, ample)
 from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
                                 deReceiptTriple,
@@ -3996,7 +3996,7 @@ def test_direct_mode_cbor_mgpk():
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
                            ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
-                           kind=Serials.cbor)
+                           kind=Kinds.cbor)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
         coepre = coeSerder.ked["i"]
@@ -4028,7 +4028,7 @@ def test_direct_mode_cbor_mgpk():
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
                            ndigs=[coring.Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
-                           kind=Serials.mgpk)
+                           kind=Kinds.mgpk)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
         valpre = valSerder.ked["i"]
@@ -4072,7 +4072,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
                            said=coeK.serder.said,
-                           kind=Serials.mgpk)
+                           kind=Kinds.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIcpDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
@@ -4123,7 +4123,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=10,
                            said=fake,
-                           kind=Serials.mgpk)
+                           kind=Kinds.mgpk)
         # sign event not receipt
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
 
@@ -4158,7 +4158,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=valK.prefixer.qb64,
                            sn=valK.sn,
                            said=valK.serder.said,
-                           kind=Serials.cbor)
+                           kind=Kinds.cbor)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
         valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
@@ -4211,7 +4211,7 @@ def test_direct_mode_cbor_mgpk():
                            dig=coeKever.serder.said,
                            ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            sn=csn,
-                           kind=Serials.cbor)
+                           kind=Kinds.cbor)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
@@ -4253,7 +4253,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
                            said=coeK.serder.said,
-                           kind=Serials.mgpk)
+                           kind=Kinds.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
@@ -4305,7 +4305,7 @@ def test_direct_mode_cbor_mgpk():
         coeSerder = interact(pre=coeKever.prefixer.qb64,
                              dig=coeKever.serder.said,
                              sn=csn,
-                             kind=Serials.cbor)
+                             kind=Kinds.cbor)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
@@ -4345,7 +4345,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
                            said=coeK.serder.said,
-                           kind=Serials.mgpk)
+                           kind=Kinds.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
@@ -4444,7 +4444,7 @@ def test_process_nontransferable():
     nsigs = 1  # one attached signature unspecified index
 
     #["v", "t", "d", "i", "s",  "kt", "k", "nt", "n","bt", "b", "c", "a"]
-    ked0 = dict(v=versify(kind=Serials.json, size=0),
+    ked0 = dict(v=versify(kind=Kinds.json, size=0),
                 t=Ilks.icp,
                 d="",
                 i=aid0.qb64,  # qual base 64 prefix
@@ -4532,7 +4532,7 @@ def test_process_transferable():
     nsigs = 1  # one attached signature unspecified index
 
 
-    ked0 = dict(v=versify(kind=Serials.json, size=0),  # version string
+    ked0 = dict(v=versify(kind=Kinds.json, size=0),  # version string
                t=Ilks.icp,
                d="",  # SAID
                i="",  # qb64 prefix
@@ -4659,7 +4659,7 @@ def test_process_manual():
     index = 0
 
     # create key event dict
-    ked0 = dict(v=versify(kind=Serials.json, size=0),
+    ked0 = dict(v=versify(kind=Kinds.json, size=0),
                 t=Ilks.icp,
                 d="",
                 i=aidmat.qb64,  # qual base 64 prefix
@@ -4675,7 +4675,7 @@ def test_process_manual():
                 )
     _, ked0 = coring.Saider.saidify(sad=ked0)
 
-    txsrdr = serdering.SerderKERI(sad=ked0, kind=Serials.json)
+    txsrdr = serdering.SerderKERI(sad=ked0, kind=Kinds.json)
     assert txsrdr.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EKYHED-wvkYDZv4tNUF9qiC1kgnnGLS9YUU8'
                         b'PCWig_n4","i":"DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL","s":"0","kt":"1'
                         b'","k":["DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL"],"nt":"1","n":["EDcWJG'

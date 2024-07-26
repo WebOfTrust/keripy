@@ -47,7 +47,7 @@ class KomerBase:
     def __init__(self, db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
-                 kind: str = coring.Serials.json,
+                 kind: str = coring.Kinds.json,
                  dupsort: bool = False,
                  sep: str = None,
                  **kwa):
@@ -133,9 +133,9 @@ class KomerBase:
         Parameters:
             kind (str): serialization
         """
-        if kind == coring.Serials.mgpk:
+        if kind == coring.Kinds.mgpk:
             return self.__serializeMGPK
-        elif kind == coring.Serials.cbor:
+        elif kind == coring.Kinds.cbor:
             return self.__serializeCBOR
         else:
             return self.__serializeJSON
@@ -146,9 +146,9 @@ class KomerBase:
         Parameters:
             kind (str): deserialization
         """
-        if kind == coring.Serials.mgpk:
+        if kind == coring.Kinds.mgpk:
             return self.__deserializeMGPK
-        elif kind == coring.Serials.cbor:
+        elif kind == coring.Kinds.cbor:
             return self.__deserializeCBOR
         else:
             return self.__deserializeJSON
@@ -218,7 +218,7 @@ class Komer(KomerBase):
                  db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
-                 kind: str = coring.Serials.json,
+                 kind: str = coring.Kinds.json,
                  **kwa):
         """
         Parameters:
@@ -378,7 +378,7 @@ class IoSetKomer(KomerBase):
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
              schema: Type[dataclass],  # class not instance
-             kind: str = coring.Serials.json,
+             kind: str = coring.Kinds.json,
              **kwa):
         """
         Parameters:
@@ -665,7 +665,7 @@ class DupKomer(KomerBase):
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
              schema: Type[dataclass],  # class not instance
-             kind: str = coring.Serials.json,
+             kind: str = coring.Kinds.json,
              **kwa):
         """
         Parameters:

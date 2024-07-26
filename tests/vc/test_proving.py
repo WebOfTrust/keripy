@@ -11,7 +11,7 @@ from keri.kering import Versionage, Vrsn_1_0
 from keri import core
 from keri.core import coring, scheming, parsing, serdering
 from keri.core import counting, Counter, Codens
-from keri.core.coring import Serials, Prefixer, Seqner, Diger
+from keri.core.coring import Kinds, Prefixer, Seqner, Diger
 from keri.core.indexing import Siger
 from keri.core.scheming import CacheResolver
 
@@ -119,7 +119,7 @@ def test_credentialer():
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
-        v=coring.versify(protocol=coring.Protocols.acdc, kind=Serials.json, size=0),
+        v=coring.versify(protocol=coring.Protocols.acdc, kind=Kinds.json, size=0),
         d="",
         i="EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi",
         s="abc",
@@ -131,7 +131,7 @@ def test_credentialer():
 
     creder = serdering.SerderACDC(sad=d)  # Creder(ked=d)
     assert creder.said == said
-    assert creder.kind == Serials.json
+    assert creder.kind == Kinds.json
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
     assert creder.attrib == sub
@@ -147,19 +147,19 @@ def test_credentialer():
     knd1 = creder.kind
     sad1 = creder.sad
 
-    assert knd1 == Serials.json
+    assert knd1 == Kinds.json
     assert sad1 == d
     assert ver1 == Versionage(major=1, minor=0)
 
     creder = serdering.SerderACDC(raw=raw1)  # Creder(raw=raw1)
-    assert creder.kind == Serials.json
+    assert creder.kind == Kinds.json
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.sad == d
     assert creder.size == 211
 
     d2 = dict(d)
     d2['d'] = ""
-    d2["v"] = coring.versify(protocol=coring.Protocols.acdc, kind=Serials.cbor, size=0)
+    d2["v"] = coring.versify(protocol=coring.Protocols.acdc, kind=Kinds.cbor, size=0)
     _, d2 = coring.Saider.saidify(sad=d2)
 
     creder = serdering.SerderACDC(sad=d2)  # Creder(ked=d2)
@@ -185,7 +185,7 @@ def test_credentialer():
     assert creder.sad == d2
 
     d3 = dict(d)
-    d3["v"] = coring.versify(protocol=coring.Protocols.acdc, kind=Serials.mgpk, size=0)
+    d3["v"] = coring.versify(protocol=coring.Protocols.acdc, kind=Kinds.mgpk, size=0)
     _, d3 = coring.Saider.saidify(sad=d3)
     creder = serdering.SerderACDC(sad=d3)  # Creder(ked=d3)
 

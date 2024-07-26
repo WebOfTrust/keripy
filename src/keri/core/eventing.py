@@ -29,7 +29,7 @@ from .. import help
 from ..help import helping
 
 from . import coring
-from .coring import (versify, Serials, Ilks, PreDex, DigDex,
+from .coring import (versify, Kinds, Ilks, PreDex, DigDex,
                      NonTransDex,
                      Number, Seqner, Cigar, Dater,
                      Verfer, Diger, Prefixer, Tholder, Saider)
@@ -506,7 +506,7 @@ def state(pre,
           cnfg=None,  # default to []
           dpre=None,
           version=Version,
-          kind=Serials.json,
+          kind=Kinds.json,
           intive = False,
           ):
     """
@@ -657,7 +657,7 @@ def incept(keys,
            cnfg=None,
            data=None,
            version=Version,
-           kind=Serials.json,
+           kind=Kinds.json,
            code=None,
            intive=False,
            delpre=None,
@@ -806,7 +806,7 @@ def rotate(pre,
            adds=None,
            data=None,
            version=Version,
-           kind=Serials.json,
+           kind=Kinds.json,
            intive = False,
            ):
     """
@@ -974,7 +974,7 @@ def interact(pre,
              sn=1,
              data=None,
              version=Version,
-             kind=Serials.json,
+             kind=Kinds.json,
              ):
     """
     Returns serder of interaction event message.
@@ -1020,7 +1020,7 @@ def receipt(pre,
             said,
             *,
             version=Version,
-            kind=Serials.json
+            kind=Kinds.json
             ):
     """
     Returns serder of event receipt message. Used for both non-trans and trans
@@ -1059,7 +1059,7 @@ def query(route="",
           query=None,
           stamp=None,
           version=Version,
-          kind=Serials.json):
+          kind=Kinds.json):
     """
     Returns serder of query 'qry' message.
     Utility function to automate creation of query messages.
@@ -1117,7 +1117,7 @@ def reply(route="",
           data=None,
           stamp=None,
           version=Version,
-          kind=Serials.json):
+          kind=Kinds.json):
     """
     Returns serder of reply 'rpy' message.
     Utility function to automate creation of reply messages.
@@ -1171,7 +1171,7 @@ def prod(route="",
           query=None,
           stamp=None,
           version=Version,
-          kind=Serials.json):
+          kind=Kinds.json):
     """
     Returns serder of prod, 'pro', msg to request disclosure via bare, 'bar' msg
     of data anchored via seal(s) on KEL for identifier prefix, pre, when given
@@ -1215,7 +1215,7 @@ def bare(route="",
            data=None,
            stamp=None,
            version=Version,
-           kind=Serials.json):
+           kind=Kinds.json):
     """
     Returns serder of bare 'bar' message.
     Utility function to automate creation of unhiding (bareing) messages for

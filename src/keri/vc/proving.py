@@ -11,7 +11,7 @@ from .. import help
 
 from .. import core
 from ..core import coring, serdering
-from ..core.coring import (Serials, versify)
+from ..core.coring import (Kinds, versify)
 from ..db import subing
 from ..kering import Version
 from ..help import helping
@@ -31,7 +31,7 @@ def credential(schema,
                source=None,
                rules=None,
                version=Version,
-               kind=Serials.json):
+               kind=Kinds.json):
     """Utility function to create an ACDC. Creates dict SAD for credential from
     parameters and Saidifyies it before creation.
 

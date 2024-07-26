@@ -451,7 +451,7 @@ class ForwardHandler:
         pevt = bytearray()
         for pather, atc in attachments:
             ked = pather.resolve(embeds)
-            sadder = coring.Sadder(ked=ked, kind=eventing.Serials.json)
+            sadder = coring.Sadder(ked=ked, kind=eventing.Kinds.json)
             pevt.extend(sadder.raw)
             pevt.extend(atc)
 

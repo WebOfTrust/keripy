@@ -894,7 +894,7 @@ class HttpEnd:
         rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
-        sadder = coring.Sadder(ked=cr.payload, kind=eventing.Serials.json)
+        sadder = coring.Sadder(ked=cr.payload, kind=eventing.Kinds.json)
         msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
@@ -1064,7 +1064,7 @@ class ReceiptEnd(doing.DoDoer):
         rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
-        serder = serdering.SerderKERI(sad=cr.payload, kind=eventing.Serials.json)
+        serder = serdering.SerderKERI(sad=cr.payload, kind=eventing.Kinds.json)
 
         pre = serder.ked["i"]
         if self.aids is not None and pre not in self.aids:

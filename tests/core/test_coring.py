@@ -42,7 +42,7 @@ from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
                               Dater, Bexter, Texter,
                               TagDex, PadTagDex, Tagger, Ilker, Traitor,
                               Verser, Versage, )
-from keri.core.coring import Serialage, Serials
+from keri.core.coring import Kindage, Kinds
 from keri.core.coring import (Sizage, MtrDex, Matter)
 from keri.core.coring import (Verfer, Cigar, Saider, DigDex,
                               Diger, Prefixer,)
@@ -4732,7 +4732,7 @@ def test_prefixer():
         prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519)
 
     # Test digest derivation from inception ked
-    vs = versify(version=Version, kind=Serials.json, size=0)
+    vs = versify(version=Version, kind=Kinds.json, size=0)
     sn = 0
     ilk = Ilks.icp
     sith = "1"
@@ -5012,7 +5012,7 @@ def test_saider():
     assert set(Saider.Digests.keys()) == set(code for code in DigDex)
 
     code = MtrDex.Blake3_256
-    kind = Serials.json
+    kind = Kinds.json
     label = Saids.dollar
 
     # Test with valid said qb64
@@ -5214,7 +5214,7 @@ def test_saider():
     assert saider.verify(sad8, prefixed=True)
 
     # verify gets kind from version string if provided when loading from dict
-    vs = versify(version=Version, kind=Serials.mgpk, size=0)  # vaccuous size == 0
+    vs = versify(version=Version, kind=Kinds.mgpk, size=0)  # vaccuous size == 0
     assert vs == 'KERI10MGPK000000_'
     sad9 = dict(sad4)
     sad9['v'] = vs

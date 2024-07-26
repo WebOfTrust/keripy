@@ -27,7 +27,7 @@ from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
 from ..kering import SMELLSIZE, Smellage, smell
 
-from ..kering import Protocols, Serials, versify, deversify, Ilks
+from ..kering import Protocols, Kinds, versify, deversify, Ilks
 
 from .. import help
 from ..help import helping
@@ -379,7 +379,7 @@ class Serder:
     Protocol = None  # class based message protocol, None means any in Protocols is ok
     Proto = Protocols.keri  # default message protocol type for makify on base Serder
     Vrsn = Vrsn_1_0  # default protocol version for protocol type
-    Kind = Serials.json  # default serialization kind
+    Kind = Kinds.json  # default serialization kind
     CVrsn = Vrsn_2_0  # default CESR code table version
 
 
@@ -809,7 +809,7 @@ class Serder:
         if self.kind != kind:
             raise ValidationError(f"Inconsistent kind={self.kind} in {sad}.")
 
-        if self.kind in (Serials.json, Serials.cbor, Serials.mgpk):
+        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
             if size != self.size != len(raw):
                 raise ValidationError(f"Inconsistent size={self.size} in {sad}.")
         else:  # size is not set in version string when kind is CESR
@@ -898,7 +898,7 @@ class Serder:
             ilk = (silk if silk is not None else
                    list(self.Fields[proto][vrsn])[0])  # list(dict) gives list of keys
 
-        if kind not in Serials:
+        if kind not in Kinds:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
         if ilk not in self.Fields[proto][vrsn]:
@@ -986,7 +986,7 @@ class Serder:
             raise SerializeError(f"Missing requires version string field 'v'"
                                           f" in sad = {sad}.")
 
-        if kind in (Serials.json, Serials.cbor, Serials.mgpk):
+        if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
             # this size of sad needs to be computed based on actual version string span
             # since not same for all versions
             sad['v'] = self.Dummy * self.Spans[vrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
@@ -1015,7 +1015,7 @@ class Serder:
                 sad[label] = dig
 
         raw = self.dumps(sad, kind=kind, proto=proto, vrsn=vrsn)  # compute final raw
-        if kind == Serials.cesr:# cesr kind version string does not set size
+        if kind == Kinds.cesr:# cesr kind version string does not set size
             size = len(raw) # size of whole message
 
         self._raw = raw
@@ -1074,7 +1074,7 @@ class Serder:
 
 
 
-    def loads(self, raw, size=None, kind=Serials.json):
+    def loads(self, raw, size=None, kind=Kinds.json):
         """method to handle deserialization by kind
         assumes already sniffed and smelled to determine
         serialization size and kind
@@ -1093,21 +1093,21 @@ class Serder:
         Notes:
             loads of json uses str whereas loads of cbor and msgpack use bytes
         """
-        if kind == Serials.json:
+        if kind == Kinds.json:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing JSON: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
-        elif kind == Serials.mgpk:
+        elif kind == Kinds.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing MGPK: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
-        elif kind == Serials.cbor:
+        elif kind == Kinds.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
@@ -1152,7 +1152,7 @@ class Serder:
 
         raw = self.dumps(sad, kind)
 
-        if kind in (Serials.cesr):  # cesr kind version string does not set size
+        if kind in (Kinds.cesr):  # cesr kind version string does not set size
             size = len(raw) # size of whole message
 
         # must call .verify to ensure these are compatible
@@ -1164,7 +1164,7 @@ class Serder:
         self._size = size
 
 
-    def dumps(self, sad=None, kind=Serials.json, proto=None, vrsn=None):
+    def dumps(self, sad=None, kind=Kinds.json, proto=None, vrsn=None):
         """Method to handle serialization by kind
         Assumes sad fields are properly filled out for serialization kind.
 
@@ -1187,17 +1187,17 @@ class Serder:
         """
         sad = sad if sad is not None else self.sad
 
-        if kind == Serials.json:
+        if kind == Kinds.json:
             raw = json.dumps(sad, separators=(",", ":"),
                              ensure_ascii=False).encode("utf-8")
 
-        elif kind == Serials.mgpk:
+        elif kind == Kinds.mgpk:
             raw = msgpack.dumps(sad)
 
-        elif kind == Serials.cbor:
+        elif kind == Kinds.cbor:
             raw = cbor.dumps(sad)
 
-        elif kind == Serials.cesr:  # does not support list only dict
+        elif kind == Kinds.cesr:  # does not support list only dict
             raw = self._dumps(sad, proto=proto, vrsn=vrsn)
 
         else:

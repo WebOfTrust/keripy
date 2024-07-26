@@ -39,7 +39,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
-from ..kering import (Serials, Serialage, Protocols, Protocolage, Ilkage, Ilks,
+from ..kering import (Kinds, Kindage, Protocols, Protocolage, Ilkage, Ilks,
                       TraitDex, )
 
 from ..help import helping
@@ -94,7 +94,7 @@ def sizeify(ked, kind=None, version=Version):
     if not kind:
         kind = knd
 
-    if kind not in Serials:
+    if kind not in Kinds:
         raise ValueError("Invalid serialization kind = {}".format(kind))
 
     raw = dumps(ked, kind)
@@ -118,7 +118,7 @@ def sizeify(ked, kind=None, version=Version):
 
 
 
-def dumps(ked, kind=Serials.json):
+def dumps(ked, kind=Kinds.json):
     """
     utility function to handle serialization by kind
 
@@ -129,13 +129,13 @@ def dumps(ked, kind=Serials.json):
        ked (Optional(dict, list)): key event dict or message dict to serialize
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
-    if kind == Serials.json:
+    if kind == Kinds.json:
         raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
-    elif kind == Serials.mgpk:
+    elif kind == Kinds.mgpk:
         raw = msgpack.dumps(ked)
 
-    elif kind == Serials.cbor:
+    elif kind == Kinds.cbor:
         raw = cbor.dumps(ked)
     else:
         raise ValueError("Invalid serialization kind = {}".format(kind))
@@ -143,7 +143,7 @@ def dumps(ked, kind=Serials.json):
     return raw
 
 
-def loads(raw, size=None, kind=Serials.json):
+def loads(raw, size=None, kind=Kinds.json):
     """
     utility function to handle deserialization by kind
 
@@ -156,21 +156,21 @@ def loads(raw, size=None, kind=Serials.json):
                    then consume all bytes
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
-    if kind == Serials.json:
+    if kind == Kinds.json:
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
             raise DeserializeError("Error deserializing JSON: {}"
                                        "".format(raw[:size].decode("utf-8")))
 
-    elif kind == Serials.mgpk:
+    elif kind == Kinds.mgpk:
         try:
             ked = msgpack.loads(raw[:size])
         except Exception as ex:
             raise DeserializeError("Error deserializing MGPK: {}"
                                        "".format(raw[:size]))
 
-    elif kind == Serials.cbor:
+    elif kind == Kinds.cbor:
         try:
             ked = cbor.loads(raw[:size])
         except Exception as ex:
@@ -3747,7 +3747,7 @@ class Saider(Matter):
                         otherwise default is Serials.json
 
         """
-        knd = Serials.json
+        knd = Kinds.json
         if 'v' in sad:  # versioned sad
             _, _, knd, _, _ = deversify(sad['v'])
 

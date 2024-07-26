@@ -9,7 +9,7 @@ from keri.app import habbing, keeping
 from keri.core import Signer
 from keri.core import coring, serdering
 from keri.core import eventing as keventing
-from keri.core.coring import versify, Serials, Ilks, MtrDex, Prefixer, Seqner, Saider
+from keri.core.coring import versify, Kinds, Ilks, MtrDex, Prefixer, Seqner, Saider
 from keri.db import basing
 from keri.db.dbing import snKey, dgKey
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \
@@ -323,7 +323,7 @@ def test_backer_issue_revoke(mockHelpingNowUTC):
 def test_prefixer():
 
     pre = "DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
-    vs = versify(version=Version, kind=Serials.json, size=0)
+    vs = versify(version=Version, kind=Kinds.json, size=0)
 
     with pytest.raises(EmptyMaterialError):
         prefixer = Prefixer()

@@ -311,7 +311,7 @@ def exchange(route,
              modifiers=None,
              embeds=None,
              version=coring.Version,
-             kind=coring.Serials.json):
+             kind=coring.Kinds.json):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
