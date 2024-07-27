@@ -655,15 +655,15 @@ class TagCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
-    Tag2:  str = '0K'  # 1 B64 char tag
-    Tag3:  str = 'X'  # 1 B64 char tag
-    Tag4:  str = '1AAF'  # 1 B64 char tag
-    Tag5:  str = '0L'  # 1 B64 char tag with 1 pre pad
-    Tag6:  str = '0M'  # 1 B64 char tag
-    Tag7:  str = 'Y'  # 1 B64 char tag
-    Tag8:  str = '1AAN'  # 1 B64 char tag
-    Tag9:  str = '0N'  # 1 B64 char tag with 1 pre pad
-    Tag10: str = '0O'  # 1 B64 char tag
+    Tag2:  str = '0K'  # 2 B64 char tag
+    Tag3:  str = 'X'  # 3 B64 char tag
+    Tag4:  str = '1AAF'  # 4 B64 char tag
+    Tag5:  str = '0L'  # 5 B64 char tag with 1 pre pad
+    Tag6:  str = '0M'  # 6 B64 char tag
+    Tag7:  str = 'Y'  # 7 B64 char tag
+    Tag8:  str = '1AAN'  # 8 B64 char tag
+    Tag9:  str = '0N'  # 9 B64 char tag with 1 pre pad
+    Tag10: str = '0O'  # 10 B64 char tag
 
     def __iter__(self):
         return iter(astuple(self))
@@ -806,10 +806,8 @@ class Matter:
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
     # Sizes table maps from value of hs chars of code to Sizage namedtuple of
-    # (hs, ss, fs, ls) where hs is hard size, ss is soft size, and fs is full size
-    # and ls is lead size
-    # soft size, ss, should always be 0 for Matter unless fs is None which allows
-    # for variable size multiple of 4, i.e. not (hs + ss) % 4.
+    # (hs, ss, xs, fs, ls) where hs is hard size, ss is soft size,
+    # xs is extra size of soft, fs is full size, and ls is lead size of raw.
     Sizes = {
         'A': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
         'B': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
@@ -2121,11 +2119,12 @@ class Tagger(Matter):
                 tag = tag.decode("utf-8")
             if not Reb64.match(tag.encode("utf-8")):
                 raise InvalidSoftError(f"Non Base64 chars in {tag=}.")
+            # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
             codes = astuple(TagDex)
             l = len(tag)  # soft not empty so l > 0
             if l > len(codes):
                 raise InvalidSoftError("Oversized tag={soft}.")
-            code = codes[l-1]  # get code for size of soft
+            code = codes[l-1]  # get code for for tag of len where (index = len - 1)
             if code in PadTagDex:
                 soft = self.Pad + tag # pre pad for those that need it
             else:
