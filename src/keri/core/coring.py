@@ -2109,7 +2109,7 @@ class Tagger(Matter):
 
 
     """
-    Pad = '_'  # B64 pad char for tag codes with pre-padded soft values
+
 
     def __init__(self, tag='', soft='', code=None, **kwa):
         """
