@@ -3,7 +3,6 @@
 keri.app.notifying module
 
 """
-import datetime
 from collections.abc import Iterable
 from typing import Union, Type
 
@@ -71,7 +70,7 @@ class Notice(coring.Dicter):
             raise ValueError(f"invalid notice, missing attributes in {pad}")
 
         if "dt" not in self._pad:
-            self._pad["dt"] = datetime.datetime.now().isoformat()
+            self._pad["dt"] = helping.nowIso8601()
 
     @property
     def datetime(self):
@@ -386,7 +385,7 @@ class Notifier:
 
         """
 
-        note = notice(attrs, dt=datetime.datetime.now())
+        note = notice(attrs, dt=helping.nowIso8601())
         cig = self.hby.signator.sign(ser=note.raw)
         if self.noter.add(note, cig):
             signal = dict(
