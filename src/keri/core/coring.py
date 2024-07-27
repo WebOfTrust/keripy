@@ -655,15 +655,15 @@ class TagCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
-    Tag2:  str = '0K'  # 1 B64 char tag
-    Tag3:  str = 'X'  # 1 B64 char tag
-    Tag4:  str = '1AAF'  # 1 B64 char tag
-    Tag5:  str = '0L'  # 1 B64 char tag with 1 pre pad
-    Tag6:  str = '0M'  # 1 B64 char tag
-    Tag7:  str = 'Y'  # 1 B64 char tag
-    Tag8:  str = '1AAN'  # 1 B64 char tag
-    Tag9:  str = '0N'  # 1 B64 char tag with 1 pre pad
-    Tag10: str = '0O'  # 1 B64 char tag
+    Tag2:  str = '0K'  # 2 B64 char tag
+    Tag3:  str = 'X'  # 3 B64 char tag
+    Tag4:  str = '1AAF'  # 4 B64 char tag
+    Tag5:  str = '0L'  # 5 B64 char tag with 1 pre pad
+    Tag6:  str = '0M'  # 6 B64 char tag
+    Tag7:  str = 'Y'  # 7 B64 char tag
+    Tag8:  str = '1AAN'  # 8 B64 char tag
+    Tag9:  str = '0N'  # 9 B64 char tag with 1 pre pad
+    Tag10: str = '0O'  # 10 B64 char tag
 
     def __iter__(self):
         return iter(astuple(self))
@@ -671,26 +671,6 @@ class TagCodex:
 
 TagDex = TagCodex()  # Make instance
 
-
-@dataclass(frozen=True)
-class PadTagCodex:
-    """
-    TagCodex is codex of Base64 derivation codes for compactly representing
-    various small Base64 tag values as prepadded special code soft part values.
-    Prepad is 1 B64 char.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
-    Tag5:  str = '0L'  # 1 B64 char tag with 1 pre pad
-    Tag9:  str = '0N'  # 1 B64 char tag with 1 pre pad
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-PadTagDex = PadTagCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -727,9 +707,10 @@ PreDex = PreCodex()  # Make instance
 # namedtuple for size entries in Matter  and Counter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
+# xs is the xtra size into number of xtra (pre-pad) chars as part of soft
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
-Sizage = namedtuple("Sizage", "hs ss fs ls")
+Sizage = namedtuple("Sizage", "hs ss xs fs ls")
 
 
 class Matter:
@@ -746,6 +727,9 @@ class Matter:
         Hards (dict): hard sizes keyed by qb64 selector
         Bards (dict): hard size keyed by qb2 selector
         Sizes (dict): sizes tables for codes
+        Codes (dict): maps code name to code
+        Names (dict): maps code to code name
+        Pad (str): B64 pad char for xtra size pre-padded soft values
 
     Calss Methods:
 
@@ -755,7 +739,7 @@ class Matter:
     Properties:
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
-        soft (str | bytes): soft part of derivation code fs any.
+        soft (str | bytes): soft part of full code exclusive of xs xtra prepad.
                     Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
@@ -790,6 +774,8 @@ class Matter:
     Special soft values are indicated when fn in table is None and ss > 0.
 
     """
+    Codex = MtrDex  # class variable holding MatterDex reference
+
     # Hards table maps from bytes Base64 first code char to int of hard size, hs,
     # (stable) of code. The soft size, ss, (unstable) is always 0 for Matter
     # unless fs is None which allows for variable size multiple of 4, i.e.
@@ -805,107 +791,105 @@ class Matter:
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
     # Sizes table maps from value of hs chars of code to Sizage namedtuple of
-    # (hs, ss, fs, ls) where hs is hard size, ss is soft size, and fs is full size
-    # and ls is lead size
-    # soft size, ss, should always be 0 for Matter unless fs is None which allows
-    # for variable size multiple of 4, i.e. not (hs + ss) % 4.
+    # (hs, ss, xs, fs, ls) where hs is hard size, ss is soft size,
+    # xs is extra size of soft, fs is full size, and ls is lead size of raw.
     Sizes = {
-        'A': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'B': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'C': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'D': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'E': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'F': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'G': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'H': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'I': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'J': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'K': Sizage(hs=1, ss=0, fs=76, ls=0),
-        'L': Sizage(hs=1, ss=0, fs=76, ls=0),
-        'M': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'N': Sizage(hs=1, ss=0, fs=12, ls=0),
-        'O': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'P': Sizage(hs=1, ss=0, fs=124, ls=0),
-        'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'R': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'S': Sizage(hs=1, ss=0, fs=16, ls=0),
-        'T': Sizage(hs=1, ss=0, fs=20, ls=0),
-        'U': Sizage(hs=1, ss=0, fs=24, ls=0),
-        'V': Sizage(hs=1, ss=0, fs=4, ls=1),
-        'W': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'X': Sizage(hs=1, ss=3, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=7, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
-        '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
-        '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=6, fs=8, ls=0),
-        '0M': Sizage(hs=2, ss=6, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=10, fs=12, ls=0),
-        '0O': Sizage(hs=2, ss=10, fs=12, ls=0),
-        '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
-        '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
-        '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-        '1AAF': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
-        '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
-        '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=8, fs=12, ls=0),
-        '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
-        '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
-        '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
-        '2___': Sizage(hs=4, ss=0, fs=8, ls=1),
-        '3__-': Sizage(hs=4, ss=2, fs=12, ls=2),
-        '3___': Sizage(hs=4, ss=0, fs=8, ls=2),
-        '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4C': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5C': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4D': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5D': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6D': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAD': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAD': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAD': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4E': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5E': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6E': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAE': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2),
+        'A': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'B': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'C': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'D': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'E': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'F': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'G': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'H': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'I': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'J': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'K': Sizage(hs=1, ss=0, xs=0, fs=76, ls=0),
+        'L': Sizage(hs=1, ss=0, xs=0, fs=76, ls=0),
+        'M': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
+        'N': Sizage(hs=1, ss=0, xs=0, fs=12, ls=0),
+        'O': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'P': Sizage(hs=1, ss=0, xs=0, fs=124, ls=0),
+        'Q': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'R': Sizage(hs=1, ss=0, xs=0, fs=8, ls=0),
+        'S': Sizage(hs=1, ss=0, xs=0, fs=16, ls=0),
+        'T': Sizage(hs=1, ss=0, xs=0, fs=20, ls=0),
+        'U': Sizage(hs=1, ss=0, xs=0, fs=24, ls=0),
+        'V': Sizage(hs=1, ss=0, xs=0, fs=4, ls=1),
+        'W': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
+        'X': Sizage(hs=1, ss=3, xs=0, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
+        'Z': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
+        '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0D': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0E': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0F': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0G': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0H': Sizage(hs=2, ss=0, xs=0, fs=8, ls=0),
+        '0I': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0J': Sizage(hs=2, ss=2, xs=1, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=6, xs=1, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
+        '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
+        '1AAD': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
+        '1AAE': Sizage(hs=4, ss=0, xs=0, fs=56, ls=0),
+        '1AAF': Sizage(hs=4, ss=4, xs=0, fs=8, ls=0),
+        '1AAG': Sizage(hs=4, ss=0, xs=0, fs=36, ls=0),
+        '1AAH': Sizage(hs=4, ss=0, xs=0, fs=100, ls=0),
+        '1AAI': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAJ': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
+        '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
+        '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
+        '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
+        '2___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=1),
+        '3__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=2),
+        '3___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=2),
+        '4A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
     Codes = asdict(MtrDex)  # map code name to code
     Names = {val : key for key, val in Codes.items()} # invert map code to code name
-
+    Pad = '_'  # B64 pad char for special codes with xtra size pre-padded soft values
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
@@ -916,7 +900,7 @@ class Matter:
             raw (bytes | bytearray | None): unqualified crypto material usable
                     for crypto operations.
             code (str): stable (hard) part of derivation code
-            soft (str | bytes): soft part for special codes
+            soft (str | bytes): soft part exclusive of prepad for special codes
             rize (int | None): raw size in bytes when variable sized material not
                         including lead bytes if any
                         Otherwise None
@@ -953,9 +937,10 @@ class Matter:
             if code not in self.Sizes:
                 raise InvalidCodeError(f"Unsupported {code=}.")
 
-            hs, ss, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
+            hs, ss, xs, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
 
             if fs is None:  # variable sized assumes code[0] in SmallVrzDex or LargeVrzDex
+                # assumes xs must be 0 when variable sized
                 if rize:  # use rsize to determine length of raw to extract
                     if rize < 0:
                         raise InvalidVarRawSizeError(f"Missing var raw size for "
@@ -998,12 +983,13 @@ class Matter:
 
             else:  # fixed size but raw may be empty and/or special soft
                 rize = Matter._rawSize(code)  # get raw size from Sizes for code
+                # if raw then ls may be nonzero
 
                 if ss > 0: # special soft size, so soft must be provided
-                    soft = soft[:ss]
-                    if len(soft) != ss:
+                    soft = soft[:ss-xs]  #
+                    if len(soft) != ss - xs:
                         raise SoftMaterialError(f"Not enough chars in {soft=} "
-                                                 f"with {ss=} for {code=}.")
+                                                 f"with {ss=} {xs=} for {code=}.")
 
                     if not Reb64.match(soft.encode("utf-8")):
                         raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
@@ -1016,13 +1002,13 @@ class Matter:
                 raise RawMaterialError(f"Not enougth raw bytes for code={code}"
                                        f"expected {rize=} got {len(raw)}.")
 
-            self._code = code  # str hard part of code
-            self._soft = soft  # str soft part of code, empty when ss=0
+            self._code = code  # str hard part of full code
+            self._soft = soft  # str soft part of full code exclusive of xs prepad, empty when ss=0
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
-        elif soft and code:  # fixed size and special when raw None
-            hs, ss, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
-            if not fs:  # variable sized code so can't be soft
+        elif soft and code:  # raw None so ls == 0 with fixed size and special
+            hs, ss, xs, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
+            if not fs:  # variable sized code so can't be special soft
                 raise InvalidSoftError(f"Unsupported variable sized {code=} "
                                        f" with {fs=} for special {soft=}.")
 
@@ -1030,17 +1016,17 @@ class Matter:
                 raise InvalidSoftError("Invalid soft size={ss} or lead={ls} "
                                        f" or {code=} {fs=} when special soft.")
 
-            soft = soft[:ss]
-            if len(soft) != ss:
+            soft = soft[:ss-xs]
+            if len(soft) != ss - xs:
                 raise SoftMaterialError(f"Not enough chars in {soft=} "
-                                         f"with {ss=} for {code=}.")
+                                         f"with {ss=} {xs=} for {code=}.")
 
             if not Reb64.match(soft.encode("utf-8")):
                 raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
 
             self._code = code  # str hard part of code
             self._soft = soft  # str soft part of code, empty when ss=0
-            self._raw = b''  # make raw empty when None and when special soft
+            self._raw = b''  # force raw empty when None given and special soft
 
         elif qb64b is not None:
             self._exfil(qb64b)
@@ -1069,7 +1055,7 @@ class Matter:
         Parameters:
             code (str): derivation code Base64
         """
-        hs, ss, fs, ls = cls.Sizes[code]  # get sizes
+        hs, ss, xs, fs, ls = cls.Sizes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
         if fs is None:
             raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
@@ -1084,8 +1070,18 @@ class Matter:
         Parameters:
             code (str): derivation code Base64
         """
-        _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
+        _, _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
         return ls
+
+    @classmethod
+    def _xtraSize(cls, code):
+        """
+        Returns xtra size in bytes for a given code
+        Parameters:
+            code (str): derivation code Base64
+        """
+        _, _, xs, _, _ = cls.Sizes[code]  # get lead size from .Sizes table
+        return xs
 
 
     @classmethod
@@ -1097,7 +1093,7 @@ class Matter:
                 False otherwise
 
         """
-        hs, ss, fs, ls = cls.Sizes[code]
+        hs, ss, xs, fs, ls = cls.Sizes[code]
 
         return (fs is not None and ss > 0)
 
@@ -1178,7 +1174,9 @@ class Matter:
         #else:
             #return (f"{self.code}{self.soft}")
 
-        return (f"{self.code}{self.soft}")
+        _, _, xs, _, _ = self.Sizes[self.code]
+
+        return (f"{self.code}{self.Pad * xs}{self.soft}")
 
 
     @property
@@ -1188,7 +1186,7 @@ class Matter:
         Fixed size codes returns fs from .Sizes
         Variable size codes where fs==None computes fs from .size and sizes
         """
-        hs, ss, fs, _ = self.Sizes[self.code]  # get sizes
+        hs, ss, _, fs, _ = self.Sizes[self.code]  # get sizes
 
         if fs is None:  # compute fs from ss characters in code
             fs = hs + ss + (self.size * 4)
@@ -1288,6 +1286,8 @@ class Matter:
 
     def _infil(self):
         """
+        Create text domain representation
+
         Returns:
             primitive (bytes): fully qualified base64 characters.
         """
@@ -1295,7 +1295,7 @@ class Matter:
         both = self.both  # code + soft, soft may be empty
         raw = self.raw  # bytes or bytearray, raw may be empty
         rs = len(raw)  # raw size
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, xs, fs, ls = self.Sizes[code]
         cs = hs + ss
         # assumes unit tests on Matter.Sizes ensure valid size entries
 
@@ -1342,13 +1342,15 @@ class Matter:
         if (len(full) % 4) or (fs and len(full) != fs):
             raise InvalidCodeSizeError(f"Invalid full size given code{both=} "
                                        f" with raw size={rs}, {cs=}, {hs=}, "
-                                       f"{ss=}, {fs=}, and {ls=}.")
+                                       f"{ss=}, {xs=} {fs=}, and {ls=}.")
 
         return full
 
 
     def _binfil(self):
         """
+        Create binary domain representation
+
         Returns bytes of fully qualified base2 bytes, that is .qb2
         self.code converted to Base2 + self.raw left shifted with pad bits
         equivalent of Base64 decode of .qb64 into .qb2
@@ -1357,7 +1359,7 @@ class Matter:
         both = self.both  # code + soft, soft may be empty
         raw = self.raw  # bytes or bytearray may be empty
 
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, xs, fs, ls = self.Sizes[code]
         cs = hs + ss
         # assumes unit tests on Matter.Sizes ensure valid size entries
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
@@ -1416,13 +1418,23 @@ class Matter:
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs in both tables match
+        hs, ss, xs, fs, ls = self.Sizes[hard]  # assumes hs in both tables match
         cs = hs + ss  # both hs and ss
         # assumes that unit tests on Matter .Sizes .Hards and .Bards ensure that
         # these are well formed.
         # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
 
-        soft = qb64b[hs:hs + ss]  # extract soft chars, empty when ss==0
+        xtra = qb64b[hs:hs+xs]  # extract xtra prepad chars of soft, empty when xs==0
+        if isinstance(xtra, memoryview):
+            xtra = bytes(xtra)
+        if hasattr(xtra, "decode"):
+            xtra = xtra.decode()  # converts bytes/bytearray to str
+        if xtra != f"{self.Pad * xs}":
+            raise UnexpectedCodeError(f"Invalid prepad xtra ={xtra}.")
+
+        # extract soft chars excluding xtra, empty when ss==0 and xs == 0
+        # assumes that when ss == 0 then xs must be 0
+        soft = qb64b[hs+xs:hs+ss]
         if isinstance(soft, memoryview):
             soft = bytes(soft)
         if hasattr(soft, "decode"):
@@ -1493,7 +1505,7 @@ class Matter:
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[hard]
+        hs, ss, xs, fs, ls = self.Sizes[hard]
         cs = hs + ss  # both hs and ss
         # assumes that unit tests on Matter .Sizes .Hards and .Bards ensure that
         # these are well formed.
@@ -1504,7 +1516,13 @@ class Matter:
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        soft = both[hs:hs + ss]  # get soft may be empty
+        xtra = both[hs:hs+xs]  # extract xtra prepad chars of soft, empty when xs==0
+        if xtra != f"{self.Pad * xs}":
+            raise UnexpectedCodeError(f"Invalid prepad xtra ={xtra}.")
+
+        # extract soft chars excluding xtra, empty when ss==0 and xs == 0
+        # assumes that when ss == 0 then xs must be 0
+        soft = both[hs+xs:hs+ss]  # get soft may be empty
 
         if not fs:  # compute fs from size chars in ss part of code
             if len(qb2) < bcs:  # need more bytes
@@ -2068,7 +2086,7 @@ class Tagger(Matter):
         composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
 
     Properties:
-        tag (str): B64 primitive without prepad (strips prepad from soft)
+        tag (str): B64 primitive without prepad (alias of .soft)
 
 
     Inherited Hidden:  (See Matter)
@@ -2089,11 +2107,9 @@ class Tagger(Matter):
 
     Methods:
 
-    def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
 
     """
-    Pad = '_'  # B64 pad char for tag codes with pre-padded soft values
+
 
     def __init__(self, tag='', soft='', code=None, **kwa):
         """
@@ -2112,7 +2128,7 @@ class Tagger(Matter):
                 bytearray after parsing qb64b or qb2. False means do not strip
 
         Parameters:
-            tag (str | bytes):  Base64 plain. Prepad is added as needed.
+            tag (str | bytes):  Base64 automatic sets code given size of tag
 
         """
         if tag:
@@ -2120,15 +2136,13 @@ class Tagger(Matter):
                 tag = tag.decode("utf-8")
             if not Reb64.match(tag.encode("utf-8")):
                 raise InvalidSoftError(f"Non Base64 chars in {tag=}.")
+            # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
             codes = astuple(TagDex)
             l = len(tag)  # soft not empty so l > 0
             if l > len(codes):
                 raise InvalidSoftError("Oversized tag={soft}.")
-            code = codes[l-1]  # get code for size of soft
-            if code in PadTagDex:
-                soft = self.Pad + tag # pre pad for those that need it
-            else:
-                soft = tag
+            code = codes[l-1]  # get code for for tag of len where (index = len - 1)
+            soft = tag
 
 
         super(Tagger, self).__init__(soft=soft, code=code, **kwa)
@@ -2139,17 +2153,10 @@ class Tagger(Matter):
     @property
     def tag(self):
         """Returns:
-                tag (str): B64 primitive without prepad (strips prepad from soft)
+            tag (str): B64 primitive without prepad (alias of self.soft)
 
         """
-        tag = self.soft
-        if self.code in PadTagDex:
-            pad = self.soft[0]
-            tag = self.soft[1:]
-            if pad != self.Pad:
-                raise  InvalidSoftError("Invaid pre {pad=} for {tag=}.")
-
-        return tag
+        return self.soft
 
 
 class Ilker(Tagger):
@@ -2735,7 +2742,7 @@ class Bexter(Matter):
         Property bext: Base64 text value portion of qualified b64 str
         Returns the value portion of .qb64 with text code and leader removed
         """
-        _, _, _, ls = self.Sizes[self.code]
+        _, _, _, _, ls = self.Sizes[self.code]
         bext = encodeB64(bytes([0] * ls) + self.raw)
         ws = 0
         if ls == 0 and bext:

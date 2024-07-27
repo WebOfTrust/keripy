@@ -40,7 +40,7 @@ from keri import core
 from keri.core import coring
 from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
                               Dater, Bexter, Texter,
-                              TagDex, PadTagDex, Tagger, Ilker, Traitor,
+                              TagDex, Tagger, Ilker, Traitor,
                               Verser, Versage, )
 from keri.core.coring import Kindage, Kinds
 from keri.core.coring import (Sizage, MtrDex, Matter)
@@ -204,6 +204,9 @@ def test_matter_class():
     """
     Test Matter class attributes
     """
+    assert Matter.Codex == MtrDex
+
+    assert Matter.Pad == '_'
 
     assert Matter.Codes == \
     {
@@ -411,102 +414,103 @@ def test_matter_class():
     # Codes table with sizes of code (hard) and full primitive material
     assert Matter.Sizes == \
     {
-        'A': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'B': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'C': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'D': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'E': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'F': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'G': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'H': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'I': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'J': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'K': Sizage(hs=1, ss=0, fs=76, ls=0),
-        'L': Sizage(hs=1, ss=0, fs=76, ls=0),
-        'M': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'N': Sizage(hs=1, ss=0, fs=12, ls=0),
-        'O': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'P': Sizage(hs=1, ss=0, fs=124, ls=0),
-        'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
-        'R': Sizage(hs=1, ss=0, fs=8, ls=0),
-        'S': Sizage(hs=1, ss=0, fs=16, ls=0),
-        'T': Sizage(hs=1, ss=0, fs=20, ls=0),
-        'U': Sizage(hs=1, ss=0, fs=24, ls=0),
-        'V': Sizage(hs=1, ss=0, fs=4, ls=1),
-        'W': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'X': Sizage(hs=1, ss=3, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=7, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, fs=44, ls=0),
-        '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
-        '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=6, fs=8, ls=0),
-        '0M': Sizage(hs=2, ss=6, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=10, fs=12, ls=0),
-        '0O': Sizage(hs=2, ss=10, fs=12, ls=0),
-        '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
-        '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
-        '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-        '1AAF': Sizage(hs=4, ss=4, fs=8, ls=0),
-        '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
-        '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
-        '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
-        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAN': Sizage(hs=4, ss=8, fs=12, ls=0),
-        '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
-        '1___': Sizage(hs=4, ss=0, fs=8, ls=0),
-        '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
-        '2___': Sizage(hs=4, ss=0, fs=8, ls=1),
-        '3__-': Sizage(hs=4, ss=2, fs=12, ls=2),
-        '3___': Sizage(hs=4, ss=0, fs=8, ls=2),
-        '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4C': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5C': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4D': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5D': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6D': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAD': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAD': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAD': Sizage(hs=4, ss=4, fs=None, ls=2),
-        '4E': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5E': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6E': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '7AAE': Sizage(hs=4, ss=4, fs=None, ls=0),
-        '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2)
+        'A': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'B': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'C': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'D': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'E': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'F': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'G': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'H': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'I': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'J': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'K': Sizage(hs=1, ss=0, xs=0, fs=76, ls=0),
+        'L': Sizage(hs=1, ss=0, xs=0, fs=76, ls=0),
+        'M': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
+        'N': Sizage(hs=1, ss=0, xs=0, fs=12, ls=0),
+        'O': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'P': Sizage(hs=1, ss=0, xs=0, fs=124, ls=0),
+        'Q': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'R': Sizage(hs=1, ss=0, xs=0, fs=8, ls=0),
+        'S': Sizage(hs=1, ss=0, xs=0, fs=16, ls=0),
+        'T': Sizage(hs=1, ss=0, xs=0, fs=20, ls=0),
+        'U': Sizage(hs=1, ss=0, xs=0, fs=24, ls=0),
+        'V': Sizage(hs=1, ss=0, xs=0, fs=4, ls=1),
+        'W': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
+        'X': Sizage(hs=1, ss=3, xs=0, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
+        'Z': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
+        '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0D': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0E': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0F': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0G': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0H': Sizage(hs=2, ss=0, xs=0, fs=8, ls=0),
+        '0I': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
+        '0J': Sizage(hs=2, ss=2, xs=1, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
+        '0L': Sizage(hs=2, ss=6, xs=1, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
+        '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
+        '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
+        '1AAD': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
+        '1AAE': Sizage(hs=4, ss=0, xs=0, fs=56, ls=0),
+        '1AAF': Sizage(hs=4, ss=4, xs=0, fs=8, ls=0),
+        '1AAG': Sizage(hs=4, ss=0, xs=0, fs=36, ls=0),
+        '1AAH': Sizage(hs=4, ss=0, xs=0, fs=100, ls=0),
+        '1AAI': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAJ': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
+        '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
+        '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
+        '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
+        '2___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=1),
+        '3__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=2),
+        '3___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=2),
+        '4A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6A': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAA': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6B': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAB': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6C': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAC': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6D': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAD': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2)
     }
 
 
     assert Matter.Sizes['A'].hs == 1  # hard size
     assert Matter.Sizes['A'].ss == 0  # soft size
+    assert Matter.Sizes['A'].xs == 0  # xtra size
     assert Matter.Sizes['A'].fs == 44  # full size
     assert Matter.Sizes['A'].ls == 0  # lead size
 
@@ -515,17 +519,18 @@ def test_matter_class():
     for code, val in Matter.Sizes.items():  # hard code
         hs = val.hs
         ss = val.ss
+        xs = val.xs
         fs = val.fs
         ls = val.ls
         cs = hs + ss
 
         assert (isinstance(hs, int) and isinstance(ss, int) and
                 isinstance(ls, int))
-        assert hs > 0 and ss >= 0 and ls in (0, 1, 2)
+        assert hs > 0 and ss >= 0 and xs in (0, 1, 2) and ls in (0, 1, 2)
         assert len(code) == hs
 
         if fs is None:  # variable sized
-            assert ss > 0 and not (cs % 4)  # full code is 24 bit aligned
+            assert ss > 0 and xs == 0 and not (cs % 4)  # full code is 24 bit aligned
             # assumes that Matter methods also ensure (ls + rs) % 3 == 0 i.e.
             # variable raw with lead is 24 bit aligned, where rs is raw size.
             assert code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex
@@ -561,10 +566,12 @@ def test_matter_class():
             assert not (code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex)
             assert isinstance(fs, int) and fs > 0 and not fs % 4
             assert fs >= cs
+            assert xs <= ss  # xs must be zero if ss is
             assert cs % 4 != 3  # prevent ambiguous conversion
             if ss > 0 and fs == cs:  # special soft value with raw empty
                 assert ls == 0  # no lead
                 assert Matter._rawSize(code) == 0
+                assert xs < ss  # soft must not be empty, not all prepad
 
             # verify correct sizes given raw size. Assumes properties above
             rs = ((fs - cs) * 3 // 4) - ls  # raw size bytes sans lead
@@ -599,6 +606,7 @@ def test_matter_class():
 
     assert Matter._rawSize(MtrDex.Ed25519) == 32
     assert Matter._leadSize(MtrDex.Ed25519) == 0
+    assert Matter._xtraSize(MtrDex.Ed25519) == 0
     assert not Matter._special(MtrDex.Ed25519)
     assert Matter._special(MtrDex.Tag3)
 
@@ -1977,7 +1985,7 @@ def test_matter_special():
 
     # Test TBD0S  '1__-'
     # soft special but valid non-empty raw as part of primitive
-    code = MtrDex.TBD0S  # sizes '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
+    code = MtrDex.TBD0S  # sizes '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
     rs = Matter._rawSize(code)  # raw size
     soft = 'TG'
     qb64 = '1__-TGB1dnd4'
@@ -2038,11 +2046,11 @@ def test_matter_special():
 
     # Test TBD1S  '2__-'
     # soft special but valid non-empty raw as part of primitive
-    code = MtrDex.TBD1S  # sizes '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
+    code = MtrDex.TBD1S  # sizes '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
     rs = Matter._rawSize(code)  # raw size
-    soft = 'TG'
-    qb64 = '2__-TGAAdXZ3'  # see lead byte
-    qb2 = b'\xdb\xff\xfeL`\x00uvw'
+    soft = 'T'
+    qb64 = '2__-_TAAdXZ3'  # see prepad and see lead byte
+    qb2 = b'\xdb\xff\xfe\xfd0\x00uvw'
     raw = b'uvw'
 
     assert rs == 3
@@ -2079,8 +2087,8 @@ def test_matter_special():
 
     # Same as above but raw all zeros
 
-    qb64 = '2__-TGAAAAAA'
-    qb2 = b'\xdb\xff\xfeL`\x00\x00\x00\x00'
+    qb64 = '2__-_TAAAAAA'
+    qb2 = b'\xdb\xff\xfe\xfd0\x00\x00\x00\x00'
     raw = b'\x00\x00\x00'
 
     assert rs == 3
@@ -3359,7 +3367,6 @@ def test_tagger():
     # Tag1
     tag = 'v'
     code = MtrDex.Tag1
-    soft = '_v'
     qb64 = '0J_v'
     qb64b = qb64.encode("utf-8")
     qb2 = decodeB64(qb64b)
@@ -3367,7 +3374,7 @@ def test_tagger():
 
     tagger = Tagger(tag=tag)  # defaults
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
@@ -3377,7 +3384,7 @@ def test_tagger():
 
     tagger = Tagger(qb2=qb2)
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
@@ -3387,7 +3394,7 @@ def test_tagger():
 
     tagger = Tagger(qb64=qb64)
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
@@ -3397,7 +3404,7 @@ def test_tagger():
 
     tagger = Tagger(qb64b=qb64b)
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
@@ -5784,7 +5791,6 @@ if __name__ == "__main__":
     test_traitor()
     test_verser()
     #test_texter()
-    #test_counter()
     #test_prodex()
     #test_indexer()
     test_number()
