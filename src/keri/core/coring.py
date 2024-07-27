@@ -747,6 +747,9 @@ class Matter:
         Hards (dict): hard sizes keyed by qb64 selector
         Bards (dict): hard size keyed by qb2 selector
         Sizes (dict): sizes tables for codes
+        Codes (dict): maps code name to code
+        Names (dict): maps code to code name
+        Pad (str): B64 pad char for xtra size pre-padded soft values
 
     Calss Methods:
 
@@ -756,7 +759,7 @@ class Matter:
     Properties:
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
-        soft (str | bytes): soft part of derivation code fs any.
+        soft (str | bytes): soft part of full code exclusive of xs xtra prepad.
                     Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
@@ -791,6 +794,8 @@ class Matter:
     Special soft values are indicated when fn in table is None and ss > 0.
 
     """
+    Codex = MtrDex  # class variable holding MatterDex reference
+
     # Hards table maps from bytes Base64 first code char to int of hard size, hs,
     # (stable) of code. The soft size, ss, (unstable) is always 0 for Matter
     # unless fs is None which allows for variable size multiple of 4, i.e.
@@ -904,7 +909,7 @@ class Matter:
 
     Codes = asdict(MtrDex)  # map code name to code
     Names = {val : key for key, val in Codes.items()} # invert map code to code name
-
+    Pad = '_'  # B64 pad char for special codes with xtra size pre-padded soft values
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
@@ -915,7 +920,7 @@ class Matter:
             raw (bytes | bytearray | None): unqualified crypto material usable
                     for crypto operations.
             code (str): stable (hard) part of derivation code
-            soft (str | bytes): soft part for special codes
+            soft (str | bytes): soft part exclusive of prepad for special codes
             rize (int | None): raw size in bytes when variable sized material not
                         including lead bytes if any
                         Otherwise None
@@ -955,6 +960,7 @@ class Matter:
             hs, ss, xs, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
 
             if fs is None:  # variable sized assumes code[0] in SmallVrzDex or LargeVrzDex
+                # assumes xs must be 0 when variable sized
                 if rize:  # use rsize to determine length of raw to extract
                     if rize < 0:
                         raise InvalidVarRawSizeError(f"Missing var raw size for "
@@ -997,12 +1003,13 @@ class Matter:
 
             else:  # fixed size but raw may be empty and/or special soft
                 rize = Matter._rawSize(code)  # get raw size from Sizes for code
+                # if raw then ls may be nonzero
 
                 if ss > 0: # special soft size, so soft must be provided
-                    soft = soft[:ss]
-                    if len(soft) != ss:
+                    soft = soft[:ss-xs]  #
+                    if len(soft) != ss - xs:
                         raise SoftMaterialError(f"Not enough chars in {soft=} "
-                                                 f"with {ss=} for {code=}.")
+                                                 f"with {ss=} {xs=} for {code=}.")
 
                     if not Reb64.match(soft.encode("utf-8")):
                         raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
@@ -1015,13 +1022,13 @@ class Matter:
                 raise RawMaterialError(f"Not enougth raw bytes for code={code}"
                                        f"expected {rize=} got {len(raw)}.")
 
-            self._code = code  # str hard part of code
-            self._soft = soft  # str soft part of code, empty when ss=0
+            self._code = code  # str hard part of full code
+            self._soft = soft  # str soft part of full code exclusive of xs prepad, empty when ss=0
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
-        elif soft and code:  # fixed size and special when raw None
+        elif soft and code:  # raw None so ls == 0 with fixed size and special
             hs, ss, xs, fs, ls = self.Sizes[code]  # assumes unit tests force valid sizes
-            if not fs:  # variable sized code so can't be soft
+            if not fs:  # variable sized code so can't be special soft
                 raise InvalidSoftError(f"Unsupported variable sized {code=} "
                                        f" with {fs=} for special {soft=}.")
 
@@ -1029,17 +1036,17 @@ class Matter:
                 raise InvalidSoftError("Invalid soft size={ss} or lead={ls} "
                                        f" or {code=} {fs=} when special soft.")
 
-            soft = soft[:ss]
-            if len(soft) != ss:
+            soft = soft[:ss-xs]
+            if len(soft) != ss - xs:
                 raise SoftMaterialError(f"Not enough chars in {soft=} "
-                                         f"with {ss=} for {code=}.")
+                                         f"with {ss=} {xs=} for {code=}.")
 
             if not Reb64.match(soft.encode("utf-8")):
                 raise InvalidSoftError(f"Non Base64 chars in {soft=}.")
 
             self._code = code  # str hard part of code
             self._soft = soft  # str soft part of code, empty when ss=0
-            self._raw = b''  # make raw empty when None and when special soft
+            self._raw = b''  # force raw empty when None given and special soft
 
         elif qb64b is not None:
             self._exfil(qb64b)
@@ -1085,6 +1092,16 @@ class Matter:
         """
         _, _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
         return ls
+
+    @classmethod
+    def _xtraSize(cls, code):
+        """
+        Returns xtra size in bytes for a given code
+        Parameters:
+            code (str): derivation code Base64
+        """
+        _, _, xs, _, _ = cls.Sizes[code]  # get lead size from .Sizes table
+        return xs
 
 
     @classmethod
@@ -1177,7 +1194,9 @@ class Matter:
         #else:
             #return (f"{self.code}{self.soft}")
 
-        return (f"{self.code}{self.soft}")
+        _, _, xs, _, _ = self.Sizes[self.code]
+
+        return (f"{self.code}{self.Pad * xs}{self.soft}")
 
 
     @property
@@ -1287,6 +1306,8 @@ class Matter:
 
     def _infil(self):
         """
+        Create text domain representation
+
         Returns:
             primitive (bytes): fully qualified base64 characters.
         """
@@ -1341,13 +1362,15 @@ class Matter:
         if (len(full) % 4) or (fs and len(full) != fs):
             raise InvalidCodeSizeError(f"Invalid full size given code{both=} "
                                        f" with raw size={rs}, {cs=}, {hs=}, "
-                                       f"{ss=}, {fs=}, and {ls=}.")
+                                       f"{ss=}, {xs=} {fs=}, and {ls=}.")
 
         return full
 
 
     def _binfil(self):
         """
+        Create binary domain representation
+
         Returns bytes of fully qualified base2 bytes, that is .qb2
         self.code converted to Base2 + self.raw left shifted with pad bits
         equivalent of Base64 decode of .qb64 into .qb2
@@ -1421,7 +1444,17 @@ class Matter:
         # these are well formed.
         # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
 
-        soft = qb64b[hs:hs + ss]  # extract soft chars, empty when ss==0
+        xtra = qb64b[hs:hs+xs]  # extract xtra prepad chars of soft, empty when xs==0
+        if isinstance(xtra, memoryview):
+            xtra = bytes(xtra)
+        if hasattr(xtra, "decode"):
+            xtra = xtra.decode()  # converts bytes/bytearray to str
+        if xtra != f"{self.Pad * xs}":
+            raise UnexpectedCodeError(f"Invalid prepad xtra ={xtra}.")
+
+        # extract soft chars excluding xtra, empty when ss==0 and xs == 0
+        # assumes that when ss == 0 then xs must be 0
+        soft = qb64b[hs+xs:hs+ss]
         if isinstance(soft, memoryview):
             soft = bytes(soft)
         if hasattr(soft, "decode"):
@@ -1503,7 +1536,13 @@ class Matter:
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        soft = both[hs:hs + ss]  # get soft may be empty
+        xtra = both[hs:hs+xs]  # extract xtra prepad chars of soft, empty when xs==0
+        if xtra != f"{self.Pad * xs}":
+            raise UnexpectedCodeError(f"Invalid prepad xtra ={xtra}.")
+
+        # extract soft chars excluding xtra, empty when ss==0 and xs == 0
+        # assumes that when ss == 0 then xs must be 0
+        soft = both[hs+xs:hs+ss]  # get soft may be empty
 
         if not fs:  # compute fs from size chars in ss part of code
             if len(qb2) < bcs:  # need more bytes

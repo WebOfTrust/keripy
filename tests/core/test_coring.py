@@ -204,6 +204,9 @@ def test_matter_class():
     """
     Test Matter class attributes
     """
+    assert Matter.Codex == MtrDex
+
+    assert Matter.Pad == '_'
 
     assert Matter.Codes == \
     {
@@ -527,7 +530,7 @@ def test_matter_class():
         assert len(code) == hs
 
         if fs is None:  # variable sized
-            assert ss > 0 and not (cs % 4)  # full code is 24 bit aligned
+            assert ss > 0 and xs == 0 and not (cs % 4)  # full code is 24 bit aligned
             # assumes that Matter methods also ensure (ls + rs) % 3 == 0 i.e.
             # variable raw with lead is 24 bit aligned, where rs is raw size.
             assert code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex
@@ -563,10 +566,12 @@ def test_matter_class():
             assert not (code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex)
             assert isinstance(fs, int) and fs > 0 and not fs % 4
             assert fs >= cs
+            assert xs <= ss  # xs must be zero if ss is
             assert cs % 4 != 3  # prevent ambiguous conversion
             if ss > 0 and fs == cs:  # special soft value with raw empty
                 assert ls == 0  # no lead
                 assert Matter._rawSize(code) == 0
+                assert xs < ss  # soft must not be empty, not all prepad
 
             # verify correct sizes given raw size. Assumes properties above
             rs = ((fs - cs) * 3 // 4) - ls  # raw size bytes sans lead
@@ -601,6 +606,7 @@ def test_matter_class():
 
     assert Matter._rawSize(MtrDex.Ed25519) == 32
     assert Matter._leadSize(MtrDex.Ed25519) == 0
+    assert Matter._xtraSize(MtrDex.Ed25519) == 0
     assert not Matter._special(MtrDex.Ed25519)
     assert Matter._special(MtrDex.Tag3)
 
