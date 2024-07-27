@@ -40,7 +40,7 @@ from keri import core
 from keri.core import coring
 from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
                               Dater, Bexter, Texter,
-                              TagDex, PadTagDex, Tagger, Ilker, Traitor,
+                              TagDex, Tagger, Ilker, Traitor,
                               Verser, Versage, )
 from keri.core.coring import Kindage, Kinds
 from keri.core.coring import (Sizage, MtrDex, Matter)

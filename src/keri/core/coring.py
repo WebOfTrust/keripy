@@ -672,26 +672,6 @@ class TagCodex:
 TagDex = TagCodex()  # Make instance
 
 
-@dataclass(frozen=True)
-class PadTagCodex:
-    """
-    TagCodex is codex of Base64 derivation codes for compactly representing
-    various small Base64 tag values as prepadded special code soft part values.
-    Prepad is 1 B64 char.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
-    Tag5:  str = '0L'  # 1 B64 char tag with 1 pre pad
-    Tag9:  str = '0N'  # 1 B64 char tag with 1 pre pad
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-PadTagDex = PadTagCodex()  # Make instance
-
 
 @dataclass(frozen=True)
 class PreCodex:
@@ -2106,7 +2086,7 @@ class Tagger(Matter):
         composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
 
     Properties:
-        tag (str): B64 primitive without prepad (strips prepad from soft)
+        tag (str): B64 primitive without prepad (alias of .soft)
 
 
     Inherited Hidden:  (See Matter)
@@ -2127,8 +2107,6 @@ class Tagger(Matter):
 
     Methods:
 
-    def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
 
     """
     Pad = '_'  # B64 pad char for tag codes with pre-padded soft values
@@ -2150,7 +2128,7 @@ class Tagger(Matter):
                 bytearray after parsing qb64b or qb2. False means do not strip
 
         Parameters:
-            tag (str | bytes):  Base64 plain. Prepad is added as needed.
+            tag (str | bytes):  Base64 automatic sets code given size of tag
 
         """
         if tag:
@@ -2164,10 +2142,6 @@ class Tagger(Matter):
             if l > len(codes):
                 raise InvalidSoftError("Oversized tag={soft}.")
             code = codes[l-1]  # get code for for tag of len where (index = len - 1)
-            #if code in PadTagDex:
-                #soft = self.Pad + tag # pre pad for those that need it
-            #else:
-                #soft = tag
             soft = tag
 
 
@@ -2179,17 +2153,10 @@ class Tagger(Matter):
     @property
     def tag(self):
         """Returns:
-                tag (str): B64 primitive without prepad (strips prepad from soft)
+            tag (str): B64 primitive without prepad (alias of self.soft)
 
         """
-        tag = self.soft
-        #if self.code in PadTagDex:
-            #pad = self.soft[0]
-            #tag = self.soft[1:]
-            #if pad != self.Pad:
-                #raise  InvalidSoftError("Invaid pre {pad=} for {tag=}.")
-
-        return tag
+        return self.soft
 
 
 class Ilker(Tagger):
