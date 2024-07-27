@@ -9,8 +9,8 @@ import os
 from keri import help
 from keri.help import helping
 
-from keri import core
-from keri.core import coring, eventing, parsing, serdering, indexing
+from keri import core, kering
+from keri.core import coring, eventing, parsing, serdering, indexing, counting
 
 from keri.app import habbing
 
@@ -340,14 +340,14 @@ def test_replay():
         del msg[:len(serder.raw)]
         assert len(msg) == 1076
 
-        counter = coring.Counter(qb64b=msg)  # attachment length quadlets counter
-        assert counter.code == coring.CtrDex.AttachmentGroup
+        counter = core.Counter(qb64b=msg, gvrsn=kering.Vrsn_1_0)  # attachment length quadlets counter
+        assert counter.code == counting.CtrDex_1_0.AttachmentGroup
         assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 268
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1072 == 268 * 4
 
-        counter = coring.Counter(qb64b=msg)  # indexed signatures counter
-        assert counter.code == coring.CtrDex.ControllerIdxSigs
+        counter = core.Counter(qb64b=msg, gvrsn=kering.Vrsn_1_0)  # indexed signatures counter
+        assert counter.code == counting.CtrDex_1_0.ControllerIdxSigs
         assert counter.count == 3  # multisig deb
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1068
@@ -357,8 +357,8 @@ def test_replay():
             del msg[:len(siger.qb64b)]
         assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
 
-        counter = coring.Counter(qb64b=msg)  # trans receipt (vrc) counter
-        assert counter.code == coring.CtrDex.TransReceiptQuadruples
+        counter = core.Counter(qb64b=msg, gvrsn=kering.Vrsn_1_0)  # trans receipt (vrc) counter
+        assert counter.code == counting.CtrDex_1_0.TransReceiptQuadruples
         assert counter.count == 3  # multisig cam
         del msg[:len(counter.qb64b)]
         assert len(msg) == 800
@@ -368,8 +368,8 @@ def test_replay():
         assert len(msg) == 800 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
                                       len(diger.qb64b) + len(siger.qb64b)) == 200
 
-        counter = coring.Counter(qb64b=msg)  # nontrans receipt (rct) counter
-        assert counter.code == coring.CtrDex.NonTransReceiptCouples
+        counter = core.Counter(qb64b=msg, gvrsn=kering.Vrsn_1_0)  # nontrans receipt (rct) counter
+        assert counter.code == counting.CtrDex_1_0.NonTransReceiptCouples
         assert counter.count == 1  # single sig bev
         del msg[:len(counter.qb64b)]
         assert len(msg) == 196
@@ -378,8 +378,8 @@ def test_replay():
             prefixer, cigar = eventing.deReceiptCouple(msg, strip=True)
         assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
-        counter = coring.Counter(qb64b=msg)  # first seen replay couple counter
-        assert counter.code == coring.CtrDex.FirstSeenReplayCouples
+        counter = core.Counter(qb64b=msg, gvrsn=kering.Vrsn_1_0)  # first seen replay couple counter
+        assert counter.code == counting.CtrDex_1_0.FirstSeenReplayCouples
         assert counter.count == 1
         del msg[:len(counter.qb64b)]
         assert len(msg) == 60

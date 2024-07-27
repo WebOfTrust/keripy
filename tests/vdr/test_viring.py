@@ -9,7 +9,7 @@ import os
 
 import lmdb
 
-from keri.core.coring import Diger, versify, Serials
+from keri.core.coring import Diger, versify, Kinds
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger
 
@@ -77,7 +77,7 @@ def test_issuer():
     #  test with registry inception (vcp) event
     regk = regb
     sn = 0
-    vs = versify(kind=Serials.json, size=20)
+    vs = versify(kind=Kinds.json, size=20)
 
     vcp = dict(v=vs, i=regk.decode("utf-8"),
                s="{:x}".format(sn), b=[rarb.decode("utf-8")],
@@ -184,7 +184,7 @@ def test_issuer():
         #  test with verifiable credential issuance (iss) event
         vcdig = b'EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
         sn = 0
-        vs = versify(kind=Serials.json, size=20)
+        vs = versify(kind=Kinds.json, size=20)
 
         vcp = dict(v=vs, i=vcdig.decode("utf-8"),
                    s="{:x}".format(sn),
@@ -267,7 +267,7 @@ def test_clone():
 
     #  test with registry inception (vcp) event
     sn = 0
-    vs = versify(kind=Serials.json, size=20)
+    vs = versify(kind=Kinds.json, size=20)
 
     vcp = dict(v=vs, i=regk.decode("utf-8"),
                s="{:x}".format(sn), b=[rarb.decode("utf-8")],

@@ -17,7 +17,8 @@ from . import keeping, configing
 from .. import help
 from .. import kering
 from .. import core
-from ..core import coring, eventing, parsing, routing, serdering, indexing
+from ..core import (coring, eventing, parsing, routing, serdering, indexing,
+                    Counter, Codens)
 from ..db import dbing, basing
 from ..kering import MissingSignatureError, Roles
 
@@ -1567,8 +1568,8 @@ class BaseHab:
         dig = bytes(dig)
         key = dbing.dgKey(pre, dig)  # digest key
         msg.extend(self.db.getEvt(key))
-        msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=self.db.cntSigs(key)).qb64b)  # attach cnt
+        msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
+                           gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in self.db.getSigsIter(key):
             msg.extend(sig)  # attach sig
         return msg
@@ -2035,14 +2036,14 @@ class BaseHab:
         serder, sigs, couple = self.getOwnEvent(sn=sn,
                                                 allowPartiallySigned=allowPartiallySigned)
         msg.extend(serder.raw)
-        msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=len(sigs)).qb64b)  # attach cnt
+        msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigs),
+                           gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in sigs:
             msg.extend(sig.qb64b)  # attach sig
 
         if couple is not None:
-            msg.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                      count=1).qb64b)
+            msg.extend(Counter(Codens.SealSourceCouples, count=1,
+                               gvrsn=kering.Vrsn_1_0).qb64b)
             msg.extend(couple)
 
         return msg
@@ -2727,7 +2728,7 @@ class GroupHab(BaseHab):
                                       rmids=self.rmids)
         self.save(habord)
         self.prefixes.add(self.pre)
-        
+
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
         # MissingSignatureError
         try:

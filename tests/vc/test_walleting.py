@@ -3,7 +3,7 @@
 tests.vc.walleting module
 
 """
-from keri import core
+from keri import core, kering
 from keri.core import coring, parsing
 from keri.core.eventing import SealEvent
 
@@ -56,7 +56,8 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         sidReg.processEscrows()
 
         msg = bytearray(creder.raw)
-        msg.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        msg.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
         msg.extend(coring.Prefixer(qb64=iss.pre).qb64b)
         msg.extend(coring.Seqner(sn=0).qb64b)
         msg.extend(iss.saidb)

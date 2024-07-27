@@ -18,7 +18,7 @@ from keri import kering
 from .. import core
 from .. import help
 from ..core import serdering, coring, indexing
-from ..core.coring import (MtrDex, Serials, versify, Prefixer,
+from ..core.coring import (MtrDex, Kinds, versify, Prefixer,
                            Ilks, Seqner, Verfer, Number)
 from ..core.signing import (Salter,)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs
@@ -39,7 +39,7 @@ def incept(
         nonce=None,
         cnfg=None,
         version=Version,
-        kind=Serials.json,
+        kind=Kinds.json,
         code=MtrDex.Blake3_256,
 ):
     """ Returns serder of credential registry inception (vcp) message event
@@ -118,7 +118,7 @@ def rotate(
         cuts=None,
         adds=None,
         version=Version,
-        kind=Serials.json,
+        kind=Kinds.json,
 ):
     """ Returns serder of registry rotation (brt) message event
 
@@ -214,7 +214,7 @@ def issue(
         vcdig,
         regk,
         version=Version,
-        kind=Serials.json,
+        kind=Kinds.json,
         dt=None
 ):
     """ Returns serder of issuance (iss) message event
@@ -256,7 +256,7 @@ def revoke(
         regk,
         dig,
         version=Version,
-        kind=Serials.json,
+        kind=Kinds.json,
         dt=None
 ):
     """ Returns serder of backerless credential revocation (rev) message event
@@ -307,7 +307,7 @@ def backerIssue(
         regsn,
         regd,
         version=Version,
-        kind=Serials.json,
+        kind=Kinds.json,
         dt=None,
 ):
     """ Returns serder of backer issuance (bis) message event
@@ -361,7 +361,7 @@ def backerRevoke(
         regd,
         dig,
         version=Version,
-        kind=Serials.json,
+        kind=Kinds.json,
         dt=None
 ):
     """ Returns serder of backer credential revocation (brv) message event
@@ -521,7 +521,7 @@ def vcstate(vcpre,
             ra=None,
             dts=None,  # default current datetime
             version=Version,
-            kind=Serials.json,
+            kind=Kinds.json,
             ):
     """ Returns the credential transaction state notification
 
@@ -591,7 +591,7 @@ def query(regk,
           dtb=None,
           stamp=None,
           version=Version,
-          kind=Serials.json
+          kind=Kinds.json
           ):
     """ Returns serder of credentialquery (qry) event message.
 

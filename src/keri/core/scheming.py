@@ -12,7 +12,7 @@ import jsonschema
 import msgpack
 
 from . import coring
-from .coring import MtrDex, Serials, Saider, Saids
+from .coring import MtrDex, Kinds, Saider, Saids
 from .. import help, kering
 from ..kering import ValidationError, DeserializeError
 
@@ -109,7 +109,7 @@ class JSONSchema:
 
         return self.resolver.resolve(uri)
 
-    def load(self, raw, kind=Serials.json):
+    def load(self, raw, kind=Kinds.json):
         """ Schema loader
 
         Loads schema based on kind by performing deserialization on raw bytes of schema
@@ -122,21 +122,21 @@ class JSONSchema:
             tuple: (dict, Serials, Saider) of schema
 
         """
-        if kind == Serials.json:
+        if kind == Kinds.json:
             try:
                 sed = json.loads(raw.decode("utf-8"))
             except Exception as ex:
                 raise DeserializeError("Error deserializing JSON: {} {}"
                                            "".format(raw.decode("utf-8"), ex))
 
-        elif kind == Serials.mgpk:
+        elif kind == Kinds.mgpk:
             try:
                 sed = msgpack.loads(raw)
             except Exception as ex:
                 raise DeserializeError("Error deserializing MGPK: {} {}"
                                            "".format(raw, ex))
 
-        elif kind == Serials.cbor:
+        elif kind == Kinds.cbor:
             try:
                 sed = cbor.loads(raw)
             except Exception as ex:
@@ -158,7 +158,7 @@ class JSONSchema:
         return sed, kind, saider
 
     @staticmethod
-    def dump(sed, kind=Serials.json):
+    def dump(sed, kind=Kinds.json):
         """ Serailize schema based on kind
 
         Parameters:

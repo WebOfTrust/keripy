@@ -39,13 +39,13 @@ def test_mimes():
     assert ending.KeriMimes.cesr == 'application/keri+cesr'
 
     # Usage: to get Mime from serialization kind
-    assert getattr(ending.Mimes, coring.Serials.json.lower()) == ending.Mimes.json
-    assert getattr(ending.Mimes, coring.Serials.mgpk.lower()) == ending.Mimes.mgpk
-    assert getattr(ending.Mimes, coring.Serials.cbor.lower()) == ending.Mimes.cbor
+    assert getattr(ending.Mimes, coring.Kinds.json.lower()) == ending.Mimes.json
+    assert getattr(ending.Mimes, coring.Kinds.mgpk.lower()) == ending.Mimes.mgpk
+    assert getattr(ending.Mimes, coring.Kinds.cbor.lower()) == ending.Mimes.cbor
 
-    assert getattr(ending.KeriMimes, coring.Serials.json.lower()) == ending.KeriMimes.json
-    assert getattr(ending.KeriMimes, coring.Serials.mgpk.lower()) == ending.KeriMimes.mgpk
-    assert getattr(ending.KeriMimes, coring.Serials.cbor.lower()) == ending.KeriMimes.cbor
+    assert getattr(ending.KeriMimes, coring.Kinds.json.lower()) == ending.KeriMimes.json
+    assert getattr(ending.KeriMimes, coring.Kinds.mgpk.lower()) == ending.KeriMimes.mgpk
+    assert getattr(ending.KeriMimes, coring.Kinds.cbor.lower()) == ending.KeriMimes.cbor
     """Done Test"""
 
 

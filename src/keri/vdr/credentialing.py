@@ -12,6 +12,7 @@ from keri.vdr import viring
 from .. import kering, help
 from ..app import agenting
 from ..app.habbing import GroupHab
+from .. import kering, core
 from ..core import parsing, coring, scheming, serdering
 from ..core.coring import Seqner, MtrDex
 from ..core.eventing import TraitDex
@@ -931,7 +932,8 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         postman.send(serder=source, attachment=atc)
 
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
-    atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+    atc = bytearray(core.Counter(core.Codens.SealSourceTriples,
+                                 count=1, gvrsn=kering.Vrsn_1_0).qb64b)
     atc.extend(prefixer.qb64b)
     atc.extend(seqner.qb64b)
     atc.extend(saider.qb64b)

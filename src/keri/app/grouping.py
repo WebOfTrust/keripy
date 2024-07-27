@@ -9,7 +9,7 @@ module for enveloping and forwarding KERI message
 from hio.base import doing
 from hio.help import decking
 
-from .. import kering
+from .. import kering, core
 from .. import help
 from ..app import delegating, agenting
 from ..core import coring, routing, eventing, parsing, serdering, indexing
@@ -518,14 +518,14 @@ def getEscrowedEvent(db, pre, sn):
 
     msg = bytearray()
     msg.extend(serder.raw)
-    msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                              count=len(sigs)).qb64b)  # attach cnt
+    msg.extend(core.Counter(core.Codens.ControllerIdxSigs,
+                            count=len(sigs), gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
     for sig in sigs:
         msg.extend(sig.qb64b)  # attach sig
 
     if couple is not None:
-        msg.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                  count=1).qb64b)
+        msg.extend(core.Counter(core.Codens.SealSourceCouples,
+                                count=1, gvrsn=kering.Vrsn_1_0).qb64b)
         msg.extend(couple)
 
     return msg

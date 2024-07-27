@@ -16,7 +16,7 @@ from keri.help.helping import datify, dictify
 from keri import core
 from keri.core import coring, eventing, serdering
 
-from keri.core.coring import Serials, versify
+from keri.core.coring import Kinds, versify
 
 from keri.core.eventing import incept, rotate, interact, Kever
 
@@ -124,7 +124,7 @@ def test_baser():
     preb = 'DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
-    vs = versify(kind=Serials.json, size=20)
+    vs = versify(kind=Kinds.json, size=20)
     assert vs == 'KERI10JSON000014_'
 
     ked = dict(vs=vs, pre=preb.decode("utf-8"),
@@ -1838,7 +1838,7 @@ def test_fetchkeldel():
     preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
-    vs = versify(kind=Serials.json, size=20)
+    vs = versify(kind=Kinds.json, size=20)
     assert vs == 'KERI10JSON000014_'
 
     ked = dict(vs=vs, pre=preb.decode("utf-8"),

@@ -39,7 +39,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
-from ..kering import (Serials, Serialage, Protocols, Protocolage, Ilkage, Ilks,
+from ..kering import (Kinds, Kindage, Protocols, Protocolage, Ilkage, Ilks,
                       TraitDex, )
 
 from ..help import helping
@@ -94,7 +94,7 @@ def sizeify(ked, kind=None, version=Version):
     if not kind:
         kind = knd
 
-    if kind not in Serials:
+    if kind not in Kinds:
         raise ValueError("Invalid serialization kind = {}".format(kind))
 
     raw = dumps(ked, kind)
@@ -118,7 +118,7 @@ def sizeify(ked, kind=None, version=Version):
 
 
 
-def dumps(ked, kind=Serials.json):
+def dumps(ked, kind=Kinds.json):
     """
     utility function to handle serialization by kind
 
@@ -129,13 +129,13 @@ def dumps(ked, kind=Serials.json):
        ked (Optional(dict, list)): key event dict or message dict to serialize
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
-    if kind == Serials.json:
+    if kind == Kinds.json:
         raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
-    elif kind == Serials.mgpk:
+    elif kind == Kinds.mgpk:
         raw = msgpack.dumps(ked)
 
-    elif kind == Serials.cbor:
+    elif kind == Kinds.cbor:
         raw = cbor.dumps(ked)
     else:
         raise ValueError("Invalid serialization kind = {}".format(kind))
@@ -143,7 +143,7 @@ def dumps(ked, kind=Serials.json):
     return raw
 
 
-def loads(raw, size=None, kind=Serials.json):
+def loads(raw, size=None, kind=Kinds.json):
     """
     utility function to handle deserialization by kind
 
@@ -156,21 +156,21 @@ def loads(raw, size=None, kind=Serials.json):
                    then consume all bytes
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
-    if kind == Serials.json:
+    if kind == Kinds.json:
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
             raise DeserializeError("Error deserializing JSON: {}"
                                        "".format(raw[:size].decode("utf-8")))
 
-    elif kind == Serials.mgpk:
+    elif kind == Kinds.mgpk:
         try:
             ked = msgpack.loads(raw[:size])
         except Exception as ex:
             raise DeserializeError("Error deserializing MGPK: {}"
                                        "".format(raw[:size]))
 
-    elif kind == Serials.cbor:
+    elif kind == Kinds.cbor:
         try:
             ked = cbor.loads(raw[:size])
         except Exception as ex:
@@ -909,7 +909,7 @@ class Matter:
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
+                 qb64b=None, qb64=None, qb2=None, strip=False, **kwa):
         """
         Validate as fully qualified
         Parameters:
@@ -3747,7 +3747,7 @@ class Saider(Matter):
                         otherwise default is Serials.json
 
         """
-        knd = Serials.json
+        knd = Kinds.json
         if 'v' in sad:  # versioned sad
             _, _, knd, _, _ = deversify(sad['v'])
 
@@ -3904,408 +3904,6 @@ class Saider(Matter):
             return False
 
         return True
-
-
-@dataclass(frozen=True)
-class CounterCodex:
-    """
-    CounterCodex is codex hard (stable) part of all counter derivation codes.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-
-    ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
-    WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
-    NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
-    TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
-    FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
-    TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
-    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
-    TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
-    SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    SadPathSigGroups: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
-    RootSadPathSigGroups: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
-    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    BigPathedMaterialGroup: str = '-0L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group, dig of content+Texter group
-    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
-
-    def __iter__(self):
-        return iter(astuple(self))  # enables inclusion test with "in"
-
-CtrDex = CounterCodex()
-
-
-class Counter:
-    """
-    Counter is fully qualified cryptographic material primitive base class for
-    counter primitives (framing composition grouping count codes).
-
-    Sub classes are derivation code and key event element context specific.
-
-    Includes the following attributes and properties:
-
-    Class Attributes:
-
-    Attributes:
-
-    Properties:
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .pad  is int number of pad chars given raw
-        .count is int count of grouped following material (not part of counter)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-
-    Hidden:
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._pad is method to compute  .pad property
-        ._count is int value for .count property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
-
-    """
-    # Hards table maps from bytes Base64 first two code chars to int of
-    # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
-    # is always > 0 and hs + ss = fs always
-    Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
-    Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
-    Hards.update([('-0', 3)])
-    Hards.update([('--', 5)])
-
-    # Bards table maps to hard size, hs, of code from bytes holding sextets
-    # converted from first two code char. Used for ._bexfil.
-    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
-
-    # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
-    # where hs is hard size, ss is soft size, and fs is full size
-    # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
-    Sizes = {
-        '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
-    }
-
-    Codex = CtrDex
-
-
-    def __init__(self, code=None, count=None, countB64=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
-        """
-        Validate as fully qualified
-        Parameters:
-            code (str | None):  stable (hard) part of derivation code
-            count (int | None): count for composition.
-                Count may represent quadlets/triplet, groups, primitives or
-                other numericy
-                When both count and countB64 are None then count defaults to 1
-            countB64 (str | None): count for composition as Base64
-                countB64 may represent quadlets/triplet, groups, primitives or
-                other numericy
-            qb64b (bytes | bytearray | None): fully qualified crypto material text domain
-            qb64 (str | None) fully qualified crypto material text domain
-            qb2 (bytes | bytearray | None)  fully qualified crypto material binary domain
-            strip (bool):  True means strip counter contents from input stream
-                bytearray after parsing qb64b or qb2. False means do not strip.
-                default False
-
-
-        Needs either code or qb64b or qb64 or qb2
-        Otherwise raises EmptyMaterialError
-        When code and count provided then validate that code and count are correct
-        Else when qb64b or qb64 or qb2 provided extract and assign
-        .code and .count
-
-        """
-        if code is not None:  # code provided
-            if code not in self.Sizes:
-                raise InvalidCodeError("Unsupported code={}.".format(code))
-
-            hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
-            cs = hs + ss  # both hard + soft code size
-            if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
-                raise InvalidCodeSizeError("Whole code size not full size or not "
-                                           "multiple of 4. cs={} fs={}.".format(cs, fs))
-
-            if count is None:
-                count = 1 if countB64 is None else b64ToInt(countB64)
-
-            if count < 0 or count > (64 ** ss - 1):
-                raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
-
-            self._code = code
-            self._count = count
-
-        elif qb64b is not None:
-            self._exfil(qb64b)
-            if strip:  # assumes bytearray
-                del qb64b[:self.Sizes[self.code].fs]
-
-        elif qb64 is not None:
-            self._exfil(qb64)
-
-        elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            self._bexfil(qb2)
-            if strip:  # assumes bytearray
-                del qb2[:self.Sizes[self.code].fs * 3 // 4]
-
-        else:
-            raise EmptyMaterialError("Improper initialization need either "
-                                     "(code and count) or qb64b or "
-                                     "qb64 or qb2.")
-
-    @property
-    def code(self):
-        """
-        Returns ._code
-        Makes .code read only
-        """
-        return self._code
-
-
-    @property
-    def count(self):
-        """
-        Returns ._count
-        Makes ._count read only
-        """
-        return self._count
-
-
-    @property
-    def qb64b(self):
-        """
-        Property qb64b:
-        Returns Fully Qualified Base64 Version encoded as bytes
-        Assumes self.raw and self.code are correctly populated
-        """
-        return self._infil()
-
-
-    @property
-    def qb64(self):
-        """
-        Property qb64:
-        Returns Fully Qualified Base64 Version
-        Assumes self.raw and self.code are correctly populated
-        """
-        return self.qb64b.decode("utf-8")
-
-
-    @property
-    def qb2(self):
-        """
-        Property qb2:
-        Returns Fully Qualified Binary Version Bytes
-        """
-        return self._binfil()
-
-
-    def countToB64(self, l=None):
-        """ Returns count as Base64 left padded with "A"s
-            Parameters:
-                l (int | None): minimum number characters including left padding
-                    When not provided use the softsize of .code
-
-        """
-        if l is None:
-            _, ss, _, _ = self.Sizes[self.code]
-            l = ss
-        return (intToB64(self.count, l=l))
-
-
-    @staticmethod
-    def semVerToB64(version="", major=0, minor=0, patch=0):
-        """ Converts semantic version to Base64 representation of countB64
-        suitable for CESR protocol genus and version
-
-        Returns:
-            countB64 (str): suitable for input to Counter
-            example: Counter(countB64=semVerToB64(version = "1.0.0"))
-
-        Parameters:
-            version (str | None): dot separated semantic version string of format
-                "major.minor.patch"
-            major (int): When version is None or empty then use major,minor, patch
-            minor (int): When version is None or empty then use major,minor, patch
-            patch (int): When version is None or empty then use major,minor, patch
-
-        each of major, minor, patch must be in range [0,63] for represenation as
-        three Base64 characters
-
-        """
-        parts = [major, minor, patch]
-        if version:
-            splits = version.split(".", maxsplit=3)
-            splits = [(int(s) if s else 0) for s in splits]
-            for i in range(3-len(splits),0, -1):
-                splits.append(parts[-i])
-            parts = splits
-
-        for p in parts:
-            if p < 0 or p > 63:
-                raise ValueError(f"Out of bounds semantic version. "
-                                 f"Part={p} is < 0 or > 63.")
-        return ("".join(intToB64(p, l=1) for p in parts))
-
-
-    def _infil(self):
-        """
-        Returns fully qualified attached sig base64 bytes computed from
-        self.code and self.count.
-        """
-        code = self.code  # codex value chars hard code
-        count = self.count  # index value int used for soft
-
-        hs, ss, fs, ls = self.Sizes[code]
-        cs = hs + ss  # both hard + soft size
-        if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
-            raise InvalidCodeSizeError("Whole code size not full size or not "
-                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
-        if count < 0 or count > (64 ** ss - 1):
-            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
-
-        # both is hard code + converted count
-        both = "{}{}".format(code, intToB64(count, l=ss))
-
-        # check valid pad size for whole code size
-        if len(both) % 4:  # no pad
-            raise InvalidCodeSizeError("Invalid size = {} of {} not a multiple of 4."
-                                       .format(len(both), both))
-        # prepending full derivation code with index and strip off trailing pad characters
-        return (both.encode("utf-8"))
-
-
-    def _binfil(self):
-        """
-        Returns bytes of fully qualified base2 bytes, that is .qb2
-        self.code converted to Base2 left shifted with pad bits
-        equivalent of Base64 decode of .qb64 into .qb2
-        """
-        code = self.code  # codex chars hard code
-        count = self.count  # index value int used for soft
-
-        hs, ss, fs, ls = self.Sizes[code]
-        cs = hs + ss
-        if fs != cs or cs % 4:  # fs must be cs and multiple of 4 for count codes
-            raise InvalidCodeSizeError("Whole code size not full size or not "
-                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
-
-        if count < 0 or count > (64 ** ss - 1):
-            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
-
-        # both is hard code + converted count
-        both = "{}{}".format(code, intToB64(count, l=ss))
-        if len(both) != cs:
-            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                       .format(cs, len(both)))
-
-        return (codeB64ToB2(both))  # convert to b2 left shift if any
-
-
-    def _exfil(self, qb64b):
-        """
-        Extracts self.code and self.count from qualified base64 bytes qb64b
-        """
-        if not qb64b:  # empty need more bytes
-            raise ShortageError("Empty material, Need more characters.")
-
-        first = qb64b[:2]  # extract first two char code selector
-        if hasattr(first, "decode"):
-            first = first.decode("utf-8")
-        if first not in self.Hards:
-            if first[0] == '_':
-                raise UnexpectedOpCodeError("Unexpected op code start"
-                                            "while extracing Counter.")
-            else:
-                raise UnexpectedCodeError("Unsupported code start ={}.".format(first))
-
-        hs = self.Hards[first]  # get hard code size
-        if len(qb64b) < hs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
-
-        hard = qb64b[:hs]  # get hard code
-        if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")  # decode converts bytearray/bytes to str
-        if hard not in self.Sizes:  # Sizes needs str not bytes
-            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
-
-        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs consistent in both tables
-        cs = hs + ss  # both hard + soft code size
-
-        # assumes that unit tests on Counter and CounterCodex ensure that
-        # .Codes and .Sizes are well formed.
-        # hs consistent and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
-
-        if len(qb64b) < cs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(cs - len(qb64b)))
-
-        count = qb64b[hs:hs + ss]  # extract count chars
-        if hasattr(count, "decode"):
-            count = count.decode("utf-8")
-        count = b64ToInt(count)  # compute int count
-
-        self._code = hard
-        self._count = count
-
-
-    def _bexfil(self, qb2):
-        """
-        Extracts self.code and self.count from qualified base2 bytes qb2
-        """
-        if not qb2:  # empty need more bytes
-            raise ShortageError("Empty material, Need more bytes.")
-
-        first = nabSextets(qb2, 2)  # extract first two sextets as code selector
-        if first not in self.Bards:
-            if first[0] == b'\xfc':  # b64ToB2('_')
-                raise UnexpectedOpCodeError("Unexpected  op code start"
-                                            "while extracing Matter.")
-            else:
-                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
-
-        hs = self.Bards[first]  # get code hard size equvalent sextets
-        bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
-        if len(qb2) < bhs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
-
-        hard = codeB2ToB64(qb2, hs)  # extract and convert hard part of code
-        if hard not in self.Sizes:
-            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
-
-        hs, ss, fs, ls = self.Sizes[hard]
-        cs = hs + ss  # both hs and ss
-        # assumes that unit tests on Counter and CounterCodex ensure that
-        # .Codes and .Sizes are well formed.
-        # hs consistent and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
-
-        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
-        if len(qb2) < bcs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
-
-        both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        count = b64ToInt(both[hs:hs + ss])  # get count
-
-        self._code = hard
-        self._count = count
 
 
 

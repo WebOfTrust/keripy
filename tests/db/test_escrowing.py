@@ -66,7 +66,7 @@ def test_broker_nontrans():
         rrsr = viring.RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
         #tserder = serdering.SerderKERI(sad=ked["a"])
 
-        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Saids.d)
+        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Kinds.json, label=coring.Saids.d)
         dater = coring.Dater(dts=dts)
 
         cigars = wesHab.sign(ser=serder.raw,
@@ -132,7 +132,7 @@ def test_broker_trans():
         serder = serdering.SerderKERI(sad=ked)
         rrsr = viring.RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
         #tserder = serdering.SerderKERI(sad=ked["a"])
-        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Saids.d)
+        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Kinds.json, label=coring.Saids.d)
         dater = coring.Dater(dts=dts)
 
         sigers = bobHab.sign(ser=serder.raw,

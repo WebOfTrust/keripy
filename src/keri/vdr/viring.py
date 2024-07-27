@@ -13,9 +13,9 @@ from  ordered_set import OrderedSet as oset
 
 from ..db import koming, subing, escrowing
 
-from .. import kering
+from .. import kering, core
 from ..app import signing
-from ..core import coring, serdering, indexing
+from ..core import coring, serdering, indexing, counting
 from ..db import dbing, basing
 from ..db.dbing import snKey
 from ..help import helping
@@ -439,11 +439,11 @@ class Reger(dbing.LMDBer):
                 )
             )
 
-            ctr = coring.Counter(qb64b=iss, strip=True)
-            if ctr.code == coring.CtrDex.AttachmentGroup:
-                ctr = coring.Counter(qb64b=iss, strip=True)
+            ctr = core.Counter(qb64b=iss, strip=True, gvrsn=kering.Vrsn_1_0)
+            if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
+                ctr = core.Counter(qb64b=iss, strip=True, gvrsn=kering.Vrsn_1_0)
 
-            if ctr.code == coring.CtrDex.SealSourceCouples:
+            if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
                 coring.Seqner(qb64b=iss, strip=True)
                 saider = coring.Saider(qb64b=iss)
 
@@ -525,24 +525,24 @@ class Reger(dbing.LMDBer):
 
         # add indexed backer signatures to attachments
         if tibs := self.getTibs(key=dgkey):
-            atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                      count=len(tibs)).qb64b)
+            atc.extend(core.Counter(core.Codens.WitnessIdxSigs, count=len(tibs),
+                                    gvrsn=kering.Vrsn_1_0).qb64b)
             for tib in tibs:
                 atc.extend(tib)
 
         # add authorizer (delegator/issure) source seal event couple to attachments
         couple = self.getAnc(dgkey)
         if couple is not None:
-            atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                      count=1).qb64b)
+            atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
+                                    gvrsn=kering.Vrsn_1_0).qb64b)
             atc.extend(couple)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        pcnt = coring.Counter(code=coring.CtrDex.AttachmentGroup,
-                              count=(len(atc) // 4)).qb64b
+        pcnt = core.Counter(core.Codens.AttachmentGroup, count=(len(atc) // 4),
+                            gvrsn=kering.Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
@@ -573,7 +573,8 @@ class Reger(dbing.LMDBer):
         for said in saids:
             screder, prefixer, seqner, saider = self.cloneCred(said=said)
 
-            atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+            atc = bytearray(core.Counter(core.Codens.SealSourceTriples, count=1,
+                                         gvrsn=kering.Vrsn_1_0).qb64b)
             atc.extend(prefixer.qb64b)
             atc.extend(seqner.qb64b)
             atc.extend(saider.qb64b)
@@ -981,12 +982,14 @@ def buildProof(prefixer, seqner, diger, sigers):
     """
 
     prf = bytearray()
-    prf.extend(coring.Counter(coring.CtrDex.TransIdxSigGroups, count=1).qb64b)
+    prf.extend(core.Counter(core.Codens.TransIdxSigGroups, count=1,
+                            gvrsn=kering.Vrsn_1_0).qb64b)
     prf.extend(prefixer.qb64b)
     prf.extend(seqner.qb64b)
     prf.extend(diger.qb64b)
 
-    prf.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+    prf.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                            gvrsn=kering.Vrsn_1_0).qb64b)
     for siger in sigers:
         prf.extend(siger.qb64b)
 
@@ -1009,8 +1012,8 @@ def messagize(creder, proof):
     if len(proof) % 4:
         raise ValueError("Invalid attachments size={}, nonintegral"
                          " quadlets.".format(len(proof)))
-    craw.extend(coring.Counter(code=coring.CtrDex.AttachmentGroup,
-                               count=(len(proof) // 4)).qb64b)
+    craw.extend(core.Counter(core.Codens.AttachmentGroup, count=(len(proof) // 4),
+                             gvrsn=kering.Vrsn_1_0).qb64b)
     craw.extend(proof)
 
     return craw

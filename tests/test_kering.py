@@ -14,7 +14,7 @@ import pytest
 
 from keri import kering
 from keri.kering import Protocolage, Protocols
-from keri.kering import Serialage,  Serials
+from keri.kering import Kindage,  Kinds
 from keri.kering import Ilkage, Ilks
 from keri.kering import ColdCodex, ColdDex, TraitCodex, TraitDex
 from keri.kering import (Versionage, Version, MAXVERFULLSPAN,
@@ -251,7 +251,7 @@ def test_snuff():
             if gvrsn.major < 2:  # version2 vs but major < 2
                 raise VersionError(f"Incompatible {gvrsn=} with CESR native version"
                                    f"field.")
-            kind = Serials.cesr
+            kind = Kinds.cesr
             size = size
         else:
             raise VersionError(f"Bad snatch.")
@@ -456,22 +456,22 @@ def test_serials():
 
     assert Version == Versionage(major=1, minor=0)
 
-    assert isinstance(Serials, Serialage)
+    assert isinstance(Kinds, Kindage)
 
-    assert Serials.json == 'JSON'
-    assert Serials.mgpk == 'MGPK'
-    assert Serials.cbor == 'CBOR'
-    assert Serials.cesr == 'CESR'
+    assert Kinds.json == 'JSON'
+    assert Kinds.mgpk == 'MGPK'
+    assert Kinds.cbor == 'CBOR'
+    assert Kinds.cesr == 'CESR'
 
-    assert 'JSON' in Serials
-    assert 'MGPK' in Serials
-    assert 'CBOR' in Serials
-    assert 'CESR' in Serials
+    assert 'JSON' in Kinds
+    assert 'MGPK' in Kinds
+    assert 'CBOR' in Kinds
+    assert 'CESR' in Kinds
 
-    Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
-                         mgpk=versify(kind=Serials.mgpk, size=0),
-                         cbor=versify(kind=Serials.cbor, size=0),
-                         cesr=versify(kind=Serials.cesr, size=0))
+    Vstrings = Kindage(json=versify(kind=Kinds.json, size=0),
+                         mgpk=versify(kind=Kinds.mgpk, size=0),
+                         cbor=versify(kind=Kinds.cbor, size=0),
+                         cesr=versify(kind=Kinds.cesr, size=0))
 
 
     assert Vstrings.json == 'KERI10JSON000000_'
@@ -589,61 +589,61 @@ def test_versify_v1():
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert vrsn == Version
     assert size == 0
 
-    vs = versify(kind=Serials.json, size=65)
+    vs = versify(kind=Kinds.json, size=65)
     assert vs == "KERI10JSON000041_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert vrsn == Version
     assert size == 65
 
-    vs = versify(protocol=Protocols.acdc, kind=Serials.json, size=86)
+    vs = versify(protocol=Protocols.acdc, kind=Kinds.json, size=86)
     assert vs == "ACDC10JSON000056_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.acdc
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert vrsn == Version
     assert size == 86
 
-    vs = versify(kind=Serials.mgpk, size=0)
+    vs = versify(kind=Kinds.mgpk, size=0)
     assert vs == "KERI10MGPK000000_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.mgpk
+    assert kind == Kinds.mgpk
     assert vrsn == Version
     assert size == 0
 
-    vs = versify(kind=Serials.mgpk, size=65)
+    vs = versify(kind=Kinds.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.mgpk
+    assert kind == Kinds.mgpk
     assert vrsn == Version
     assert size == 65
 
-    vs = versify(kind=Serials.cbor, size=0)
+    vs = versify(kind=Kinds.cbor, size=0)
     assert vs == "KERI10CBOR000000_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.cbor
+    assert kind == Kinds.cbor
     assert vrsn == Version
     assert size == 0
 
-    vs = versify(kind=Serials.cbor, size=65)
+    vs = versify(kind=Kinds.cbor, size=65)
     assert vs == "KERI10CBOR000041_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.cbor
+    assert kind == Kinds.cbor
     assert vrsn == Version
     assert size == 65
 
@@ -652,7 +652,7 @@ def test_versify_v1():
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert vrsn == (1, 1)
     assert size == 0
 
@@ -685,61 +685,61 @@ def test_versify_v2():
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert vrsn == version
     assert size == 0
 
-    vs = versify(version=version, kind=Serials.json, size=65)
+    vs = versify(version=version, kind=Kinds.json, size=65)
     assert vs == "KERICAAJSONAABB."
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert vrsn == version
     assert size == 65
 
-    vs = versify(protocol=Protocols.acdc, version=version, kind=Serials.json, size=86)
+    vs = versify(protocol=Protocols.acdc, version=version, kind=Kinds.json, size=86)
     assert vs == "ACDCCAAJSONAABW."
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.acdc
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert version == version
     assert size == 86
 
-    vs = versify(version=version, kind=Serials.mgpk, size=0)
+    vs = versify(version=version, kind=Kinds.mgpk, size=0)
     assert vs == 'KERICAAMGPKAAAA.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.mgpk
+    assert kind == Kinds.mgpk
     assert vrsn == version
     assert size == 0
 
-    vs = versify(version=version, kind=Serials.mgpk, size=65)
+    vs = versify(version=version, kind=Kinds.mgpk, size=65)
     assert vs == 'KERICAAMGPKAABB.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.mgpk
+    assert kind == Kinds.mgpk
     assert vrsn == version
     assert size == 65
 
-    vs = versify(version=version, kind=Serials.cbor, size=0)
+    vs = versify(version=version, kind=Kinds.cbor, size=0)
     assert vs == 'KERICAACBORAAAA.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.cbor
+    assert kind == Kinds.cbor
     assert vrsn == version
     assert size == 0
 
-    vs = versify(version=version, kind=Serials.cbor, size=65)
+    vs = versify(version=version, kind=Kinds.cbor, size=65)
     assert vs == 'KERICAACBORAABB.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.cbor
+    assert kind == Kinds.cbor
     assert vrsn == version
     assert size == 65
 
@@ -748,7 +748,7 @@ def test_versify_v2():
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
     assert proto == Protocols.keri
-    assert kind == Serials.json
+    assert kind == Kinds.json
     assert vrsn == (2, 1)
     assert size == 0
 

@@ -14,7 +14,7 @@ from ordered_set import OrderedSet as oset
 from hio.help import decking
 
 
-from .. import kering
+from .. import kering, core
 from ..kering import (MissingEntryError,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
@@ -29,10 +29,12 @@ from .. import help
 from ..help import helping
 
 from . import coring
-from .coring import (versify, Serials, Ilks, PreDex, DigDex,
-                     NonTransDex, CtrDex, Counter,
+from .coring import (versify, Kinds, Ilks, PreDex, DigDex,
+                     NonTransDex,
                      Number, Seqner, Cigar, Dater,
                      Verfer, Diger, Prefixer, Tholder, Saider)
+
+from .counting import Counter, Codens
 
 from . import indexing
 from .indexing import Siger
@@ -504,7 +506,7 @@ def state(pre,
           cnfg=None,  # default to []
           dpre=None,
           version=Version,
-          kind=Serials.json,
+          kind=Kinds.json,
           intive = False,
           ):
     """
@@ -655,7 +657,7 @@ def incept(keys,
            cnfg=None,
            data=None,
            version=Version,
-           kind=Serials.json,
+           kind=Kinds.json,
            code=None,
            intive=False,
            delpre=None,
@@ -804,7 +806,7 @@ def rotate(pre,
            adds=None,
            data=None,
            version=Version,
-           kind=Serials.json,
+           kind=Kinds.json,
            intive = False,
            ):
     """
@@ -972,7 +974,7 @@ def interact(pre,
              sn=1,
              data=None,
              version=Version,
-             kind=Serials.json,
+             kind=Kinds.json,
              ):
     """
     Returns serder of interaction event message.
@@ -1018,7 +1020,7 @@ def receipt(pre,
             said,
             *,
             version=Version,
-            kind=Serials.json
+            kind=Kinds.json
             ):
     """
     Returns serder of event receipt message. Used for both non-trans and trans
@@ -1057,7 +1059,7 @@ def query(route="",
           query=None,
           stamp=None,
           version=Version,
-          kind=Serials.json):
+          kind=Kinds.json):
     """
     Returns serder of query 'qry' message.
     Utility function to automate creation of query messages.
@@ -1115,7 +1117,7 @@ def reply(route="",
           data=None,
           stamp=None,
           version=Version,
-          kind=Serials.json):
+          kind=Kinds.json):
     """
     Returns serder of reply 'rpy' message.
     Utility function to automate creation of reply messages.
@@ -1169,7 +1171,7 @@ def prod(route="",
           query=None,
           stamp=None,
           version=Version,
-          kind=Serials.json):
+          kind=Kinds.json):
     """
     Returns serder of prod, 'pro', msg to request disclosure via bare, 'bar' msg
     of data anchored via seal(s) on KEL for identifier prefix, pre, when given
@@ -1213,7 +1215,7 @@ def bare(route="",
            data=None,
            stamp=None,
            version=Version,
-           kind=Serials.json):
+           kind=Kinds.json):
     """
     Returns serder of bare 'bar' message.
     Utility function to automate creation of unhiding (bareing) messages for
@@ -1304,21 +1306,25 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     if sigers:
         if isinstance(seal, SealEvent):
-            atc.extend(Counter(CtrDex.TransIdxSigGroups, count=1).qb64b)
+            atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
+                                    gvrsn=kering.Vrsn_1_0).qb64b)
             atc.extend(seal.i.encode("utf-8"))
             atc.extend(Seqner(snh=seal.s).qb64b)
             atc.extend(seal.d.encode("utf-8"))
 
         elif isinstance(seal, SealLast):
-            atc.extend(Counter(CtrDex.TransLastIdxSigGroups, count=1).qb64b)
+            atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
+                               gvrsn=kering.Vrsn_1_0).qb64b)
             atc.extend(seal.i.encode("utf-8"))
 
-        atc.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+        atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                           gvrsn=kering.Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
     if wigers:
-        atc.extend(Counter(code=CtrDex.WitnessIdxSigs, count=len(wigers)).qb64b)
+        atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
+                           gvrsn=kering.Vrsn_1_0).qb64b)
         for wiger in wigers:
             if wiger.verfer and wiger.verfer.code not in NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1326,7 +1332,8 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             atc.extend(wiger.qb64b)
 
     if cigars:
-        atc.extend(Counter(code=CtrDex.NonTransReceiptCouples, count=len(cigars)).qb64b)
+        atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
+                           gvrsn=kering.Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1338,8 +1345,8 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        msg.extend(Counter(code=CtrDex.AttachmentGroup,
-                           count=(len(atc) // 4)).qb64b)
+        msg.extend(Counter(Codens.AttachmentGroup,
+                           count=(len(atc) // 4), gvrsn=kering.Vrsn_1_0).qb64b)
 
     msg.extend(atc)
     return msg
@@ -1370,33 +1377,40 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
     count = 0
     for (pather, sigers) in sadsigers:
         count += 1
-        atc.extend(coring.Counter(coring.CtrDex.SadPathSigGroups, count=1).qb64b)
+        atc.extend(Counter(Codens.SadPathSigGroups, count=1,
+                                  gvrsn=kering.Vrsn_1_0).qb64b)
         atc.extend(pather.qb64b)
 
-        atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+        atc.extend(Counter(Codens.ControllerIdxSigs,
+                                  count=len(sigers), gvrsn=kering.Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
     for (pather, prefixer, seqner, saider, sigers) in sadtsgs:
         count += 1
-        atc.extend(coring.Counter(coring.CtrDex.SadPathSigGroups, count=1).qb64b)
+        atc.extend(Counter(Codens.SadPathSigGroups, count=1,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
         atc.extend(pather.qb64b)
 
-        atc.extend(coring.Counter(coring.CtrDex.TransIdxSigGroups, count=1).qb64b)
+        atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
         atc.extend(prefixer.qb64b)
         atc.extend(seqner.qb64b)
         atc.extend(saider.qb64b)
 
-        atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+        atc.extend(Counter(Codens.ControllerIdxSigs,
+                                count=len(sigers), gvrsn=kering.Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
     for (pather, cigars) in sadcigars:
         count += 1
-        atc.extend(coring.Counter(coring.CtrDex.SadPathSigGroups, count=1).qb64b)
+        atc.extend(Counter(Codens.SadPathSigGroups, count=1,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
         atc.extend(pather.qb64b)
 
-        atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=len(sadcigars)).qb64b)
+        atc.extend(Counter(Codens.NonTransReceiptCouples,
+                                count=len(sadcigars), gvrsn=kering.Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in coring.NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1410,12 +1424,13 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        msg.extend(coring.Counter(code=coring.CtrDex.AttachmentGroup,
-                                  count=(len(atc) // 4)).qb64b)
+        msg.extend(Counter(Codens.AttachmentGroup, count=(len(atc) // 4),
+                                gvrsn=kering.Vrsn_1_0).qb64b)
 
     if count > 1:
         root = coring.Pather(bext="-")
-        msg.extend(coring.Counter(code=coring.CtrDex.RootSadPathSigGroups, count=count).qb64b)
+        msg.extend(Counter(Codens.RootSadPathSigGroups, count=count,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
         msg.extend(root.qb64b)
 
     msg.extend(atc)

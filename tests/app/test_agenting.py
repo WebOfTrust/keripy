@@ -7,12 +7,9 @@ import time
 
 from hio.base import doing, tyming
 
-from keri import kering
-
-from keri import core
-
+from keri import kering, core
 from keri.core import coring, serdering
-from keri.core.coring import Counter, CtrDex, Seqner
+from keri.core.coring import Seqner
 from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting, directing
 from keri.db import dbing
@@ -158,7 +155,8 @@ class PublishDoer(doing.DoDoer):
         serder = eventing.issue(vcdig=regser.pre,
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
         msg = bytearray(serder.raw)
-        msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
+        msg.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
         msg.extend(Seqner(sn=self.palHab.kever.sn).qb64b)
         msg.extend(self.palHab.kever.serder.saidb)
 

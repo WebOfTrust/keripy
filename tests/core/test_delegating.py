@@ -7,7 +7,7 @@ import os
 
 from keri import help
 
-from keri import core
+from keri import kering, core
 from keri.core import coring, eventing, parsing
 
 from keri.app import keeping, habbing
@@ -55,7 +55,8 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -107,8 +108,8 @@ def test_delegation():
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -135,13 +136,13 @@ def test_delegation():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                 count=1)
+        counter = core.Counter(core.Codens.SealSourceCouples, count=1,
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         seqner = coring.Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -201,8 +202,8 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -229,13 +230,13 @@ def test_delegation():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                 count=1)
+        counter = core.Counter(core.Codens.SealSourceCouples, count=1,
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         seqner = coring.Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -462,14 +463,7 @@ def test_delegation_supersede():
         count = botHab.db.cntWigs(dbing.dgKey(botHab.pre, serder.said))
         assert count >= 1
 
-
-
-        """End Test"""
-
-
-
-
-
+    # This needs to be fixedup to actually test delegating superseding recovery
     with (basing.openDB(name="bob") as bobDB,
             keeping.openKS(name="bob") as bobKS,
             basing.openDB(name="del") as delDB,
@@ -497,7 +491,8 @@ def test_delegation_supersede():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -549,8 +544,8 @@ def test_delegation_supersede():
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -577,13 +572,13 @@ def test_delegation_supersede():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                 count=1)
+        counter = core.Counter(core.Codens.SealSourceCouples, count=1,
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         seqner = coring.Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -643,8 +638,8 @@ def test_delegation_supersede():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -671,13 +666,13 @@ def test_delegation_supersede():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                 count=1)
+        counter = core.Counter(core.Codens.SealSourceCouples, count=1,
+                               gvrsn=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         seqner = coring.Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)

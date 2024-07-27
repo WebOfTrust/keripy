@@ -15,8 +15,8 @@ MaxON = int("f"*32, 16)  # 256 ** 16 - 1 maximum ordinal number, sequence or fir
 
 
 # Serialization Kinds
-Serialage = namedtuple("Serialage", 'json mgpk cbor cesr')
-Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR', cesr='CESR')
+Kindage = namedtuple("Kindage", 'json mgpk cbor cesr')
+Kinds = Kindage(json='JSON', mgpk='MGPK', cbor='CBOR', cesr='CESR')
 
 # Protocol Types
 Protocolage = namedtuple("Protocolage", "keri acdc")
@@ -98,7 +98,7 @@ def rematch(match):
             raise VersionError(f"Incompatible {vrsn=} with version string.")
 
         kind = kind.decode("utf-8")
-        if kind not in Serials:
+        if kind not in Kinds:
             raise KindError(f"Invalid serialization kind = {kind}.")
         size = b64ToInt(size)
 
@@ -116,7 +116,7 @@ def rematch(match):
             raise VersionError(f"Incompatible {vrsn=} with version string.")
 
         kind = kind.decode("utf-8")
-        if kind not in Serials:
+        if kind not in Kinds:
             raise KindError(f"Invalid serialization kind = {kind}.")
         size = int(size, 16)
 
@@ -126,7 +126,7 @@ def rematch(match):
     return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size)
 
 
-def versify(protocol=Protocols.keri, version=Version, kind=Serials.json, size=0):
+def versify(protocol=Protocols.keri, version=Version, kind=Kinds.json, size=0):
     """
     Returns:
        vs (str): version string
@@ -139,7 +139,7 @@ def versify(protocol=Protocols.keri, version=Version, kind=Serials.json, size=0)
     """
     if protocol not in Protocols:
         raise ProtocolError("Invalid message identifier = {}".format(protocol))
-    if kind not in Serials:
+    if kind not in Kinds:
         raise KindError("Invalid serialization kind = {}".format(kind))
 
     if version.major < 2:  # version1 version string

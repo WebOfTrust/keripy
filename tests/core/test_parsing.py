@@ -9,13 +9,13 @@ import pytest
 from hio.help import decking
 
 
-from keri.kering import ValidationError
+from keri.kering import ValidationError, Vrsn_1_0
 
 from keri import help
 
 from keri import core
-from keri.core import parsing, coring
-from keri.core.coring import (CtrDex, Counter,)
+from keri.core import parsing, coring, Counter, Codens
+
 from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
 
 from keri.db.basing import openDB
@@ -46,7 +46,7 @@ def test_parser():
                         ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[0].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
@@ -72,7 +72,7 @@ def test_parser():
                         sn=1)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[1].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
@@ -90,7 +90,7 @@ def test_parser():
                         sn=2)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[2].sign(serder.raw, index=0)
         # update key event verifier state
@@ -106,7 +106,7 @@ def test_parser():
                           sn=3)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[2].sign(serder.raw, index=0)
         # update key event verifier state
@@ -122,7 +122,7 @@ def test_parser():
                           sn=4)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[2].sign(serder.raw, index=0)
         # update key event verifier state
@@ -140,7 +140,7 @@ def test_parser():
                         sn=5)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[3].sign(serder.raw, index=0)
         # update key event verifier state
@@ -156,7 +156,7 @@ def test_parser():
                           sn=6)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[3].sign(serder.raw, index=0)
         # update key event verifier state
@@ -174,7 +174,7 @@ def test_parser():
                         sn=7)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[4].sign(serder.raw, index=0)
         # update key event verifier state
@@ -189,7 +189,7 @@ def test_parser():
                           dig=kever.serder.said,
                           sn=8)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[4].sign(serder.raw, index=0)
         # update key event verifier state
@@ -207,7 +207,7 @@ def test_parser():
                         ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[4].sign(serder.raw, index=0)
         # update key event verifier state

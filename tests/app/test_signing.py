@@ -3,7 +3,7 @@
 tests.app.signing module
 
 """
-from keri import core
+from keri import kering, core
 from keri.core import coring, parsing, eventing
 from keri.core.eventing import SealEvent
 
@@ -212,7 +212,8 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
 
         # Sign with non-transferable identifier, defaults to single signature on entire SAD
         sig0 = bytearray(cred.raw)
-        sig0.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        sig0.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
+                                 gvrsn=kering.Vrsn_1_0).qb64b)
         sig0.extend(coring.Prefixer(qb64=issuer.regk).qb64b)
         sig0.extend(seqner.qb64b)
         sig0.extend(coring.Saider(qb64=issuer.regd).qb64b)

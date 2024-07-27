@@ -10,7 +10,7 @@ from dataclasses import dataclass, asdict
 
 import pytest
 
-from keri.core.coring import Serials
+from keri.core.coring import Kinds
 from keri.db import dbing, koming
 from keri.help import helping
 
@@ -299,16 +299,16 @@ def test_serialization():
 
     with dbing.openLMDB() as db:
         k = koming.Komer(db=db, schema=Record, subkey='records.')
-        srl = k._serializer(Serials.mgpk)
+        srl = k._serializer(Kinds.mgpk)
 
         expected = b'\x86\xa5first\xa3Jim\xa4last\xa5Black\xa6street\xaf100 Main Street\xa4city\xa8Riverton\xa5state\xa2UT\xa3zip\xce\x00\x01HZ'
         assert srl(jim) == expected
 
-        srl = k._serializer(Serials.cbor)
+        srl = k._serializer(Kinds.cbor)
         expected = b'\xa6efirstcJimdlasteBlackfstreeto100 Main StreetdcityhRivertonestatebUTczip\x1a\x00\x01HZ'
         assert srl(jim) == expected
 
-        srl = k._serializer(Serials.json)
+        srl = k._serializer(Kinds.json)
         expected = b'{"first":"Jim","last":"Black","street":"100 Main Street","city":"Riverton","state":"UT","zip":84058}'
         assert srl(jim) == expected
 
@@ -389,7 +389,7 @@ def test_deserialization():
     with dbing.openLMDB() as db:
         k = koming.Komer(db=db, schema=Record, subkey='records.')
 
-        desrl = k._deserializer(Serials.mgpk)
+        desrl = k._deserializer(Kinds.mgpk)
         actual = helping.datify(Record, desrl(msgp))
         assert actual.first == "Jim"
         assert actual.last == "Black"
@@ -398,7 +398,7 @@ def test_deserialization():
         assert actual.state == "UT"
         assert actual.zip == 84058
 
-        desrl = k._deserializer(Serials.json)
+        desrl = k._deserializer(Kinds.json)
         actual = helping.datify(Record, desrl(json))
         assert actual.first == "Jim"
         assert actual.last == "Black"
@@ -407,7 +407,7 @@ def test_deserialization():
         assert actual.state == "UT"
         assert actual.zip == 84058
 
-        desrl = k._deserializer(Serials.cbor)
+        desrl = k._deserializer(Kinds.cbor)
         actual = helping.datify(Record, desrl(cbor))
         assert actual.first == "Jim"
         assert actual.last == "Black"

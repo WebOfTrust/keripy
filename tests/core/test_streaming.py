@@ -162,7 +162,7 @@ def test_annot():
             "kid" : "FdFYFzERwC2uCBB46pZQi4GG85LujR8obt-KWRBICVQ"
           }
 
-    jwk = dumps(djwk, kering.Serials.json)
+    jwk = dumps(djwk, kering.Kinds.json)
     assert jwk == (b'{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHUR'
                    b'o","d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A","use":"sig","kid":"FdFY'
                    b'FzERwC2uCBB46pZQi4GG85LujR8obt-KWRBICVQ"}')

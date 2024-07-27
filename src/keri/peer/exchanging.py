@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from hio.help import decking
 
-from .. import help, kering
+from .. import help, kering, core
 from ..app import habbing
 from ..core import eventing, coring, serdering
 from ..help import helping
@@ -311,7 +311,7 @@ def exchange(route,
              modifiers=None,
              embeds=None,
              version=coring.Version,
-             kind=coring.Serials.json):
+             kind=coring.Kinds.json):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
@@ -350,11 +350,13 @@ def exchange(route,
         pathed.extend(pather.qb64b)
         pathed.extend(atc)
         if len(pathed) // 4 < 4096:
-            end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialGroup,
-                                      count=(len(pathed) // 4)).qb64b)
+            end.extend(core.Counter(core.Codens.PathedMaterialGroup,
+                                      count=(len(pathed) // 4),
+                                      gvrsn=kering.Vrsn_1_0).qb64b)
         else:
-            end.extend(coring.Counter(code=coring.CtrDex.BigPathedMaterialGroup,
-                                      count=(len(pathed) // 4)).qb64b)
+            end.extend(core.Counter(core.Codens.BigPathedMaterialGroup,
+                                      count=(len(pathed) // 4),
+                                      gvrsn=kering.Vrsn_1_0).qb64b)
         end.extend(pathed)
 
     if e:
@@ -434,17 +436,20 @@ def serializeMessage(hby, said, pipelined=False):
 
     if len(tsgs) > 0:
         for (prefixer, seqner, saider, sigers) in tsgs:
-            atc.extend(coring.Counter(coring.CtrDex.TransIdxSigGroups, count=1).qb64b)
+            atc.extend(core.Counter(core.Codens.TransIdxSigGroups, count=1,
+                                    gvrsn=kering.Vrsn_1_0).qb64b)
             atc.extend(prefixer.qb64b)
             atc.extend(seqner.qb64b)
             atc.extend(saider.qb64b)
 
-            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+            atc.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                                    gvrsn=kering.Vrsn_1_0).qb64b)
             for siger in sigers:
                 atc.extend(siger.qb64b)
 
     if len(cigars) > 0:
-        atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=len(cigars)).qb64b)
+        atc.extend(core.Counter(core.Codens.NonTransReceiptCouples,
+                                count=len(cigars), gvrsn=kering.Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in coring.NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -454,8 +459,8 @@ def serializeMessage(hby, said, pipelined=False):
 
     # Smash the pathed components on the end
     for p in hby.db.epath.get(keys=(exn.said,)):
-        atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialGroup,
-                                  count=(len(p) // 4)).qb64b)
+        atc.extend(core.Counter(core.Codens.PathedMaterialGroup,
+                                  count=(len(p) // 4), gvrsn=kering.Vrsn_1_0).qb64b)
         atc.extend(p.encode("utf-8"))
 
     msg = bytearray()
@@ -464,8 +469,8 @@ def serializeMessage(hby, said, pipelined=False):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        msg.extend(coring.Counter(code=coring.CtrDex.AttachmentGroup,
-                                  count=(len(atc) // 4)).qb64b)
+        msg.extend(core.Counter(core.Codens.AttachmentGroup,
+                                  count=(len(atc) // 4), gvrsn=kering.Vrsn_1_0).qb64b)
 
     msg.extend(atc)
     return msg

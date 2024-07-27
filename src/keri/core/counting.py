@@ -4,6 +4,7 @@ keri.core.counting module
 
 Provides versioning support for Counter classes and codes
 """
+import copy
 
 from dataclasses import dataclass, astuple, asdict
 from collections import namedtuple
@@ -147,18 +148,15 @@ class CounterCodex_2_0(MapDom):
 
 CtrDex_2_0 = CounterCodex_2_0()
 
-# keys and values as strings of keys
-Codict1 = asdict(CtrDex_1_0)
-Tagage_1_0 = namedtuple("Tagage_1_0", list(Codict1), defaults=list(Codict1))
-Tags_1_0 = Tagage_1_0()  # uses defaults
-
-Codict2 = asdict(CtrDex_2_0)
-Tagage_2_0 = namedtuple("Tagage_2_0", list(Codict2), defaults=list(Codict2))
-Tags_2_0 = Tagage_2_0()  # uses defaults
-
-CodictAll = Codict2 | Codict1
-AllTagage = namedtuple("AllTagage", list(CodictAll), defaults=list(CodictAll))
-AllTags = AllTagage()  # uses defaults
+# CodeNames  is tuple of codes names given by attributes of union of codices
+CodeNames = tuple(asdict(CtrDex_2_0) | asdict(CtrDex_1_0))
+# Codens  is namedtuple of CodeNames where its names are the code names
+# Codens enables using the attributes of the named tuple to specify a code by
+# name (indirection) so that changes in the code itself do not break the
+# creation of a counter. Enables specifying a counter by the code name not the
+# code itself. The code may change between versions but the code name does not.
+Codenage = namedtuple("Codenage", CodeNames, defaults=CodeNames)
+Codens = Codenage()
 
 
 @dataclass(frozen=True)
@@ -200,8 +198,9 @@ class Counter:
     Includes the following attributes and properties:
 
     Class Attributes:
-        Codes (dict): of codexes keyed by version
-        Tags (dict): of tagages keyed by version
+        Codes (dict): nested of codexes keyed by major and minor version
+        Names (dict): nested of map of code names to codes keyed by
+                        major and minor version
         Hards (dict): of hard code sizes keyed by text domain selector
         Bards (dict): of hard code sizes keyed by binary domain selector
         Sizes (dict): of size tables keyed by version. Size table is dict
@@ -310,7 +309,15 @@ class Counter:
         },
     }
 
-    Tags = {Vrsn_1_0: Tags_1_0, Vrsn_2_0: Tags_2_0}
+
+    # invert dataclass codenames: codes to dict codes: codenames
+    Names = copy.deepcopy(Codes)  # make deep nested copy so can invert nested values
+    for minor in Names.values():
+        for key in minor:
+            minor[key] = {val: key for key, val in asdict(minor[key]).items()}
+
+
+
 
     # Hards table maps from bytes Base64 first two code chars to int of
     # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
@@ -350,6 +357,7 @@ class Counter:
                 '-0L': Sizage(hs=3, ss=5, fs=8, ls=0),
                 '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
                 '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
             },
         },
@@ -415,17 +423,17 @@ class Counter:
     }
 
 
-    def __init__(self, tag=None, *, code = None, count=None, countB64=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False, gvrsn=Vrsn_2_0):
+    def __init__(self, code=None, *, count=None, countB64=None,
+                 qb64b=None, qb64=None, qb2=None, strip=False,
+                 gvrsn=Vrsn_2_0, **kwa):
         """
         Validate as fully qualified
         Parameters:
-            tag (str | None):  label of stable (hard) part of derivation code
-                               to lookup in codex so it can depend on version.
-                               takes precedence over code.
-            code (str | None):  stable (hard) part of derivation code
-                            if tag provided lookup code from tag
-                            else if tag is None and code provided use code.
+            code (str | None):  either stable (hard) part of derivation code or
+                                code name. When code name then look up code from
+                                ._codes. This allows versioning to change code
+                                but keep stable code name.
+
             count (int | None): count of framed material in quadlets/triplets
                                for composition. Count does not include code.
                                When both count and countB64 are None then count
@@ -466,14 +474,15 @@ class Counter:
         self._version = gvrsn  # provided version may be earlier than supported version
 
 
-        if tag:
-            if not hasattr(self._codes, tag):
-                raise kering.InvalidCodeError(f"Unsupported {tag=}.")
-            code = self._codes[tag]
-
-        if code is not None:  # code (hard) provided
+        if code:  # code (hard) provided
+             # assumes ._sizes ._codes coherent
             if code not in self._sizes or len(code) < 2:
-                raise kering.InvalidCodeError(f"Unsupported {code=}.")
+                try:
+                    code = self._codes[code]  # code is code name so look up code
+                    if code not in self._sizes or len(code) < 2:
+                        raise kering.InvalidCodeError(f"Unsupported {code=}.")
+                except Exception as ex:
+                    raise kering.InvalidCodeError(f"Unsupported {code=}.") from ex
 
             hs, ss, fs, ls = self._sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
@@ -520,8 +529,7 @@ class Counter:
                                      "(code and count) or qb64b or "
                                      "qb64 or qb2.")
 
-        codenames = { val: key for key, val in asdict(self.codes).items()} # map codes to code names
-        self._tag = codenames[self.code]
+        self._name = self.Names[gvrsn.major][latest][self.code]
 
     @property
     def version(self):
@@ -547,13 +555,13 @@ class Counter:
         """
         return self._codes
 
-    @property
-    def tags(self):
-        """
-        Returns tags for current .version
-        Makes .tags read only
-        """
-        return self.Tags[self.version]  # use own version
+    #@property
+    #def tags(self):
+        #"""
+        #Returns tags for current .version
+        #Makes .tags read only
+        #"""
+        #return self.Tags[self.version]  # use own version
 
     @property
     def sizes(self):
@@ -575,24 +583,16 @@ class Counter:
         return self._code
 
     @property
-    def tag(self):
-        """
-        Returns:
-            tag (str): code name for self.code
-
-        Getter for ._tag. Makes .tag read only
-        """
-        return self._tag
-
-    @property
     def name(self):
         """
         Returns:
-            name (str): code name for self.code alias of .tag. Match interface
+            name (str): code name for self.code. Match interface
             for annotation for primitives like Matter
 
+        Getter for ._name. Makes .name read only
+
         """
-        return self.tag
+        return self._name
 
 
     @property
