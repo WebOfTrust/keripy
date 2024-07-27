@@ -849,11 +849,11 @@ class Matter:
         '0G': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, xs=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
+        '0J': Sizage(hs=2, ss=2, xs=1, fs=4, ls=0),
         '0K': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
+        '0L': Sizage(hs=2, ss=6, xs=1, fs=8, ls=0),
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
@@ -871,7 +871,7 @@ class Matter:
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
-        '2__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=1),
+        '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
         '2___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=1),
         '3__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=2),
         '3___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=2),
@@ -2164,10 +2164,11 @@ class Tagger(Matter):
             if l > len(codes):
                 raise InvalidSoftError("Oversized tag={soft}.")
             code = codes[l-1]  # get code for for tag of len where (index = len - 1)
-            if code in PadTagDex:
-                soft = self.Pad + tag # pre pad for those that need it
-            else:
-                soft = tag
+            #if code in PadTagDex:
+                #soft = self.Pad + tag # pre pad for those that need it
+            #else:
+                #soft = tag
+            soft = tag
 
 
         super(Tagger, self).__init__(soft=soft, code=code, **kwa)
@@ -2182,11 +2183,11 @@ class Tagger(Matter):
 
         """
         tag = self.soft
-        if self.code in PadTagDex:
-            pad = self.soft[0]
-            tag = self.soft[1:]
-            if pad != self.Pad:
-                raise  InvalidSoftError("Invaid pre {pad=} for {tag=}.")
+        #if self.code in PadTagDex:
+            #pad = self.soft[0]
+            #tag = self.soft[1:]
+            #if pad != self.Pad:
+                #raise  InvalidSoftError("Invaid pre {pad=} for {tag=}.")
 
         return tag
 

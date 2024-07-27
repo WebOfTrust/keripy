@@ -449,11 +449,11 @@ def test_matter_class():
         '0G': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, xs=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
+        '0J': Sizage(hs=2, ss=2, xs=1, fs=4, ls=0),
         '0K': Sizage(hs=2, ss=2, xs=0, fs=4, ls=0),
-        '0L': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
+        '0L': Sizage(hs=2, ss=6, xs=1, fs=8, ls=0),
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
-        '0N': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
@@ -471,7 +471,7 @@ def test_matter_class():
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
-        '2__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=1),
+        '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
         '2___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=1),
         '3__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=2),
         '3___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=2),
@@ -1985,7 +1985,7 @@ def test_matter_special():
 
     # Test TBD0S  '1__-'
     # soft special but valid non-empty raw as part of primitive
-    code = MtrDex.TBD0S  # sizes '1__-': Sizage(hs=4, ss=2, fs=12, ls=0),
+    code = MtrDex.TBD0S  # sizes '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
     rs = Matter._rawSize(code)  # raw size
     soft = 'TG'
     qb64 = '1__-TGB1dnd4'
@@ -2046,11 +2046,11 @@ def test_matter_special():
 
     # Test TBD1S  '2__-'
     # soft special but valid non-empty raw as part of primitive
-    code = MtrDex.TBD1S  # sizes '2__-': Sizage(hs=4, ss=2, fs=12, ls=1),
+    code = MtrDex.TBD1S  # sizes '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
     rs = Matter._rawSize(code)  # raw size
-    soft = 'TG'
-    qb64 = '2__-TGAAdXZ3'  # see lead byte
-    qb2 = b'\xdb\xff\xfeL`\x00uvw'
+    soft = 'T'
+    qb64 = '2__-_TAAdXZ3'  # see prepad and see lead byte
+    qb2 = b'\xdb\xff\xfe\xfd0\x00uvw'
     raw = b'uvw'
 
     assert rs == 3
@@ -2087,8 +2087,8 @@ def test_matter_special():
 
     # Same as above but raw all zeros
 
-    qb64 = '2__-TGAAAAAA'
-    qb2 = b'\xdb\xff\xfeL`\x00\x00\x00\x00'
+    qb64 = '2__-_TAAAAAA'
+    qb2 = b'\xdb\xff\xfe\xfd0\x00\x00\x00\x00'
     raw = b'\x00\x00\x00'
 
     assert rs == 3
@@ -3367,7 +3367,6 @@ def test_tagger():
     # Tag1
     tag = 'v'
     code = MtrDex.Tag1
-    soft = '_v'
     qb64 = '0J_v'
     qb64b = qb64.encode("utf-8")
     qb2 = decodeB64(qb64b)
@@ -3375,7 +3374,7 @@ def test_tagger():
 
     tagger = Tagger(tag=tag)  # defaults
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
@@ -3385,7 +3384,7 @@ def test_tagger():
 
     tagger = Tagger(qb2=qb2)
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
@@ -3395,7 +3394,7 @@ def test_tagger():
 
     tagger = Tagger(qb64=qb64)
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
@@ -3405,7 +3404,7 @@ def test_tagger():
 
     tagger = Tagger(qb64b=qb64b)
     assert tagger.code == tagger.hard == code
-    assert tagger.soft == soft
+    assert tagger.soft == tag
     assert tagger.raw == raw
     assert tagger.qb64 == qb64
     assert tagger.qb2 == qb2
