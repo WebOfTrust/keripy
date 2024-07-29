@@ -12,8 +12,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
-                      RawMaterialError)
+from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError)
 
 from ..help import helping
 
