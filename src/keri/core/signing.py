@@ -12,12 +12,13 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-from ..kering import (EmptyMaterialError, InvalidSizeError, InvalidVarRawSizeError)
+from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
+                      InvalidVarRawSizeError)
 
 from ..help import helping
 
 from .coring import (Tiers, )
-from .coring import (Matter, MtrDex, Verfer, Cigar)
+from .coring import (SmallVrzDex, LargeVrzDex, Matter, MtrDex, Verfer, Cigar)
 from .indexing import IdrDex, Siger
 
 
@@ -587,6 +588,39 @@ class CipherX25519QB2VarCodex:
 
 CiXVarQB2Dex = CipherX25519QB2VarCodex()  # Make instance
 
+# Codes for for ciphers of all varibale sizes and all types of plain text
+@dataclass(frozen=True)
+class CipherX25519AllVarCodex:
+    """
+    CipherX25519AllVarCodex is codex all variable size codes  of cipher bytes
+    for sealed box encryped ciphertext. Plaintext maybe sniffable or qb64 or qb2.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+    X25519_Cipher_QB2_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_QB2_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_QB2_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_QB2_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_QB2_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_QB2_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CiXVarDex = CipherX25519AllVarCodex()  # Make instance
+
 
 # Codes for for ciphers of all sizes and all types of plain text
 @dataclass(frozen=True)
@@ -653,51 +687,26 @@ class Cipher(Matter):
             code (str): cipher suite
 
         """
-        if raw is not None:
-            if code is None or code in CiXFixQB64Dex:
+        # default when raw is not None and code is None  is to use fixed size
+        # code given by raw size. Otherwise provided code fixed or variable size
+        # is handled by Matter superclass.
+        if raw is not None and code is None:
                 if len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Salt):
                     code = MtrDex.X25519_Cipher_Salt
                 elif len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Seed):
                     code = MtrDex.X25519_Cipher_Seed
                 else:
                     raise InvalidSizeError(f"Unsupported fixed raw size"
-                                                 f" {len(raw)} for {code=}.")
-
-            #if code[0] in SmallVrzDex:  # compute code with sizes
-                #if size <= (64 ** 2 - 1):  # ss = 2
-                    #hs = 2
-                    #s = astuple(SmallVrzDex)[ls]
-                    #code = f"{s}{code[1:hs]}"
-                    #ss = 2
-                #elif size <= (64 ** 4 - 1):  # ss = 4 make big version of code
-                    #hs = 4
-                    #s = astuple(LargeVrzDex)[ls]
-                    #code = f"{s}{'A' * (hs - 2)}{code[1]}"
-                    #soft = intToB64(size, 4)
-                    #ss = 4
-                #else:
-                    #raise InvalidVarRawSizeError(f"Unsupported raw size for "
-                                                 #f"{code=}.")
-            #elif code[0] in LargeVrzDex:  # compute code with sizes
-                #if size <= (64 ** 4 - 1):  # ss = 4
-                    #hs = 4
-                    #s = astuple(LargeVrzDex)[ls]
-                    #code = f"{s}{code[1:hs]}"
-                    #ss = 4
-                #else:
-                    #raise InvalidVarRawSizeError(f"Unsupported raw size for large "
-                                                 #f"{code=}. {size} <= {64 ** 4 - 1}")
-            #else:
-                #raise InvalidVarRawSizeError(f"Unsupported variable raw size "
-                                             #f"{code=}.")
+                                           f" {len(raw)} for {code=}.")
 
         if hasattr(raw, "encode"):
             raw = raw.encode("utf-8")  # ensure bytes not str
 
         super(Cipher, self).__init__(raw=raw, code=code, **kwa)
 
-        if self.code not in (MtrDex.X25519_Cipher_Salt, MtrDex.X25519_Cipher_Seed):
-            raise ValueError("Unsupported cipher code = {}.".format(self.code))
+        if self.code not in CiXDex:
+            raise InvalidCodeError(f"Unsupported cipher code = {self.code}.")
+
 
     def decrypt(self, prikey=None, seed=None):
         """
@@ -706,7 +715,7 @@ class Cipher(Matter):
         qualified (qb64) so derivaton code of plain text preserved through
         encryption/decryption round trip.
 
-        Uses either decryption key given by prikey or derives prikey from
+        Decrypter uses either decryption key given by prikey or derives prikey from
         signing key derived from private seed.
 
         Parameters:

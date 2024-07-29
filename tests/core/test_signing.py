@@ -541,7 +541,7 @@ def test_cipher():
     cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
     assert cipher.decrypt(seed=cryptseedqb64).qb64b == saltqb64b
 
-    with pytest.raises(ValueError):  # bad code
+    with pytest.raises(kering.InvalidCodeError):  # bad code
         cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
 
     # Test bad raw size
