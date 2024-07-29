@@ -461,7 +461,7 @@ class MaterialError(KeriError):
 
 class RawMaterialError(MaterialError):
     """
-    Not Enough bytes in buffer bytearray for raw material
+    Invalid raw material
     Usage:
         raise RawMaterialError("error message")
     """
@@ -469,7 +469,7 @@ class RawMaterialError(MaterialError):
 
 class SoftMaterialError(MaterialError):
     """
-    Not Enough chars in soft for soft material
+    Invalid soft material
     Usage:
         raise SoftMaterialError("error message")
     """

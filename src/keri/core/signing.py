@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
-                      InvalidVarRawSizeError)
+                      RawMaterialError)
 
 from ..help import helping
 
@@ -670,7 +670,7 @@ class Cipher(Matter):
     private key for decryption. The default is to use X25519 sealed box encryption.
 
     The Cipher instances .raw is the raw binary encrypted cipher text and its
-    .code indicates what type of secret has been encrypted. The cipher suite used
+    .code indicates what type of plain text has been encrypted. The cipher suite used
     for the encryption/decryption is implied by the context where the cipher is
     used.
 
@@ -680,10 +680,10 @@ class Cipher(Matter):
     Codex = CiXDex
     Codes = asdict(CiXDex)  # map code name to code
 
-    def __init__(self, raw=None, code=None, fix=False, **kwa):
+    def __init__(self, raw=None, code=None, **kwa):
         """
         Parmeters:
-            raw (bytes | str): cipher text
+            raw (bytes | str): cipher text (not plain text)
             code (str): cipher suite
 
         """
