@@ -622,7 +622,7 @@ class Matter:
         Names (dict): maps code to code name
         Pad (str): B64 pad char for xtra size pre-padded soft values
 
-    Calss Methods:
+    Class Methods:
 
 
     Attributes:
