@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-from ..kering import (EmptyMaterialError,)
+from ..kering import (EmptyMaterialError, InvalidSizeError, InvalidVarRawSizeError)
 
 from ..help import helping
 
@@ -24,115 +24,6 @@ from .indexing import IdrDex, Siger
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
-
-
-@dataclass(frozen=True)
-class CipherX25519VarCodex:
-    """
-    CipherX25519VarCodex is codex all variable sized cipher bytes derivation codes
-    for sealed box encryped ciphertext. Plaintext is B2.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    X25519_Cipher_L0:     str = '4D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
-    X25519_Cipher_L1:     str = '5D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
-    X25519_Cipher_L2:     str = '6D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
-    X25519_Cipher_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-CiXVarDex = CipherX25519VarCodex()  # Make instance
-
-
-@dataclass(frozen=True)
-class CipherX25519FixQB64Codex:
-    """
-    CipherX25519FixQB64Codex is codex all fixed sized cipher bytes derivation codes
-    for sealed box encryped ciphertext. Plaintext is B64.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-CiXFixQB64Dex = CipherX25519FixQB64Codex()  # Make instance
-
-
-@dataclass(frozen=True)
-class CipherX25519VarQB64Codex:
-    """
-    CipherX25519VarQB64Codex is codex all variable sized cipher bytes derivation codes
-    for sealed box encryped ciphertext. Plaintext is QB64.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
-    X25519_Cipher_QB64_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
-    X25519_Cipher_QB64_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
-    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
-    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
-    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-CiXVarQB64Dex = CipherX25519VarQB64Codex()  # Make instance
-
-
-@dataclass(frozen=True)
-class CipherX25519AllQB64Codex:
-    """
-    CipherX25519AllQB64Codex is codex all both fixed and variable sized cipher bytes
-    derivation codes for sealed box encryped ciphertext. Plaintext is B64.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
-    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
-    X25519_Cipher_QB64_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
-    X25519_Cipher_QB64_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
-    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
-    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
-    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-CiXAllQB64Dex = CipherX25519AllQB64Codex()  # Make instance
-
-
-@dataclass(frozen=True)
-class CipherX25519QB2VarCodex:
-    """
-    CipherX25519QB2VarCodex is codex all variable sized cipher bytes derivation codes
-    for sealed box encryped ciphertext. Plaintext is B2.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    X25519_Cipher_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
-    X25519_Cipher_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
-    X25519_Cipher_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
-    X25519_Cipher_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-CiXVarQB2Dex = CipherX25519QB2VarCodex()  # Make instance
-
 
 
 
@@ -588,6 +479,153 @@ class Salter(Matter):
         return [self.signer(path=f"{path}{i + start:x}", **kwa) for i in range(count)]
 
 
+
+
+# Codes for for ciphers of variable sized sniffable QB2 or QB64 plain text
+@dataclass(frozen=True)
+class CipherX25519VarSnifCodex:
+    """
+    CipherX25519VarCodex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is Sniffable QB2 or QB64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CiXVarSnifDex = CipherX25519VarSnifCodex()  # Make instance
+
+
+# Codes for for ciphers of variable sized QB64 plain text
+@dataclass(frozen=True)
+class CipherX25519VarQB64Codex:
+    """
+    CipherX25519VarQB64Codex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is QB64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CiXVarQB64Dex = CipherX25519VarQB64Codex()  # Make instance
+
+# Codes for for ciphers of fixed sized QB64 plain text
+@dataclass(frozen=True)
+class CipherX25519FixQB64Codex:
+    """
+    CipherX25519FixQB64Codex is codex all fixed sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is B64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CiXFixQB64Dex = CipherX25519FixQB64Codex()  # Make instance
+
+# Codes for for ciphers of all sizes fixed and variable of QB64 plain text
+@dataclass(frozen=True)
+class CipherX25519AllQB64Codex:
+    """
+    CipherX25519AllQB64Codex is codex all both fixed and variable sized cipher bytes
+    derivation codes for sealed box encryped ciphertext. Plaintext is B64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CiXAllQB64Dex = CipherX25519AllQB64Codex()  # Make instance
+
+
+
+# Codes for for ciphers of variable sized QB2 plain text
+@dataclass(frozen=True)
+class CipherX25519QB2VarCodex:
+    """
+    CipherX25519QB2VarCodex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is B2.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_QB2_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_QB2_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_QB2_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_QB2_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_QB2_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_QB2_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CiXVarQB2Dex = CipherX25519QB2VarCodex()  # Make instance
+
+
+# Codes for for ciphers of all sizes and all types of plain text
+@dataclass(frozen=True)
+class CipherX25519AllCodex:
+    """
+    CipherX25519AllCodex is codex all codes and types of cipher bytes
+    for sealed box encryped ciphertext. Plaintext maybe sniffable or qb64 or qb2.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+    X25519_Cipher_QB2_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_QB2_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_QB2_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_QB2_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_QB2_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_QB2_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CiXDex = CipherX25519AllCodex()  # Make instance
+
+
+
+
 class Cipher(Matter):
     """
     Cipher is Matter subclass holding a cipher text of a secret that may be
@@ -605,18 +643,53 @@ class Cipher(Matter):
     See Matter for inherited attributes and properties
 
     """
+    Codex = CiXDex
+    Codes = asdict(CiXDex)  # map code name to code
 
-    def __init__(self, raw=None, code=None, **kwa):
+    def __init__(self, raw=None, code=None, fix=False, **kwa):
         """
         Parmeters:
-            raw (Union[bytes, str]): cipher text
+            raw (bytes | str): cipher text
             code (str): cipher suite
+
         """
-        if raw is not None and code is None:
-            if len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Salt):
-                code = MtrDex.X25519_Cipher_Salt
-            elif len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Seed):
-                code = MtrDex.X25519_Cipher_Seed
+        if raw is not None:
+            if code is None or code in CiXFixQB64Dex:
+                if len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Salt):
+                    code = MtrDex.X25519_Cipher_Salt
+                elif len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Seed):
+                    code = MtrDex.X25519_Cipher_Seed
+                else:
+                    raise InvalidSizeError(f"Unsupported fixed raw size"
+                                                 f" {len(raw)} for {code=}.")
+
+            #if code[0] in SmallVrzDex:  # compute code with sizes
+                #if size <= (64 ** 2 - 1):  # ss = 2
+                    #hs = 2
+                    #s = astuple(SmallVrzDex)[ls]
+                    #code = f"{s}{code[1:hs]}"
+                    #ss = 2
+                #elif size <= (64 ** 4 - 1):  # ss = 4 make big version of code
+                    #hs = 4
+                    #s = astuple(LargeVrzDex)[ls]
+                    #code = f"{s}{'A' * (hs - 2)}{code[1]}"
+                    #soft = intToB64(size, 4)
+                    #ss = 4
+                #else:
+                    #raise InvalidVarRawSizeError(f"Unsupported raw size for "
+                                                 #f"{code=}.")
+            #elif code[0] in LargeVrzDex:  # compute code with sizes
+                #if size <= (64 ** 4 - 1):  # ss = 4
+                    #hs = 4
+                    #s = astuple(LargeVrzDex)[ls]
+                    #code = f"{s}{code[1:hs]}"
+                    #ss = 4
+                #else:
+                    #raise InvalidVarRawSizeError(f"Unsupported raw size for large "
+                                                 #f"{code=}. {size} <= {64 ** 4 - 1}")
+            #else:
+                #raise InvalidVarRawSizeError(f"Unsupported variable raw size "
+                                             #f"{code=}.")
 
         if hasattr(raw, "encode"):
             raw = raw.encode("utf-8")  # ensure bytes not str

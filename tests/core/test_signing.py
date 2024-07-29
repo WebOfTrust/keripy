@@ -11,8 +11,7 @@ import pytest
 from keri import kering
 from keri.core import (Indexer, IdrDex, )
 from keri.core import (Matter, MtrDex, Cigar, Verfer, Prefixer)
-from keri.core import (Signer, Salter,
-                       Cipher, Encrypter, Decrypter, )
+from keri.core import (Signer, Salter, Cipher, CiXDex, Encrypter, Decrypter, )
 from keri.core import (Tiers, )
 
 
@@ -452,6 +451,38 @@ def test_gensignerswithsalter():
 
     """ End Test """
 
+def test_cipher_closs():
+    """
+    Test class attributes of Cipher
+    """
+    assert Cipher.Codex == CiXDex
+
+    assert Cipher.Codes == \
+    {
+        'X25519_Cipher_L0': '4C',
+        'X25519_Cipher_L1': '5C',
+        'X25519_Cipher_L2': '6C',
+        'X25519_Cipher_Big_L0': '7AAC',
+        'X25519_Cipher_Big_L1': '8AAC',
+        'X25519_Cipher_Big_L2': '9AAC',
+        'X25519_Cipher_Seed': 'P',
+        'X25519_Cipher_Salt': '1AAH',
+        'X25519_Cipher_QB64_L0': '4D',
+        'X25519_Cipher_QB64_L1': '5D',
+        'X25519_Cipher_QB64_L2': '6D',
+        'X25519_Cipher_QB64_Big_L0': '7AAD',
+        'X25519_Cipher_QB64_Big_L1': '8AAD',
+        'X25519_Cipher_QB64_Big_L2': '9AAD',
+        'X25519_Cipher_QB2_L0': '4E',
+        'X25519_Cipher_QB2_L1': '5E',
+        'X25519_Cipher_QB2_L2': '6E',
+        'X25519_Cipher_QB2_Big_L0': '7AAE',
+        'X25519_Cipher_QB2_Big_L1': '8AAE',
+        'X25519_Cipher_QB2_Big_L2': '9AAE'
+    }
+
+    """End Test"""
+
 
 def test_cipher():
     """
@@ -512,6 +543,21 @@ def test_cipher():
 
     with pytest.raises(ValueError):  # bad code
         cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
+
+    # Test bad raw size
+    raw = pysodium.crypto_box_seal(seedqb64b, pubkey)  # uses nonce so different everytime
+    with pytest.raises(kering.InvalidSizeError):
+        cipher = Cipher(raw=raw[:len(raw)-1])  # make raw too small
+    with pytest.raises(kering.InvalidSizeError):
+        cipher = Cipher(raw=raw + b'_')  # make raw too big
+
+    raw = pysodium.crypto_box_seal(saltqb64b, pubkey)  # uses nonce so different everytime
+    with pytest.raises(kering.InvalidSizeError):
+        cipher = Cipher(raw=raw[:len(raw)-1])  # make raw too small
+    with pytest.raises(kering.InvalidSizeError):
+        cipher = Cipher(raw=raw + b'_')  # make raw too big
+
+
     """ Done Test """
 
 
@@ -705,6 +751,7 @@ if __name__ == "__main__":
     test_signer()
     test_salter()
     test_gensignerswithsalter()
+    test_cipher_closs()
     test_cipher()
     test_encrypter()
     test_decrypter()
