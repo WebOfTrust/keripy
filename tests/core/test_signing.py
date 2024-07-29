@@ -375,33 +375,6 @@ def test_signer():
     """ Done Test """
 
 
-def test_generatesigners():
-    """
-    Test the support function genSigners
-
-    """
-    signers = Salter().signers(count=2, temp=True, transferable=False)
-    assert len(signers) == 2
-    for signer in signers:
-        assert signer.verfer.code == MtrDex.Ed25519N
-
-    # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)  # raw salt
-    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    assert len(raw) == 16
-    signers = Salter(raw=raw).signers(count=4)
-    assert len(signers) == 4
-    for signer in signers:
-        assert signer.code == MtrDex.Ed25519_Seed
-        assert signer.verfer.code == MtrDex.Ed25519
-
-    sigkeys = [signer.qb64 for signer in signers]
-    assert sigkeys == ['AK8F6AAiYDpXlWdj2O5F5-6wNCCNJh2A4XOlqwR_HwwH',
-                       'AOs8-zNPPh0EhavdrCfCiTk9nGeO8e6VxUCzwdKXJAd0',
-                       'AHMBU5PsIJN2U9m7j0SGyvs8YD8fkym2noELzxIrzfdG',
-                       'AJZ7ZLd7unQ4IkMUwE69NXcvDO9rrmmRH_Xk3TPu9BpP']
-
-    """ End Test """
-
 
 def test_salter():
     """
@@ -450,6 +423,34 @@ def test_salter():
     assert salter.stretch(tier=Tiers.high) == b'(\xcd\xc4\xb85\xcd\xe8:\xfc\x00\x8b\xfd\xa6\tj.y\x98\x0b\x04\x1c\xe3hBc!I\xe49K\x16-'
 
     """ Done Test """
+
+
+def test_gensignerswithsalter():
+    """
+    Test generating a set of signers using Salter
+
+    """
+    signers = Salter().signers(count=2, temp=True, transferable=False)
+    assert len(signers) == 2
+    for signer in signers:
+        assert signer.verfer.code == MtrDex.Ed25519N
+
+    # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)  # raw salt
+    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    assert len(raw) == 16
+    signers = Salter(raw=raw).signers(count=4)
+    assert len(signers) == 4
+    for signer in signers:
+        assert signer.code == MtrDex.Ed25519_Seed
+        assert signer.verfer.code == MtrDex.Ed25519
+
+    sigkeys = [signer.qb64 for signer in signers]
+    assert sigkeys == ['AK8F6AAiYDpXlWdj2O5F5-6wNCCNJh2A4XOlqwR_HwwH',
+                       'AOs8-zNPPh0EhavdrCfCiTk9nGeO8e6VxUCzwdKXJAd0',
+                       'AHMBU5PsIJN2U9m7j0SGyvs8YD8fkym2noELzxIrzfdG',
+                       'AJZ7ZLd7unQ4IkMUwE69NXcvDO9rrmmRH_Xk3TPu9BpP']
+
+    """ End Test """
 
 
 def test_cipher():
@@ -702,8 +703,8 @@ def test_decrypter():
 
 if __name__ == "__main__":
     test_signer()
-    test_generatesigners()
     test_salter()
+    test_gensignerswithsalter()
     test_cipher()
     test_encrypter()
     test_decrypter()
