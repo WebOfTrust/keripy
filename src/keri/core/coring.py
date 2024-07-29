@@ -1424,21 +1424,18 @@ class Matter:
         # these are well formed.
         # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
 
-        xtra = qb64b[hs:hs+xs]  # extract xtra prepad chars of soft, empty when xs==0
-        if isinstance(xtra, memoryview):
-            xtra = bytes(xtra)
-        if hasattr(xtra, "decode"):
-            xtra = xtra.decode()  # converts bytes/bytearray to str
-        if xtra != f"{self.Pad * xs}":
-            raise UnexpectedCodeError(f"Invalid prepad xtra ={xtra}.")
 
-        # extract soft chars excluding xtra, empty when ss==0 and xs == 0
+        # extract soft chars including xtra, empty when ss==0 and xs == 0
         # assumes that when ss == 0 then xs must be 0
-        soft = qb64b[hs+xs:hs+ss]
+        soft = qb64b[hs:hs+ss]
         if isinstance(soft, memoryview):
             soft = bytes(soft)
         if hasattr(soft, "decode"):
             soft = soft.decode()  # converts bytes/bytearray to str
+        xtra = soft[:xs]  # extract xtra if any from front of soft
+        soft = soft[xs:]  # strip xtra from soft
+        if xtra != f"{self.Pad * xs}":
+            raise UnexpectedCodeError(f"Invalid prepad xtra ={xtra}.")
 
         if not fs:  # compute fs from soft from ss part which provides size B64
             # compute variable size as int may have value 0
@@ -1516,13 +1513,14 @@ class Matter:
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        xtra = both[hs:hs+xs]  # extract xtra prepad chars of soft, empty when xs==0
+
+        # extract soft chars including xtra, empty when ss==0 and xs == 0
+        # assumes that when ss == 0 then xs must be 0
+        soft = both[hs:hs+ss]  # get soft may be empty
+        xtra = soft[:xs]  # extract xtra if any from front of soft
+        soft = soft[xs:]  # strip xtra from soft
         if xtra != f"{self.Pad * xs}":
             raise UnexpectedCodeError(f"Invalid prepad xtra ={xtra}.")
-
-        # extract soft chars excluding xtra, empty when ss==0 and xs == 0
-        # assumes that when ss == 0 then xs must be 0
-        soft = both[hs+xs:hs+ss]  # get soft may be empty
 
         if not fs:  # compute fs from size chars in ss part of code
             if len(qb2) < bcs:  # need more bytes
