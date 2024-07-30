@@ -154,6 +154,8 @@ def test_noter():
     assert res[1][0].attrs['a'] == 2
     assert res[2][0].attrs['a'] == 3
 
+    assert res[2][0].datetime[-6:] == "+00:00"
+
     # test paginated iteration
     for i in range(10):
         note = notifying.notice(attrs=dict(a=i))
@@ -207,6 +209,8 @@ def test_notifier():
 
         notes = notifier.getNotes()
         assert len(notes) == 3
+
+        assert notes[2].datetime[-6:] == "+00:00"
 
     payload = dict(a=1, b=2, c=3)
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
