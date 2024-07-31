@@ -105,7 +105,7 @@ def test_dictersuber():
         assert res[2].attrs['a'] == 3
 
 
-def test_noter():
+def test_noter(mockHelpingNowUTC):
     noter = notifying.Noter()
     assert noter.path.endswith("/not/not")
     noter.reopen()
@@ -137,12 +137,14 @@ def test_noter():
     notes = noter.getNotes(start=0)
     assert len(notes) == 0
 
-    dt = datetime.datetime.now()
-    note = notifying.notice(attrs=dict(a=1))
+    note = notifying.notice(attrs=dict(a=1), 
+                            dt=helping.fromIso8601("2022-07-08T15:01:05.453632"))
     assert noter.add(note, cig) is True
-    note = notifying.notice(attrs=dict(a=2))
+    note = notifying.notice(attrs=dict(a=2), 
+                            dt=helping.fromIso8601("2022-07-08T15:01:06.453632"))
     assert noter.add(note, cig) is True
-    note = notifying.notice(attrs=dict(a=3))
+    note = notifying.notice(attrs=dict(a=3), 
+                            dt=helping.fromIso8601("2022-07-08T15:01:07.453632"))
     assert noter.add(note, cig) is True
 
     res = []
@@ -154,8 +156,6 @@ def test_noter():
     assert res[1][0].attrs['a'] == 2
     assert res[2][0].attrs['a'] == 3
 
-    assert res[2][0].datetime[-6:] == "+00:00"
-
     # test paginated iteration
     for i in range(10):
         note = notifying.notice(attrs=dict(a=i))
@@ -166,12 +166,13 @@ def test_noter():
         res.append(note)
 
     assert len(res) == 5
+    assert res[0][0].datetime == "2021-01-01T00:00:00.000000+00:00"
 
     cnt = noter.getNoteCnt()
     assert cnt == 13
 
 
-def test_notifier():
+def test_notifier(mockHelpingNowUTC):
     with habbing.openHby(name="test") as hby:
         notifier = notifying.Notifier(hby=hby)
         assert notifier.signaler is not None
@@ -210,7 +211,7 @@ def test_notifier():
         notes = notifier.getNotes()
         assert len(notes) == 3
 
-        assert notes[2].datetime[-6:] == "+00:00"
+        assert notes[2].datetime == "2021-01-01T00:00:00.000000+00:00"
 
     payload = dict(a=1, b=2, c=3)
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
