@@ -98,7 +98,7 @@ Navigate to Settings in Docker Desktop.
 In the General tab, check Use containerd for pulling and storing images.
 Select Apply & Restart.
 
-```angular2html
+```shell
 make build-keri
 make publish-keri
 ```
