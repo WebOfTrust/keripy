@@ -203,7 +203,7 @@ def test_notifier(mockHelpingNowUTC):
         assert notifier.rem(note.rid) is True
         assert notifier.getNotes() == []
 
-        dt = datetime.datetime.now()
+        dt = helping.nowIso8601()
         assert notifier.add(attrs=dict(a=1)) is True
         assert notifier.add(attrs=dict(a=2)) is True
         assert notifier.add(attrs=dict(a=3)) is True

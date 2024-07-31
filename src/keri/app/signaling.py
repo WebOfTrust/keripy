@@ -27,7 +27,7 @@ def signal(attrs, topic, ckey=None, dt=None):
         Notice:  Notice instance
 
     """
-    dt = dt if dt is not None else datetime.datetime.now().isoformat()
+    dt = dt if dt is not None else helping.nowIso8601()
 
     if hasattr(dt, "isoformat"):
         dt = dt.isoformat()
@@ -117,7 +117,7 @@ class Signaler(doing.DoDoer):
         Returns:
 
         """
-        dt = dt if dt is not None else datetime.datetime.now()
+        dt = dt if dt is not None else helping.nowIso8601()
         sig = signal(attrs=attrs, topic=topic, ckey=ckey, dt=dt)
 
         if sig.ckey is not None:
@@ -146,7 +146,7 @@ class Signaler(doing.DoDoer):
         _ = (yield self.tock)
 
         while True:  # loop checking for expired messages
-            now = datetime.datetime.now()
+            now = helping.nowUTC()
             toRemove = []
             for sig in self.signals:
                 if now - helping.fromIso8601(sig.dt) > self.SignalTimeout:  # Expire messages that are too old
