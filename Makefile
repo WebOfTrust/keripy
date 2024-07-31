@@ -1,8 +1,8 @@
 
 .PHONY: build-keri
 build-keri:
-	@docker buildx build --platform=linux/amd64 -f images/keripy.dockerfile --tag weboftrust/keri:1.2.0-dev11 .
-	@docker buildx build --platform=linux/arm64 -f images/keripy.dockerfile --tag weboftrust/keri:1.2.0-dev11-arm64 .
+	@docker buildx build --platform=linux/amd64 -f images/keripy.dockerfile --tag weboftrust/keri:1.2.0-dev12 .
+	@docker buildx build --platform=linux/arm64 -f images/keripy.dockerfile --tag weboftrust/keri:1.2.0-dev12-arm64 .
 
 .PHONY: build-witness-demo
 build-witness-demo:
@@ -11,8 +11,8 @@ build-witness-demo:
 
 .PHONY: publish-keri
 publish-keri:
-	@docker push weboftrust/keri:1.2.0-dev11
-	@docker push weboftrust/keri:1.2.0-dev11-arm64
+	@docker push weboftrust/keri:1.2.0-dev12
+	@docker push weboftrust/keri:1.2.0-dev12-arm64
 
 .PHONY: publish-keri-witness-demo
 publish-keri-witness-demo:
