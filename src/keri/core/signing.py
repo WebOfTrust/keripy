@@ -840,22 +840,9 @@ class Encrypter(Matter):
         if not isinstance(ser, bytes):
             ser = bytes(ser)  # convert bytearray and memoryview to bytes
 
-        #if not (ser or prim):
-            #raise EmptyMaterialError(f"Neither bar serialization or primitive "
-                                     #f"are provided.")
-
-        #if ser:
-            #prim = Matter(qb64b=ser)
-
-        #if prim.code == MtrDex.Salt_128:  # future other salt codes
-            #code = MtrDex.X25519_Cipher_Salt
-        #elif prim.code == MtrDex.Ed25519_Seed:  # future other seed codes
-            #code = MtrDex.X25519_Cipher_Seed
-        #else:
-            #raise ValueError("Unsupported plain text code = {}.".format(prim.code))
-
-        # encrypting fully qualified qb64 version of plain text ensures its
-        # derivation code round trips through eventual decryption
+        # encrypting fully qualified qb64 version of cesr primitive as plain
+        # text with proper cipher code ensures primitive round trip through eventual
+        # decryption. Likewise for sniffable stream with sniffible cipher code.
         return (self._encrypt(ser=ser, pubkey=self.raw, code=code))
 
     @staticmethod
@@ -866,7 +853,7 @@ class Encrypter(Matter):
             ser (Union[bytes, str]): qb64b or qb64 serialization of seed or salt
                 to be encrypted.
             pubkey (bytes): raw binary serialization of encryption public key
-            code (str): derivation code of serialized plain text seed or salt
+            code (str): cipher derivation code
         """
         raw = pysodium.crypto_box_seal(ser, pubkey)
         return Cipher(raw=raw, code=code)
@@ -934,7 +921,7 @@ class Decrypter(Matter):
         else:
             raise ValueError("Unsupported decrypter code = {}.".format(self.code))
 
-    def decrypt(self, ser=None, cipher=None, transferable=False):
+    def decrypt(self, *, ser=None, cipher=None, klas=None, transferable=False):
         """
         Returns:
             Salter or Signer instance derived from plain text decrypted from
@@ -944,10 +931,14 @@ class Decrypter(Matter):
             encryption/decryption round trip.
 
         Parameters:
-            ser (Union[bytes,str]): qb64b or qb64 serialization of cipher text
+            ser (bytes | str): serialization of cipher text
             cipher (Cipher): optional Cipher instance when ser is None
-            transferable (bool): True means associated verfer of returned
-                signer is transferable. False means non-transferable
+            klas (Matter, Indexer, Streamer): Class used to create instance from
+                decrypted serialization.
+            transferable (bool): Modifier of Klas instance creation. When klas
+                is signer;
+                   True means verfer of returned signer is transferable.
+                   False means non-transferable
         """
         if not (ser or cipher):
             raise EmptyMaterialError("Neither ser or cipher are provided.")
@@ -957,10 +948,11 @@ class Decrypter(Matter):
 
         return (self._decrypt(cipher=cipher,
                               prikey=self.raw,
+                              klas=klas,
                               transferable=transferable))
 
     @staticmethod
-    def _x25519(cipher, prikey, transferable=False):
+    def _x25519(cipher, prikey, klas, transferable=False):
         """
         Returns plain text as Salter or Signer instance depending on the cipher
             code and the embedded encrypted plain text derivation code.
@@ -969,8 +961,12 @@ class Decrypter(Matter):
             cipher (Cipher): instance of encrypted seed or salt
             prikey (bytes): raw binary decryption private key derived from
                 signing seed or sigkey
-            transferable (bool): True means associated verfer of returned
-                signer is transferable. False means non-transferable
+            klas (Matter, Indexer, Streamer): Class used to create instance from
+                decrypted serialization.
+            transferable (bool): Modifier of Klas instance creation. When klas
+                is signer;
+                   True means verfer of returned signer is transferable.
+                   False means non-transferable
         """
         pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
         plain = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)  # qb64b
