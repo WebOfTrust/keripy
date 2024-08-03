@@ -794,33 +794,36 @@ class Encrypter(Matter):
         pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
         return (pubkey == self.raw)
 
-    def encrypt(self, ser=None, matter=None):
+    def encrypt(self, ser=None, prim=None, code=None):
         """
         Returns:
             Cipher instance of cipher text encryption of plain text serialization
             provided by either ser or Matter instance when provided.
 
         Parameters:
+
             ser (Union[bytes,str]): qb64b or qb64 serialization of plain text
-            matter (Matter): plain text as Matter instance of seed or salt to
-                be encrypted
+            prim (Matter | Indexer): CESR primitive instance whose serialization
+                qb64 or qb2 is to be encrypted based on code
+            code (str): code of plain text type for resultant encrypted cipher
         """
-        if not (ser or matter):
-            raise EmptyMaterialError("Neither ser or plain are provided.")
+        if not (ser or prim):
+            raise EmptyMaterialError(f"Neither bar serialization or primitive "
+                                     f"are provided.")
 
         if ser:
-            matter = Matter(qb64b=ser)
+            prim = Matter(qb64b=ser)
 
-        if matter.code == MtrDex.Salt_128:  # future other salt codes
+        if prim.code == MtrDex.Salt_128:  # future other salt codes
             code = MtrDex.X25519_Cipher_Salt
-        elif matter.code == MtrDex.Ed25519_Seed:  # future other seed codes
+        elif prim.code == MtrDex.Ed25519_Seed:  # future other seed codes
             code = MtrDex.X25519_Cipher_Seed
         else:
-            raise ValueError("Unsupported plain text code = {}.".format(matter.code))
+            raise ValueError("Unsupported plain text code = {}.".format(prim.code))
 
         # encrypting fully qualified qb64 version of plain text ensures its
         # derivation code round trips through eventual decryption
-        return (self._encrypt(ser=matter.qb64b, pubkey=self.raw, code=code))
+        return (self._encrypt(ser=prim.qb64b, pubkey=self.raw, code=code))
 
     @staticmethod
     def _x25519(ser, pubkey, code):

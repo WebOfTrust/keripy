@@ -949,7 +949,7 @@ class CryptSignerSuber(SignerSuber):
                               already in database.
         """
         if encrypter:
-            val = encrypter.encrypt(matter=val)  # returns Cipher instance
+            val = encrypter.encrypt(prim=val)  # returns Cipher instance
         return (self.db.putVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=val.qb64b))
@@ -970,7 +970,7 @@ class CryptSignerSuber(SignerSuber):
             result (bool): True If successful. False otherwise.
         """
         if encrypter:
-            val = encrypter.encrypt(matter=val)  # returns Cipher instance
+            val = encrypter.encrypt(prim=val)  # returns Cipher instance
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=val.qb64b))

@@ -805,7 +805,7 @@ class Manager:
             for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
                 if data.salt:
                     salter = self.decrypter.decrypt(ser=data.salt)
-                    data.salt = (self.encrypter.encrypt(matter=salter).qb64
+                    data.salt = (self.encrypter.encrypt(prim=salter).qb64
                                  if self.encrypter else salter.qb64)
                     self.ks.prms.pin(keys, val=data)
 
