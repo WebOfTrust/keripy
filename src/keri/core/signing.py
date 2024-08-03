@@ -12,7 +12,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError)
+from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
+                      InvalidValueError)
 
 from ..help import helping
 
@@ -766,8 +767,8 @@ class Encrypter(Matter):
         if not raw and verkey:
             verfer = Verfer(qb64b=verkey)
             if verfer.code not in (MtrDex.Ed25519N, MtrDex.Ed25519):
-                raise ValueError("Unsupported verkey derivation code = {}."
-                                 "".format(verfer.code))
+                raise InvalidValueError(f"Unsupported verkey derivation code ="
+                                        f" {verfer.code}.")
             # convert signing public key to encryption public key
             raw = pysodium.crypto_sign_pk_to_box_pk(verfer.raw)
 
@@ -776,7 +777,7 @@ class Encrypter(Matter):
         if self.code == MtrDex.X25519:
             self._encrypt = self._x25519
         else:
-            raise ValueError("Unsupported encrypter code = {}.".format(self.code))
+            raise InvalidValueError(f"Unsupported encrypter code = {self.code}.")
 
     def verifySeed(self, seed):
         """
@@ -807,23 +808,55 @@ class Encrypter(Matter):
                 qb64 or qb2 is to be encrypted based on code
             code (str): code of plain text type for resultant encrypted cipher
         """
-        if not (ser or prim):
-            raise EmptyMaterialError(f"Neither bar serialization or primitive "
-                                     f"are provided.")
+        if not ser:
 
-        if ser:
-            prim = Matter(qb64b=ser)
+            if not prim:
+                raise EmptyMaterialError(f"Neither bar serialization or primitive "
+                                         f"are provided.")
 
-        if prim.code == MtrDex.Salt_128:  # future other salt codes
-            code = MtrDex.X25519_Cipher_Salt
-        elif prim.code == MtrDex.Ed25519_Seed:  # future other seed codes
-            code = MtrDex.X25519_Cipher_Seed
-        else:
-            raise ValueError("Unsupported plain text code = {}.".format(prim.code))
+            if not code:
+                if prim.code == MtrDex.Salt_128:  # future other salt codes
+                    code = MtrDex.X25519_Cipher_Salt
+                elif prim.code == MtrDex.Ed25519_Seed:  # future other seed codes
+                    code = MtrDex.X25519_Cipher_Seed
+                else:
+                    raise InvalidValueError(f"Unsupported primitive with code ="
+                                            f" {prim.code} when cipher code is "
+                                            f"missing.")
+
+            if code in CiXAllQB64Dex:
+                ser = prim.qb64b
+            elif code in CiXVarQB2Dex:
+                ser = prim.qb2
+            else:
+                raise InvalidCodeError(f"Invalide primitive cipher {code=} not "
+                                       f"qb64 or qb2.")
+
+        if not code:  # assumes default is sniffable stream
+            code = CiXDex.X25519_Cipher_L0
+
+        if hasattr(ser, "encode"):
+            ser = ser.encode()  # convert str to bytes
+        if not isinstance(ser, bytes):
+            ser = bytes(ser)  # convert bytearray and memoryview to bytes
+
+        #if not (ser or prim):
+            #raise EmptyMaterialError(f"Neither bar serialization or primitive "
+                                     #f"are provided.")
+
+        #if ser:
+            #prim = Matter(qb64b=ser)
+
+        #if prim.code == MtrDex.Salt_128:  # future other salt codes
+            #code = MtrDex.X25519_Cipher_Salt
+        #elif prim.code == MtrDex.Ed25519_Seed:  # future other seed codes
+            #code = MtrDex.X25519_Cipher_Seed
+        #else:
+            #raise ValueError("Unsupported plain text code = {}.".format(prim.code))
 
         # encrypting fully qualified qb64 version of plain text ensures its
         # derivation code round trips through eventual decryption
-        return (self._encrypt(ser=prim.qb64b, pubkey=self.raw, code=code))
+        return (self._encrypt(ser=ser, pubkey=self.raw, code=code))
 
     @staticmethod
     def _x25519(ser, pubkey, code):

@@ -902,7 +902,7 @@ class Manager:
                 may be plain text or cipher text handled by updateAeid
         """
         if self.encrypter:
-            salt = self.encrypter.encrypt(ser=salt).qb64
+            salt = self.encrypter.encrypt(ser=salt, code=core.MtrDex.X25519_Cipher_Salt).qb64
         self.ks.gbls.pin('salt', salt)
 
 
@@ -1020,7 +1020,8 @@ class Manager:
 
         if creator.salt:
             pp.salt = (creator.salt if not self.encrypter
-                       else self.encrypter.encrypt(ser=creator.salt).qb64)
+                       else self.encrypter.encrypt(ser=creator.salt,
+                                    code=core.MtrDex.X25519_Cipher_Salt).qb64)
 
         dt = helping.nowIso8601()
         ps = PreSit(
@@ -1543,7 +1544,8 @@ class Manager:
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
                             salt=(creator.salt if not self.encrypter
-                                  else self.encrypter.encrypt(ser=creator.salt).qb64),
+                                  else self.encrypter.encrypt(ser=creator.salt,
+                                        code=core.MtrDex.X25519_Cipher_Salt).qb64),
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b

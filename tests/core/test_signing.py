@@ -779,12 +779,12 @@ def test_encrypter():
     assert encrypter.raw == pubkey
     assert encrypter.verifySeed(seed=cryptsigner.qb64)
 
-    cipher = encrypter.encrypt(ser=seedqb64b)
+    cipher = encrypter.encrypt(ser=seedqb64b, code=MtrDex.X25519_Cipher_Seed)
     assert cipher.code == MtrDex.X25519_Cipher_Seed
     uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
     assert uncb == seedqb64b
 
-    cipher = encrypter.encrypt(ser=saltqb64b)
+    cipher = encrypter.encrypt(ser=saltqb64b, code=MtrDex.X25519_Cipher_Salt)
     assert cipher.code == MtrDex.X25519_Cipher_Salt
     uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
     assert uncb == saltqb64b
@@ -857,7 +857,7 @@ def test_decrypter():
     assert encrypter.raw == pubkey
 
     # create cipher of seed
-    seedcipher = encrypter.encrypt(ser=seedqb64b)
+    seedcipher = encrypter.encrypt(ser=seedqb64b, code=MtrDex.X25519_Cipher_Seed)
     assert seedcipher.code == MtrDex.X25519_Cipher_Seed
     # each encryption uses a nonce so not a stable representation for testing
 
@@ -882,7 +882,7 @@ def test_decrypter():
     assert signer.verfer.transferable
 
     # create cipher of salt
-    saltcipher = encrypter.encrypt(ser=saltqb64b)
+    saltcipher = encrypter.encrypt(ser=saltqb64b, code=MtrDex.X25519_Cipher_Salt)
     assert saltcipher.code == MtrDex.X25519_Cipher_Salt
     # each encryption uses a nonce so not a stable representation for testing
 
