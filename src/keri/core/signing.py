@@ -921,7 +921,7 @@ class Decrypter(Matter):
         else:
             raise ValueError("Unsupported decrypter code = {}.".format(self.code))
 
-    def decrypt(self, *, ser=None, cipher=None, klas=None, transferable=False):
+    def decrypt(self, *, cipher=None, ser=None, klas=None, transferable=False):
         """
         Returns:
             Salter or Signer instance derived from plain text decrypted from
@@ -931,8 +931,8 @@ class Decrypter(Matter):
             encryption/decryption round trip.
 
         Parameters:
-            ser (bytes | str): serialization of cipher text
             cipher (Cipher): optional Cipher instance when ser is None
+            ser (bytes | str): serialization of cipher text
             klas (Matter, Indexer, Streamer): Class used to create instance from
                 decrypted serialization.
             transferable (bool): Modifier of Klas instance creation. When klas
