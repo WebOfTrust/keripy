@@ -1394,10 +1394,10 @@ class Manager:
                 cigars.append(signer.sign(ser))  # assigns .verfer to cigar
             return cigars
 
+
     def decrypt(self, ser, pubs=None, verfers=None):
         """
-        Returns list of signatures of ser if indexed as Sigers else as Cigars with
-        .verfer assigned.
+        Returns plain text of decrypted serialization
 
         Parameters:
             ser (bytes): serialization to sign
@@ -1405,7 +1405,8 @@ class Manager:
                 one of pubs or verfers is required. If both then verfers is ignored.
             verfers (list[Verfer] | None): Verfer instances of public keys
                 one of pubs or verfers is required. If both then verfers is ignored.
-                If not pubs then gets public key from verfer.qb64
+                If not pubs then gets public key from verfer.qb64 used to lookup
+                private keys
 
         Returns:
             bytes: decrypted data

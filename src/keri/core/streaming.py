@@ -48,7 +48,7 @@ def annot(ims):
 
 
     if not isinstance(ims, bytearray):  # going to strip
-        ims = bytearray(ims)  # so make bytearray copy
+        ims = bytearray(ims)  # so make bytearray copy, converts str to bytearray
 
     while ims:  # right now just for KERI event messages
         cold = sniff(ims)  # check for spurious counters at front of stream
@@ -342,14 +342,22 @@ class Streamer:
 
     def __init__(self, stream):
         """Initialize instance
+        Holds sniffable CESR stream as byte like string
+        either (bytes, bytearray, or memoryview)
 
 
         Parameters:
-            stream (bytes | bytearray): sniffable CESR stream
+            stream (str | bytes | bytearray | memoryview): sniffable CESR stream
+
 
 
         """
-        self._stream = bytes(stream)
+        if hasattr(stream, "encode"):
+            stream = bytearray(stream.encode())  # convert str to bytearray
+        if not isinstance(stream, (bytes, bytearray, memoryview)):
+            raise kering.InvalidTypeError(f"Invalid stream type, not byteable.")
+
+        self._stream = stream
 
 
     @property
@@ -360,7 +368,9 @@ class Streamer:
 
     @property
     def text(self):
-        """expanded stream as qb64 text
+        """expanded stream where all primitives and groups in stream are
+        individually expanded to qb64.
+        Requires parsing full depth to ensure expanded consistently.
         Returns:
            stream (bytes): expanded text qb64 version of stream
 
@@ -369,7 +379,9 @@ class Streamer:
 
     @property
     def binary(self):
-        """compacted stream as qb2 binary
+        """compacted stream where all primitives and groups in stream are
+        individually compacted to qb2.
+        Requires parsing full depth to ensure compacted consistently
         Returns:
            stream (bytes): compacted binary qb2 version of stream
 
@@ -378,9 +390,29 @@ class Streamer:
 
     @property
     def texter(self):
-        """expanded stream as Texter instance
+        """stream as Texter instance.
+            Texter(text=self.stream)
         Returns:
            texter (Texter): Texter primitive of stream suitable wrapping
+
+        """
+        return self._stream
+
+    @property
+    def bexter(self):
+        """stream as Bexter instance.
+        Bexter of expanded text version of stream.
+        First expand  to text which requires parsing then create bexter
+            Bexter(bext=self.text)
+        Because sniffable stream MUST NOT start with 'A' then there is no
+        length ambiguity. The only tritet collison of 'A' is with '-' but the
+        remaining 5 bits are guaranteed to always be different. So bexter must
+        check not just the starting tritet but the full starting byte to ensure
+        not 'A' as first byte.
+
+        Requires parsing to ensure qb64
+        Returns:
+           bexter (Bexter): Bexter primitive of stream suitable wrapping
 
         """
         return self._stream
