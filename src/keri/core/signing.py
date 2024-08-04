@@ -484,24 +484,24 @@ class Salter(Matter):
 
 # Codes for for ciphers of variable sized sniffable QB2 or QB64 plain text
 @dataclass(frozen=True)
-class CipherX25519VarSnifCodex:
+class CipherX25519VarStrmCodex:
     """
     CipherX25519VarCodex is codex all variable sized cipher bytes derivation codes
-    for sealed box encryped ciphertext. Plaintext is Sniffable QB2 or QB64.
+    for sealed box encryped ciphertext. Plaintext is Sniffable CESR Stream.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
-    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
-    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
-    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 2
 
     def __iter__(self):
         return iter(astuple(self))
 
-CiXVarSnifDex = CipherX25519VarSnifCodex()  # Make instance
+CiXVarStrmDex = CipherX25519VarStrmCodex()  # Make instance
 
 
 # Codes for for ciphers of variable sized QB64 plain text
@@ -593,16 +593,16 @@ CiXVarQB2Dex = CipherX25519QB2VarCodex()  # Make instance
 class CipherX25519AllVarCodex:
     """
     CipherX25519AllVarCodex is codex all variable size codes  of cipher bytes
-    for sealed box encryped ciphertext. Plaintext maybe sniffable or qb64 or qb2.
+    for sealed box encryped ciphertext. Plaintext maybe sniffable CESR stream or qb64 or qb2.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
-    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
-    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
-    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 2
     X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
     X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
     X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
@@ -631,12 +631,12 @@ class CipherX25519AllCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
-    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
-    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
-    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 2
     X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
@@ -691,13 +691,13 @@ class Cipher(Matter):
         # code given by raw size. Otherwise provided code fixed or variable size
         # is handled by Matter superclass.
         if raw is not None and code is None:
-                if len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Salt):
-                    code = MtrDex.X25519_Cipher_Salt
-                elif len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Seed):
-                    code = MtrDex.X25519_Cipher_Seed
-                else:
-                    raise InvalidSizeError(f"Unsupported fixed raw size"
-                                           f" {len(raw)} for {code=}.")
+            if len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Salt):
+                code = MtrDex.X25519_Cipher_Salt
+            elif len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Seed):
+                code = MtrDex.X25519_Cipher_Seed
+            else:
+                raise InvalidSizeError(f"Unsupported fixed raw size"
+                                       f" {len(raw)} for {code=}.")
 
         if hasattr(raw, "encode"):
             raw = raw.encode("utf-8")  # ensure bytes not str
