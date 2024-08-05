@@ -823,7 +823,7 @@ class Encrypter(Matter):
         pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
         return (pubkey == self.raw)
 
-    def encrypt(self, ser=None, prim=None, code=None):
+    def encrypt(self, *, ser=None, prim=None, code=None):
         """
         Returns:
             Cipher instance of cipher text encryption of plain text serialization
@@ -831,8 +831,8 @@ class Encrypter(Matter):
 
         Parameters:
 
-            ser (str | bytes | bytearray | memoryview): qb64b or qb64
-                serialization of plain text
+            ser (str | bytes | bytearray | memoryview): qb64b or qb64 or sniffable
+                stream serialization of plain text
             prim (Matter | Indexer | Streamer): CESR primitive instance whose
                 serialization is qb64 or qb2 or sniffable stream and is to be
                 encrypted based on code
@@ -872,9 +872,9 @@ class Encrypter(Matter):
         if not isinstance(ser, bytes):
             ser = bytes(ser)  # convert bytearray and memoryview to bytes
 
-        # encrypting fully qualified qb64 version of cesr primitive as plain
+        # encrypting cesr primitive qb64 or qb2 or cesr stream as plain
         # text with proper cipher code ensures primitive round trip through eventual
-        # decryption. Likewise for sniffable stream with sniffible cipher code.
+        # decryption.
         return (self._encrypt(ser=ser, pubkey=self.raw, code=code))
 
     @staticmethod
