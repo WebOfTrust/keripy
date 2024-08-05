@@ -55,8 +55,8 @@ def decrypt(tymth, tock=0.0, **opts):
             else:
                 data = data
 
-            m = coring.Matter(qb64=data)
-            d = coring.Matter(qb64=hab.decrypt(m.raw))
+            m = coring.Matter(qb64=data)  # should refactor this to use Cipher
+            d = coring.Matter(qb64=hab.decrypt(ser=m.raw))
             print(d.raw)
 
     except kering.ConfigurationError:

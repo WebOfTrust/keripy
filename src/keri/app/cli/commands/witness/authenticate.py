@@ -127,8 +127,8 @@ class AuthDoer(doing.DoDoer):
             data = json.loads(rep.body)
 
             totp = data["totp"]
-            m = coring.Matter(qb64=totp)
-            d = coring.Matter(qb64=self.hab.decrypt(m.raw))
+            m = coring.Matter(qb64=totp)  # refactor this to use cipher
+            d = coring.Matter(qb64=self.hab.decrypt(ser=m.raw))
             otpurl = f"otpauth://totp/KERIpy:{self.witness}?secret={d.raw.decode('utf-8')}&issuer=KERIpy"
 
             if not self.urlOnly:

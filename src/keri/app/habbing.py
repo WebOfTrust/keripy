@@ -1320,12 +1320,14 @@ class BaseHab:
                              indices=indices,
                              ondices=ondices)
 
+
     def decrypt(self, ser, verfers=None, **kwa):
         """Decrypt given serialization ser using appropriate keys.
         Use provided verfers or .kever.verfers to lookup keys to sign.
 
         Parameters:
-            ser (bytes): serialization to decrypt
+            ser (str | bytes | bytearray | memoryview): serialization to decrypt
+
             verfers (list[Verfer] | None): Verfer instances to get pub verifier
                 keys to lookup and convert to private decryption keys.
                 verfers None means use .kever.verfers. Assumes that when group
@@ -1335,6 +1337,8 @@ class BaseHab:
         if verfers is None:
             verfers = self.kever.verfers  # when group these provide group signing keys
 
+        # should not use mgr.decrypt since it assumes qb64. Just lucky its not
+        # yet a problem
         return self.mgr.decrypt(qb64=ser, verfers=verfers)
 
 

@@ -84,7 +84,7 @@ def test_essrs():
 
         # Pull the logged ESSR attachment and verify it is the one attached
         texter = recHby.db.essrs.get(keys=(serder.said,))
-        raw = recHab.decrypt(texter[0].raw)
+        raw = recHab.decrypt(ser=texter[0].raw)
         assert raw.decode("utf-8") == msg
 
         # Test with invalid diger
