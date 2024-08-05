@@ -804,7 +804,7 @@ class Manager:
             # re-encrypt root salt secrets by prefix parameters .prms
             for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
                 if data.salt:
-                    salter = self.decrypter.decrypt(ser=data.salt)
+                    salter = self.decrypter.decrypt(qb64=data.salt)
                     data.salt = (self.encrypter.encrypt(prim=salter).qb64
                                  if self.encrypter else salter.qb64)
                     self.ks.prms.pin(keys, val=data)
@@ -889,7 +889,7 @@ class Manager:
         """
         salt = self.ks.gbls.get('salt')
         if self.decrypter:  # given .decrypt secret salt must be encrypted in db
-            return self.decrypter.decrypt(ser=salt).qb64
+            return self.decrypter.decrypt(qb64=salt).qb64
         return salt
 
 
@@ -1185,7 +1185,7 @@ class Manager:
             if self.aeid:
                 if not self.decrypter:
                     raise kering.DecryptError("Unauthorized decryption. Aeid but no decrypter.")
-                salt = self.decrypter.decrypt(ser=salt).qb64
+                salt = self.decrypter.decrypt(qb64=salt).qb64
             else:
                 salt = core.Salter(qb64=salt).qb64  # ensures salt was unencrypted
 

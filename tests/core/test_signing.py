@@ -868,7 +868,7 @@ def test_decrypter():
     assert decrypter.raw == prikey
 
     # decrypt seed cipher using ser
-    designer = decrypter.decrypt(ser=seedcipher.qb64b, transferable=signer.verfer.transferable)
+    designer = decrypter.decrypt(qb64=seedcipher.qb64b, transferable=signer.verfer.transferable)
     assert designer.qb64b == seedqb64b
     assert designer.code == MtrDex.Ed25519_Seed
     assert designer.verfer.code == MtrDex.Ed25519
@@ -887,7 +887,7 @@ def test_decrypter():
     # each encryption uses a nonce so not a stable representation for testing
 
     # decrypt salt cipher using ser
-    desalter = decrypter.decrypt(ser=saltcipher.qb64b)
+    desalter = decrypter.decrypt(qb64=saltcipher.qb64b)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
 
@@ -900,7 +900,7 @@ def test_decrypter():
     # get from seedcipher above
     cipherseed = ('PM9jOGWNYfjM_oLXJNaQ8UlFSAV5ACjsUY7J16xfzrlpc9Ve3A5WYrZ4o_'
                   'NHtP5lhp78Usspl9fyFdnCdItNd5JyqZ6dt8SXOt6TOqOCs-gy0obrwFkPPqBvVkEw')
-    designer = decrypter.decrypt(ser=cipherseed, transferable=signer.verfer.transferable)
+    designer = decrypter.decrypt(qb64=cipherseed, transferable=signer.verfer.transferable)
     assert designer.qb64b == seedqb64b
     assert designer.code == MtrDex.Ed25519_Seed
     assert designer.verfer.code == MtrDex.Ed25519
@@ -909,7 +909,7 @@ def test_decrypter():
     # get from saltcipher above
     ciphersalt = ('1AAHjlR2QR9J5Et67Wy-ZaVdTryN6T6ohg44r73GLRPnHw-5S3ABFkhWy'
                   'IwLOI6TXUB_5CT13S8JvknxLxBaF8ANPK9FSOPD8tYu')
-    desalter = decrypter.decrypt(ser=ciphersalt)
+    desalter = decrypter.decrypt(qb64=ciphersalt)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
 
@@ -920,7 +920,7 @@ def test_decrypter():
     assert decrypter.raw == prikey
 
     # decrypt ciphersalt
-    desalter = decrypter.decrypt(ser=saltcipher.qb64b)
+    desalter = decrypter.decrypt(qb64=saltcipher.qb64b)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
 

@@ -19,7 +19,8 @@ from ..help import helping
 
 from .coring import (Tiers, )
 from .coring import (SmallVrzDex, LargeVrzDex, Matter, MtrDex, Verfer, Cigar)
-from .indexing import IdrDex, Siger
+from .indexing import IdrDex, Indexer, Siger
+from .streaming import Streamer
 
 
 DSS_SIG_MODE = "fips-186-3"
@@ -682,6 +683,9 @@ class Cipher(Matter):
 
     def __init__(self, raw=None, code=None, **kwa):
         """
+        Inherited Parameters:
+            (see Matter)
+
         Parmeters:
             raw (bytes | str): cipher text (not plain text)
             code (str): cipher suite
@@ -725,7 +729,7 @@ class Cipher(Matter):
                 signing key seed used to derive private decryption key
         """
         decrypter = Decrypter(qb64b=prikey, seed=seed)
-        return decrypter.decrypt(ser=self.qb64b)
+        return decrypter.decrypt(qb64=self.qb64b)
 
 
 class Encrypter(Matter):
@@ -799,11 +803,12 @@ class Encrypter(Matter):
         """
         Returns:
             Cipher instance of cipher text encryption of plain text serialization
-            provided by either ser or Matter instance when provided.
+            provided by either ser or prim as CESR primitive instance.
 
         Parameters:
 
-            ser (Union[bytes,str]): qb64b or qb64 serialization of plain text
+            ser (str | bytes | bytearray | memoryview): qb64b or qb64
+                serialization of plain text
             prim (Matter | Indexer): CESR primitive instance whose serialization
                 qb64 or qb2 is to be encrypted based on code
             code (str): code of plain text type for resultant encrypted cipher
@@ -893,13 +898,14 @@ class Decrypter(Matter):
         """
         Assign decrypting cipher suite function to ._decrypt
 
-        Parameters:  See Matter for inheirted parameters
-            raw (bytes): private decryption key derived from seed (private signing key)
-            qb64b (bytes): fully qualified private decryption key
-            qb64 (str): fully qualified private decryption key
+        Inherited Parameters:
+            (see Matter)
+
+        Parameters:  See Matter for inherited parameters
             code (str): derivation code for private decryption key
-            seed (Union[bytes, str]): qb64b or qb64 of signing key seed used to
-                derive raw which is private decryption key
+            seed (str | bytes | bytearray | memoryview | None): qb64b or qb64
+                of signing key seed used to derive raw which is private
+                decryption key
         """
         try:
             super(Decrypter, self).__init__(code=code, **kwa)
@@ -921,7 +927,9 @@ class Decrypter(Matter):
         else:
             raise ValueError("Unsupported decrypter code = {}.".format(self.code))
 
-    def decrypt(self, *, cipher=None, ser=None, klas=None, transferable=False):
+
+    def decrypt(self, *, cipher=None, qb64=None, qb2=None, klas=None,
+                transferable=False, **kwa):
         """
         Returns:
             Salter or Signer instance derived from plain text decrypted from
@@ -931,20 +939,29 @@ class Decrypter(Matter):
             encryption/decryption round trip.
 
         Parameters:
-            cipher (Cipher): optional Cipher instance when ser is None
-            ser (bytes | str): serialization of cipher text
-            klas (Matter, Indexer, Streamer): Class used to create instance from
+            cipher (Cipher): instance. One of cipher, qb64, or qb2 required.
+            qb64 (str | bytes | bytearray | memoryview | None ): serialization
+                of cipher text as fully qualified base64. When str, encodes as
+                utf-8. When bytearray and strip in kwa is True then strips.
+            qb2 (bytes | bytearray | memoryview | None ): serialization
+                of cipher text as fully qualified base2. Strips when bytearray
+                and strip in kwa is True.
+            klas (Matter | Indexer | Streamer): Class used to create instance from
                 decrypted serialization.
-            transferable (bool): Modifier of Klas instance creation. When klas
-                is signer;
+            transferable (bool): Modifier of Klas instance creation.
+                When klas init (such as Signer) supports transferabe parm;
                    True means verfer of returned signer is transferable.
                    False means non-transferable
         """
-        if not (ser or cipher):
-            raise EmptyMaterialError("Neither ser or cipher are provided.")
+        if not cipher:
+            if qb64:  # create cipher from qb64
+                cipher = Cipher(qb64b=qb64, **kwa)
 
-        if ser:  # create cipher to ensure valid derivation code of material in ser
-            cipher = Cipher(qb64b=ser)
+            elif qb2:
+                cipher = Cipher(qb2=qb2, **kwa)
+
+            else:
+                raise EmptyMaterialError(f"Need one of cipher, qb64, or qb2.")
 
         return (self._decrypt(cipher=cipher,
                               prikey=self.raw,
@@ -952,7 +969,7 @@ class Decrypter(Matter):
                               transferable=transferable))
 
     @staticmethod
-    def _x25519(cipher, prikey, klas, transferable=False):
+    def _x25519(cipher, prikey, klas=None, transferable=False):
         """
         Returns plain text as Salter or Signer instance depending on the cipher
             code and the embedded encrypted plain text derivation code.
@@ -961,19 +978,35 @@ class Decrypter(Matter):
             cipher (Cipher): instance of encrypted seed or salt
             prikey (bytes): raw binary decryption private key derived from
                 signing seed or sigkey
-            klas (Matter, Indexer, Streamer): Class used to create instance from
-                decrypted serialization.
-            transferable (bool): Modifier of Klas instance creation. When klas
-                is signer;
+            klas (Matter, Indexer, Streamer | None): Class used to create instance from
+                decrypted serialization. Default depends on cipher.code.
+            transferable (bool): Modifier of Klas instance creation.
+                When klas init (such as Signer) supports transferabe parm;
                    True means verfer of returned signer is transferable.
                    False means non-transferable
         """
         pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
         plain = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)  # qb64b
         # ensure raw plain text is qb64b or qb64 so its derivation code is round tripped
-        if cipher.code == MtrDex.X25519_Cipher_Salt:
-            return Salter(qb64b=plain)
-        elif cipher.code == MtrDex.X25519_Cipher_Seed:
-            return Signer(qb64b=plain, transferable=transferable)
+
+        if not klas:
+            if cipher.code == CiXFixQB64Dex.X25519_Cipher_Salt:
+                #return Salter(qb64b=plain)
+                klas = Salter
+            elif cipher.code == CiXFixQB64Dex.X25519_Cipher_Seed:
+                #return Signer(qb64b=plain, transferable=transferable)
+                klas = Signer
+            elif cipher.code in CiXVarStrmDex:
+                klas = Streamer
+            else:
+                raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}"
+                                       f" when klas missing.")
+
+        if cipher.code in CiXAllQB64Dex:
+            return klas(qb64b=plain, transferable=transferable)
+        elif cipher.code in CiXVarQB2Dex:
+            return klas(qb2=plain)
+        elif cipher.code in CiXVarStrmDex:
+            return klas(stream=plain)
         else:
-            raise ValueError("Unsupported cipher text code = {}.".format(cipher.code))
+            raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}.")

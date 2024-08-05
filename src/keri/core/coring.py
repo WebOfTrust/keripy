@@ -795,9 +795,13 @@ class Matter:
             rize (int | None): raw size in bytes when variable sized material not
                         including lead bytes if any
                         Otherwise None
-            qb64b (bytes | None): fully qualified crypto material Base64
-            qb64 (str | bytes | None):  fully qualified crypto material Base64
-            qb2 (bytes | None): fully qualified crypto material Base2
+            qb64b (str | bytes | bytearray | memoryview | None): fully qualified
+                crypto material Base64. When str, encodes as utf-8. Strips when
+                bytearray and strip is True.
+            qb64 (str | bytes | bytearray | memoryview | None):  fully qualified
+                crypto material Base64. When str, encodes as utf-8. Ignores strip
+            qb2 (bytes | bytearray | memoryview | None): fully qualified crypto
+                material Base2. Strips when bytearray and strip is True.
             strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 

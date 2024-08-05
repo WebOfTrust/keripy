@@ -1008,7 +1008,7 @@ class CryptSignerSuber(SignerSuber):
         keys = self._tokeys(key)  # verkey is last split if any
         verfer = coring.Verfer(qb64b=keys[-1])  # last split
         if decrypter:
-            return (decrypter.decrypt(ser=bytes(val),
+            return (decrypter.decrypt(qb64=bytes(val),
                                       transferable=verfer.transferable))
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable))
 
@@ -1037,7 +1037,7 @@ class CryptSignerSuber(SignerSuber):
             ikeys = self._tokeys(key)  # verkey is last split if any
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             if decrypter:
-                yield (ikeys, decrypter.decrypt(ser=bytes(val),
+                yield (ikeys, decrypter.decrypt(qb64=bytes(val),
                                             transferable=verfer.transferable))
             else:
                 yield (ikeys, self.klas(qb64b=bytes(val),
