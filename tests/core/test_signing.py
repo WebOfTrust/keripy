@@ -529,9 +529,11 @@ def test_cipher():
     # test .decrypt method needs qb64
     prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
     assert cipher.decrypt(prikey=prikeyqb64).qb64b == seedqb64b
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == seedqb64b
 
     cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
     assert cipher.decrypt(seed=cryptseedqb64).qb64b == seedqb64b
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == seedqb64b
 
     # wrong but shorter code so instance creation succeeds
     cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_Salt)
@@ -557,9 +559,11 @@ def test_cipher():
     # test .decrypt method needs qb64
     prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
     assert cipher.decrypt(prikey=prikeyqb64).qb64b == saltqb64b
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == saltqb64b
 
     cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
     assert cipher.decrypt(seed=cryptseedqb64).qb64b == saltqb64b
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == saltqb64b
 
     with pytest.raises(kering.InvalidCodeError):  # bad code
         cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
@@ -754,11 +758,15 @@ def test_cipher():
         result = cipher.decrypt(prikey=prikeyqb64)
     texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb64b
     # test using seed
     with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
         result = cipher.decrypt(seed=cryptseedqb64)
     texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb64b
 
 
     # qb64 lead 1
@@ -775,11 +783,15 @@ def test_cipher():
         result = cipher.decrypt(prikey=prikeyqb64)
     texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb64b
      # test using seed
     with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
         result = cipher.decrypt(seed=cryptseedqb64)
     texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb64b
 
 
     # qb64 lead 2
@@ -796,11 +808,15 @@ def test_cipher():
         result = cipher.decrypt(prikey=prikeyqb64)
     texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb64b
      # test using seed
     with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
         result = cipher.decrypt(seed=cryptseedqb64)
     texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb64b
 
     # test .decrypt method with variable sized qb2 coded ciphers
     # qb2 lead 0  (always lead 0 when qb2 from texter)
@@ -817,11 +833,15 @@ def test_cipher():
         result = cipher.decrypt(prikey=prikeyqb64)
     texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb2
         # test using seed
     with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
         result = cipher.decrypt(seed=cryptseedqb64)
     texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
     assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb2
 
     # sniffable qb64 lead 0
     plain = "The quick brown fox jumps over the lazy"
@@ -839,16 +859,21 @@ def test_cipher():
     assert streamer.stream == strm
     streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
     assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
     # test using seed
     streamer = cipher.decrypt(seed=cryptseedqb64)
     assert streamer.stream == strm
     streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
     assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
     strm = bytearray(strm)
     counter = core.Counter(qb64b=strm, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
     texter = core.Texter(qb64b=strm, strip=True)
     assert texter.text == plain
+
 
     # sniffable qb64 lead 1
     plain = "The quick brown fox jumps over the lazy dog"
@@ -866,11 +891,15 @@ def test_cipher():
     assert streamer.stream == strm
     streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
     assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
     # test using seed
     streamer = cipher.decrypt(seed=cryptseedqb64)
     assert streamer.stream == strm
     streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
     assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
     strm = bytearray(strm)
     counter = core.Counter(qb64b=strm, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
@@ -893,11 +922,15 @@ def test_cipher():
     assert streamer.stream == strm
     streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
     assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
     # test using seed
     streamer = cipher.decrypt(seed=cryptseedqb64)
     assert streamer.stream == strm
     streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
     assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
     strm = bytearray(strm)
     counter = core.Counter(qb64b=strm, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
@@ -922,11 +955,15 @@ def test_cipher():
     assert streamer.stream == strmb2
     streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
     assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
     # test using seed
     streamer = cipher.decrypt(seed=cryptseedqb64)
     assert streamer.stream == strmb2
     streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
     assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
     strmb2 = bytearray(strmb2)
     counter = core.Counter(qb2=strmb2, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
@@ -953,11 +990,15 @@ def test_cipher():
     assert streamer.stream == strmb2
     streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
     assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
     # test using seed
     streamer = cipher.decrypt(seed=cryptseedqb64)
     assert streamer.stream == strmb2
     streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
     assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
     strmb2 = bytearray(strmb2)
     counter = core.Counter(qb2=strmb2, strip=True)
     assert counter.code == core.CtrDex_2_0.BigGenericGroup
@@ -1107,6 +1148,12 @@ def test_decrypter():
     assert designer.verfer.code == MtrDex.Ed25519
     assert signer.verfer.transferable
 
+    # test bare decryption returns plain not instance
+    plain = decrypter.decrypt(qb64=seedcipher.qb64b,
+                              transferable=signer.verfer.transferable,
+                              bare=True)
+    assert plain == seedqb64b
+
     # decrypt seed cipher using cipher
     designer = decrypter.decrypt(cipher=seedcipher, transferable=signer.verfer.transferable)
     assert designer.qb64b == seedqb64b
@@ -1123,6 +1170,10 @@ def test_decrypter():
     desalter = decrypter.decrypt(qb64=saltcipher.qb64b)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
+
+    # test bare decryption returns plain not instance
+    plain = decrypter.decrypt(qb64=saltcipher.qb64b, bare=True)
+    assert plain == saltqb64b
 
     # decrypt salt cipher using cipher
     desalter = decrypter.decrypt(cipher=saltcipher)
