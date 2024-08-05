@@ -713,7 +713,7 @@ class Cipher(Matter):
 
 
     def decrypt(self, prikey=None, seed=None, klas=None, transferable=False,
-                **kwa):
+                bare=False, **kwa):
         """
         Returns plain text as klas instance (Matter, Indexer, Streamer).
         When klas is None then klas default is based on .code. Maybe Salter,
@@ -728,7 +728,8 @@ class Cipher(Matter):
         Returns:
             decrypted (Matter | Indexer | Streamer): instance of decrypted
                cipher text of .raw which is encrypted qb64, qb2, or sniffable
-               stream depending on .code
+               stream depending on .code when bare is False. Otherwise returns
+               plaintext itself.
 
         Keyword Parameters:
             (see Matter because created Decrypter is Matter subclass)
@@ -745,9 +746,14 @@ class Cipher(Matter):
                 When klas init (such as Signer) supports transferabe parm;
                    True means verfer of returned signer is transferable.
                    False means non-transferable
+            bare (bool): False (default) means returns instance holding plaintext
+                         True means returns plaintext itself
         """
         decrypter = Decrypter(qb64b=prikey, seed=seed, **kwa)
-        return decrypter.decrypt(cipher=self, klas=klas, transferable=transferable)
+        return decrypter.decrypt(cipher=self,
+                                 klas=klas,
+                                 transferable=transferable,
+                                 bare=bare)
 
 
 class Encrypter(Matter):
@@ -947,7 +953,7 @@ class Decrypter(Matter):
 
 
     def decrypt(self, *, cipher=None, qb64=None, qb2=None, klas=None,
-                transferable=False, **kwa):
+                transferable=False, bare=False, **kwa):
         """Returns plain text as klas instance (Matter, Indexer, Streamer).
         When klas is None then klas default is based on cipher.code or inferred
         from qb64 or qb2 code. Default maybe Salter, Signer, or Streamer.
@@ -957,9 +963,11 @@ class Decrypter(Matter):
 
 
         Returns:
-            decrypted (Matter | Indexer | Streamer): instance of decrypted
-               cipher text of .raw which is encrypted qb64, qb2, or sniffable
-               stream depending on .code
+            decrypted (Matter | Indexer | Streamer | bytes): When bare is False
+               returns instance of decrypted cipher text of .raw which is
+               encrypted qb64, qb2, or sniffable stream depending on .code
+               hhen Bare is True. Otherwise returns decrypted serialization
+               plaintext whatever that may be.
 
         Keyword Parameters:
             (see Matter because created Decrypter is Matter subclass)
@@ -978,6 +986,8 @@ class Decrypter(Matter):
                 When klas init (such as Signer) supports transferabe parm;
                    True means verfer of returned signer is transferable.
                    False means non-transferable
+            bare (bool): False (default) means returns instance holding plaintext
+                         True means returns plaintext itself
         """
         if not cipher:
             if qb64:  # create cipher from qb64
@@ -992,10 +1002,11 @@ class Decrypter(Matter):
         return (self._decrypt(cipher=cipher,
                               prikey=self.raw,
                               klas=klas,
-                              transferable=transferable))
+                              transferable=transferable,
+                              bare=bare))
 
     @staticmethod
-    def _x25519(cipher, prikey, klas=None, transferable=False):
+    def _x25519(cipher, prikey, klas=None, transferable=False, bare=False):
         """
         Returns plain text as Salter or Signer instance depending on the cipher
             code and the embedded encrypted plain text derivation code.
@@ -1010,27 +1021,34 @@ class Decrypter(Matter):
                 When klas init (such as Signer) supports transferabe parm;
                    True means verfer of returned signer is transferable.
                    False means non-transferable
+            bare (bool): False (default) means CESR instance holding plaintext
+                         True means plaintext
         """
+        # assumes raw plain text is qb64b or qb64 or sniffable stream
+        # so it's round trippable
         pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
         plain = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)  # qb64b
-        # ensure raw plain text is qb64b or qb64 so its derivation code is round tripped
 
-        if not klas:
-            if cipher.code == CiXFixQB64Dex.X25519_Cipher_Salt:
-                klas = Salter
-            elif cipher.code == CiXFixQB64Dex.X25519_Cipher_Seed:
-                klas = Signer
-            elif cipher.code in CiXVarStrmDex:
-                klas = Streamer
-            else:
-                raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}"
-                                       f" when klas missing.")
+        if bare:
+            return plain
 
-        if cipher.code in CiXAllQB64Dex:
-            return klas(qb64b=plain, transferable=transferable)
-        elif cipher.code in CiXVarQB2Dex:
-            return klas(qb2=plain)
-        elif cipher.code in CiXVarStrmDex:
-            return klas(stream=plain)
         else:
-            raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}.")
+            if not klas:
+                if cipher.code == CiXFixQB64Dex.X25519_Cipher_Salt:
+                    klas = Salter
+                elif cipher.code == CiXFixQB64Dex.X25519_Cipher_Seed:
+                    klas = Signer
+                elif cipher.code in CiXVarStrmDex:
+                    klas = Streamer
+                else:
+                    raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}"
+                                           f" when klas missing.")
+
+            if cipher.code in CiXAllQB64Dex:
+                return klas(qb64b=plain, transferable=transferable)
+            elif cipher.code in CiXVarQB2Dex:
+                return klas(qb2=plain)
+            elif cipher.code in CiXVarStrmDex:
+                return klas(stream=plain)
+            else:
+                raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}.")
