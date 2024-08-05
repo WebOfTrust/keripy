@@ -833,8 +833,9 @@ class Encrypter(Matter):
 
             ser (str | bytes | bytearray | memoryview): qb64b or qb64
                 serialization of plain text
-            prim (Matter | Indexer): CESR primitive instance whose serialization
-                qb64 or qb2 is to be encrypted based on code
+            prim (Matter | Indexer | Streamer): CESR primitive instance whose
+                serialization is qb64 or qb2 or sniffable stream and is to be
+                encrypted based on code
             code (str): code of plain text type for resultant encrypted cipher
         """
         if not ser:
@@ -857,8 +858,10 @@ class Encrypter(Matter):
                 ser = prim.qb64b
             elif code in CiXVarQB2Dex:
                 ser = prim.qb2
+            elif code in CiXVarStrmDex:
+                ser = prim.stream
             else:
-                raise InvalidCodeError(f"Invalide primitive cipher {code=} not "
+                raise InvalidCodeError(f"Invalid primitive cipher {code=} not "
                                        f"qb64 or qb2.")
 
         if not code:  # assumes default is sniffable stream

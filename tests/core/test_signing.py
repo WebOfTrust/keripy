@@ -1081,6 +1081,9 @@ def test_encrypter():
     uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
     assert uncb == saltqb64b
 
+    # needs tests of encrypter with prim param instead of ser (see roundtrip)
+
+
     """ Done Test """
 
 
@@ -1233,13 +1236,92 @@ def test_roundtrip():
     assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
 
+
+    # Test cipher qb2 (always L0 when qb2)
+
+    plain = "The quick brown fox jumps over the lazy dog"
+    tin = core.Texter(text=plain)  # texter in
     # create cipher using Encrypter
-
-
+    cipher = encrypter.encrypt(prim=tin, code=CiXDex.X25519_Cipher_QB2_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB2_L0
     # decrypt cipher using Decrypter
+    tout = decrypter.decrypt(cipher=cipher, klas=core.Texter) # texter out
+    assert tout.text == tin.text
 
 
+    # sniffable qb64 lead 0
+    plain = "The quick brown fox jumps over the lazy"
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb64b + texter.qb64b)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L0
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
 
+
+    # sniffable qb64 lead 1
+    plain = "The quick brown fox jumps over the lazy dog"
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb64b + texter.qb64b)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L1
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+
+    # sniffable qb64 lead 2
+    plain = "The quick brown fox jumps over the lazy "
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb64b + texter.qb64b)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L2
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+
+    # sniffable qb2 lead 0
+    plain = "The quick brown fox jumps over the lazy"
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb2 + texter.qb2)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L0
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+    # sniffable qb2 lead 0 Big
+    plain = "The quick brown fox jumps over the lazy" * 324
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    assert counter.code == core.CtrDex_2_0.BigGenericGroup
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb2 + texter.qb2)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_Big_L0
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
 
     """End Test"""
 
