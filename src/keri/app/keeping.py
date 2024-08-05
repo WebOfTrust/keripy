@@ -1396,12 +1396,13 @@ class Manager:
             return cigars
 
 
-    def decrypt(self, ser, pubs=None, verfers=None):
+    def decrypt(self, qb64, pubs=None, verfers=None):
         """
-        Returns plain text of decrypted serialization
+        Returns decrypted plaintext of encrypted qb64 ciphertext serialization.
 
         Parameters:
-            ser (bytes): serialization to sign
+            qb64 (str | bytes | bytearray | memoryview): fully qualified base64
+                ciphertext serialization to decrypt
             pubs (list[str] | None): of qb64 public keys to lookup private keys
                 one of pubs or verfers is required. If both then verfers is ignored.
             verfers (list[Verfer] | None): Verfer instances of public keys
@@ -1410,7 +1411,7 @@ class Manager:
                 private keys
 
         Returns:
-            bytes: decrypted data
+            plain (bytes): decrypted plaintext
 
         """
         signers = []
@@ -1435,17 +1436,21 @@ class Manager:
                     raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
                 signers.append(signer)
 
-        plain = ser
+        if hasattr(qb64, "encode"):
+            qb64 = qb64.encode()  # convert str to bytes
+        qb64 = bytes(qb64)  # convert bytearray or memoryview to bytes
+
         for signer in signers:
             sigkey = signer.raw + signer.verfer.raw  # sigkey is raw seed + raw verkey
             prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)  # raw private encrypt key
             pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
-            plain = pysodium.crypto_box_seal_open(plain, pubkey, prikey)  # qb64b
+            plain = pysodium.crypto_box_seal_open(qb64, pubkey, prikey)  # qb64b
 
-        if plain == ser:
-            raise ValueError("unable to decrypt data")
+        if plain == qb64:
+            raise ValueError(f"Unable to decrypt.")
 
         return plain
+
 
     def ingest(self, secrecies, iridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,

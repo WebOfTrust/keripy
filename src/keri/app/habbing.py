@@ -1335,9 +1335,8 @@ class BaseHab:
         if verfers is None:
             verfers = self.kever.verfers  # when group these provide group signing keys
 
-        return self.mgr.decrypt(ser=ser,
-                                verfers=verfers,
-                                )
+        return self.mgr.decrypt(qb64=ser, verfers=verfers)
+
 
     def query(self, pre, src, query=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
