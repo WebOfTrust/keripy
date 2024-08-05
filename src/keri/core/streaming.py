@@ -362,9 +362,12 @@ class Streamer:
     @property
     def _verify(self):
         """Returns True if sniffable stream, False otherwise
-            Returns:
-                sniffable (bool): True when .stream is sniffable.
+        Returns:
+            sniffable (bool): True when .stream is sniffable.
                                   False otherwise.
+        Only works for ver 2 CESR because need for all count codes to be
+        pipelineable in order to simply parse stream
+
         """
         return False
 
@@ -384,6 +387,9 @@ class Streamer:
         Returns:
            stream (bytes): expanded text qb64 version of stream
 
+        Only works for ver 2 CESR because need for all count codes to be
+        pipelineable in order to simply parse and expand stream
+
         """
         return self._stream
 
@@ -394,6 +400,9 @@ class Streamer:
         Requires parsing full depth to ensure compacted consistently
         Returns:
            stream (bytes): compacted binary qb2 version of stream
+
+        Only works for ver 2 CESR because need for all count codes to be
+        pipelineable in order to simply parse and compact stream
 
         """
         return self._stream
