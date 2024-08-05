@@ -340,7 +340,7 @@ class Streamer:
 
     """
 
-    def __init__(self, stream):
+    def __init__(self, stream, verify=False):
         """Initialize instance
         Holds sniffable CESR stream as byte like string
         either (bytes, bytearray, or memoryview)
@@ -348,7 +348,7 @@ class Streamer:
 
         Parameters:
             stream (str | bytes | bytearray | memoryview): sniffable CESR stream
-
+            verify (bool): When True raise error if .stream is not sniffable.
 
 
         """
@@ -359,12 +359,22 @@ class Streamer:
 
         self._stream = stream
 
+    @property
+    def _verify(self):
+        """Returns True if sniffable stream, False otherwise
+            Returns:
+                sniffable (bool): True when .stream is sniffable.
+                                  False otherwise.
+        """
+        return False
+
 
     @property
     def stream(self):
         """stream property getter
         """
         return self._stream
+
 
     @property
     def text(self):

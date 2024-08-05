@@ -712,24 +712,44 @@ class Cipher(Matter):
             raise InvalidCodeError(f"Unsupported cipher code = {self.code}.")
 
 
-    def decrypt(self, prikey=None, seed=None):
+    def decrypt(self, prikey=None, seed=None, klas=None, transferable=False,
+                **kwa):
         """
-        Returns plain text as Matter instance (Signer or Salter) of cryptographic
-        cipher text material given by .raw. Encrypted plain text is fully
-        qualified (qb64) so derivaton code of plain text preserved through
+        Returns plain text as klas instance (Matter, Indexer, Streamer).
+        When klas is None then klas default is based on .code. Maybe Salter,
+        Signer, or Streamer. Encrypted plain text is fully
+        qualified (qb64) via self so derivaton code of plain text preserved through
         encryption/decryption round trip.
 
-        Decrypter uses either decryption key given by prikey or derives prikey from
-        signing key derived from private seed.
+        The created Decrypter uses either decryption key given by prikey or
+        when prikey missing derives prikey from signing key derived from private
+        seed.
+
+        Returns:
+            decrypted (Matter | Indexer | Streamer): instance of decrypted
+               cipher text of .raw which is encrypted qb64, qb2, or sniffable
+               stream depending on .code
+
+        Keyword Parameters:
+            (see Matter because created Decrypter is Matter subclass)
 
         Parameters:
             prikey (Union[bytes, str]): qb64b or qb64 serialization of private
                 decryption key
             seed (Union[bytes, str]): qb64b or qb64 serialization of private
                 signing key seed used to derive private decryption key
+            klas (Matter | Indexer | Streamer): Class used to create instance from
+                decrypted serialization.
+            transferable (bool): Modifier of klas instance creation.
+                When klas init (such as Signer) supports transferabe parm;
+                   True means verfer of returned signer is transferable.
+                   False means non-transferable
         """
-        decrypter = Decrypter(qb64b=prikey, seed=seed)
-        return decrypter.decrypt(qb64=self.qb64b)
+        decrypter = Decrypter(qb64b=prikey, seed=seed, **kwa)
+        return decrypter.decrypt(cipher=self, klas=klas, transferable=transferable)
+
+        #return decrypter.decrypt(qb64=self.qb64b)
+
 
 
 class Encrypter(Matter):
@@ -930,13 +950,21 @@ class Decrypter(Matter):
 
     def decrypt(self, *, cipher=None, qb64=None, qb2=None, klas=None,
                 transferable=False, **kwa):
-        """
+        """Returns plain text as klas instance (Matter, Indexer, Streamer).
+        When klas is None then klas default is based on cipher.code or inferred
+        from qb64 or qb2 code. Default maybe Salter, Signer, or Streamer.
+        Cipher's encrypted plain text is fully qualified (qb64)
+        so derivaton code of plain text preserved through encryption/decryption
+        round trip.
+
+
         Returns:
-            Salter or Signer instance derived from plain text decrypted from
-            encrypted cipher text material given by ser or cipher. Plain text
-            that is orignally encrypt should always be fully qualified (qb64b)
-            so that derivaton code of plain text is preserved through
-            encryption/decryption round trip.
+            decrypted (Matter | Indexer | Streamer): instance of decrypted
+               cipher text of .raw which is encrypted qb64, qb2, or sniffable
+               stream depending on .code
+
+        Keyword Parameters:
+            (see Matter because created Decrypter is Matter subclass)
 
         Parameters:
             cipher (Cipher): instance. One of cipher, qb64, or qb2 required.
@@ -948,7 +976,7 @@ class Decrypter(Matter):
                 and strip in kwa is True.
             klas (Matter | Indexer | Streamer): Class used to create instance from
                 decrypted serialization.
-            transferable (bool): Modifier of Klas instance creation.
+            transferable (bool): Modifier of klas instance creation.
                 When klas init (such as Signer) supports transferabe parm;
                    True means verfer of returned signer is transferable.
                    False means non-transferable
