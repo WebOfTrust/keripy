@@ -734,10 +734,11 @@ class Cipher(Matter):
             (see Matter because created Decrypter is Matter subclass)
 
         Parameters:
-            prikey (Union[bytes, str]): qb64b or qb64 serialization of private
-                decryption key
-            seed (Union[bytes, str]): qb64b or qb64 serialization of private
-                signing key seed used to derive private decryption key
+            prikey (str | bytes): qb64 or qb64b serialization of private
+                decryption key. Must be fully qualified with code.
+            seed (str | bytes): qb64 or qb64b serialization of private
+                signing key seed used to derive private decryption key. Must be
+                fully qualified with code.
             klas (Matter | Indexer | Streamer): Class used to create instance from
                 decrypted serialization.
             transferable (bool): Modifier of klas instance creation.
