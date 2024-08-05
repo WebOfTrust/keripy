@@ -1004,16 +1004,6 @@ def test_encrypter():
     assert encrypter.raw == pubkey
     assert encrypter.verifySeed(seed=cryptsigner.qb64)
 
-    cipher = encrypter.encrypt(ser=seedqb64b, code=MtrDex.X25519_Cipher_Seed)
-    assert cipher.code == MtrDex.X25519_Cipher_Seed
-    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
-    assert uncb == seedqb64b
-
-    cipher = encrypter.encrypt(ser=saltqb64b, code=MtrDex.X25519_Cipher_Salt)
-    assert cipher.code == MtrDex.X25519_Cipher_Salt
-    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
-    assert uncb == saltqb64b
-
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
 
     encrypter = Encrypter(verkey=verfer.qb64)
@@ -1032,6 +1022,24 @@ def test_encrypter():
     assert encrypter.code == MtrDex.X25519
     assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
+
+    # Test encrypt method
+    encrypter = Encrypter(raw=pubkey)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
+    assert encrypter.raw == pubkey
+    assert encrypter.verifySeed(seed=cryptsigner.qb64)
+
+    cipher = encrypter.encrypt(ser=seedqb64b, code=MtrDex.X25519_Cipher_Seed)
+    assert cipher.code == MtrDex.X25519_Cipher_Seed
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
+    assert uncb == seedqb64b
+
+    cipher = encrypter.encrypt(ser=saltqb64b, code=MtrDex.X25519_Cipher_Salt)
+    assert cipher.code == MtrDex.X25519_Cipher_Salt
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
+    assert uncb == saltqb64b
+
     """ Done Test """
 
 
@@ -1149,7 +1157,40 @@ def test_decrypter():
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
 
+
+
     """ Done Test """
+
+def test_roundtrip():
+    """Test round trip encrypt decrypt with variable sized ciphers"""
+
+    # cryptseed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+    cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)  # raw
+    pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+    prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
+
+    # create decrypter from prikey
+    decrypter = Decrypter(raw=prikey)
+    assert decrypter.code == MtrDex.X25519_Private
+    assert decrypter.qb64 == 'OLCFxqMz1z1UUS0TEJnvZP_zXHcuYdQsSGBWdOZeY5VQ'
+    assert decrypter.raw == prikey
+
+    # create encrypter from pubkey
+    encrypter = Encrypter(raw=pubkey)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
+    assert encrypter.raw == pubkey
+
+    # create cipher using Encrypter
+
+
+    # decrypt cipher using Decrypter
+
+
+
+
+    """End Test"""
 
 
 
@@ -1161,4 +1202,5 @@ if __name__ == "__main__":
     test_cipher()
     test_encrypter()
     test_decrypter()
+    test_roundtrip()
 

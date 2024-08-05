@@ -749,9 +749,6 @@ class Cipher(Matter):
         decrypter = Decrypter(qb64b=prikey, seed=seed, **kwa)
         return decrypter.decrypt(cipher=self, klas=klas, transferable=transferable)
 
-        #return decrypter.decrypt(qb64=self.qb64b)
-
-
 
 class Encrypter(Matter):
     """
@@ -1020,10 +1017,8 @@ class Decrypter(Matter):
 
         if not klas:
             if cipher.code == CiXFixQB64Dex.X25519_Cipher_Salt:
-                #return Salter(qb64b=plain)
                 klas = Salter
             elif cipher.code == CiXFixQB64Dex.X25519_Cipher_Seed:
-                #return Signer(qb64b=plain, transferable=transferable)
                 klas = Signer
             elif cipher.code in CiXVarStrmDex:
                 klas = Streamer
