@@ -350,12 +350,12 @@ class MatterCodex:
     Bytes_Big_L0:         str = '7AAB'  # Byte String big lead size 0
     Bytes_Big_L1:         str = '8AAB'  # Byte String big lead size 1
     Bytes_Big_L2:         str = '9AAB'  # Byte String big lead size 2
-    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
-    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
-    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
-    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable stream plaintext big lead size 2
     X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
     X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
     X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
@@ -795,9 +795,13 @@ class Matter:
             rize (int | None): raw size in bytes when variable sized material not
                         including lead bytes if any
                         Otherwise None
-            qb64b (bytes | None): fully qualified crypto material Base64
-            qb64 (str | bytes | None):  fully qualified crypto material Base64
-            qb2 (bytes | None): fully qualified crypto material Base2
+            qb64b (str | bytes | bytearray | memoryview | None): fully qualified
+                crypto material Base64. When str, encodes as utf-8. Strips when
+                bytearray and strip is True.
+            qb64 (str | bytes | bytearray | memoryview | None):  fully qualified
+                crypto material Base64. When str, encodes as utf-8. Ignores strip
+            qb2 (bytes | bytearray | memoryview | None): fully qualified crypto
+                material Base2. Strips when bytearray and strip is True.
             strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 

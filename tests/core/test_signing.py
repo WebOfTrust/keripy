@@ -529,9 +529,11 @@ def test_cipher():
     # test .decrypt method needs qb64
     prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
     assert cipher.decrypt(prikey=prikeyqb64).qb64b == seedqb64b
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == seedqb64b
 
     cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
     assert cipher.decrypt(seed=cryptseedqb64).qb64b == seedqb64b
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == seedqb64b
 
     # wrong but shorter code so instance creation succeeds
     cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_Salt)
@@ -557,9 +559,11 @@ def test_cipher():
     # test .decrypt method needs qb64
     prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
     assert cipher.decrypt(prikey=prikeyqb64).qb64b == saltqb64b
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == saltqb64b
 
     cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
     assert cipher.decrypt(seed=cryptseedqb64).qb64b == saltqb64b
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == saltqb64b
 
     with pytest.raises(kering.InvalidCodeError):  # bad code
         cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
@@ -642,18 +646,18 @@ def test_cipher():
     texter = core.Texter(text=plain)
     assert texter.text == plain
     counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
-    peb = counter.qb64b + texter.qb64b
-    raw = pysodium.crypto_box_seal(peb, pubkey)  # uses nonce so different everytime
+    strm = counter.qb64b + texter.qb64b
+    raw = pysodium.crypto_box_seal(strm, pubkey)  # uses nonce so different everytime
     assert len(raw) == 108
     assert (3 - (len(raw) % 3)) % 3  == 0
     cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
     assert cipher.code == CiXDex.X25519_Cipher_L0
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
-    assert uncb == peb
-    peb = bytearray(peb)
-    counter = core.Counter(qb64b=peb, strip=True)
+    assert uncb == strm
+    strm = bytearray(strm)
+    counter = core.Counter(qb64b=strm, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
-    texter = core.Texter(qb64b=peb, strip=True)
+    texter = core.Texter(qb64b=strm, strip=True)
     assert texter.text == plain
 
     # sniffable qb64 lead 1
@@ -661,18 +665,18 @@ def test_cipher():
     texter = core.Texter(text=plain)
     assert texter.text == plain
     counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
-    peb = counter.qb64b + texter.qb64b
-    raw = pysodium.crypto_box_seal(peb, pubkey)  # uses nonce so different everytime
+    strm = counter.qb64b + texter.qb64b
+    raw = pysodium.crypto_box_seal(strm, pubkey)  # uses nonce so different everytime
     assert len(raw) == 116
     assert (3 - (len(raw) % 3)) % 3  == 1
     cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
     assert cipher.code == CiXDex.X25519_Cipher_L1
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
-    assert uncb == peb
-    peb = bytearray(peb)
-    counter = core.Counter(qb64b=peb, strip=True)
+    assert uncb == strm
+    strm = bytearray(strm)
+    counter = core.Counter(qb64b=strm, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
-    texter = core.Texter(qb64b=peb, strip=True)
+    texter = core.Texter(qb64b=strm, strip=True)
     assert texter.text == plain
 
     # sniffable qb64 lead 2
@@ -680,18 +684,18 @@ def test_cipher():
     texter = core.Texter(text=plain)
     assert texter.text == plain
     counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
-    peb = counter.qb64b + texter.qb64b
-    raw = pysodium.crypto_box_seal(peb, pubkey)  # uses nonce so different everytime
+    strm = counter.qb64b + texter.qb64b
+    raw = pysodium.crypto_box_seal(strm, pubkey)  # uses nonce so different everytime
     assert len(raw) == 112
     assert (3 - (len(raw) % 3)) % 3  == 2
     cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
     assert cipher.code == CiXDex.X25519_Cipher_L2
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
-    assert uncb == peb
-    peb = bytearray(peb)
-    counter = core.Counter(qb64b=peb, strip=True)
+    assert uncb == strm
+    strm = bytearray(strm)
+    counter = core.Counter(qb64b=strm, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
-    texter = core.Texter(qb64b=peb, strip=True)
+    texter = core.Texter(qb64b=strm, strip=True)
     assert texter.text == plain
 
     # sniffable qb2 lead 0
@@ -700,19 +704,19 @@ def test_cipher():
     assert texter.text == plain
     counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
     assert counter.code == core.CtrDex_2_0.GenericGroup
-    peb = counter.qb64b + texter.qb64b
-    pebqb2 = decodeB64(peb)
-    raw = pysodium.crypto_box_seal(pebqb2, pubkey)  # uses nonce so different everytime
+    strm = counter.qb64b + texter.qb64b
+    strmb2 = decodeB64(strm)
+    raw = pysodium.crypto_box_seal(strmb2, pubkey)  # uses nonce so different everytime
     assert len(raw) == 93
     assert (3 - (len(raw) % 3)) % 3  == 0
     cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
     assert cipher.code == CiXDex.X25519_Cipher_L0
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
-    assert uncb == pebqb2
-    pebqb2 = bytearray(pebqb2)
-    counter = core.Counter(qb2=pebqb2, strip=True)
+    assert uncb == strmb2
+    strmb2 = bytearray(strmb2)
+    counter = core.Counter(qb2=strmb2, strip=True)
     assert counter.code == core.CtrDex_2_0.GenericGroup
-    texter = core.Texter(qb2=pebqb2, strip=True)
+    texter = core.Texter(qb2=strmb2, strip=True)
     assert texter.text == plain
 
 
@@ -723,20 +727,282 @@ def test_cipher():
     assert texter.text == plain
     counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
     assert counter.code == core.CtrDex_2_0.BigGenericGroup
-    peb = counter.qb64b + texter.qb64b
-    pebqb2 = decodeB64(peb)
-    raw = pysodium.crypto_box_seal(pebqb2, pubkey)  # uses nonce so different everytime
+    strm = counter.qb64b + texter.qb64b
+    strmb2 = decodeB64(strm)
+    raw = pysodium.crypto_box_seal(strmb2, pubkey)  # uses nonce so different everytime
     assert len(raw) == 12696
     assert (3 - (len(raw) % 3)) % 3  == 0
     assert (len(raw) // 3 ) > (64 ** 2 - 1)  # triplets
     cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
     assert cipher.code == CiXDex.X25519_Cipher_Big_L0
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
-    assert uncb == pebqb2
-    pebqb2 = bytearray(pebqb2)
-    counter = core.Counter(qb2=pebqb2, strip=True)
+    assert uncb == strmb2
+    strmb2 = bytearray(strmb2)
+    counter = core.Counter(qb2=strmb2, strip=True)
     assert counter.code == core.CtrDex_2_0.BigGenericGroup
-    texter = core.Texter(qb2=pebqb2, strip=True)
+    texter = core.Texter(qb2=strmb2, strip=True)
+    assert texter.text == plain
+
+    # test .decrypt method with variable sized qb64 coded ciphers
+    # qb64 lead 0
+    plain = "The quick brown fox jumps over the lazy "
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    raw = pysodium.crypto_box_seal(texter.qb64b, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 108
+    assert (3 - (len(raw) % 3)) % 3  == 0
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_QB64_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB64_L0
+    # test using prikey
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(prikey=prikeyqb64)
+    texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb64b
+    # test using seed
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(seed=cryptseedqb64)
+    texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb64b
+
+
+    # qb64 lead 1
+    plain = "The quick brown fox jumps over the lazy dogcats"
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    raw = pysodium.crypto_box_seal(texter.qb64b, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 116
+    assert (3 - (len(raw) % 3)) % 3  == 1
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_QB64_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB64_L1
+    # test using prikey
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(prikey=prikeyqb64)
+    texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb64b
+     # test using seed
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(seed=cryptseedqb64)
+    texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb64b
+
+
+    # qb64 lead 2
+    plain = "The quick brown fox jumps over the lazy dog"
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    raw = pysodium.crypto_box_seal(texter.qb64b, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 112
+    assert (3 - (len(raw) % 3)) % 3  == 2
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_QB64_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB64_L2
+    # test using prikey
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(prikey=prikeyqb64)
+    texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb64b
+     # test using seed
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(seed=cryptseedqb64)
+    texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb64b
+
+    # test .decrypt method with variable sized qb2 coded ciphers
+    # qb2 lead 0  (always lead 0 when qb2 from texter)
+    plain = "The quick brown fox jumps over the lazy dog"
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    raw = pysodium.crypto_box_seal(texter.qb2, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 96
+    assert (3 - (len(raw) % 3)) % 3  == 0
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_QB2_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB2_L0
+    # test using prikey
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(prikey=prikeyqb64)
+    texter = cipher.decrypt(prikey=prikeyqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == texter.qb2
+        # test using seed
+    with pytest.raises(kering.InvalidCodeError):  # needs klas when var len qb64
+        result = cipher.decrypt(seed=cryptseedqb64)
+    texter = cipher.decrypt(seed=cryptseedqb64, klas=core.Texter)
+    assert texter.text == plain
+    # test with bare
+    texter = cipher.decrypt(seed=cryptseedqb64, bare=True) == texter.qb2
+
+    # sniffable qb64 lead 0
+    plain = "The quick brown fox jumps over the lazy"
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    strm = counter.qb64b + texter.qb64b  # sniffable stream
+    raw = pysodium.crypto_box_seal(strm, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 108
+    assert (3 - (len(raw) % 3)) % 3  == 0
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L0
+    # test using prikey
+    streamer = cipher.decrypt(prikey=prikeyqb64)  # default klas is streamer
+    assert streamer.stream == strm
+    streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
+    assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
+    # test using seed
+    streamer = cipher.decrypt(seed=cryptseedqb64)
+    assert streamer.stream == strm
+    streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
+    assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
+    strm = bytearray(strm)
+    counter = core.Counter(qb64b=strm, strip=True)
+    assert counter.code == core.CtrDex_2_0.GenericGroup
+    texter = core.Texter(qb64b=strm, strip=True)
+    assert texter.text == plain
+
+
+    # sniffable qb64 lead 1
+    plain = "The quick brown fox jumps over the lazy dog"
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    strm = counter.qb64b + texter.qb64b
+    raw = pysodium.crypto_box_seal(strm, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 116
+    assert (3 - (len(raw) % 3)) % 3  == 1
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L1
+    # test using prikey
+    streamer = cipher.decrypt(prikey=prikeyqb64)  # default klas is streamer
+    assert streamer.stream == strm
+    streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
+    assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
+    # test using seed
+    streamer = cipher.decrypt(seed=cryptseedqb64)
+    assert streamer.stream == strm
+    streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
+    assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
+    strm = bytearray(strm)
+    counter = core.Counter(qb64b=strm, strip=True)
+    assert counter.code == core.CtrDex_2_0.GenericGroup
+    texter = core.Texter(qb64b=strm, strip=True)
+    assert texter.text == plain
+
+    # sniffable qb64 lead 2
+    plain = "The quick brown fox jumps over the lazy "
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    strm = counter.qb64b + texter.qb64b
+    raw = pysodium.crypto_box_seal(strm, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 112
+    assert (3 - (len(raw) % 3)) % 3  == 2
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L2
+    # test using prikey
+    streamer = cipher.decrypt(prikey=prikeyqb64)  # default klas is streamer
+    assert streamer.stream == strm
+    streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
+    assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
+    # test using seed
+    streamer = cipher.decrypt(seed=cryptseedqb64)
+    assert streamer.stream == strm
+    streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
+    assert streamer.stream == strm
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
+    strm = bytearray(strm)
+    counter = core.Counter(qb64b=strm, strip=True)
+    assert counter.code == core.CtrDex_2_0.GenericGroup
+    texter = core.Texter(qb64b=strm, strip=True)
+    assert texter.text == plain
+
+    # sniffable qb2 lead 0
+    plain = "The quick brown fox jumps over the lazy"
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    assert counter.code == core.CtrDex_2_0.GenericGroup
+    strm = counter.qb64b + texter.qb64b
+    strmb2 = decodeB64(strm)
+    raw = pysodium.crypto_box_seal(strmb2, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 93
+    assert (3 - (len(raw) % 3)) % 3  == 0
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L0
+    # test using prikey
+    streamer = cipher.decrypt(prikey=prikeyqb64)  # default klas is streamer
+    assert streamer.stream == strmb2
+    streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
+    assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
+    # test using seed
+    streamer = cipher.decrypt(seed=cryptseedqb64)
+    assert streamer.stream == strmb2
+    streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
+    assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
+    strmb2 = bytearray(strmb2)
+    counter = core.Counter(qb2=strmb2, strip=True)
+    assert counter.code == core.CtrDex_2_0.GenericGroup
+    texter = core.Texter(qb2=strmb2, strip=True)
+    assert texter.text == plain
+
+    # sniffable qb2 lead 0 Big
+
+    plain = "The quick brown fox jumps over the lazy" * 324
+    texter = core.Texter(text=plain)
+    assert texter.text == plain
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    assert counter.code == core.CtrDex_2_0.BigGenericGroup
+    strm = counter.qb64b + texter.qb64b
+    strmb2 = decodeB64(strm)
+    raw = pysodium.crypto_box_seal(strmb2, pubkey)  # uses nonce so different everytime
+    assert len(raw) == 12696
+    assert (3 - (len(raw) % 3)) % 3  == 0
+    assert (len(raw) // 3 ) > (64 ** 2 - 1)  # triplets
+    cipher = Cipher(raw=raw, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_Big_L0
+    # test using prikey
+    streamer = cipher.decrypt(prikey=prikeyqb64)  # default klas is streamer
+    assert streamer.stream == strmb2
+    streamer = cipher.decrypt(prikey=prikeyqb64, klas=core.Streamer)
+    assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(prikey=prikeyqb64, bare=True) == streamer.stream
+    # test using seed
+    streamer = cipher.decrypt(seed=cryptseedqb64)
+    assert streamer.stream == strmb2
+    streamer = cipher.decrypt(seed=cryptseedqb64, klas=core.Streamer)
+    assert streamer.stream == strmb2
+    # test with bare
+    assert cipher.decrypt(seed=cryptseedqb64, bare=True) == streamer.stream
+    strmb2 = bytearray(strmb2)
+    counter = core.Counter(qb2=strmb2, strip=True)
+    assert counter.code == core.CtrDex_2_0.BigGenericGroup
+    texter = core.Texter(qb2=strmb2, strip=True)
     assert texter.text == plain
 
     """ Done Test """
@@ -779,16 +1045,6 @@ def test_encrypter():
     assert encrypter.raw == pubkey
     assert encrypter.verifySeed(seed=cryptsigner.qb64)
 
-    cipher = encrypter.encrypt(ser=seedqb64b)
-    assert cipher.code == MtrDex.X25519_Cipher_Seed
-    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
-    assert uncb == seedqb64b
-
-    cipher = encrypter.encrypt(ser=saltqb64b)
-    assert cipher.code == MtrDex.X25519_Cipher_Salt
-    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
-    assert uncb == saltqb64b
-
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
 
     encrypter = Encrypter(verkey=verfer.qb64)
@@ -807,6 +1063,27 @@ def test_encrypter():
     assert encrypter.code == MtrDex.X25519
     assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
+
+    # Test encrypt method
+    encrypter = Encrypter(raw=pubkey)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
+    assert encrypter.raw == pubkey
+    assert encrypter.verifySeed(seed=cryptsigner.qb64)
+
+    cipher = encrypter.encrypt(ser=seedqb64b, code=MtrDex.X25519_Cipher_Seed)
+    assert cipher.code == MtrDex.X25519_Cipher_Seed
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
+    assert uncb == seedqb64b
+
+    cipher = encrypter.encrypt(ser=saltqb64b, code=MtrDex.X25519_Cipher_Salt)
+    assert cipher.code == MtrDex.X25519_Cipher_Salt
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
+    assert uncb == saltqb64b
+
+    # needs tests of encrypter with prim param instead of ser (see roundtrip)
+
+
     """ Done Test """
 
 
@@ -857,7 +1134,7 @@ def test_decrypter():
     assert encrypter.raw == pubkey
 
     # create cipher of seed
-    seedcipher = encrypter.encrypt(ser=seedqb64b)
+    seedcipher = encrypter.encrypt(ser=seedqb64b, code=MtrDex.X25519_Cipher_Seed)
     assert seedcipher.code == MtrDex.X25519_Cipher_Seed
     # each encryption uses a nonce so not a stable representation for testing
 
@@ -868,11 +1145,17 @@ def test_decrypter():
     assert decrypter.raw == prikey
 
     # decrypt seed cipher using ser
-    designer = decrypter.decrypt(ser=seedcipher.qb64b, transferable=signer.verfer.transferable)
+    designer = decrypter.decrypt(qb64=seedcipher.qb64b, transferable=signer.verfer.transferable)
     assert designer.qb64b == seedqb64b
     assert designer.code == MtrDex.Ed25519_Seed
     assert designer.verfer.code == MtrDex.Ed25519
     assert signer.verfer.transferable
+
+    # test bare decryption returns plain not instance
+    plain = decrypter.decrypt(qb64=seedcipher.qb64b,
+                              transferable=signer.verfer.transferable,
+                              bare=True)
+    assert plain == seedqb64b
 
     # decrypt seed cipher using cipher
     designer = decrypter.decrypt(cipher=seedcipher, transferable=signer.verfer.transferable)
@@ -882,14 +1165,18 @@ def test_decrypter():
     assert signer.verfer.transferable
 
     # create cipher of salt
-    saltcipher = encrypter.encrypt(ser=saltqb64b)
+    saltcipher = encrypter.encrypt(ser=saltqb64b, code=MtrDex.X25519_Cipher_Salt)
     assert saltcipher.code == MtrDex.X25519_Cipher_Salt
     # each encryption uses a nonce so not a stable representation for testing
 
     # decrypt salt cipher using ser
-    desalter = decrypter.decrypt(ser=saltcipher.qb64b)
+    desalter = decrypter.decrypt(qb64=saltcipher.qb64b)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
+
+    # test bare decryption returns plain not instance
+    plain = decrypter.decrypt(qb64=saltcipher.qb64b, bare=True)
+    assert plain == saltqb64b
 
     # decrypt salt cipher using cipher
     desalter = decrypter.decrypt(cipher=saltcipher)
@@ -900,7 +1187,7 @@ def test_decrypter():
     # get from seedcipher above
     cipherseed = ('PM9jOGWNYfjM_oLXJNaQ8UlFSAV5ACjsUY7J16xfzrlpc9Ve3A5WYrZ4o_'
                   'NHtP5lhp78Usspl9fyFdnCdItNd5JyqZ6dt8SXOt6TOqOCs-gy0obrwFkPPqBvVkEw')
-    designer = decrypter.decrypt(ser=cipherseed, transferable=signer.verfer.transferable)
+    designer = decrypter.decrypt(qb64=cipherseed, transferable=signer.verfer.transferable)
     assert designer.qb64b == seedqb64b
     assert designer.code == MtrDex.Ed25519_Seed
     assert designer.verfer.code == MtrDex.Ed25519
@@ -909,7 +1196,7 @@ def test_decrypter():
     # get from saltcipher above
     ciphersalt = ('1AAHjlR2QR9J5Et67Wy-ZaVdTryN6T6ohg44r73GLRPnHw-5S3ABFkhWy'
                   'IwLOI6TXUB_5CT13S8JvknxLxBaF8ANPK9FSOPD8tYu')
-    desalter = decrypter.decrypt(ser=ciphersalt)
+    desalter = decrypter.decrypt(qb64=ciphersalt)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
 
@@ -920,11 +1207,123 @@ def test_decrypter():
     assert decrypter.raw == prikey
 
     # decrypt ciphersalt
-    desalter = decrypter.decrypt(ser=saltcipher.qb64b)
+    desalter = decrypter.decrypt(qb64=saltcipher.qb64b)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
 
+
+
     """ Done Test """
+
+def test_roundtrip():
+    """Test round trip encrypt decrypt with variable sized ciphers"""
+
+    # cryptseed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+    cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)  # raw
+    pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+    prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
+
+    # create decrypter from prikey
+    decrypter = Decrypter(raw=prikey)
+    assert decrypter.code == MtrDex.X25519_Private
+    assert decrypter.qb64 == 'OLCFxqMz1z1UUS0TEJnvZP_zXHcuYdQsSGBWdOZeY5VQ'
+    assert decrypter.raw == prikey
+
+    # create encrypter from pubkey
+    encrypter = Encrypter(raw=pubkey)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
+    assert encrypter.raw == pubkey
+
+
+    # Test cipher qb2 (always L0 when qb2)
+
+    plain = "The quick brown fox jumps over the lazy dog"
+    tin = core.Texter(text=plain)  # texter in
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=tin, code=CiXDex.X25519_Cipher_QB2_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB2_L0
+    # decrypt cipher using Decrypter
+    tout = decrypter.decrypt(cipher=cipher, klas=core.Texter) # texter out
+    assert tout.text == tin.text
+
+
+    # sniffable qb64 lead 0
+    plain = "The quick brown fox jumps over the lazy"
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb64b + texter.qb64b)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L0
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+
+    # sniffable qb64 lead 1
+    plain = "The quick brown fox jumps over the lazy dog"
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb64b + texter.qb64b)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L1
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+
+    # sniffable qb64 lead 2
+    plain = "The quick brown fox jumps over the lazy "
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb64b + texter.qb64b)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L2
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+
+    # sniffable qb2 lead 0
+    plain = "The quick brown fox jumps over the lazy"
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb2 + texter.qb2)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_L0
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+    # sniffable qb2 lead 0 Big
+    plain = "The quick brown fox jumps over the lazy" * 324
+    texter = core.Texter(text=plain)
+    counter = core.Counter(core.Codens.GenericGroup, count=texter.size)
+    assert counter.code == core.CtrDex_2_0.BigGenericGroup
+    # sniffable streamer in
+    sin = core.Streamer(stream=counter.qb2 + texter.qb2)
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=sin, code=CiXDex.X25519_Cipher_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_Big_L0
+    # decrypt cipher using Decrypter
+    # sniffable stream out
+    sout = decrypter.decrypt(cipher=cipher, klas=core.Streamer)
+    assert sin.stream == sout.stream
+
+    """End Test"""
 
 
 
@@ -936,4 +1335,5 @@ if __name__ == "__main__":
     test_cipher()
     test_encrypter()
     test_decrypter()
+    test_roundtrip()
 

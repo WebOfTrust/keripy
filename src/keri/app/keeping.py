@@ -804,8 +804,8 @@ class Manager:
             # re-encrypt root salt secrets by prefix parameters .prms
             for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
                 if data.salt:
-                    salter = self.decrypter.decrypt(ser=data.salt)
-                    data.salt = (self.encrypter.encrypt(matter=salter).qb64
+                    salter = self.decrypter.decrypt(qb64=data.salt)
+                    data.salt = (self.encrypter.encrypt(prim=salter).qb64
                                  if self.encrypter else salter.qb64)
                     self.ks.prms.pin(keys, val=data)
 
@@ -889,7 +889,7 @@ class Manager:
         """
         salt = self.ks.gbls.get('salt')
         if self.decrypter:  # given .decrypt secret salt must be encrypted in db
-            return self.decrypter.decrypt(ser=salt).qb64
+            return self.decrypter.decrypt(qb64=salt).qb64
         return salt
 
 
@@ -902,7 +902,7 @@ class Manager:
                 may be plain text or cipher text handled by updateAeid
         """
         if self.encrypter:
-            salt = self.encrypter.encrypt(ser=salt).qb64
+            salt = self.encrypter.encrypt(ser=salt, code=core.MtrDex.X25519_Cipher_Salt).qb64
         self.ks.gbls.pin('salt', salt)
 
 
@@ -1020,7 +1020,8 @@ class Manager:
 
         if creator.salt:
             pp.salt = (creator.salt if not self.encrypter
-                       else self.encrypter.encrypt(ser=creator.salt).qb64)
+                       else self.encrypter.encrypt(ser=creator.salt,
+                                    code=core.MtrDex.X25519_Cipher_Salt).qb64)
 
         dt = helping.nowIso8601()
         ps = PreSit(
@@ -1184,7 +1185,7 @@ class Manager:
             if self.aeid:
                 if not self.decrypter:
                     raise kering.DecryptError("Unauthorized decryption. Aeid but no decrypter.")
-                salt = self.decrypter.decrypt(ser=salt).qb64
+                salt = self.decrypter.decrypt(qb64=salt).qb64
             else:
                 salt = core.Salter(qb64=salt).qb64  # ensures salt was unencrypted
 
@@ -1394,21 +1395,23 @@ class Manager:
                 cigars.append(signer.sign(ser))  # assigns .verfer to cigar
             return cigars
 
-    def decrypt(self, ser, pubs=None, verfers=None):
+
+    def decrypt(self, qb64, pubs=None, verfers=None):
         """
-        Returns list of signatures of ser if indexed as Sigers else as Cigars with
-        .verfer assigned.
+        Returns decrypted plaintext of encrypted qb64 ciphertext serialization.
 
         Parameters:
-            ser (bytes): serialization to sign
+            qb64 (str | bytes | bytearray | memoryview): fully qualified base64
+                ciphertext serialization to decrypt
             pubs (list[str] | None): of qb64 public keys to lookup private keys
                 one of pubs or verfers is required. If both then verfers is ignored.
             verfers (list[Verfer] | None): Verfer instances of public keys
                 one of pubs or verfers is required. If both then verfers is ignored.
-                If not pubs then gets public key from verfer.qb64
+                If not pubs then gets public key from verfer.qb64 used to lookup
+                private keys
 
         Returns:
-            bytes: decrypted data
+            plain (bytes): decrypted plaintext
 
         """
         signers = []
@@ -1433,17 +1436,21 @@ class Manager:
                     raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
                 signers.append(signer)
 
-        plain = ser
+        if hasattr(qb64, "encode"):
+            qb64 = qb64.encode()  # convert str to bytes
+        qb64 = bytes(qb64)  # convert bytearray or memoryview to bytes
+
         for signer in signers:
             sigkey = signer.raw + signer.verfer.raw  # sigkey is raw seed + raw verkey
             prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)  # raw private encrypt key
             pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
-            plain = pysodium.crypto_box_seal_open(plain, pubkey, prikey)  # qb64b
+            plain = pysodium.crypto_box_seal_open(qb64, pubkey, prikey)  # qb64b
 
-        if plain == ser:
-            raise ValueError("unable to decrypt data")
+        if plain == qb64:
+            raise ValueError(f"Unable to decrypt.")
 
         return plain
+
 
     def ingest(self, secrecies, iridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
@@ -1542,7 +1549,8 @@ class Manager:
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
                             salt=(creator.salt if not self.encrypter
-                                  else self.encrypter.encrypt(ser=creator.salt).qb64),
+                                  else self.encrypter.encrypt(ser=creator.salt,
+                                        code=core.MtrDex.X25519_Cipher_Salt).qb64),
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b

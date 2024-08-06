@@ -1591,7 +1591,7 @@ def test_manager_with_aeid():
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
-        assert manager.decrypter.decrypt(ser=pp.salt).qb64 == salt
+        assert manager.decrypter.decrypt(qb64=pp.salt).qb64 == salt
         assert pp.stem == ''
         assert pp.tier == core.Tiers.low
 
@@ -1674,7 +1674,7 @@ def test_manager_with_aeid():
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
-        assert manager.decrypter.decrypt(ser=pp.salt).qb64 == salt
+        assert manager.decrypter.decrypt(qb64=pp.salt).qb64 == salt
         assert pp.stem == ''
         assert pp.tier == core.Tiers.low
 
