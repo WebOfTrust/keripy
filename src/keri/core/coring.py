@@ -2451,9 +2451,6 @@ class Verser(Tagger):
         return Versionage(major=b64ToInt(b64[0]), minor=b64ToInt(b64[1:3]))
 
 
-
-
-
 class Texter(Matter):
     """
     Texter is subclass of Matter, cryptographic material, for variable length
