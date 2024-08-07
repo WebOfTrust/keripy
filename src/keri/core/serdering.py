@@ -34,7 +34,8 @@ from ..help import helping
 
 
 from . import coring
-from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
+from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
+                     Saids,  Digestage)
 from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
                      Ilker, Traitor, Verser, )
 
@@ -1588,8 +1589,8 @@ class SerderKERI(Serder):
 
         if (self.vrsn.major < 2 and self.vrsn.minor < 1 and
             self.ilk in (Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar, Ilks.exn)):
-                pass
-        else:  # verify pre
+                pass  # non prefixive ilks do not have 'i' field
+        else:  # verify pre 'i' field
             try:
                 code = Matter(qb64=self.pre).code
             except Exception as ex:
@@ -1604,19 +1605,32 @@ class SerderKERI(Serder):
             if code not in idex:
                 raise ValidationError(f"Invalid identifier prefix code = {code}.")
 
-            # non-transferable pre validations
-            if code in [PreDex.Ed25519N, PreDex.ECDSA_256r1N, PreDex.ECDSA_256k1N]:
-                if self.ndigs:
-                    raise ValidationError(f"Non-transferable code = {code} with"
-                                          f" non-empty nxt = {self.ndigs}.")
 
-                if self.backs:
-                    raise ValidationError("Non-transferable code = {code} with"
-                                          f" non-empty backers = {self.backs}.")
+            if self.ilk in (Ilks.icp, Ilks.dip, Ilks.rot, Ilks.drt):  # est event
+                if self.ilk in (Ilks.icp, Ilks.dip):  # inceptive event
+                    if code in PreNonDigDex:
+                        if len(self.keys) != 1:
+                            raise ValidationError(f"Invalid keys for non-digestive "
+                                                  f"prefix {code=}.")
 
-                if self.seals:
-                    raise ValidationError("Non-transferable code = {code} with"
-                                          f" non-empty seals = {self.seals}.")
+                        if self.pre != self.keys[0]:
+                            raise ValidationError(f"Mismatch prefix = {self.pre} and"
+                                                  f" zeroth key = {self.keys[0]} for "
+                                                  f" non-digestive prefix {code=}.")
+
+                # non-transferable pre validations
+                if code in NonTransDex:
+                    if self.ndigs:  # when field missing returns None
+                        raise ValidationError(f"Non-transferable code = {code} with"
+                                              f" non-empty nxt = {self.ndigs}.")
+
+                    if self.backs:  # when field missing returns None
+                        raise ValidationError("Non-transferable code = {code} with"
+                                              f" non-empty backers = {self.backs}.")
+
+                    if self.seals:  # when field missing returns None
+                        raise ValidationError("Non-transferable code = {code} with"
+                                              f" non-empty seals = {self.seals}.")
 
         if self.ilk in (Ilks.dip):  # validate delpre
             try:

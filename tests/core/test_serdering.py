@@ -727,7 +727,7 @@ def test_serderkeri():
                           b'jON07Rwv","i":"EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv","s":"0","kt":"0'
                           b'","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
 
-    assert serder.verify()  # because empty prefix 'i' field
+    assert serder.verify()
     assert serder.ilk == kering.Ilks.icp
     assert serder.said == 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv'
     assert serder.pre == serder.said  # prefix is not saidive
@@ -736,12 +736,13 @@ def test_serderkeri():
     pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
     sad['i'] = pre
     said = serder.said
+    sad['k'] = [pre]
 
     serder = SerderKERI(sad=sad, makify=True)
 
     assert serder.verify()
     assert serder.ilk == kering.Ilks.icp
-    assert serder.said == 'EIXK39EgyxshefoCdSpKCkG5FR9s405YI4FAHDvAqO_R'
+    assert serder.said == 'EOx98RQxHrFkjDxqd8TJv9JFnGyho-r0REi0WYHgbYJ0'
     assert serder.pre == pre  # prefix is not saidive
 
     sad = serder.sad
@@ -769,8 +770,8 @@ def test_serderkeri():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
-    assert serder.keys == []
-    assert [verfer.qb64 for verfer in serder.verfers] == []
+    assert serder.keys == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
+    assert [verfer.qb64 for verfer in serder.verfers] == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
     assert serder.bner.num == 0
@@ -801,8 +802,8 @@ def test_serderkeri():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
-    assert serder.keys == []
-    assert [verfer.qb64 for verfer in serder.verfers] == []
+    assert serder.keys == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
+    assert [verfer.qb64 for verfer in serder.verfers] == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
     assert serder.bner.num == 0
@@ -957,25 +958,30 @@ def test_serderkeri_icp():
     # test makify with preloaded non-digestive 'i' value in sad
     pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
     sad['i'] = pre
+    sad['k'] = [pre]
 
     serder = SerderKERI(sad=sad, makify=True)
-    assert serder.sad == {'v': 'KERI10JSON0000cf_',
-                        't': 'icp',
-                        'd': 'EIXK39EgyxshefoCdSpKCkG5FR9s405YI4FAHDvAqO_R',
-                        'i': 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx',
-                        's': '0',
-                        'kt': '0',
-                        'k': [],
-                        'nt': '0',
-                        'n': [],
-                        'bt': '0',
-                        'b': [],
-                        'c': [],
-                        'a': []}
+    assert serder.sad == \
+            {
+                'v': 'KERI10JSON0000fd_',
+                't': 'icp',
+                'd': 'EOx98RQxHrFkjDxqd8TJv9JFnGyho-r0REi0WYHgbYJ0',
+                'i': 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx',
+                's': '0',
+                'kt': '0',
+                'k': ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'],
+                'nt': '0',
+                'n': [],
+                'bt': '0',
+                'b': [],
+                'c': [],
+                'a': []
+            }
 
-    assert serder.raw ==(b'{"v":"KERI10JSON0000cf_","t":"icp","d":"EIXK39EgyxshefoCdSpKCkG5FR9s405YI4FA'
-                         b'HDvAqO_R","i":"DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx","s":"0","kt":"0'
-                         b'","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
+    assert serder.raw ==(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EOx98RQxHrFkjDxqd8TJv9JFnGyho-r0REi0'
+                         b'WYHgbYJ0","i":"DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx","s":"0","kt":"0'
+                         b'","k":["DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx"],"nt":"0","n":[],"bt":'
+                         b'"0","b":[],"c":[],"a":[]}')
 
     assert serder.verify()
     assert serder.ilk == kering.Ilks.icp
@@ -1006,8 +1012,8 @@ def test_serderkeri_icp():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
-    assert serder.keys == []
-    assert [verfer.qb64 for verfer in serder.verfers] == []
+    assert serder.keys == [pre]
+    assert [verfer.qb64 for verfer in serder.verfers] == [pre]
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
     assert serder.bner.num == 0
@@ -1042,8 +1048,8 @@ def test_serderkeri_icp():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
-    assert serder.keys == []
-    assert [verfer.qb64 for verfer in serder.verfers] == []
+    assert serder.keys == [pre]
+    assert [verfer.qb64 for verfer in serder.verfers] == [pre]
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
     assert serder.bner.num == 0
@@ -1098,7 +1104,7 @@ def test_serderkeri_rot():
 
     serder = SerderKERI(sad=sad, makify=True)
 
-    assert serder.verify()  # because pre is empty
+    assert serder.verify()  # because pre is valid
     assert serder.ilk == kering.Ilks.rot
     assert serder.pre == pre != serder.said  # prefix is not saidive
 
@@ -1206,7 +1212,7 @@ def test_serderkeri_ixn():
 
     serder = SerderKERI(sad=sad, makify=True)
 
-    assert serder.verify()  # because pre is empty
+    assert serder.verify()  # because pre is now valid
     assert serder.ilk == kering.Ilks.ixn
     assert serder.pre == pre != serder.said  # prefix is not saidive
 
@@ -1629,7 +1635,7 @@ def test_serderkeri_drt():
 
     serder = SerderKERI(sad=sad, makify=True, verify=False)
 
-    assert not serder.verify()  # because pre is not digest and delpre is empty
+    assert not serder.verify()
     sad = serder.sad
     pre = 'EF78YGUYCWXptoVVel1TN1F9-KShPHAtEqvf-TEiGvv9'
     sad['i'] = pre

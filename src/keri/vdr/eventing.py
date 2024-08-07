@@ -105,7 +105,6 @@ def incept(
                )
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -206,7 +205,6 @@ def rotate(
                )
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -247,7 +245,6 @@ def issue(
         ked["dt"] = dt
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -297,7 +294,6 @@ def revoke(
     _, ked = coring.Saider.saidify(sad=ked)
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -350,7 +346,6 @@ def backerIssue(
         ked["dt"] = dt
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -405,7 +400,6 @@ def backerRevoke(
         ked["dt"] = dt
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
