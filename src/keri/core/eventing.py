@@ -1779,6 +1779,7 @@ class Kever:
             raise MissingEntryError(f"Corresponding event not found for state="
                                     f"{state}.")
         self.serder = serdering.SerderKERI(raw=bytes(raw))
+
         # May want to do additional checks here
 
 
@@ -1808,10 +1809,10 @@ class Kever:
 
 
         self.prefixer = Prefixer(qb64=serder.pre)
-        if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
-            raise ValidationError("Invalid prefix = {} for inception evt = {}."
-                                  "".format(self.prefixer.qb64, ked))
-
+        #if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
+            #raise ValidationError("Invalid prefix = {} for inception evt = {}."
+                                  #"".format(self.prefixer.qb64, ked))
+        #serder._verify() redundant serder.__init__ defaults to verify
         self.serder = serder  # need whole serder for digest agility comparisons
 
         ndigs = serder.ndigs # ked["n"]
@@ -1959,6 +1960,7 @@ class Kever:
 
             # nxt and signatures verify so update state
             self.sner = sner  # sequence number Number instance
+            #serder._verify() redundant serder.__init__ defaults to verify
             self.serder = serder  # need whole serder for digest agility compare
             self.ilk = ilk
             self.tholder = tholder
@@ -2019,6 +2021,7 @@ class Kever:
 
             # validates so update state
             self.sner = sner  # sequence number Number instance
+            #serder._verify() redundant serder.__init__ defaults to verify
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
             if fn is not None:  # first is non-idempotent for fn check mode fn is None

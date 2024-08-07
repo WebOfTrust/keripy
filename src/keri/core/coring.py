@@ -484,6 +484,7 @@ class NonTransCodex:
 
 NonTransDex = NonTransCodex()  # Make instance
 
+
 # When add new to DigCodes update Saider.Digests and Serder.Digests class attr
 @dataclass(frozen=True)
 class DigCodex:
@@ -3288,40 +3289,14 @@ class Prefixer(Matter):
                 the codes allowed to a subset of all supported.
 
         """
-        try:
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-        except EmptyMaterialError as ex:
-            if not ked or (not code and "i" not in ked):
-                raise ex
+        super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
+        if self.code not in PreDex:
+            raise InvalidCodeError(f"Invalid prefixer code = {self.code}.")
 
-            if not code:  # get code from pre in ked
-                super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
-                code = self.code
-
-            if allows is not None and code not in allows:
-                raise ValueError("Unallowed code={} for prefixer.".format(code))
-
-            if code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-                self._derive = self._derive_non_transferable
-            elif code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-                self._derive = self._derive_transferable
-            elif code == MtrDex.Blake3_256:
-                self._derive = self._derive_blake3_256
-            else:
-                raise ValueError("Unsupported code = {} for prefixer.".format(code))
-
-            # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self.derive(ked=ked)
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-
-        if self.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-            self._verify = self._verify_non_transferable
-        elif self.code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-            self._verify = self._verify_transferable
-        elif self.code == MtrDex.Blake3_256:
-            self._verify = self._verify_blake3_256
-        else:
-            raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
+        #if self.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
+            #self._verify = self._verify_non_transferable
+        #elif self.code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
+            #self._verify = self._verify_transferable
 
     def derive(self, ked):
         """
