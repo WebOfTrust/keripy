@@ -1569,30 +1569,6 @@ class SerderKERI(Serder):
     Proto = Protocols.keri  # default protocol type
 
 
-    # can't do this override as is because would have to then redo the saidive field
-    # calculation. To do that would have to first extract the saidive calculations from
-    # both makify and verify into hidden method called ._saidify and then recall
-    # ._saidify in order to change defaults via an override
-
-    #def makify(self, **kwa):
-        #"""Makify given sad dict makes the versions
-        #Override for ilk and pre specific defaults
-        #"""
-        #super(SerderKERI, self).makify(**kwa)  # all properties now setup
-
-        #if self.ilk in (Ilks.icp, Ilks.dip) and self.pre:  # inceptive with pre
-            #try:
-                #code = Matter(qb64=self.pre).code
-            #except Exception as ex:
-                #raise ValidationError(f"Invalid identifier prefix = "
-                                      #f"{self.pre}.") from ex
-
-            #if code in PreNonDigDex:
-                #if not self.keys:
-                    #self._sad['k'] = [self.pre]  # default for non digestive prefix
-                    #self._sad['kt'] = '1'
-
-
     def _verify(self, **kwa):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
