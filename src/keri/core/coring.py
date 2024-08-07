@@ -3265,125 +3265,29 @@ class Diger(Matter):
 
 class Prefixer(Matter):
     """
-    Prefixer is Matter subclass for autonomic identifier prefix using
-    derivation as determined by code from ked
+    Prefixer is Matter subclass for autonomic identifier AID prefix
 
     Attributes:
 
     Inherited Properties:  (see Matter)
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
 
     Methods:
-        verify():  Verifies derivation of aid prefix from a ked
 
     Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+
     """
-    Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
 
-    def __init__(self, raw=None, code=None, ked=None, allows=None, **kwa):
-        """
-        assign ._derive to derive aid prefix from ked
-        assign ._verify to verify derivation of aid prefix from ked
-
-        Default code is None to force EmptyMaterialError when only raw provided but
-        not code.
-
+    def __init__(self, **kwa):
+        """Checks for .code in PreDex so valid prefixive code
         Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
-
-        Parameters:
-            allows (list): allowed codes for prefix. When None then all supported
-                codes are allowed. This enables a particular use case to restrict
-                the codes allowed to a subset of all supported.
+            See Matter
 
         """
-        super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
+        super(Prefixer, self).__init__(**kwa)
         if self.code not in PreDex:
             raise InvalidCodeError(f"Invalid prefixer code = {self.code}.")
-
-        #if self.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-            #self._verify = self._verify_non_transferable
-        #elif self.code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-            #self._verify = self._verify_transferable
-
-
-    def _verify_non_transferable(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified  False otherwise
-        Verify derivation of fully qualified Base64 pre from inception iked dict
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix default to .qb64
-        """
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-            if ked["n"]:  # must be empty
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-
-
-    def _verify_transferable(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified False otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix default to .qb64
-        """
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-
 
 
 

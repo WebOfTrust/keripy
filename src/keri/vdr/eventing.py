@@ -834,7 +834,6 @@ class Tever:
                 raise ValidationError("Invalid toad = {} for baks = {} for evt = {}."
                                       "".format(toad, baks, ked))
         self.toad = toad
-        #serder._verify() redundant serder.__init__ defaults to verify
         self.serder = serder
 
     def config(self, serder, noBackers=None, estOnly=None):

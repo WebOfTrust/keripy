@@ -737,12 +737,13 @@ def test_serderkeri():
     sad['i'] = pre
     said = serder.said
     sad['k'] = [pre]
+    sad['kt'] = '1'
 
     serder = SerderKERI(sad=sad, makify=True)
 
     assert serder.verify()
     assert serder.ilk == kering.Ilks.icp
-    assert serder.said == 'EOx98RQxHrFkjDxqd8TJv9JFnGyho-r0REi0WYHgbYJ0'
+    assert serder.said == 'EDjTI-CYL5U9jgeDNMRmbB79zogNOYmMdSUeAxmg5F9k'
     assert serder.pre == pre  # prefix is not saidive
 
     sad = serder.sad
@@ -769,7 +770,7 @@ def test_serderkeri():
     assert serder.sn == 0
     assert serder.seals == []
     assert serder.traits == []
-    assert serder.tholder.sith == '0'
+    assert serder.tholder.sith == '1'
     assert serder.keys == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert [verfer.qb64 for verfer in serder.verfers] == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert serder.ntholder.sith == '0'
@@ -780,8 +781,7 @@ def test_serderkeri():
     assert [verfer.qb64 for verfer in serder.berfers] == []
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
 
     serder = SerderKERI(raw=raw)
@@ -801,7 +801,7 @@ def test_serderkeri():
     assert serder.sn == 0
     assert serder.seals == []
     assert serder.traits == []
-    assert serder.tholder.sith == '0'
+    assert serder.tholder.sith == '1'
     assert serder.keys == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert [verfer.qb64 for verfer in serder.verfers] == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert serder.ntholder.sith == '0'
@@ -812,8 +812,7 @@ def test_serderkeri():
     assert [verfer.qb64 for verfer in serder.berfers] == []
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
 
 def test_serderkeri_icp():
@@ -885,8 +884,7 @@ def test_serderkeri_icp():
     assert serder.adds == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -921,8 +919,7 @@ def test_serderkeri_icp():
     assert serder.adds == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
 
     # Test with non-digestive code for 'i' saidive field no sad
@@ -959,16 +956,17 @@ def test_serderkeri_icp():
     pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
     sad['i'] = pre
     sad['k'] = [pre]
+    sad['kt'] = '1'
 
     serder = SerderKERI(sad=sad, makify=True)
     assert serder.sad == \
             {
                 'v': 'KERI10JSON0000fd_',
                 't': 'icp',
-                'd': 'EOx98RQxHrFkjDxqd8TJv9JFnGyho-r0REi0WYHgbYJ0',
+                'd': 'EDjTI-CYL5U9jgeDNMRmbB79zogNOYmMdSUeAxmg5F9k',
                 'i': 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx',
                 's': '0',
-                'kt': '0',
+                'kt': '1',
                 'k': ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'],
                 'nt': '0',
                 'n': [],
@@ -978,10 +976,12 @@ def test_serderkeri_icp():
                 'a': []
             }
 
-    assert serder.raw ==(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EOx98RQxHrFkjDxqd8TJv9JFnGyho-r0REi0'
-                         b'WYHgbYJ0","i":"DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx","s":"0","kt":"0'
-                         b'","k":["DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx"],"nt":"0","n":[],"bt":'
-                         b'"0","b":[],"c":[],"a":[]}')
+
+    assert serder.raw ==(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EDjTI-CYL5U9jgeDNMRmbB79zogNOYmMdSUe'
+                        b'Axmg5F9k","i":"DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx","s":"0","kt":"1'
+                        b'","k":["DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx"],"nt":"0","n":[],"bt":'
+                        b'"0","b":[],"c":[],"a":[]}')
+
 
     assert serder.verify()
     assert serder.ilk == kering.Ilks.icp
@@ -1011,7 +1011,7 @@ def test_serderkeri_icp():
     assert serder.sn == 0
     assert serder.seals == []
     assert serder.traits == []
-    assert serder.tholder.sith == '0'
+    assert serder.tholder.sith == '1'
     assert serder.keys == [pre]
     assert [verfer.qb64 for verfer in serder.verfers] == [pre]
     assert serder.ntholder.sith == '0'
@@ -1026,8 +1026,7 @@ def test_serderkeri_icp():
     assert serder.adds == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -1047,7 +1046,7 @@ def test_serderkeri_icp():
     assert serder.sn == 0
     assert serder.seals == []
     assert serder.traits == []
-    assert serder.tholder.sith == '0'
+    assert serder.tholder.sith == '1'
     assert serder.keys == [pre]
     assert [verfer.qb64 for verfer in serder.verfers] == [pre]
     assert serder.ntholder.sith == '0'
@@ -1062,8 +1061,7 @@ def test_serderkeri_icp():
     assert serder.adds == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     """End Test"""
 
@@ -1143,8 +1141,7 @@ def test_serderkeri_rot():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -1179,8 +1176,7 @@ def test_serderkeri_rot():
     assert serder.adds == []
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     """End Test"""
 
@@ -1254,8 +1250,7 @@ def test_serderkeri_ixn():
     assert serder.priorb == b""
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -1290,8 +1285,7 @@ def test_serderkeri_ixn():
     assert serder.adds == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
     """End Test"""
 
 def test_serderkeri_dip():
@@ -1389,8 +1383,6 @@ def test_serderkeri_dip():
     assert serder.adds == None
     assert serder.delpre == delpre
     assert serder.delpreb == delpre.encode("utf-8")
-    #assert serder.fner == None
-    #assert serder.fn == None
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -1425,8 +1417,6 @@ def test_serderkeri_dip():
     assert serder.adds == None
     assert serder.delpre == delpre
     assert serder.delpreb == delpre.encode("utf-8")
-    #assert serder.fner == None
-    #assert serder.fn == None
 
 
     # Test with non-digestive code for 'i' saidive field no sad
@@ -1558,8 +1548,6 @@ def test_serderkeri_dip():
     assert serder.adds == None
     assert serder.delpre == delpre
     assert serder.delpreb == delpre.encode("utf-8")
-    #assert serder.fner == None
-    #assert serder.fn == None
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -1594,8 +1582,6 @@ def test_serderkeri_dip():
     assert serder.adds == None
     assert serder.delpre == delpre
     assert serder.delpreb == delpre.encode("utf-8")
-    #assert serder.fner == None
-    #assert serder.fn == None
 
     """End Test"""
 
@@ -1783,8 +1769,6 @@ def test_serderkeri_rct():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -1814,8 +1798,6 @@ def test_serderkeri_rct():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
     """End Test"""
 
 def test_serderkeri_qry():
@@ -1837,18 +1819,6 @@ def test_serderkeri_qry():
     assert serder.verify()
     assert serder.ilk == kering.Ilks.qry
     assert serder.pre == None != serder.said  # prefix is not saidive
-
-    #sad = serder.sad
-    # test makify with preloaded non-digestive 'i' value in sad
-    #pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
-    #sad['i'] = pre
-
-    #serder = SerderKERI(sad=sad, makify=True)
-
-    #assert serder.verify()  # because pre is empty
-    #assert serder.ilk == kering.Ilks.qry
-    #assert serder.pre == pre != serder.said  # prefix is not saidive
-
 
     sad = serder.sad
     raw = serder.raw
@@ -1915,8 +1885,7 @@ def test_serderkeri_qry():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     """End Test"""
 
@@ -1941,18 +1910,6 @@ def test_serderkeri_rpy():
     assert serder.ilk == kering.Ilks.rpy
     assert serder.pre == None != serder.said  # prefix is not saidive
 
-    #sad = serder.sad
-    # test makify with preloaded non-digestive 'i' value in sad
-    #pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
-    #sad['i'] = pre
-
-    #serder = SerderKERI(sad=sad, makify=True)
-
-    #assert serder.verify()  # because pre is empty
-    #assert serder.ilk == kering.Ilks.qry
-    #assert serder.pre == pre != serder.said  # prefix is not saidive
-
-
     sad = serder.sad
     raw = serder.raw
     said = serder.said
@@ -1986,8 +1943,6 @@ def test_serderkeri_rpy():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -2017,8 +1972,7 @@ def test_serderkeri_rpy():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     """End Test"""
 
@@ -2042,18 +1996,6 @@ def test_serderkeri_pro():
     assert serder.ilk == kering.Ilks.pro
     assert serder.pre == None != serder.said  # prefix is not saidive
 
-    #sad = serder.sad
-    # test makify with preloaded non-digestive 'i' value in sad
-    #pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
-    #sad['i'] = pre
-
-    #serder = SerderKERI(sad=sad, makify=True)
-
-    #assert serder.verify()  # because pre is empty
-    #assert serder.ilk == kering.Ilks.qry
-    #assert serder.pre == pre != serder.said  # prefix is not saidive
-
-
     sad = serder.sad
     raw = serder.raw
     said = serder.said
@@ -2119,8 +2061,7 @@ def test_serderkeri_pro():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     """End Test"""
 
@@ -2144,18 +2085,6 @@ def test_serderkeri_bar():
     assert serder.ilk == kering.Ilks.bar
     assert serder.pre == None != serder.said  # prefix is not saidive
 
-    #sad = serder.sad
-    # test makify with preloaded non-digestive 'i' value in sad
-    #pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
-    #sad['i'] = pre
-
-    #serder = SerderKERI(sad=sad, makify=True)
-
-    #assert serder.verify()  # because pre is empty
-    #assert serder.ilk == kering.Ilks.qry
-    #assert serder.pre == pre != serder.said  # prefix is not saidive
-
-
     sad = serder.sad
     raw = serder.raw
     said = serder.said
@@ -2221,8 +2150,7 @@ def test_serderkeri_bar():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
+
 
     """End Test"""
 
@@ -2252,19 +2180,6 @@ def test_serderkeri_exn():
     assert serder.ilk == kering.Ilks.exn
     assert serder.pre == ''
     assert serder.prior == ''
-
-    #sad = serder.sad
-    ## test makify with preloaded non-digestive 'i' value in sad
-    #pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
-    #sad['i'] = pre
-
-    #serder = SerderKERI(sad=sad, makify=True)
-    #assert serder.verify()  # because pre is empty
-    #assert serder.ilk == kering.Ilks.exn
-    ## need to fix this, since exn does not include prefix field which should be
-    ## required
-    #assert serder.pre == pre != serder.said  # prefix is not saidive
-
 
     sad = serder.sad
     raw = serder.raw
@@ -2302,8 +2217,6 @@ def test_serderkeri_exn():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
 
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
@@ -2335,9 +2248,6 @@ def test_serderkeri_exn():
     assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
-
 
     """End Test"""
 
@@ -2400,8 +2310,6 @@ def test_serderkeri_vcp():
     assert serder.berfers == []
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
     assert serder.uuid == None
     assert serder.nonce == ''
 
@@ -2432,8 +2340,6 @@ def test_serderkeri_vcp():
     assert serder.berfers == []
     assert serder.delpre == None
     assert serder.delpreb == None
-    #assert serder.fner == None
-    #assert serder.fn == None
     assert serder.uuid == None
     assert serder.nonce == ''
 
