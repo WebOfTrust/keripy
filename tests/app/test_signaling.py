@@ -79,7 +79,7 @@ def test_signaler():
     signaler.push(attrs=dict(a=1), topic="/m")
     signaler.push(attrs=dict(a=2), topic="/m", ckey="abc")
     signaler.push(attrs=dict(a=3), topic="/m")
-    now = datetime.datetime.now() - datetime.timedelta(minutes=11)
+    now = helping.nowUTC() - datetime.timedelta(minutes=11)
     signaler.push(attrs=dict(a=4), topic="/m", ckey="abc", dt=now)
 
     assert len(signaler.signals) == 3
