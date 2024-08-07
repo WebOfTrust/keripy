@@ -18,7 +18,7 @@ from keri.help import helping
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description='Poll events at controller for prefix')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)

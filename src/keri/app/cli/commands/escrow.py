@@ -18,7 +18,7 @@ from keri.vdr import viring
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description='Views events in escrow state.')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
