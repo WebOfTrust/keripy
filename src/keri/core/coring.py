@@ -466,24 +466,6 @@ TexDex = TextCodex()  # Make instance
 
 
 
-@dataclass(frozen=True)
-class NonTransCodex:
-    """
-    NonTransCodex is codex all non-transferable derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
-    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-NonTransDex = NonTransCodex()  # Make instance
-
 # When add new to DigCodes update Saider.Digests and Serder.Digests class attr
 @dataclass(frozen=True)
 class DigCodex:
@@ -573,7 +555,7 @@ class PreCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     Ed25519N:      str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    Ed25519:       str = 'D'  # Ed25519 verification key basic derivation
+    Ed25519:       str = 'D'  # Ed25519 verification key, basic derivation.
     Blake3_256:    str = 'E'  # Blake3 256 bit digest self-addressing derivation.
     Blake2b_256:   str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
     Blake2s_256:   str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
@@ -585,6 +567,9 @@ class PreCodex:
     SHA2_512:      str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     ECDSA_256k1N:  str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:   str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
+    Ed448N:        str = '1AAC'  # Ed448 verification key non-transferable, basic derivation.
+    Ed448:         str = '1AAD'  # Ed448 verification key, basic derivation.
+    Ed448_Sig:     str = '1AAE'  # Ed448 signature. Self-signing derivation.
     ECDSA_256r1N:  str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:   str = "1AAJ"  # ECDSA secp256r1 verification or encryption key, basic derivation
 
@@ -593,6 +578,50 @@ class PreCodex:
 
 
 PreDex = PreCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class NonTransCodex:
+    """
+    NonTransCodex is codex all non-transferable derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N: str = '1AAC'  # Ed448 verification key non-transferable, basic derivation.
+    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NonTransDex = NonTransCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class PreNonDigCodex:
+    """
+    PreNonDigCodex is codex all prefixive but non-digestive derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N:      str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    Ed25519:       str = 'D'  # Ed25519 verification key, basic derivation.
+    ECDSA_256k1N:  str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:   str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
+    Ed448N:        str = '1AAC'  # Ed448 verification key non-transferable, basic derivation.
+    Ed448:         str = '1AAD'  # Ed448 verification key, basic derivation.
+    ECDSA_256r1N:  str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+    ECDSA_256r1:   str = "1AAJ"  # ECDSA secp256r1 verification or encryption key, basic derivation
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+PreNonDigDex = PreNonDigCodex()  # Make instance
+
+
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -2451,9 +2480,6 @@ class Verser(Tagger):
         return Versionage(major=b64ToInt(b64[0]), minor=b64ToInt(b64[1:3]))
 
 
-
-
-
 class Texter(Matter):
     """
     Texter is subclass of Matter, cryptographic material, for variable length
@@ -3239,301 +3265,29 @@ class Diger(Matter):
 
 class Prefixer(Matter):
     """
-    Prefixer is Matter subclass for autonomic identifier prefix using
-    derivation as determined by code from ked
+    Prefixer is Matter subclass for autonomic identifier AID prefix
 
     Attributes:
 
     Inherited Properties:  (see Matter)
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
 
     Methods:
-        verify():  Verifies derivation of aid prefix from a ked
 
     Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+
     """
-    Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
 
-    def __init__(self, raw=None, code=None, ked=None, allows=None, **kwa):
-        """
-        assign ._derive to derive aid prefix from ked
-        assign ._verify to verify derivation of aid prefix from ked
-
-        Default code is None to force EmptyMaterialError when only raw provided but
-        not code.
-
+    def __init__(self, **kwa):
+        """Checks for .code in PreDex so valid prefixive code
         Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
-
-        Parameters:
-            allows (list): allowed codes for prefix. When None then all supported
-                codes are allowed. This enables a particular use case to restrict
-                the codes allowed to a subset of all supported.
+            See Matter
 
         """
-        try:
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-        except EmptyMaterialError as ex:
-            if not ked or (not code and "i" not in ked):
-                raise ex
-
-            if not code:  # get code from pre in ked
-                super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
-                code = self.code
-
-            if allows is not None and code not in allows:
-                raise ValueError("Unallowed code={} for prefixer.".format(code))
-
-            if code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-                self._derive = self._derive_non_transferable
-            elif code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-                self._derive = self._derive_transferable
-            elif code == MtrDex.Blake3_256:
-                self._derive = self._derive_blake3_256
-            else:
-                raise ValueError("Unsupported code = {} for prefixer.".format(code))
-
-            # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self.derive(ked=ked)
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-
-        if self.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-            self._verify = self._verify_non_transferable
-        elif self.code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-            self._verify = self._verify_transferable
-        elif self.code == MtrDex.Blake3_256:
-            self._verify = self._verify_blake3_256
-        else:
-            raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
-
-    def derive(self, ked):
-        """
-        Returns tuple (raw, code) of aid prefix as derived from key event dict ked.
-                uses a derivation code specific _derive method
-
-        Parameters:
-            ked is inception key event dict
-            seed is only used for sig derivation it is the secret key/secret
-
-        """
-        ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
-
-        # Serder now does this check
-        #labels = getattr(Labels, ilk)
-        #for k in labels:
-            #if k not in ked:
-                #raise ValidationError("Missing element = {} from {} event for "
-                                      #"evt = {}.".format(k, ilk, ked))
-
-        return (self._derive(ked=ked))
-
-    def verify(self, ked, prefixed=False):
-        """
-        Returns True if derivation from ked for .code matches .qb64 and
-                If prefixed also verifies ked["i"] matches .qb64
-                False otherwise
-
-        Parameters:
-            ked is inception key event dict
-        """
-        ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
-
-        # Serder now does this check
-        #labels = getattr(Labels, ilk)
-        #for k in labels:
-            #if k not in ked:
-                #raise ValidationError("Missing element = {} from {} event for "
-                                      #"evt = {}.".format(k, ilk, ked))
-
-        return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
-
-    def _derive_non_transferable(self, ked):
-        """
-        Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
-            as derived from inception key event dict ked keys[0]
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                raise DerivationError("Basic derivation needs at most 1 key "
-                                      " got {} keys instead".format(len(keys)))
-            verfer = Verfer(qb64=keys[0])
-        except Exception as ex:
-            raise DerivationError("Error extracting public key ="
-                                  " = {}".format(ex))
-
-        if verfer.code not in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-            raise DerivationError("Mismatch derivation code = {}."
-                                  "".format(verfer.code))
-
-        try:
-            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and ked["n"]:
-                raise DerivationError("Non-empty nxt = {} for non-transferable"
-                                      " code = {}".format(ked["n"],
-                                                          verfer.code))
-
-            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "b" in ked and ked["b"]:
-                raise DerivationError("Non-empty b = {} for non-transferable"
-                                      " code = {}".format(ked["b"],
-                                                          verfer.code))
-
-            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "a" in ked and ked["a"]:
-                raise DerivationError("Non-empty a = {} for non-transferable"
-                                      " code = {}".format(ked["a"],
-                                                          verfer.code))
-
-        except Exception as ex:
-            raise DerivationError("Error checking nxt = {}".format(ex))
-
-        return (verfer.raw, verfer.code)
-
-    def _verify_non_transferable(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified  False otherwise
-        Verify derivation of fully qualified Base64 pre from inception iked dict
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix default to .qb64
-        """
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-            if ked["n"]:  # must be empty
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-    def _derive_transferable(self, ked):
-        """
-        Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
-            as derived from inception key event dict ked keys[0]
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                raise DerivationError("Basic derivation needs at most 1 key "
-                                      " got {} keys instead".format(len(keys)))
-            verfer = Verfer(qb64=keys[0])
-        except Exception as ex:
-            raise DerivationError("Error extracting public key ="
-                                  " = {}".format(ex))
-
-        if verfer.code not in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-            raise DerivationError("Mismatch derivation code = {}"
-                                  "".format(verfer.code))
-
-        return (verfer.raw, verfer.code)
-
-    def _verify_transferable(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified False otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix default to .qb64
-        """
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-
-    def _derive_blake3_256(self, ked):
-        """
-        Returns tuple (raw, code) of pre (qb64) as blake3 digest
-            as derived from inception key event dict ked
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
-            raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
-
-        # put in dummy pre to get size correct
-        ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
-        ked["d"] = ked["i"]  # must be same dummy
-        #raw, proto, kind, ked, version = sizeify(ked=ked)
-        raw, _, _, _, _ = sizeify(ked=ked)
-        dig = blake3.blake3(raw).digest()  # digest with dummy 'i' and 'd'
-        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i' and 'd'
-
-
-    def _verify_blake3_256(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified False otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified default to .qb64
-        """
-        try:
-            raw, code = self._derive_blake3_256(ked=ked)  # replace with dummy 'i'
-            crymat = Matter(raw=raw, code=MtrDex.Blake3_256)
-            if crymat.qb64 != pre:  # derived raw with dummy 'i' must match pre
-                return False
-
-            if prefixed and ked["i"] != pre:  # incoming 'i' must match pre
-                return False
-
-            if ked["i"] != ked["d"]:  # when digestive then SAID must match pre
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
+        super(Prefixer, self).__init__(**kwa)
+        if self.code not in PreDex:
+            raise InvalidCodeError(f"Invalid prefixer code = {self.code}.")
 
 
 

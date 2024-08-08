@@ -1211,8 +1211,6 @@ def test_decrypter():
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
 
-
-
     """ Done Test """
 
 def test_roundtrip():
@@ -1237,8 +1235,38 @@ def test_roundtrip():
     assert encrypter.raw == pubkey
 
 
-    # Test cipher qb2 (always L0 when qb2)
+    # Test cipher qb64 lead 0
+    plain = "The quick brown fox jumps over the lazy "
+    tin = core.Texter(text=plain)  # texter in
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=tin, code=CiXDex.X25519_Cipher_QB64_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB64_L0
+    # decrypt cipher using Decrypter
+    tout = decrypter.decrypt(cipher=cipher, klas=core.Texter) # texter out
+    assert tout.text == tin.text
 
+    # Test cipher qb64 lead 1
+    plain = "The quick brown fox jumps over the lazy dogcats"
+    tin = core.Texter(text=plain)  # texter in
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=tin, code=CiXDex.X25519_Cipher_QB64_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB64_L1
+    # decrypt cipher using Decrypter
+    tout = decrypter.decrypt(cipher=cipher, klas=core.Texter) # texter out
+    assert tout.text == tin.text
+
+    # Test cipher qb64 lead 2
+    plain = "The quick brown fox jumps over the lazy dog"
+    tin = core.Texter(text=plain)  # texter in
+    # create cipher using Encrypter
+    cipher = encrypter.encrypt(prim=tin, code=CiXDex.X25519_Cipher_QB64_L0)
+    assert cipher.code == CiXDex.X25519_Cipher_QB64_L2
+    # decrypt cipher using Decrypter
+    tout = decrypter.decrypt(cipher=cipher, klas=core.Texter) # texter out
+    assert tout.text == tin.text
+
+
+    # Test cipher qb2 (always L0 when qb2)
     plain = "The quick brown fox jumps over the lazy dog"
     tin = core.Texter(text=plain)  # texter in
     # create cipher using Encrypter

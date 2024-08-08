@@ -329,12 +329,14 @@ class Streamer:
     Has the following public properties:
 
     Properties:
+        stream (bytearray): sniffable CESR stream
 
 
     Methods:
 
 
     Hidden:
+        _verify() -> bool
 
 
 
@@ -359,9 +361,10 @@ class Streamer:
 
         self._stream = stream
 
-    @property
+
     def _verify(self):
-        """Returns True if sniffable stream, False otherwise
+        """Returns True if .stream is sniffable, False otherwise
+
         Returns:
             sniffable (bool): True when .stream is sniffable.
                                   False otherwise.

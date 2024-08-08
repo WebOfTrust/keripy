@@ -761,7 +761,6 @@ def incept(keys,
         saids = {'i': code}
 
     serder = serdering.SerderKERI(sad=ked, makify=True, saids=saids)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -926,12 +925,8 @@ def rotate(pre,
                )
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
-    #_, ked = coring.Saider.saidify(sad=ked)
-
-    #return Serder(ked=ked)  # return serialized ked
 
 def deltate(pre,
            keys,
@@ -1007,12 +1002,7 @@ def interact(pre,
                )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
-
-    #_, ked = coring.Saider.saidify(sad=ked)
-
-    #return Serder(ked=ked)  # return serialized ked
 
 
 def receipt(pre,
@@ -1050,7 +1040,6 @@ def receipt(pre,
                )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -1105,7 +1094,6 @@ def query(route="",
                )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
     #_, ked = coring.Saider.saidify(sad=ked)
@@ -1162,7 +1150,6 @@ def reply(route="",
                )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -1204,7 +1191,6 @@ def prod(route="",
                )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
     #_, ked = coring.Saider.saidify(sad=ked)
@@ -1264,7 +1250,6 @@ def bare(route="",
                )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
     #_, sad = coring.Saider.saidify(sad=sad)
@@ -1779,6 +1764,7 @@ class Kever:
             raise MissingEntryError(f"Corresponding event not found for state="
                                     f"{state}.")
         self.serder = serdering.SerderKERI(raw=bytes(raw))
+
         # May want to do additional checks here
 
 
@@ -1808,10 +1794,6 @@ class Kever:
 
 
         self.prefixer = Prefixer(qb64=serder.pre)
-        if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
-            raise ValidationError("Invalid prefix = {} for inception evt = {}."
-                                  "".format(self.prefixer.qb64, ked))
-
         self.serder = serder  # need whole serder for digest agility comparisons
 
         ndigs = serder.ndigs # ked["n"]
