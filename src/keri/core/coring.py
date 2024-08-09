@@ -3407,8 +3407,8 @@ class Saider(Matter):
             ignore (list): fields to ignore when generating SAID
 
         """
-        if code not in DigDex or code not in clas.Digests:
-            raise ValueError("Unsupported digest code = {}.".format(code))
+        if code not in DigDex:
+            raise ValueError(f"Unsupported digest {code = }.")
 
         sad = dict(sad)  # make shallow copy so don't clobber original sad
         # fill id field denoted by label with dummy chars to get size correct
@@ -3423,8 +3423,8 @@ class Saider(Matter):
 
         # string now has correct size
         # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
-        return (Diger._digest(ser=cpa[0], code=code), sad)   # raw digest and sad
+        cpa = clas._serialize(ser, kind=kind)  # raw pos arg class
+        return (Diger._digest(ser=cpa, code=code), sad)   # raw digest and sad
 
 
     def derive(self, sad, code=None, **kwa):
