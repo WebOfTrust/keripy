@@ -3417,13 +3417,11 @@ class Saider(Matter):
             raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
 
         ser = dict(sad)
-        if ignore:
+        if ignore:  # delete ignore fields in said calculation from ser dict
             for f in ignore:
                 del ser[f]
 
-        # string now has correct size
-        # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = clas._serialize(ser, kind=kind)  # raw pos arg class
+        cpa = clas._serialize(ser, kind=kind) # serialize ser
         return (Diger._digest(ser=cpa, code=code), sad)   # raw digest and sad
 
 
