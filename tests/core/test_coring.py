@@ -4439,11 +4439,9 @@ def test_diger():
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     dig = blake3.blake3(ser).digest()
-    with pytest.raises(coring.InvalidValueError):
+    with pytest.raises(kering.InvalidCodeError):
         diger = Diger(raw=dig, code=MtrDex.Ed25519)
 
-    with pytest.raises(coring.InvalidValueError):
-        diger = Diger(ser=ser, code=MtrDex.Ed25519)
 
     diger = Diger(raw=dig)  # defaults provide Blake3_256 digester
     assert diger.code == MtrDex.Blake3_256
@@ -5389,6 +5387,7 @@ if __name__ == "__main__":
     test_ilker()
     test_traitor()
     test_verser()
+    test_diger()
     #test_texter()
     #test_prodex()
     #test_indexer()
