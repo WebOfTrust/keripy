@@ -277,6 +277,13 @@ def test_lmdber():
                      in dber.getAllItemIter(db=db)] == [(b'a', b'1', b'wow'),
                                                         (b'a', b'2', b'wee'),
                                                         (b'b', b'1', b'woo')]
+        
+        # Test reversed getAllItemRvsdIter
+        assert [(bytes(pre), bytes(num), bytes(val)) for pre, num, val
+                     in dber.getAllItemRvsdIter(db=db)] == [(b'b', b'1', b'woo'),
+                                                            (b'a', b'2', b'wee'),
+                                                            (b'a', b'1', b'wow')]
+
 
         assert dber.delTopVal(db, key=b"a.")
         items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]

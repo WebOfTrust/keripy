@@ -168,6 +168,46 @@ def test_noter():
     cnt = noter.getNoteCnt()
     assert cnt == 13
 
+    # test reversed iteration
+    notes = noter.getFltNotes(rvsd=True)
+    assert notes[0][0].attrs['a'] == 9
+    assert notes[1][0].attrs['a'] == 8
+    assert notes[2][0].attrs['a'] == 7
+    assert notes[3][0].attrs['a'] == 6
+    assert notes[4][0].attrs['a'] == 5
+    assert notes[5][0].attrs['a'] == 4
+    assert notes[9][0].attrs['a'] == 0
+
+    # test reversed and paginated iteration
+    notes = noter.getFltNotes(start=5, end=7, rvsd=True)
+    assert notes[0][0].attrs['a'] == 4
+    assert notes[1][0].attrs['a'] == 3
+    assert notes[2][0].attrs['a'] == 2
+
+    # test filter by route
+    note = notifying.notice(attrs=dict(r='/multisig/rev'))
+    assert noter.add(note, cig) is True
+    notes = noter.getFltNotes(route='/multisig/rev')
+    assert notes[0][0].attrs['r'] == '/multisig/rev'
+    assert len(notes) == 1
+
+    cnt = noter.getFltNoteCnt(route='/multisig/rev')
+    assert cnt == 1
+
+    # test filter by read status
+    note = notifying.notice(attrs=dict(a=11), read=True)
+    assert noter.add(note, cig) is True
+    note = notifying.notice(attrs=dict(a=12), read=True)
+    assert noter.add(note, cig) is True
+    notes = noter.getFltNotes(read=True)
+    assert notes[0][0].read == True
+    assert notes[0][0].attrs['a'] == 11
+    assert notes[1][0].read == True
+    assert notes[1][0].attrs['a'] == 12
+    assert len(notes) == 2
+
+    cnt = noter.getFltNoteCnt(read=True)
+    assert cnt == 2
 
 def test_notifier():
     with habbing.openHby(name="test") as hby:
@@ -207,6 +247,38 @@ def test_notifier():
 
         notes = notifier.getNotes()
         assert len(notes) == 3
+
+        # test reversed iteration
+        notes = notifier.getFltNotes(rvsd=True)
+        assert notes[0].attrs['a'] == 3
+        assert notes[1].attrs['a'] == 2
+        assert notes[2].attrs['a'] == 1
+
+        # test reversed and paginated iteration
+        notes = notifier.getFltNotes(start=1, end=2, rvsd=True)
+        assert notes[0].attrs['a'] == 2
+        assert notes[1].attrs['a'] == 1
+
+        # test filter by read status
+        notes = notifier.getNotes()
+        assert notifier.mar(notes[1].rid) is True
+        assert notifier.mar(notes[2].rid) is True
+        notes = notifier.getFltNotes(read=True)
+        assert notes[0].attrs['a'] == 2
+        assert notes[1].attrs['a'] == 3
+
+        cnt = notifier.getFltNoteCnt(read=True)
+        assert cnt == 2
+
+        # test filter by route
+        assert notifier.add(attrs=dict(r='/multisig/rev')) is True
+        notes = notifier.getFltNotes(route='/multisig/rev')
+        assert notes[0].attrs['r'] == '/multisig/rev'
+        assert len(notes) == 1
+
+        cnt = notifier.getFltNoteCnt(route='/multisig/rev')
+        assert cnt == 1
+
 
     payload = dict(a=1, b=2, c=3)
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
