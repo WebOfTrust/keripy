@@ -3140,18 +3140,18 @@ class Diger(Matter):
         if self.code not in DigDex:
             raise InvalidCodeError(f"Unsupported Digest {code=}.")
 
-
-    def _digest(self, ser, code=DigDex.Blake3_256):
+    @classmethod
+    def _digest(cls, ser, code=DigDex.Blake3_256):
         """Returns raw digest of ser using digest algorithm given by code
 
         Parameters:
             ser (bytes): serialization from which raw digest is computed
             code (str): derivation code used to lookup digest algorithm
         """
-        if code not in self.Digests:
+        if code not in cls.Digests:
             raise InvalidCodeError(f"Unsupported Digest {code=}.")
 
-        klas, size, length = self.Digests[code]  # digest algo size & length
+        klas, size, length = cls.Digests[code]  # digest algo size & length
         ikwa = dict(digest_size=size) if size else dict()  # opt digest size
         dkwa = dict(length=length) if length else dict() # opt digest length
         raw = klas(ser, **ikwa).digest(**dkwa)
@@ -3277,19 +3277,6 @@ class Saider(Matter):
 
     """
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
-    # should be same set of codes as in coring.DigestCodex coring.DigDex so
-    # .digestive property works. Unit test ensures code sets match
-    Digests = {
-        MtrDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
-        MtrDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
-        MtrDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
-        MtrDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
-        MtrDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
-        MtrDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
-        MtrDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
-        MtrDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
-        MtrDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
-    }
 
     def __init__(self, raw=None, *, code=None, sad=None,
                  kind=None, label=Saids.d, ignore=None, **kwa):
@@ -3434,18 +3421,10 @@ class Saider(Matter):
             for f in ignore:
                 del ser[f]
 
-        # string now has
-        # correct size
-        klas, size, length = clas.Digests[code]
+        # string now has correct size
         # sad as 'v' verision string then use its kind otherwise passed in kind
         cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
-        ckwa = dict()  # class keyword args
-        if size:
-            ckwa.update(digest_size=size)  # optional digest_size
-        dkwa = dict()  # digest keyword args
-        if length:
-            dkwa.update(length=length)
-        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
+        return (Diger._digest(ser=cpa[0], code=code), sad)   # raw digest and sad
 
 
     def derive(self, sad, code=None, **kwa):
