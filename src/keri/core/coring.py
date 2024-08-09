@@ -3408,7 +3408,7 @@ class Saider(Matter):
 
         """
         if code not in DigDex:
-            raise ValueError(f"Unsupported digest {code = }.")
+            raise ValueError(f"Unsupported digest {code=}.")
 
         sad = dict(sad)  # make shallow copy so don't clobber original sad
         # fill id field denoted by label with dummy chars to get size correct
