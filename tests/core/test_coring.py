@@ -4432,6 +4432,10 @@ def test_diger():
     """
     Test the support functionality for Diger subclass of CryMat
     """
+    # Ensure keyspace of Diger.Digests is same as codes in DigDex
+    assert set(coring.DigDex) == set(Diger.Digests.keys())
+
+
     with pytest.raises(EmptyMaterialError):
         diger = Diger()
 
@@ -4439,11 +4443,9 @@ def test_diger():
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     dig = blake3.blake3(ser).digest()
-    with pytest.raises(coring.InvalidValueError):
+    with pytest.raises(kering.InvalidCodeError):
         diger = Diger(raw=dig, code=MtrDex.Ed25519)
 
-    with pytest.raises(coring.InvalidValueError):
-        diger = Diger(ser=ser, code=MtrDex.Ed25519)
 
     diger = Diger(raw=dig)  # defaults provide Blake3_256 digester
     assert diger.code == MtrDex.Blake3_256
@@ -4614,8 +4616,6 @@ def test_saider():
     """
     Test Saider object
     """
-    # Test class attribute Digest matches DigDex (i.e.DigestCodex)
-    assert set(Saider.Digests.keys()) == set(code for code in DigDex)
 
     code = MtrDex.Blake3_256
     kind = Kinds.json
@@ -5389,6 +5389,7 @@ if __name__ == "__main__":
     test_ilker()
     test_traitor()
     test_verser()
+    test_diger()
     #test_texter()
     #test_prodex()
     #test_indexer()

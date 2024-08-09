@@ -55,6 +55,9 @@ DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
 
+# digest algorithm  klas, digest size (not default), digest length
+# size and length are needed for some digest types as function parameters
+Digestage = namedtuple("Digestage", "klas size length")
 
 # SAID field labels
 Saidage = namedtuple("Saidage", "dollar at id_ i d")
@@ -266,6 +269,8 @@ class MapDom:
             return delattr(self, name)
         except AttributeError as ex:
             raise IndexError(ex.args) from ex
+
+
 
 
 
@@ -3094,68 +3099,77 @@ class Diger(Matter):
 
     """
 
-    def __init__(self, raw=None, ser=None, code=MtrDex.Blake3_256, **kwa):
-        """
-        Assign digest verification function to ._verify
+    # Maps digest codes to Digestages of algorithms for computing digest.
+    # Should be based on the same set of codes as in DigestCodex
+    # so Matter.digestive property works.
+    # Use unit tests to ensure codex elements sets match
 
-        See Matter for inherited parameters
+    Digests = {
+        DigDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
+        DigDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
+        DigDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
+        DigDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
+        DigDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
+        DigDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
+        DigDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
+        DigDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
+        DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
+    }
+
+    def __init__(self, raw=None, ser=None, code=DigDex.Blake3_256, **kwa):
+        """Initialize attributes
 
         Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
+            See Matter
 
         Parameters:
-           ser is bytes serialization from which raw is computed if not raw
+           ser (bytes): serialization from which raw is computed if not raw
 
         """
-        # Should implement all digests in DigCodex instance DigDex
+
         try:
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
             if not ser:
                 raise ex
-            if code == MtrDex.Blake3_256:
-                dig = blake3.blake3(ser).digest()
-            elif code == MtrDex.Blake2b_256:
-                dig = hashlib.blake2b(ser, digest_size=32).digest()
-            elif code == MtrDex.Blake2s_256:
-                dig = hashlib.blake2s(ser, digest_size=32).digest()
-            elif code == MtrDex.SHA3_256:
-                dig = hashlib.sha3_256(ser).digest()
-            elif code == MtrDex.SHA2_256:
-                dig = hashlib.sha256(ser).digest()
-            else:
-                raise InvalidValueError("Unsupported code={code} for diger.")
 
-            super(Diger, self).__init__(raw=dig, code=code, **kwa)
+            raw = self._digest(ser, code=code)
 
-        if self.code == MtrDex.Blake3_256:
-            self._verify = self._blake3_256
-        elif self.code == MtrDex.Blake2b_256:
-            self._verify = self._blake2b_256
-        elif self.code == MtrDex.Blake2s_256:
-            self._verify = self._blake2s_256
-        elif self.code == MtrDex.SHA3_256:
-            self._verify = self._sha3_256
-        elif self.code == MtrDex.SHA2_256:
-            self._verify = self._sha2_256
-        else:
-            raise InvalidValueError("Unsupported code={self.code} for diger.")
+            super(Diger, self).__init__(raw=raw, code=code, **kwa)
+
+        if self.code not in DigDex:
+            raise InvalidCodeError(f"Unsupported Digest {code=}.")
+
+    @classmethod
+    def _digest(cls, ser, code=DigDex.Blake3_256):
+        """Returns raw digest of ser using digest algorithm given by code
+
+        Parameters:
+            ser (bytes): serialization from which raw digest is computed
+            code (str): derivation code used to lookup digest algorithm
+        """
+        if code not in cls.Digests:
+            raise InvalidCodeError(f"Unsupported Digest {code=}.")
+
+        klas, size, length = cls.Digests[code]  # digest algo size & length
+        ikwa = dict(digest_size=size) if size else dict()  # opt digest size
+        dkwa = dict(length=length) if length else dict() # opt digest length
+        raw = klas(ser, **ikwa).digest(**dkwa)
+        return (raw)
+
 
     def verify(self, ser):
         """
         Returns True if raw digest of ser bytes (serialization) matches .raw
-        using .raw as reference digest for ._verify digest algorithm determined
+        using .raw as reference digest for digest algorithm determined
         by .code
 
         Parameters:
-            ser (bytes): serialization to be digested and compared to .ser
+            ser (bytes): serialization to be digested and compared to .raw
+
         """
-        return (self._verify(ser=ser, raw=self.raw))
+        return (self._digest(ser=ser, code=self.code) == self.raw)
+
 
     def compare(self, ser, dig=None, diger=None):
         """
@@ -3202,65 +3216,6 @@ class Diger(Matter):
 
         return (False)
 
-    @staticmethod
-    def _blake3_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake3_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (blake3.blake3(ser).digest() == raw)
-
-    @staticmethod
-    def _blake2b_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2b_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.blake2b(ser, digest_size=32).digest() == raw)
-
-    @staticmethod
-    def _blake2s_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.blake2s(ser, digest_size=32).digest() == raw)
-
-    @staticmethod
-    def _sha3_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.sha3_256(ser).digest() == raw)
-
-    @staticmethod
-    def _sha2_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.sha256(ser).digest() == raw)
 
 
 class Prefixer(Matter):
@@ -3291,9 +3246,6 @@ class Prefixer(Matter):
 
 
 
-# digest algorithm  klas, digest size (not default), digest length
-# size and length are needed for some digest types as function parameters
-Digestage = namedtuple("Digestage", "klas size length")
 
 
 class Saider(Matter):
@@ -3325,19 +3277,6 @@ class Saider(Matter):
 
     """
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
-    # should be same set of codes as in coring.DigestCodex coring.DigDex so
-    # .digestive property works. Unit test ensures code sets match
-    Digests = {
-        MtrDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
-        MtrDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
-        MtrDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
-        MtrDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
-        MtrDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
-        MtrDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
-        MtrDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
-        MtrDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
-        MtrDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
-    }
 
     def __init__(self, raw=None, *, code=None, sad=None,
                  kind=None, label=Saids.d, ignore=None, **kwa):
@@ -3468,8 +3407,8 @@ class Saider(Matter):
             ignore (list): fields to ignore when generating SAID
 
         """
-        if code not in DigDex or code not in clas.Digests:
-            raise ValueError("Unsupported digest code = {}.".format(code))
+        if code not in DigDex:
+            raise ValueError(f"Unsupported digest {code=}.")
 
         sad = dict(sad)  # make shallow copy so don't clobber original sad
         # fill id field denoted by label with dummy chars to get size correct
@@ -3482,18 +3421,10 @@ class Saider(Matter):
             for f in ignore:
                 del ser[f]
 
-        # string now has
-        # correct size
-        klas, size, length = clas.Digests[code]
+        # string now has correct size
         # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
-        ckwa = dict()  # class keyword args
-        if size:
-            ckwa.update(digest_size=size)  # optional digest_size
-        dkwa = dict()  # digest keyword args
-        if length:
-            dkwa.update(length=length)
-        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
+        cpa = clas._serialize(ser, kind=kind)  # raw pos arg class
+        return (Diger._digest(ser=cpa, code=code), sad)   # raw digest and sad
 
 
     def derive(self, sad, code=None, **kwa):

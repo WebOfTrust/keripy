@@ -348,22 +348,6 @@ class Serder:
     # Spans dict keyed by version (Versionage instance) of version string span (size)
     Spans = {Vrsn_1_0: VER1FULLSPAN, Vrsn_2_0: VER2FULLSPAN}
 
-    # Maps digest codes to Digestages of algorithms for computing digest.
-    # Should be based on the same set of codes as in coring.DigestCodex
-    # coring.DigDex so .digestive property works.
-    # Use unit tests to ensure codex elements sets match
-    Digests = {
-        DigDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
-        DigDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
-        DigDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
-        DigDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
-        DigDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
-        DigDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
-        DigDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
-        DigDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
-        DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
-    }
-
     # map seal clan names to seal counter code for grouping seals in anchor list
     ClanCodes = dict()
     ClanCodes[SClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
@@ -777,14 +761,7 @@ class Serder:
         raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
         for label, code in saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
-                klas, size, length = self.Digests[code]  # digest algo size & length
-                ikwa = dict()  # digest algo class initi keyword args
-                if size:
-                    ikwa.update(digest_size=size)  # optional digest_size
-                dkwa = dict()  # digest method keyword args
-                if length:
-                    dkwa.update(length=length)
-                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
+                dig = Diger(ser=raw, code=code).qb64
                 if dig != self._sad[label]:  # compare to original
                     raise ValidationError(f"Invalid said field '{label}' in sad"
                                           f" = {self._sad}, should be {dig}.")
@@ -1005,15 +982,7 @@ class Serder:
         raw = self.dumps(sad, kind=kind, proto=proto, vrsn=vrsn)  # serialize sized dummied sad
         for label, code in _saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
-                klas, dsize, dlen = self.Digests[code]  # digest algo size & length
-                ikwa = dict()  # digest algo class initi keyword args
-                if dsize:
-                    ikwa.update(digest_size=dsize)  # optional digest_size
-                dkwa = dict()  # digest method keyword args
-                if dlen:
-                    dkwa.update(length=dlen)
-                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
-                sad[label] = dig
+                sad[label] = Diger(ser=raw, code=code).qb64
 
         raw = self.dumps(sad, kind=kind, proto=proto, vrsn=vrsn)  # compute final raw
         if kind == Kinds.cesr:# cesr kind version string does not set size
