@@ -2646,7 +2646,8 @@ class Bexter(Matter):
             raise ValidationError("Invalid code = {} for Bexter."
                                   "".format(self.code))
 
-    def _rawify(self, bext):
+    @staticmethod
+    def _rawify(bext):
         """Returns raw value equivalent of Base64 text.
         Suitable for variable sized matter
 
@@ -2661,7 +2662,7 @@ class Bexter(Matter):
         return raw  # raw binary equivalent of text
 
     @classmethod
-    def _decode(cls, raw, code):
+    def _derawify(cls, raw, code):
         """Returns decoded raw as B64 str aka bext value
 
         Returns:
@@ -2684,16 +2685,7 @@ class Bexter(Matter):
         Property bext: Base64 text value portion of qualified b64 str
         Returns the value portion of .qb64 with text code and leader removed
         """
-        return self._decode(raw=self.raw, code=self.code)
-        #_, _, _, _, ls = self.Sizes[self.code]
-        #bext = encodeB64(bytes([0] * ls) + self.raw)
-        #ws = 0
-        #if ls == 0 and bext:
-            #if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
-                #ws = 1
-        #else:
-            #ws = (ls + 1) % 4
-        #return bext.decode('utf-8')[ws:]
+        return self._derawify(raw=self.raw, code=self.code)
 
 
 class Pather(Bexter):
