@@ -2013,7 +2013,7 @@ class Tagger(Matter):
         composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
 
     Properties:
-        tag (str): B64 primitive without prepad (alias of .soft)
+        tag (str): B64 .soft portion of code but without prepad
 
 
     Inherited Hidden:  (See Matter)
@@ -2660,14 +2660,15 @@ class Bexter(Matter):
         raw = decodeB64(base)[ls:]  # convert and remove leader
         return raw  # raw binary equivalent of text
 
-    @property
-    def bext(self):
+    @classmethod
+    def _decode(cls, raw, code):
+        """Returns decoded raw as B64 str aka bext value
+
+        Returns:
+           bext (str): decoded raw as B64 str aka bext value
         """
-        Property bext: Base64 text value portion of qualified b64 str
-        Returns the value portion of .qb64 with text code and leader removed
-        """
-        _, _, _, _, ls = self.Sizes[self.code]
-        bext = encodeB64(bytes([0] * ls) + self.raw)
+        _, _, _, _, ls = cls.Sizes[code]
+        bext = encodeB64(bytes([0] * ls) + raw)
         ws = 0
         if ls == 0 and bext:
             if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
@@ -2675,6 +2676,24 @@ class Bexter(Matter):
         else:
             ws = (ls + 1) % 4
         return bext.decode('utf-8')[ws:]
+
+
+    @property
+    def bext(self):
+        """
+        Property bext: Base64 text value portion of qualified b64 str
+        Returns the value portion of .qb64 with text code and leader removed
+        """
+        return self._decode(raw=self.raw, code=self.code)
+        #_, _, _, _, ls = self.Sizes[self.code]
+        #bext = encodeB64(bytes([0] * ls) + self.raw)
+        #ws = 0
+        #if ls == 0 and bext:
+            #if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
+                #ws = 1
+        #else:
+            #ws = (ls + 1) % 4
+        #return bext.decode('utf-8')[ws:]
 
 
 class Pather(Bexter):
@@ -2907,6 +2926,72 @@ class Pather(Bexter):
             raise KeyError("invalid traversal type")
 
         return self._resolve(cur, ptr)
+
+
+class Labeler(Matter):
+    """
+    Labeler is subclass of Matter for CESR native field map labels and/or generic
+    textual field values. Labeler auto sizes the instance code to minimize
+    the total encoded size of associated field label or textual field value.
+
+
+
+    Attributes:
+
+    Inherited Properties:
+        (See Matter)
+
+
+    Properties:
+        label (str):  base value without encoding
+
+    Inherited Hidden:
+        (See Matter)
+
+    Hidden:
+        _label (str): base value without encoding
+
+    Methods:
+
+    """
+
+
+    def __init__(self, label='', code=None, **kwa):
+        """
+        Inherited Parameters:
+            (see Matter)
+
+        Parameters:
+            label (str | bytes):  base value before encoding
+
+        """
+        self._label = None
+        if label:
+            if hasattr(label, "decode"):  # make label a str
+                label = label.decode("utf-8")
+
+            if not Reb64.match(label.encode("utf-8")):
+                raise InvalidSoftError(f"Non Base64 chars in {tag=}.")
+
+            self._label = label
+
+
+        super(Labeler, self).__init__(code=code, **kwa)
+
+
+
+        if self.code not in LabelDex:
+            raise InvalidCodeError(f"Invalid code={self.code} for Labeler.")
+
+    @property
+    def label(self):
+        """Returns:
+            label (str): base value without encoding
+
+        getter for ._label. Makes ._label read only
+
+        """
+        return self._label
 
 
 

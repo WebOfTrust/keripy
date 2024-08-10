@@ -40,7 +40,7 @@ from keri import core
 from keri.core import coring
 from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
                               Dater, Bexter, Texter,
-                              TagDex, Tagger, Ilker, Traitor,
+                              TagDex, Tagger, Ilker, Traitor, Labeler,
                               Verser, Versage, )
 from keri.core.coring import Kindage, Kinds
 from keri.core.coring import (Sizage, MtrDex, Matter)
@@ -4270,6 +4270,19 @@ def test_pather():
     """ Done Test """
 
 
+def test_labeler():
+    """
+    Test Labeler subclass of Matter
+    """
+
+
+    with pytest.raises(EmptyMaterialError):
+        labeler = Labeler()  # defaults
+
+
+    """ Done Test """
+
+
 def test_verfer():
     """
     Test the support functionality for verifier subclass of crymat
@@ -5390,14 +5403,14 @@ if __name__ == "__main__":
     test_traitor()
     test_verser()
     test_diger()
-    #test_texter()
+    test_texter()
+    test_bexter()
+    test_labeler()
     #test_prodex()
-    #test_indexer()
     test_number()
     #test_seqner()
     #test_siger()
     #test_nexter()
     #test_tholder()
-    #test_labels()
-    #test_prefixer()
+    test_prefixer()
 
