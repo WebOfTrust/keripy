@@ -115,6 +115,9 @@ def test_verifier(seeder):
         for idx, cred in enumerate(creds):
             assert dcre.sad == cred["sad"]
 
+        with pytest.raises(kering.MissingEntryError):
+            regery.reger.cloneCred(said="nonexistantsaid")
+
     """End Test"""
 
 
