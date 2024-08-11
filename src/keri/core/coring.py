@@ -3046,9 +3046,10 @@ class Labeler(Matter):
         super(Labeler, self).__init__(raw=raw, code=code, soft=soft, **kwa)
 
 
-
         if self.code not in LabelDex:
             raise InvalidCodeError(f"Invalid code={self.code} for Labeler.")
+
+         # need way to extract label from raw and code
 
     @property
     def label(self):
