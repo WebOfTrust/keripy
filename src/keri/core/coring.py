@@ -550,6 +550,46 @@ class TagCodex:
 TagDex = TagCodex()  # Make instance
 
 
+@dataclass(frozen=True)
+class LabelCodex:
+    """
+    LabelCodex is codex of.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
+    Tag2:  str = '0K'  # 2 B64 char tag
+    Tag3:  str = 'X'  # 3 B64 char tag
+    Tag4:  str = '1AAF'  # 4 B64 char tag
+    Tag5:  str = '0L'  # 5 B64 char tag with 1 pre pad
+    Tag6:  str = '0M'  # 6 B64 char tag
+    Tag7:  str = 'Y'  # 7 B64 char tag
+    Tag8:  str = '1AAN'  # 8 B64 char tag
+    Tag9:  str = '0N'  # 9 B64 char tag with 1 pre pad
+    Tag10: str = '0O'  # 10 B64 char tag
+    StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1:     str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2:     str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
+    Label1:        str = 'V'  # Label1 1 bytes for label lead size 1
+    Label2:        str = 'W'  # Label2 2 bytes for label lead size 0
+    Bytes_L0:     str = '4B'  # Byte String lead size 0
+    Bytes_L1:     str = '5B'  # Byte String lead size 1
+    Bytes_L2:     str = '6B'  # Byte String lead size 2
+    Bytes_Big_L0: str = '7AAB'  # Byte String big lead size 0
+    Bytes_Big_L1: str = '8AAB'  # Byte String big lead size 1
+    Bytes_Big_L2: str = '9AAB'  # Byte String big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+LabelDex = LabelCodex()  # Make instance
+
+
 
 @dataclass(frozen=True)
 class PreCodex:
@@ -2059,16 +2099,13 @@ class Tagger(Matter):
 
         """
         if tag:
-            if hasattr(tag, "decode"):  # make tag str
-                tag = tag.decode("utf-8")
-            if not Reb64.match(tag.encode("utf-8")):
+            if hasattr(tag, "encode"):  # make tag bytes for regex
+                tag = tag.encode("utf-8")
+
+            if not Reb64.match(tag):
                 raise InvalidSoftError(f"Non Base64 chars in {tag=}.")
-            # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
-            codes = astuple(TagDex)
-            l = len(tag)  # soft not empty so l > 0
-            if l > len(codes):
-                raise InvalidSoftError("Oversized tag={soft}.")
-            code = codes[l-1]  # get code for for tag of len where (index = len - 1)
+
+            code = self._codify(tag=tag)
             soft = tag
 
 
@@ -2076,6 +2113,27 @@ class Tagger(Matter):
 
         if (not self._special(self.code)) or self.code not in TagDex:
             raise InvalidCodeError(f"Invalid code={self.code} for Tagger.")
+
+
+    @staticmethod
+    def _codify(tag):
+        """Returns code for tag when tag is appropriately sized Base64
+
+        Parameters:
+           tag (str | bytes):  Base64 value
+
+        Returns:
+           code (str): derivation code for tag
+
+        """
+        # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
+        codes = astuple(TagDex)
+        l = len(tag)
+        if l < 1 or l > len(codes):
+            raise InvalidSoftError(f"Invalid {tag=} size {l=}, empty or oversized.")
+        return codes[l-1]  # return code at index = len - 1
+
+
 
     @property
     def tag(self):
@@ -2948,7 +3006,7 @@ class Labeler(Matter):
     """
 
 
-    def __init__(self, label='', code=None, **kwa):
+    def __init__(self, label='', raw=None, code=None, soft=None, **kwa):
         """
         Inherited Parameters:
             (see Matter)
@@ -2958,17 +3016,34 @@ class Labeler(Matter):
 
         """
         self._label = None
+
         if label:
-            if hasattr(label, "decode"):  # make label a str
-                label = label.decode("utf-8")
+            if hasattr(label, "encode"):  # make label bytes
+                label = label.encode("utf-8")
 
-            if not Reb64.match(label.encode("utf-8")):
-                raise InvalidSoftError(f"Non Base64 chars in {tag=}.")
+            if Reb64.match(label):  # candidate for Base64 compact encoding
+                try:
+                    code = Tagger._codify(tag=label)
+                    soft = label
+                except InvalidSoftError as ex:  # too big
+                    if label[0] != b'A':  # use Bexter code
+                        code = MtrDex.StrB64_L0
+                        raw = Bexter.rawify(label)
+                    else:  # use Texter code
+                        code = MtrDex.Bytes_L0
+                        raw = label
+            else:
+                if len(label) == 1:
+                    code = MtrDex.Label1
+                elif len(label) == 2:
+                    code = MtrDex.Label2
+                else:
+                    code = MtrDex.Bytes_L0
+                raw = label
 
-            self._label = label
+            self._label = label.decode()  # convert bytes to str
 
-
-        super(Labeler, self).__init__(code=code, **kwa)
+        super(Labeler, self).__init__(raw=raw, code=code, soft=soft, **kwa)
 
 
 
