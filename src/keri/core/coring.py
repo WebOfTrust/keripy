@@ -2999,7 +2999,6 @@ class Labeler(Matter):
         (See Matter)
 
     Hidden:
-        _label (str): base value without encoding
 
     Methods:
 
@@ -3015,8 +3014,6 @@ class Labeler(Matter):
             label (str | bytes):  base value before encoding
 
         """
-        self._label = None
-
         if label:
             if hasattr(label, "encode"):  # make label bytes
                 label = label.encode("utf-8")
@@ -3025,41 +3022,49 @@ class Labeler(Matter):
                 try:
                     code = Tagger._codify(tag=label)
                     soft = label
+
                 except InvalidSoftError as ex:  # too big
-                    if label[0] != b'A':  # use Bexter code
-                        code = MtrDex.StrB64_L0
-                        raw = Bexter.rawify(label)
-                    else:  # use Texter code
-                        code = MtrDex.Bytes_L0
+                    if label[0] != ord(b'A'):  # use Bexter code
+                        code = LabelDex.StrB64_L0
+                        raw = Bexter._rawify(label)
+
+                    else:  # use Texter code since ambiguity if starts with 'A'
+                        code = LabelDex.Bytes_L0
                         raw = label
+
             else:
                 if len(label) == 1:
-                    code = MtrDex.Label1
+                    code = LabelDex.Label1
+
                 elif len(label) == 2:
-                    code = MtrDex.Label2
+                    code = LabelDex.Label2
+
                 else:
-                    code = MtrDex.Bytes_L0
+                    code = LabelDex.Bytes_L0
+
                 raw = label
 
-            self._label = label.decode()  # convert bytes to str
-
         super(Labeler, self).__init__(raw=raw, code=code, soft=soft, **kwa)
-
 
         if self.code not in LabelDex:
             raise InvalidCodeError(f"Invalid code={self.code} for Labeler.")
 
-         # need way to extract label from raw and code
+
 
     @property
     def label(self):
-        """Returns:
+        """Extracts and returns label from .code and .soft or .code and .raw
+
+        Returns:
             label (str): base value without encoding
-
-        getter for ._label. Makes ._label read only
-
         """
-        return self._label
+        if self.code in TagDex:  # tag
+            return self.soft  # soft part of code
+
+        if self.code in BexDex:  # bext
+            return Bexter._derawify(raw=self.raw, code=self.code)  # derawify
+
+        return self.raw.decode()  # everything else is just raw as str
 
 
 
