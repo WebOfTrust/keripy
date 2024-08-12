@@ -34,7 +34,8 @@ from ..help import helping
 
 
 from . import coring
-from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
+from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
+                     Saids,  Digestage)
 from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
                      Ilker, Traitor, Verser, )
 
@@ -346,22 +347,6 @@ class Serder:
 
     # Spans dict keyed by version (Versionage instance) of version string span (size)
     Spans = {Vrsn_1_0: VER1FULLSPAN, Vrsn_2_0: VER2FULLSPAN}
-
-    # Maps digest codes to Digestages of algorithms for computing digest.
-    # Should be based on the same set of codes as in coring.DigestCodex
-    # coring.DigDex so .digestive property works.
-    # Use unit tests to ensure codex elements sets match
-    Digests = {
-        DigDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
-        DigDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
-        DigDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
-        DigDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
-        DigDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
-        DigDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
-        DigDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
-        DigDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
-        DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
-    }
 
     # map seal clan names to seal counter code for grouping seals in anchor list
     ClanCodes = dict()
@@ -776,14 +761,7 @@ class Serder:
         raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
         for label, code in saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
-                klas, size, length = self.Digests[code]  # digest algo size & length
-                ikwa = dict()  # digest algo class initi keyword args
-                if size:
-                    ikwa.update(digest_size=size)  # optional digest_size
-                dkwa = dict()  # digest method keyword args
-                if length:
-                    dkwa.update(length=length)
-                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
+                dig = Diger(ser=raw, code=code).qb64
                 if dig != self._sad[label]:  # compare to original
                     raise ValidationError(f"Invalid said field '{label}' in sad"
                                           f" = {self._sad}, should be {dig}.")
@@ -1004,15 +982,7 @@ class Serder:
         raw = self.dumps(sad, kind=kind, proto=proto, vrsn=vrsn)  # serialize sized dummied sad
         for label, code in _saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
-                klas, dsize, dlen = self.Digests[code]  # digest algo size & length
-                ikwa = dict()  # digest algo class initi keyword args
-                if dsize:
-                    ikwa.update(digest_size=dsize)  # optional digest_size
-                dkwa = dict()  # digest method keyword args
-                if dlen:
-                    dkwa.update(length=dlen)
-                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
-                sad[label] = dig
+                sad[label] = Diger(ser=raw, code=code).qb64
 
         raw = self.dumps(sad, kind=kind, proto=proto, vrsn=vrsn)  # compute final raw
         if kind == Kinds.cesr:# cesr kind version string does not set size
@@ -1568,7 +1538,6 @@ class SerderKERI(Serder):
     Proto = Protocols.keri  # default protocol type
 
 
-
     def _verify(self, **kwa):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
@@ -1588,8 +1557,8 @@ class SerderKERI(Serder):
 
         if (self.vrsn.major < 2 and self.vrsn.minor < 1 and
             self.ilk in (Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar, Ilks.exn)):
-                pass
-        else:  # verify pre
+                pass  # non prefixive ilks do not have 'i' field
+        else:  # verify pre 'i' field
             try:
                 code = Matter(qb64=self.pre).code
             except Exception as ex:
@@ -1604,19 +1573,38 @@ class SerderKERI(Serder):
             if code not in idex:
                 raise ValidationError(f"Invalid identifier prefix code = {code}.")
 
-            # non-transferable pre validations
-            if code in [PreDex.Ed25519N, PreDex.ECDSA_256r1N, PreDex.ECDSA_256k1N]:
-                if self.ndigs:
-                    raise ValidationError(f"Non-transferable code = {code} with"
-                                          f" non-empty nxt = {self.ndigs}.")
 
-                if self.backs:
-                    raise ValidationError("Non-transferable code = {code} with"
-                                          f" non-empty backers = {self.backs}.")
+            if self.ilk in (Ilks.icp, Ilks.dip, Ilks.rot, Ilks.drt):  # est event
+                if self.ilk in (Ilks.icp, Ilks.dip):  # inceptive event
+                    if code in PreNonDigDex:
+                        if len(self.keys) != 1:
+                            raise ValidationError(f"Invalid keys = {self.keys} "
+                                                  "for non-digestive prefix "
+                                                  f"{code=}.")
 
-                if self.seals:
-                    raise ValidationError("Non-transferable code = {code} with"
-                                          f" non-empty seals = {self.seals}.")
+                        if self.tholder.sith != '1':
+                            raise ValidationError(f"Invalid signing threshold ="
+                                                  f" {self.tholder.sith} for "
+                                                  f"non-digestive prefix {code=}.")
+
+                        if self.pre != self.keys[0]:
+                            raise ValidationError(f"Mismatch prefix = {self.pre} and"
+                                                  f" zeroth key = {self.keys[0]} for "
+                                                  f" non-digestive prefix {code=}.")
+
+                # non-transferable pre validations
+                if code in NonTransDex:
+                    if self.ndigs:  # when field missing returns None
+                        raise ValidationError(f"Non-transferable code = {code} with"
+                                              f" non-empty nxt = {self.ndigs}.")
+
+                    if self.backs:  # when field missing returns None
+                        raise ValidationError("Non-transferable code = {code} with"
+                                              f" non-empty backers = {self.backs}.")
+
+                    if self.seals:  # when field missing returns None
+                        raise ValidationError("Non-transferable code = {code} with"
+                                              f" non-empty seals = {self.seals}.")
 
         if self.ilk in (Ilks.dip):  # validate delpre
             try:

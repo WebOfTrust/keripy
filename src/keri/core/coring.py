@@ -55,6 +55,9 @@ DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
 
+# digest algorithm  klas, digest size (not default), digest length
+# size and length are needed for some digest types as function parameters
+Digestage = namedtuple("Digestage", "klas size length")
 
 # SAID field labels
 Saidage = namedtuple("Saidage", "dollar at id_ i d")
@@ -269,6 +272,8 @@ class MapDom:
 
 
 
+
+
 @dataclass(frozen=True)
 class MatterCodex:
     """
@@ -466,24 +471,6 @@ TexDex = TextCodex()  # Make instance
 
 
 
-@dataclass(frozen=True)
-class NonTransCodex:
-    """
-    NonTransCodex is codex all non-transferable derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
-    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-NonTransDex = NonTransCodex()  # Make instance
-
 # When add new to DigCodes update Saider.Digests and Serder.Digests class attr
 @dataclass(frozen=True)
 class DigCodex:
@@ -573,7 +560,7 @@ class PreCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     Ed25519N:      str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    Ed25519:       str = 'D'  # Ed25519 verification key basic derivation
+    Ed25519:       str = 'D'  # Ed25519 verification key, basic derivation.
     Blake3_256:    str = 'E'  # Blake3 256 bit digest self-addressing derivation.
     Blake2b_256:   str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
     Blake2s_256:   str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
@@ -585,6 +572,9 @@ class PreCodex:
     SHA2_512:      str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     ECDSA_256k1N:  str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:   str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
+    Ed448N:        str = '1AAC'  # Ed448 verification key non-transferable, basic derivation.
+    Ed448:         str = '1AAD'  # Ed448 verification key, basic derivation.
+    Ed448_Sig:     str = '1AAE'  # Ed448 signature. Self-signing derivation.
     ECDSA_256r1N:  str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:   str = "1AAJ"  # ECDSA secp256r1 verification or encryption key, basic derivation
 
@@ -593,6 +583,50 @@ class PreCodex:
 
 
 PreDex = PreCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class NonTransCodex:
+    """
+    NonTransCodex is codex all non-transferable derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N: str = '1AAC'  # Ed448 verification key non-transferable, basic derivation.
+    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NonTransDex = NonTransCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class PreNonDigCodex:
+    """
+    PreNonDigCodex is codex all prefixive but non-digestive derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N:      str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    Ed25519:       str = 'D'  # Ed25519 verification key, basic derivation.
+    ECDSA_256k1N:  str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:   str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
+    Ed448N:        str = '1AAC'  # Ed448 verification key non-transferable, basic derivation.
+    Ed448:         str = '1AAD'  # Ed448 verification key, basic derivation.
+    ECDSA_256r1N:  str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+    ECDSA_256r1:   str = "1AAJ"  # ECDSA secp256r1 verification or encryption key, basic derivation
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+PreNonDigDex = PreNonDigCodex()  # Make instance
+
+
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -2451,9 +2485,6 @@ class Verser(Tagger):
         return Versionage(major=b64ToInt(b64[0]), minor=b64ToInt(b64[1:3]))
 
 
-
-
-
 class Texter(Matter):
     """
     Texter is subclass of Matter, cryptographic material, for variable length
@@ -3068,68 +3099,77 @@ class Diger(Matter):
 
     """
 
-    def __init__(self, raw=None, ser=None, code=MtrDex.Blake3_256, **kwa):
-        """
-        Assign digest verification function to ._verify
+    # Maps digest codes to Digestages of algorithms for computing digest.
+    # Should be based on the same set of codes as in DigestCodex
+    # so Matter.digestive property works.
+    # Use unit tests to ensure codex elements sets match
 
-        See Matter for inherited parameters
+    Digests = {
+        DigDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
+        DigDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
+        DigDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
+        DigDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
+        DigDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
+        DigDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
+        DigDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
+        DigDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
+        DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
+    }
+
+    def __init__(self, raw=None, ser=None, code=DigDex.Blake3_256, **kwa):
+        """Initialize attributes
 
         Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
+            See Matter
 
         Parameters:
-           ser is bytes serialization from which raw is computed if not raw
+           ser (bytes): serialization from which raw is computed if not raw
 
         """
-        # Should implement all digests in DigCodex instance DigDex
+
         try:
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
             if not ser:
                 raise ex
-            if code == MtrDex.Blake3_256:
-                dig = blake3.blake3(ser).digest()
-            elif code == MtrDex.Blake2b_256:
-                dig = hashlib.blake2b(ser, digest_size=32).digest()
-            elif code == MtrDex.Blake2s_256:
-                dig = hashlib.blake2s(ser, digest_size=32).digest()
-            elif code == MtrDex.SHA3_256:
-                dig = hashlib.sha3_256(ser).digest()
-            elif code == MtrDex.SHA2_256:
-                dig = hashlib.sha256(ser).digest()
-            else:
-                raise InvalidValueError("Unsupported code={code} for diger.")
 
-            super(Diger, self).__init__(raw=dig, code=code, **kwa)
+            raw = self._digest(ser, code=code)
 
-        if self.code == MtrDex.Blake3_256:
-            self._verify = self._blake3_256
-        elif self.code == MtrDex.Blake2b_256:
-            self._verify = self._blake2b_256
-        elif self.code == MtrDex.Blake2s_256:
-            self._verify = self._blake2s_256
-        elif self.code == MtrDex.SHA3_256:
-            self._verify = self._sha3_256
-        elif self.code == MtrDex.SHA2_256:
-            self._verify = self._sha2_256
-        else:
-            raise InvalidValueError("Unsupported code={self.code} for diger.")
+            super(Diger, self).__init__(raw=raw, code=code, **kwa)
+
+        if self.code not in DigDex:
+            raise InvalidCodeError(f"Unsupported Digest {code=}.")
+
+    @classmethod
+    def _digest(cls, ser, code=DigDex.Blake3_256):
+        """Returns raw digest of ser using digest algorithm given by code
+
+        Parameters:
+            ser (bytes): serialization from which raw digest is computed
+            code (str): derivation code used to lookup digest algorithm
+        """
+        if code not in cls.Digests:
+            raise InvalidCodeError(f"Unsupported Digest {code=}.")
+
+        klas, size, length = cls.Digests[code]  # digest algo size & length
+        ikwa = dict(digest_size=size) if size else dict()  # opt digest size
+        dkwa = dict(length=length) if length else dict() # opt digest length
+        raw = klas(ser, **ikwa).digest(**dkwa)
+        return (raw)
+
 
     def verify(self, ser):
         """
         Returns True if raw digest of ser bytes (serialization) matches .raw
-        using .raw as reference digest for ._verify digest algorithm determined
+        using .raw as reference digest for digest algorithm determined
         by .code
 
         Parameters:
-            ser (bytes): serialization to be digested and compared to .ser
+            ser (bytes): serialization to be digested and compared to .raw
+
         """
-        return (self._verify(ser=ser, raw=self.raw))
+        return (self._digest(ser=ser, code=self.code) == self.raw)
+
 
     def compare(self, ser, dig=None, diger=None):
         """
@@ -3176,370 +3216,36 @@ class Diger(Matter):
 
         return (False)
 
-    @staticmethod
-    def _blake3_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake3_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (blake3.blake3(ser).digest() == raw)
-
-    @staticmethod
-    def _blake2b_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2b_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.blake2b(ser, digest_size=32).digest() == raw)
-
-    @staticmethod
-    def _blake2s_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.blake2s(ser, digest_size=32).digest() == raw)
-
-    @staticmethod
-    def _sha3_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.sha3_256(ser).digest() == raw)
-
-    @staticmethod
-    def _sha2_256(ser, raw):
-        """
-        Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
-
-        Parameters:
-            ser is bytes serialization
-            dig is bytes reference digest
-        """
-        return (hashlib.sha256(ser).digest() == raw)
 
 
 class Prefixer(Matter):
     """
-    Prefixer is Matter subclass for autonomic identifier prefix using
-    derivation as determined by code from ked
+    Prefixer is Matter subclass for autonomic identifier AID prefix
 
     Attributes:
 
     Inherited Properties:  (see Matter)
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
 
     Methods:
-        verify():  Verifies derivation of aid prefix from a ked
 
     Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+
     """
-    Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
 
-    def __init__(self, raw=None, code=None, ked=None, allows=None, **kwa):
-        """
-        assign ._derive to derive aid prefix from ked
-        assign ._verify to verify derivation of aid prefix from ked
-
-        Default code is None to force EmptyMaterialError when only raw provided but
-        not code.
-
+    def __init__(self, **kwa):
+        """Checks for .code in PreDex so valid prefixive code
         Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
-
-        Parameters:
-            allows (list): allowed codes for prefix. When None then all supported
-                codes are allowed. This enables a particular use case to restrict
-                the codes allowed to a subset of all supported.
+            See Matter
 
         """
-        try:
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-        except EmptyMaterialError as ex:
-            if not ked or (not code and "i" not in ked):
-                raise ex
-
-            if not code:  # get code from pre in ked
-                super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
-                code = self.code
-
-            if allows is not None and code not in allows:
-                raise ValueError("Unallowed code={} for prefixer.".format(code))
-
-            if code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-                self._derive = self._derive_non_transferable
-            elif code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-                self._derive = self._derive_transferable
-            elif code == MtrDex.Blake3_256:
-                self._derive = self._derive_blake3_256
-            else:
-                raise ValueError("Unsupported code = {} for prefixer.".format(code))
-
-            # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self.derive(ked=ked)
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-
-        if self.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-            self._verify = self._verify_non_transferable
-        elif self.code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-            self._verify = self._verify_transferable
-        elif self.code == MtrDex.Blake3_256:
-            self._verify = self._verify_blake3_256
-        else:
-            raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
-
-    def derive(self, ked):
-        """
-        Returns tuple (raw, code) of aid prefix as derived from key event dict ked.
-                uses a derivation code specific _derive method
-
-        Parameters:
-            ked is inception key event dict
-            seed is only used for sig derivation it is the secret key/secret
-
-        """
-        ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
-
-        # Serder now does this check
-        #labels = getattr(Labels, ilk)
-        #for k in labels:
-            #if k not in ked:
-                #raise ValidationError("Missing element = {} from {} event for "
-                                      #"evt = {}.".format(k, ilk, ked))
-
-        return (self._derive(ked=ked))
-
-    def verify(self, ked, prefixed=False):
-        """
-        Returns True if derivation from ked for .code matches .qb64 and
-                If prefixed also verifies ked["i"] matches .qb64
-                False otherwise
-
-        Parameters:
-            ked is inception key event dict
-        """
-        ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
-
-        # Serder now does this check
-        #labels = getattr(Labels, ilk)
-        #for k in labels:
-            #if k not in ked:
-                #raise ValidationError("Missing element = {} from {} event for "
-                                      #"evt = {}.".format(k, ilk, ked))
-
-        return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
-
-    def _derive_non_transferable(self, ked):
-        """
-        Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
-            as derived from inception key event dict ked keys[0]
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                raise DerivationError("Basic derivation needs at most 1 key "
-                                      " got {} keys instead".format(len(keys)))
-            verfer = Verfer(qb64=keys[0])
-        except Exception as ex:
-            raise DerivationError("Error extracting public key ="
-                                  " = {}".format(ex))
-
-        if verfer.code not in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
-            raise DerivationError("Mismatch derivation code = {}."
-                                  "".format(verfer.code))
-
-        try:
-            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and ked["n"]:
-                raise DerivationError("Non-empty nxt = {} for non-transferable"
-                                      " code = {}".format(ked["n"],
-                                                          verfer.code))
-
-            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "b" in ked and ked["b"]:
-                raise DerivationError("Non-empty b = {} for non-transferable"
-                                      " code = {}".format(ked["b"],
-                                                          verfer.code))
-
-            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "a" in ked and ked["a"]:
-                raise DerivationError("Non-empty a = {} for non-transferable"
-                                      " code = {}".format(ked["a"],
-                                                          verfer.code))
-
-        except Exception as ex:
-            raise DerivationError("Error checking nxt = {}".format(ex))
-
-        return (verfer.raw, verfer.code)
-
-    def _verify_non_transferable(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified  False otherwise
-        Verify derivation of fully qualified Base64 pre from inception iked dict
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix default to .qb64
-        """
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-            if ked["n"]:  # must be empty
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-    def _derive_transferable(self, ked):
-        """
-        Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
-            as derived from inception key event dict ked keys[0]
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                raise DerivationError("Basic derivation needs at most 1 key "
-                                      " got {} keys instead".format(len(keys)))
-            verfer = Verfer(qb64=keys[0])
-        except Exception as ex:
-            raise DerivationError("Error extracting public key ="
-                                  " = {}".format(ex))
-
-        if verfer.code not in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
-            raise DerivationError("Mismatch derivation code = {}"
-                                  "".format(verfer.code))
-
-        return (verfer.raw, verfer.code)
-
-    def _verify_transferable(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified False otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix default to .qb64
-        """
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-
-    def _derive_blake3_256(self, ked):
-        """
-        Returns tuple (raw, code) of pre (qb64) as blake3 digest
-            as derived from inception key event dict ked
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
-            raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
-
-        # put in dummy pre to get size correct
-        ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
-        ked["d"] = ked["i"]  # must be same dummy
-        #raw, proto, kind, ked, version = sizeify(ked=ked)
-        raw, _, _, _, _ = sizeify(ked=ked)
-        dig = blake3.blake3(raw).digest()  # digest with dummy 'i' and 'd'
-        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i' and 'd'
-
-
-    def _verify_blake3_256(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified False otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified default to .qb64
-        """
-        try:
-            raw, code = self._derive_blake3_256(ked=ked)  # replace with dummy 'i'
-            crymat = Matter(raw=raw, code=MtrDex.Blake3_256)
-            if crymat.qb64 != pre:  # derived raw with dummy 'i' must match pre
-                return False
-
-            if prefixed and ked["i"] != pre:  # incoming 'i' must match pre
-                return False
-
-            if ked["i"] != ked["d"]:  # when digestive then SAID must match pre
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
+        super(Prefixer, self).__init__(**kwa)
+        if self.code not in PreDex:
+            raise InvalidCodeError(f"Invalid prefixer code = {self.code}.")
 
 
 
-# digest algorithm  klas, digest size (not default), digest length
-# size and length are needed for some digest types as function parameters
-Digestage = namedtuple("Digestage", "klas size length")
 
 
 class Saider(Matter):
@@ -3571,19 +3277,6 @@ class Saider(Matter):
 
     """
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
-    # should be same set of codes as in coring.DigestCodex coring.DigDex so
-    # .digestive property works. Unit test ensures code sets match
-    Digests = {
-        MtrDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
-        MtrDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
-        MtrDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
-        MtrDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
-        MtrDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
-        MtrDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
-        MtrDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
-        MtrDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
-        MtrDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
-    }
 
     def __init__(self, raw=None, *, code=None, sad=None,
                  kind=None, label=Saids.d, ignore=None, **kwa):
@@ -3714,8 +3407,8 @@ class Saider(Matter):
             ignore (list): fields to ignore when generating SAID
 
         """
-        if code not in DigDex or code not in clas.Digests:
-            raise ValueError("Unsupported digest code = {}.".format(code))
+        if code not in DigDex:
+            raise ValueError(f"Unsupported digest {code=}.")
 
         sad = dict(sad)  # make shallow copy so don't clobber original sad
         # fill id field denoted by label with dummy chars to get size correct
@@ -3728,18 +3421,10 @@ class Saider(Matter):
             for f in ignore:
                 del ser[f]
 
-        # string now has
-        # correct size
-        klas, size, length = clas.Digests[code]
+        # string now has correct size
         # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
-        ckwa = dict()  # class keyword args
-        if size:
-            ckwa.update(digest_size=size)  # optional digest_size
-        dkwa = dict()  # digest keyword args
-        if length:
-            dkwa.update(length=length)
-        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
+        cpa = clas._serialize(ser, kind=kind)  # raw pos arg class
+        return (Diger._digest(ser=cpa, code=code), sad)   # raw digest and sad
 
 
     def derive(self, sad, code=None, **kwa):

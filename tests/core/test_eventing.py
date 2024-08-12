@@ -4460,8 +4460,6 @@ def test_process_nontransferable():
                 )
     _, ked0 = coring.Saider.saidify(sad=ked0)
 
-    # verify derivation of aid0 from ked0
-    assert aid0.verify(ked=ked0)
 
     # Serialize ked0
     tser0 = serdering.SerderKERI(sad=ked0)
@@ -4500,9 +4498,6 @@ def test_process_nontransferable():
         assert verfer.verify(rsig.raw, rser0.raw)
         del msgb0[:len(rsig.qb64)]
 
-    # verify pre
-    raid0 = Prefixer(qb64=rser0.pre)
-    assert raid0.verify(ked=rser0.ked)
     """ Done Test """
 
 
@@ -4548,8 +4543,9 @@ def test_process_transferable():
                )
 
 
-    # Use non digestive AID
-    aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
+    # Use non digestive AID made from keys[0]
+    aid0 = Prefixer(raw=Verfer(qb64=keys[0]).raw, code=MtrDex.Ed25519)
+    #aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
     assert aid0.code == MtrDex.Ed25519
     assert aid0.qb64 == skp0.verfer.qb64
     # update ked with pre
@@ -4592,10 +4588,6 @@ def test_process_transferable():
         assert verfer.qb64 == skp0.verfer.qb64
         assert verfer.verify(rsig.raw, rser0.raw)
         del msgb0[:len(rsig.qb64)]
-
-    # verify pre
-    raid0 = Prefixer(qb64=rser0.pre)
-    assert raid0.verify(ked=rser0.ked)
 
     # verify nxt digest from event is still valid
     digers=rser0.ndigers

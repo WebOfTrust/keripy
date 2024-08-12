@@ -105,7 +105,6 @@ def incept(
                )
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -206,7 +205,6 @@ def rotate(
                )
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -247,7 +245,6 @@ def issue(
         ked["dt"] = dt
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -297,7 +294,6 @@ def revoke(
     _, ked = coring.Saider.saidify(sad=ked)
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -350,7 +346,6 @@ def backerIssue(
         ked["dt"] = dt
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -405,7 +400,6 @@ def backerRevoke(
         ked["dt"] = dt
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
-    serder._verify()  # raises error if fails verifications
     return serder
 
 
@@ -717,12 +711,6 @@ class Tever:
             raise ValidationError("Expected ilk {} got {} for evt: {}".format(Ilks.vcp, ilk, serder))
 
         self.ilk = ilk
-        #labels = VCP_LABELS
-        #for k in labels:
-            #if k not in serder.ked:
-                #raise ValidationError("Missing element = {} from {} event for "
-                                      #"evt = {}.".format(k, ilk, serder.ked))
-
         self.incept(serder=serder)
         self.config(serder=serder, noBackers=noBackers, estOnly=estOnly)
 
@@ -819,14 +807,13 @@ class Tever:
         """
 
         ked = serder.ked
-        self.pre = ked["ii"]
-        self.prefixer = Prefixer(qb64=serder.pre)
-        if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
-            raise ValidationError("Invalid prefix = {} for registry inception evt = {}."
-                                  .format(self.prefixer.qb64, ked))
+        self.pre = ked["ii"]  # which is not the AID of the serder in ked["i"]
+        self.prefixer = Prefixer(qb64=serder.pre)  # this not related to self.pre
+        #if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
+            #raise ValidationError("Invalid prefix = {} for registry inception evt = {}."
+                                  #.format(self.prefixer.qb64, ked))
 
-        #sn = ked["s"]
-        #self.sn = validateSN(sn, inceptive=True)
+
         self.sn = Number(numh=ked["s"]).validate(inceptive=True).sn
 
         self.cuts = []  # always empty at inception since no prev event
