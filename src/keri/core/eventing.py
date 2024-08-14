@@ -1561,16 +1561,16 @@ class Kever:
 
         # Validates signers, delegation if any, and witnessing when applicable
         # If does not validate then escrows as needed and raises ValidationError
-        sigers, wigers, delpre, delseqner, delsaider = self.valSigsWigsDel(serder=serder,
-                                                                           sigers=sigers,
-                                                                           verfers=serder.verfers,
-                                                                           tholder=self.tholder,
-                                                                           wigers=wigers,
-                                                                           toader=self.toader,
-                                                                           wits=self.wits,
-                                                                           local=local,
-                                                                           delseqner=delseqner,
-                                                                           delsaider=delsaider)
+        sigers, wigers, delpre = self.valSigsWigsDel(serder=serder,
+                                                    sigers=sigers,
+                                                    verfers=serder.verfers,
+                                                    tholder=self.tholder,
+                                                    wigers=wigers,
+                                                    toader=self.toader,
+                                                    wits=self.wits,
+                                                    local=local,
+                                                    delseqner=delseqner,
+                                                    delsaider=delsaider)
 
         self.delpre = delpre  # may be None
         self.delegated = True if self.delpre else False
@@ -1920,16 +1920,16 @@ class Kever:
             # Validates signers, delegation if any, and witnessing when applicable
             # returned sigers and wigers are verified signatures
             # If does not validate then escrows as needed and raises ValidationError
-            sigers, wigers, delpre, delseqner, delsaider = self.valSigsWigsDel(serder=serder,
-                                                                               sigers=sigers,
-                                                                               verfers=serder.verfers,
-                                                                               tholder=tholder,
-                                                                               wigers=wigers,
-                                                                               toader=toader,
-                                                                               wits=wits,
-                                                                               local=local,
-                                                                               delseqner=delseqner,
-                                                                               delsaider=delsaider)
+            sigers, wigers, delpre = self.valSigsWigsDel(serder=serder,
+                                                        sigers=sigers,
+                                                        verfers=serder.verfers,
+                                                        tholder=tholder,
+                                                        wigers=wigers,
+                                                        toader=toader,
+                                                        wits=wits,
+                                                        local=local,
+                                                        delseqner=delseqner,
+                                                        delsaider=delsaider)
 
 
 
@@ -1985,18 +1985,18 @@ class Kever:
 
             # Validates signers, delegation if any, and witnessing when applicable
             # If does not validate then escrows as needed and raises ValidationError
-            sigers, wigers, delpre, delseqner, delsaider = self.valSigsWigsDel(serder=serder,
-                                                                               sigers=sigers,
-                                                                               verfers=self.verfers,
-                                                                               tholder=self.tholder,
-                                                                               wigers=wigers,
-                                                                               toader=self.toader,
-                                                                               wits=self.wits,
-                                                                               local=local)
+            sigers, wigers, delpre = self.valSigsWigsDel(serder=serder,
+                                                        sigers=sigers,
+                                                        verfers=self.verfers,
+                                                        tholder=self.tholder,
+                                                        wigers=wigers,
+                                                        toader=self.toader,
+                                                        wits=self.wits,
+                                                        local=local)
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, seqner=delseqner, saider=delsaider,
+            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                     first=True if not check else False)  # First seen accepted
 
             # validates so update state
@@ -2314,19 +2314,19 @@ class Kever:
                                                    f"for event={serder.ked}.")
 
         if delpre:
-            if not (delseqner and delsaider):
-                seal = dict(i=serder.ked["i"], s=serder.snh, d=serder.said)
-                srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
-                if srdr is not None:
-                    delseqner = coring.Seqner(sn=srdr.sn)
-                    delsaider = coring.Saider(qb64=srdr.said)
+            #if not (delseqner and delsaider):
+                #seal = dict(i=serder.ked["i"], s=serder.snh, d=serder.said)
+                #srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                #if srdr is not None:
+                    #delseqner = coring.Seqner(sn=srdr.sn)
+                    #delsaider = coring.Saider(qb64=srdr.said)
 
             self.validateDelegation(serder, sigers=sigers,
                                     wigers=wigers, wits=wits,
                                     local=local, delpre=delpre,
-                                    delseqner=delseqner, delsaider=delsaider)
+                                    )  # delseqner=delseqner, delsaider=delsaider
 
-        return sigers, wigers, delpre, delseqner, delsaider
+        return (sigers, wigers, delpre) # delseqner, delsaider
 
 
     def exposeds(self, sigers):
@@ -2833,6 +2833,7 @@ class Kever:
 
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         # update event source
+
 
         if seqner and saider:  # delegation for authorized delegated or issued event
             couple = seqner.qb64b + saider.qb64b
