@@ -1617,7 +1617,7 @@ class Baser(dbing.LMDBer):
             kever (Kever): Kever from which to clone the delegator's AID.
 
         """
-        if kever.delegated:
+        if kever.delegated and kever.delpre in self.kevers:
             dkever = self.kevers[kever.delpre]
             yield from self.cloneDelegation(dkever)
 
