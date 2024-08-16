@@ -1579,7 +1579,8 @@ class Kever:
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
         # returns fn == None if already logged fn log is non idempotent
-        fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
+        fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                wits=wits,
                                 first=True if not check else False,
                                 seqner=delseqner, saider=delsaider,
                                 firner=firner, dater=dater, local=local)
@@ -1935,8 +1936,10 @@ class Kever:
 
             # .valSigWigsDel above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
-                                    first=True if not check else False, seqner=delseqner, saider=delsaider,
+            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                    wits=wits,
+                                    first=True if not check else False,
+                                    seqner=delseqner, saider=delsaider,
                                     firner=firner, dater=dater, local=local)
 
             # nxt and signatures verify so update state
@@ -2600,15 +2603,21 @@ class Kever:
         if self.locallyOwned() or self.locallyWitnessed(wits=wits):
             return
 
-        if self.kevers is None or delpre not in self.kevers:   # drop event
+        if self.kevers is None or delpre not in self.kevers:   # missing delegator
             # ToDo XXXX cue a trigger to get the KEL of the delegator
-            # the processDelegableEvent should also cue a trigger to get KEL
+            # the processPSEvent should also cue a trigger to get KEL
             # of delegator if still missing when processing escrow later.
-            self.escrowDelegableEvent(serder=serder, sigers=sigers,
-                                              wigers=wigers,local=local)
-            raise MissingDelegableApprovalError(f"Missing Kever for delegator"
-                                                f" = {delpre} of event"
-                                                f" = {serder.ked}.")
+            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+                               local=local)
+            raise MissingDelegationError(f"Missing KEL of delegator "
+                                         f"{delpre} of evt = {serder.ked}.")
+
+
+            #self.escrowDelegableEvent(serder=serder, sigers=sigers,
+                                              #wigers=wigers,local=local)
+            #raise MissingDelegableApprovalError(f"Missing Kever for delegator"
+                                                #f" = {delpre} of event"
+                                                #f" = {serder.ked}.")
 
         dkever = self.kevers[delpre]
         if dkever.doNotDelegate:  # drop event if delegation not allowed
@@ -2621,7 +2630,7 @@ class Kever:
         # Once fully receipted, cue in Kevery will then trigger cue to approve
         # delegation
 
-        if delseqner is None or delsaider is None:
+        if delseqner is None or delsaider is None: # missing delegation seal ref
             if self.locallyOwned(delpre):  # local delegator so escrow.
                 # Won't get to here if not local and locallyOwned(delpre) because
                 # valSigsWigsDel will send nonlocal sourced delegable event to
@@ -2834,10 +2843,21 @@ class Kever:
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         # update event source
 
-
-        if seqner and saider:  # delegation for authorized delegated or issued event
+        # delegation for authorized delegated or issued event
+        # when seqner and saider are provided they are only assured to be valid
+        # kever for event if kel is delegated and not locallyOwned
+        # and not locallyWitnessed as the validateDelegation is short circuited
+        # for non delegated kels, local controllers, and local witnesses.
+        # These checks prevent ddos via malicious source seal attachments.
+        # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
+        if (self.delpre and not self.locallyOwned()
+            and not self.locallyWitnessed(wits=wits) and seqner and saider):
             couple = seqner.qb64b + saider.qb64b
             self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
+
+        #if seqner and saider:
+            #couple = seqner.qb64b + saider.qb64b
+            #self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
 
         if esr := self.db.esrs.get(keys=dgkeys):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
@@ -5290,6 +5310,10 @@ class Kevery:
                         else:
                             delpre = eserder.ked["di"]
 
+                        # consider using here instead todo XXXX
+                        # Kever.fetchDelegatingEvent(delegator=delpre,
+                        #                            serder=eserder)
+                        # need Kever reference for eserder.pre
                         seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
                         if srdr is not None:
