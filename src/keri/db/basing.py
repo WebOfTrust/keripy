@@ -611,6 +611,37 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
+        .kels is named sub DB of key event log tables that map sequence numbers
+            to serialized event digests.
+            Uses sequence number or sn.
+            snKey
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifier prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .fels is named sub DB of first seen event log table (FEL) of digests
+            that indexes events in first 'seen' accepted order for replay and
+            cloning of event log.
+            Uses first seen order number or fn.
+            fnKey
+            DB is keyed by identifier prefix plus monotonically increasing first
+            seen order number fn.
+            Value is digest of serialized event used to lookup event in .evts sub DB
+            Only one value per DB key is allowed.
+            Provides append only ordering of accepted first seen events.
+
+        .fons is named subDB CesrSuber
+            Uses digest
+            dgKey
+            Maps prefix and digest to fn value (first seen ordinal number) of
+            the associated event. So one used pre and event digest, get its fn here
+            and then use fn to fetch event from .evnts by fn from .fels.
+            This ensures that any event looked up this way was first seen at
+            some point in time even if later superseded by a recovery rotation.
+            Whereas direct lookup in .evts could be escrowed events that may
+            never have been accepted as first seen.
+            CesrSuber(db=self, subkey='fons.', klas=core.Number)
+
         .esrs is named sub DB instance of Komer of EventSourceRecord
             dgKey
             DB is keyed by identifier prefix plus digest (said) of serialized event
@@ -636,8 +667,9 @@ class Baser(dbing.LMDBer):
             Escrow processing determines if and how to promote event source to
             local and then reprocess
 
-        .delegables is named sub DB instance of CesrIoSetSuber for delegable escrows
-            subkey "dees."
+        .delegables is named sub DB instance of CesrIoSetSuber for delegable event
+            escrows of key event with local delegator that need approval.
+            subkey "dees."  delegable event escrows
             snKey
             DB is keyed by event controller prefix plus sn of serialized event
             where sn is 32 char hex string with leading zeros
@@ -648,18 +680,6 @@ class Baser(dbing.LMDBer):
             source for a delegable event of a local delegator must first pass
             through the misfit escrow and get promoted to local source.
 
-        # delegable events escrows. events with local delegator that need approval
-        self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)
-
-        .fels is named sub DB of first seen event log table (FEL) of digests
-            that indexes events in first 'seen' accepted order for replay and
-            cloning of event log. Only one value per DB key is allowed.
-            Provides append only ordering of accepted first seen events.
-            Uses first seen order number or fn.
-            fnKey
-            DB is keyed by identifier prefix plus monotonically increasing first
-            seen order number fn.
-            Value is digest of serialized event used to lookup event in .evts sub DB
 
         .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
             the datetime when the event was first escrosed and then later first
@@ -740,13 +760,6 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .kels is named sub DB of key event log tables that map sequence numbers
-            to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
-
         .pses is named sub DB of partially signed escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
@@ -808,10 +821,6 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .fons is named subDB instance of MatterSuber that maps
-            (prefix, digest) e.g. dgKey to fn value (first seen ordinal number) of
-            the associated event. So one can lookup event digest, get its fn here
-            and then use fn to fetch event by fn from .fels.
 
         .states (subkey stts.) is named subDB instance of SerderSuber that maps a prefix
             to the latest keystate for that prefix. Used by ._kevers.db for read
@@ -978,6 +987,7 @@ class Baser(dbing.LMDBer):
 
         self.evts = self.env.open_db(key=b'evts.')
         self.fels = self.env.open_db(key=b'fels.')
+        self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.dtss = self.env.open_db(key=b'dtss.')
         self.aess = self.env.open_db(key=b'aess.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
@@ -986,7 +996,6 @@ class Baser(dbing.LMDBer):
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
         self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
-        self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         self.pdes = self.env.open_db(key=b'pdes.')
         self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
@@ -995,6 +1004,9 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
+
+        # events as ordered by first seen ordinals
+        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=core.Number)
 
         self.migs = subing.CesrSuber(db=self, subkey="migs.", klas=coring.Dater)
         self.vers = subing.Suber(db=self, subkey="vers.")
@@ -1010,8 +1022,6 @@ class Baser(dbing.LMDBer):
         # delegable events escrows. events with local delegator that need approval
         self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
 
-        # events as ordered by first seen ordinals
-        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=core.Number)
         # Kever state made of KeyStateRecord key states
         # TODO: clean
         self.states = koming.Komer(db=self,
