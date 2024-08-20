@@ -2820,10 +2820,10 @@ class Kever:
 
         Looking up in the db.evts from dig in db.aes could be malicious escrows
         of delegating events?? But a malicious escrow of delegating event would
-        only write source seal couple to db.pdes not db.aes
+        only write source seal couple to db.udes not db.aes
 
         When escrowing .escrowPACouple, the delegating seal source couple goes
-        in db.pdes indexed by delegating event pre,dig
+        in db.udes indexed by delegating event pre,dig
 
         Delegating event may have been superceded but delegated event validator
         does not know it yet because db.aes keeps original delegating event
@@ -3026,8 +3026,9 @@ class Kever:
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
-            couple = seqner.qb64b + saider.qb64b
-            self.db.putPde(dgkey, couple)  # idempotent
+            #couple = seqner.qb64b + saider.qb64b
+            #self.db.putUde(dgkey, couple)  # idempotent
+            self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
 
         res = self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
@@ -3132,8 +3133,9 @@ class Kever:
         """
         local = True if local else False  # ignored since not escrowing serder here
         dgkey = dgKey(serder.preb, serder.saidb)
-        couple = seqner.qb64b + saider.qb64b
-        self.db.putPde(dgkey, couple)  # idempotent
+        #couple = seqner.qb64b + saider.qb64b
+        #self.db.putUde(dgkey, couple)  # idempotent
+        self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
         logger.debug("Kever state: Escrowed source couple for partially signed "
                     "or delegated event = %s\n", serder.ked)
 
@@ -3163,8 +3165,9 @@ class Kever:
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if seqner and saider:
-            couple = seqner.qb64b + saider.qb64b
-            self.db.putPde(dgkey, couple)
+            #couple = seqner.qb64b + saider.qb64b
+            #self.db.putUde(dgkey, couple)
+            self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
 
         self.db.putEvt(dgkey, serder.raw)
         # update event source
@@ -4851,8 +4854,9 @@ class Kevery:
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
-            couple = seqner.qb64b + saider.qb64b
-            self.db.putPde(dgkey, couple)  # idempotent
+            #couple = seqner.qb64b + saider.qb64b
+            #self.db.putUde(dgkey, couple)  # idempotent
+            self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
         self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed misfit event=\n%s",
@@ -4891,8 +4895,9 @@ class Kevery:
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
-            couple = seqner.qb64b + saider.qb64b
-            self.db.putPde(dgkey, couple)  # idempotent
+            #couple = seqner.qb64b + saider.qb64b
+            #self.db.putUde(dgkey, couple)  # idempotent
+            self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
         self.db.addOoe(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed out of order event=\n%s",
@@ -5405,9 +5410,11 @@ class Kevery:
 
                     # seal source (delegator issuer if any)
                     delseqner = delsaider = None
-                    couple = self.db.getPde(dgkey)
-                    if couple is not None:
-                        delseqner, delsaider = deSourceCouple(couple)
+                    if (couple := self.db.udes.get(keys=dgkey)):
+                        delseqner, delsaider = couple
+                    #couple = self.db.getUde(dgkey)
+                    #if couple is not None:
+                        #delseqner, delsaider = deSourceCouple(couple)
                     elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                         if eserder.pre in self.kevers:
                             delpre = self.kevers[eserder.pre].delpre
@@ -5418,8 +5425,10 @@ class Kevery:
                         if srdr is not None:
                             delseqner = coring.Seqner(sn=srdr.sn)
                             delsaider = coring.Saider(qb64=srdr.said)
-                            couple = delseqner.qb64b + delsaider.qb64b
-                            self.db.putPde(dgkey, couple)
+                            #couple = delseqner.qb64b + delsaider.qb64b
+                            #self.db.putUde(dgkey, couple)
+                             # idempotent
+                            self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
@@ -5450,7 +5459,8 @@ class Kevery:
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than waiting on sigs or seal so remove from escrow
                     self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                    self.db.delPde(dgkey)  # remove escrow if any
+                    #self.db.delUde(dgkey)  # remove escrow if any
+                    self.db.udes.rem(keys=dgkey)  # remove escrow if any
 
                     if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                         self.cues.push(dict(kin="psUnescrow", serder=eserder))
@@ -5465,7 +5475,8 @@ class Kevery:
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
                     self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                    self.db.delPde(dgkey)  # remove escrow if any
+                    #self.db.delUde(dgkey)  # remove escrow if any
+                    self.db.udes.rem(keys=dgkey)  # remove escrow if any
 
                     if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                         self.cues.push(dict(kin="psUnescrow", serder=eserder))
@@ -5590,9 +5601,11 @@ class Kevery:
 
                     # seal source (delegator issuer if any)
                     delseqner = delsaider = None
-                    couple = self.db.getPde(dgKey(pre, bytes(edig)))
-                    if couple is not None:
-                        delseqner, delsaider = deSourceCouple(couple)
+                    if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
+                        delseqner, delsaider = couple
+                    #couple = self.db.getUde(dgKey(pre, bytes(edig)))
+                    #if couple is not None:
+                        #delseqner, delsaider = deSourceCouple(couple)
                     elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                         if eserder.pre in self.kevers:
                             delpre = self.kevers[eserder.pre].delpre
@@ -5603,8 +5616,10 @@ class Kevery:
                         if srdr is not None:
                             delseqner = coring.Seqner(sn=srdr.sn)
                             delsaider = coring.Saider(qb64=srdr.said)
-                            couple = delseqner.qb64b + delsaider.qb64b
-                            self.db.putPde(dgkey, couple)
+                            #couple = delseqner.qb64b + delsaider.qb64b
+                            #self.db.putUde(dgkey, couple)
+                            # idempotent
+                            self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
                                       delseqner=delseqner, delsaider=delsaider, local=esr.local)
@@ -5634,7 +5649,8 @@ class Kevery:
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than waiting on sigs or seal so remove from escrow
                     self.db.delPwe(snKey(pre, sn), edig)  # removes one escrow at key val
-                    self.db.delPde(dgkey)  # remove escrow if any
+                    #self.db.delUde(dgkey)  # remove escrow if any
+                    self.db.udes.rem(keys=dgkey)  # remove escrow if any
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed: %s", ex.args[0])
                     else:
@@ -5645,7 +5661,8 @@ class Kevery:
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
                     self.db.delPwe(snKey(pre, sn), edig)  # removes one escrow at key val
-                    self.db.delPde(dgkey)  # remove escrow if any
+                    #self.db.delUde(dgkey)  # remove escrow if any
+                    self.db.udes.rem(keys=dgkey)  # remove escrow if any
                     logger.info("Kevery unescrow succeeded in valid event: "
                                 "event=%s", eserder.said)
                     logger.debug(f"event=\n{eserder.pretty()}\n")

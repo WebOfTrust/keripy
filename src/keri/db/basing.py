@@ -760,7 +760,15 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .pses is named sub DB of partially signed escrowed event tables
+        .pses is named sub DB of partially signed event escrows
+            that map sequence numbers to serialized event digests.
+            snKey
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifier prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+
+        .pwes is named sub DB of partially witnessed event escrowes
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
@@ -777,12 +785,15 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
 
-        .pwes is named sub DB of partially witnessed escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+        .udes is named sub DB of unverified delegation seal source couple escrows
+            that map (pre, digest) of delegated event to delegating seal source
+            couple (sn, dig) that provides source delegator event seal.
+            Each couple is concatenation of fully qualified items, snu+dig
+            of delegating source event in which seal of delegated event appears.
+            dgKey
+            Values are couples used to lookup source event in .kels sub DB
+            DB is keyed by identifier prefix plus digest of key event
+            Only one value per DB key is allowed
 
         .uwes is named sub DB of unverified event indexed escrowed couples from
             witness signers. Witnesses are from witness list of latest establishment
@@ -997,7 +1008,10 @@ class Baser(dbing.LMDBer):
         self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
-        self.pdes = self.env.open_db(key=b'pdes.')
+        #self.pdes = self.env.open_db(key=b'pdes.')
+        #self.udes = self.env.open_db(key=b'udes.')
+        self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
+                                        klas=(coring.Seqner, coring.Saider))
         self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
         self.uwes = self.env.open_db(key=b'uwes.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
@@ -2705,40 +2719,40 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.pses, key, val)
 
-    def putPde(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event source couple to key (snu+dig)
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Returns False if key already exists
-        """
-        return self.putVal(self.pdes, key, val)
+    #def putUde(self, key, val):
+        #"""
+        #Use dgKey()
+        #Write serialized event source couple to key (snu+dig)
+        #Does not overwrite existing val if any
+        #Returns True If val successfully written Else False
+        #Returns False if key already exists
+        #"""
+        #return self.putVal(self.udes, key, val)
 
-    def setPde(self, key, val):
-        """
-        Use dgKey()
-        Write serialized seal source couple to key (snu+dig)
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.pdes, key, val)
+    #def setUde(self, key, val):
+        #"""
+        #Use dgKey()
+        #Write serialized seal source couple to key (snu+dig)
+        #Overwrites existing val if any
+        #Returns True If val successfully written Else False
+        #"""
+        #return self.setVal(self.udes, key, val)
 
-    def getPde(self, key):
-        """
-        Use dgKey()
-        Return seal source couple at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.pdes, key)
+    #def getUde(self, key):
+        #"""
+        #Use dgKey()
+        #Return seal source couple at key
+        #Returns None if no entry at key
+        #"""
+        #return self.getVal(self.udes, key)
 
-    def delPde(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.pdes, key)
+    #def delUde(self, key):
+        #"""
+        #Use dgKey()
+        #Deletes value at key.
+        #Returns True If key exists in database Else False
+        #"""
+        #return self.delVal(self.udes, key)
 
     def putPwes(self, key, vals):
         """

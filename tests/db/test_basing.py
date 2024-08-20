@@ -1009,28 +1009,56 @@ def test_baser():
         assert items == []  # empty
         assert not items
 
-        # Test .pdes partial delegated escrow seal source couples
+        # Test .udes partial delegated escrow seal source couples
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        # test .pdes sub db methods
+        # test .udes sub db methods
+        #ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
+        #sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        #ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
+        #sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
+        #val1 = ssnu1 + sdig1
+        #val2 = ssnu2 + sdig2
+
+        #assert db.getUde(key) == None
+        #assert db.delUde(key) == False
+        #assert db.putUde(key, val1) == True
+        #assert db.getUde(key) == val1
+        #assert db.putUde(key, val2) == False
+        #assert db.getUde(key) == val1
+        #assert db.setUde(key, val2) == True
+        #assert db.getUde(key) == val2
+        #assert db.delUde(key) == True
+        #assert db.getUde(key) == None
+
+        # test .udes catcesrsuber sub db methods
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         val1 = ssnu1 + sdig1
+        tuple1 = (coring.Seqner(qb64b=ssnu1), coring.Saider(qb64b=sdig1))
         val2 = ssnu2 + sdig2
+        tuple2 = (coring.Seqner(qb64b=ssnu2), coring.Saider(qb64b=sdig2))
 
-        assert db.getPde(key) == None
-        assert db.delPde(key) == False
-        assert db.putPde(key, val1) == True
-        assert db.getPde(key) == val1
-        assert db.putPde(key, val2) == False
-        assert db.getPde(key) == val1
-        assert db.setPde(key, val2) == True
-        assert db.getPde(key) == val2
-        assert db.delPde(key) == True
-        assert db.getPde(key) == None
+
+        assert db.udes.get(keys=key) == None
+        assert db.udes.rem(keys=key) == False
+        assert db.udes.put(keys=key, val=tuple1) == True
+        seqner, saider = db.udes.get(keys=key)
+        assert seqner.qb64b + saider.qb64b == val1
+        assert db.udes.put(keys=key, val=tuple2) == False
+        seqner, saider = db.udes.get(keys=key)
+        assert seqner.qb64b + saider.qb64b == val1
+        assert db.udes.pin(keys=key, val=tuple2) == True
+        seqner, saider = db.udes.get(keys=key)
+        assert seqner.qb64b + saider.qb64b == val2
+        assert db.udes.rem(keys=key) == True
+        assert db.udes.get(keys=key) == None
+
+
+
 
         # Partially Witnessed Escrow Events
         # test .pwes insertion order dup methods.  dup vals are insertion order

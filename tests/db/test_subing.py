@@ -61,6 +61,35 @@ def test_suber():
         actual = sdb.get(keys=keys)
         assert actual == kip
 
+        sdb.rem(keys)
+        actual = sdb.get(keys=keys)
+        assert actual is None
+
+        sdb.put(keys=keys, val=sue)
+        actual = sdb.get(keys=keys)
+        assert actual == sue
+
+        # test with keys as tuple of bytes
+        keys = (b"test_key", b"0001")
+        sdb.rem(keys)
+        actual = sdb.get(keys=keys)
+        assert actual is None
+
+        sdb.put(keys=keys, val=sue)
+        actual = sdb.get(keys=keys)
+        assert actual == sue
+
+        # test with keys as mixed tuple of bytes
+        keys = (b"test_key", "0001")
+        sdb.rem(keys)
+        actual = sdb.get(keys=keys)
+        assert actual is None
+
+        sdb.put(keys=keys, val=sue)
+        actual = sdb.get(keys=keys)
+        assert actual == sue
+
+
         # test with keys as string not tuple
         keys = "keystr"
 
@@ -1637,6 +1666,7 @@ def test_crypt_signer_suber():
 
 
 if __name__ == "__main__":
+    test_suber()
     test_cesr_ioset_suber()
     test_serder_suber()
     test_cesr_suber()

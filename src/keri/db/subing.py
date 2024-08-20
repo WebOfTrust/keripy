@@ -115,6 +115,7 @@ class SuberBase():
             return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
             return keys
+        keys = (key.decode() if hasattr(key, "decode") else key for key in keys)
         return (self.sep.join(keys).encode("utf-8"))
 
 

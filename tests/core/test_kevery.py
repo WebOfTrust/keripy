@@ -435,3 +435,4 @@ def test_stale_event_receipts():
 
 if __name__ == "__main__":
     test_kevery()
+    test_stale_event_receipts()

@@ -474,8 +474,12 @@ def test_missing_delegator_escrow():
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.saidb  #  escrow entry for event
-        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.said))
-        assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        #assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        #escrow entry for event
+        escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
+        assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
+
 
         # verify Kevery process partials escrow is idempotent to previously escrowed events
         # assuming not stale but nothing else has changed
@@ -484,8 +488,11 @@ def test_missing_delegator_escrow():
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.saidb  #  escrow entry for event
-        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.said))
-        assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        #assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        #escrow entry for event
+        escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
+        assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
 
         # apply Bob's inception to Dels' Kvy
         psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
@@ -496,8 +503,11 @@ def test_missing_delegator_escrow():
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.saidb  #  escrow entry for event
-        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.said))
-        assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        #assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        #escrow entry for event
+        escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
+        assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
 
         # apply Bob's delegating interaction to Dels' Kvy
         psr.parse(ims=bytearray(bobIxnMsg), kvy=delKvy, local=True)
@@ -512,8 +522,11 @@ def test_missing_delegator_escrow():
 
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 0
-        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.said))
-        assert escrow is None  # delegated inception delegation couple
+        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        #assert escrow is None  # delegated inception delegation couple
+        #escrow entry for event delegated inception delegation couple
+        escrow = self.db.udes.get(keys=(delPre, delSrdr.said))
+        assert escrow is None
 
         # Setup Del rotation event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)
