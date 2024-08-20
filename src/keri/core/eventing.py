@@ -4595,6 +4595,7 @@ class Kevery:
             src = qry["src"]
             anchor = qry["a"] if "a" in qry else None
             sn = int(qry["s"], 16) if "s" in qry else None
+            fn = int(qry["fn"], 16) if "fn" in qry else 0
 
             if pre not in self.kevers:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
@@ -4612,7 +4613,7 @@ class Kevery:
                     raise QueryNotFoundError("Query not found error={}.".format(ked))
 
             msgs = list()  # outgoing messages
-            for msg in self.db.clonePreIter(pre=pre, fn=0):
+            for msg in self.db.clonePreIter(pre=pre, fn=fn):
                 msgs.append(msg)
 
             if kever.delpre:

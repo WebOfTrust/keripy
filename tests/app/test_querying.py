@@ -37,7 +37,7 @@ def test_querying():
         assert msg["src"] == inqHab.pre
         assert msg["pre"] == subHab.pre
         assert msg["r"] == "ksn"
-        assert msg["q"] == {'s': '0'}
+        assert msg["q"] == {'fn': '0', 's': '0'}
         assert msg["wits"] is None
 
         doist.recur(deeds=deeds)
@@ -108,6 +108,12 @@ def test_querying():
         doist.recur(deeds=deeds)
         assert len(sdoer.witq.msgs) == 1
 
+        sdoer = SeqNoQuerier(hby=hby, hab=inqHab, pre=subHab.pre, fn=2, sn=4)
+        assert len(sdoer.witq.msgs) == 1
+        msg = sdoer.witq.msgs.pull()
+        query = msg['q']
+        assert query == {'fn': '2', 's': '4'}
+
         # Test with originally unknown AID
         sdoer = SeqNoQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", sn=1)
         assert len(sdoer.witq.msgs) == 1
@@ -131,7 +137,8 @@ def test_querying():
         assert len(sdoer.witq.msgs) == 1
 
         # Test with originally unknown AID
-        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", anchor={'s': '5'})
+        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA",
+                              anchor={'s': '5'})
         assert len(adoer.witq.msgs) == 1
 
         tock = 0.03125
