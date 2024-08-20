@@ -7,7 +7,8 @@ from hio.base import doing
 
 from keri.app import habbing
 from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
-from keri.core import parsing, eventing
+from keri.core import parsing, eventing, serdering
+from keri.db.dbing import dgKey
 
 
 def test_querying():
@@ -141,3 +142,22 @@ def test_querying():
         doist.recur(deeds=deeds)
         assert len(adoer.witq.msgs) == 1
 
+def test_query_not_found_escrow():
+    with habbing.openHby() as hby, \
+            habbing.openHby() as hby1:
+        inqHab = hby.makeHab(name="inquisitor")
+        subHab = hby1.makeHab(name="subject")
+
+        icp = inqHab.makeOwnInception()
+        subHab.psr.parseOne(ims=icp)
+        assert inqHab.pre in subHab.kevers
+
+        qry = inqHab.query(subHab.pre, route="/foo", src=inqHab.pre)
+        serder = serdering.SerderKERI(raw=qry)
+        dgkey = dgKey(inqHab.pre, serder.saidb)
+
+        subHab.db.putEvt(dgkey, serder.raw)
+        subHab.db.qnfs.add(keys=(inqHab.pre, serder.said), val=serder.saidb)
+
+        subHab.kvy.processQueryNotFound()
+        assert subHab.db.qnfs.get(dgkey) == []

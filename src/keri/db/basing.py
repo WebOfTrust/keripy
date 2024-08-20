@@ -994,7 +994,7 @@ class Baser(dbing.LMDBer):
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
-        self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
+        self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
 
         self.migs = subing.CesrSuber(db=self, subkey="migs.", klas=coring.Dater)
         self.vers = subing.Suber(db=self, subkey="vers.")
@@ -3027,97 +3027,6 @@ class Baser(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoVal(self.ooes, key, val)
-
-    def putQnfs(self, key, vals):
-        """
-        Use snKey()
-        Write each out of order escrow event dig entry from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoVals(self.qnfs, key, vals)
-
-    def addQnf(self, key, val):
-        """
-        Use snKey()
-        Add out of order escrow val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoVal(self.qnfs, key, val)
-
-    def getQnfs(self, key):
-        """
-        Use snKey()
-        Return list of out of order escrow event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoVals(self.qnfs, key)
-
-    def getQnfLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup val of out of order escrow event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoValLast(self.qnfs, key)
-
-    def getQnfItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of out of order escrowed event dig items at next key after key.
-        Item is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoItemsNext(self.qnfs, key, skip)
-
-    def getQnfItemsNextIter(self, key=b'', skip=True):
-        """
-        Use sgKey()
-        Return iterator of out of order escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoItemsNextIter(self.qnfs, key, skip)
-
-    def cntQnfs(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoVals(self.qnfs, key)
-
-    def delQnfs(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoVals(self.qnfs, key)
-
-    def delQnf(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoVal(self.qnfs, key, val)
 
     def putDes(self, key, vals):
         """
