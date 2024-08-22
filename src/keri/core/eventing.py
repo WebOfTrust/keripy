@@ -41,7 +41,7 @@ from .indexing import Siger
 
 from . import serdering
 
-from ..db import basing, dbing
+from ..db import basing, dbing, subing
 from ..db.basing import KeyStateRecord, StateEERecord, OobiRecord
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
 
@@ -3324,6 +3324,7 @@ class Kevery:
         self.direct = True if direct else False  # process as direct mode
         self.check = True if check else False  # process as check mode
 
+
     @property
     def kevers(self):
         """
@@ -4790,7 +4791,7 @@ class Kevery:
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
-        self.db.addQnf(dgkey, serder.saidb)
+        self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
 
         for cigar in cigars:
             self.db.addRct(key=dgkey, val=cigar.verfer.qb64b + cigar.qb64b)
@@ -5935,7 +5936,7 @@ class Kevery:
         This allows FIFO processing of events with same prefix and sn but different
         digest.
 
-        Uses  .db.addQnf(self, key, val) which is IOVal with dups.
+        Uses .db.qnfs.add(key=(pre, said), val) which is IOVal with dups
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
@@ -5953,11 +5954,11 @@ class Kevery:
         pre = b''
         sn = 0
         while True:  # break when done
-            for ekey, edig in self.db.getQnfItemsNextIter(key=key):
+            for (pre, said), edig in self.db.qnfs.getItemIter(keys=key):
                 try:
-                    pre, _ = splitKey(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgKey(pre, bytes(edig)))
+                    dgkey = dgKey(pre.encode("utf-8"), edig.encode("utf-8"))
+                    dtb = self.db.getDts(dgkey)
                     if dtb is None:  # othewise is a datetime as bytes
                         # no date time so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Missing event datetime"
@@ -5978,7 +5979,7 @@ class Kevery:
                                               "at dig = {}.".format(bytes(edig)))
 
                     # get the escrowed event using edig
-                    eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
+                    eraw = self.db.getEvt(dgkey)
                     if eraw is None:
                         # no event so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Missing event at."
@@ -5990,7 +5991,7 @@ class Kevery:
                     eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                     #  get sigs and attach
-                    sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
+                    sigs = self.db.getSigs(dgkey)
                     if not sigs:  # otherwise its a list of sigs
                         # no sigs so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Missing event sigs at."
@@ -6010,7 +6011,7 @@ class Kevery:
 
                     #  get nontrans endorsements
                     cigars = []
-                    cigs = self.db.getRcts(dgKey(pre, bytes(edig)))  # list of wigs
+                    cigs = self.db.getRcts(dgkey)  # list of wigs
                     for cig in cigs:
                         (_, cigar) = deReceiptCouple(cig)
                         cigars.append(cigar)
@@ -6025,7 +6026,7 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
-                    self.db.delQnf(dgKey(pre, edig), edig)  # removes one escrow at key val
+                    self.db.qnfs.rem(keys=(pre, said), val=edig)  # removes one escrow at key val
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed: %s", ex.args[0])
                     else:
@@ -6034,7 +6035,7 @@ class Kevery:
                     # We don't remove all escrows at pre,sn because some might be
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
-                    self.db.delQnf(dgKey(pre, edig), edig)  # removes one escrow at key val
+                    self.db.qnfs.rem(keys=(pre, said), val=edig)   # removes one escrow at key val
                     logger.info("Kevery unescrow succeeded in valid event: "
                                 "event=%s", eserder.said)
                     logger.debug(f"event=\n{eserder.pretty()}\n")

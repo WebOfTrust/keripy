@@ -41,7 +41,6 @@ class SignatureValidationComponent(object):
             req: Http request object
             resp: Http response object
 
-
         """
         sig = req.headers.get("SIGNATURE")
         ked = req.media
