@@ -24,6 +24,7 @@ from keri.app import habbing
 
 from keri.db import basing
 from keri.db import dbing
+from keri.db import subing
 from keri.db.basing import openDB, Baser, KeyStateRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
@@ -1013,26 +1014,13 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        # test .udes sub db methods
-        #ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
-        #sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-        #ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
-        #sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
-        #val1 = ssnu1 + sdig1
-        #val2 = ssnu2 + sdig2
+        # test .pdes SerderIoSetSuber methods
+        assert isinstance(db.pdes, subing.IoSetSuber)
 
-        #assert db.getUde(key) == None
-        #assert db.delUde(key) == False
-        #assert db.putUde(key, val1) == True
-        #assert db.getUde(key) == val1
-        #assert db.putUde(key, val2) == False
-        #assert db.getUde(key) == val1
-        #assert db.setUde(key, val2) == True
-        #assert db.getUde(key) == val2
-        #assert db.delUde(key) == True
-        #assert db.getUde(key) == None
+        # test .udes CatCesrSuber sub db methods
+        assert isinstance(db.udes, subing.CatCesrSuber)
+        assert db.udes.klas == (coring.Seqner, coring.Saider)
 
-        # test .udes catcesrsuber sub db methods
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'

@@ -606,21 +606,24 @@ class Baser(dbing.LMDBer):
         kevers (dict): Kever instances indexed by identifier prefix qb64
         prefixes (OrderedSet): local prefixes corresponding to habitats for this db
 
-        .evts is named sub DB whose values are serialized events
+        .evts is named sub DB whose values are serialized key events
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .kels is named sub DB of key event log tables that map sequence numbers
-            to serialized event digests.
+        .kels is named sub DB of key event logs as indices that map sequence numbers
+            to serialized key event digests.
+            Actual serialized key events are stored in .evts by SAID digest
             Uses sequence number or sn.
             snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .fels is named sub DB of first seen event log table (FEL) of digests
-            that indexes events in first 'seen' accepted order for replay and
+        .fels is named sub DB of first seen event logs (FEL) as indices that map
+            first seen ordinal number to digests.
+            Actual serialized key events are stored in .evts by SAID digest
+            This indexes events in first 'seen' accepted order for replay and
             cloning of event log.
             Uses first seen order number or fn.
             fnKey
@@ -760,7 +763,7 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .pses is named sub DB of partially signed event escrows
+        .pses is named sub DB of partially signed key event escrows
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
@@ -768,22 +771,21 @@ class Baser(dbing.LMDBer):
             More than one value per DB key is allowed
 
 
-        .pwes is named sub DB of partially witnessed event escrowes
+        .pwes is named sub DB of partially witnessed key event escrowes
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .pdes is named sub DB of partially delegated escrowed couples
-            that map digest to seal source couple that provides source
-            (delegator or issuer) event seal. Each couples is concatenations
-            of full qualified items, snu+dig of authorizing (delegating or
-            issuing) source event.
-            dgKey
-            Values are couples used to lookup source event in .kels sub DB
-            DB is keyed by identifier prefix plus digest of key event
-            Only one value per DB key is allowed
+        .pdes is named sub DB of partially delegated key event escrows
+            that map sequence numbers to serialized event digests. This is
+            used in conjunction with .udes which escrows the associated seal
+            source couple.
+            snKey
+            Values are digests used to lookup delegated event in .evts sub DB
+            DB is keyed by identifier prefix plus sequence number of key event
+            More than one value per DB key is allowed
 
         .udes is named sub DB of unverified delegation seal source couple escrows
             that map (pre, digest) of delegated event to delegating seal source
@@ -791,7 +793,9 @@ class Baser(dbing.LMDBer):
             Each couple is concatenation of fully qualified items, snu+dig
             of delegating source event in which seal of delegated event appears.
             dgKey
-            Values are couples used to lookup source event in .kels sub DB
+            Values are serialized instances of CatCesrSuber as couples
+            (Seqner.qb64b, Saider.qb64b) used to lookup source event in delegator's
+            KEL.
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
 
@@ -1009,7 +1013,7 @@ class Baser(dbing.LMDBer):
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         #self.pdes = self.env.open_db(key=b'pdes.')
-        #self.udes = self.env.open_db(key=b'udes.')
+        self.pdes = subing.IoSetSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
         self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
