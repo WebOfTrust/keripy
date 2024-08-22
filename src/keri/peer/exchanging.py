@@ -77,7 +77,7 @@ class Exchanger:
         essrs = kwargs["essrs"] if "essrs" in kwargs else []
 
         behavior = self.routes[route] if route in self.routes else None
-        if tsgs is not None:
+        if tsgs:
             for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
                 if sender != prefixer.qb64:  # sig not by aid
                     raise MissingSignatureError(f"Exchange process: skipped signature not from aid="
@@ -99,7 +99,7 @@ class Exchanger:
                     raise MissingSignatureError(f"Not enough signatures in  {indices}"
                                                 f" for evt = {serder.ked}.")
 
-        elif cigars is not None:
+        elif cigars:
             for cigar in cigars:
                 if sender != cigar.verfer.qb64:  # cig not by aid
                     raise MissingSignatureError(" process: skipped cig not from aid="
@@ -110,6 +110,7 @@ class Exchanger:
                                                 " for evt = {}.".format(cigar,
                                                                         serder.ked))
         else:
+            self.escrowPSEvent(serder=serder, tsgs=[], pathed=pathed)
             raise MissingSignatureError("Failure satisfying exn, no cigs or sigs"
                                         " for evt = {}.".format(serder.ked))
 
