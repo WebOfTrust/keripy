@@ -4,8 +4,7 @@ tests.peer.test_exchanging module
 
 """
 import pysodium
-from base64 import urlsafe_b64encode as encodeB64
-from base64 import urlsafe_b64decode as decodeB64
+import pytest
 
 from keri import kering
 from keri import core
@@ -100,8 +99,40 @@ def test_essrs():
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 
-
 def test_exchanger():
+    with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
+            habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
+        exc = exchanging.Exchanger(hby=recHby, handlers=[])
+
+        msg = hab.makeOwnInception()
+        recHab.psr.parseOne(ims=msg)
+
+        ser, sigs, _ = hab.getOwnEvent(sn=0)
+
+        sadsig = signing.SadPathSigGroup(pather=coring.Pather(path=[]), sigers=sigs)
+        act = bytearray()
+        pather = coring.Pather(path=["e"])
+        sadsig.transpose(pather)
+        act.extend(sadsig.proof)
+
+        # create the forward message with payload embedded at `a` field
+        fwd, _ = exchanging.exchange(route='/fwd', sender=hab.pre,
+                                     modifiers=dict(pre="EBCAFG", topic="/delegation"),
+                                     payload={}, embeds=dict(evt=ser.raw))
+        with pytest.raises(kering.MissingSignatureError):
+            exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=None)
+
+        assert recHby.db.epse.get(keys=(fwd.said,)) is not None
+        exc.processEscrowPartialSigned()
+        assert recHby.db.epse.get(keys=(fwd.said,)) is not None
+
+        # Set the PSE timeout artifically low to trigger removal
+        exc.TimeoutPSE = 0.00001
+        exc.processEscrowPartialSigned()
+        assert recHby.db.epse.get(keys=(fwd.said,)) is None
+
+
+def test_exchange_ps_escrow_timeout():
     with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
             habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
         mbx = storing.Mailboxer(hby=hby)

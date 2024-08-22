@@ -1106,6 +1106,10 @@ class Baser(dbing.LMDBer):
         # exchange message partial signature escrow
         self.epse = subing.SerderSuber(db=self, subkey="epse.")
 
+        # exchange message PS escrow date time of message
+        self.epsd = subing.CesrSuber(db=self, subkey="epsd.",
+                                     klas=coring.Dater)
+
         # exchange messages
         # TODO: clean
         self.exns = subing.SerderSuber(db=self, subkey="exns.")

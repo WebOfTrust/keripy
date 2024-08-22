@@ -135,15 +135,14 @@ class Poster(doing.DoDoer):
 
         return False
 
-    def sendEvent(self, hab, fn=0):
+    def sendEventToDelegator(self, sender, hab, fn=0):
         """ Returns generator for sending event and waiting until send is complete """
         # Send KEL event for processing
         icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
         ser = serdering.SerderKERI(raw=icp)
         del icp[:ser.size]
 
-        sender = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre
-        self.send(src=sender, dest=hab.kever.delpre, topic="delegate", serder=ser, attachment=icp)
+        self.send(src=sender.pre, dest=hab.kever.delpre, topic="delegate", serder=ser, attachment=icp)
         while True:
             if self.cues:
                 cue = self.cues.popleft()

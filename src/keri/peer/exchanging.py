@@ -3,6 +3,7 @@
 keri.peer.exchanging module
 
 """
+import datetime
 import logging
 from datetime import timedelta
 
@@ -23,6 +24,8 @@ class Exchanger:
     """
      Peer to Peer KERI message Exchanger.
     """
+
+    TimeoutPSE = 10  # seconds to timeout partially signed or delegated escrows
 
     def __init__(self, hby, handlers, cues=None, delta=ExchangeMessageTimeWindow):
         """ Initialize instance
@@ -74,7 +77,7 @@ class Exchanger:
         essrs = kwargs["essrs"] if "essrs" in kwargs else []
 
         behavior = self.routes[route] if route in self.routes else None
-        if tsgs is not None:
+        if tsgs:
             for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
                 if sender != prefixer.qb64:  # sig not by aid
                     raise MissingSignatureError(f"Exchange process: skipped signature not from aid="
@@ -96,7 +99,7 @@ class Exchanger:
                     raise MissingSignatureError(f"Not enough signatures in  {indices}"
                                                 f" for evt = {serder.ked}.")
 
-        elif cigars is not None:
+        elif cigars:
             for cigar in cigars:
                 if sender != cigar.verfer.qb64:  # cig not by aid
                     raise MissingSignatureError(" process: skipped cig not from aid="
@@ -107,6 +110,7 @@ class Exchanger:
                                                 " for evt = {}.".format(cigar,
                                                                         serder.ked))
         else:
+            self.escrowPSEvent(serder=serder, tsgs=[], pathed=pathed)
             raise MissingSignatureError("Failure satisfying exn, no cigs or sigs"
                                         " for evt = {}.".format(serder.ked))
 
@@ -178,35 +182,49 @@ class Exchanger:
             for siger in sigers:
                 self.hby.db.esigs.add(keys=quadkeys, val=siger)
 
+        self.hby.db.epsd.put(keys=(dig,), val=coring.Dater())
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         return self.hby.db.epse.put(keys=(dig,), val=serder)
 
     def processEscrowPartialSigned(self):
         """ Process escrow of partially signed messages """
         for (dig,), serder in self.hby.db.epse.getItemIter():
-            tsgs = []
-            klases = (coring.Prefixer, coring.Seqner, coring.Saider)
-            args = ("qb64", "snh", "qb64")
-            sigers = []
-            old = None  # empty keys
-            for keys, siger in self.hby.db.esigs.getItemIter(keys=(dig, "")):
-                quad = keys[1:]
-                if quad != old:  # new tsg
-                    if sigers:  # append tsg made for old and sigers
-                        prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
-
-                        tsgs.append((prefixer, seqner, saider, sigers))
-                        sigers = []
-                    old = quad
-                sigers.append(siger)
-            if sigers and old:
-                prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
-                tsgs.append((prefixer, seqner, saider, sigers))
-
-            pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
-            essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
-
             try:
+                tsgs = []
+                klases = (coring.Prefixer, coring.Seqner, coring.Saider)
+                args = ("qb64", "snh", "qb64")
+                sigers = []
+
+                dtnow = helping.nowUTC()
+                dater = self.hby.db.epsd.get(keys=(dig,))
+                if dater is None:
+                    raise ValidationError("Missing exn escrowed event datetime "
+                                          f"at dig = {dig}.")
+
+                dte = dater.datetime
+                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    raise ValidationError("Stale exn event escrow "
+                                          f"at dig = {dig}.")
+
+                old = None  # empty keys
+                for keys, siger in self.hby.db.esigs.getItemIter(keys=(dig, "")):
+                    quad = keys[1:]
+                    if quad != old:  # new tsg
+                        if sigers:  # append tsg made for old and sigers
+                            prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
+
+                            tsgs.append((prefixer, seqner, saider, sigers))
+                            sigers = []
+                        old = quad
+                    sigers.append(siger)
+                if sigers and old:
+                    prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
+                    tsgs.append((prefixer, seqner, saider, sigers))
+
+                pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
+                essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
+
                 kwargs = dict()
                 if essrs:
                     kwargs["essrs"] = essrs
@@ -219,11 +237,12 @@ class Exchanger:
                     logger.info("Exchange partially signed failed: %s", ex.args[0])
             except Exception as ex:
                 self.hby.db.epse.rem(dig)
+                self.hby.db.epsd.rem(dig)
                 self.hby.db.esigs.rem(dig)
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.info("Exchange partially signed unescrowed: %s", ex.args[0])
+                    logger.exception("Exchange partially signed unescrowed: %s", ex.args[0])
                 else:
-                    logger.info("Exchange partially signed unescrowed: %s", ex.args[0])
+                    logger.error("Exchange partially signed unescrowed: %s", ex.args[0])
             else:
                 self.hby.db.epse.rem(dig)
                 self.hby.db.esigs.rem(dig)
