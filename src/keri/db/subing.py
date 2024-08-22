@@ -60,8 +60,8 @@ class SuberBase():
         db (dbing.LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
-        verify (bool): some subclasses want to re-verify when deser from db
-                       default false
+        verify (bool): True means reverify when ._des from db when applicable
+                       False means do not reverify. Default False
     """
     Sep = '.'  # separator for combining key iterables
 
@@ -80,6 +80,8 @@ class SuberBase():
                                each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
         """
         super(SuberBase, self).__init__()  # for multi inheritance
         self.db = db
@@ -115,8 +117,9 @@ class SuberBase():
             return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
             return keys
-        keys = (key.decode() if hasattr(key, "decode") else key for key in keys)
-        return (self.sep.join(keys).encode("utf-8"))
+        #keys = (key.decode() if hasattr(key, "decode") else key for key in keys)
+        return (self.sep.join(key.decode() if hasattr(key, "decode") else key
+                              for key in keys).encode("utf-8"))
 
 
     def _tokeys(self, key: Union[str, bytes, memoryview]):
@@ -204,6 +207,17 @@ class Suber(SuberBase):
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
         """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
@@ -282,7 +296,7 @@ class Suber(SuberBase):
 
 class CesrSuberBase(SuberBase):
     """
-    Sub class of Suber where data is CESR encode/decode ducktyped subclass
+    Sub class of SuberBase where data is CESR encode/decode ducktyped subclass
     instance such as Matter, Indexer, Counter with .qb64b property when provided
     as fully qualified serialization
     Automatically serializes and deserializes from qb64b to/from CESR instance
@@ -291,11 +305,20 @@ class CesrSuberBase(SuberBase):
 
     def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        Parameters:
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
                 Indexer or Counter or any ducktyped class of Matter
+
         """
         super(CesrSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
@@ -318,7 +341,7 @@ class CesrSuberBase(SuberBase):
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
-        return self.klas(qb64b=val)
+        return self.klas(qb64b=val)  # qb64b parameter accepts str
 
 
 class CesrSuber(CesrSuberBase, Suber):
@@ -334,9 +357,16 @@ class CesrSuber(CesrSuberBase, Suber):
 
     def __init__(self, *pa, **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
                 Indexer or Counter or any ducktyped class of Matter
         """
@@ -361,7 +391,7 @@ class CatCesrSuberBase(CesrSuberBase):
 
     def __init__(self, *pa, klas: Iterable = None, **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
@@ -369,8 +399,10 @@ class CatCesrSuberBase(CesrSuberBase):
                                each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
-            klas (Iterable): of Class references to subclasses of Matter, each
-                of to Type[coring.Matter]
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
 
         """
         if klas is None:
@@ -378,7 +410,6 @@ class CatCesrSuberBase(CesrSuberBase):
         if not nonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
         super(CatCesrSuberBase, self).__init__(*pa, klas=klas, **kwa)
-        # self.klas = klas
 
 
     def _ser(self, val: Union[Iterable, coring.Matter]):
@@ -423,7 +454,7 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
     such as Matter, Indexer, Counter
     Automatically serializes and deserializes from qb64b to/from CESR instances
 
-     Attributes:
+    Attributes:
         db (dbing.LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
@@ -433,7 +464,7 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
 
     def __init__(self, *pa, **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
@@ -441,8 +472,10 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
                                each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
-            klas (Iterable): of Class references to subclasses of Matter, each
-                of to Type[coring.Matter]
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
 
         """
         super(CatCesrSuber, self).__init__(*pa, **kwa)
@@ -475,7 +508,7 @@ class IoSetSuber(SuberBase):
                        subkey: str='docs.',
                        dupsort: bool=False, **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
@@ -483,6 +516,10 @@ class IoSetSuber(SuberBase):
                                each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
         """
         super(IoSetSuber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
@@ -500,6 +537,8 @@ class IoSetSuber(SuberBase):
             result (bool): True If successful, False otherwise.
 
         """
+        #if not nonStringIterable(vals):  # not iterable
+            #vals = (vals, )  # make iterable
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      vals=[self._ser(val) for val in vals],
@@ -542,6 +581,8 @@ class IoSetSuber(SuberBase):
         """
         key = self._tokey(keys)
         self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
+        #if not nonStringIterable(vals):  # not iterable
+            #vals = (vals, )  # make iterable
         return (self.db.setIoSetVals(db=self.sdb,
                                      key=key,
                                      vals=[self._ser(val) for val in vals],
@@ -779,7 +820,7 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
 
     def __init__(self, *pa, **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
@@ -787,6 +828,8 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
                                each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
                 Indexer or Counter or any ducktyped class of Matter
 
@@ -829,16 +872,18 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     """
     def __init__(self, *pa, **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
-                            False (default) means do not enable duplicates at
-                            each key
+                               False (default) means do not enable duplicates at
+                               each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
-            klas (Iterable): of Class references to subclasses of Matter, each
-                of to Type[coring.Matter]
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
 
         """
         super(CatCesrIoSetSuber, self).__init__(*pa, **kwa)
@@ -1044,13 +1089,11 @@ class CryptSignerSuber(SignerSuber):
                 yield (ikeys, self.klas(qb64b=bytes(val),
                                             transferable=verfer.transferable))
 
-
-class SerderSuber(Suber):
+class SerderSuberBase(SuberBase):
     """
-    Sub class of Suber where data is serialized Serder Subclass instance
+    Sub class of SuberBase where data is serialized Serder Subclass instance
     given by .klas
     Automatically serializes and deserializes using .klas Serder methods
-
     """
 
     def __init__(self, *pa,
@@ -1060,99 +1103,120 @@ class SerderSuber(Suber):
         Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
 
-        Parameters:
+        Overridden Parameters:
             klas (Type[serdering.Serder]): Class reference to subclass of Serder
         """
-        super(SerderSuber, self).__init__(*pa, **kwa)
+        super(SerderSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
 
 
-    def put(self, keys: Union[str, Iterable], val: serdering.SerderKERI):
+    def _ser(self, val: serdering.Serder):
         """
-        Puts val at key made from keys. Does not overwrite
-
+        Serialize value to bytes to store in db
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Serder): instance
-
-        Returns:
-            result (bool): True If successful, False otherwise, such as key
-                              already in database.
+            val (serdering.Serder): instance Serder subclass like SerderKERI
         """
-        return (self.db.putVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.raw))
+        return val.raw
 
 
-    def pin(self, keys: Union[str, Iterable], val: serdering.SerderKERI):
+    def _des(self, val: (str | memoryview | bytes)):
         """
-        Pins (sets) val at key made from keys. Overwrites.
-
+        Deserialize val to str
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Serder): instance
-
-        Returns:
-            result (bool): True If successful. False otherwise.
+            val (Union[str, memoryview, bytes]): convertable to coring.matter
         """
-        return (self.db.setVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.raw))
+        if isinstance(val, memoryview):  # memoryview is always bytes
+            val = bytes(val)  # convert to bytes
+        elif hasattr(val, "encode"):  # str
+            val = val.encode()  # convert to bytes
+        return self.klas(raw=val, verify=self.verify)
 
 
-    def get(self, keys: Union[str, Iterable]):
+class SerderSuber(SerderSuberBase, Suber):
+    """
+    Sub class of SerderSuberBase, Suber where data is serialized Serder Subclass
+    instance given by .klas
+    Automatically serializes and deserializes using .klas Serder methods
+    """
+
+    def __init__(self, *pa, **kwa):
         """
-        Gets Serder at keys
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Type[serdering.Serder]): Class reference to subclass of Serder
+        """
+        super(SerderSuber, self).__init__(*pa, **kwa)
 
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
 
-        Returns:
-            Serder:
-            None: if no entry at keys
+class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
+    """
+    Sub class of SerderSuberBase and IoSetSuber that allows multiple Serder
+    instances to be stored at the same db key in insertion order.
+    Example use case would be an escrow where the key is a sequence number
+    based index (such as snKey).
 
-        Usage:
-            Use walrus operator to catch and raise missing entry
-            if (srder := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use srdr here
+    Sub class of SerderSuberBase where data is serialized Serder Subclass instance
+    given by .klas
+    Automatically serializes and deserializes using .klas Serder methods
+
+    Extends IoSetSuber so that all IoSetSuber methods now work with Serder
+    subclass for each val.
+
+    IoSetSuber stores at each effective key a set of distinct values that
+    share that same effective key where each member of the set is retrieved in
+    insertion order (dupsort==False)
+    The methods allows an Iterable (set valued) of Iterables of separation subclass
+    instances to be stored at a given effective key in insertion order.
+
+    Actual keys include a hidden ordinal key suffix that tracks insertion order.
+    The suffix is appended and stripped transparently from the keys. The set of
+    items with duplicate effective keys are retrieved in insertion order when
+    iterating or as a list of the set elements. The actual iokey for any item
+    includes the ordinal suffix.
+
+     Attributes:
+        db (dbing.LMDBer): base LMDB db
+        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        sep (str): separator for combining keys tuple of strs into key bytes
+        klas (Iterable): of Class references to subclasses of CESR compatible
+                , each of to Type[coring.Matter etc]
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Type[serdering.Serder]): Class reference to subclass of Serder
 
         """
-        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return self.klas(raw=bytes(val), verify=self.verify) if val is not None else None
+        super(SerderIoSetSuber, self).__init__(*pa, **kwa)
 
 
-    def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-        """
-        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield self._tokeys(iokey), self.klas(raw=bytes(val), verify=self.verify)
 
 
 class SchemerSuber(Suber):

@@ -641,79 +641,176 @@ def test_serder_suber():
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.SerderSuber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.SerderSuber)
-        assert not sdb.sdb.flags()["dupsort"]
+        serber = subing.SerderSuber(db=db, subkey='bags.')
+        assert isinstance(serber, subing.SerderSuber)
+        assert not serber.sdb.flags()["dupsort"]
+        assert serber.klas == serdering.SerderKERI
 
         pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
         srdr0 = eventing.incept(keys=[pre])
 
         keys = (pre, srdr0.said)
-        sdb.put(keys=keys, val=srdr0)
-        actual = sdb.get(keys=keys)
+        serber.put(keys=keys, val=srdr0)
+        actual = serber.get(keys=keys)
         assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr0.said
 
-        sdb.rem(keys)
-        actual = sdb.get(keys=keys)
+        serber.rem(keys)
+        actual = serber.get(keys=keys)
         assert actual is None
 
-        sdb.put(keys=keys, val=srdr0)
-        actual = sdb.get(keys=keys)
+        serber.put(keys=keys, val=srdr0)
+        actual = serber.get(keys=keys)
         assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr0.said
 
         srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.said)
-        result = sdb.put(keys=keys, val=srdr1)
+        result = serber.put(keys=keys, val=srdr1)
         assert not result
+        actual = serber.get(keys=keys)
         assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr0.said
 
-        result = sdb.pin(keys=keys, val=srdr1)
+        result = serber.pin(keys=keys, val=srdr1)
         assert result
-        actual = sdb.get(keys=keys)
+        actual = serber.get(keys=keys)
         assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr1.said
 
         # test with keys as string not tuple
         keys = "{}.{}".format(pre, srdr1.said)
 
-        sdb.put(keys=keys, val=srdr1)
-        actual = sdb.get(keys=keys)
+        serber.put(keys=keys, val=srdr1)
+        actual = serber.get(keys=keys)
         assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr1.said
 
-        sdb.rem(keys)
-        actual = sdb.get(keys=keys)
+        serber.rem(keys)
+        actual = serber.get(keys=keys)
         assert actual is None
 
         # test missing entry at keys
         badkey = "badkey"
-        actual = sdb.get(badkey)
+        actual = serber.get(badkey)
         assert actual is None
 
         # test iteritems
-        sdb = subing.SerderSuber(db=db, subkey='pugs.')
-        assert isinstance(sdb, subing.SerderSuber)
-        sdb.put(keys=("a","1"), val=srdr0)
-        sdb.put(keys=("a","2"), val=srdr1)
+        serber = subing.SerderSuber(db=db, subkey='pugs.')
+        assert isinstance(serber, subing.SerderSuber)
+        serber.put(keys=("a","1"), val=srdr0)
+        serber.put(keys=("a","2"), val=srdr1)
 
-        items = [(keys, srdr.said) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter()]
         assert items == [(('a', '1'), srdr0.said),
                          (('a', '2'), srdr1.said)]
 
-        assert sdb.put(keys=("b","1"), val=srdr0)
-        assert sdb.put(keys=("b","2"), val=srdr1)
-        assert sdb.put(keys=("bc","1"), val=srdr0)
+        assert serber.put(keys=("b","1"), val=srdr0)
+        assert serber.put(keys=("b","2"), val=srdr1)
+        assert serber.put(keys=("bc","1"), val=srdr0)
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.said) for keys, srdr in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), srdr0.said),
                          (('b', '2'), srdr1.said)]
 
     assert not os.path.exists(db.path)
     assert not db.opened
 
+def test_serder_ioset_suber():
+    """
+    Test SerderIoSetSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        serber = subing.SerderIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(serber, subing.SerderIoSetSuber)
+        assert not serber.sdb.flags()["dupsort"]
+        assert serber.klas == serdering.SerderKERI
+
+        pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+        srdr0 = eventing.incept(keys=[pre])
+
+        keys = (pre, srdr0.said)
+        serber.put(keys=keys, vals=(srdr0, ))
+        actuals = serber.get(keys=keys)
+        for actual in actuals:
+            assert isinstance(actual, serdering.SerderKERI)
+            assert actual.said == srdr0.said
+
+        serber.rem(keys)
+        actuals = serber.get(keys=keys)
+        assert not actuals  # empty list
+
+        serber.put(keys=keys, vals=(srdr0, ))
+        actuals = serber.get(keys=keys)
+        for actual in actuals:
+            assert isinstance(actual, serdering.SerderKERI)
+            assert actual.said == srdr0.said
+
+        srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.said)
+        result = serber.put(keys=keys, vals=(srdr1, ))
+        assert result
+        actuals = serber.get(keys=keys)
+        assert isinstance(actuals[0], serdering.SerderKERI)
+        assert actuals[0].said == srdr0.said
+        assert isinstance(actuals[1], serdering.SerderKERI)
+        assert actuals[1].said == srdr1.said
+
+
+        result = serber.pin(keys=keys, vals=(srdr1, ))
+        assert result
+        actuals = serber.get(keys=keys)
+        for actual in actuals:
+            assert isinstance(actual, serdering.SerderKERI)
+            assert actual.said == srdr1.said
+
+        # test with keys as string not tuple
+        keys = "{}.{}".format(pre, srdr1.said)
+
+        serber.put(keys=keys, vals=(srdr1, ))
+        actuals = serber.get(keys=keys)
+        for actual in actuals:
+            assert isinstance(actual, serdering.SerderKERI)
+            assert actual.said == srdr1.said
+
+        serber.rem(keys)
+        actuals = serber.get(keys=keys)
+        assert not actuals
+
+        # test missing entry at keys
+        badkey = "badkey"
+        actuals = serber.get(badkey)
+        assert not actuals
+
+        # test iteritems
+        serber = subing.SerderIoSetSuber(db=db, subkey='pugs.')
+        assert isinstance(serber, subing.SerderIoSetSuber)
+        serber.put(keys=("a","1"), vals=(srdr0, ))
+        serber.put(keys=("a","1"), vals=(srdr1, ))
+        serber.put(keys=("a","2"), vals=(srdr1, ))
+
+        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter()]
+        assert items == [
+                            (('a', '1'), srdr0.said),
+                            (('a', '1'), srdr1.said),
+                            (('a', '2'), srdr1.said),
+                        ]
+
+        assert serber.put(keys=("b","1"), vals=(srdr0, ))
+        assert serber.put(keys=("b","2"), vals=(srdr1, ))
+        assert serber.put(keys=("bc","1"), vals=(srdr0, ))
+
+        topkeys =  ("b", "")  # append empty str to force trailing .sep
+        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter(keys=topkeys)]
+        assert items == [(('b', '1'), srdr0.said),
+                         (('b', '2'), srdr1.said)]
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
 
 
 def test_cesr_suber():
@@ -996,7 +1093,7 @@ def test_cat_suber():
     """Done Test"""
 
 
-def test_cat__cesr_ioset_suber():
+def test_cat_cesr_ioset_suber():
     """
     Test CatIoSetSuber LMDBer sub database class
     """
@@ -1667,11 +1764,14 @@ def test_crypt_signer_suber():
 
 if __name__ == "__main__":
     test_suber()
-    test_cesr_ioset_suber()
-    test_serder_suber()
-    test_cesr_suber()
+    test_dup_suber()
+    test_ioset_suber()
     test_cat_suber()
-    test_cat__cesr_ioset_suber()
+    test_cesr_suber()
+    test_cesr_ioset_suber()
+    test_cat_cesr_ioset_suber()
     test_cesr_dup_suber()
+    test_serder_suber()
+    test_serder_ioset_suber()
     test_signer_suber()
     test_crypt_signer_suber()
