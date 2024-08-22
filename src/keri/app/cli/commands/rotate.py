@@ -33,7 +33,7 @@ parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth 
                     default=[], action="append", required=False)
 parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
 
-parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
+parser.add_argument("--proxy", help="alias for delegation communication proxy", default=None)
 
 rotating.addRotationArgs(parser)
 
@@ -148,7 +148,6 @@ class RotateDoer(doing.DoDoer):
         self.toad = toad
         self.data = data
         self.endpoint = endpoint
-        self.proxy = proxy
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
         self.codeTime = codeTime
@@ -159,7 +158,9 @@ class RotateDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.hby.habByName(self.proxy))
+
+        self.proxy = self.hby.habByName(proxy) if proxy is not None else None
+        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.proxy)
         self.postman = forwarding.Poster(hby=self.hby)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
@@ -213,7 +214,7 @@ class RotateDoer(doing.DoDoer):
                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 
         if hab.kever.delpre:
-            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, auths=auths)
+            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, auths=auths, proxy=self.proxy)
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock
@@ -237,7 +238,11 @@ class RotateDoer(doing.DoDoer):
                 self.remove([witDoer])
 
         if hab.kever.delpre:
-            yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
+            if self.proxy is not None:
+                sender = self.proxy
+            else:
+                sender = hab
+            yield from self.postman.sendEventToDelegator(hab=hab, sender=sender, fn=hab.kever.sn)
 
         print(f'Prefix  {hab.pre}')
         print(f'New Sequence No.  {hab.kever.sn}')
