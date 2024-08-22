@@ -664,8 +664,9 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key
-            val (str):  value at key to delete
-                              if val is empty then remove all values at key
+            val (str):  value at key to delete. Subclass ._ser method may
+                        accept different value types
+                        if val is empty then remove all values at key
 
         Returns:
            result (bool): True if effective key with val exists so delete successful.

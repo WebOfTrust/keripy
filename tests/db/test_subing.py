@@ -655,7 +655,7 @@ def test_serder_suber():
         assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr0.said
 
-        serber.rem(keys)
+        assert serber.rem(keys)
         actual = serber.get(keys=keys)
         assert actual is None
 
@@ -685,7 +685,7 @@ def test_serder_suber():
         assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr1.said
 
-        serber.rem(keys)
+        assert serber.rem(keys)
         actual = serber.get(keys=keys)
         assert actual is None
 
@@ -741,7 +741,7 @@ def test_serder_ioset_suber():
             assert isinstance(actual, serdering.SerderKERI)
             assert actual.said == srdr0.said
 
-        serber.rem(keys)
+        assert serber.rem(keys)
         actuals = serber.get(keys=keys)
         assert not actuals  # empty list
 
@@ -752,6 +752,7 @@ def test_serder_ioset_suber():
             assert actual.said == srdr0.said
 
         srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.said)
+
         result = serber.put(keys=keys, vals=(srdr1, ))
         assert result
         actuals = serber.get(keys=keys)
@@ -768,6 +769,22 @@ def test_serder_ioset_suber():
             assert isinstance(actual, serdering.SerderKERI)
             assert actual.said == srdr1.said
 
+
+        # test rem a specific value
+        serber.put(keys=keys, vals=(srdr0, ))
+        actuals = serber.get(keys=keys)
+        assert isinstance(actuals[0], serdering.SerderKERI)
+        assert actuals[0].said == srdr1.said
+        assert isinstance(actuals[1], serdering.SerderKERI)
+        assert actuals[1].said == srdr0.said
+
+        assert serber.rem(keys=keys, val=srdr1)
+        actuals = serber.get(keys=keys)
+        assert len(actuals) == 1
+        assert isinstance(actuals[0], serdering.SerderKERI)
+        assert actuals[0].said == srdr0.said
+
+
         # test with keys as string not tuple
         keys = "{}.{}".format(pre, srdr1.said)
 
@@ -777,7 +794,7 @@ def test_serder_ioset_suber():
             assert isinstance(actual, serdering.SerderKERI)
             assert actual.said == srdr1.said
 
-        serber.rem(keys)
+        assert serber.rem(keys)
         actuals = serber.get(keys=keys)
         assert not actuals
 
