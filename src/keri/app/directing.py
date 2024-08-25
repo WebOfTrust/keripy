@@ -6,7 +6,10 @@ keri.app.directing module
 simple direct mode demo support classes
 """
 import itertools
+import json
+
 from hio.base import doing
+from hio.help import decking
 
 from .. import help
 from ..core import eventing, routing
@@ -356,7 +359,7 @@ class Directant(doing.DoDoer):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, server, verifier=None, exchanger=None, doers=None, **kwa):
+    def __init__(self, hab, server, verifier=None, exchanger=None, doers=None, cues=None, **kwa):
         """
         Initialize instance.
 
@@ -374,6 +377,8 @@ class Directant(doing.DoDoer):
         self.exchanger = exchanger
         self.server = server  # use server for cx
         self.rants = dict()
+        self.cues = cues if cues is not None else decking.Deck()
+
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.serviceDo)])
         super(Directant, self).__init__(doers=doers, **kwa)
@@ -419,7 +424,7 @@ class Directant(doing.DoDoer):
 
                 if ca not in self.rants:  # create Reactant and extend doers with it
                     rant = Reactant(tymth=self.tymth, hab=self.hab, verifier=self.verifier,
-                                    exchanger=self.exchanger, remoter=ix)
+                                    exchanger=self.exchanger, remoter=ix, cues=self.cues)
                     self.rants[ca] = rant
                     # add Reactant (rant) doer to running doers
                     self.extend(doers=[rant])  # open and run rant as doer
@@ -498,7 +503,7 @@ class Reactant(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, remoter, verifier=None, exchanger=None, doers=None, **kwa):
+    def __init__(self, hab, remoter, verifier=None, exchanger=None, doers=None, cues=None, **kwa):
         """
         Initialize instance.
 
@@ -518,6 +523,7 @@ class Reactant(doing.DoDoer):
         self.verifier = verifier
         self.exchanger = exchanger
         self.remoter = remoter  # use remoter for both rx and tx
+        self.cues = cues if cues is not None else decking.Deck()
 
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo),
@@ -560,7 +566,6 @@ class Reactant(doing.DoDoer):
         super(Reactant, self).wind(tymth)
         self.remoter.wind(tymth)
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -586,8 +591,7 @@ class Reactant(doing.DoDoer):
             logger.info("Server %s: received:\n%s\n...\n", self.hab.name,
                         self.parser.ims[:1024])
         done = yield from self.parser.parsator(local=True)  # process messages continuously
-        return done  # should nover get here except forced close
-
+        return done  # should never get here except forced close
 
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -616,8 +620,13 @@ class Reactant(doing.DoDoer):
 
                 self.sendMessage(msg, label="chit or receipt or replay")
                 yield  # throttle just do one cue at a time
+            while self.cues:
+                msg = self.cues.popleft()
+                data = json.dumps(msg).encode("utf-8")
+
+                self.sendMessage(data, label="exn response")
+                yield  # throttle just do one cue at a time
             yield
-        return False  # should never get here except forced close
 
 
     def escrowDo(self, tymth=None, tock=0.0, **opts):
@@ -645,7 +654,6 @@ class Reactant(doing.DoDoer):
             if self.tevery is not None:
                 self.tevery.processEscrows()
             yield
-        return False  # should never get here except forced close
 
     def sendMessage(self, msg, label=""):
         """
