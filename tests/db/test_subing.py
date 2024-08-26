@@ -146,6 +146,8 @@ def test_suber():
                         (('b', '2'), 'Green tree'),
                         (('bc', '3'), 'Red apple')]
 
+
+        # test with top keys for partial tree
         topkeys = ("b","")  # last element empty to force trailing separator
         items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), w),
@@ -158,6 +160,20 @@ def test_suber():
                         (('a', '3'), y),
                         (('a', '4'), z)]
 
+        # test with top parameter
+        keys = ("b", )  # last element empty to force trailing separator
+        items = [(keys, val) for keys, val in sdb.getItemIter(keys=keys, top=True)]
+        assert items == [(('b', '1'), w),
+                         (('b', '2'), x)]
+
+        keys = ("a", )  # last element empty to force trailing separator
+        items = [(keys, val) for keys, val in sdb.getItemIter(keys=keys, top=True)]
+        assert items == [(('a', '1'), w),
+                        (('a', '2'), x),
+                        (('a', '3'), y),
+                        (('a', '4'), z)]
+
+        # Test trim
         assert sdb.trim(keys=("b", ""))
         items = [(keys, val) for keys, val in sdb.getItemIter()]
         assert items == [(('a', '1'), 'Blue dog'),
@@ -170,6 +186,28 @@ def test_suber():
         assert sdb.trim(keys=("a", ""))
         items = [(keys, val) for keys, val in sdb.getItemIter()]
         assert items == [(('ac', '4'), 'White snow'), (('bc', '3'), 'Red apple')]
+
+        # Test trim with top parameters
+        sdb.put(keys=("a","1"), val=w)
+        sdb.put(keys=("a","2"), val=x)
+        sdb.put(keys=("a","3"), val=y)
+        sdb.put(keys=("a","4"), val=z)
+        sdb.put(keys=("b","1"), val=w)
+        sdb.put(keys=("b","2"), val=x)
+
+        assert sdb.trim(keys=("b",), top=True)
+        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert items == [(('a', '1'), 'Blue dog'),
+                        (('a', '2'), 'Green tree'),
+                        (('a', '3'), 'Red apple'),
+                        (('a', '4'), 'White snow'),
+                        (('ac', '4'), 'White snow'),
+                        (('bc', '3'), 'Red apple')]
+
+        assert sdb.trim(keys=("a",), top=True)
+        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert items == [(('ac', '4'), 'White snow'),
+                         (('bc', '3'), 'Red apple')]
 
         assert sdb.trim()
         items = [(keys, val) for keys, val in sdb.getItemIter()]
@@ -191,54 +229,54 @@ def test_dup_suber():
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.DupSuber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.DupSuber)
-        assert sdb.sdb.flags()["dupsort"]
+        dupber = subing.DupSuber(db=db, subkey='bags.')
+        assert isinstance(dupber, subing.DupSuber)
+        assert dupber.sdb.flags()["dupsort"]
 
         sue = "Hello sailer!"
         sal = "Not my type."
 
         keys0 = ("test_key", "0001")
         keys1 = ("test_key", "0002")
-        sdb.put(keys=keys0, vals=[sue, sal])
-        actual = sdb.get(keys=keys0)
+        dupber.put(keys=keys0, vals=[sue, sal])
+        actual = dupber.get(keys=keys0)
         assert actual == [sue, sal]  # lexicographic order
-        assert sdb.cnt(keys0) == 2
+        assert dupber.cnt(keys0) == 2
 
-        sdb.rem(keys0)
-        actual = sdb.get(keys=keys0)
+        dupber.rem(keys0)
+        actual = dupber.get(keys=keys0)
         assert not actual
         assert actual == []
-        assert sdb.cnt(keys0) == 0
+        assert dupber.cnt(keys0) == 0
 
-        sdb.put(keys=keys0, vals=[sal, sue])
-        actual = sdb.get(keys=keys0)
+        dupber.put(keys=keys0, vals=[sal, sue])
+        actual = dupber.get(keys=keys0)
         assert actual == [sue, sal]  # lexicographic order
-        actual = sdb.getLast(keys=keys0)
+        actual = dupber.getLast(keys=keys0)
         assert actual == sal
 
         sam = "A real charmer!"
-        result = sdb.add(keys=keys0, val=sam)
+        result = dupber.add(keys=keys0, val=sam)
         assert result
-        actual = sdb.get(keys=keys0)
+        actual = dupber.get(keys=keys0)
         assert actual == [sam, sue, sal]   # lexicographic order
 
         zoe = "See ya later."
         zia = "Hey gorgeous!"
 
-        result = sdb.pin(keys=keys0, vals=[zoe, zia])
+        result = dupber.pin(keys=keys0, vals=[zoe, zia])
         assert result
-        actual = sdb.get(keys=keys0)
+        actual = dupber.get(keys=keys0)
         assert actual == [zia, zoe]  # lexi order
 
-        sdb.put(keys=keys1, vals=[sal, sue, sam])
-        actual = sdb.get(keys=keys1)
+        dupber.put(keys=keys1, vals=[sal, sue, sam])
+        actual = dupber.get(keys=keys1)
         assert actual == [sam, sue, sal]  # lexicographic order
 
-        for i, val in enumerate(sdb.getIter(keys=keys1)):
+        for i, val in enumerate(dupber.getIter(keys=keys1)):
             assert val == actual[i]
 
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        items = [(keys, val) for keys, val in dupber.getItemIter()]
         assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0002'), 'A real charmer!'),
@@ -246,9 +284,9 @@ def test_dup_suber():
                         (('test_key', '0002'), 'Not my type.')]
 
 
-        assert sdb.put(keys=("test", "blue"), vals=[sal, sue, sam])
+        assert dupber.put(keys=("test", "blue"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in dupber.getItemIter(keys=topkeys)]
         assert items == [(('test', 'blue'), 'A real charmer!'),
                          (('test', 'blue'), 'Hello sailer!'),
                          (('test', 'blue'), 'Not my type.')]
@@ -256,27 +294,53 @@ def test_dup_suber():
         # test with keys as string not tuple
         keys2 = "keystr"
         bob = "Shove off!"
-        sdb.put(keys=keys2, vals=[bob])
-        actual = sdb.get(keys=keys2)
+        dupber.put(keys=keys2, vals=[bob])
+        actual = dupber.get(keys=keys2)
         assert actual == [bob]
-        assert sdb.cnt(keys2) == 1
-        sdb.rem(keys2)
-        actual = sdb.get(keys=keys2)
+        assert dupber.cnt(keys2) == 1
+        dupber.rem(keys2)
+        actual = dupber.get(keys=keys2)
         assert actual == []
-        assert sdb.cnt(keys2) == 0
+        assert dupber.cnt(keys2) == 0
 
-        sdb.put(keys=keys2, vals=[bob])
-        actual = sdb.get(keys=keys2)
+        dupber.put(keys=keys2, vals=[bob])
+        actual = dupber.get(keys=keys2)
         assert actual == [bob]
 
         bil = "Go away."
-        sdb.pin(keys=keys2, vals=[bil])
-        actual = sdb.get(keys=keys2)
+        dupber.pin(keys=keys2, vals=[bil])
+        actual = dupber.get(keys=keys2)
         assert actual == [bil]
 
-        sdb.add(keys=keys2, val=bob)
-        actual = sdb.get(keys=keys2)
+        dupber.add(keys=keys2, val=bob)
+        actual = dupber.get(keys=keys2)
         assert actual == [bil, bob]
+
+
+        # test cntpre
+        vals = ["hi", "me", "my"]
+        for i, val in enumerate(vals):
+            assert dupber.put(keys=dbing.onKey("bob", i), vals=val)
+
+        vals = ["bye", "guy", "gal"]
+        for i, val in enumerate(vals):
+            assert dupber.put(keys=dbing.onKey("bob", i), vals=val)
+
+        items = [(keys, val) for keys, val in dupber.getItemIter(keys="bob")]
+        assert items == [
+            (('bob', '00000000000000000000000000000000'), 'bye'),
+            (('bob', '00000000000000000000000000000000'), 'hi'),
+            (('bob', '00000000000000000000000000000001'), 'guy'),
+            (('bob', '00000000000000000000000000000001'), 'me'),
+            (('bob', '00000000000000000000000000000002'), 'gal'),
+            (('bob', '00000000000000000000000000000002'), 'my')
+        ]
+
+        assert dupber.cnt(keys=dbing.onKey("bob", 1)) == 2
+
+        vals = [val for val in dupber.getIter(keys=dbing.onKey("bob", 2))]
+        assert vals == ["gal", "my"]
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -350,6 +414,8 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'A real charmer!')]
 
 
+
+
         items = list(sdb.getIoItemIter())
         assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
@@ -366,6 +432,9 @@ def test_ioset_suber():
         assert items == [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                          (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
 
+
+
+        # Test with top keys
         assert sdb.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
         items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
@@ -373,6 +442,14 @@ def test_ioset_suber():
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
+        # test with top parameter
+        keys = ("test", )
+        items = [(keys, val) for keys, val in sdb.getItemIter(keys=keys, top=True)]
+        assert items == [(('test', 'pop'), 'Not my type.'),
+                         (('test', 'pop'), 'Hello sailer!'),
+                         (('test', 'pop'), 'A real charmer!')]
+
+        # IoItems
         items = list(sdb.getIoItemIter(keys=topkeys))
         assert items == [(('test', 'pop', '00000000000000000000000000000000'), 'Not my type.'),
                          (('test', 'pop', '00000000000000000000000000000001'), 'Hello sailer!'),

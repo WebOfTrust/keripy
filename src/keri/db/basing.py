@@ -2723,40 +2723,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.pses, key, val)
 
-    #def putUde(self, key, val):
-        #"""
-        #Use dgKey()
-        #Write serialized event source couple to key (snu+dig)
-        #Does not overwrite existing val if any
-        #Returns True If val successfully written Else False
-        #Returns False if key already exists
-        #"""
-        #return self.putVal(self.udes, key, val)
-
-    #def setUde(self, key, val):
-        #"""
-        #Use dgKey()
-        #Write serialized seal source couple to key (snu+dig)
-        #Overwrites existing val if any
-        #Returns True If val successfully written Else False
-        #"""
-        #return self.setVal(self.udes, key, val)
-
-    #def getUde(self, key):
-        #"""
-        #Use dgKey()
-        #Return seal source couple at key
-        #Returns None if no entry at key
-        #"""
-        #return self.getVal(self.udes, key)
-
-    #def delUde(self, key):
-        #"""
-        #Use dgKey()
-        #Deletes value at key.
-        #Returns True If key exists in database Else False
-        #"""
-        #return self.delVal(self.udes, key)
 
     def putPwes(self, key, vals):
         """

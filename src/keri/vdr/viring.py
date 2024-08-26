@@ -685,7 +685,7 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
-        return self.cntValsAllPre(db=self.tels, pre=pre, on=fn)
+        return self.cntAllOrdValsPre(db=self.tels, pre=pre, on=fn)
 
     def getTibs(self, key):
         """

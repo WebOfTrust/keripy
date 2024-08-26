@@ -652,8 +652,39 @@ class LMDBer(filing.Filer):
 
 
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
-    # and use keys with ordinal as monotonically increasing number part
-    # such as sn or fn
+    # and use keys with suffic ordinal that is monotonically increasing number part
+    # such as fn where no duplicates allowed at a given (pre, on)
+
+    def cntAllOrdValsPre(self, db, pre, on=0):
+        """
+        Returns (int): count of of all ordinal keyed vals with same pre in key
+        but different on in key in db starting at ordinal number on of pre.
+        For db with dupsort=False but ordinal number suffix in each key
+
+        Parameters:
+            db is opened named sub db
+            pre is bytes of key within sub db's keyspace pre.on
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = onKey(pre, on)  # start replay at this enty 0 is earliest
+            count = 0
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return count  # no values end of db
+
+            for key in cursor.iternext(values=False):  # get key only at cursor
+                try:
+                    cpre, cn = splitKeyON(key)
+                except ValueError as ex:  # not splittable key
+                    break
+
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                count = count+1
+
+            return count
+
+
     def appendOrdValPre(self, db, pre, val):
         """
         Appends val in order after last previous key with same pre in db.
@@ -757,6 +788,9 @@ class LMDBer(filing.Filer):
                 yield (cpre, cn, val)  # (pre, on, dig) of event
 
 
+
+    # IoSet insertion order in val so can have effective dups but with
+    # dupsort = False so val not limited to 511 bytes
     # For databases that support set of insertion ordered values with apparent
     # effective duplicate key but with (dupsort==False). Actual key uses hidden
     # key suffix ordinal to provide insertion ordering of value members of set
@@ -810,8 +844,8 @@ class LMDBer(filing.Filer):
 
     def addIoSetVal(self, db, key, val, *, sep=b'.'):
         """
-        Add val to insertion ordered set of values all with the same apparent
-        effective key if val not already in set of vals at key.
+        Add val idempotently to insertion ordered set of values all with the
+        same apparent effective key if val not already in set of vals at key. A
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is appended and stripped transparently.
 
@@ -845,37 +879,17 @@ class LMDBer(filing.Filer):
             return cursor.put(iokey, val, dupdata=False, overwrite=False)
 
 
-    def setIoSetVals(self, db, key, vals, *, sep=b'.'):
-        """
-        Erase all vals at key and then add unique vals as insertion ordered set of
-        values all with the same apparent effective key.
-        Uses hidden ordinal key suffix for insertion ordering.
-        The suffix is appended and stripped transparently.
-
-        Returns:
-           result (bool): True is added to set.
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
-            vals (abc.Iterable): serialized values to add to set of vals at key
-        """
-        self.delIoSetVals(db=db, key=key, sep=sep)
-        result = False
-        vals = oset(vals)  # make set
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            for i, val in enumerate(vals):
-                iokey = suffix(key, i, sep=sep)  # ion is at add on amount
-                result = txn.put(iokey, val, dupdata=False, overwrite=True) or result
-            return result
-
-
     def appendIoSetVal(self, db, key, val, *, sep=b'.'):
         """
-        Append val to insertion ordered set of values all with the same apparent
-        effective key. Assumes val is not already in set.
+        Append val non-idempotently to insertion ordered set of values all with
+        the same apparent effective key.  If val already in set at key then
+        after append there will be multiple entries in database with val at key
+        each with different insertion order (iokey).
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is appended and stripped transparently.
+
+        Works by walking backward to find last iokey for key instead of reading
+        all vals for ioky.
 
         Returns:
            ion (int): hidden insertion ordering ordinal of appended val
@@ -921,6 +935,33 @@ class LMDBer(filing.Filer):
                 raise  ValueError("Failed appending {} at {}.".format(val, key))
 
             return ion
+
+
+
+    def setIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """
+        Erase all vals at key and then add unique vals as insertion ordered set of
+        values all with the same apparent effective key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           result (bool): True is added to set.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            vals (abc.Iterable): serialized values to add to set of vals at key
+        """
+        self.delIoSetVals(db=db, key=key, sep=sep)
+        result = False
+        vals = oset(vals)  # make set
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            for i, val in enumerate(vals):
+                iokey = suffix(key, i, sep=sep)  # ion is at add on amount
+                result = txn.put(iokey, val, dupdata=False, overwrite=True) or result
+            return result
+
 
 
     def getIoSetVals(self, db, key, *, ion=0, sep=b'.'):
@@ -1338,31 +1379,6 @@ class LMDBer(filing.Filer):
             return count
 
 
-    def cntValsAllPre(self, db, pre, on=0):
-        """
-        Returns (int): count of of all vals with same pre in key but different
-            on in key in db starting at ordinal number on of pre
-
-        Does not count dups
-
-        Parameters:
-            db is opened named sub db
-            pre is bytes of key within sub db's keyspace pre.on
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = onKey(pre, on)  # start replay at this enty 0 is earliest
-            count = 0
-            if not cursor.set_range(key):  #  moves to val at key >= key
-                return count  # no values end of db
-
-            for val in cursor.iternext(values=False):  # get key, val at cursor
-                cpre, cn = splitKeyON(val)
-                if cpre != pre:  # prev is now the last event for pre
-                    break  # done
-                count = count+1
-
-            return count
 
 
     def delVals(self, db, key, val=b''):
@@ -1385,7 +1401,9 @@ class LMDBer(filing.Filer):
 
 
     # For subdbs that support insertion order preserving duplicates at each key.
-    # dupsort==True and prepends and strips io val proem
+    # IoDup class IoVals IoItems
+    # dupsort==True and prepends and strips io val proem to each value.
+    # because dupsort==True values are limited to 511 bytes including proem
     def putIoVals(self, db, key, vals):
         """
         Write each entry from list of bytes vals to key in db in insertion order
