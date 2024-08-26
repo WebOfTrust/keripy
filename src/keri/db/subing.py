@@ -1374,6 +1374,10 @@ class SchemerSuber(Suber):
     Sub class of Suber where data is serialized Schemer instance
     Automatically serializes and deserializes using Schemer methods
 
+    ToDo XXXX make this a subclass of SerderSuber since from a ser des interface
+    Schemer is duck type of Serder, Then can get rid of the redundant put, add,
+    pin, get etc definitions
+
     """
 
     def __init__(self, *pa, **kwa):
@@ -1669,3 +1673,59 @@ class CesrDupSuber(CesrSuberBase, DupSuber):
         super(CesrDupSuber, self).__init__(*pa, **kwa)
 
 
+class IoDupSuber(DupSuber):
+    """
+    Sub class of DupSuber that supports Insertion Ordering (IoDup) of duplicates
+    By automagically prepending and stripping  ordinal proem to/from each
+    duplicate value at a given key.
+
+    IoDupSuber supports  insertion ordered multiple entries at each key
+    (duplicates) with dupsort==True
+
+    Do not use if  serialized length key + proem + value, is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
+
+    IoDupSuber may be more performant then IoSetSuber for values that are indices
+    to other sub dbs that fit the size constraint because LMDB support for
+    duplicates is more space efficient and code performant.
+
+    Duplicates at a given key preserve insertion order of duplicate.
+    Because lmdb is lexocographic an insertion ordering proem is prepended to
+    all values that makes lexocographic order that same as insertion order.
+
+    Duplicates are ordered as a pair of key plus value so prepending proem
+    to each value changes duplicate ordering. Proem is 33 characters long.
+    With 32 character hex string followed by '.' for essentiall unlimited
+    number of values which will be limited by memory.
+
+    With prepended proem ordinal must explicity check for duplicate values
+    before insertion. Uses a python set for the duplicate inclusion test.
+    Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+    """
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+
+        """
+        super(IoDupSuber, self).__init__(*pa, **kwa)
+
+
+    def put(self, keys: str | bytes | memoryview | Iterable,
+                  vals: str | bytes | memoryview | Iterable):
+        """
+        Puts all vals at effective key made from keys and hidden ordinal suffix.
+        that are not already in set of vals at key. Does not overwrite.
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            vals (Iterable): of str serializations
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        if not nonStringIterable(vals):  # not iterable
+            vals = (vals, )  # make iterable
+        return (self.db.putIoDupVals(db=self.sdb,
+                                     key=self._tokey(keys),
+                                     vals=[self._ser(val) for val in vals]))

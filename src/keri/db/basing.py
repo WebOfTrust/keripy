@@ -2231,7 +2231,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.ures, key, vals)
+        return self.putIoDupVals(self.ures, key, vals)
 
     def addUre(self, key, val):
         """
@@ -2242,7 +2242,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.ures, key, val)
+        return self.addIoDupVal(self.ures, key, val)
 
     def getUres(self, key):
         """
@@ -2252,7 +2252,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.ures, key)
+        return self.getIoDupVals(self.ures, key)
 
     def getUresIter(self, key):
         """
@@ -2262,7 +2262,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsIter(self.ures, key)
+        return self.getIoDupValsIter(self.ures, key)
 
     def getUreLast(self, key):
         """
@@ -2272,7 +2272,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.ures, key)
+        return self.getIoDupValLast(self.ures, key)
 
     def getUreItemsNext(self, key=b'', skip=True):
         """
@@ -2286,7 +2286,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.ures, key, skip)
+        return self.getIoDupItemsNext(self.ures, key, skip)
 
     def getUreItemsNextIter(self, key=b'', skip=True):
         """
@@ -2300,7 +2300,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.ures, key, skip)
+        return self.getIoDupItemsNextIter(self.ures, key, skip)
 
     def cntUres(self, key):
         """
@@ -2308,7 +2308,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt triplets at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.ures, key)
+        return self.cntIoDupVals(self.ures, key)
 
     def delUres(self, key):
         """
@@ -2316,7 +2316,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key in db.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.ures, key)
+        return self.delIoDupVals(self.ures, key)
 
     def delUre(self, key, val):
         """
@@ -2328,7 +2328,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.ures, key, val)
+        return self.delIoDupVal(self.ures, key, val)
 
     def putVrcs(self, key, vals):
         """
@@ -2398,7 +2398,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.vres, key, vals)
+        return self.putIoDupVals(self.vres, key, vals)
 
     def addVre(self, key, val):
         """
@@ -2409,7 +2409,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.vres, key, val)
+        return self.addIoDupVal(self.vres, key, val)
 
     def getVres(self, key):
         """
@@ -2419,7 +2419,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.vres, key)
+        return self.getIoDupVals(self.vres, key)
 
     def getVresIter(self, key):
         """
@@ -2429,7 +2429,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsIter(self.vres, key)
+        return self.getIoDupValsIter(self.vres, key)
 
     def getVreLast(self, key):
         """
@@ -2439,7 +2439,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.vres, key)
+        return self.getIoDupValLast(self.vres, key)
 
     def getVreItemsNext(self, key=b'', skip=True):
         """
@@ -2453,7 +2453,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.vres, key, skip)
+        return self.getIoDupItemsNext(self.vres, key, skip)
 
     def getVreItemsNextIter(self, key=b'', skip=True):
         """
@@ -2467,7 +2467,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.vres, key, skip)
+        return self.getIoDupItemsNextIter(self.vres, key, skip)
 
     def cntVres(self, key):
         """
@@ -2475,7 +2475,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt quinlets at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.vres, key)
+        return self.cntIoDupVals(self.vres, key)
 
     def delVres(self, key):
         """
@@ -2483,7 +2483,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key in db.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.vres, key)
+        return self.delIoDupVals(self.vres, key)
 
     def delVre(self, key, val):
         """
@@ -2495,7 +2495,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.vres, key, val)
+        return self.delIoDupVal(self.vres, key, val)
 
     def putKes(self, key, vals):
         """
@@ -2505,7 +2505,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.kels, key, vals)
+        return self.putIoDupVals(self.kels, key, vals)
 
     def addKe(self, key, val):
         """
@@ -2515,7 +2515,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.kels, key, val)
+        return self.addIoDupVal(self.kels, key, val)
 
     def getKes(self, key):
         """
@@ -2524,7 +2524,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.kels, key)
+        return self.getIoDupVals(self.kels, key)
 
     def getKeLast(self, key):
         """
@@ -2533,7 +2533,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.kels, key)
+        return self.getIoDupValLast(self.kels, key)
 
     def cntKes(self, key):
         """
@@ -2541,7 +2541,7 @@ class Baser(dbing.LMDBer):
         Return count of dup key event dig val at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.kels, key)
+        return self.cntIoDupVals(self.kels, key)
 
     def delKes(self, key):
         """
@@ -2549,7 +2549,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.kels, key)
+        return self.delIoDupVals(self.kels, key)
 
 
     def getKelIter(self, pre, sn=0):
@@ -2632,7 +2632,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.pses, key, vals)
+        return self.putIoDupVals(self.pses, key, vals)
 
     def addPse(self, key, val):
         """
@@ -2642,7 +2642,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.pses, key, val)
+        return self.addIoDupVal(self.pses, key, val)
 
     def getPses(self, key):
         """
@@ -2651,7 +2651,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.pses, key)
+        return self.getIoDupVals(self.pses, key)
 
     def getPsesIter(self, key):
         """
@@ -2660,7 +2660,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsIter(self.pses, key)
+        return self.getIoDupValsIter(self.pses, key)
 
     def getPseLast(self, key):
         """
@@ -2669,7 +2669,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.pses, key)
+        return self.getIoDupValLast(self.pses, key)
 
     def getPseItemsNext(self, key=b'', skip=True):
         """
@@ -2681,7 +2681,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.pses, key, skip)
+        return self.getIoDupItemsNext(self.pses, key, skip)
 
     def getPseItemsNextIter(self, key=b'', skip=True):
         """
@@ -2693,7 +2693,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.pses, key, skip)
+        return self.getIoDupItemsNextIter(self.pses, key, skip)
 
     def cntPses(self, key):
         """
@@ -2701,7 +2701,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.pses, key)
+        return self.cntIoDupVals(self.pses, key)
 
     def delPses(self, key):
         """
@@ -2709,7 +2709,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key in db.
         Returns True If key  exists in db Else False
         """
-        return self.delIoVals(self.pses, key)
+        return self.delIoDupVals(self.pses, key)
 
     def delPse(self, key, val):
         """
@@ -2721,7 +2721,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.pses, key, val)
+        return self.delIoDupVal(self.pses, key, val)
 
 
     def putPwes(self, key, vals):
@@ -2732,7 +2732,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.pwes, key, vals)
+        return self.putIoDupVals(self.pwes, key, vals)
 
     def addPwe(self, key, val):
         """
@@ -2742,7 +2742,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.pwes, key, val)
+        return self.addIoDupVal(self.pwes, key, val)
 
     def getPwes(self, key):
         """
@@ -2751,7 +2751,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.pwes, key)
+        return self.getIoDupVals(self.pwes, key)
 
     def getPwesIter(self, key):
         """
@@ -2760,7 +2760,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsIter(self.pwes, key)
+        return self.getIoDupValsIter(self.pwes, key)
 
     def getPweLast(self, key):
         """
@@ -2769,7 +2769,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.pwes, key)
+        return self.getIoDupValLast(self.pwes, key)
 
     def getPweItemsNext(self, key=b'', skip=True):
         """
@@ -2781,7 +2781,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.pwes, key, skip)
+        return self.getIoDupItemsNext(self.pwes, key, skip)
 
     def getPweItemsNextIter(self, key=b'', skip=True):
         """
@@ -2793,7 +2793,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.pwes, key, skip)
+        return self.getIoDupItemsNextIter(self.pwes, key, skip)
 
     def cntPwes(self, key):
         """
@@ -2801,7 +2801,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.pwes, key)
+        return self.cntIoDupVals(self.pwes, key)
 
     def delPwes(self, key):
         """
@@ -2809,7 +2809,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key in db.
         Returns True If key  exists in db Else False
         """
-        return self.delIoVals(self.pwes, key)
+        return self.delIoDupVals(self.pwes, key)
 
     def delPwe(self, key, val):
         """
@@ -2821,7 +2821,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.pwes, key, val)
+        return self.delIoDupVal(self.pwes, key, val)
 
     def putUwes(self, key, vals):
         """
@@ -2832,7 +2832,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.uwes, key, vals)
+        return self.putIoDupVals(self.uwes, key, vals)
 
     def addUwe(self, key, val):
         """
@@ -2843,7 +2843,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.uwes, key, val)
+        return self.addIoDupVal(self.uwes, key, val)
 
     def getUwes(self, key):
         """
@@ -2853,7 +2853,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.uwes, key)
+        return self.getIoDupVals(self.uwes, key)
 
     def getUwesIter(self, key):
         """
@@ -2863,7 +2863,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsIter(self.uwes, key)
+        return self.getIoDupValsIter(self.uwes, key)
 
     def getUweLast(self, key):
         """
@@ -2873,7 +2873,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.uwes, key)
+        return self.getIoDupValLast(self.uwes, key)
 
     def getUweItemsNext(self, key=b'', skip=True):
         """
@@ -2887,7 +2887,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.uwes, key, skip)
+        return self.getIoDupItemsNext(self.uwes, key, skip)
 
     def getUweItemsNextIter(self, key=b'', skip=True):
         """
@@ -2901,7 +2901,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.uwes, key, skip)
+        return self.getIoDupItemsNextIter(self.uwes, key, skip)
 
     def cntUwes(self, key):
         """
@@ -2909,7 +2909,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt couples at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.uwes, key)
+        return self.cntIoDupVals(self.uwes, key)
 
     def delUwes(self, key):
         """
@@ -2917,7 +2917,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key in db.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.uwes, key)
+        return self.delIoDupVals(self.uwes, key)
 
     def delUwe(self, key, val):
         """
@@ -2929,7 +2929,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.uwes, key, val)
+        return self.delIoDupVal(self.uwes, key, val)
 
     def putOoes(self, key, vals):
         """
@@ -2939,7 +2939,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.ooes, key, vals)
+        return self.putIoDupVals(self.ooes, key, vals)
 
     def addOoe(self, key, val):
         """
@@ -2949,7 +2949,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.ooes, key, val)
+        return self.addIoDupVal(self.ooes, key, val)
 
     def getOoes(self, key):
         """
@@ -2958,7 +2958,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.ooes, key)
+        return self.getIoDupVals(self.ooes, key)
 
     def getOoeLast(self, key):
         """
@@ -2967,7 +2967,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.ooes, key)
+        return self.getIoDupValLast(self.ooes, key)
 
     def getOoeItemsNext(self, key=b'', skip=True):
         """
@@ -2979,7 +2979,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.ooes, key, skip)
+        return self.getIoDupItemsNext(self.ooes, key, skip)
 
     def getOoeItemsNextIter(self, key=b'', skip=True):
         """
@@ -2991,7 +2991,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.ooes, key, skip)
+        return self.getIoDupItemsNextIter(self.ooes, key, skip)
 
     def cntOoes(self, key):
         """
@@ -2999,7 +2999,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.ooes, key)
+        return self.cntIoDupVals(self.ooes, key)
 
     def delOoes(self, key):
         """
@@ -3007,7 +3007,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.ooes, key)
+        return self.delIoDupVals(self.ooes, key)
 
     def delOoe(self, key, val):
         """
@@ -3020,7 +3020,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.ooes, key, val)
+        return self.delIoDupVal(self.ooes, key, val)
 
     def putQnfs(self, key, vals):
         """
@@ -3030,7 +3030,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.qnfs, key, vals)
+        return self.putIoDupVals(self.qnfs, key, vals)
 
     def addQnf(self, key, val):
         """
@@ -3040,7 +3040,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.qnfs, key, val)
+        return self.addIoDupVal(self.qnfs, key, val)
 
     def getQnfs(self, key):
         """
@@ -3049,7 +3049,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.qnfs, key)
+        return self.getIoDupVals(self.qnfs, key)
 
     def getQnfLast(self, key):
         """
@@ -3058,7 +3058,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.qnfs, key)
+        return self.getIoDupValLast(self.qnfs, key)
 
     def getQnfItemsNext(self, key=b'', skip=True):
         """
@@ -3070,7 +3070,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.qnfs, key, skip)
+        return self.getIoDupItemsNext(self.qnfs, key, skip)
 
     def getQnfItemsNextIter(self, key=b'', skip=True):
         """
@@ -3082,7 +3082,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.qnfs, key, skip)
+        return self.getIoDupItemsNextIter(self.qnfs, key, skip)
 
     def cntQnfs(self, key):
         """
@@ -3090,7 +3090,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.qnfs, key)
+        return self.cntIoDupVals(self.qnfs, key)
 
     def delQnfs(self, key):
         """
@@ -3098,7 +3098,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.qnfs, key)
+        return self.delIoDupVals(self.qnfs, key)
 
     def delQnf(self, key, val):
         """
@@ -3111,7 +3111,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.qnfs, key, val)
+        return self.delIoDupVal(self.qnfs, key, val)
 
     def putDes(self, key, vals):
         """
@@ -3121,7 +3121,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.dels, key, vals)
+        return self.putIoDupVals(self.dels, key, vals)
 
     def addDe(self, key, val):
         """
@@ -3131,7 +3131,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.dels, key, val)
+        return self.addIoDupVal(self.dels, key, val)
 
     def getDes(self, key):
         """
@@ -3140,7 +3140,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.dels, key)
+        return self.getIoDupVals(self.dels, key)
 
     def getDeLast(self, key):
         """
@@ -3150,7 +3150,7 @@ class Baser(dbing.LMDBer):
 
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.dels, key)
+        return self.getIoDupValLast(self.dels, key)
 
     def cntDes(self, key):
         """
@@ -3158,7 +3158,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.dels, key)
+        return self.cntIoDupVals(self.dels, key)
 
     def delDes(self, key):
         """
@@ -3166,7 +3166,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.dels, key)
+        return self.delIoDupVals(self.dels, key)
 
     def getDelIter(self, pre):
         """
@@ -3195,7 +3195,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.ldes, key, vals)
+        return self.putIoDupVals(self.ldes, key, vals)
 
     def addLde(self, key, val):
         """
@@ -3205,7 +3205,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.ldes, key, val)
+        return self.addIoDupVal(self.ldes, key, val)
 
     def getLdes(self, key):
         """
@@ -3214,7 +3214,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.ldes, key)
+        return self.getIoDupVals(self.ldes, key)
 
     def getLdeLast(self, key):
         """
@@ -3223,7 +3223,7 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValLast(self.ldes, key)
+        return self.getIoDupValLast(self.ldes, key)
 
     def getLdeItemsNext(self, key=b'', skip=True):
         """
@@ -3235,7 +3235,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.ldes, key, skip)
+        return self.getIoDupItemsNext(self.ldes, key, skip)
 
     def getLdeItemsNextIter(self, key=b'', skip=True):
         """
@@ -3247,7 +3247,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.ldes, key, skip)
+        return self.getIoDupItemsNextIter(self.ldes, key, skip)
 
     def cntLdes(self, key):
         """
@@ -3255,7 +3255,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.ldes, key)
+        return self.cntIoDupVals(self.ldes, key)
 
     def delLdes(self, key):
         """
@@ -3263,7 +3263,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.ldes, key)
+        return self.delIoDupVals(self.ldes, key)
 
     def delLde(self, key, val):
         """
@@ -3276,7 +3276,7 @@ class Baser(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.ldes, key, val)
+        return self.delIoDupVal(self.ldes, key, val)
 
 
 class BaserDoer(doing.Doer):

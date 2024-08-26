@@ -907,7 +907,7 @@ class Reger(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.baks, key, vals)
+        return self.putIoDupVals(self.baks, key, vals)
 
 
     def addBak(self, key, val):
@@ -918,7 +918,7 @@ class Reger(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.baks, key, val)
+        return self.addIoDupVal(self.baks, key, val)
 
 
     def getBaks(self, key):
@@ -928,7 +928,7 @@ class Reger(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.baks, key)
+        return self.getIoDupVals(self.baks, key)
 
 
     def getBaksIter(self, key):
@@ -938,7 +938,7 @@ class Reger(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsIter(self.baks, key)
+        return self.getIoDupValsIter(self.baks, key)
 
     def cntBaks(self, key):
         """
@@ -946,7 +946,7 @@ class Reger(dbing.LMDBer):
         Return count of backer prefixes at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.baks, key)
+        return self.cntIoDupVals(self.baks, key)
 
 
     def delBaks(self, key):
@@ -955,7 +955,7 @@ class Reger(dbing.LMDBer):
         Deletes all values at key in db.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.baks, key)
+        return self.delIoDupVals(self.baks, key)
 
 
     def delBak(self, key, val):
@@ -968,7 +968,7 @@ class Reger(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.baks, key, val)
+        return self.delIoDupVal(self.baks, key, val)
 
 
 def buildProof(prefixer, seqner, diger, sigers):
