@@ -470,7 +470,7 @@ class Revery:
         quadruple (prefixer, seqner, diger, siger)
 
         """
-        for (route, ion), saider in self.db.rpes.getIoItemIter():
+        for (route, ion), saider in self.db.rpes.getFullItemIter():
             try:
                 tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=saider)
 

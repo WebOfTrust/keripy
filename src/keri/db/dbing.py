@@ -1520,6 +1520,152 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
+    def getIoDupValLast(self, db, key):
+        """
+        Return last added dup value at key in db in insertion order
+        Returns None no entry at key
+        Removes prepended proem ordinal from val before returning
+        Assumes DB opened with dupsort=True
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            val = None
+            try:
+                if cursor.set_key(key):  # move to first_dup
+                    if cursor.last_dup(): # move to last_dup
+                        val = cursor.value()[33:]  # slice off prepended ordering proem
+                return val
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+
+    def delIoDupVals(self, db, key):
+        """
+        Deletes all values at key in db if key present.
+        Returns True If key exists
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            try:
+                return (txn.delete(key))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+
+    def delIoDupVal(self, db, key, val):
+        """
+        Deletes dup io val at key in db. Performs strip search to find match.
+        Strips proems and then searches.
+        Returns True if delete else False if val not present
+        Assumes DB opened with dupsort=True
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentially unlimited
+        number of values which will be limited by memory.
+
+        Does a linear search so not very efficient when not deleting from the front.
+        This is hack for supporting escrow which needs to delete individual dup.
+        The problem is that escrow is not fixed buts stuffs gets added and
+        deleted which just adds to the value of the proem. 2**16 is an impossibly
+        large number so the proem will not max out practically. But its not
+        an elegant solution.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be deleted without intersion ordering proem
+        """
+
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            cursor = txn.cursor()
+            try:
+                if cursor.set_key(key):  # move to first_dup
+                    for proval in cursor.iternext_dup():  #  value with proem
+                        if val == proval[33:]:  #  strip of proem
+                            return cursor.delete()
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+        return False
+
+
+    def cntIoDupVals(self, db, key):
+        """
+        Return count of dup values at key in db, or zero otherwise
+        Assumes DB opened with dupsort=True
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            count = 0
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    count = cursor.count()
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+            return count
+
+
+
     def getIoDupValsIter(self, db, key):
         """
         Return iterator of all duplicate values at key in db in insertion order
@@ -1557,43 +1703,6 @@ class LMDBer(filing.Filer):
                 raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
-
-    def getIoDupValLast(self, db, key):
-        """
-        Return last added dup value at key in db in insertion order
-        Returns None no entry at key
-        Removes prepended proem ordinal from val before returning
-        Assumes DB opened with dupsort=True
-
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order.
-
-        Duplicates are ordered as a pair of key plus value so prepending proem
-        to each value changes duplicate ordering. Proem is 33 characters long.
-        With 32 character hex string followed by '.' for essentiall unlimited
-        number of values which will be limited by memory.
-
-        With prepended proem ordinal must explicity check for duplicate values
-        before insertion. Uses a python set for the duplicate inclusion test.
-        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
-
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            val = None
-            try:
-                if cursor.set_key(key):  # move to first_dup
-                    if cursor.last_dup(): # move to last_dup
-                        val = cursor.value()[33:]  # slice off prepended ordering proem
-                return val
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def getIoDupItemsNext(self, db, key=b"", skip=True):
@@ -1686,113 +1795,6 @@ class LMDBer(filing.Filer):
                 if found:
                     for key, val in cursor.iternext_dup(keys=True):
                         yield (key, val[33:]) # slice off prepended ordering prefix
-
-
-    def cntIoDupVals(self, db, key):
-        """
-        Return count of dup values at key in db, or zero otherwise
-        Assumes DB opened with dupsort=True
-
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order.
-
-        Duplicates are ordered as a pair of key plus value so prepending proem
-        to each value changes duplicate ordering. Proem is 33 characters long.
-        With 32 character hex string followed by '.' for essentiall unlimited
-        number of values which will be limited by memory.
-
-        With prepended proem ordinal must explicity check for duplicate values
-        before insertion. Uses a python set for the duplicate inclusion test.
-        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
-
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            count = 0
-            try:
-                if cursor.set_key(key):  # moves to first_dup
-                    count = cursor.count()
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
-            return count
-
-
-    def delIoDupVals(self, db, key):
-        """
-        Deletes all values at key in db if key present.
-        Returns True If key exists
-
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order.
-
-        Duplicates are ordered as a pair of key plus value so prepending proem
-        to each value changes duplicate ordering. Proem is 33 characters long.
-        With 32 character hex string followed by '.' for essentiall unlimited
-        number of values which will be limited by memory.
-
-        With prepended proem ordinal must explicity check for duplicate values
-        before insertion. Uses a python set for the duplicate inclusion test.
-        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
-
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            try:
-                return (txn.delete(key))
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
-
-
-    def delIoDupVal(self, db, key, val):
-        """
-        Deletes dup io val at key in db. Performs strip search to find match.
-        Strips proems and then searches.
-        Returns True if delete else False if val not present
-        Assumes DB opened with dupsort=True
-
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending proem
-        to each value changes duplicate ordering. Proem is 33 characters long.
-        With 32 character hex string followed by '.' for essentially unlimited
-        number of values which will be limited by memory.
-
-        Does a linear search so not very efficient when not deleting from the front.
-        This is hack for supporting escrow which needs to delete individual dup.
-        The problem is that escrow is not fixed buts stuffs gets added and
-        deleted which just adds to the value of the proem. 2**16 is an impossibly
-        large number so the proem will not max out practically. But its not
-        an elegant solution.
-
-        Parameters:
-            db is opened named sub db with dupsort=False
-            key is bytes of key within sub db's keyspace
-            val is bytes of value to be deleted without intersion ordering proem
-        """
-
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            cursor = txn.cursor()
-            try:
-                if cursor.set_key(key):  # move to first_dup
-                    for proval in cursor.iternext_dup():  #  value with proem
-                        if val == proval[33:]:  #  strip of proem
-                            return cursor.delete()
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
-        return False
 
 
     def getIoValsAllPreIter(self, db, pre, on=0):

@@ -416,7 +416,7 @@ def test_iodup_suber():
 
 
 
-        items = list(sdb.getIoItemIter())
+        items = list(sdb.getFullItemIter())
         assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
                         (('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
@@ -450,7 +450,7 @@ def test_iodup_suber():
                          (('test', 'pop'), 'A real charmer!')]
 
         # IoItems
-        items = list(sdb.getIoItemIter(keys=topkeys))
+        items = list(sdb.getFullItemIter(keys=topkeys))
         assert items == [(('test', 'pop', '00000000000000000000000000000000'), 'Not my type.'),
                          (('test', 'pop', '00000000000000000000000000000001'), 'Hello sailer!'),
                          (('test', 'pop', '00000000000000000000000000000002'), 'A real charmer!')]
@@ -473,7 +473,7 @@ def test_iodup_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        for iokeys, val in sdb.getIoItemIter():
+        for iokeys, val in sdb.getFullItemIter():
             assert sdb.remIokey(iokeys=iokeys)
 
         assert sdb.cnt(keys=keys0) == 0
@@ -579,7 +579,7 @@ def test_ioset_suber():
 
 
 
-        items = list(sdb.getIoItemIter())
+        items = list(sdb.getFullItemIter())
         assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
                         (('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
@@ -613,7 +613,7 @@ def test_ioset_suber():
                          (('test', 'pop'), 'A real charmer!')]
 
         # IoItems
-        items = list(sdb.getIoItemIter(keys=topkeys))
+        items = list(sdb.getFullItemIter(keys=topkeys))
         assert items == [(('test', 'pop', '00000000000000000000000000000000'), 'Not my type.'),
                          (('test', 'pop', '00000000000000000000000000000001'), 'Hello sailer!'),
                          (('test', 'pop', '00000000000000000000000000000002'), 'A real charmer!')]
@@ -636,7 +636,7 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        for iokeys, val in sdb.getIoItemIter():
+        for iokeys, val in sdb.getFullItemIter():
             assert sdb.remIokey(iokeys=iokeys)
 
         assert sdb.cnt(keys=keys0) == 0
@@ -667,6 +667,12 @@ def test_ioset_suber():
         assert sdb.add(keys=keys2, val=bob)
         actuals = sdb.get(keys=keys2)
         assert actuals == [bil, bob]
+
+        # ToDo test with append non idempotent
+        #assert dber.putIoSetVals(db, key1, vals1) == True
+        #assert dber.getIoSetVals(db, key1) == vals1
+        #assert dber.appendIoSetVal(db, key1, val=b"k") == 4
+        #assert dber.getIoSetVals(db, key1) == [b"w", b"n", b"y", b"d", b"k"]
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -825,7 +831,7 @@ def test_cesr_ioset_suber():
                         ]
 
 
-        items = [(iokeys, val.qb64) for iokeys, val in sdb.getIoItemIter()]
+        items = [(iokeys, val.qb64) for iokeys, val in sdb.getFullItemIter()]
         assert items == [
                             ((*keys1, '00000000000000000000000000000000'), said2),
                             ((*keys1, '00000000000000000000000000000002'), said0),
@@ -854,13 +860,13 @@ def test_cesr_ioset_suber():
                         ]
 
         topkeys = (seq0, "")
-        items = [(iokeys, val.qb64) for iokeys, val in sdb.getIoItemIter(keys=topkeys)]
+        items = [(iokeys, val.qb64) for iokeys, val in sdb.getFullItemIter(keys=topkeys)]
         assert items == [
                             ((*keys0, '00000000000000000000000000000000'), said1),
                             ((*keys0, '00000000000000000000000000000001'), said2),
                         ]
 
-        for iokeys, val in sdb.getIoItemIter():
+        for iokeys, val in sdb.getFullItemIter():
             assert sdb.remIokey(iokeys=iokeys)
 
         assert sdb.cnt(keys=keys0) == 0
@@ -1496,7 +1502,7 @@ def test_cat_cesr_ioset_suber():
                         ]
 
         items = [(iokeys, [val.qb64 for val in  vals])
-                                      for iokeys, vals in sdb.getIoItemIter()]
+                                      for iokeys, vals in sdb.getFullItemIter()]
         assert items ==  [
                           (keys0 + ('00000000000000000000000000000000', ), [sqr0.qb64, dgr0.qb64]),
                           (keys0 + ('00000000000000000000000000000001', ), [sqr1.qb64, dgr1.qb64]),
@@ -1526,14 +1532,14 @@ def test_cat_cesr_ioset_suber():
                         ]
 
         items = [(iokeys, [val.qb64 for val in vals])
-                             for iokeys, vals in sdb.getIoItemIter(keys=topkeys)]
+                             for iokeys, vals in sdb.getFullItemIter(keys=topkeys)]
 
         assert items == [
                         (keys0 + ('00000000000000000000000000000000', ), [sqr0.qb64, dgr0.qb64]),
                         (keys0 + ('00000000000000000000000000000001', ), [sqr1.qb64, dgr1.qb64]),
                         ]
 
-        for iokeys, val in sdb.getIoItemIter():
+        for iokeys, val in sdb.getFullItemIter():
             assert sdb.remIokey(iokeys=iokeys)
 
         assert sdb.cnt(keys=keys0) == 0

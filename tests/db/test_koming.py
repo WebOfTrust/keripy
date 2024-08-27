@@ -829,13 +829,13 @@ def test_ioset_komer():
                             '00000000000000000000000000000000')]
 
         i = 0
-        for iokeys, end in endDB.getIoItemIter(keys=(cid0, "")):
+        for iokeys, end in endDB.getFullItemIter(keys=(cid0, "")):
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1
 
         i = 0
-        for iokeys, end in endDB.getIoItemIter():
+        for iokeys, end in endDB.getFullItemIter():
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1
@@ -850,6 +850,13 @@ def test_ioset_komer():
 
 
 if __name__ == "__main__":
-    test_dup_komer()
+    test_kom_happy_path()
     test_kom_get_item_iter()
+    test_put_invalid_dataclass()
+    test_get_invalid_dataclass()
+    test_not_found_entity()
+    test_serialization()
+    test_custom_serialization()
+    test_deserialization()
+    test_dup_komer()
     test_ioset_komer()

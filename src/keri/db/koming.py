@@ -110,7 +110,34 @@ class KomerBase:
 
 
     def getItemIter(self, keys: Union[str, Iterable]=b""):
+        """Iterator over items in .db subclasses that do special hidden transforms
+        on either the keyspace or valuespace should override this method to hide
+        hidden parts from the returned items. For example, adding either
+        a hidden key space suffix or hidden val space proem to ensure insertion
+        order. Use getFullItemIter instead to return full items with hidden parts
+        shown for debugging or testing.
+
+        Returns:
+            items (Iterator): of (key, val) tuples  over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
         """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(key), self.deserializer(val))
+
+
+    def getFullItemIter(self, keys: Union[str, Iterable]=b""):
+        """Iterator over items in .db that returns full items with subclass
+        specific special hidden parts shown for debugging or testing.
+
         Returns:
             items (Iterator): of (key, val) tuples  over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
@@ -613,27 +640,6 @@ class IoSetKomer(KomerBase):
         for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
                                                     key=self._tokey(keys),
                                                     sep=self.sep):
-            yield (self._tokeys(iokey), self.deserializer(val))
-
-
-    def getIoItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            items (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith effective key made from keys.
-            Keys may be keyspace prefix to return branches of key space.
-            When keys is empty then returns all items in subdb.
-
-
-        Parameters:
-            keys (Iterable): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database. Append "" to end of keys Iterable to
-                ensure get properly separated top branch key.
-
-        """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(iokey), self.deserializer(val))
 
 
