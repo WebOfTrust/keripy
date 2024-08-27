@@ -356,9 +356,9 @@ def test_iodup_suber():
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.IoSetSuber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.IoSetSuber)
-        assert not sdb.sdb.flags()["dupsort"]
+        ioduber = subing.IoSetSuber(db=db, subkey='bags.')
+        assert isinstance(ioduber, subing.IoSetSuber)
+        assert not ioduber.sdb.flags()["dupsort"]
 
         sue = "Hello sailer!"
         sal = "Not my type."
@@ -366,47 +366,47 @@ def test_iodup_suber():
         keys0 = ("test_key", "0001")
         keys1 = ("test_key", "0002")
 
-        assert sdb.put(keys=keys0, vals=[sal, sue])
-        actuals = sdb.get(keys=keys0)
+        assert ioduber.put(keys=keys0, vals=[sal, sue])
+        actuals = ioduber.get(keys=keys0)
         assert actuals == [sal, sue]  # insertion order not lexicographic
-        assert sdb.cnt(keys0) == 2
-        actual = sdb.getLast(keys=keys0)
+        assert ioduber.cnt(keys0) == 2
+        actual = ioduber.getLast(keys=keys0)
         assert actual == sue
 
-        assert sdb.rem(keys0)
-        actuals = sdb.get(keys=keys0)
+        assert ioduber.rem(keys0)
+        actuals = ioduber.get(keys=keys0)
         assert not actuals
         assert actuals == []
-        assert sdb.cnt(keys0) == 0
+        assert ioduber.cnt(keys0) == 0
 
-        assert sdb.put(keys=keys0, vals=[sue, sal])
-        actuals = sdb.get(keys=keys0)
+        assert ioduber.put(keys=keys0, vals=[sue, sal])
+        actuals = ioduber.get(keys=keys0)
         assert actuals == [sue, sal]  # insertion order
-        actual = sdb.getLast(keys=keys0)
+        actual = ioduber.getLast(keys=keys0)
         assert actual == sal
 
         sam = "A real charmer!"
-        result = sdb.add(keys=keys0, val=sam)
+        result = ioduber.add(keys=keys0, val=sam)
         assert result
-        actuals = sdb.get(keys=keys0)
+        actuals = ioduber.get(keys=keys0)
         assert actuals == [sue, sal, sam]   # insertion order
 
         zoe = "See ya later."
         zia = "Hey gorgeous!"
 
-        result = sdb.pin(keys=keys0, vals=[zoe, zia])
+        result = ioduber.pin(keys=keys0, vals=[zoe, zia])
         assert result
-        actuals = sdb.get(keys=keys0)
+        actuals = ioduber.get(keys=keys0)
         assert actuals == [zoe, zia]  # insertion order
 
-        assert sdb.put(keys=keys1, vals=[sal, sue, sam])
-        actuals = sdb.get(keys=keys1)
+        assert ioduber.put(keys=keys1, vals=[sal, sue, sam])
+        actuals = ioduber.get(keys=keys1)
         assert actuals == [sal, sue, sam]
 
-        for i, val in enumerate(sdb.getIter(keys=keys1)):
+        for i, val in enumerate(ioduber.getIter(keys=keys1)):
             assert val == actuals[i]
 
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        items = [(keys, val) for keys, val in ioduber.getItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
@@ -416,48 +416,48 @@ def test_iodup_suber():
 
 
 
-        items = list(sdb.getFullItemIter())
+        items = list(ioduber.getFullItemIter())
         assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
                         (('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
                         (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
-        items = sdb.getIoSetItem(keys=keys1)
+        items = [(iokeys, val) for iokeys,  val in ioduber.getIoSetItemIter(keys=keys1)]
         assert items == [(('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
                          (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
                          (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in  sdb.getIoSetItemIter(keys=keys0)]
+        items = [(iokeys, val) for iokeys,  val in  ioduber.getIoSetItemIter(keys=keys0)]
         assert items == [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                          (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
 
 
 
         # Test with top keys
-        assert sdb.put(keys=("test", "pop"), vals=[sal, sue, sam])
+        assert ioduber.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in ioduber.getItemIter(keys=topkeys)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=keys, top=True)]
+        items = [(keys, val) for keys, val in ioduber.getItemIter(keys=keys, top=True)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
         # IoItems
-        items = list(sdb.getFullItemIter(keys=topkeys))
+        items = list(ioduber.getFullItemIter(keys=topkeys))
         assert items == [(('test', 'pop', '00000000000000000000000000000000'), 'Not my type.'),
                          (('test', 'pop', '00000000000000000000000000000001'), 'Hello sailer!'),
                          (('test', 'pop', '00000000000000000000000000000002'), 'A real charmer!')]
 
         # test remove with a specific val
-        assert sdb.rem(keys=("test_key", "0002"), val=sue)
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert ioduber.rem(keys=("test_key", "0002"), val=sue)
+        items = [(keys, val) for keys, val in ioduber.getItemIter()]
         assert items == [(('test', 'pop'), 'Not my type.'),
                         (('test', 'pop'), 'Hello sailer!'),
                         (('test', 'pop'), 'A real charmer!'),
@@ -466,43 +466,43 @@ def test_iodup_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        assert sdb.trim(keys=("test", ""))
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert ioduber.trim(keys=("test", ""))
+        items = [(keys, val) for keys, val in ioduber.getItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        for iokeys, val in sdb.getFullItemIter():
-            assert sdb.remIokey(iokeys=iokeys)
+        for iokeys, val in ioduber.getFullItemIter():
+            assert ioduber.remIokey(iokeys=iokeys)
 
-        assert sdb.cnt(keys=keys0) == 0
-        assert sdb.cnt(keys=keys1) == 0
+        assert ioduber.cnt(keys=keys0) == 0
+        assert ioduber.cnt(keys=keys1) == 0
 
 
         # test with keys as string not tuple
         keys2 = "keystr"
         bob = "Shove off!"
-        assert sdb.put(keys=keys2, vals=[bob])
-        actuals = sdb.get(keys=keys2)
+        assert ioduber.put(keys=keys2, vals=[bob])
+        actuals = ioduber.get(keys=keys2)
         assert actuals == [bob]
-        assert sdb.cnt(keys2) == 1
-        assert sdb.rem(keys2)
-        actuals = sdb.get(keys=keys2)
+        assert ioduber.cnt(keys2) == 1
+        assert ioduber.rem(keys2)
+        actuals = ioduber.get(keys=keys2)
         assert actuals == []
-        assert sdb.cnt(keys2) == 0
+        assert ioduber.cnt(keys2) == 0
 
-        assert sdb.put(keys=keys2, vals=[bob])
-        actuals = sdb.get(keys=keys2)
+        assert ioduber.put(keys=keys2, vals=[bob])
+        actuals = ioduber.get(keys=keys2)
         assert actuals == [bob]
 
         bil = "Go away."
-        assert sdb.pin(keys=keys2, vals=[bil])
-        actuals = sdb.get(keys=keys2)
+        assert ioduber.pin(keys=keys2, vals=[bil])
+        actuals = ioduber.get(keys=keys2)
         assert actuals == [bil]
 
-        assert sdb.add(keys=keys2, val=bob)
-        actuals = sdb.get(keys=keys2)
+        assert ioduber.add(keys=keys2, val=bob)
+        actuals = ioduber.get(keys=keys2)
         assert actuals == [bil, bob]
 
     assert not os.path.exists(db.path)
@@ -519,9 +519,9 @@ def test_ioset_suber():
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.IoSetSuber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.IoSetSuber)
-        assert not sdb.sdb.flags()["dupsort"]
+        iosuber = subing.IoSetSuber(db=db, subkey='bags.')
+        assert isinstance(iosuber, subing.IoSetSuber)
+        assert not iosuber.sdb.flags()["dupsort"]
 
         sue = "Hello sailer!"
         sal = "Not my type."
@@ -529,47 +529,47 @@ def test_ioset_suber():
         keys0 = ("test_key", "0001")
         keys1 = ("test_key", "0002")
 
-        assert sdb.put(keys=keys0, vals=[sal, sue])
-        actuals = sdb.get(keys=keys0)
+        assert iosuber.put(keys=keys0, vals=[sal, sue])
+        actuals = iosuber.get(keys=keys0)
         assert actuals == [sal, sue]  # insertion order not lexicographic
-        assert sdb.cnt(keys0) == 2
-        actual = sdb.getLast(keys=keys0)
+        assert iosuber.cnt(keys0) == 2
+        actual = iosuber.getLast(keys=keys0)
         assert actual == sue
 
-        assert sdb.rem(keys0)
-        actuals = sdb.get(keys=keys0)
+        assert iosuber.rem(keys0)
+        actuals = iosuber.get(keys=keys0)
         assert not actuals
         assert actuals == []
-        assert sdb.cnt(keys0) == 0
+        assert iosuber.cnt(keys0) == 0
 
-        assert sdb.put(keys=keys0, vals=[sue, sal])
-        actuals = sdb.get(keys=keys0)
+        assert iosuber.put(keys=keys0, vals=[sue, sal])
+        actuals = iosuber.get(keys=keys0)
         assert actuals == [sue, sal]  # insertion order
-        actual = sdb.getLast(keys=keys0)
+        actual = iosuber.getLast(keys=keys0)
         assert actual == sal
 
         sam = "A real charmer!"
-        result = sdb.add(keys=keys0, val=sam)
+        result = iosuber.add(keys=keys0, val=sam)
         assert result
-        actuals = sdb.get(keys=keys0)
+        actuals = iosuber.get(keys=keys0)
         assert actuals == [sue, sal, sam]   # insertion order
 
         zoe = "See ya later."
         zia = "Hey gorgeous!"
 
-        result = sdb.pin(keys=keys0, vals=[zoe, zia])
+        result = iosuber.pin(keys=keys0, vals=[zoe, zia])
         assert result
-        actuals = sdb.get(keys=keys0)
+        actuals = iosuber.get(keys=keys0)
         assert actuals == [zoe, zia]  # insertion order
 
-        assert sdb.put(keys=keys1, vals=[sal, sue, sam])
-        actuals = sdb.get(keys=keys1)
+        assert iosuber.put(keys=keys1, vals=[sal, sue, sam])
+        actuals = iosuber.get(keys=keys1)
         assert actuals == [sal, sue, sam]
 
-        for i, val in enumerate(sdb.getIter(keys=keys1)):
+        for i, val in enumerate(iosuber.getIter(keys=keys1)):
             assert val == actuals[i]
 
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        items = [(keys, val) for keys, val in iosuber.getItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
@@ -579,54 +579,54 @@ def test_ioset_suber():
 
 
 
-        items = list(sdb.getFullItemIter())
+        items = list(iosuber.getFullItemIter())
         assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
                         (('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
                         (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
-        items = sdb.getIoSetItem(keys=keys1)
+        items = [(iokeys, val) for iokeys,  val in iosuber.getIoSetItemIter(keys=keys1)]
         assert items == [(('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
                          (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
                          (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in  sdb.getIoSetItemIter(keys=keys0)]
+        items = [(iokeys, val) for iokeys,  val in  iosuber.getIoSetItemIter(keys=keys0)]
         assert items == [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                          (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
 
-        items = sdb.getIoSetItem(keys=keys1, ion=1)
+        items = [(iokeys, val) for iokeys,  val in  iosuber.getIoSetItemIter(keys=keys1, ion=1)]
         assert items ==[(('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in  sdb.getIoSetItemIter(keys=keys0, ion=1)]
+        items = [(iokeys, val) for iokeys,  val in  iosuber.getIoSetItemIter(keys=keys0, ion=1)]
         assert items == [(('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
 
 
         # Test with top keys
-        assert sdb.put(keys=("test", "pop"), vals=[sal, sue, sam])
+        assert iosuber.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in iosuber.getItemIter(keys=topkeys)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=keys, top=True)]
+        items = [(keys, val) for keys, val in iosuber.getItemIter(keys=keys, top=True)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
         # IoItems
-        items = list(sdb.getFullItemIter(keys=topkeys))
+        items = list(iosuber.getFullItemIter(keys=topkeys))
         assert items == [(('test', 'pop', '00000000000000000000000000000000'), 'Not my type.'),
                          (('test', 'pop', '00000000000000000000000000000001'), 'Hello sailer!'),
                          (('test', 'pop', '00000000000000000000000000000002'), 'A real charmer!')]
 
         # test remove with a specific val
-        assert sdb.rem(keys=("test_key", "0002"), val=sue)
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert iosuber.rem(keys=("test_key", "0002"), val=sue)
+        items = [(keys, val) for keys, val in iosuber.getItemIter()]
         assert items == [(('test', 'pop'), 'Not my type.'),
                         (('test', 'pop'), 'Hello sailer!'),
                         (('test', 'pop'), 'A real charmer!'),
@@ -635,50 +635,51 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        assert sdb.trim(keys=("test", ""))
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert iosuber.trim(keys=("test", ""))
+        items = [(keys, val) for keys, val in iosuber.getItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        for iokeys, val in sdb.getFullItemIter():
-            assert sdb.remIokey(iokeys=iokeys)
+        for iokeys, val in iosuber.getFullItemIter():
+            assert iosuber.remIokey(iokeys=iokeys)
 
-        assert sdb.cnt(keys=keys0) == 0
-        assert sdb.cnt(keys=keys1) == 0
+        assert iosuber.cnt(keys=keys0) == 0
+        assert iosuber.cnt(keys=keys1) == 0
 
 
         # test with keys as string not tuple
         keys2 = "keystr"
         bob = "Shove off!"
-        assert sdb.put(keys=keys2, vals=[bob])
-        actuals = sdb.get(keys=keys2)
+        assert iosuber.put(keys=keys2, vals=[bob])
+        actuals = iosuber.get(keys=keys2)
         assert actuals == [bob]
-        assert sdb.cnt(keys2) == 1
-        assert sdb.rem(keys2)
-        actuals = sdb.get(keys=keys2)
+        assert iosuber.cnt(keys2) == 1
+        assert iosuber.rem(keys2)
+        actuals = iosuber.get(keys=keys2)
         assert actuals == []
-        assert sdb.cnt(keys2) == 0
+        assert iosuber.cnt(keys2) == 0
 
-        assert sdb.put(keys=keys2, vals=[bob])
-        actuals = sdb.get(keys=keys2)
+        assert iosuber.put(keys=keys2, vals=[bob])
+        actuals = iosuber.get(keys=keys2)
         assert actuals == [bob]
 
         bil = "Go away."
-        assert sdb.pin(keys=keys2, vals=[bil])
-        actuals = sdb.get(keys=keys2)
+        assert iosuber.pin(keys=keys2, vals=[bil])
+        actuals = iosuber.get(keys=keys2)
         assert actuals == [bil]
 
-        assert sdb.add(keys=keys2, val=bob)
-        actuals = sdb.get(keys=keys2)
+        assert iosuber.add(keys=keys2, val=bob)
+        actuals = iosuber.get(keys=keys2)
         assert actuals == [bil, bob]
 
         # ToDo test with append non idempotent
-        #assert dber.putIoSetVals(db, key1, vals1) == True
-        #assert dber.getIoSetVals(db, key1) == vals1
-        #assert dber.appendIoSetVal(db, key1, val=b"k") == 4
-        #assert dber.getIoSetVals(db, key1) == [b"w", b"n", b"y", b"d", b"k"]
+        assert iosuber.trim()  # default trims whole database
+        assert iosuber.put(keys=keys1, vals=[bob, bil])
+        assert iosuber.get(keys=keys1) == [bob, bil]
+        assert iosuber.append(keys=keys1, val=bob) == 2
+        assert iosuber.get(keys=keys1) == [bob, bil, bob]
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -845,7 +846,7 @@ def test_cesr_ioset_suber():
                             ((*keys0, '00000000000000000000000000000001'), said2),
                         ]
 
-        items = [(iokeys, val.qb64) for iokeys, val in sdb.getIoSetItem(keys=keys1)]
+        items = [(iokeys, val.qb64) for iokeys, val in sdb.getIoSetItemIter(keys=keys1)]
         assert items == [
                             ((*keys1, '00000000000000000000000000000000'), said2),
                             ((*keys1, '00000000000000000000000000000002'), said0),
@@ -1518,7 +1519,7 @@ def test_cat_cesr_ioset_suber():
                          ]
 
         items = [(iokeys, [val.qb64 for val in vals])
-                                 for iokeys, vals in sdb.getIoSetItem(keys=keys1)]
+                                 for iokeys, vals in sdb.getIoSetItemIter(keys=keys1)]
         assert items == [(keys1 +  ('00000000000000000000000000000000', ), [sqr2.qb64, dgr2.qb64])]
 
         items = [(iokeys, [val.qb64 for val in vals])

@@ -626,7 +626,7 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): truncated top key, a key space prefix to get all the items
                         from multiple branches of the key space. If top key is
-                        empty then gets all items in database
+                        empty then deletes all items in database
 
         Works for both dupsort==False and dupsort==True
         Because cursor.iternext() advances cursor after returning item its safe
@@ -1189,12 +1189,14 @@ class LMDBer(filing.Filer):
             at same apparent effective key where each iteration returns tuple
             (iokey, val). iokey includes the ordinal key suffix.
             Uses hidden ordinal key suffix for insertion ordering.
+            Does not work with partial effective key.
 
         Raises StopIteration Error when empty.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
+            key (bytes): Apparent effective key. Does not work with partial key
+                         that is not the full effective key sans the ion part.
             ion (int): starting ordinal value, default 0
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:

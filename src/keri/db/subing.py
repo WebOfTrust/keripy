@@ -170,31 +170,21 @@ class SuberBase():
         return (val.decode("utf-8") if hasattr(val, "decode") else val)
 
 
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
-                       *, top=False):
-        """Iterator over items in .db subclasses that do special hidden transforms
-        on either the keyspace or valuespace should override this method to hide
-        hidden parts from the returned items. For example, adding either
-        a hidden key space suffix or hidden val space proem to ensure insertion
-        order. Use getFullItemIter instead to return full items with hidden parts
-        shown for debugging or testing.
-
-        Returns:
-            items (Iterator[tuple[key,val]]): (key, val) tuples of each item
-            over the all the items in subdb whose key startswith key made from
-            keys. Keys may be keyspace prefix to return branches of key space.
-            When keys is empty then returns all items in subdb
-
-
+    def trim(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
+                *, top=False):
+        """
+        Removes all entries whose keys startswith keys. Enables removal of whole
+        branches of db key space. To ensure that proper separation of a branch
+        include empty string as last key in keys. For example ("a","") deletes
+        'a.1'and 'a.2' but not 'ab'
 
         Parameters:
             keys (Iterator[str | bytes | memoryview]): of key parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
-                If keys is empty then gets all items in database.
+                If keys is empty then trims all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
-
 
             top (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
@@ -204,10 +194,11 @@ class SuberBase():
                        When last item in keys is empty str then will treat as
                        partial ending in sep regardless of top value
 
+
+        Returns:
+           result (bool): True if val at key exists so delete successful. False otherwise
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
-                                               key=self._tokey(keys, top=top)):
-            yield (self._tokeys(key), self._des(val))
+        return(self.db.delTopVal(db=self.sdb, key=self._tokey(keys, top=top)))
 
 
     def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
@@ -246,13 +237,22 @@ class SuberBase():
             yield (self._tokeys(key), self._des(val))
 
 
-    def trim(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
-                *, top=False):
-        """
-        Removes all entries whose keys startswith keys. Enables removal of whole
-        branches of db key space. To ensure that proper separation of a branch
-        include empty string as last key in keys. For example ("a","") deletes
-        'a.1'and 'a.2' but not 'ab'
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
+                       *, top=False):
+        """Iterator over items in .db subclasses that do special hidden transforms
+        on either the keyspace or valuespace should override this method to hide
+        hidden parts from the returned items. For example, adding either
+        a hidden key space suffix or hidden val space proem to ensure insertion
+        order. Use getFullItemIter instead to return full items with hidden parts
+        shown for debugging or testing.
+
+        Returns:
+            items (Iterator[tuple[key,val]]): (key, val) tuples of each item
+            over the all the items in subdb whose key startswith key made from
+            keys. Keys may be keyspace prefix to return branches of key space.
+            When keys is empty then returns all items in subdb
+
+
 
         Parameters:
             keys (Iterator[str | bytes | memoryview]): of key parts that may be
@@ -262,6 +262,7 @@ class SuberBase():
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
 
+
             top (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
                        character.
@@ -270,11 +271,10 @@ class SuberBase():
                        When last item in keys is empty str then will treat as
                        partial ending in sep regardless of top value
 
-
-        Returns:
-           result (bool): True if val at key exists so delete successful. False otherwise
         """
-        return(self.db.delTopVal(db=self.sdb, key=self._tokey(keys, top=top)))
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                               key=self._tokey(keys, top=top)):
+            yield (self._tokeys(key), self._des(val))
 
 
 class Suber(SuberBase):
@@ -370,7 +370,6 @@ class Suber(SuberBase):
            result (bool): True if key exists so delete successful. False otherwise
         """
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
-
 
 
 
@@ -906,32 +905,7 @@ class IoSetSuber(SuberBase):
                                      sep=self.sep))
 
 
-    def getIoSetItem(self, keys: str | bytes | memoryview | Iterable,
-                     *, ion=0):
-        """
-        Gets (iokeys, val) ioitems list at key made from keys where key is
-        apparent effective key and ioitems all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-            ion (int): starting ordinal value, default 0
-
-        Returns:
-            ioitems (Iterable):  each item in list is tuple (iokeys, val) where each
-                    iokeys is actual key tuple including hidden suffix and
-                    each val is str
-                    empty list if no entry at keys
-
-        """
-        return ([(self._tokeys(iokey), self._des(val)) for iokey, val in
-                        self.db.getIoSetItemsIter(db=self.sdb,
-                                                  key=self._tokey(keys),
-                                                  ion=ion,
-                                                  sep=self.sep)])
-
-
-    def getIoSetItemIter(self, keys: str | bytes | memoryview | Iterable,
-                         *, ion=0):
+    def getIoSetItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """
         Gets (iokeys, val) ioitems  iterator at key made from keys where key is
         apparent effective key and items all have same apparent effective key
