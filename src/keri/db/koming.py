@@ -576,6 +576,70 @@ class IoSetKomer(KomerBase):
                                        key=self._tokey(keys),
                                        sep=self.sep)
 
+    def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
+        """
+        Removes entry at iokeys
+
+        Parameters:
+            iokeys (tuple): of key str or tuple of key strs to be combined in
+                            order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
+
+
+    def getIoSetItem(self, keys: Union[str, Iterable], *, ion=0):
+        """
+        Gets (iokeys, val) ioitems list at key made from keys where key is
+        apparent effective key and ioitems all have same apparent effective key
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            ion (int): starting ordinal value, default 0
+
+        Returns:
+            ioitems (Iterable):  each item in list is tuple (iokeys, val) where each
+                    iokeys is actual key tuple including hidden suffix and
+                    each val is str
+                    empty list if no entry at keys
+
+
+        """
+        return ([(self._tokeys(iokey), self.deserializer(val)) for iokey, val
+                    in self.db.getIoSetItems(db=self.sdb,
+                                             key=self._tokey(keys),
+                                             ion=ion,
+                                             sep=self.sep)])
+
+
+    def getIoSetItemIter(self, keys: Union[str, Iterable], *, ion=0):
+        """
+        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
+        apparent effective key and items all have same apparent effective key
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            ion (int): starting ordinal value, default 0
+
+        Returns:
+            ioitems (Iterator):  each item iterated is tuple (iokeys, val) where
+                each iokeys is actual keys tuple including hidden suffix and
+                each val is str
+                empty list if no entry at keys.
+                Raises StopIteration when done
+
+        """
+        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
+                                                    key=self._tokey(keys),
+                                                    ion=ion,
+                                                    sep=self.sep):
+            yield (self._tokeys(iokey), self.deserializer(val))
+
+
+
 
     def getItemIter(self, keys: Union[str, Iterable]=b""):
         """Get items iterator
@@ -598,64 +662,6 @@ class IoSetKomer(KomerBase):
             key, ion = dbing.unsuffix(iokey, sep=self.sep)
             yield (self._tokeys(key), self.deserializer(val))
 
-
-    def getIoSetItem(self, keys: Union[str, Iterable]):
-        """
-        Gets (iokeys, val) ioitems list at key made from keys where key is
-        apparent effective key and ioitems all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-
-        Returns:
-            ioitems (Iterable):  each item in list is tuple (iokeys, val) where each
-                    iokeys is actual key tuple including hidden suffix and
-                    each val is str
-                    empty list if no entry at keys
-
-
-        """
-        return ([(self._tokeys(iokey), self.deserializer(val)) for iokey, val
-                    in self.db.getIoSetItems(db=self.sdb,
-                                             key=self._tokey(keys),
-                                             sep=self.sep)])
-
-
-    def getIoSetItemIter(self, keys: Union[str, Iterable]):
-        """
-        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
-        apparent effective key and items all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-
-        Returns:
-            ioitems (Iterator):  each item iterated is tuple (iokeys, val) where
-                each iokeys is actual keys tuple including hidden suffix and
-                each val is str
-                empty list if no entry at keys.
-                Raises StopIteration when done
-
-        """
-        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
-                                                    key=self._tokey(keys),
-                                                    sep=self.sep):
-            yield (self._tokeys(iokey), self.deserializer(val))
-
-
-    def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
-        """
-        Removes entry at iokeys
-
-        Parameters:
-            iokeys (tuple): of key str or tuple of key strs to be combined in
-                            order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
 
 
 

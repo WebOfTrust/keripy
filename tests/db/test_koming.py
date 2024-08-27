@@ -786,6 +786,18 @@ def test_ioset_komer():
             assert iokeys == iokeys0[i]
             i += 1
 
+        i = 1
+        for iokeys, end in endDB.getIoSetItem(keys=keys0, ion=i):
+            assert end == ends[i]
+            assert iokeys == iokeys0[i]
+            i += 1
+
+        i = 1
+        for iokeys, end in endDB.getIoSetItemIter(keys=keys0, ion=i):
+            assert end == ends[i]
+            assert iokeys == iokeys0[i]
+            i += 1
+
         # test getAllItemIter
         ends = ends + [wit3end]
         i = 0

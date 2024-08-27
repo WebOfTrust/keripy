@@ -595,6 +595,12 @@ def test_ioset_suber():
         assert items == [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                          (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
 
+        items = sdb.getIoSetItem(keys=keys1, ion=1)
+        assert items ==[(('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
+                        (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
+
+        items = [(iokeys, val) for iokeys,  val in  sdb.getIoSetItemIter(keys=keys0, ion=1)]
+        assert items == [(('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
 
 
         # Test with top keys
