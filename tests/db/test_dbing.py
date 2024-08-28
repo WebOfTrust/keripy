@@ -494,7 +494,7 @@ def test_lmdber():
         key = snKey(pre, sn)
         assert dber.putIoDupVals(db, key, vals2) == True
 
-        vals = [bytes(val) for val in dber.getIoValsAllPreIter(db, pre)]
+        vals = [bytes(val) for val in dber.getIoDupValsAllPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
@@ -516,7 +516,7 @@ def test_lmdber():
         key = snKey(pre, sn)
         assert dber.putIoDupVals(db, key, vals2) == True
 
-        vals = [bytes(val) for val in dber.getIoValLastAllPreIter(db, pre)]
+        vals = [bytes(val) for val in dber.getIoDupValLastAllPreIter(db, pre)]
         lastvals = [vals0[-1], vals1[-1], vals2[-1]]
         assert vals == lastvals
 
@@ -538,7 +538,7 @@ def test_lmdber():
         key = snKey(pre, sn)
         assert dber.putIoDupVals(db, key, vals2) == True
 
-        vals = [bytes(val) for val in dber.getIoValsAnyPreIter(db, pre)]
+        vals = [bytes(val) for val in dber.getIoDupValsAnyPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
@@ -553,10 +553,24 @@ def test_lmdber():
         dKey = snKey(pre=b'A', sn=7)
         dVals = [b"k", b"b"]
 
+
+        # Test getIoDupItemIter
         assert dber.putIoDupVals(edb, key=aKey, vals=aVals)
         assert dber.putIoDupVals(edb, key=bKey, vals=bVals)
         assert dber.putIoDupVals(edb, key=cKey, vals=cVals)
         assert dber.putIoDupVals(edb, key=dKey, vals=dVals)
+
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getIoDupItemIter(edb)]  # default all
+        assert items == [(b'A.00000000000000000000000000000001', b'z'),
+                        (b'A.00000000000000000000000000000001', b'm'),
+                        (b'A.00000000000000000000000000000001', b'x'),
+                        (b'A.00000000000000000000000000000002', b'o'),
+                        (b'A.00000000000000000000000000000002', b'r'),
+                        (b'A.00000000000000000000000000000002', b'z'),
+                        (b'A.00000000000000000000000000000004', b'h'),
+                        (b'A.00000000000000000000000000000004', b'n'),
+                        (b'A.00000000000000000000000000000007', b'k'),
+                        (b'A.00000000000000000000000000000007', b'b')]
 
         # Test getIoItemsNext(self, db, key=b"")
         # aVals
@@ -769,18 +783,14 @@ def test_lmdber():
         assert dber.appendIoSetVal(db, key1, val=b"k") == 4
         assert dber.getIoSetVals(db, key1) == [b"w", b"n", b"y", b"d", b"k"]
 
-        assert dber.getIoSetItems(db, key0) == [(b'ABC.ZYX.00000000000000000000000000000000', b'z'),
-                                                (b'ABC.ZYX.00000000000000000000000000000001', b'm'),
-                                                (b'ABC.ZYX.00000000000000000000000000000002', b'x'),
-                                                (b'ABC.ZYX.00000000000000000000000000000003', b'a')]
 
-        assert ([(bytes(iokey), bytes(val)) for iokey, val in dber.getIoSetItemsIter(db, key0)] ==
+        assert ([(bytes(iokey), bytes(val)) for iokey, val in dber.getIoSetItemIter(db, key0)] ==
                 [(b'ABC.ZYX.00000000000000000000000000000000', b'z'),
                 (b'ABC.ZYX.00000000000000000000000000000001', b'm'),
                 (b'ABC.ZYX.00000000000000000000000000000002', b'x'),
                 (b'ABC.ZYX.00000000000000000000000000000003', b'a')])
 
-        for iokey, val in dber.getIoSetItemsIter(db, key0):
+        for iokey, val in dber.getIoSetItemIter(db, key0):
             assert dber.delIoSetIokey(db, iokey)
         assert dber.getIoSetVals(db, key0) == []
 
@@ -811,8 +821,7 @@ def test_lmdber():
         dber.cntIoSetVals(db, empty_key)
         dber.delIoSetVals(db, empty_key)
         dber.delIoSetVal(db, empty_key, some_value)
-        dber.getIoSetItems(db, empty_key)
-        dber.getIoSetItemsIter(db, empty_key)
+        dber.getIoSetItemIter(db, empty_key)
         with pytest.raises(KeyError):
             dber.delIoSetIokey(db, empty_key)
         with pytest.raises(KeyError):

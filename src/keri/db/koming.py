@@ -591,30 +591,6 @@ class IoSetKomer(KomerBase):
         return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
 
 
-    def getIoSetItem(self, keys: Union[str, Iterable], *, ion=0):
-        """
-        Gets (iokeys, val) ioitems list at key made from keys where key is
-        apparent effective key and ioitems all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-            ion (int): starting ordinal value, default 0
-
-        Returns:
-            ioitems (Iterable):  each item in list is tuple (iokeys, val) where each
-                    iokeys is actual key tuple including hidden suffix and
-                    each val is str
-                    empty list if no entry at keys
-
-
-        """
-        return ([(self._tokeys(iokey), self.deserializer(val)) for iokey, val
-                    in self.db.getIoSetItems(db=self.sdb,
-                                             key=self._tokey(keys),
-                                             ion=ion,
-                                             sep=self.sep)])
-
-
     def getIoSetItemIter(self, keys: Union[str, Iterable], *, ion=0):
         """
         Gets (iokeys, val) ioitems  iterator at key made from keys where key is
@@ -632,7 +608,7 @@ class IoSetKomer(KomerBase):
                 Raises StopIteration when done
 
         """
-        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
+        for iokey, val in self.db.getIoSetItemIter(db=self.sdb,
                                                     key=self._tokey(keys),
                                                     ion=ion,
                                                     sep=self.sep):

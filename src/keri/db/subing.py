@@ -922,7 +922,7 @@ class IoSetSuber(SuberBase):
                 Raises StopIteration when done
 
         """
-        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
+        for iokey, val in self.db.getIoSetItemIter(db=self.sdb,
                                                     key=self._tokey(keys),
                                                     ion=ion,
                                                     sep=self.sep):

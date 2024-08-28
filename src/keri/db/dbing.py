@@ -1156,33 +1156,7 @@ class LMDBer(filing.Filer):
             return False
 
 
-    def getIoSetItems(self, db, key, *, ion=0, sep=b'.'):
-        """
-        Returns:
-            items (list): list of tuples (iokey, val) of entries in set of with
-                same apparent effective key. iokey includes the ordinal key suffix
-            Uses hidden ordinal key suffix for insertion ordering.
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
-            ion (int): starting ordinal value, default 0
-
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            items = []
-            iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
-            cursor = txn.cursor()
-            if cursor.set_range(iokey):  # move to val at key >= iokey if any
-                for iokey, val in cursor.iternext():  # get iokey, val at cursor
-                    ckey, cion = unsuffix(iokey, sep=sep)
-                    if ckey != key:  # prev entry if any was the last entry for key
-                        break  # done
-                    items.append((iokey, val))  # another entry at key
-            return items
-
-
-    def getIoSetItemsIter(self, db, key, *, ion=0, sep=b'.'):
+    def getIoSetItemIter(self, db, key, *, ion=0, sep=b'.'):
         """
         Returns:
             items (abc.Iterator): iterator over insertion ordered set of values
@@ -1754,6 +1728,7 @@ class LMDBer(filing.Filer):
             return items
 
 
+
     def getIoDupItemsNextIter(self, db, key=b"", skip=True):
         """
         Return iterator of all dup items at next key after key in db in insertion order.
@@ -1799,7 +1774,59 @@ class LMDBer(filing.Filer):
                         yield (key, val[33:]) # slice off prepended ordering prefix
 
 
-    def getIoValsAllPreIter(self, db, pre, on=0):
+    def getIoDupItemIter(self, db, key=b''):
+        """
+        Iterates over branch of db given by key of IoDup items where each value
+        has 33 byte insertion ordinal number proem (prefixed) with separator.
+        Automagically removes (strips) proem before returning items.
+
+        Assumes DB opened with dupsort=True
+
+        Returns:
+            items (abc.Iterator): iterator of (full key, val) tuples of all
+            dup items  over a branch of the db given by top key where returned
+            full key is full database key for val not truncated top key.
+            Item is (key, val) with proem stripped from val stored in db.
+            If key = b'' then returns list of dup items for all keys in db.
+
+
+        Because cursor.iternext() advances cursor after returning item its safe
+        to delete the item within the iteration loop. curson.iternext() works
+        for both dupsort==False and dupsort==True
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if cursor.set_range(key):  # move to val at key >= key if any
+                for ckey, cval in cursor.iternext():  # get key, val first dup at cursor
+                    ckey = bytes(ckey)
+                    if not ckey.startswith(key): #  prev entry if any last in branch
+                        break  # done
+                    yield (ckey, cval[33:])  # slice off prepended ordering prefix
+            return  # done raises StopIteration
+
+
+    def getIoDupValsAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all ordinal numbers in increasing order
@@ -1835,7 +1862,7 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoValsAllPreBackIter(self, db, pre, on=0):
+    def getIoDupValsAllPreBackIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all sequence numbers in decreasing order without gaps
@@ -1873,7 +1900,7 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt-1)
 
 
-    def getIoValLastAllPreIter(self, db, pre, on=0):
+    def getIoDupValLastAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of last only of dup vals of each key in insertion order
         for all entries with same prefix across all sequence numbers in increasing order
@@ -1908,7 +1935,7 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoValsAnyPreIter(self, db, pre, on=0):
+    def getIoDupValsAnyPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for any entries
         with same prefix across all ordinal numbers in order including gaps

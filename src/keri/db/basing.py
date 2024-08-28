@@ -2573,7 +2573,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValsAllPreIter(self.kels, pre, on=sn)
+        return self.getIoDupValsAllPreIter(self.kels, pre, on=sn)
 
 
     def getKelBackIter(self, pre, sn=0):
@@ -2597,7 +2597,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValsAllPreBackIter(self.kels, pre, sn)
+        return self.getIoDupValsAllPreBackIter(self.kels, pre, sn)
 
 
     def getKelLastIter(self, pre, sn=0):
@@ -2621,7 +2621,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValLastAllPreIter(self.kels, pre, on=sn)
+        return self.getIoDupValLastAllPreIter(self.kels, pre, on=sn)
 
 
     def putPses(self, key, vals):
@@ -2794,6 +2794,18 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoDupItemsNextIter(self.pwes, key, skip)
+
+    def getPweIoDupItemIter(self, key=b''):
+        """
+        Use sgKey()
+        Return iterator of partial witnessed escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoDupItemsIter(self.pwes, key)
 
     def cntPwes(self, key):
         """
@@ -3185,7 +3197,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValsAnyPreIter(self.dels, pre)
+        return self.getIoDupValsAnyPreIter(self.dels, pre)
 
     def putLdes(self, key, vals):
         """
