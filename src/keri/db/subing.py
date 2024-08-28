@@ -1964,3 +1964,11 @@ class IoDupSuber(DupSuber):
             val = val[33:]  # strip off proem
             yield (self._tokeys(key), self._des(val))
 
+# ToDo
+    # these seem like a mixture of OrdSuber and IoDupSuber since ord suber
+    # has onkey for its key and IoDupSuber has dupsort==True but OrdSuber does
+    # not. .kels uses these methods
+        # getIoDupValsAllPreIter(self, db, pre, on=0):
+        # getIoDupValsAllPreBackIter(self, db, pre, on=0):
+    # used by .dels but maybe someother method works as well
+        # getIoDupValsAnyPreIter(self, db, pre, on=0)
