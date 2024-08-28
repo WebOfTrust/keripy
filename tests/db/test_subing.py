@@ -356,9 +356,15 @@ def test_iodup_suber():
         assert db.name == "test"
         assert db.opened
 
-        ioduber = subing.IoSetSuber(db=db, subkey='bags.')
-        assert isinstance(ioduber, subing.IoSetSuber)
-        assert not ioduber.sdb.flags()["dupsort"]
+        ioduber = subing.IoDupSuber(db=db, subkey='bags.')
+        assert isinstance(ioduber, subing.IoDupSuber)
+        assert ioduber.sdb.flags()["dupsort"]
+
+        sue = "Hello sailer!"
+        sal = "Not my type."
+
+        keys0 = ("test_key", "0001")
+        keys1 = ("test_key", "0002")
 
         sue = "Hello sailer!"
         sal = "Not my type."
@@ -413,26 +419,28 @@ def test_iodup_suber():
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-
-
-
         items = list(ioduber.getFullItemIter())
-        assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
-                        (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
-                        (('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
-                        (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
-                        (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
+        assert items ==  [(('test_key', '0001'), '00000000000000000000000000000000.See ya later.'),
+                        (('test_key', '0001'), '00000000000000000000000000000001.Hey gorgeous!'),
+                        (('test_key', '0002'), '00000000000000000000000000000000.Not my type.'),
+                        (('test_key', '0002'), '00000000000000000000000000000001.Hello sailer!'),
+                        (('test_key', '0002'), '00000000000000000000000000000002.A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in ioduber.getIoSetItemIter(keys=keys1)]
-        assert items == [(('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
-                         (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
-                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
+        items = [(keys, ioval) for keys,  ioval in ioduber.getIoDupItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), '00000000000000000000000000000000.Not my type.'),
+                        (('test_key', '0002'), '00000000000000000000000000000001.Hello sailer!'),
+                        (('test_key', '0002'), '00000000000000000000000000000002.A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in  ioduber.getIoSetItemIter(keys=keys0)]
-        assert items == [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
-                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
+        items = [(keys, ioval) for keys,  ioval in  ioduber.getIoDupItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), '00000000000000000000000000000000.See ya later.'),
+                         (('test_key', '0001'), '00000000000000000000000000000001.Hey gorgeous!')]
 
+        items = [(keys, ioval) for keys,  ioval in  ioduber.getIoDupItemIter(keys=keys1, ion=1)]
+        assert items ==[(('test_key', '0002'), '00000000000000000000000000000001.Hello sailer!'),
+                        (('test_key', '0002'), '00000000000000000000000000000002.A real charmer!')]
 
+        items = [(keys, ioval) for keys, ioval in  ioduber.getIoDupItemIter(keys=keys0, ion=1)]
+        assert items == [(('test_key', '0001'), '00000000000000000000000000000001.Hey gorgeous!')]
 
         # Test with top keys
         assert ioduber.put(keys=("test", "pop"), vals=[sal, sue, sam])
@@ -451,9 +459,9 @@ def test_iodup_suber():
 
         # IoItems
         items = list(ioduber.getFullItemIter(keys=topkeys))
-        assert items == [(('test', 'pop', '00000000000000000000000000000000'), 'Not my type.'),
-                         (('test', 'pop', '00000000000000000000000000000001'), 'Hello sailer!'),
-                         (('test', 'pop', '00000000000000000000000000000002'), 'A real charmer!')]
+        assert items == [(('test', 'pop'), '00000000000000000000000000000000.Not my type.'),
+                         (('test', 'pop'), '00000000000000000000000000000001.Hello sailer!'),
+                         (('test', 'pop'), '00000000000000000000000000000002.A real charmer!')]
 
         # test remove with a specific val
         assert ioduber.rem(keys=("test_key", "0002"), val=sue)
@@ -473,12 +481,8 @@ def test_iodup_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        for iokeys, val in ioduber.getFullItemIter():
-            assert ioduber.remIokey(iokeys=iokeys)
-
-        assert ioduber.cnt(keys=keys0) == 0
-        assert ioduber.cnt(keys=keys1) == 0
-
+        assert ioduber.cnt(keys=keys0) == 2
+        assert ioduber.cnt(keys=keys1) == 2
 
         # test with keys as string not tuple
         keys2 = "keystr"
@@ -504,6 +508,12 @@ def test_iodup_suber():
         assert ioduber.add(keys=keys2, val=bob)
         actuals = ioduber.get(keys=keys2)
         assert actuals == [bil, bob]
+
+        # Test trim
+        assert ioduber.trim()  # default trims whole database
+        assert ioduber.put(keys=keys1, vals=[bob, bil])
+        assert ioduber.get(keys=keys1) == [bob, bil]
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -575,9 +585,6 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'A real charmer!')]
-
-
-
 
         items = list(iosuber.getFullItemIter())
         assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
@@ -674,7 +681,7 @@ def test_ioset_suber():
         actuals = iosuber.get(keys=keys2)
         assert actuals == [bil, bob]
 
-        # ToDo test with append non idempotent
+        # Test trim and append
         assert iosuber.trim()  # default trims whole database
         assert iosuber.put(keys=keys1, vals=[bob, bil])
         assert iosuber.get(keys=keys1) == [bob, bil]
@@ -2035,6 +2042,7 @@ def test_crypt_signer_suber():
 if __name__ == "__main__":
     test_suber()
     test_dup_suber()
+    test_iodup_suber()
     test_ioset_suber()
     test_cat_suber()
     test_cesr_suber()

@@ -2805,7 +2805,7 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsIter(self.pwes, key)
+        return self.getTopIoDupItemIter(self.pwes, key)
 
     def cntPwes(self, key):
         """

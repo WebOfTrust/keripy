@@ -221,6 +221,8 @@ class SuberBase():
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
+                In Python str.startswith('') always returns True so if branch
+                key is empty string it matches all keys in db with startswith.
 
 
             top (bool): True means treat as partial key tuple from top branch of
@@ -261,6 +263,8 @@ class SuberBase():
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
+                In Python str.startswith('') always returns True so if branch
+                key is empty string it matches all keys in db with startswith.
 
 
             top (bool): True means treat as partial key tuple from top branch of
@@ -862,7 +866,7 @@ class IoSetSuber(SuberBase):
                         if val is empty then remove all values at key
 
         Returns:
-           result (bool): True if effective key with val exists so delete successful.
+           result (bool): True if effective key with val exists so rem successful.
                            False otherwise
 
         """
@@ -950,6 +954,8 @@ class IoSetSuber(SuberBase):
                 all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
+                In Python str.startswith('') always returns True so if branch
+                key is empty string it matches all keys in db with startswith.
 
             top (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
@@ -1804,14 +1810,14 @@ class IoDupSuber(DupSuber):
         if not nonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return self.db.putIoDupVals(db=self.sdb,
-                                     key=keys,
+                                     key=key,
                                      vals=[self._ser(val) for val in vals])
 
 
     def get(self, keys: str | bytes | memoryview | Iterable):
         """
-        Gets vals set list at key made from keys in insertion order using
-        hidden ordinal proem.
+        Gets vals dup list in insertion order using key made from keys and
+        hidden ordinal proem on dups.
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key
@@ -1823,6 +1829,24 @@ class IoDupSuber(DupSuber):
         """
         return ([self._des(val) for val in
                     self.db.getIoDupVals(db=self.sdb, key=self._tokey(keys))])
+
+
+    def getIter(self, keys: str | bytes | memoryview | Iterable):
+        """
+        Gets vals dup iterator in insertion order using key made from keys and
+        hidden ordinal proem on dups.
+        All vals in dups that share same key are retrieved in insertion order.
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): of key parts
+
+        Returns:
+            vals (Iterator):  str values. Raises StopIteration when done
+
+        """
+        for val in self.db.getIoDupValsIter(db=self.sdb,
+                                            key=self._tokey(keys)):
+            yield self._des(val)
 
 
     def getLast(self, keys: str | bytes | memoryview | Iterable):
@@ -1839,3 +1863,104 @@ class IoDupSuber(DupSuber):
         """
         val = self.db.getIoDupValLast(db=self.sdb, key=self._tokey(keys))
         return (self._des(val) if val is not None else val)
+
+
+    def rem(self, keys: str | bytes | memoryview | Iterable,
+                   val: str | bytes | memoryview = b''):
+        """
+        Removes entry at key made from keys and dup val that matches val if any,
+        notwithstanding hidden ordinal proem. Otherwise deletes all dup values
+        at key if any.
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): of key parts to be
+                combined in order to form key
+            val (str):  value at key to delete. Subclass ._ser method may
+                        accept different value types
+                        if val is empty then remove all values at key
+
+        Returns:
+           result (bool): True if key with dup val exists so rem successful.
+                           False otherwise
+
+        """
+        if val:
+            return self.db.delIoDupVal(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       val=self._ser(val))
+        else:
+            return self.db.delIoDupVals(db=self.sdb, key=self._tokey(keys))
+
+
+    def cnt(self, keys: str | bytes | memoryview | Iterable):
+        """
+        Return count of dup values at key made from keys with hidden ordinal
+        proem. Zero otherwise
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): of key parts to be
+                combined in order to form key
+        """
+        return (self.db.cntIoDupVals(db=self.sdb, key=self._tokey(keys)))
+
+
+    def getIoDupItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+        """
+        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
+        apparent effective key and items all have same apparent effective key
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            ion (int): starting ordinal value, default 0
+
+        Returns:
+            ioitems (Iterator):  each item iterated is tuple (keys, ioval) where
+                each keys is actual keys tuple and each ioval is dup that
+                includes prefixed insertion ordering proem.
+                Empty list if no entry at keys.
+                Raises StopIteration when done
+
+        """
+        for key, ioval in self.db.getIoDupItemIter(db=self.sdb,
+                                                    key=self._tokey(keys),
+                                                    ion=ion):
+            yield (self._tokeys(key), self._des(ioval))
+
+
+    def getItemIter(self, keys: str | bytes | memoryview | Iterable = b"",
+                    *, top=False):
+        """
+        Return iterator over all the items including dup items for all keys
+        in top branch defined by keys where keys may be truncation of full branch.
+
+        Returns:
+            items (Iterator): of (key, val) tuples over the all the items in
+            subdb whose key startswith key made from keys and val has its hidden
+            dup ordinal proem removed.
+            Keys may be keyspace prefix in order to return branches of key space.
+            When keys is empty then returns all items in subdb.
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): key or key parts that
+                may be a truncation of a full keys tuple in  in order to address
+                all the items from multiple branches of the key space.
+                If keys is empty then gets all items in database.
+                Either append "" to end of keys Iterable to ensure get properly
+                separated top branch key or use top=True.
+                In Python str.startswith('') always returns True so if branch
+                key is empty string it matches all keys in db with startswith.
+
+            top (bool): True means treat as partial key tuple from top branch of
+                       key space given by partial keys. Resultant key ends in .sep
+                       character.
+                       False means treat as full branch in key space. Resultant key
+                       does not end in .sep character.
+                       When last item in keys is empty str then will treat as
+                       partial ending in sep regardless of top value
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                                 key=self._tokey(keys, top=top)):
+            val = val[33:]  # strip off proem
+            yield (self._tokeys(key), self._des(val))
+

@@ -601,7 +601,9 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): truncated top key, a key space prefix to get all the items
                         from multiple branches of the key space. If top key is
-                        empty then gets all items in database
+                        empty then gets all items in database.
+                        In Python str.startswith('') always returns True so if branch
+                        key is empty string it matches all keys in db with startswith.
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
@@ -1156,6 +1158,26 @@ class LMDBer(filing.Filer):
             return False
 
 
+    def delIoSetIokey(self, db, iokey):
+        """
+        Deletes val at at actual iokey that includes ordinal key suffix.
+
+        Returns:
+            result (bool): True if val was deleted at iokey. False otherwise
+                if no val at iokey
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            iokey (bytes): actual key with ordinal key suffix
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            try:
+                return txn.delete(iokey)
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{iokey}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+
     def getIoSetItemIter(self, db, key, *, ion=0, sep=b'.'):
         """
         Returns:
@@ -1184,25 +1206,6 @@ class LMDBer(filing.Filer):
                     yield (iokey, val)  # another entry at key
             return  # done raises StopIteration
 
-
-    def delIoSetIokey(self, db, iokey):
-        """
-        Deletes val at at actual iokey that includes ordinal key suffix.
-
-        Returns:
-            result (bool): True if val was deleted at iokey. False otherwise
-                if no val at iokey
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            iokey (bytes): actual key with ordinal key suffix
-        """
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            try:
-                return txn.delete(iokey)
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{iokey}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     # For subdbs that support duplicates at each key (dupsort==True)
@@ -1496,6 +1499,44 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
+    def getIoDupValsIter(self, db, key):
+        """
+        Return iterator of all duplicate values at key in db in insertion order
+        Raises StopIteration Error when no remaining dup items = empty.
+        Removes prepended proem ordinal from each val before returning
+        Assumes DB opened with dupsort=True
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            try:
+                if cursor.set_key(key):  # moves to first_dup
+                    for val in cursor.iternext_dup():
+                        yield val[33:]  # slice off prepended ordering proem
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+
     def getIoDupValLast(self, db, key):
         """
         Return last added dup value at key in db in insertion order
@@ -1642,42 +1683,7 @@ class LMDBer(filing.Filer):
 
 
 
-    def getIoDupValsIter(self, db, key):
-        """
-        Return iterator of all duplicate values at key in db in insertion order
-        Raises StopIteration Error when no remaining dup items = empty.
-        Removes prepended proem ordinal from each val before returning
-        Assumes DB opened with dupsort=True
 
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order.
-
-        Duplicates are ordered as a pair of key plus value so prepending proem
-        to each value changes duplicate ordering. Proem is 33 characters long.
-        With 32 character hex string followed by '.' for essentiall unlimited
-        number of values which will be limited by memory.
-
-        With prepended proem ordinal must explicity check for duplicate values
-        before insertion. Uses a python set for the duplicate inclusion test.
-        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
-
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            vals = []
-            try:
-                if cursor.set_key(key):  # moves to first_dup
-                    for val in cursor.iternext_dup():
-                        yield val[33:]  # slice off prepended ordering proem
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
 
@@ -1774,9 +1780,67 @@ class LMDBer(filing.Filer):
                         yield (key, val[33:]) # slice off prepended ordering prefix
 
 
-    def getIoDupItemIter(self, db, key=b''):
+    def getIoDupItemIter(self, db, key=b'', *, ion=0):
         """
         Iterates over branch of db given by key of IoDup items where each value
+        has 33 byte insertion ordinal number proem (prefixed) with separator.
+        Automagically removes (strips) proem before returning items.
+
+        Assumes DB opened with dupsort=True
+
+        Returns:
+            ioitems (Iterator):  each item iterated is tuple (keys, ioval) where
+                each keys is actual keys tuple and each ioval is dup that
+                includes prefixed insertion ordering proem
+                empty list if no entry at keys.
+                Raises StopIteration when done
+
+
+        Because cursor.iternext() advances cursor after returning item its safe
+        to delete the item within the iteration loop. curson.iternext() works
+        for both dupsort==False and dupsort==True
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database
+            ion (int): starting ordinal value, default 0
+
+
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if cursor.set_range(key):  # move to val at key >= key if any
+                for ckey, cval in cursor.iternext():  # get key, val first dup at cursor
+                    ckey = bytes(ckey)
+                    if not ckey.startswith(key): #  prev entry if any last in branch
+                        break  # done
+                    cion = int(bytes(cval[:32]), 16)  # convert without sep '.' in [33]
+                    if cion < ion:  # cion cursor insertion order proem as int
+                        continue  # skip dups whose cion is below ion
+                    yield (ckey, cval)  # include proem on val
+            return  # done raises StopIteration
+
+
+    def getTopIoDupItemIter(self, db, key=b''):
+        """
+        Iterates over top branch of db given by key of IoDup items where each value
         has 33 byte insertion ordinal number proem (prefixed) with separator.
         Automagically removes (strips) proem before returning items.
 
@@ -1815,15 +1879,9 @@ class LMDBer(filing.Filer):
         before insertion. Uses a python set for the duplicate inclusion test.
         Set inclusion scales with O(1) whereas list inclusion scales with O(n).
         """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if cursor.set_range(key):  # move to val at key >= key if any
-                for ckey, cval in cursor.iternext():  # get key, val first dup at cursor
-                    ckey = bytes(ckey)
-                    if not ckey.startswith(key): #  prev entry if any last in branch
-                        break  # done
-                    yield (ckey, cval[33:])  # slice off prepended ordering prefix
-            return  # done raises StopIteration
+        for key, val in self.getTopItemIter(db=db, key=key):
+            val = val[33:] # strip proem
+            yield (key, val)
 
 
     def getIoDupValsAllPreIter(self, db, pre, on=0):
