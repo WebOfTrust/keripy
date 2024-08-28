@@ -402,7 +402,11 @@ class Reger(dbing.LMDBer):
             atc = bytearray(signing.serialize(creder, prefixer, seqner, saider))
             del atc[0:creder.size]
 
-            iss = bytearray(self.cloneTvtAt(creder.said, sn=seqner.sn))
+            regk = creder.regi
+            status = self.tevers[regk].vcState(saider.qb64)
+            schemer = db.schema.get(creder.schema)
+
+            iss = bytearray(self.cloneTvtAt(creder.said, sn=0 if status.et == coring.Ilks.iss else 1))
             iserder = serdering.SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
 
@@ -418,10 +422,6 @@ class Reger(dbing.LMDBer):
 
                 chainSaids.append(coring.Saider(qb64=p["n"]))
             chains = self.cloneCreds(chainSaids, db)
-
-            regk = creder.regi
-            status = self.tevers[regk].vcState(saider.qb64)
-            schemer = db.schema.get(creder.schema)
 
             cred = dict(
                 sad=creder.sad,
