@@ -1931,7 +1931,7 @@ class OnSuber(Suber):
                 to form key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
-        return (self.db.cntAllOnValsPre(db=self.sdb, pre=self._tokey(pre), on=on))
+        return (self.db.cntAllOnValsPre(db=self.sdb, top=self._tokey(pre), on=on))
 
     # appendOrdPre
 

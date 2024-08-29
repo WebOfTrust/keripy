@@ -65,6 +65,51 @@ MaxProem = int("f"*(ProemSize), 16)
 SuffixSize = 32  # does not include trailing separator
 MaxSuffix = int("f"*(SuffixSize), 16)
 
+def onKey(top, on, *, sep=b'.'):
+    """
+    Returns:
+        onkey (bytes): key formed by joining top key and hex str conversion of
+                       int ordinal number on with sep character.
+
+    Parameters:
+        top (str | bytes): top key prefix to be joined with hex version of on using sep
+        on (int): ordinal number to be converted to 32 hex bytes
+        sep (bytes): separator character for join
+
+    """
+    if hasattr(top, "encode"):
+        top = top.encode("utf-8")  # convert str to bytes
+    return (b'%s%s%032x' % (top, sep, on))
+
+
+def snKey(pre, sn):
+    """
+    Returns:
+        snkey (bytes): key formed by joining pre and hex str conversion of int
+                       sequence ordinal number sn with sep character b".".
+
+    Parameters:
+        pre (str | bytes): key prefix to be joined with hex version of on using
+                           b"." sep
+        sn (int): sequence number to be converted to 32 hex bytes
+    """
+
+    return onKey(pre, sn, sep=b'.')
+
+def fnKey(pre, fn):
+    """
+    Returns:
+        fnkey (bytes): key formed by joining pre and hex str conversion of int
+                       first seen ordinal number fn with sep character b".".
+
+    Parameters:
+        pre (str | bytes): key prefix to be joined with hex version of on using
+                           b"." sep
+        fn (int): first seen ordinal number to be converted to 32 hex bytes
+    """
+    return onKey(pre, fn, sep=b'.')
+
+
 def dgKey(pre, dig):
     """
     Returns bytes DB key from concatenation of '.' with qualified Base64 prefix
@@ -76,20 +121,6 @@ def dgKey(pre, dig):
     if hasattr(dig, "encode"):
         dig = dig.encode("utf-8")  # convert str to bytes
     return (b'%s.%s' %  (pre, dig))
-
-
-def onKey(pre, sn):
-    """
-    Returns bytes DB key from concatenation with '.' of qualified Base64 prefix
-    bytes pre and int ordinal number of event, such as sequence number or first
-    seen order number.
-    """
-    if hasattr(pre, "encode"):
-        pre = pre.encode("utf-8")  # convert str to bytes
-    return (b'%s.%032x' % (pre, sn))
-
-snKey = onKey  # alias so intent is clear, sn vs fn
-fnKey = onKey  # alias so intent is clear, sn vs fn
 
 
 def dtKey(pre, dts):
@@ -134,7 +165,7 @@ def splitKey(key, sep=b'.'):
     return tuple(splits)
 
 
-def splitKeyON(key):
+def splitOnKey(key, *, sep=b'.'):
     """
     Returns list of pre and int on from key
     Accepts either bytes or str key
@@ -142,12 +173,17 @@ def splitKeyON(key):
     """
     if isinstance(key, memoryview):
         key = bytes(key)
-    pre, on = splitKey(key)
+    top, on = splitKey(key, sep=sep)
     on = int(on, 16)
-    return (pre, on)
+    return (top, on)
 
-splitKeySN = splitKeyON  # alias so intent is clear, sn vs fn
-splitKeyFN = splitKeyON  # alias so intent is clear, sn vs fn
+
+splitSnKey = splitOnKey  # alias so intent is clear, sn vs fn
+splitFnKey = splitOnKey  # alias so intent is clear, sn vs fn
+
+splitKeyON = splitOnKey  # backwards compatible alias
+splitKeySN = splitSnKey  # backwards compatible alias
+splitKeyFN = splitFnKey  # backwards compatible alias
 
 
 def splitKeyDT(key):
@@ -686,12 +722,12 @@ class LMDBer(filing.Filer):
                 #  last is last entry  at same pre
                 if cursor.last():  # not empty db. last entry earlier than max
                     ckey = cursor.key()
-                    cpre, cn = splitKeyON(ckey)
+                    cpre, cn = splitOnKey(ckey)
                     if cpre == pre:  # last is last entry for same pre
                         on = cn + 1  # increment
             else:  # not past end so not empty either later pre or max entry at pre
                 ckey = cursor.key()
-                cpre, cn = splitKeyON(ckey)
+                cpre, cn = splitOnKey(ckey)
                 if cpre == pre:  # last entry for pre is already at max
                     raise ValueError("Number part of key {}  exceeds maximum"
                                      " size.".format(ckey))
@@ -699,7 +735,7 @@ class LMDBer(filing.Filer):
                     # either no entry before last or earlier pre with entry
                     if cursor.prev():  # prev entry, maybe same or earlier pre
                         ckey = cursor.key()
-                        cpre, cn = splitKeyON(ckey)
+                        cpre, cn = splitOnKey(ckey)
                         if cpre == pre:  # last entry at pre
                             on = cn + 1  # increment
 
@@ -710,30 +746,32 @@ class LMDBer(filing.Filer):
             return on
 
 
-    def cntAllOnValsPre(self, db, pre, on=0):
+    def cntAllOnValsPre(self, db, top, on=0, *, sep=b'.'):
         """
-        Returns (int): count of of all ordinal keyed vals with same pre in key
-        but different on in key in db starting at ordinal number on of pre.
-        For db with dupsort=False but ordinal number suffix in each key
+        Returns (int): count of of all ordinal keyed vals with top key
+        but different on tail in db starting at ordinal number on of top.
+        Full key is composed of top+sep+
+        When dupsort==true then duplicates are included in count
 
         Parameters:
             db is opened named sub db
-            pre is bytes of key within sub db's keyspace pre.on
+            top (bytes): top key within sub db's keyspace with trailing part on
+            sep (bytes): separator character for split
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = onKey(pre, on)  # start replay at this enty 0 is earliest
+            key = onKey(top, on)  # start replay at this enty 0 is earliest
             count = 0
             if not cursor.set_range(key):  #  moves to val at key >= key
                 return count  # no values end of db
 
             for key in cursor.iternext(values=False):  # get key only at cursor
                 try:
-                    cpre, cn = splitKeyON(key)
+                    cpre, cn = splitOnKey(key)
                 except ValueError as ex:  # not splittable key
                     break
 
-                if cpre != pre:  # prev is now the last event for pre
+                if cpre != top:  # prev is now the last event for pre
                     break  # done
                 count = count+1
 
@@ -764,7 +802,7 @@ class LMDBer(filing.Filer):
                 return  # no values end of db
 
             for key, val in cursor.iternext():  # get key, val at cursor
-                cpre, cn = splitKeyON(key)
+                cpre, cn = splitOnKey(key)
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
                 yield (cn, val)  # (on, dig) of event
@@ -791,7 +829,7 @@ class LMDBer(filing.Filer):
                 return  # no values end of db
 
             for key, val in cursor.iternext():  # return key, val at cursor
-                cpre, cn = splitKeyON(key)
+                cpre, cn = splitOnKey(key)
                 yield (cpre, cn, val)  # (pre, on, dig) of event
 
 

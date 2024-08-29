@@ -43,7 +43,7 @@ from . import serdering
 
 from ..db import basing, dbing
 from ..db.basing import KeyStateRecord, StateEERecord, OobiRecord
-from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
+from ..db.dbing import dgKey, snKey, fnKey, splitSnKey, splitKey
 
 
 logger = help.ogler.getLogger()
@@ -3929,7 +3929,7 @@ class Kevery:
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
         if firner:
-            ldig = self.db.getFe(key=fnKey(pre=pre, sn=firner.sn))
+            ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
         else:
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
@@ -4106,7 +4106,7 @@ class Kevery:
         sn = serder.sn
 
         if firner:  # retrieve last event by fn ordinal
-            ldig = self.db.getFe(key=fnKey(pre=pre, sn=firner.sn))
+            ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
         else:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
@@ -5211,7 +5211,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.db.getOoeItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     dgkey = dgKey(pre, bytes(edig))
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local sourde so raise ValidationError which unescrows below
@@ -5350,7 +5350,7 @@ class Kevery:
             for ekey, edig in self.db.getPseItemsNextIter(key=key):
                 eserder = None
                 try:
-                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     dgkey = dgKey(pre, bytes(edig))
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local sourde so raise ValidationError which unescrows below
@@ -5530,7 +5530,7 @@ class Kevery:
         #while True:  # break when done
         for ekey, edig in self.db.getPweIoDupItemIter(key=b''):  #self.db.getPweItemsNextIter(key=key)
             try:
-                pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                 dgkey = dgKey(pre, bytes(edig))
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local sourde so raise ValidationError which unescrows below
@@ -5755,7 +5755,7 @@ class Kevery:
         while True:  # break when done
             for ekey, ecouple in self.db.getUweItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow db key
+                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow db key
 
                     #  get escrowed receipt's rdiger of receipted event and
                     # wiger indexed signature of receipted event
@@ -5875,7 +5875,7 @@ class Kevery:
         while True:  # break when done
             for ekey, etriplet in self.db.getUreItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     rsaider, sprefixer, cigar = deReceiptTriple(etriplet)
                     cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
 
@@ -6388,7 +6388,7 @@ class Kevery:
         while True:  # break when done
             for ekey, equinlet in self.db.getVreItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
 
                     # check date if expired then remove escrow.
@@ -6558,7 +6558,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.db.getLdeItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     dgkey = dgKey(pre, bytes(edig))
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local sourde so raise ValidationError which unescrows below

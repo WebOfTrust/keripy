@@ -17,7 +17,7 @@ from hio.base import doing
 from keri.db import dbing
 from keri.db.dbing import clearDatabaserDir, openLMDB
 from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
-                           splitKeyON, splitKeyFN, splitKeySN, splitKeyDT)
+                           splitOnKey, splitKeyFN, splitSnKey, splitKeyDT)
 from keri.db.dbing import LMDBer
 
 
@@ -35,11 +35,41 @@ def test_key_funcs():
     sn = 3
     dts = b'2021-02-13T19:16:50.750302+00:00'
 
+
+    # test onKey generator of key from top key and trailing ordinal number
+    assert onKey(pre, 0) == pre + b'.' + b"%032x" % 0
+    assert onKey(pre, 1) == pre + b'.' + b"%032x" % 1
+    assert onKey(pre, 2) == pre + b'.' + b"%032x" % 2
+    assert onKey(pre, 3) == pre + b'.' + b"%032x" % 3
+    assert onKey(pre, 4) == pre + b'.' + b"%032x" % 4
+
+    assert onKey(pre, 0, sep=b'|') == pre + b'|' + b"%032x" % 0
+    assert onKey(pre, 4, sep=b'|') == pre + b'|' + b"%032x" % 4
+
+    assert (onkey := onKey(top=pre, on=0)) == pre + b'.' + b"%032x" % 0
+    assert splitKey(key=onkey) == (pre, b"%032x" % 0)
+    assert splitOnKey(onkey) == (pre, 0)
+    assert (onkey := onKey(top=pre, on=1)) == pre + b'.' + b"%032x" % 1
+    assert splitKey(key=onkey) == (pre, b"%032x" % 1)
+    assert splitOnKey(onkey) == (pre, 1)
+    assert (onkey := onKey(top=pre, on=15)) == pre + b'.' + b"%032x" % 15
+    assert splitKey(key=onkey) == (pre, b"%032x" % 15)
+    assert splitOnKey(onkey) == (pre, 15)
+
+    assert (onkey := onKey(top=pre, on=0, sep=b'|')) == pre + b'|' + b"%032x" % 0
+    assert splitKey(key=onkey, sep=b'|') == (pre, b"%032x" % 0)
+    assert splitOnKey(onkey, sep=b'|') == (pre, 0)
+    assert (onkey := onKey(top=pre, on=15, sep=b'|')) == pre + b'|' + b"%032x" % 15
+    assert splitKey(key=onkey, sep=b'|') == (pre, b"%032x" % 15)
+    assert splitOnKey(onkey, sep=b'|') == (pre, 15)
+
+
+    # test snKey
     assert snKey(pre, sn) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                         b'.00000000000000000000000000000003')
 
     assert splitKey(snKey(pre, sn)) == (pre, b'%032x' % sn)
-    assert splitKeySN(snKey(pre, sn)) == (pre, sn)
+    assert splitSnKey(snKey(pre, sn)) == (pre, sn)
 
     assert dgKey(pre, dig) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -63,7 +93,7 @@ def test_key_funcs():
                                         b'.00000000000000000000000000000003')
 
     assert splitKey(snKey(pre, sn).decode("utf-8")) == (pre, '%032x' % sn)
-    assert splitKeySN(snKey(pre, sn).decode("utf-8")) == (pre, sn)
+    assert splitSnKey(snKey(pre, sn).decode("utf-8")) == (pre, sn)
 
     assert dgKey(pre, dig) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -94,7 +124,7 @@ def test_key_funcs():
 
     key = memoryview(snKey(pre, sn))
     assert splitKey(key) == (pre, b'%032x' % sn)
-    assert splitKeySN(key) == (pre, sn)
+    assert splitSnKey(key) == (pre, sn)
 
     key = memoryview(dgKey(pre, dig))
     assert splitKey(key) == (pre, dig)
@@ -376,7 +406,7 @@ def test_lmdber():
         assert on == 4
         assert dber.getVal(db, keyB4) == digY
 
-        assert dber.cntAllOnValsPre(db, preB) == 5
+        assert dber.cntAllOnValsPre(db, top=preB) == 5
 
         # replay preB events in database
         items = [item for item in dber.getAllOnItemPreIter(db, preB)]
