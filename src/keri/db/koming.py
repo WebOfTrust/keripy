@@ -130,7 +130,7 @@ class KomerBase:
                 all items in database.
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             yield (self._tokeys(key), self.deserializer(val))
 
 
@@ -151,7 +151,7 @@ class KomerBase:
                 all items in database.
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             yield (self._tokeys(key), self.deserializer(val))
 
 
@@ -355,7 +355,7 @@ class Komer(KomerBase):
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
         """
-        return(self.db.delTopVal(db=self.sdb, key=self._tokey(keys)))
+        return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys)))
 
 
     def cntAll(self):
@@ -634,7 +634,7 @@ class IoSetKomer(KomerBase):
                 ensure get properly separated top branch key.
 
         """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             key, ion = dbing.unsuffix(iokey, sep=self.sep)
             yield (self._tokeys(key), self.deserializer(val))
 

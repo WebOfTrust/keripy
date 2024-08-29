@@ -128,9 +128,9 @@ def splitKey(key, sep=b'.'):
     else:
         if hasattr(sep, 'encode'):  # make sep match bytes or str
             sep = sep.encode("utf-8")
-    splits = key.split(sep)
+    splits = key.rsplit(sep, 1)
     if len(splits) != 2:
-        raise  ValueError("Unsplittable key = {}".format(key))
+        raise  ValueError(f"Unsplittable {key=} at {sep=}.")
     return tuple(splits)
 
 
@@ -550,7 +550,7 @@ class LMDBer(filing.Filer):
                 count += 1
             return count
 
-
+    # Suber subclasses don't need this since they always split keys int tuple to return
     def getAllItemIter(self, db, key=b'', split=True, sep=b'.'):
         """
         Returns iterator of item duple (key, val), at each key over all
@@ -583,9 +583,9 @@ class LMDBer(filing.Filer):
                 yield tuple(splits)
 
 
-    def getTopItemIter(self, db, key=b''):
+    def getTopItemIter(self, db, top=b''):
         """
-        Iterates over branch of db given by key
+        Iterates over branch of db given by top key
 
         Returns:
             items (abc.Iterator): iterator of (full key, val) tuples over a
@@ -600,7 +600,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): truncated top key, a key space prefix to get all the items
+            top (bytes): truncated top key, a key space prefix to get all the items
                         from multiple branches of the key space. If top key is
                         empty then gets all items in database.
                         In Python str.startswith('') always returns True so if branch
@@ -608,16 +608,16 @@ class LMDBer(filing.Filer):
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            if cursor.set_range(key):  # move to val at key >= key if any
+            if cursor.set_range(top):  # move to val at key >= key if any
                 for ckey, cval in cursor.iternext():  # get key, val at cursor
                     ckey = bytes(ckey)
-                    if not ckey.startswith(key): #  prev entry if any last in branch
+                    if not ckey.startswith(top): #  prev entry if any last in branch
                         break  # done
                     yield (ckey, cval)  # another entry in branch startswith key
             return  # done raises StopIteration
 
 
-    def delTopVal(self, db, key=b''):
+    def delTopVal(self, db, top=b''):
         """
         Deletes all values in branch of db given top key.
 
@@ -627,7 +627,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): truncated top key, a key space prefix to get all the items
+            top (bytes): truncated top key, a key space prefix to get all the items
                         from multiple branches of the key space. If top key is
                         empty then deletes all items in database
 
@@ -643,11 +643,11 @@ class LMDBer(filing.Filer):
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             result = False
             cursor = txn.cursor()
-            if cursor.set_range(key):  # move to val at key >= key if any
+            if cursor.set_range(top):  # move to val at key >= key if any
                 ckey, cval = cursor.item()
                 while ckey:  # end of database key == b''
                     ckey = bytes(ckey)
-                    if not ckey.startswith(key): #  prev entry if any last in branch
+                    if not ckey.startswith(top): #  prev entry if any last in branch
                         break  # done
                     result = cursor.delete() or result # delete moves cursor to next item
                     ckey, cval = cursor.item()  # cursor now at next item after deleted
@@ -1884,7 +1884,7 @@ class LMDBer(filing.Filer):
         before insertion. Uses a python set for the duplicate inclusion test.
         Set inclusion scales with O(1) whereas list inclusion scales with O(n).
         """
-        for key, val in self.getTopItemIter(db=db, key=key):
+        for key, val in self.getTopItemIter(db=db, top=key):
             val = val[33:] # strip proem
             yield (key, val)
 

@@ -198,7 +198,7 @@ class SuberBase():
         Returns:
            result (bool): True if val at key exists so delete successful. False otherwise
         """
-        return(self.db.delTopVal(db=self.sdb, key=self._tokey(keys, top=top)))
+        return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys, top=top)))
 
 
     def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
@@ -235,7 +235,7 @@ class SuberBase():
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
-                                               key=self._tokey(keys, top=top)):
+                                               top=self._tokey(keys, top=top)):
             yield (self._tokeys(key), self._des(val))
 
 
@@ -277,7 +277,7 @@ class SuberBase():
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
-                                               key=self._tokey(keys, top=top)):
+                                               top=self._tokey(keys, top=top)):
             yield (self._tokeys(key), self._des(val))
 
 
@@ -875,7 +875,7 @@ class IoSetSuber(SuberBase):
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb,
-                                                 key=self._tokey(keys, top=top)):
+                                                 top=self._tokey(keys, top=top)):
             key, ion = dbing.unsuffix(iokey, sep=self.sep)
             yield (self._tokeys(key), self._des(val))
 
@@ -1054,7 +1054,7 @@ class SignerSuber(CesrSuber):
                 all items in database.
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             ikeys = self._tokeys(key)  # verkey is last split if any
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             yield (ikeys, self.klas(qb64b=bytes(val),
@@ -1174,7 +1174,7 @@ class CryptSignerSuber(SignerSuber):
                 all items in database.
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             ikeys = self._tokeys(key)  # verkey is last split if any
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             if decrypter:
@@ -1412,7 +1412,7 @@ class SchemerSuber(Suber):
                 all items in database.
 
         """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             yield self._tokeys(iokey), scheming.Schemer(raw=bytes(val))
 
 
@@ -1868,7 +1868,7 @@ class IoDupSuber(DupSuber):
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
-                                                 key=self._tokey(keys, top=top)):
+                                                 top=self._tokey(keys, top=top)):
             val = val[33:]  # strip off proem
             yield (self._tokeys(key), self._des(val))
 

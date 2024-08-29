@@ -83,8 +83,7 @@ def test_key_funcs():
     with pytest.raises(ValueError):
         splitKey(pre)
 
-    with pytest.raises(ValueError):
-        splitKey(dgKey(pre, dgKey(pre, dig)))
+    assert splitKey(dgKey(pre, dgKey(pre, dig)))  # rsplit on gets trailing part
 
     # memoryview
     # Bytes
@@ -278,7 +277,7 @@ def test_lmdber():
                                                         (b'a', b'2', b'wee'),
                                                         (b'b', b'1', b'woo')]
 
-        assert dber.delTopVal(db, key=b"a.")
+        assert dber.delTopVal(db, top=b"a.")
         items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]
         assert items == [(b'b.1', b'woo')]
 
@@ -936,4 +935,6 @@ def test_lmdber():
 
 if __name__ == "__main__":
     test_key_funcs()
+    test_suffix()
     test_lmdber()
+    test_opendatabaser()

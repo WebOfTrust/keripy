@@ -201,7 +201,7 @@ class Organizer:
             stream (file): file-like stream of image data
 
         """
-        self.hby.db.delTopVal(db=self.hby.db.imgs, key=pre.encode("utf-8"))
+        self.hby.db.delTopVal(db=self.hby.db.imgs, top=pre.encode("utf-8"))
 
         key = f"{pre}.content-type".encode("utf-8")
         self.hby.db.setVal(db=self.hby.db.imgs, key=key, val=typ.encode("utf-8"))
