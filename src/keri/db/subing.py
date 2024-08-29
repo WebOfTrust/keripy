@@ -378,98 +378,6 @@ class Suber(SuberBase):
 
 
 
-class OrdSuber(Suber):
-    """
-    Subclass of Suber that adds methods for keys with ordinal numbered suffixes.
-    Each key consistes of pre joined with .sep to ordinal suffix
-
-    """
-
-    def __init__(self, *pa, **kwa):
-        """
-        Inherited Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
-            dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
-            sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
-            verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
-        super(Suber, self).__init__(*pa, **kwa)
-
-
-    def cntOrdPre(self, pre: str | bytes | memoryview, on: int=0):
-        """
-        Returns
-            cnt (int): count of of all ordinal suffix keyed vals with same pre
-                in key but different on in key in db starting at ordinal number
-                on of pre where key is formed with onKey(pre,on)
-                       Does not count dups at same on for a given pre, only
-                       unique on at a given pre.
-
-        Parameters:
-            pre (str | bytes | memoryview): prefix to  to be combined with on
-                to form key
-            on (int): ordinal number used with onKey(pre,on) to form key.
-        """
-        return (self.db.cntAllOrdValsPre(db=self.sdb, pre=self._tokey(pre), on=on))
-
-    # appendOrdPre
-
-    #def appendOrdValPre(self, db, pre, val):
-        #"""
-        #Appends val in order after last previous key with same pre in db.
-        #Returns ordinal number in, on, of appended entry. Appended on is 1 greater
-        #than previous latest on.
-        #Uses onKey(pre, on) for entries.
-
-        #Append val to end of db entries with same pre but with on incremented by
-        #1 relative to last preexisting entry at pre.
-
-        #Parameters:
-            #db is opened named sub db with dupsort=False
-            #pre is bytes identifier prefix for event
-            #val is event digest
-        #"""
-
-    # getAllOrdItemPreIter
-    #def getAllOrdItemPreIter(self, db, pre, on=0):
-        #"""
-        #Returns iterator of duple item, (on, dig), at each key over all ordinal
-        #numbered keys with same prefix, pre, in db. Values are sorted by
-        #onKey(pre, on) where on is ordinal number int.
-        #Returned items are duples of (on, dig) where on is ordinal number int
-        #and dig is event digest for lookup in .evts sub db.
-
-        #Raises StopIteration Error when empty.
-
-        #Parameters:
-            #db is opened named sub db with dupsort=False
-            #pre is bytes of itdentifier prefix
-            #on is int ordinal number to resume replay
-        #"""
-
-
-    #def getAllOrdItemAllPreIter(self, db, key=b''):
-        #"""
-        #Returns iterator of triple item, (pre, on, dig), at each key over all
-        #ordinal numbered keys for all prefixes in db. Values are sorted by
-        #onKey(pre, on) where on is ordinal number int.
-        #Each returned item is triple (pre, on, dig) where pre is identifier prefix,
-        #on is ordinal number int and dig is event digest for lookup in .evts sub db.
-
-        #Raises StopIteration Error when empty.
-
-        #Parameters:
-            #db is opened named sub db with dupsort=False
-            #key is key location in db to resume replay,
-                   #If empty then start at first key in database
-        #"""
-
-
 class CesrSuberBase(SuberBase):
     """
     Sub class of SuberBase where data is CESR encode/decode ducktyped subclass
@@ -1965,10 +1873,114 @@ class IoDupSuber(DupSuber):
             yield (self._tokeys(key), self._des(val))
 
 # ToDo
-    # these seem like a mixture of OrdSuber and IoDupSuber since ord suber
-    # has onkey for its key and IoDupSuber has dupsort==True but OrdSuber does
-    # not. .kels uses these methods
+# OnIoDupSuber methods instead of pre just use key prefix parts top val so
+# can work with any key space that has last part has ordinal
+# try refactoring these to use cursor.iternext cursor.iterpre cursor.next cursor.prev
+# so they work across prefixes without having the extra burden doing repeated
+# iter within a given pre dups. This way they could work with or without duplicates
+# and then the IoDupIter could just strip the proem whereas OrdSuber would not care
+# OnSuber
+    #Although these are similar to OrdSuber in that they both have ordinal
+    # not hidden as last part of keys. OnIoDup suber also has proem that
+    # must be prefixed and stripped so not able to mixin with each other
+    # in multiple inheritance
+    # used by .kels
         # getIoDupValsAllPreIter(self, db, pre, on=0):
         # getIoDupValsAllPreBackIter(self, db, pre, on=0):
-    # used by .dels but maybe someother method works as well
+        # getIoDupValLastAllPreIter(self.kels, pre, on=sn)
+    # used by .dels
         # getIoDupValsAnyPreIter(self, db, pre, on=0)
+
+
+
+
+class OnSuber(Suber):
+    """
+    Subclass of Suber that adds methods for keys with ordinal numbered suffixes.
+    Each key consistes of pre joined with .sep to ordinal suffix
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(OnSuber, self).__init__(*pa, **kwa)
+
+
+    def cntOrdPre(self, pre: str | bytes | memoryview, on: int=0):
+        """
+        Returns
+            cnt (int): count of of all ordinal suffix keyed vals with same pre
+                in key but different on in key in db starting at ordinal number
+                on of pre where key is formed with onKey(pre,on)
+                       Does not count dups at same on for a given pre, only
+                       unique on at a given pre.
+
+        Parameters:
+            pre (str | bytes | memoryview): prefix to  to be combined with on
+                to form key
+            on (int): ordinal number used with onKey(pre,on) to form key.
+        """
+        return (self.db.cntAllOnValsPre(db=self.sdb, pre=self._tokey(pre), on=on))
+
+    # appendOrdPre
+
+    #def appendOrdValPre(self, db, pre, val):
+        #"""
+        #Appends val in order after last previous key with same pre in db.
+        #Returns ordinal number in, on, of appended entry. Appended on is 1 greater
+        #than previous latest on.
+        #Uses onKey(pre, on) for entries.
+
+        #Append val to end of db entries with same pre but with on incremented by
+        #1 relative to last preexisting entry at pre.
+
+        #Parameters:
+            #db is opened named sub db with dupsort=False
+            #pre is bytes identifier prefix for event
+            #val is event digest
+        #"""
+
+    # getAllOrdItemPreIter
+    #def getAllOrdItemPreIter(self, db, pre, on=0):
+        #"""
+        #Returns iterator of duple item, (on, dig), at each key over all ordinal
+        #numbered keys with same prefix, pre, in db. Values are sorted by
+        #onKey(pre, on) where on is ordinal number int.
+        #Returned items are duples of (on, dig) where on is ordinal number int
+        #and dig is event digest for lookup in .evts sub db.
+
+        #Raises StopIteration Error when empty.
+
+        #Parameters:
+            #db is opened named sub db with dupsort=False
+            #pre is bytes of itdentifier prefix
+            #on is int ordinal number to resume replay
+        #"""
+
+
+    #def getAllOrdItemAllPreIter(self, db, key=b''):
+        #"""
+        #Returns iterator of triple item, (pre, on, dig), at each key over all
+        #ordinal numbered keys for all prefixes in db. Values are sorted by
+        #onKey(pre, on) where on is ordinal number int.
+        #Each returned item is triple (pre, on, dig) where pre is identifier prefix,
+        #on is ordinal number int and dig is event digest for lookup in .evts sub db.
+
+        #Raises StopIteration Error when empty.
+
+        #Parameters:
+            #db is opened named sub db with dupsort=False
+            #key is key location in db to resume replay,
+                   #If empty then start at first key in database
+        #"""

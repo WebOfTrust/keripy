@@ -657,7 +657,7 @@ class LMDBer(filing.Filer):
     # and use keys with suffic ordinal that is monotonically increasing number part
     # such as fn where no duplicates allowed at a given (pre, on)
 
-    def cntAllOrdValsPre(self, db, pre, on=0):
+    def cntAllOnValsPre(self, db, pre, on=0):
         """
         Returns (int): count of of all ordinal keyed vals with same pre in key
         but different on in key in db starting at ordinal number on of pre.
@@ -687,7 +687,7 @@ class LMDBer(filing.Filer):
             return count
 
 
-    def appendOrdValPre(self, db, pre, val):
+    def appendOnValPre(self, db, pre, val):
         """
         Appends val in order after last previous key with same pre in db.
         Returns ordinal number in, on, of appended entry. Appended on is 1 greater
@@ -737,7 +737,7 @@ class LMDBer(filing.Filer):
             return on
 
 
-    def getAllOrdItemPreIter(self, db, pre, on=0):
+    def getAllOnItemPreIter(self, db, pre, on=0):
         """
         Returns iterator of duple item, (on, dig), at each key over all ordinal
         numbered keys with same prefix, pre, in db. Values are sorted by
@@ -765,7 +765,7 @@ class LMDBer(filing.Filer):
                 yield (cn, val)  # (on, dig) of event
 
 
-    def getAllOrdItemAllPreIter(self, db, key=b''):
+    def getAllOnItemAllPreIter(self, db, key=b''):
         """
         Returns iterator of triple item, (pre, on, dig), at each key over all
         ordinal numbered keys for all prefixes in db. Values are sorted by

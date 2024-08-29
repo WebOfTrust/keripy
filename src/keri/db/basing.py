@@ -1944,7 +1944,7 @@ class Baser(dbing.LMDBer):
             pre is bytes identifier prefix for event
             val is event digest
         """
-        return self.appendOrdValPre(db=self.fels, pre=pre, val=val)
+        return self.appendOnValPre(db=self.fels, pre=pre, val=val)
 
     def getFelItemPreIter(self, pre, fn=0):
         """
@@ -1961,7 +1961,7 @@ class Baser(dbing.LMDBer):
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
         """
-        return self.getAllOrdItemPreIter(db=self.fels, pre=pre, on=fn)
+        return self.getAllOnItemPreIter(db=self.fels, pre=pre, on=fn)
 
 
     def getFelItemAllPreIter(self, key=b''):
@@ -1980,7 +1980,7 @@ class Baser(dbing.LMDBer):
             key is key location in db to resume replay, If empty then start at
                 first key in database
         """
-        return self.getAllOrdItemAllPreIter(db=self.fels, key=key)
+        return self.getAllOnItemAllPreIter(db=self.fels, key=key)
 
     def putDts(self, key, val):
         """

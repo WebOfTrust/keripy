@@ -322,7 +322,7 @@ def test_lmdber():
         #  test appendOrdValPre
         # empty database
         assert dber.getVal(db, keyB0) == None
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnValPre(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -330,7 +330,7 @@ def test_lmdber():
 
         # earlier pre in database only
         assert dber.putVal(db, keyA0, val=digA) == True
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnValPre(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -339,7 +339,7 @@ def test_lmdber():
         # earlier and later pre in db but not same pre
         assert dber.getVal(db, keyA0) == digA
         assert dber.putVal(db, keyC0, val=digC) == True
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnValPre(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -349,13 +349,13 @@ def test_lmdber():
         assert dber.delVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
         assert dber.getVal(db, keyC0) == digC
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnValPre(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
 
         # earlier pre and later pre and earlier entry for same pre
         assert dber.putVal(db, keyA0, val=digA) == True
-        on = dber.appendOrdValPre(db, preB, digV)
+        on = dber.appendOnValPre(db, preB, digV)
         assert on == 1
         assert dber.getVal(db, keyB1) == digV
 
@@ -365,49 +365,49 @@ def test_lmdber():
         assert dber.delVal(db, keyC0) == True
         assert dber.getVal(db, keyC0) == None
         # another value for preB
-        on = dber.appendOrdValPre(db, preB, digW)
+        on = dber.appendOnValPre(db, preB, digW)
         assert on == 2
         assert dber.getVal(db, keyB2) == digW
         # yet another value for preB
-        on = dber.appendOrdValPre(db, preB, digX)
+        on = dber.appendOnValPre(db, preB, digX)
         assert on == 3
         assert dber.getVal(db, keyB3) == digX
         # yet another value for preB
-        on = dber.appendOrdValPre(db, preB, digY )
+        on = dber.appendOnValPre(db, preB, digY )
         assert on == 4
         assert dber.getVal(db, keyB4) == digY
 
-        assert dber.cntAllOrdValsPre(db, preB) == 5
+        assert dber.cntAllOnValsPre(db, preB) == 5
 
         # replay preB events in database
-        items = [item for item in dber.getAllOrdItemPreIter(db, preB)]
+        items = [item for item in dber.getAllOnItemPreIter(db, preB)]
         assert items == [(0, digU), (1, digV), (2, digW), (3, digX), (4, digY)]
 
         # resume replay preB events at on = 3
-        items = [item for item in dber.getAllOrdItemPreIter(db, preB, on=3)]
+        items = [item for item in dber.getAllOnItemPreIter(db, preB, on=3)]
         assert items == [(3, digX), (4, digY)]
 
         # resume replay preB events at on = 5
-        items = [item for item in dber.getAllOrdItemPreIter(db, preB, on=5)]
+        items = [item for item in dber.getAllOnItemPreIter(db, preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
         assert dber.putVal(db, keyA0, val=digA) == True
         assert dber.putVal(db, keyC0, val=digC) == True
 
-        items = [item  for item in dber.getAllOrdItemAllPreIter(db)]
+        items = [item  for item in dber.getAllOnItemAllPreIter(db)]
         assert items == [(preA, 0, digA), (preB, 0, digU), (preB, 1, digV),
                          (preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
                          (preC, 0, digC)]
 
 
         # resume replay all starting at preB on=2
-        items = [item for item in dber.getAllOrdItemAllPreIter(db, key=keyB2)]
+        items = [item for item in dber.getAllOnItemAllPreIter(db, key=keyB2)]
         assert items == [(preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
                              (preC, 0, digC)]
 
         # resume replay all starting at preC on=1
-        items = [item for item in dber.getAllOrdItemAllPreIter(db, key=onKey(preC, 1))]
+        items = [item for item in dber.getAllOnItemAllPreIter(db, key=onKey(preC, 1))]
         assert items == []
 
 
