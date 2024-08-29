@@ -107,7 +107,8 @@ def dtKey(pre, dts):
         dts = dts.encode("utf-8")  # convert str to bytes
     return (b'%s|%s' % (pre, dts))
 
-
+# ToDo right split so key prefix could be top of key space with more than one
+# part
 def splitKey(key, sep=b'.'):
     """
     Returns duple of pre and either dig or on, sn, fn str or dts datetime str by
@@ -656,36 +657,8 @@ class LMDBer(filing.Filer):
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
     # and use keys with suffic ordinal that is monotonically increasing number part
     # such as fn where no duplicates allowed at a given (pre, on)
-
-    def cntAllOnValsPre(self, db, pre, on=0):
-        """
-        Returns (int): count of of all ordinal keyed vals with same pre in key
-        but different on in key in db starting at ordinal number on of pre.
-        For db with dupsort=False but ordinal number suffix in each key
-
-        Parameters:
-            db is opened named sub db
-            pre is bytes of key within sub db's keyspace pre.on
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = onKey(pre, on)  # start replay at this enty 0 is earliest
-            count = 0
-            if not cursor.set_range(key):  #  moves to val at key >= key
-                return count  # no values end of db
-
-            for key in cursor.iternext(values=False):  # get key only at cursor
-                try:
-                    cpre, cn = splitKeyON(key)
-                except ValueError as ex:  # not splittable key
-                    break
-
-                if cpre != pre:  # prev is now the last event for pre
-                    break  # done
-                count = count+1
-
-            return count
-
+# ToDo change pre to top so can use in suber for any top branch key space whose last
+# part is ordinal number
 
     def appendOnValPre(self, db, pre, val):
         """
@@ -736,6 +709,38 @@ class LMDBer(filing.Filer):
                 raise  ValueError("Failed appending {} at {}.".format(val, key))
             return on
 
+
+    def cntAllOnValsPre(self, db, pre, on=0):
+        """
+        Returns (int): count of of all ordinal keyed vals with same pre in key
+        but different on in key in db starting at ordinal number on of pre.
+        For db with dupsort=False but ordinal number suffix in each key
+
+        Parameters:
+            db is opened named sub db
+            pre is bytes of key within sub db's keyspace pre.on
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = onKey(pre, on)  # start replay at this enty 0 is earliest
+            count = 0
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return count  # no values end of db
+
+            for key in cursor.iternext(values=False):  # get key only at cursor
+                try:
+                    cpre, cn = splitKeyON(key)
+                except ValueError as ex:  # not splittable key
+                    break
+
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                count = count+1
+
+            return count
+
+
+#Returned item should be (top, on, val)
 
     def getAllOnItemPreIter(self, db, pre, on=0):
         """
