@@ -1172,7 +1172,7 @@ class Tever:
             status (Serder): transaction event state notification message
         """
         digs = []
-        for _, dig in self.reger.getTelItemPreIter(pre=vci.encode("utf-8")):
+        for _, _, dig in self.reger.getTelItemPreIter(pre=vci.encode("utf-8")):
             digs.append(dig)
 
         if len(digs) == 0:

@@ -282,11 +282,11 @@ def test_baser():
 
         # replay preB events in database
         items = [item for item in db.getFelItemPreIter(preB)]
-        assert items == [(0, digU), (1, digV), (2, digW), (3, digX), (4, digY)]
+        assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW), (preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 3
         items = [item for item in db.getFelItemPreIter(preB, fn=3)]
-        assert items == [(3, digX), (4, digY)]
+        assert items == [(preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 5
         items = [item for item in db.getFelItemPreIter(preB, fn=5)]

@@ -406,18 +406,19 @@ def test_lmdber():
         assert on == 4
         assert dber.getVal(db, keyB4) == digY
 
-        assert dber.cntAllOnValsPre(db, top=preB) == 5
+        assert dber.cntTopOnVals(db, top=preB) == 5
 
         # replay preB events in database
-        items = [item for item in dber.getAllOnItemPreIter(db, preB)]
-        assert items == [(0, digU), (1, digV), (2, digW), (3, digX), (4, digY)]
+        items = [item for item in dber.getTopOnItemIter(db, preB)]
+        assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
+                         (preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 3
-        items = [item for item in dber.getAllOnItemPreIter(db, preB, on=3)]
-        assert items == [(3, digX), (4, digY)]
+        items = [item for item in dber.getTopOnItemIter(db, preB, on=3)]
+        assert items == [(preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 5
-        items = [item for item in dber.getAllOnItemPreIter(db, preB, on=5)]
+        items = [item for item in dber.getTopOnItemIter(db, preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after

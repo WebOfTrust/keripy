@@ -508,7 +508,7 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for fn, dig in self.getTelItemPreIter(pre, fn=fn):
+        for _, fn, dig in self.getTelItemPreIter(pre, fn=fn):
             msg = self.cloneTvt(pre, dig)
             yield msg
 
@@ -671,7 +671,7 @@ class Reger(dbing.LMDBer):
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
         """
-        return self.getAllOnItemPreIter(db=self.tels, pre=pre, on=fn)
+        return self.getTopOnItemIter(db=self.tels, top=pre, on=fn)
 
     def cntTels(self, pre, fn=0):
         """
@@ -685,7 +685,7 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
-        return self.cntAllOnValsPre(db=self.tels, top=pre, on=fn)
+        return self.cntTopOnVals(db=self.tels, top=pre, on=fn)
 
     def getTibs(self, key):
         """

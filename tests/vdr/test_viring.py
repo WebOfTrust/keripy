@@ -231,7 +231,7 @@ def test_issuer():
         assert issuer.putTel(snKey(vcdig, sn + 2), val=idig.qb64b) is True
         assert issuer.putTel(snKey(vcdig, sn + 3), val=rdig.qb64b) is True
 
-        result = [(sn, dig) for sn, dig in issuer.getTelItemPreIter(vcdig)]
+        result = [(sn, dig) for _, sn, dig in issuer.getTelItemPreIter(vcdig)]
         assert result == [(0, idig.qb64b), (1, rdig.qb64b), (2, idig.qb64b), (3, rdig.qb64b)]
 
         bak1 = b'BA1Q98kT0HRn9R62lY-LufjjKdbCeL1mqu9arTgOmbqI'

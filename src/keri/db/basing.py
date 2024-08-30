@@ -1535,7 +1535,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for fn, dig in self.getFelItemPreIter(pre, fn=fn):
+        for _, fn, dig in self.getFelItemPreIter(pre, fn=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1961,7 +1961,7 @@ class Baser(dbing.LMDBer):
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
         """
-        return self.getAllOnItemPreIter(db=self.fels, pre=pre, on=fn)
+        return self.getTopOnItemIter(db=self.fels, top=pre, on=fn)
 
 
     def getFelItemAllPreIter(self, key=b''):
