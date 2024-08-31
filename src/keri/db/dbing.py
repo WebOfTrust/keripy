@@ -733,10 +733,10 @@ class LMDBer(filing.Filer):
 
     def getTopOnItemIter(self, db, top, on=0, *, sep=b'.'):
         """
-        Returns iterator of triples (top, on, val), at each key over all ordinal
+        Returns iterator of triples (key, on, val), at each key over all ordinal
         numbered keys with same top keyin db. Values are sorted by
-        onKey(top, on) where on is ordinal number int.
-        Returned items are triples of (top, on, val)
+        onKey(key, on) where on is ordinal number int and key is prefix sans on.
+        Returned items are triples of (key, on, val)
         When dupsort==true then duplicates are included in items since .iternext
         includes duplicates.
 
@@ -750,15 +750,47 @@ class LMDBer(filing.Filer):
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = onKey(top, on, sep=sep)  # start replay at this enty 0 is earliest
+            if top:  # not empty
+                key = onKey(top, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:  # empty top
+                key = top  # get all values empty key is start of db
             if not cursor.set_range(key):  #  moves to val at key >= key
                 return  # no values end of db
 
             for key, val in cursor.iternext():  # get key, val at cursor
-                cpre, cn = splitOnKey(key, sep=sep)
-                if cpre != top:  # prev is now the last event for pre
-                    break  # done
-                yield (top, cn, val)
+                ckey, cn = splitOnKey(key, sep=sep)
+                if not ckey.startswith(top):  # prev is now the last event for pre
+                    break # done
+                #if ckey != top:  # prev is now the last event for pre
+                    #break  # done
+                yield (ckey, cn, val)
+
+
+    def getAllOnItemAllPreIter(self, db, key=b''):
+        """
+        Returns iterator of triple item, (pre, on, dig), at each key over all
+        ordinal numbered keys for all prefixes in db. Values are sorted by
+        onKey(pre, on) where on is ordinal number int.
+        Each returned item is triple (pre, on, dig) where pre is identifier prefix,
+        on is ordinal number int and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is key location in db to resume replay,
+                   If empty then start at first key in database
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, cn = splitOnKey(key)
+                yield (cpre, cn, val)  # (pre, on, dig) of event
+
+
 
 
     def appendOnValPre(self, db, pre, val):
@@ -809,35 +841,6 @@ class LMDBer(filing.Filer):
             if not cursor.put(key, val, overwrite=False):
                 raise  ValueError("Failed appending {} at {}.".format(val, key))
             return on
-
-
-
-
-
-
-    def getAllOnItemAllPreIter(self, db, key=b''):
-        """
-        Returns iterator of triple item, (pre, on, dig), at each key over all
-        ordinal numbered keys for all prefixes in db. Values are sorted by
-        onKey(pre, on) where on is ordinal number int.
-        Each returned item is triple (pre, on, dig) where pre is identifier prefix,
-        on is ordinal number int and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            db is opened named sub db with dupsort=False
-            key is key location in db to resume replay,
-                   If empty then start at first key in database
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
-                return  # no values end of db
-
-            for key, val in cursor.iternext():  # return key, val at cursor
-                cpre, cn = splitOnKey(key)
-                yield (cpre, cn, val)  # (pre, on, dig) of event
 
 
 
@@ -1732,9 +1735,50 @@ class LMDBer(filing.Filer):
             return count
 
 
+    def getTopIoDupItemIter(self, db, key=b''):
+        """
+        Iterates over top branch of db given by key of IoDup items where each value
+        has 33 byte insertion ordinal number proem (prefixed) with separator.
+        Automagically removes (strips) proem before returning items.
+
+        Assumes DB opened with dupsort=True
+
+        Returns:
+            items (abc.Iterator): iterator of (full key, val) tuples of all
+            dup items  over a branch of the db given by top key where returned
+            full key is full database key for val not truncated top key.
+            Item is (key, val) with proem stripped from val stored in db.
+            If key = b'' then returns list of dup items for all keys in db.
 
 
+        Because cursor.iternext() advances cursor after returning item its safe
+        to delete the item within the iteration loop. curson.iternext() works
+        for both dupsort==False and dupsort==True
 
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+        """
+        for key, val in self.getTopItemIter(db=db, top=key):
+            val = val[33:] # strip proem
+            yield (key, val)
 
 
     def getIoDupItemsNext(self, db, key=b"", skip=True):
@@ -1886,52 +1930,6 @@ class LMDBer(filing.Filer):
                         continue  # skip dups whose cion is below ion
                     yield (ckey, cval)  # include proem on val
             return  # done raises StopIteration
-
-
-    def getTopIoDupItemIter(self, db, key=b''):
-        """
-        Iterates over top branch of db given by key of IoDup items where each value
-        has 33 byte insertion ordinal number proem (prefixed) with separator.
-        Automagically removes (strips) proem before returning items.
-
-        Assumes DB opened with dupsort=True
-
-        Returns:
-            items (abc.Iterator): iterator of (full key, val) tuples of all
-            dup items  over a branch of the db given by top key where returned
-            full key is full database key for val not truncated top key.
-            Item is (key, val) with proem stripped from val stored in db.
-            If key = b'' then returns list of dup items for all keys in db.
-
-
-        Because cursor.iternext() advances cursor after returning item its safe
-        to delete the item within the iteration loop. curson.iternext() works
-        for both dupsort==False and dupsort==True
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then gets all items in database
-
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order.
-
-        Duplicates are ordered as a pair of key plus value so prepending proem
-        to each value changes duplicate ordering. Proem is 33 characters long.
-        With 32 character hex string followed by '.' for essentiall unlimited
-        number of values which will be limited by memory.
-
-        With prepended proem ordinal must explicity check for duplicate values
-        before insertion. Uses a python set for the duplicate inclusion test.
-        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-        """
-        for key, val in self.getTopItemIter(db=db, top=key):
-            val = val[33:] # strip proem
-            yield (key, val)
 
 
     def getIoDupValsAllPreIter(self, db, pre, on=0):
