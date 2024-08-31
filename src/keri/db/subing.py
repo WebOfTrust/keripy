@@ -91,14 +91,14 @@ class SuberBase():
 
 
 
-    def _tokey(self, keys: str | bytes | memoryview | Iterable[str | bytes],
-                top: bool=False):
+    def _tokey(self, keys: str|bytes|memoryview|Iterable[str|bytes|memoryview],
+                topive: bool=False):
         """
         Converts keys to key bytes with proper separators and returns key bytes.
         If keys is already str or bytes then returns key bytes.
         Else If keys is iterable (non-str) of strs or bytes then joins with
         separator converts to key bytes and returns. When keys is iterable and
-        top is True then enables partial key from top branch of key space given
+        topive is True then enables partial key from top branch of key space given
         by partial keys by appending separator to end of partial key
 
         Returns:
@@ -108,7 +108,7 @@ class SuberBase():
         Parameters:
            keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
                         Iterable of (str | bytes) to form key.
-           top (bool): True means treat as partial key tuple from top branch of
+           topive (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
                        character.
                        False means treat as full branch in key space. Resultant key
@@ -123,7 +123,7 @@ class SuberBase():
             return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
             return keys
-        if top and keys[-1]:  # top and keys is not already partial
+        if topive and keys[-1]:  # topive and keys is not already partial
             keys = tuple(keys) + ('',)  # cat empty str so join adds trailing sep
         return (self.sep.join(key.decode() if hasattr(key, "decode") else key
                               for key in keys).encode("utf-8"))
@@ -170,8 +170,7 @@ class SuberBase():
         return (val.decode("utf-8") if hasattr(val, "decode") else val)
 
 
-    def trim(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
-                *, top=False):
+    def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
         """
         Removes all entries whose keys startswith keys. Enables removal of whole
         branches of db key space. To ensure that proper separation of a branch
@@ -179,14 +178,14 @@ class SuberBase():
         'a.1'and 'a.2' but not 'ab'
 
         Parameters:
-            keys (Iterator[str | bytes | memoryview]): of key parts that may be
+            keys (Iteratabke[str | bytes | memoryview]): of key parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
                 If keys is empty then trims all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
 
-            top (bool): True means treat as partial key tuple from top branch of
+            topive (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
                        character.
                        False means treat as full branch in key space. Resultant key
@@ -198,11 +197,11 @@ class SuberBase():
         Returns:
            result (bool): True if val at key exists so delete successful. False otherwise
         """
-        return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys, top=top)))
+        return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys, topive=topive)))
 
 
     def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
-                       *, top=False):
+                       *, topive=False):
         """Iterator over items in .db that returns full items with subclass
         specific special hidden parts shown for debugging or testing.
 
@@ -215,7 +214,8 @@ class SuberBase():
             valuespace which may be useful in debugging or testing.
 
         Parameters:
-            keys (Iterator[str | bytes | memoryview]): of key parts that may be
+            keys (str|bytes|memoryview|Iteratable[str | bytes | memoryview]):
+                of key parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
                 If keys is empty then gets all items in database.
@@ -225,7 +225,7 @@ class SuberBase():
                 key is empty string it matches all keys in db with startswith.
 
 
-            top (bool): True means treat as partial key tuple from top branch of
+            topive (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
                        character.
                        False means treat as full branch in key space. Resultant key
@@ -235,12 +235,12 @@ class SuberBase():
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
-                                               top=self._tokey(keys, top=top)):
+                                               top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
 
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
-                       *, top=False):
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable=b"",
+                       *, topive=False):
         """Iterator over items in .db subclasses that do special hidden transforms
         on either the keyspace or valuespace should override this method to hide
         hidden parts from the returned items. For example, adding either
@@ -257,7 +257,8 @@ class SuberBase():
 
 
         Parameters:
-            keys (Iterator[str | bytes | memoryview]): of key parts that may be
+            keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): of key
+                parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
                 If keys is empty then gets all items in database.
@@ -267,17 +268,17 @@ class SuberBase():
                 key is empty string it matches all keys in db with startswith.
 
 
-            top (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
-                                               top=self._tokey(keys, top=top)):
+                                               top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
 
@@ -375,6 +376,111 @@ class Suber(SuberBase):
         """
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
+
+class OnSuberBase(SuberBase):
+    """
+    Subclass of SuberBase that adds methods for keys with  exposed key part suffix
+    that is 32 byte serializaton of monotonically increasing ordinal number on
+    such as sn or fn.
+    Each key consistes of top key joined with .sep to ordinal suffix
+    Works with dupsort==True or False
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Default False
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       Default '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(OnSuberBase, self).__init__(*pa, **kwa)
+
+
+    def cntOn(self, keys: str | bytes | memoryview, on: int=0):
+        """
+        Returns
+            cnt (int): count of of all ordinal suffix keyed vals with same top
+                in key but different on in key in db starting at ordinal number
+                on of pre where key is formed with onKey(pre,on)
+                       Does not count dups at same on for a given pre, only
+                       unique on at a given pre.
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): top keys as prefix to be
+                combined with serialized on suffix and sep to form top key
+            on (int): ordinal number used with onKey(pre,on) to form key.
+        """
+        return (self.db.cntTopOnVals(db=self.sdb,
+                                     top=self._tokey(keys),
+                                     on=on,
+                                     sep=self.sep.encode()))
+
+    def getOnItemIter(self, keys: str | bytes | memoryview | Iterable, on: int=0):
+        """
+        Returns
+            items (Iterator[(top keys, on, val)]): triples of (top keys, on int,
+                  deserialized val)
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): top keys as prefix to be
+                combined with serialized on suffix and sep to form key
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for keys, on, val in (self.db.getTopOnItemIter(db=self.sdb,
+                        top=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._tokeys(keys), on, self._des(val))
+
+
+
+class OnSuber(OnSuberBase, Suber):
+    """
+    Subclass of Suber that adds methods for keys with ordinal numbered suffixes.
+    Each key consistes of pre joined with .sep to ordinal suffix
+
+    Assumes dupsort==False
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(OnSuber, self).__init__(*pa, **kwa)
+
+
+    def appendOn(self, keys: str | bytes | memoryview,
+                       val: str | bytes | memoryview):
+        """
+        Returns:
+            on (int): ordinal number of newly appended val
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): top keys as prefix to be
+                combined with serialized on suffix and sep to form key
+            val (str | bytes | memoryview): serialization
+            on (int): ordinal number used with onKey(pre,on) to form key.
+        """
+        return (self.db.appendTopOnVal(db=self.sdb,
+                                       top=self._tokey(keys),
+                                       val=self._ser(val),
+                                       sep=self.sep.encode()))
 
 
 
@@ -843,7 +949,7 @@ class IoSetSuber(SuberBase):
 
 
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = b"",
-                    *, top=False):
+                    *, topive=False):
         """
         Return iterator over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -856,7 +962,7 @@ class IoSetSuber(SuberBase):
             Returned key in each item has ordinal suffix removed.
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
+            keys (Iterable): tuple of bytes or strs that may be a truncation of
                 a full keys tuple in  in order to address all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
@@ -865,17 +971,17 @@ class IoSetSuber(SuberBase):
                 In Python str.startswith('') always returns True so if branch
                 key is empty string it matches all keys in db with startswith.
 
-            top (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb,
-                                                 top=self._tokey(keys, top=top)):
+                                        top=self._tokey(keys, topive=topive)):
             key, ion = dbing.unsuffix(iokey, sep=self.sep)
             yield (self._tokeys(key), self._des(val))
 
@@ -1039,7 +1145,8 @@ class SignerSuber(CesrSuber):
                 if val is not None else None)
 
 
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
+    def getItemIter(self, keys: str | bytes | memoryview | Iterable =b"",
+                    *, topive=False):
         """
         Returns:
             iterator (Iteratore: tuple (key, val) over the all the items in
@@ -1048,13 +1155,21 @@ class SignerSuber(CesrSuber):
             returns all items in subdb
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
+            keys (Iterable): tuple of bytes or strs that may be a truncation of
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                        top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             yield (ikeys, self.klas(qb64b=bytes(val),
@@ -1155,11 +1270,11 @@ class CryptSignerSuber(SignerSuber):
 
 
 
-    def getItemIter(self, keys: Union[str, Iterable]=b"",
-                       decrypter: core.Decrypter = None):
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable=b"",
+                       decrypter: core.Decrypter = None, *, topive=False):
         """
         Returns:
-            iterator (Iterator): of tuples (key, val) over the all the items in
+            items (Iterator): of tuples (key, val) over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
             prefix to return branches of key space. When keys is empty then
             returns all items in subdb
@@ -1168,13 +1283,21 @@ class CryptSignerSuber(SignerSuber):
                 db was encrypted and so decrypts before converting to Signer.
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
+            keys (Iterable): tuple of bytes or strs that may be a truncation of
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                        top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             if decrypter:
@@ -1397,7 +1520,8 @@ class SchemerSuber(Suber):
         """
         return self.db.delVal(db=self.sdb, key=self._tokey(keys))
 
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
+    def getItemIter(self, keys: str | bytes | memoryview | Iterable =b"",
+                    *, topive=False):
         """
         Returns:
             iterator (Iterator): tuple (key, val) over the all the items in
@@ -1406,13 +1530,22 @@ class SchemerSuber(Suber):
             returns all items in subdb
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
+            keys (str | bytes | memoryview | Iterable): tuple of bytes or
+                strs that may be a truncation of
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
+        for iokey, val in self.db.getTopItemIter(db=self.sdb,
+                                        top=self._tokey(keys, topive=topive)):
             yield self._tokeys(iokey), scheming.Schemer(raw=bytes(val))
 
 
@@ -1686,7 +1819,7 @@ class IoDupSuber(DupSuber):
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key
-            val (Union[bytes, str]): serialization
+            val (str | bytes | memoryview): serialization
 
         Returns:
             result (bool): True means unique value added among duplications,
@@ -1818,7 +1951,8 @@ class IoDupSuber(DupSuber):
         apparent effective key and items all have same apparent effective key
 
         Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                    in order to form key
             ion (int): starting ordinal value, default 0
 
         Returns:
@@ -1836,7 +1970,7 @@ class IoDupSuber(DupSuber):
 
 
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = b"",
-                    *, top=False):
+                    *, topive=False):
         """
         Return iterator over all the items including dup items for all keys
         in top branch defined by keys where keys may be truncation of full branch.
@@ -1858,17 +1992,17 @@ class IoDupSuber(DupSuber):
                 In Python str.startswith('') always returns True so if branch
                 key is empty string it matches all keys in db with startswith.
 
-            top (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
-                                                 top=self._tokey(keys, top=top)):
+                                         top=self._tokey(keys, topive=topive)):
             val = val[33:]  # strip off proem
             yield (self._tokeys(key), self._des(val))
 
@@ -1891,96 +2025,3 @@ class IoDupSuber(DupSuber):
     # used by .dels
         # getIoDupValsAnyPreIter(self, db, pre, on=0)
 
-
-
-
-class OnSuber(Suber):
-    """
-    Subclass of Suber that adds methods for keys with ordinal numbered suffixes.
-    Each key consistes of pre joined with .sep to ordinal suffix
-
-    """
-
-    def __init__(self, *pa, **kwa):
-        """
-        Inherited Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
-            dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
-            sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
-            verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
-        super(OnSuber, self).__init__(*pa, **kwa)
-
-
-    def cntOrdPre(self, pre: str | bytes | memoryview, on: int=0):
-        """
-        Returns
-            cnt (int): count of of all ordinal suffix keyed vals with same pre
-                in key but different on in key in db starting at ordinal number
-                on of pre where key is formed with onKey(pre,on)
-                       Does not count dups at same on for a given pre, only
-                       unique on at a given pre.
-
-        Parameters:
-            pre (str | bytes | memoryview): prefix to  to be combined with on
-                to form key
-            on (int): ordinal number used with onKey(pre,on) to form key.
-        """
-        return (self.db.cntTopOnVals(db=self.sdb, top=self._tokey(pre), on=on))
-
-    # appendOrdPre
-
-    #def appendOrdValPre(self, db, pre, val):
-        #"""
-        #Appends val in order after last previous key with same pre in db.
-        #Returns ordinal number in, on, of appended entry. Appended on is 1 greater
-        #than previous latest on.
-        #Uses onKey(pre, on) for entries.
-
-        #Append val to end of db entries with same pre but with on incremented by
-        #1 relative to last preexisting entry at pre.
-
-        #Parameters:
-            #db is opened named sub db with dupsort=False
-            #pre is bytes identifier prefix for event
-            #val is event digest
-        #"""
-
-    # getAllOrdItemPreIter
-    #def getAllOrdItemPreIter(self, db, pre, on=0):
-        #"""
-        #Returns iterator of duple item, (on, dig), at each key over all ordinal
-        #numbered keys with same prefix, pre, in db. Values are sorted by
-        #onKey(pre, on) where on is ordinal number int.
-        #Returned items are duples of (on, dig) where on is ordinal number int
-        #and dig is event digest for lookup in .evts sub db.
-
-        #Raises StopIteration Error when empty.
-
-        #Parameters:
-            #db is opened named sub db with dupsort=False
-            #pre is bytes of itdentifier prefix
-            #on is int ordinal number to resume replay
-        #"""
-
-
-    #def getAllOrdItemAllPreIter(self, db, key=b''):
-        #"""
-        #Returns iterator of triple item, (pre, on, dig), at each key over all
-        #ordinal numbered keys for all prefixes in db. Values are sorted by
-        #onKey(pre, on) where on is ordinal number int.
-        #Each returned item is triple (pre, on, dig) where pre is identifier prefix,
-        #on is ordinal number int and dig is event digest for lookup in .evts sub db.
-
-        #Raises StopIteration Error when empty.
-
-        #Parameters:
-            #db is opened named sub db with dupsort=False
-            #key is key location in db to resume replay,
-                   #If empty then start at first key in database
-        #"""

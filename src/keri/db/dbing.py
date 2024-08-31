@@ -690,12 +690,8 @@ class LMDBer(filing.Filer):
             return result
 
 
-    # For subdbs with no duplicate values allowed at each key. (dupsort==False)
-    # and use keys with suffic ordinal that is monotonically increasing number part
-    # such as fn where no duplicates allowed at a given (pre, on)
-# ToDo change pre to top so can use in suber for any top branch key space whose last
-# part is ordinal number
-
+    # For subdbs  the use keys with trailing part the is  monotonically
+    # ordinal number serialized as 32 hex bytes
 
     def cntTopOnVals(self, db, top, on=0, *, sep=b'.'):
         """
@@ -742,6 +738,9 @@ class LMDBer(filing.Filer):
 
         Raises StopIteration Error when empty.
 
+        Returns:
+            items (Iterator[(top, on, val)]): triples of top key, on int, val
+
         Parameters:
             db (subdb): named sub db in lmdb
             top (bytes): top key within sub db's keyspace with trailing part on
@@ -763,25 +762,33 @@ class LMDBer(filing.Filer):
                     break # done
                 yield (ckey, cn, val)
 
+    # only valid for dupsort==False such as fn where only one entry per ordinal
+    # is allowed
 
-    def appendOnValPre(self, db, pre, val):
+    def appendTopOnVal(self, db, top, val, *, sep=b'.'):
         """
         Appends val in order after last previous key with same pre in db.
         Returns ordinal number in, on, of appended entry. Appended on is 1 greater
-        than previous latest on.
+        than previous latest on at pre.
         Uses onKey(pre, on) for entries.
+
+        Assumes dupsort==False so no duplicates at a given onKey.
 
         Append val to end of db entries with same pre but with on incremented by
         1 relative to last preexisting entry at pre.
 
+        Returns:
+            on (int): ordinal number of newly appended val
+
         Parameters:
-            db is opened named sub db with dupsort=False
-            pre is bytes identifier prefix for event
-            val is event digest
+            db (subdb): named sub db in lmdb
+            top (bytes): top key within sub db's keyspace with trailing part on
+            val (bytes): serialized value to append
+            sep (bytes): separator character for split
         """
         # set key with fn at max and then walk backwards to find last entry at pre
         # if any otherwise zeroth entry at pre
-        key = onKey(pre, MaxON)
+        key = onKey(top, MaxON, sep=sep)
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             on = 0  # unless other cases match then zeroth entry at pre
             cursor = txn.cursor()
@@ -790,24 +797,24 @@ class LMDBer(filing.Filer):
                 #  last is last entry  at same pre
                 if cursor.last():  # not empty db. last entry earlier than max
                     ckey = cursor.key()
-                    cpre, cn = splitOnKey(ckey)
-                    if cpre == pre:  # last is last entry for same pre
+                    cpre, cn = splitOnKey(ckey, sep=sep)
+                    if cpre == top:  # last is last entry for same pre
                         on = cn + 1  # increment
             else:  # not past end so not empty either later pre or max entry at pre
                 ckey = cursor.key()
-                cpre, cn = splitOnKey(ckey)
-                if cpre == pre:  # last entry for pre is already at max
+                cpre, cn = splitOnKey(ckey, sep=sep)
+                if cpre == top:  # last entry for pre is already at max
                     raise ValueError("Number part of key {}  exceeds maximum"
                                      " size.".format(ckey))
                 else:  # later pre so backup one entry
                     # either no entry before last or earlier pre with entry
                     if cursor.prev():  # prev entry, maybe same or earlier pre
                         ckey = cursor.key()
-                        cpre, cn = splitOnKey(ckey)
-                        if cpre == pre:  # last entry at pre
+                        cpre, cn = splitOnKey(ckey, sep=sep)
+                        if cpre == top:  # last entry at pre
                             on = cn + 1  # increment
 
-            key = onKey(pre, on)
+            key = onKey(top, on, sep=sep)
 
             if not cursor.put(key, val, overwrite=False):
                 raise  ValueError("Failed appending {} at {}.".format(val, key))
@@ -839,7 +846,7 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): Apparent effective key
-            vals (abc.Iterable): serialized values to add to set of vals at key
+            vals (Iterable): serialized values to add to set of vals at key
 
         """
         result = False

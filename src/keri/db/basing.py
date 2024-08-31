@@ -1952,7 +1952,7 @@ class Baser(dbing.LMDBer):
             pre is bytes identifier prefix for event
             val is event digest
         """
-        return self.appendOnValPre(db=self.fels, pre=pre, val=val)
+        return self.appendTopOnVal(db=self.fels, top=pre, val=val)
 
     def getFelItemPreIter(self, pre, fn=0):
         """

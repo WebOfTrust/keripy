@@ -31,62 +31,62 @@ def test_suber():
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.Suber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.Suber)
-        assert not sdb.sdb.flags()["dupsort"]
+        suber = subing.Suber(db=db, subkey='bags.')
+        assert isinstance(suber, subing.Suber)
+        assert not suber.sdb.flags()["dupsort"]
 
         sue = "Hello sailer!"
 
         keys = ("test_key", "0001")
-        sdb.put(keys=keys, val=sue)
-        actual = sdb.get(keys=keys)
+        suber.put(keys=keys, val=sue)
+        actual = suber.get(keys=keys)
         assert actual == sue
 
-        sdb.rem(keys)
-        actual = sdb.get(keys=keys)
+        suber.rem(keys)
+        actual = suber.get(keys=keys)
         assert actual is None
 
-        sdb.put(keys=keys, val=sue)
-        actual = sdb.get(keys=keys)
+        suber.put(keys=keys, val=sue)
+        actual = suber.get(keys=keys)
         assert actual == sue
 
         kip = "Hey gorgeous!"
-        result = sdb.put(keys=keys, val=kip)
+        result = suber.put(keys=keys, val=kip)
         assert not result
-        actual = sdb.get(keys=keys)
+        actual = suber.get(keys=keys)
         assert actual == sue
 
-        result = sdb.pin(keys=keys, val=kip)
+        result = suber.pin(keys=keys, val=kip)
         assert result
-        actual = sdb.get(keys=keys)
+        actual = suber.get(keys=keys)
         assert actual == kip
 
-        sdb.rem(keys)
-        actual = sdb.get(keys=keys)
+        suber.rem(keys)
+        actual = suber.get(keys=keys)
         assert actual is None
 
-        sdb.put(keys=keys, val=sue)
-        actual = sdb.get(keys=keys)
+        suber.put(keys=keys, val=sue)
+        actual = suber.get(keys=keys)
         assert actual == sue
 
         # test with keys as tuple of bytes
         keys = (b"test_key", b"0001")
-        sdb.rem(keys)
-        actual = sdb.get(keys=keys)
+        suber.rem(keys)
+        actual = suber.get(keys=keys)
         assert actual is None
 
-        sdb.put(keys=keys, val=sue)
-        actual = sdb.get(keys=keys)
+        suber.put(keys=keys, val=sue)
+        actual = suber.get(keys=keys)
         assert actual == sue
 
         # test with keys as mixed tuple of bytes
         keys = (b"test_key", "0001")
-        sdb.rem(keys)
-        actual = sdb.get(keys=keys)
+        suber.rem(keys)
+        actual = suber.get(keys=keys)
         assert actual is None
 
-        sdb.put(keys=keys, val=sue)
-        actual = sdb.get(keys=keys)
+        suber.put(keys=keys, val=sue)
+        actual = suber.get(keys=keys)
         assert actual == sue
 
 
@@ -95,21 +95,21 @@ def test_suber():
 
         bob = "Shove off!"
 
-        sdb.put(keys=keys, val=bob)
-        actual = sdb.get(keys=keys)
+        suber.put(keys=keys, val=bob)
+        actual = suber.get(keys=keys)
         assert actual == bob
 
-        sdb.rem(keys)
+        suber.rem(keys)
 
-        actual = sdb.get(keys=keys)
+        actual = suber.get(keys=keys)
         assert actual is None
 
 
         liz =  "May life is insane."
         keys = ("test_key", "0002")
 
-        sdb.put(keys=keys, val=liz)
-        actual = sdb.get(("not_found", "0002"))
+        suber.put(keys=keys, val=liz)
+        actual = suber.get(("not_found", "0002"))
         assert actual is None
 
         w = "Blue dog"
@@ -117,26 +117,26 @@ def test_suber():
         y = "Red apple"
         z = "White snow"
 
-        sdb = subing.Suber(db=db, subkey='pugs.')
-        assert isinstance(sdb, subing.Suber)
+        suber = subing.Suber(db=db, subkey='pugs.')
+        assert isinstance(suber, subing.Suber)
 
-        sdb.put(keys=("a","1"), val=w)
-        sdb.put(keys=("a","2"), val=x)
-        sdb.put(keys=("a","3"), val=y)
-        sdb.put(keys=("a","4"), val=z)
+        suber.put(keys=("a","1"), val=w)
+        suber.put(keys=("a","2"), val=x)
+        suber.put(keys=("a","3"), val=y)
+        suber.put(keys=("a","4"), val=z)
 
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getItemIter()]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
                         (('a', '4'), z)]
 
-        sdb.put(keys=("b","1"), val=w)
-        sdb.put(keys=("b","2"), val=x)
-        sdb.put(keys=("bc","3"), val=y)
-        sdb.put(keys=("ac","4"), val=z)
+        suber.put(keys=("b","1"), val=w)
+        suber.put(keys=("b","2"), val=x)
+        suber.put(keys=("bc","3"), val=y)
+        suber.put(keys=("ac","4"), val=z)
 
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getItemIter()]
         assert items == [(('a', '1'), 'Blue dog'),
                         (('a', '2'), 'Green tree'),
                         (('a', '3'), 'Red apple'),
@@ -149,12 +149,12 @@ def test_suber():
 
         # test with top keys for partial tree
         topkeys = ("b","")  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in suber.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), w),
                          (('b', '2'), x)]
 
         topkeys = ("a","")  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in suber.getItemIter(keys=topkeys)]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
@@ -162,20 +162,20 @@ def test_suber():
 
         # test with top parameter
         keys = ("b", )  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=keys, top=True)]
+        items = [(keys, val) for keys, val in suber.getItemIter(keys=keys, topive=True)]
         assert items == [(('b', '1'), w),
                          (('b', '2'), x)]
 
         keys = ("a", )  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in sdb.getItemIter(keys=keys, top=True)]
+        items = [(keys, val) for keys, val in suber.getItemIter(keys=keys, topive=True)]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
                         (('a', '4'), z)]
 
         # Test trim
-        assert sdb.trim(keys=("b", ""))
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert suber.trim(keys=("b", ""))
+        items = [(keys, val) for keys, val in suber.getItemIter()]
         assert items == [(('a', '1'), 'Blue dog'),
                         (('a', '2'), 'Green tree'),
                         (('a', '3'), 'Red apple'),
@@ -183,20 +183,20 @@ def test_suber():
                         (('ac', '4'), 'White snow'),
                         (('bc', '3'), 'Red apple')]
 
-        assert sdb.trim(keys=("a", ""))
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert suber.trim(keys=("a", ""))
+        items = [(keys, val) for keys, val in suber.getItemIter()]
         assert items == [(('ac', '4'), 'White snow'), (('bc', '3'), 'Red apple')]
 
         # Test trim with top parameters
-        sdb.put(keys=("a","1"), val=w)
-        sdb.put(keys=("a","2"), val=x)
-        sdb.put(keys=("a","3"), val=y)
-        sdb.put(keys=("a","4"), val=z)
-        sdb.put(keys=("b","1"), val=w)
-        sdb.put(keys=("b","2"), val=x)
+        suber.put(keys=("a","1"), val=w)
+        suber.put(keys=("a","2"), val=x)
+        suber.put(keys=("a","3"), val=y)
+        suber.put(keys=("a","4"), val=z)
+        suber.put(keys=("b","1"), val=w)
+        suber.put(keys=("b","2"), val=x)
 
-        assert sdb.trim(keys=("b",), top=True)
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert suber.trim(keys=("b",), topive=True)
+        items = [(keys, val) for keys, val in suber.getItemIter()]
         assert items == [(('a', '1'), 'Blue dog'),
                         (('a', '2'), 'Green tree'),
                         (('a', '3'), 'Red apple'),
@@ -204,19 +204,84 @@ def test_suber():
                         (('ac', '4'), 'White snow'),
                         (('bc', '3'), 'Red apple')]
 
-        assert sdb.trim(keys=("a",), top=True)
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert suber.trim(keys=("a",), topive=True)
+        items = [(keys, val) for keys, val in suber.getItemIter()]
         assert items == [(('ac', '4'), 'White snow'),
                          (('bc', '3'), 'Red apple')]
 
-        assert sdb.trim()
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        assert suber.trim()
+        items = [(keys, val) for keys, val in suber.getItemIter()]
         assert items == []
 
-        assert not sdb.trim()
+        assert not suber.trim()
 
     assert not os.path.exists(db.path)
     assert not db.opened
+
+
+def test_on_suber():
+    """
+    Test OnSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        onsuber = subing.OnSuber(db=db, subkey='bags.')
+        assert isinstance(onsuber, subing.OnSuber)
+        assert not onsuber.sdb.flags()["dupsort"]
+
+        w = "Blue dog"
+        x = "Green tree"
+        y = "Red apple"
+        z = "White snow"
+
+        # test append
+        assert 0 == onsuber.appendOn(keys=("a",), val=w)
+        assert 1 == onsuber.appendOn(keys=("a",), val=x)
+        assert 2 == onsuber.appendOn(keys=("a",), val=y)
+        assert 3 == onsuber.appendOn(keys=("a",), val=z)
+
+        assert onsuber.cntOn(keys=("a",)) == 4
+        assert onsuber.cntOn(keys=("a",), on=2) == 2
+        assert onsuber.cntOn(keys=("a",), on=4) == 0
+
+        items = [(keys, val) for keys, val in onsuber.getItemIter()]
+        assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
+                        (('a', '00000000000000000000000000000001'), 'Green tree'),
+                        (('a', '00000000000000000000000000000002'), 'Red apple'),
+                        (('a', '00000000000000000000000000000003'), 'White snow')]
+
+
+        # test getOnItemIter
+
+        assert 0 == onsuber.appendOn(keys=("b",), val=w)
+        assert 1 == onsuber.appendOn(keys=("b",), val=x)
+        assert 0 == onsuber.appendOn(keys=("bc",), val=y)
+        assert 0 == onsuber.appendOn(keys=("ac",), val=z)
+
+        assert onsuber.cntOn(keys=("b",)) == 2
+        assert onsuber.cntOn(keys=("ac",), on=2) == 0
+
+        items = [(keys, val) for keys, val in onsuber.getItemIter()]
+        assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
+                        (('a', '00000000000000000000000000000001'), 'Green tree'),
+                        (('a', '00000000000000000000000000000002'), 'Red apple'),
+                        (('a', '00000000000000000000000000000003'), 'White snow'),
+                        (('ac', '00000000000000000000000000000000'), 'White snow'),
+                        (('b', '00000000000000000000000000000000'), 'Blue dog'),
+                        (('b', '00000000000000000000000000000001'), 'Green tree'),
+                        (('bc', '00000000000000000000000000000000'), 'Red apple')]
+
+        # test getOnItemIter
+
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
 
 
 def test_dup_suber():
@@ -452,7 +517,7 @@ def test_iodup_suber():
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in ioduber.getItemIter(keys=keys, top=True)]
+        items = [(keys, val) for keys, val in ioduber.getItemIter(keys=keys, topive=True)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
@@ -620,7 +685,7 @@ def test_ioset_suber():
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in iosuber.getItemIter(keys=keys, top=True)]
+        items = [(keys, val) for keys, val in iosuber.getItemIter(keys=keys, topive=True)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
@@ -2041,6 +2106,7 @@ def test_crypt_signer_suber():
 
 if __name__ == "__main__":
     test_suber()
+    test_on_suber()
     test_dup_suber()
     test_iodup_suber()
     test_ioset_suber()
