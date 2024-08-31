@@ -1538,7 +1538,7 @@ class BaseHab:
 
         return msgs
 
-    def replayAll(self, key=b''):
+    def replayAll(self):
         """
         Returns replay of FEL first seen event log for all pre starting at key
 
@@ -1547,7 +1547,7 @@ class BaseHab:
 
         """
         msgs = bytearray()
-        for msg in self.db.cloneAllPreIter(key=key):
+        for msg in self.db.cloneAllPreIter():
             msgs.extend(msg)
         return msgs
 

@@ -1531,6 +1531,13 @@ class Baser(dbing.LMDBer):
         Returns iterator of first seen event messages with attachments for the
         identifier prefix pre starting at first seen order number, fn.
         Essentially a replay in first seen order with attachments
+
+        Parameters:
+            pre is bytes of itdentifier prefix
+            fn is int fn to resume replay. Earliset is fn=0
+
+        Returns:
+           msgs (Iterator): over all items with pre starting at fn
         """
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
@@ -1543,18 +1550,19 @@ class Baser(dbing.LMDBer):
             yield msg
 
 
-    def cloneAllPreIter(self, key=b''):
+    def cloneAllPreIter(self):
         """
         Returns iterator of first seen event messages with attachments for all
-        identifier prefixes starting at key. If key == b'' then rstart at first
+        identifier prefixes starting at key. If key == b'' then start at first
         key in databse. Use key to resume replay.
         Essentially a replay in first seen order with attachments of entire
         set of FELs.
 
-        Parameters:
-            key (bytes): fnKey(pre, fn)
+        Returns:
+           msgs (Iterator): over all items in db
+
         """
-        for pre, fn, dig in self.getFelItemAllPreIter(key=key):
+        for pre, fn, dig in self.getFelItemAllPreIter():
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1948,9 +1956,9 @@ class Baser(dbing.LMDBer):
 
     def getFelItemPreIter(self, pre, fn=0):
         """
-        Returns iterator of all (fn, dig) duples in first seen order for all events
-        with same prefix, pre, in database. Items are sorted by fnKey(pre, fn)
-        where fn is first seen order number int.
+        Returns iterator of all (pre, fn, dig) triples in first seen order for
+        all events with same prefix, pre, in database. Items are sorted by
+        fnKey(pre, fn) where fn is first seen order number int.
         Returns a First Seen Event Log FEL.
         Returned items are duples of (fn, dig): Where fn is first seen order
         number int and dig is event digest for lookup in .evts sub db.
@@ -1960,11 +1968,14 @@ class Baser(dbing.LMDBer):
         Parameters:
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
+
+        Returns:
+           items (Iterator[(pre, fn, val)]): over all items starting at pre, on
         """
         return self.getTopOnItemIter(db=self.fels, top=pre, on=fn)
 
 
-    def getFelItemAllPreIter(self, key=b''):
+    def getFelItemAllPreIter(self):
         """
         Returns iterator of all (pre, fn, dig) triples in first seen order for
         all events for all prefixes in database. Items are sorted by
@@ -1980,7 +1991,8 @@ class Baser(dbing.LMDBer):
             key is key location in db to resume replay, If empty then start at
                 first key in database
         """
-        return self.getAllOnItemAllPreIter(db=self.fels, key=key)
+        #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
+        return self.getTopOnItemIter(db=self.fels, top=b'')
 
     def putDts(self, key, val):
         """

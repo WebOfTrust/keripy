@@ -425,19 +425,18 @@ def test_lmdber():
         assert dber.putVal(db, keyA0, val=digA) == True
         assert dber.putVal(db, keyC0, val=digC) == True
 
-        items = [item  for item in dber.getAllOnItemAllPreIter(db)]
+        items = [item  for item in dber.getTopOnItemIter(db, top=b'')]
         assert items == [(preA, 0, digA), (preB, 0, digU), (preB, 1, digV),
                          (preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
                          (preC, 0, digC)]
 
-
         # resume replay all starting at preB on=2
-        items = [item for item in dber.getAllOnItemAllPreIter(db, key=keyB2)]
-        assert items == [(preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
-                             (preC, 0, digC)]
+        top, on = splitOnKey(keyB2)
+        items = [item for item in dber.getTopOnItemIter(db, top=top, on=on)]
+        assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
 
         # resume replay all starting at preC on=1
-        items = [item for item in dber.getAllOnItemAllPreIter(db, key=onKey(preC, 1))]
+        items = [item for item in dber.getTopOnItemIter(db, top=preC, on=1)]
         assert items == []
 
 

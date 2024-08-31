@@ -731,7 +731,7 @@ class LMDBer(filing.Filer):
             return count
 
 
-    def getTopOnItemIter(self, db, top, on=0, *, sep=b'.'):
+    def getTopOnItemIter(self, db, top=b'', on=0, *, sep=b'.'):
         """
         Returns iterator of triples (key, on, val), at each key over all ordinal
         numbered keys with same top keyin db. Values are sorted by
@@ -761,36 +761,7 @@ class LMDBer(filing.Filer):
                 ckey, cn = splitOnKey(key, sep=sep)
                 if not ckey.startswith(top):  # prev is now the last event for pre
                     break # done
-                #if ckey != top:  # prev is now the last event for pre
-                    #break  # done
                 yield (ckey, cn, val)
-
-
-    def getAllOnItemAllPreIter(self, db, key=b''):
-        """
-        Returns iterator of triple item, (pre, on, dig), at each key over all
-        ordinal numbered keys for all prefixes in db. Values are sorted by
-        onKey(pre, on) where on is ordinal number int.
-        Each returned item is triple (pre, on, dig) where pre is identifier prefix,
-        on is ordinal number int and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            db is opened named sub db with dupsort=False
-            key is key location in db to resume replay,
-                   If empty then start at first key in database
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
-                return  # no values end of db
-
-            for key, val in cursor.iternext():  # return key, val at cursor
-                cpre, cn = splitOnKey(key)
-                yield (cpre, cn, val)  # (pre, on, dig) of event
-
-
 
 
     def appendOnValPre(self, db, pre, val):
