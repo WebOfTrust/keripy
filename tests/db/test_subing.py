@@ -307,6 +307,16 @@ def test_on_suber():
                         (('b',), 1, 'Green tree'),
                         (('bc',), 0, 'Red apple')]
 
+        items = [item for item in onsuber.getOnItemIter()]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'White snow'),
+                        (('ac',), 0, 'White snow'),
+                        (('b',), 0, 'Blue dog'),
+                        (('b',), 1, 'Green tree'),
+                        (('bc',), 0, 'Red apple')]
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
