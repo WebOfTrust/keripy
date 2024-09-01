@@ -254,8 +254,17 @@ def test_on_suber():
                         (('a', '00000000000000000000000000000002'), 'Red apple'),
                         (('a', '00000000000000000000000000000003'), 'White snow')]
 
-
         # test getOnItemIter
+        items = [item for item in onsuber.getOnItemIter(keys='a')]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'White snow')]
+
+        items = [item for item in onsuber.getOnItemIter(keys='a', on=2)]
+        assert items == [(('a',), 2, 'Red apple'),
+                         (('a',), 3, 'White snow')]
+
 
         assert 0 == onsuber.appendOn(keys=("b",), val=w)
         assert 1 == onsuber.appendOn(keys=("b",), val=x)
@@ -264,6 +273,7 @@ def test_on_suber():
 
         assert onsuber.cntOn(keys=("b",)) == 2
         assert onsuber.cntOn(keys=("ac",), on=2) == 0
+        assert onsuber.cntOn(keys="") == 8
 
         items = [(keys, val) for keys, val in onsuber.getItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
@@ -276,7 +286,26 @@ def test_on_suber():
                         (('bc', '00000000000000000000000000000000'), 'Red apple')]
 
         # test getOnItemIter
+        items = [item for item in onsuber.getOnItemIter(keys='b')]
+        assert items == [(('b',), 0, 'Blue dog'),
+                         (('b',), 1, 'Green tree')]
 
+        items = [item for item in onsuber.getOnItemIter(keys=('b', ))]
+        assert items == [(('b',), 0, 'Blue dog'),
+                         (('b',), 1, 'Green tree')]
+
+        items = [item for item in onsuber.getOnItemIter(keys=('b', ""))]
+        assert items == []
+
+        items = [item for item in onsuber.getOnItemIter(keys='')]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'White snow'),
+                        (('ac',), 0, 'White snow'),
+                        (('b',), 0, 'Blue dog'),
+                        (('b',), 1, 'Green tree'),
+                        (('bc',), 0, 'Red apple')]
 
 
     assert not os.path.exists(db.path)

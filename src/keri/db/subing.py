@@ -200,7 +200,7 @@ class SuberBase():
         return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys, topive=topive)))
 
 
-    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]=b"",
+    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]="",
                        *, topive=False):
         """Iterator over items in .db that returns full items with subclass
         specific special hidden parts shown for debugging or testing.
@@ -239,7 +239,7 @@ class SuberBase():
             yield (self._tokeys(key), self._des(val))
 
 
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable=b"",
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
         """Iterator over items in .db subclasses that do special hidden transforms
         on either the keyspace or valuespace should override this method to hide
@@ -403,7 +403,7 @@ class OnSuberBase(SuberBase):
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
-    def cntOn(self, keys: str | bytes | memoryview, on: int=0):
+    def cntOn(self, keys: str | bytes | memoryview = "", on: int=0):
         """
         Returns
             cnt (int): count of of all ordinal suffix keyed vals with same top
@@ -417,12 +417,12 @@ class OnSuberBase(SuberBase):
                 combined with serialized on suffix and sep to form top key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
-        return (self.db.cntTopOnVals(db=self.sdb,
-                                     top=self._tokey(keys),
+        return (self.db.cntOnVals(db=self.sdb,
+                                     key=self._tokey(keys),
                                      on=on,
                                      sep=self.sep.encode()))
 
-    def getOnItemIter(self, keys: str | bytes | memoryview | Iterable, on: int=0):
+    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns
             items (Iterator[(top keys, on, val)]): triples of (top keys, on int,
@@ -434,8 +434,8 @@ class OnSuberBase(SuberBase):
             on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
-        for keys, on, val in (self.db.getTopOnItemIter(db=self.sdb,
-                        top=self._tokey(keys), on=on, sep=self.sep.encode())):
+        for keys, on, val in (self.db.getOnItemIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
 
@@ -948,7 +948,7 @@ class IoSetSuber(SuberBase):
 
 
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable = b"",
+    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """
         Return iterator over all the items in top branch defined by keys where
@@ -1145,7 +1145,7 @@ class SignerSuber(CesrSuber):
                 if val is not None else None)
 
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable =b"",
+    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """
         Returns:
@@ -1270,7 +1270,7 @@ class CryptSignerSuber(SignerSuber):
 
 
 
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable=b"",
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable= "",
                        decrypter: core.Decrypter = None, *, topive=False):
         """
         Returns:
@@ -1520,7 +1520,7 @@ class SchemerSuber(Suber):
         """
         return self.db.delVal(db=self.sdb, key=self._tokey(keys))
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable =b"",
+    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """
         Returns:
@@ -1969,7 +1969,7 @@ class IoDupSuber(DupSuber):
             yield (self._tokeys(key), self._des(ioval))
 
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable = b"",
+    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """
         Return iterator over all the items including dup items for all keys

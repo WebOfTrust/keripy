@@ -317,6 +317,7 @@ def test_lmdber():
         preA = b'BBKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
         preC = b'EIDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+        preD = b'EAYC49i5zY_qrIZIicQgIDA1n-WiBA0A8YOqnKrB-wWQ'
 
         keyA0 = onKey(preA, 0)
 
@@ -406,37 +407,56 @@ def test_lmdber():
         assert on == 4
         assert dber.getVal(db, keyB4) == digY
 
-        assert dber.cntTopOnVals(db, top=preB) == 5
+        assert dber.appendTopOnVal(db, preD, digY ) == 0
+
+        assert dber.cntOnVals(db, key=preB) == 5
+        assert dber.cntOnVals(db, key=b'') == 6  # all keys
+        assert dber.cntOnVals(db) == 6  # all keys
 
         # replay preB events in database
-        items = [item for item in dber.getTopOnItemIter(db, preB)]
+        items = [item for item in dber.getOnItemIter(db, preB)]
         assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
                          (preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 3
-        items = [item for item in dber.getTopOnItemIter(db, preB, on=3)]
+        items = [item for item in dber.getOnItemIter(db, preB, on=3)]
         assert items == [(preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 5
-        items = [item for item in dber.getTopOnItemIter(db, preB, on=5)]
+        items = [item for item in dber.getOnItemIter(db, preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
         assert dber.putVal(db, keyA0, val=digA) == True
         assert dber.putVal(db, keyC0, val=digC) == True
 
-        items = [item  for item in dber.getTopOnItemIter(db, top=b'')]
-        assert items == [(preA, 0, digA), (preB, 0, digU), (preB, 1, digV),
-                         (preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
+        items = [item  for item in dber.getOnItemIter(db, key=b'')]
+        assert items == [(preA, 0, digA),
+                         (preD, 0, digY),
+                         (preB, 0, digU),
+                         (preB, 1, digV),
+                         (preB, 2, digW),
+                         (preB, 3, digX),
+                         (preB, 4, digY),
+                         (preC, 0, digC)]
+
+        items = [item  for item in dber.getOnItemIter(db)]
+        assert items == [(preA, 0, digA),
+                         (preD, 0, digY),
+                         (preB, 0, digU),
+                         (preB, 1, digV),
+                         (preB, 2, digW),
+                         (preB, 3, digX),
+                         (preB, 4, digY),
                          (preC, 0, digC)]
 
         # resume replay all starting at preB on=2
         top, on = splitOnKey(keyB2)
-        items = [item for item in dber.getTopOnItemIter(db, top=top, on=on)]
+        items = [item for item in dber.getOnItemIter(db, key=top, on=on)]
         assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
 
         # resume replay all starting at preC on=1
-        items = [item for item in dber.getTopOnItemIter(db, top=preC, on=1)]
+        items = [item for item in dber.getOnItemIter(db, key=preC, on=1)]
         assert items == []
 
 

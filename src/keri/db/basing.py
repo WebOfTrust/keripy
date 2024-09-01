@@ -1972,7 +1972,7 @@ class Baser(dbing.LMDBer):
         Returns:
            items (Iterator[(pre, fn, val)]): over all items starting at pre, on
         """
-        return self.getTopOnItemIter(db=self.fels, top=pre, on=fn)
+        return self.getOnItemIter(db=self.fels, key=pre, on=fn)
 
 
     def getFelItemAllPreIter(self):
@@ -1992,7 +1992,7 @@ class Baser(dbing.LMDBer):
                 first key in database
         """
         #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
-        return self.getTopOnItemIter(db=self.fels, top=b'')
+        return self.getOnItemIter(db=self.fels, key=b'')
 
     def putDts(self, key, val):
         """

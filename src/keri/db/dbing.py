@@ -693,7 +693,7 @@ class LMDBer(filing.Filer):
     # For subdbs  the use keys with trailing part the is  monotonically
     # ordinal number serialized as 32 hex bytes
 
-    def cntTopOnVals(self, db, top, on=0, *, sep=b'.'):
+    def cntOnVals(self, db, key=b'', on=0, *, sep=b'.'):
         """
         Returns (int): count of of all ordinal keyed vals with top key
         but different on tail in db starting at ordinal number on of top.
@@ -703,34 +703,37 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
-            top (bytes): top key within sub db's keyspace with trailing part on
+            key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which to initiate count
             sep (bytes): separator character for split
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = onKey(top, on, sep=sep)  # start replay at this enty 0 is earliest
+            if key:  # not empty
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:
+                onkey = key
             count = 0
-            if not cursor.set_range(key):  #  moves to val at key >= key
+            if not cursor.set_range(onkey):  #  moves to val at key >= key
                 return count  # no values end of db
 
-            for key in cursor.iternext(values=False):  # get key only at cursor
+            for ckey in cursor.iternext(values=False):  # get key only at cursor
                 try:
-                    cpre, cn = splitOnKey(key, sep=sep)
+                    ckey, cn = splitOnKey(ckey, sep=sep)
                 except ValueError as ex:  # not splittable key
                     break
 
-                if cpre != top:  # prev is now the last event for pre
+                if key and ckey != key:  # prev is now the last event for pre
                     break  # done
                 count = count+1
 
             return count
 
 
-    def getTopOnItemIter(self, db, top=b'', on=0, *, sep=b'.'):
+    def getOnItemIter(self, db, key=b'', on=0, *, sep=b'.'):
         """
         Returns iterator of triples (key, on, val), at each key over all ordinal
-        numbered keys with same top keyin db. Values are sorted by
+        numbered keys with same key + sep + on in db. Values are sorted by
         onKey(key, on) where on is ordinal number int and key is prefix sans on.
         Returned items are triples of (key, on, val)
         When dupsort==true then duplicates are included in items since .iternext
@@ -739,28 +742,28 @@ class LMDBer(filing.Filer):
         Raises StopIteration Error when empty.
 
         Returns:
-            items (Iterator[(top, on, val)]): triples of top key, on int, val
+            items (Iterator[(key, on, val)]): triples of key, on, val
 
         Parameters:
             db (subdb): named sub db in lmdb
-            top (bytes): top key within sub db's keyspace with trailing part on
+            key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which to initiate retrieval
             sep (bytes): separator character for split
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            if top:  # not empty
-                key = onKey(top, on, sep=sep)  # start replay at this enty 0 is earliest
-            else:  # empty top
-                key = top  # get all values empty key is start of db
-            if not cursor.set_range(key):  #  moves to val at key >= key
-                return  # no values end of db
+            if key:  # not empty
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:  # empty
+                onkey = key
+            if not cursor.set_range(onkey):  #  moves to val at key >= onkey
+                return  # no values end of db raises StopIteration
 
-            for key, val in cursor.iternext():  # get key, val at cursor
-                ckey, cn = splitOnKey(key, sep=sep)
-                if not ckey.startswith(top):  # prev is now the last event for pre
-                    break # done
-                yield (ckey, cn, val)
+            for ckey, cval in cursor.iternext():  # get key, val at cursor
+                ckey, cn = splitOnKey(ckey, sep=sep)
+                if key and not ckey == key:
+                    break
+                yield (ckey, cn, cval)
 
     # only valid for dupsort==False such as fn where only one entry per ordinal
     # is allowed
