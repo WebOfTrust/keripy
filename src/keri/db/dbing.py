@@ -700,10 +700,12 @@ class LMDBer(filing.Filer):
         Full key is composed of top+sep+
         When dupsort==true then duplicates are included in count since .iternext
         includes duplicates.
+        when key is empty then retrieves whole db
 
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
+                         when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate count
             sep (bytes): separator character for split
         """
@@ -738,6 +740,7 @@ class LMDBer(filing.Filer):
         Returned items are triples of (key, on, val)
         When dupsort==true then duplicates are included in items since .iternext
         includes duplicates.
+        when key is empty then retrieves whole db
 
         Raises StopIteration Error when empty.
 
@@ -747,6 +750,7 @@ class LMDBer(filing.Filer):
         Parameters:
             db (subdb): named sub db in lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
             sep (bytes): separator character for split
         """
@@ -765,17 +769,18 @@ class LMDBer(filing.Filer):
                     break
                 yield (ckey, cn, cval)
 
-    # only valid for dupsort==False such as fn where only one entry per ordinal
-    # is allowed
+
 
     def appendOnVal(self, db, key, val, *, sep=b'.'):
         """
-        Appends val in order after last previous key with same pre in db.
+        Appends val in order after last previous key with same pre in db where
+        full key has key prefix and serialized on suffix attached with sep.
         Returns ordinal number in, on, of appended entry. Appended on is 1 greater
         than previous latest on at pre.
         Uses onKey(pre, on) for entries.
 
-        Assumes dupsort==False so no duplicates at a given onKey.
+        Works with either dupsort==True or False since always creates new full
+        key.
 
         Append val to end of db entries with same pre but with on incremented by
         1 relative to last preexisting entry at pre.

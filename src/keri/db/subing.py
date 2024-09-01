@@ -403,6 +403,25 @@ class OnSuberBase(SuberBase):
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
+    def appendOn(self, keys: str | bytes | memoryview,
+                       val: str | bytes | memoryview):
+        """
+        Returns:
+            on (int): ordinal number of newly appended val
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): top keys as prefix to be
+                combined with serialized on suffix and sep to form key
+            val (str | bytes | memoryview): serialization
+            on (int): ordinal number used with onKey(pre,on) to form key.
+        """
+        return (self.db.appendOnVal(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       val=self._ser(val),
+                                       sep=self.sep.encode()))
+
+
+
     def cntOn(self, keys: str | bytes | memoryview = "", on: int=0):
         """
         Returns
@@ -415,6 +434,7 @@ class OnSuberBase(SuberBase):
         Parameters:
             keys (str | bytes | memoryview | Iterable): top keys as prefix to be
                 combined with serialized on suffix and sep to form top key
+                When keys is empty then counts whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
         return (self.db.cntOnVals(db=self.sdb,
@@ -431,6 +451,7 @@ class OnSuberBase(SuberBase):
         Parameters:
             keys (str | bytes | memoryview | iterator): top keys as prefix to be
                 combined with serialized on suffix and sep to form key
+                When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
@@ -465,22 +486,6 @@ class OnSuber(OnSuberBase, Suber):
         super(OnSuber, self).__init__(*pa, **kwa)
 
 
-    def appendOn(self, keys: str | bytes | memoryview,
-                       val: str | bytes | memoryview):
-        """
-        Returns:
-            on (int): ordinal number of newly appended val
-
-        Parameters:
-            keys (str | bytes | memoryview | Iterable): top keys as prefix to be
-                combined with serialized on suffix and sep to form key
-            val (str | bytes | memoryview): serialization
-            on (int): ordinal number used with onKey(pre,on) to form key.
-        """
-        return (self.db.appendOnVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=self._ser(val),
-                                       sep=self.sep.encode()))
 
 
 
@@ -2025,3 +2030,49 @@ class IoDupSuber(DupSuber):
     # used by .dels
         # getIoDupValsAnyPreIter(self, db, pre, on=0)
 
+
+class OnIoDupSuber(OnSuberBase, DupSuber):
+    """
+    Sub class of IoDupSuber and OnSuberBase that supports Insertion Ordering
+    (IoDup) of duplicates but where the trailing part of the key space is
+    a serialized monotonically increasing ordinal number. This is useful for
+    escrows of key events etc where duplicates of likely events are maintained
+    in insertion order.
+    Insertion order is maintained by automagically prepending and stripping an
+    ordinal ordering proem to/from each duplicate value at a given key.
+
+    OnIoDupSuber adds the convenience methods from OnSuberBase to IoDupSuber for
+    those cases where the keyspace has a trailing ordinal part.
+
+    There are two ordinals, one in the key space and a hidden one in the duplicate
+    data value space.
+
+    OnIoDupSuber supports  insertion ordered multiple entries at each key
+    (duplicates) with dupsort==True
+
+    Do not use if  serialized length key + proem + value, is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
+
+    OnIoDupSuber may be more performant then IoSetSuber for values that are indices
+    to other sub dbs that fit the size constraint because LMDB support for
+    duplicates is more space efficient and code performant.
+
+    Duplicates at a given key preserve insertion order of duplicate.
+    Because lmdb is lexocographic an insertion ordering proem is prepended to
+    all values that makes lexocographic order that same as insertion order.
+
+    Duplicates are ordered as a pair of key plus value so prepending proem
+    to each value changes duplicate ordering. Proem is 33 characters long.
+    With 32 character hex string followed by '.' for essentiall unlimited
+    number of values which will be limited by memory.
+
+    With prepended proem ordinal must explicity check for duplicate values
+    before insertion. Uses a python set for the duplicate inclusion test.
+    Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+    """
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+
+        """
+        super(OnIoDupSuber, self).__init__(*pa, **kwa)

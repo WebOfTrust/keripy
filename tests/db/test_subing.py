@@ -623,6 +623,150 @@ def test_iodup_suber():
     assert not db.opened
 
 
+def test_oniodup_suber():
+    """
+    Test OnIoDupSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        onsuber = subing.OnIoDupSuber(db=db, subkey='bags.')
+        assert isinstance(onsuber, subing.OnIoDupSuber)
+        assert onsuber.sdb.flags()["dupsort"]
+
+        w = "Blue dog"
+        x = "Green tree"
+        y = "Red apple"
+        z = "White snow"
+
+        # test append
+        assert 0 == onsuber.appendOn(keys=("a",), val=w)
+        assert 1 == onsuber.appendOn(keys=("a",), val=x)
+        assert 2 == onsuber.appendOn(keys=("a",), val=y)
+        assert 3 == onsuber.appendOn(keys=("a",), val=z)
+
+        assert onsuber.cntOn(keys=("a",)) == 4
+        assert onsuber.cntOn(keys=("a",), on=2) == 2
+        assert onsuber.cntOn(keys=("a",), on=4) == 0
+
+        items = [(keys, val) for keys, val in onsuber.getItemIter()]
+        assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
+                        (('a', '00000000000000000000000000000001'), 'Green tree'),
+                        (('a', '00000000000000000000000000000002'), 'Red apple'),
+                        (('a', '00000000000000000000000000000003'), 'White snow')]
+
+        # test getOnItemIter
+        items = [item for item in onsuber.getOnItemIter(keys='a')]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'White snow')]
+
+        items = [item for item in onsuber.getOnItemIter(keys='a', on=2)]
+        assert items == [(('a',), 2, 'Red apple'),
+                         (('a',), 3, 'White snow')]
+
+        # test add duplicates
+        assert onsuber.add(keys=dbing.onKey("b", 0), val=w)
+        assert onsuber.add(keys=dbing.onKey("b", 1), val=x)
+        assert onsuber.add(keys=dbing.onKey("bc", 0), val=y)
+        assert onsuber.add(keys=dbing.onKey("ac", 0), val=z)
+
+        assert onsuber.cntOn(keys=("b",)) == 2
+        assert onsuber.cntOn(keys=("ac",), on=2) == 0
+        assert onsuber.cntOn(keys="") == 8
+
+        items = [(keys, val) for keys, val in onsuber.getItemIter()]
+        assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
+                        (('a', '00000000000000000000000000000001'), 'Green tree'),
+                        (('a', '00000000000000000000000000000002'), 'Red apple'),
+                        (('a', '00000000000000000000000000000003'), 'White snow'),
+                        (('ac', '00000000000000000000000000000000'), 'White snow'),
+                        (('b', '00000000000000000000000000000000'), 'Blue dog'),
+                        (('b', '00000000000000000000000000000001'), 'Green tree'),
+                        (('bc', '00000000000000000000000000000000'), 'Red apple')]
+
+        # test getOnItemIter
+        items = [item for item in onsuber.getOnItemIter(keys='b')]
+        assert items == [(('b',), 0, 'Blue dog'),
+                         (('b',), 1, 'Green tree')]
+
+        items = [item for item in onsuber.getOnItemIter(keys=('b', ))]
+        assert items == [(('b',), 0, 'Blue dog'),
+                         (('b',), 1, 'Green tree')]
+
+        items = [item for item in onsuber.getOnItemIter(keys=('b', ""))]
+        assert items == []
+
+        items = [item for item in onsuber.getOnItemIter(keys='')]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'White snow'),
+                        (('ac',), 0, 'White snow'),
+                        (('b',), 0, 'Blue dog'),
+                        (('b',), 1, 'Green tree'),
+                        (('bc',), 0, 'Red apple')]
+
+        items = [item for item in onsuber.getOnItemIter()]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'White snow'),
+                        (('ac',), 0, 'White snow'),
+                        (('b',), 0, 'Blue dog'),
+                        (('b',), 1, 'Green tree'),
+                        (('bc',), 0, 'Red apple')]
+
+        # test with duplicates
+        assert onsuber.add(keys=dbing.onKey("a", 0), val=z)
+        assert onsuber.add(keys=dbing.onKey("a", 1), val=y)
+        assert onsuber.add(keys=dbing.onKey("a", 2), val=x)
+        assert onsuber.add(keys=dbing.onKey("a", 3), val=w)
+
+        assert onsuber.cntOn(keys=("a",)) == 8
+        assert onsuber.cntOn(keys=("a",), on=2) == 4
+        assert onsuber.cntOn(keys=("a",), on=4) == 0
+
+        items = [(keys, val) for keys, val in onsuber.getItemIter(keys=("a", ""))]
+        assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
+                        (('a', '00000000000000000000000000000000'), 'White snow'),
+                        (('a', '00000000000000000000000000000001'), 'Green tree'),
+                        (('a', '00000000000000000000000000000001'), 'Red apple'),
+                        (('a', '00000000000000000000000000000002'), 'Green tree'),
+                        (('a', '00000000000000000000000000000002'), 'Red apple'),
+                        (('a', '00000000000000000000000000000003'), 'Blue dog'),
+                        (('a', '00000000000000000000000000000003'), 'White snow')]
+
+        # test getOnItemIter
+        items = [item for item in onsuber.getOnItemIter(keys='a')]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 0, 'White snow'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 1, 'Red apple'),
+                        (('a',), 2, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'Blue dog'),
+                        (('a',), 3, 'White snow')]
+
+        items = [item for item in onsuber.getOnItemIter(keys='a', on=2)]
+        assert items == [(('a',), 2, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'Blue dog'),
+                        (('a',), 3, 'White snow')]
+
+        # test append with duplicates
+        assert 4 == onsuber.appendOn(keys=("a",), val=x)
+        assert onsuber.cntOn(keys=("a",)) == 9
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
+
 def test_ioset_suber():
     """
     Test IoSetSuber LMDBer sub database class
@@ -2148,6 +2292,7 @@ if __name__ == "__main__":
     test_on_suber()
     test_dup_suber()
     test_iodup_suber()
+    test_oniodup_suber()
     test_ioset_suber()
     test_cat_suber()
     test_cesr_suber()
