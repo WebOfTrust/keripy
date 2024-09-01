@@ -768,7 +768,7 @@ class LMDBer(filing.Filer):
     # only valid for dupsort==False such as fn where only one entry per ordinal
     # is allowed
 
-    def appendTopOnVal(self, db, top, val, *, sep=b'.'):
+    def appendOnVal(self, db, key, val, *, sep=b'.'):
         """
         Appends val in order after last previous key with same pre in db.
         Returns ordinal number in, on, of appended entry. Appended on is 1 greater
@@ -785,42 +785,42 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (subdb): named sub db in lmdb
-            top (bytes): top key within sub db's keyspace with trailing part on
+            key (bytes): key within sub db's keyspace plus trailing part on
             val (bytes): serialized value to append
             sep (bytes): separator character for split
         """
         # set key with fn at max and then walk backwards to find last entry at pre
         # if any otherwise zeroth entry at pre
-        key = onKey(top, MaxON, sep=sep)
+        onkey = onKey(key, MaxON, sep=sep)
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             on = 0  # unless other cases match then zeroth entry at pre
             cursor = txn.cursor()
-            if not cursor.set_range(key):  # max is past end of database
+            if not cursor.set_range(onkey):  # max is past end of database
                 #  so either empty database or last is earlier pre or
                 #  last is last entry  at same pre
                 if cursor.last():  # not empty db. last entry earlier than max
                     ckey = cursor.key()
-                    cpre, cn = splitOnKey(ckey, sep=sep)
-                    if cpre == top:  # last is last entry for same pre
+                    ckey, cn = splitOnKey(ckey, sep=sep)
+                    if ckey == key:  # last is last entry for same pre
                         on = cn + 1  # increment
             else:  # not past end so not empty either later pre or max entry at pre
                 ckey = cursor.key()
-                cpre, cn = splitOnKey(ckey, sep=sep)
-                if cpre == top:  # last entry for pre is already at max
-                    raise ValueError("Number part of key {}  exceeds maximum"
-                                     " size.".format(ckey))
+                ckey, cn = splitOnKey(ckey, sep=sep)
+                if ckey == key:  # last entry for pre is already at max
+                    raise ValueError(f"Number part {cn=} for key part {ckey=}"
+                                     f"exceeds maximum size.")
                 else:  # later pre so backup one entry
                     # either no entry before last or earlier pre with entry
                     if cursor.prev():  # prev entry, maybe same or earlier pre
                         ckey = cursor.key()
-                        cpre, cn = splitOnKey(ckey, sep=sep)
-                        if cpre == top:  # last entry at pre
+                        ckey, cn = splitOnKey(ckey, sep=sep)
+                        if ckey == key:  # last entry at pre
                             on = cn + 1  # increment
 
-            key = onKey(top, on, sep=sep)
+            onkey = onKey(key, on, sep=sep)
 
-            if not cursor.put(key, val, overwrite=False):
-                raise  ValueError("Failed appending {} at {}.".format(val, key))
+            if not cursor.put(onkey, val, overwrite=False):
+                raise  ValueError(f"Failed appending {val=} at {key=}.")
             return on
 
 

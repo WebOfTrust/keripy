@@ -352,7 +352,7 @@ def test_lmdber():
         #  test appendOrdValPre
         # empty database
         assert dber.getVal(db, keyB0) == None
-        on = dber.appendTopOnVal(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -360,7 +360,7 @@ def test_lmdber():
 
         # earlier pre in database only
         assert dber.putVal(db, keyA0, val=digA) == True
-        on = dber.appendTopOnVal(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -369,7 +369,7 @@ def test_lmdber():
         # earlier and later pre in db but not same pre
         assert dber.getVal(db, keyA0) == digA
         assert dber.putVal(db, keyC0, val=digC) == True
-        on = dber.appendTopOnVal(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -379,13 +379,13 @@ def test_lmdber():
         assert dber.delVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
         assert dber.getVal(db, keyC0) == digC
-        on = dber.appendTopOnVal(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
 
         # earlier pre and later pre and earlier entry for same pre
         assert dber.putVal(db, keyA0, val=digA) == True
-        on = dber.appendTopOnVal(db, preB, digV)
+        on = dber.appendOnVal(db, preB, digV)
         assert on == 1
         assert dber.getVal(db, keyB1) == digV
 
@@ -395,19 +395,19 @@ def test_lmdber():
         assert dber.delVal(db, keyC0) == True
         assert dber.getVal(db, keyC0) == None
         # another value for preB
-        on = dber.appendTopOnVal(db, preB, digW)
+        on = dber.appendOnVal(db, preB, digW)
         assert on == 2
         assert dber.getVal(db, keyB2) == digW
         # yet another value for preB
-        on = dber.appendTopOnVal(db, preB, digX)
+        on = dber.appendOnVal(db, preB, digX)
         assert on == 3
         assert dber.getVal(db, keyB3) == digX
         # yet another value for preB
-        on = dber.appendTopOnVal(db, preB, digY )
+        on = dber.appendOnVal(db, preB, digY )
         assert on == 4
         assert dber.getVal(db, keyB4) == digY
 
-        assert dber.appendTopOnVal(db, preD, digY ) == 0
+        assert dber.appendOnVal(db, preD, digY ) == 0
 
         assert dber.cntOnVals(db, key=preB) == 5
         assert dber.cntOnVals(db, key=b'') == 6  # all keys

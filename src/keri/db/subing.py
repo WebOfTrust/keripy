@@ -477,8 +477,8 @@ class OnSuber(OnSuberBase, Suber):
             val (str | bytes | memoryview): serialization
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
-        return (self.db.appendTopOnVal(db=self.sdb,
-                                       top=self._tokey(keys),
+        return (self.db.appendOnVal(db=self.sdb,
+                                       key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
 
