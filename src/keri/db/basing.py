@@ -3192,7 +3192,7 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoDupVals(self.dels, key)
 
-    def getDelIter(self, pre):
+    def getDelItemIter(self, pre):
         """
         Returns iterator of all dup vals  in insertion order for any entries
         with same prefix across all sequence numbers including gaps.
@@ -3209,7 +3209,8 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupValsAnyPreIter(self.dels, pre)
+        return self.getTopIoDupItemIter(self.dels, pre)
+        #return self.getOnIoDupValsAnyPreIter(self.dels, pre)
 
     def putLdes(self, key, vals):
         """

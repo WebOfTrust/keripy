@@ -1926,7 +1926,7 @@ def test_fetchkeldel():
         assert vals == lastvals
 
 
-        # test getDelIter
+        # test getDelItemIter
         preb = 'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw'.encode("utf-8")
         sn = 1  # do not start at zero
         key = snKey(preb, sn)
@@ -1947,8 +1947,8 @@ def test_fetchkeldel():
         for val in vals2:
             assert db.addDe(key, val) == True
 
-        vals = [bytes(val) for val in db.getDelIter(preb)]
         allvals = vals0 + vals1 + vals2
+        vals = [bytes(val) for key, val in db.getDelItemIter(preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)

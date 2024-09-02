@@ -1722,6 +1722,8 @@ class LMDBer(filing.Filer):
 
 
 # used in IoDupSuber
+# do we really need this? Do we really need to access a subset of duplicates by
+# their ion? Is not yet used so now is the time to remove this
     def getIoDupItemIter(self, db, key=b'', *, ion=0):
         """
         Iterates over branch of db given by key of IoDup items where each value
@@ -1988,6 +1990,8 @@ class LMDBer(filing.Filer):
 
 
 # without gaps is used for replay with on to provide partial replay
+# Consider using ItemIter instead of just replaying vals since ItemIter already
+# works with either dupsort==True or False
 
     def getOnIoDupValsAllPreIter(self, db, pre, on=0):
         """
@@ -2030,6 +2034,10 @@ class LMDBer(filing.Filer):
     # values starting at on
     # need to fix this so it is not stopped by gaps or if gap raises error as
     # gap is normally a problem for replay so maybe a parameter to raise error on gap
+
+    # Consider creating BackItemIter instead of just replaying vals since
+    # ItemIter already works with either dupsort==True or False
+    # so if we create TopBackItemIter then we can use that everywhere
     def getOnIoDupValsAllPreBackIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
@@ -2106,16 +2114,13 @@ class LMDBer(filing.Filer):
 
 
 
-# to do do we need a replay last backwards?
+# ToDo do we need a replay last backwards?
 
-    # used by .dels do we need "on" parameter? if not then  should be able to
-    # replace with self.getTopIoDupItemIter which gets used by
-    # IoDupSuber.getIoDupItemIter which crosses gaps.
-    # duplicitous items in escrow may have gaps but do we need to have an on start
-    # of duplicity escrow processing?
+
 
     # use this method to inform how to cross gaps in other replays above with parameter
     # to raise error if detect gap when should not be one for event logs vs escrows
+    # then remove this method since not used otherwise
 
     def getOnIoDupValsAnyPreIter(self, db, pre, on=0):
         """

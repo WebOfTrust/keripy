@@ -589,8 +589,9 @@ def test_lmdber():
         key = snKey(pre, sn)
         assert dber.putIoDupVals(db, key, vals2) == True
 
-        vals = [bytes(val) for val in dber.getOnIoDupValsAnyPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
+        vals = [bytes(val) for key, val in dber.getTopIoDupItemIter(db, pre)]
+        # dber.getTopIoDupItemIter()
         assert vals == allvals
 
         # Setup Tests for getIoItemsNext and getIoItemsNextIter
