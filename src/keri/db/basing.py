@@ -2585,7 +2585,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoDupValsAllPreIter(self.kels, pre, on=sn)
+        return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
 
 
     def getKelBackIter(self, pre, sn=0):
@@ -2609,7 +2609,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoDupValsAllPreBackIter(self.kels, pre, sn)
+        return self.getOnIoDupValsAllPreBackIter(self.kels, pre, sn)
 
 
     def getKelLastIter(self, pre, sn=0):
@@ -3209,7 +3209,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoDupValsAnyPreIter(self.dels, pre)
+        return self.getOnIoDupValsAnyPreIter(self.dels, pre)
 
     def putLdes(self, key, vals):
         """

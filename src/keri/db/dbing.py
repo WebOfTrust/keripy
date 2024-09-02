@@ -1986,9 +1986,10 @@ class LMDBer(filing.Filer):
 
 
 
-# Should not need this in OnIoDupSuber because can replace with get getIoDupItemIter
 
-    def getIoDupValsAllPreIter(self, db, pre, on=0):
+# without gaps is used for replay with on to provide partial replay
+
+    def getOnIoDupValsAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all ordinal numbers in increasing order
@@ -2024,7 +2025,12 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoDupValsAllPreBackIter(self, db, pre, on=0):
+
+    # ToDo need  unit tests in dbing  Used to replay backwards all duplicate
+    # values starting at on
+    # need to fix this so it is not stopped by gaps or if gap raises error as
+    # gap is normally a problem for replay so maybe a parameter to raise error on gap
+    def getOnIoDupValsAllPreBackIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all sequence numbers in decreasing order without gaps
@@ -2061,7 +2067,9 @@ class LMDBer(filing.Filer):
                     yield val[33:]
                 key = snKey(pre, cnt:=cnt-1)
 
-# need to fix this so it is not stopped by gaps in on
+# Used to replay forward all last duplicate values starting at on
+# need to fix this so it is not stopped by gaps or if gap raises error as
+# gap is normally a problem for replay so maybe a parameter to raise error on gap
     def getIoDupValLastAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of last only of dup vals of each key in insertion order
@@ -2096,9 +2104,20 @@ class LMDBer(filing.Filer):
                     yield cursor.value()[33:]  # slice off prepended ordering proem
                 key = snKey(pre, cnt:=cnt+1)
 
-# used by .dels  should be able to replace with self.getTopIoDupItemIter which
-# gets used by IoDupSuber.getIoDupItemIter
-    def getIoDupValsAnyPreIter(self, db, pre, on=0):
+
+
+# to do do we need a replay last backwards?
+
+    # used by .dels do we need "on" parameter? if not then  should be able to
+    # replace with self.getTopIoDupItemIter which gets used by
+    # IoDupSuber.getIoDupItemIter which crosses gaps.
+    # duplicitous items in escrow may have gaps but do we need to have an on start
+    # of duplicity escrow processing?
+
+    # use this method to inform how to cross gaps in other replays above with parameter
+    # to raise error if detect gap when should not be one for event logs vs escrows
+
+    def getOnIoDupValsAnyPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for any entries
         with same prefix across all ordinal numbers in order including gaps
@@ -2139,4 +2158,3 @@ class LMDBer(filing.Filer):
                     yield val[33:]  # slice off prepended ordering prefix
                 cnt = int(back, 16)
                 key = snKey(pre, cnt:=cnt+1)
-
