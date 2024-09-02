@@ -129,7 +129,7 @@ class Mailboxer(dbing.LMDBer):
         if hasattr(topic, 'encode'):
             topic = topic.encode("utf-8")
 
-        for ion, (topic, dig) in enumerate(self.getIoSetItemIter(self.tpcs, topic)):
+        for ion, (topic, dig) in enumerate(self.getTopIoSetItemIter(self.tpcs, topic)):
             if ion >= fn:
                 if msg := self.msgs.get(keys=dig):
                     yield ion, topic, msg.encode("utf-8")

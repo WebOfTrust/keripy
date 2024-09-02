@@ -530,21 +530,17 @@ def test_iodup_suber():
                         (('test_key', '0002'), '00000000000000000000000000000001.Hello sailer!'),
                         (('test_key', '0002'), '00000000000000000000000000000002.A real charmer!')]
 
-        items = [(keys, ioval) for keys,  ioval in ioduber.getIoDupItemIter(keys=keys1)]
-        assert items == [(('test_key', '0002'), '00000000000000000000000000000000.Not my type.'),
-                        (('test_key', '0002'), '00000000000000000000000000000001.Hello sailer!'),
-                        (('test_key', '0002'), '00000000000000000000000000000002.A real charmer!')]
+        items = [(keys, val) for keys,  val in ioduber.getItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), 'Not my type.'),
+                         (('test_key', '0002'), 'Hello sailer!'),
+                         (('test_key', '0002'), 'A real charmer!')]
 
-        items = [(keys, ioval) for keys,  ioval in  ioduber.getIoDupItemIter(keys=keys0)]
-        assert items == [(('test_key', '0001'), '00000000000000000000000000000000.See ya later.'),
-                         (('test_key', '0001'), '00000000000000000000000000000001.Hey gorgeous!')]
+        items = [(keys, val) for keys,  val in  ioduber.getItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), 'See ya later.'),
+                         (('test_key', '0001'), 'Hey gorgeous!')]
 
-        items = [(keys, ioval) for keys,  ioval in  ioduber.getIoDupItemIter(keys=keys1, ion=1)]
-        assert items ==[(('test_key', '0002'), '00000000000000000000000000000001.Hello sailer!'),
-                        (('test_key', '0002'), '00000000000000000000000000000002.A real charmer!')]
 
-        items = [(keys, ioval) for keys, ioval in  ioduber.getIoDupItemIter(keys=keys0, ion=1)]
-        assert items == [(('test_key', '0001'), '00000000000000000000000000000001.Hey gorgeous!')]
+
 
         # Test with top keys
         assert ioduber.put(keys=("test", "pop"), vals=[sal, sue, sam])
@@ -843,11 +839,11 @@ def test_ioset_suber():
                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
 
-        items = [(keys, val) for keys,  val in  iosuber.getIoSetItemIter(keys=keys0)]
+        items = [(keys, val) for keys,  val in  iosuber.getItemIter(keys=keys0)]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                          (('test_key', '0001'), 'Hey gorgeous!')]
 
-        items = [(keys, val) for keys,  val in iosuber.getIoSetItemIter(keys=keys1)]
+        items = [(keys, val) for keys,  val in iosuber.getItemIter(keys=keys1)]
         assert items == [(('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'A real charmer!')]
@@ -1096,10 +1092,10 @@ def test_cesr_ioset_suber():
                             ((*keys0, '00000000000000000000000000000001'), said2),
                         ]
 
-        items = [(iokeys, val.qb64) for iokeys,  val in  cisuber.getIoSetItemIter(keys=keys0)]
+        items = [(iokeys, val.qb64) for iokeys,  val in  cisuber.getItemIter(keys=keys0)]
         assert items == [(keys0, said1), (keys0, said2)]
 
-        items = [(iokeys, val.qb64) for iokeys, val in cisuber.getIoSetItemIter(keys=keys1)]
+        items = [(iokeys, val.qb64) for iokeys, val in cisuber.getItemIter(keys=keys1)]
         assert items == [
                             (keys1, said2),
                             (keys1, said0),
@@ -1766,11 +1762,11 @@ def test_cat_cesr_ioset_suber():
                          ]
 
         items = [(keys, [val.qb64 for val in vals])
-                                 for keys, vals in sdb.getIoSetItemIter(keys=keys1)]
+                                 for keys, vals in sdb.getItemIter(keys=keys1)]
         assert items == [(keys1, [sqr2.qb64, dgr2.qb64])]
 
         items = [(keys, [val.qb64 for val in vals])
-                             for keys, vals in  sdb.getIoSetItemIter(keys=keys0)]
+                             for keys, vals in  sdb.getItemIter(keys=keys0)]
         assert items == [
                         (keys0, [sqr0.qb64, dgr0.qb64]),
                         (keys0, [sqr1.qb64, dgr1.qb64]),

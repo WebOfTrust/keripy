@@ -773,17 +773,13 @@ def test_ioset_komer():
                     'witness',
                     '00000000000000000000000000000002')]
 
-
+        # test getItemIter
         i = 0
-        for keys, end in endDB.getIoSetItemIter(keys=keys0):
+        for keys, end in endDB.getItemIter(keys=keys0):
             assert end == ends[i]
             assert keys == keys0
             i += 1
 
-
-
-
-        # test getAllItemIter
         ends = ends + [wit3end]
         i = 0
         for keys, end in endDB.getItemIter():

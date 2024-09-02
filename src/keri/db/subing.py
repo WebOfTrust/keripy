@@ -95,7 +95,7 @@ class SuberBase():
                 topive: bool=False):
         """
         Converts keys to key bytes with proper separators and returns key bytes.
-        If keys is already str or bytes then returns key bytes.
+        If keys is already str or bytes or memoryview then returns key bytes.
         Else If keys is iterable (non-str) of strs or bytes then joins with
         separator converts to key bytes and returns. When keys is iterable and
         topive is True then enables partial key from top branch of key space given
@@ -928,31 +928,6 @@ class IoSetSuber(SuberBase):
                                      sep=self.sep))
 
 
-    def getIoSetItemIter(self, keys: str|bytes|memoryview|Iterable = ''):
-        """
-        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
-        apparent effective key and items all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form apparent
-                             key. When key is empty then retrieves all items in db.
-
-
-        Returns:
-            items (Iterator):  each item iterated is tuple (keys, val) where
-                each keys is apparent keys tuple without hidden suffix and
-                each val is str
-                empty list if no entry at keys.
-                Raises StopIteration when done
-
-        """
-        for key, val in self.db.getIoSetItemIter(db=self.sdb,
-                                                 top=self._tokey(keys),
-                                                 sep=self.sep.encode()):
-            yield (self._tokeys(key), self._des(val))
-
-
-
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """
@@ -985,12 +960,9 @@ class IoSetSuber(SuberBase):
                 partial ending in sep regardless of top value
 
         """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb,
-                                        top=self._tokey(keys, topive=topive)):
-            key, ion = dbing.unsuffix(iokey, sep=self.sep)
+        for key, val in self.db.getTopIoSetItemIter(db=self.sdb,
+                top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
             yield (self._tokeys(key), self._des(val))
-
-
 
 
 class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
@@ -1950,30 +1922,27 @@ class IoDupSuber(DupSuber):
         return (self.db.cntIoDupVals(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getIoDupItemIter(self, keys: str|bytes|memoryview|Iterable = '',
-                               *, ion=0):
-        """
-        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
-        apparent effective key and items all have same apparent effective key
+    #def getIoDupItemIter(self, keys: str|bytes|memoryview|Iterable = ''):
+        #"""
+        #Gets (iokeys, val) ioitems  iterator at key made from keys where key is
+        #apparent effective key and items all have same apparent effective key
 
-        Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                    in order to form key. When keys is empty then retrieves
-                    all items in database.
-            ion (int): starting ordinal value, default 0
+        #Parameters:
+            #keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                    #in order to form key. When keys is empty then retrieves
+                    #all items in database.
 
-        Returns:
-            ioitems (Iterator):  each item iterated is tuple (keys, ioval) where
-                each keys is actual keys tuple and each ioval is dup that
-                includes prefixed insertion ordering proem.
-                Empty list if no entry at keys.
-                Raises StopIteration when done
+        #Returns:
+            #items (Iterator):  each item iterated is tuple (keys, val) where
+                #each keys is actual keys tuple and each val is dup without
+                #prefixed insertion ordering proem.
+                #Empty list if no entry at keys.
+                #Raises StopIteration when done
 
-        """
-        for key, ioval in self.db.getIoDupItemIter(db=self.sdb,
-                                                    key=self._tokey(keys),
-                                                    ion=ion):
-            yield (self._tokeys(key), self._des(ioval))
+        #"""
+        #for key, val in self.db.getIoDupItemIter(db=self.sdb,
+                                                    #key=self._tokey(keys)):
+            #yield (self._tokeys(key), self._des(val))
 
 
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",

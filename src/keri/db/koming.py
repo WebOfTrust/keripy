@@ -73,23 +73,43 @@ class KomerBase:
         self.sep = sep if sep is not None else self.Sep
 
 
-    def _tokey(self, keys: Union[str, bytes, memoryview, Iterable]):
+    def _tokey(self, keys: str|bytes|memoryview|Iterable[str|bytes|memoryview],
+                topive: bool=False):
         """
-        Converts key to key str with proper separators and returns key bytes.
-        If key is already str then returns. Else If key is iterable (non-str)
-        of strs then joins with separator converts to bytes and returns
+        Converts keys to key bytes with proper separators and returns key bytes.
+        If keys is already str or bytes or memoryview then returns key bytes.
+        Else If keys is iterable (non-str) of strs or bytes then joins with
+        separator converts to key bytes and returns. When keys is iterable and
+        topive is True then enables partial key from top branch of key space given
+        by partial keys by appending separator to end of partial key
+
+        Returns:
+           key (bytes): each element of keys is joined by .sep. If top then last
+                        char of key is also .sep
 
         Parameters:
-           keys (Union[str, bytes, Iterable]): str, bytes, or Iterable of str.
+           keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
+                        Iterable of (str | bytes) to form key.
+           topive (bool): True means treat as partial key tuple from top branch of
+                       key space given by partial keys. Resultant key ends in .sep
+                       character.
+                       False means treat as full branch in key space. Resultant key
+                       does not end in .sep character.
+                       When last item in keys is empty str then will treat as
+                       partial ending in sep regardless of top value
 
         """
+        if hasattr(keys, "encode"):  # str
+            return keys.encode("utf-8")
         if isinstance(keys, memoryview):  # memoryview of bytes
             return bytes(keys)  # return bytes
-        if hasattr(keys, "encode"):  # str
-            return keys.encode("utf-8")  # convert to bytes
         elif hasattr(keys, "decode"): # bytes
-            return keys  # return as is
-        return (self.sep.join(keys).encode("utf-8"))  # iterable so join
+            return keys
+        if topive and keys[-1]:  # topive and keys is not already partial
+            keys = tuple(keys) + ('',)  # cat empty str so join adds trailing sep
+        return (self.sep.join(key.decode() if hasattr(key, "decode") else key
+                              for key in keys).encode("utf-8"))
+
 
 
     def _tokeys(self, key: Union[str, bytes, memoryview]):
@@ -591,33 +611,7 @@ class IoSetKomer(KomerBase):
         return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
 
 
-    def getIoSetItemIter(self, keys: Union[str, Iterable] = ''):
-        """
-        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
-        apparent effective key and items all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form apparent
-                             key without insertion ordering suffix. When keys
-                             is empty then retrieves all items in db.
-
-        Returns:
-            items (Iterator):  each item iterated is tuple (keys, val) where
-                each keys is apparent keys tuple without hidden suffix and
-                each val is str
-                empty list if no entry at keys.
-                Raises StopIteration when done
-
-        """
-        for iokey, val in self.db.getIoSetItemIter(db=self.sdb,
-                                                    top=self._tokey(keys),
-                                                    sep=self.sep.encode()):
-            yield (self._tokeys(iokey), self.deserializer(val))
-
-
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
+    def getItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
         """Get items iterator
         Returns:
             items (Iterator): of (key, val) tuples over the all the items in
@@ -627,17 +621,27 @@ class IoSetKomer(KomerBase):
             Returned key in each item has ordinal suffix removed.
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
+            keys (Iterable): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to address all the items from
                 multiple branches of the key space. If keys is empty then gets
-                all items in database. Append "" to end of keys Iterable to
-                ensure get properly separated top branch key.
+                all items in database.
+                Either append "" to end of keys Iterable to ensure get properly
+                separated top branch key or use top=True.
+                In Python str.startswith('') always returns True so if branch
+                key is empty string it matches all keys in db with startswith.
 
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
         """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
-            key, ion = dbing.unsuffix(iokey, sep=self.sep)
-            yield (self._tokeys(key), self.deserializer(val))
-
+        for iokey, val in self.db.getTopIoSetItemIter(db=self.sdb,
+                                            top=self._tokey(keys, topive=topive),
+                                            sep=self.sep.encode()):
+            yield (self._tokeys(iokey), self.deserializer(val))
 
 
 
