@@ -349,7 +349,7 @@ def test_lmdber():
         assert dber.delVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
 
-        #  test appendOrdValPre
+        #  test appendOnValPre
         # empty database
         assert dber.getVal(db, keyB0) == None
         on = dber.appendOnVal(db, preB, digU)
@@ -526,6 +526,8 @@ def test_lmdber():
         assert dber.addIoDupVal(db, key, b'e')
         assert dber.getIoDupVals(db, key) == [b'm', b'a', b'w', b'e']
 
+
+
         # Test getIoValsAllPreIter(self, db, pre)
         vals0 = [b"gamma", b"beta"]
         sn = 0
@@ -623,29 +625,29 @@ def test_lmdber():
                         (b'A.00000000000000000000000000000007', b'b')]
 
         # dups at aKey
-        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, key=aKey)]
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=aKey)]
         assert items == [(b'A.00000000000000000000000000000001', b'z'),
                         (b'A.00000000000000000000000000000001', b'm'),
                         (b'A.00000000000000000000000000000001', b'x')]
 
         # dups at bKey
-        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, key=bKey)]
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=bKey)]
         assert items == [(b'A.00000000000000000000000000000002', b'o'),
                         (b'A.00000000000000000000000000000002', b'r'),
                         (b'A.00000000000000000000000000000002', b'z')]
 
         # dups at cKey
-        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, key=cKey)]
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=cKey)]
         assert items == [(b'A.00000000000000000000000000000004', b'h'),
                          (b'A.00000000000000000000000000000004', b'n')]
 
         # dups at dKey
-        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, key=dKey)]
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=dKey)]
         assert items == [(b'A.00000000000000000000000000000007', b'k'),
                          (b'A.00000000000000000000000000000007', b'b')]
 
         # dups at missing key
-        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, key=b"B.")]
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=b"B.")]
         assert not items
 
 
@@ -819,6 +821,21 @@ def test_lmdber():
         items = [item for item in dber.getIoDupItemsNext(edb, key=ikey)]
         assert items == []  # empty
         assert not items
+
+        # test OnIoDup methods
+        key = b'Z'
+        assert 0 == dber.appendOnIoDupVal(edb, key, val=b'k')
+        assert 1 == dber.appendOnIoDupVal(edb, key, val=b'l')
+        assert 2 == dber.appendOnIoDupVal(edb, key, val=b'm')
+        assert 3 == dber.appendOnIoDupVal(edb, key, val=b'n')
+
+        assert dber.cntOnVals(edb, key) == 4
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(edb, key=key)]
+        assert items == [(b'Z', 0, b'k'),
+                         (b'Z', 1, b'l'),
+                         (b'Z', 2, b'm'),
+                         (b'Z', 3, b'n')]
 
 
 

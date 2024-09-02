@@ -1950,14 +1950,16 @@ class IoDupSuber(DupSuber):
         return (self.db.cntIoDupVals(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getIoDupItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+    def getIoDupItemIter(self, keys: str|bytes|memoryview|Iterable = '',
+                               *, ion=0):
         """
         Gets (iokeys, val) ioitems  iterator at key made from keys where key is
         apparent effective key and items all have same apparent effective key
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                    in order to form key
+                    in order to form key. When keys is empty then retrieves
+                    all items in database.
             ion (int): starting ordinal value, default 0
 
         Returns:
@@ -2006,9 +2008,9 @@ class IoDupSuber(DupSuber):
                 partial ending in sep regardless of top value
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
+
+        for key, val in self.db.getTopIoDupItemIter(db=self.sdb,
                                          top=self._tokey(keys, topive=topive)):
-            val = val[33:]  # strip off proem
             yield (self._tokeys(key), self._des(val))
 
 # ToDo
@@ -2018,20 +2020,16 @@ class IoDupSuber(DupSuber):
 # so they work across prefixes without having the extra burden doing repeated
 # iter within a given pre dups. This way they could work with or without duplicates
 # and then the IoDupIter could just strip the proem whereas OrdSuber would not care
-# OnSuber
-    #Although these are similar to OrdSuber in that they both have ordinal
-    # not hidden as last part of keys. OnIoDup suber also has proem that
-    # must be prefixed and stripped so not able to mixin with each other
-    # in multiple inheritance
-    # used by .kels
-        # getIoDupValsAllPreIter(self, db, pre, on=0):
-        # getIoDupValsAllPreBackIter(self, db, pre, on=0):
-        # getIoDupValLastAllPreIter(self.kels, pre, on=sn)
-    # used by .dels
-        # getIoDupValsAnyPreIter(self, db, pre, on=0)
+
+# used by .kels
+    # getIoDupValsAllPreIter(self, db, pre, on=0):
+    # getIoDupValsAllPreBackIter(self, db, pre, on=0):
+    # getIoDupValLastAllPreIter(self.kels, pre, on=sn)
+# used by .dels
+    # getIoDupValsAnyPreIter(self, db, pre, on=0)
 
 
-class OnIoDupSuber(OnSuberBase, DupSuber):
+class OnIoDupSuber(OnSuberBase, IoDupSuber):
     """
     Sub class of IoDupSuber and OnSuberBase that supports Insertion Ordering
     (IoDup) of duplicates but where the trailing part of the key space is
@@ -2076,3 +2074,39 @@ class OnIoDupSuber(OnSuberBase, DupSuber):
 
         """
         super(OnIoDupSuber, self).__init__(*pa, **kwa)
+
+
+    def appendOn(self, keys: str | bytes | memoryview,
+                       val: str | bytes | memoryview):
+        """
+        Returns:
+            on (int): ordinal number of newly appended val
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): top keys as prefix to be
+                combined with serialized on suffix and sep to form key
+            val (str | bytes | memoryview): serialization
+            on (int): ordinal number used with onKey(pre,on) to form key.
+        """
+        return (self.db.appendOnIoDupVal(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       val=self._ser(val),
+                                       sep=self.sep.encode()))
+
+
+    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """
+        Returns
+            items (Iterator[(top keys, on, val)]): triples of (top keys, on int,
+                  deserialized val)
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): top keys as prefix to be
+                combined with serialized on suffix and sep to form key
+                When keys is empty then retrieves whole database including duplicates
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for keys, on, val in (self.db.getOnIoDupItemIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._tokeys(keys), on, self._des(val))

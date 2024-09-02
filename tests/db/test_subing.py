@@ -736,10 +736,10 @@ def test_oniodup_suber():
                         (('a', '00000000000000000000000000000000'), 'White snow'),
                         (('a', '00000000000000000000000000000001'), 'Green tree'),
                         (('a', '00000000000000000000000000000001'), 'Red apple'),
-                        (('a', '00000000000000000000000000000002'), 'Green tree'),
                         (('a', '00000000000000000000000000000002'), 'Red apple'),
-                        (('a', '00000000000000000000000000000003'), 'Blue dog'),
-                        (('a', '00000000000000000000000000000003'), 'White snow')]
+                        (('a', '00000000000000000000000000000002'), 'Green tree'),
+                        (('a', '00000000000000000000000000000003'), 'White snow'),
+                        (('a', '00000000000000000000000000000003'), 'Blue dog')]
 
         # test getOnItemIter
         items = [item for item in onsuber.getOnItemIter(keys='a')]
@@ -747,16 +747,17 @@ def test_oniodup_suber():
                         (('a',), 0, 'White snow'),
                         (('a',), 1, 'Green tree'),
                         (('a',), 1, 'Red apple'),
-                        (('a',), 2, 'Green tree'),
                         (('a',), 2, 'Red apple'),
-                        (('a',), 3, 'Blue dog'),
-                        (('a',), 3, 'White snow')]
+                        (('a',), 2, 'Green tree'),
+                        (('a',), 3, 'White snow'),
+                        (('a',), 3, 'Blue dog')]
 
         items = [item for item in onsuber.getOnItemIter(keys='a', on=2)]
-        assert items == [(('a',), 2, 'Green tree'),
-                        (('a',), 2, 'Red apple'),
-                        (('a',), 3, 'Blue dog'),
-                        (('a',), 3, 'White snow')]
+        assert items ==[(('a',), 2, 'Red apple'),
+                        (('a',), 2, 'Green tree'),
+                        (('a',), 3, 'White snow'),
+                        (('a',), 3, 'Blue dog')]
+
 
         # test append with duplicates
         assert 4 == onsuber.appendOn(keys=("a",), val=x)
