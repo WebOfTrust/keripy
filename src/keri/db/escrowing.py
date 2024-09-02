@@ -117,20 +117,20 @@ class Broker:
                         logger.exception("Kevery unescrow attempt failed: %s", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
+                    self.escrowdb.rem(keys=(typ, pre, aid), val=saider)   # remove escrow self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed due to error: %s", ex.args[0])
                     else:
                         logger.error("Kevery unescrowed due to error: %s", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow only
+                    self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow only self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))
                     logger.info("Kevery unescrow succeeded for txn state=%s",
                                 serder.said)
                     logger.debug(f"event=\n{serder.pretty()}\n")
 
             except Exception as ex:  # log diagnostics errors etc
-                self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
+                self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow  self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))
                 self.removeState(saider)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed due to error: %s", ex.args[0])

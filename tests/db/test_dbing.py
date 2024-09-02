@@ -459,6 +459,18 @@ def test_lmdber():
         items = [item for item in dber.getOnItemIter(db, key=preC, on=1)]
         assert items == []
 
+        # test delOnVal
+        assert dber.delOnVal(db, key=preB)  # default on=0
+        assert not dber.delOnVal(db, key=preB, on=0)
+        assert dber.delOnVal(db, key=preB, on=1)
+        assert not dber.delOnVal(db, key=preB, on=1)
+
+        items = [item for item in dber.getOnItemIter(db, key=preB)]
+        assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
+
+        with pytest.raises(KeyError):
+            assert dber.delOnVal(db, key=b'')  #  empty key
+
 
         # test Vals dup methods.  dup vals are lexocographic
         key = b'A'

@@ -693,14 +693,98 @@ class LMDBer(filing.Filer):
     # For subdbs  the use keys with trailing part the is  monotonically
     # ordinal number serialized as 32 hex bytes
 
+
+
+    def appendOnVal(self, db, key, val, *, sep=b'.'):
+        """
+        Appends val in order after last previous onkey in db where
+        onkey has same given key prefix but with different serialized on suffix
+        attached with sep.
+        Returns ordinal number on, of appended entry. Appended on is 1 greater
+        than previous latest on at key.
+        Uses onKey(key, on) for entries.
+
+        Works with either dupsort==True or False since always creates new full
+        key.
+
+        Append val to end of db entries with same key but with on incremented by
+        1 relative to last preexisting entry at key.
+
+        Returns:
+            on (int): ordinal number of newly appended val
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+            val (bytes): serialized value to append
+            sep (bytes): separator character for split
+        """
+        # set key with fn at max and then walk backwards to find last entry at pre
+        # if any otherwise zeroth entry at pre
+        onkey = onKey(key, MaxON, sep=sep)
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            on = 0  # unless other cases match then zeroth entry at pre
+            cursor = txn.cursor()
+            if not cursor.set_range(onkey):  # max is past end of database
+                #  so either empty database or last is earlier pre or
+                #  last is last entry  at same pre
+                if cursor.last():  # not empty db. last entry earlier than max
+                    ckey = cursor.key()
+                    ckey, cn = splitOnKey(ckey, sep=sep)
+                    if ckey == key:  # last is last entry for same pre
+                        on = cn + 1  # increment
+            else:  # not past end so not empty either later pre or max entry at pre
+                ckey = cursor.key()
+                ckey, cn = splitOnKey(ckey, sep=sep)
+                if ckey == key:  # last entry for pre is already at max
+                    raise ValueError(f"Number part {cn=} for key part {ckey=}"
+                                     f"exceeds maximum size.")
+                else:  # later pre so backup one entry
+                    # either no entry before last or earlier pre with entry
+                    if cursor.prev():  # prev entry, maybe same or earlier pre
+                        ckey = cursor.key()
+                        ckey, cn = splitOnKey(ckey, sep=sep)
+                        if ckey == key:  # last entry at pre
+                            on = cn + 1  # increment
+
+            onkey = onKey(key, on, sep=sep)
+
+            if not cursor.put(onkey, val, overwrite=False):
+                raise  ValueError(f"Failed appending {val=} at {key=}.")
+            return on
+
+
+    def delOnVal(self, db, key, on=0, *, sep=b'.'):
+        """
+        Deletes value at onkey consisting of key + sep + serialized on in db.
+        Returns True If key exists in database Else False
+
+        Parameters:
+            db (lmdbsubdb): named sub db of lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+            on (int): ordinal number at which to delete
+            sep (bytes): separator character for split
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            if key:  # not empty
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:
+                onkey = key
+            try:
+                return (txn.delete(onkey))  # when empty deletes whole db
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+
     def cntOnVals(self, db, key=b'', on=0, *, sep=b'.'):
         """
-        Returns (int): count of of all ordinal keyed vals with top key
-        but different on tail in db starting at ordinal number on of top.
+        Returns (int): count of of all ordinal keyed vals with key
+        but different on tail in db starting at ordinal number on of key.
         Full key is composed of top+sep+
         When dupsort==true then duplicates are included in count since .iternext
         includes duplicates.
-        when key is empty then retrieves whole db
+        when key is empty then counts whole db
 
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
@@ -768,65 +852,6 @@ class LMDBer(filing.Filer):
                 if key and not ckey == key:
                     break
                 yield (ckey, cn, cval)
-
-
-
-    def appendOnVal(self, db, key, val, *, sep=b'.'):
-        """
-        Appends val in order after last previous key with same pre in db where
-        full key has key prefix and serialized on suffix attached with sep.
-        Returns ordinal number in, on, of appended entry. Appended on is 1 greater
-        than previous latest on at pre.
-        Uses onKey(pre, on) for entries.
-
-        Works with either dupsort==True or False since always creates new full
-        key.
-
-        Append val to end of db entries with same pre but with on incremented by
-        1 relative to last preexisting entry at pre.
-
-        Returns:
-            on (int): ordinal number of newly appended val
-
-        Parameters:
-            db (subdb): named sub db in lmdb
-            key (bytes): key within sub db's keyspace plus trailing part on
-            val (bytes): serialized value to append
-            sep (bytes): separator character for split
-        """
-        # set key with fn at max and then walk backwards to find last entry at pre
-        # if any otherwise zeroth entry at pre
-        onkey = onKey(key, MaxON, sep=sep)
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            on = 0  # unless other cases match then zeroth entry at pre
-            cursor = txn.cursor()
-            if not cursor.set_range(onkey):  # max is past end of database
-                #  so either empty database or last is earlier pre or
-                #  last is last entry  at same pre
-                if cursor.last():  # not empty db. last entry earlier than max
-                    ckey = cursor.key()
-                    ckey, cn = splitOnKey(ckey, sep=sep)
-                    if ckey == key:  # last is last entry for same pre
-                        on = cn + 1  # increment
-            else:  # not past end so not empty either later pre or max entry at pre
-                ckey = cursor.key()
-                ckey, cn = splitOnKey(ckey, sep=sep)
-                if ckey == key:  # last entry for pre is already at max
-                    raise ValueError(f"Number part {cn=} for key part {ckey=}"
-                                     f"exceeds maximum size.")
-                else:  # later pre so backup one entry
-                    # either no entry before last or earlier pre with entry
-                    if cursor.prev():  # prev entry, maybe same or earlier pre
-                        ckey = cursor.key()
-                        ckey, cn = splitOnKey(ckey, sep=sep)
-                        if ckey == key:  # last entry at pre
-                            on = cn + 1  # increment
-
-            onkey = onKey(key, on, sep=sep)
-
-            if not cursor.put(onkey, val, overwrite=False):
-                raise  ValueError(f"Failed appending {val=} at {key=}.")
-            return on
 
 
 

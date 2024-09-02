@@ -413,7 +413,7 @@ class OnSuberBase(SuberBase):
             keys (str | bytes | memoryview | Iterable): top keys as prefix to be
                 combined with serialized on suffix and sep to form key
             val (str | bytes | memoryview): serialization
-            on (int): ordinal number used with onKey(pre,on) to form key.
+            on (int): ordinal number used with onKey(key,on) to form key.
         """
         return (self.db.appendOnVal(db=self.sdb,
                                        key=self._tokey(keys),
@@ -421,21 +421,40 @@ class OnSuberBase(SuberBase):
                                        sep=self.sep.encode()))
 
 
+    def remOn(self, keys: str | bytes | memoryview, on: int=0):
+        """
+        Returns
+            result (bool): True if onkey made from key+sep+serialized on is
+                               found in database so value is removed
+                               Removes all duplicates if any at onkey.
+                           False otherwise
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+            on (int): ordinal number used with onKey(key ,on) to form key.
+        """
+        return (self.db.delOnVal(db=self.sdb,
+                                     key=self._tokey(keys),
+                                     on=on,
+                                     sep=self.sep.encode()))
+
 
     def cntOn(self, keys: str | bytes | memoryview = "", on: int=0):
         """
         Returns
-            cnt (int): count of of all ordinal suffix keyed vals with same top
-                in key but different on in key in db starting at ordinal number
-                on of pre where key is formed with onKey(pre,on)
-                       Does not count dups at same on for a given pre, only
-                       unique on at a given pre.
+            cnt (int): count of of all ordinal suffix keyed vals with same
+                key prefix but different on in onkey in db starting at ordinal
+                number on where key is formed with onKey(key,on). Count at
+                each onkey includes duplicates if any.
+
 
         Parameters:
             keys (str | bytes | memoryview | Iterable): top keys as prefix to be
                 combined with serialized on suffix and sep to form top key
-                When keys is empty then counts whole database including duplicates
-            on (int): ordinal number used with onKey(pre,on) to form key.
+                When keys is empty then counts whole database including
+                duplicates if any.
+            on (int): ordinal number used with onKey(key,on) to form key.
         """
         return (self.db.cntOnVals(db=self.sdb,
                                      key=self._tokey(keys),
@@ -451,7 +470,8 @@ class OnSuberBase(SuberBase):
         Parameters:
             keys (str | bytes | memoryview | iterator): top keys as prefix to be
                 combined with serialized on suffix and sep to form key
-                When keys is empty then retrieves whole database including duplicates
+                When keys is empty then retrieves whole database including
+                duplicates if any
             on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """

@@ -317,6 +317,17 @@ def test_on_suber():
                         (('b',), 1, 'Green tree'),
                         (('bc',), 0, 'Red apple')]
 
+        assert onsuber.remOn(keys='a', on=1)
+        assert not onsuber.remOn(keys='a', on=1)
+        assert onsuber.remOn(keys='a', on=3)
+        assert not onsuber.remOn(keys='a', on=3)
+
+        assert onsuber.cntOn(keys=("a",)) == 2
+
+        items = [item for item in onsuber.getOnItemIter(keys='a')]
+        assert items == [(('a',), 0, 'Blue dog'),
+                         (('a',), 2, 'Red apple')]
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -758,6 +769,20 @@ def test_on_iodup_suber():
         # test append with duplicates
         assert 4 == onsuber.appendOn(keys=("a",), val=x)
         assert onsuber.cntOn(keys=("a",)) == 9
+
+        assert onsuber.remOn(keys='a', on=1)
+        assert not onsuber.remOn(keys='a', on=1)
+        assert onsuber.remOn(keys='a', on=3)
+        assert not onsuber.remOn(keys='a', on=3)
+
+        assert onsuber.cntOn(keys=("a",)) == 5
+
+        items = [item for item in onsuber.getOnItemIter(keys='a')]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 0, 'White snow'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 2, 'Green tree'),
+                        (('a',), 4, 'Green tree')]
 
     assert not os.path.exists(db.path)
     assert not db.opened
