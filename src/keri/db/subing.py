@@ -928,28 +928,28 @@ class IoSetSuber(SuberBase):
                                      sep=self.sep))
 
 
-    def getIoSetItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+    def getIoSetItemIter(self, keys: str|bytes|memoryview|Iterable = ''):
         """
         Gets (iokeys, val) ioitems  iterator at key made from keys where key is
         apparent effective key and items all have same apparent effective key
 
         Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-            ion (int): starting ordinal value, default 0
+            keys (Iterable): of key strs to be combined in order to form apparent
+                             key. When key is empty then retrieves all items in db.
+
 
         Returns:
-            ioitems (Iterator):  each item iterated is tuple (iokeys, val) where
-                each iokeys is actual keys tuple including hidden suffix and
+            items (Iterator):  each item iterated is tuple (keys, val) where
+                each keys is apparent keys tuple without hidden suffix and
                 each val is str
                 empty list if no entry at keys.
                 Raises StopIteration when done
 
         """
-        for iokey, val in self.db.getIoSetItemIter(db=self.sdb,
-                                                    key=self._tokey(keys),
-                                                    ion=ion,
-                                                    sep=self.sep):
-            yield (self._tokeys(iokey), self._des(val))
+        for key, val in self.db.getIoSetItemIter(db=self.sdb,
+                                                 top=self._tokey(keys),
+                                                 sep=self.sep.encode()):
+            yield (self._tokeys(key), self._des(val))
 
 
 

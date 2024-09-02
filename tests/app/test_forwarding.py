@@ -68,7 +68,7 @@ def test_postman(seeder):
         doist.exit()
 
         msgs = []
-        for _, topic, msg in mbx.cloneTopicIter(topic=recpHab.pre + "/echo", fn=0):
+        for _, topic, msg in mbx.cloneTopicIter(topic=recpHab.pre + "/echo"):
             msgs.append(msg)
 
         assert len(msgs) == 1

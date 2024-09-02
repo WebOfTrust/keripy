@@ -1197,7 +1197,7 @@ class LMDBer(filing.Filer):
             return False
 
 
-    def delIoSetIokey(self, db, iokey):
+    def delIoSetIokey(self, db, iokey):  # change this to key, ion
         """
         Deletes val at at actual iokey that includes ordinal key suffix.
 
@@ -1217,33 +1217,28 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
-    def getIoSetItemIter(self, db, key, *, ion=0, sep=b'.'):
+    def getIoSetItemIter(self, db, top=b'', *, sep=b'.'):
         """
         Returns:
-            items (abc.Iterator): iterator over insertion ordered set of values
-            at same apparent effective key where each iteration returns tuple
-            (iokey, val). iokey includes the ordinal key suffix.
+            items (Iterator[(key,val)]): iterator of tuples (key, val) where
+            key is apparent key with hidden insertion ordering suffixe removed
+            from effective key.
+            Iterates over top branch of insertion ordered set values where each
+            effective key has trailing hidden suffix of serialization of insertion
+            ordering ordinal.
+
             Uses hidden ordinal key suffix for insertion ordering.
-            Does not work with partial effective key.
 
         Raises StopIteration Error when empty.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key. Does not work with partial key
-                         that is not the full effective key sans the ion part.
-            ion (int): starting ordinal value, default 0
+            top (bytes): top key in db. When top is empty then every item in db.
+            sep (bytes): sep character for attached io suffix
         """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
-            cursor = txn.cursor()
-            if cursor.set_range(iokey):  # move to val at key >= iokey if any
-                for iokey, val in cursor.iternext():  # get key, val at cursor
-                    ckey, cion = unsuffix(iokey, sep=sep)
-                    if ckey != key: #  prev entry if any was the last entry for key
-                        break  # done
-                    yield (iokey, val)  # another entry at key
-            return  # done raises StopIteration
+        for iokey, val in self.getTopItemIter(db=db, top=top):
+            key, ion = splitOnKey(iokey, sep=sep)
+            yield (key, val)
 
 
 
@@ -1684,6 +1679,8 @@ class LMDBer(filing.Filer):
                 raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
         return False
+
+    #def delIoDupIonVal(self, db, key, ion):  # to match delIoSetIoKey
 
 
     def cntIoDupVals(self, db, key):

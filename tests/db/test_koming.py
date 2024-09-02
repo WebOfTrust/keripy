@@ -758,7 +758,7 @@ def test_ioset_komer():
             loc = locDB.get(keys=(end.eid, scheme))
             assert loc == wit3loc
 
-        # test IoItem methods
+        ## test IoItem methods
         iokeys0 = [f'{cid0}.witness.00000000000000000000000000000000'.encode("utf-8"),
                   f'{cid0}.witness.00000000000000000000000000000001'.encode("utf-8"),
                   f'{cid0}.witness.00000000000000000000000000000002'.encode("utf-8")]
@@ -775,28 +775,13 @@ def test_ioset_komer():
 
 
         i = 0
-        for iokeys, end in endDB.getIoSetItemIter(keys=keys0):
+        for keys, end in endDB.getIoSetItemIter(keys=keys0):
             assert end == ends[i]
-            assert iokeys == iokeys0[i]
+            assert keys == keys0
             i += 1
 
-        i = 0
-        for iokeys, end in endDB.getIoSetItemIter(keys=keys0):
-            assert end == ends[i]
-            assert iokeys == iokeys0[i]
-            i += 1
 
-        i = 1
-        for iokeys, end in endDB.getIoSetItemIter(keys=keys0, ion=i):
-            assert end == ends[i]
-            assert iokeys == iokeys0[i]
-            i += 1
 
-        i = 1
-        for iokeys, end in endDB.getIoSetItemIter(keys=keys0, ion=i):
-            assert end == ends[i]
-            assert iokeys == iokeys0[i]
-            i += 1
 
         # test getAllItemIter
         ends = ends + [wit3end]

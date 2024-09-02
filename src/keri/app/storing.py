@@ -121,14 +121,24 @@ class Mailboxer(dbing.LMDBer):
         Returns iterator of first seen exn messages with attachments for the
         identifier prefix pre starting at first seen order number, fn.
 
+        ToDo looks like misuse of IoSet this should not be IoSet but simply
+        Ordinal Numbered db.  since should not be using hidden ion has not
+        hidden.
+
         """
         if hasattr(topic, 'encode'):
             topic = topic.encode("utf-8")
 
-        for (key, dig) in self.getIoSetItemIter(self.tpcs, key=topic, ion=fn):
-            topic, ion = dbing.unsuffix(key)
-            if msg := self.msgs.get(keys=dig):
-                yield ion, topic, msg.encode("utf-8")
+        for ion, (topic, dig) in enumerate(self.getIoSetItemIter(self.tpcs, topic)):
+            if ion >= fn:
+                if msg := self.msgs.get(keys=dig):
+                    yield ion, topic, msg.encode("utf-8")
+
+        #for (key, dig) in self.getIoSetItemIter(self.tpcs, key=topic, ion=fn):
+            #topic, ion = dbing.unsuffix(key)
+            #if msg := self.msgs.get(keys=dig):
+                #yield ion, topic, msg.encode("utf-8")
+
 
 
 class Respondant(doing.DoDoer):

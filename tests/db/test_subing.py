@@ -842,21 +842,15 @@ def test_ioset_suber():
                         (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in iosuber.getIoSetItemIter(keys=keys1)]
-        assert items == [(('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
-                         (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
-                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in  iosuber.getIoSetItemIter(keys=keys0)]
-        assert items == [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
-                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
+        items = [(keys, val) for keys,  val in  iosuber.getIoSetItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), 'See ya later.'),
+                         (('test_key', '0001'), 'Hey gorgeous!')]
 
-        items = [(iokeys, val) for iokeys,  val in  iosuber.getIoSetItemIter(keys=keys1, ion=1)]
-        assert items ==[(('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
-                        (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
-
-        items = [(iokeys, val) for iokeys,  val in  iosuber.getIoSetItemIter(keys=keys0, ion=1)]
-        assert items == [(('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!')]
+        items = [(keys, val) for keys,  val in iosuber.getIoSetItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), 'Not my type.'),
+                        (('test_key', '0002'), 'Hello sailer!'),
+                        (('test_key', '0002'), 'A real charmer!')]
 
 
         # Test with top keys
@@ -952,10 +946,10 @@ def test_cesr_ioset_suber():
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.CesrIoSetSuber(db=db, subkey='bags.', klas=coring.Saider)
-        assert isinstance(sdb, subing.CesrIoSetSuber)
-        assert issubclass(sdb.klas, coring.Saider)
-        assert not sdb.sdb.flags()["dupsort"]
+        cisuber = subing.CesrIoSetSuber(db=db, subkey='bags.', klas=coring.Saider)
+        assert isinstance(cisuber, subing.CesrIoSetSuber)
+        assert issubclass(cisuber.klas, coring.Saider)
+        assert not cisuber.sdb.flags()["dupsort"]
 
         seqner0 = coring.Seqner(sn=20)
         seq0 = seqner0.qb64
@@ -1029,63 +1023,63 @@ def test_cesr_ioset_suber():
         said2 = saider2.qb64
         assert said2 == 'EJxOaEsBSObrcmrsnlfHOdVAowGhUBKoE2Ce3TZ4Mhgu'
 
-        assert sdb.put(keys=keys0, vals=[saider1, saider0])
-        assert sdb.cnt(keys0) == 2
-        actuals = sdb.get(keys=keys0)  # insertion order not lexicographic
+        assert cisuber.put(keys=keys0, vals=[saider1, saider0])
+        assert cisuber.cnt(keys0) == 2
+        actuals = cisuber.get(keys=keys0)  # insertion order not lexicographic
         assert len(actuals) ==  2
         sers = [actual.qb64 for actual in actuals]
         assert sers == [said1, said0]
-        actual = sdb.getLast(keys=keys0)
+        actual = cisuber.getLast(keys=keys0)
         assert actual.qb64 == said0
 
-        assert sdb.rem(keys0)
-        actuals = sdb.get(keys=keys0)
+        assert cisuber.rem(keys0)
+        actuals = cisuber.get(keys=keys0)
         assert not actuals
         assert actuals == []
-        assert sdb.cnt(keys0) == 0
+        assert cisuber.cnt(keys0) == 0
 
-        assert sdb.put(keys=keys0, vals=[saider0, saider1])
-        assert sdb.cnt(keys0) == 2
-        actuals = sdb.get(keys=keys0)  # insertion order not lexicographic
+        assert cisuber.put(keys=keys0, vals=[saider0, saider1])
+        assert cisuber.cnt(keys0) == 2
+        actuals = cisuber.get(keys=keys0)  # insertion order not lexicographic
         assert len(actuals) ==  2
         sers = [actual.qb64 for actual in actuals]
         assert sers == [said0, said1]
-        actual = sdb.getLast(keys=keys0)
+        actual = cisuber.getLast(keys=keys0)
         assert actual.qb64 == said1
 
-        assert sdb.add(keys=keys0, val=saider2)
-        assert sdb.cnt(keys0) == 3
-        actuals = sdb.get(keys=keys0)  # insertion order not lexicographic
+        assert cisuber.add(keys=keys0, val=saider2)
+        assert cisuber.cnt(keys0) == 3
+        actuals = cisuber.get(keys=keys0)  # insertion order not lexicographic
         assert len(actuals) ==  3
         sers = [actual.qb64 for actual in actuals]
         assert sers == [said0, said1, said2]
-        actual = sdb.getLast(keys=keys0)
+        actual = cisuber.getLast(keys=keys0)
         assert actual.qb64 == said2
 
-        assert sdb.pin(keys=keys0, vals=[saider1, saider2])
-        assert sdb.cnt(keys0) == 2
-        actuals = sdb.get(keys=keys0)  # insertion order not lexicographic
+        assert cisuber.pin(keys=keys0, vals=[saider1, saider2])
+        assert cisuber.cnt(keys0) == 2
+        actuals = cisuber.get(keys=keys0)  # insertion order not lexicographic
         assert len(actuals) ==  2
         sers = [actual.qb64 for actual in actuals]
         assert sers == [said1, said2]
 
-        assert sdb.put(keys=keys1, vals=[saider2, saider1, saider0])
-        assert sdb.cnt(keys1) == 3
-        actuals = sdb.get(keys=keys1)  # insertion order not lexicographic
+        assert cisuber.put(keys=keys1, vals=[saider2, saider1, saider0])
+        assert cisuber.cnt(keys1) == 3
+        actuals = cisuber.get(keys=keys1)  # insertion order not lexicographic
         assert len(actuals) ==  3
         sers = [actual.qb64 for actual in actuals]
         assert sers == [said2, said1, said0]
 
-        assert sdb.rem(keys=keys1, val=saider1)
-        assert sdb.cnt(keys1) == 2
-        actuals = sdb.get(keys=keys1)  # insertion order not lexicographic
+        assert cisuber.rem(keys=keys1, val=saider1)
+        assert cisuber.cnt(keys1) == 2
+        actuals = cisuber.get(keys=keys1)  # insertion order not lexicographic
         sers = [actual.qb64 for actual in actuals]
         assert sers == [said2, said0]
 
-        sers = [val.qb64 for val in sdb.getIter(keys=keys1)]
+        sers = [val.qb64 for val in cisuber.getIter(keys=keys1)]
         assert sers == [said2, said0]
 
-        items = [(keys, val.qb64) for keys, val in sdb.getItemIter()]
+        items = [(keys, val.qb64) for keys, val in cisuber.getItemIter()]
         assert items == [
                             (keys1, said2),
                             (keys1, said0),
@@ -1094,7 +1088,7 @@ def test_cesr_ioset_suber():
                         ]
 
 
-        items = [(iokeys, val.qb64) for iokeys, val in sdb.getFullItemIter()]
+        items = [(iokeys, val.qb64) for iokeys, val in cisuber.getFullItemIter()]
         assert items == [
                             ((*keys1, '00000000000000000000000000000000'), said2),
                             ((*keys1, '00000000000000000000000000000002'), said0),
@@ -1102,38 +1096,35 @@ def test_cesr_ioset_suber():
                             ((*keys0, '00000000000000000000000000000001'), said2),
                         ]
 
-        items = [(iokeys, val.qb64) for iokeys, val in sdb.getIoSetItemIter(keys=keys1)]
-        assert items == [
-                            ((*keys1, '00000000000000000000000000000000'), said2),
-                            ((*keys1, '00000000000000000000000000000002'), said0),
-                        ]
+        items = [(iokeys, val.qb64) for iokeys,  val in  cisuber.getIoSetItemIter(keys=keys0)]
+        assert items == [(keys0, said1), (keys0, said2)]
 
-        items = [(iokeys, val.qb64) for iokeys,  val in  sdb.getIoSetItemIter(keys=keys0)]
+        items = [(iokeys, val.qb64) for iokeys, val in cisuber.getIoSetItemIter(keys=keys1)]
         assert items == [
-                            ((*keys0, '00000000000000000000000000000000'), said1),
-                            ((*keys0, '00000000000000000000000000000001'), said2),
+                            (keys1, said2),
+                            (keys1, said0),
                         ]
 
 
         topkeys = (seq1, "")
-        items = [(keys, val.qb64) for keys, val in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, val.qb64) for keys, val in cisuber.getItemIter(keys=topkeys)]
         assert items == [
                             (keys1, said2),
                             (keys1, said0),
                         ]
 
         topkeys = (seq0, "")
-        items = [(iokeys, val.qb64) for iokeys, val in sdb.getFullItemIter(keys=topkeys)]
+        items = [(iokeys, val.qb64) for iokeys, val in cisuber.getFullItemIter(keys=topkeys)]
         assert items == [
                             ((*keys0, '00000000000000000000000000000000'), said1),
                             ((*keys0, '00000000000000000000000000000001'), said2),
                         ]
 
-        for iokeys, val in sdb.getFullItemIter():
-            assert sdb.remIokey(iokeys=iokeys)
+        for iokeys, val in cisuber.getFullItemIter():
+            assert cisuber.remIokey(iokeys=iokeys)
 
-        assert sdb.cnt(keys=keys0) == 0
-        assert sdb.cnt(keys=keys1) == 0
+        assert cisuber.cnt(keys=keys0) == 0
+        assert cisuber.cnt(keys=keys1) == 0
 
 
     assert not os.path.exists(db.path)
@@ -1774,15 +1765,15 @@ def test_cat_cesr_ioset_suber():
                           (keys2 + ('00000000000000000000000000000001', ), [sqr2.qb64, dgr2.qb64])
                          ]
 
-        items = [(iokeys, [val.qb64 for val in vals])
-                                 for iokeys, vals in sdb.getIoSetItemIter(keys=keys1)]
-        assert items == [(keys1 +  ('00000000000000000000000000000000', ), [sqr2.qb64, dgr2.qb64])]
+        items = [(keys, [val.qb64 for val in vals])
+                                 for keys, vals in sdb.getIoSetItemIter(keys=keys1)]
+        assert items == [(keys1, [sqr2.qb64, dgr2.qb64])]
 
-        items = [(iokeys, [val.qb64 for val in vals])
-                             for iokeys, vals in  sdb.getIoSetItemIter(keys=keys0)]
+        items = [(keys, [val.qb64 for val in vals])
+                             for keys, vals in  sdb.getIoSetItemIter(keys=keys0)]
         assert items == [
-                        (keys0 + ('00000000000000000000000000000000', ), [sqr0.qb64, dgr0.qb64]),
-                        (keys0 + ('00000000000000000000000000000001', ), [sqr1.qb64, dgr1.qb64]),
+                        (keys0, [sqr0.qb64, dgr0.qb64]),
+                        (keys0, [sqr1.qb64, dgr1.qb64]),
                         ]
 
 
