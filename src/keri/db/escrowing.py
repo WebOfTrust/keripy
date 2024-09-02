@@ -170,7 +170,7 @@ class Broker:
         for cigar in cigars:  # process each couple to verify sig and write to db
             self.cigardb.put(keys=keys, vals=[(cigar.verfer, cigar)])
 
-        return self.escrowdb.put(keys=(typ, pre, aid), vals=[saider])  # overwrite
+        return self.escrowdb.put(keys=(typ, pre, aid), vals=[saider])  # does not overwrite
 
     def updateReply(self, aid, serder, saider, dater):
         """

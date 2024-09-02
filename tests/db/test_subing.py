@@ -619,7 +619,7 @@ def test_iodup_suber():
     assert not db.opened
 
 
-def test_oniodup_suber():
+def test_on_iodup_suber():
     """
     Test OnIoDupSuber LMDBer sub database class
     """
@@ -1468,6 +1468,113 @@ def test_cesr_suber():
     assert not db.opened
     """Done Test"""
 
+def test_cesr_on_suber():
+    """
+    Test CesrOnSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        onsuber = subing.CesrOnSuber(db=db, subkey='bags.')
+        assert isinstance(onsuber, subing.CesrOnSuber)
+        assert not onsuber.sdb.flags()["dupsort"]
+
+        prew = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+        w = coring.Matter(qb64=prew)
+        prex = "BHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
+        x = coring.Matter(qb64=prex)
+        prey = "EHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
+        y = coring.Matter(qb64=prey)
+        prez = "EAPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
+        z = coring.Matter(qb64=prez)
+
+
+        # test append
+        assert 0 == onsuber.appendOn(keys=("a",), val=w)
+        assert 1 == onsuber.appendOn(keys=("a",), val=x)
+        assert 2 == onsuber.appendOn(keys=("a",), val=y)
+        assert 3 == onsuber.appendOn(keys=("a",), val=z)
+
+        assert onsuber.cntOn(keys=("a",)) == 4
+        assert onsuber.cntOn(keys=("a",), on=2) == 2
+        assert onsuber.cntOn(keys=("a",), on=4) == 0
+
+        items = [(keys, val.qb64) for keys, val in onsuber.getItemIter()]
+        assert items == [(('a', '00000000000000000000000000000000'), w.qb64),
+                        (('a', '00000000000000000000000000000001'), x.qb64),
+                        (('a', '00000000000000000000000000000002'), y.qb64),
+                        (('a', '00000000000000000000000000000003'), z.qb64)]
+
+        # test getOnItemIter
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getOnItemIter(keys='a')]
+        assert items == [(('a',), 0, w.qb64),
+                        (('a',), 1, x.qb64),
+                        (('a',), 2, y.qb64),
+                        (('a',), 3, z.qb64)]
+
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getOnItemIter(keys='a', on=2)]
+        assert items == [(('a',), 2, y.qb64),
+                         (('a',), 3, z.qb64)]
+
+        assert 0 == onsuber.appendOn(keys=("ac",), val=z)
+        assert 0 == onsuber.appendOn(keys=("b",), val=w)
+        assert 1 == onsuber.appendOn(keys=("b",), val=x)
+        assert 0 == onsuber.appendOn(keys=("bc",), val=y)
+
+
+        assert onsuber.cntOn(keys=("b",)) == 2
+        assert onsuber.cntOn(keys=("ac",), on=2) == 0
+        assert onsuber.cntOn(keys="") == 8
+
+        items = [(keys, val.qb64) for keys, val in onsuber.getItemIter()]
+        assert items == [(('a', '00000000000000000000000000000000'), w.qb64),
+                        (('a', '00000000000000000000000000000001'), x.qb64),
+                        (('a', '00000000000000000000000000000002'), y.qb64),
+                        (('a', '00000000000000000000000000000003'), z.qb64),
+                        (('ac', '00000000000000000000000000000000'), z.qb64),
+                        (('b', '00000000000000000000000000000000'), w.qb64),
+                        (('b', '00000000000000000000000000000001'), x.qb64),
+                        (('bc', '00000000000000000000000000000000'), y.qb64)]
+
+        # test getOnItemIter
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getOnItemIter(keys='b')]
+        assert items == [(('b',), 0, w.qb64),
+                         (('b',), 1, x.qb64)]
+
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getOnItemIter(keys=('b', ))]
+        assert items == [(('b',), 0, w.qb64),
+                         (('b',), 1, x.qb64)]
+
+        items = [item for item in onsuber.getOnItemIter(keys=('b', ""))]
+        assert items == []
+
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getOnItemIter(keys='')]
+        assert items == [(('a',), 0, w.qb64),
+                        (('a',), 1, x.qb64),
+                        (('a',), 2, y.qb64),
+                        (('a',), 3, z.qb64),
+                        (('ac',), 0, z.qb64),
+                        (('b',), 0, w.qb64),
+                        (('b',), 1, x.qb64),
+                        (('bc',), 0, y.qb64)]
+
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getOnItemIter()]
+        assert items == [(('a',), 0, w.qb64),
+                        (('a',), 1, x.qb64),
+                        (('a',), 2, y.qb64),
+                        (('a',), 3, z.qb64),
+                        (('ac',), 0, z.qb64),
+                        (('b',), 0, w.qb64),
+                        (('b',), 1, x.qb64),
+                        (('bc',), 0, y.qb64)]
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
 
 def test_cat_suber():
     """
@@ -2280,10 +2387,11 @@ if __name__ == "__main__":
     test_on_suber()
     test_dup_suber()
     test_iodup_suber()
-    test_oniodup_suber()
+    test_on_iodup_suber()
     test_ioset_suber()
     test_cat_suber()
     test_cesr_suber()
+    test_cesr_on_suber()
     test_cesr_ioset_suber()
     test_cat_cesr_ioset_suber()
     test_cesr_dup_suber()

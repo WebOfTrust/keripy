@@ -568,6 +568,33 @@ class CesrSuber(CesrSuberBase, Suber):
         super(CesrSuber, self).__init__(*pa, **kwa)
 
 
+class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
+    """
+    Subclass of CesrSuberBase, OnSuberBase, and Suber that adds methods for
+    keys with ordinal numbered suffixes and values that are Cesr serializations
+    of Matter subclass ducktypes.
+
+    Each key consistes of pre joined with .sep to ordinal suffix
+
+    Assumes dupsort==False
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(CesrOnSuber, self).__init__(*pa, **kwa)
+
+
 class CatCesrSuberBase(CesrSuberBase):
     """
     Base Class whose values stored in db are a concatenation of the  .qb64b property
