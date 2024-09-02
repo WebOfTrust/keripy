@@ -919,7 +919,7 @@ class LMDBer(filing.Filer):
             iokey = suffix(key, ion, sep=sep)  # ion is at add on amount
             return cursor.put(iokey, val, dupdata=False, overwrite=False)
 
-
+    # deprecated since violates set property of each item in a set is unique
     def appendIoSetVal(self, db, key, val, *, sep=b'.'):
         """
         Append val non-idempotently to insertion ordered set of values all with
@@ -1196,10 +1196,15 @@ class LMDBer(filing.Filer):
                         return cursor.delete()  # delete also moves to next so doubly moved
             return False
 
-
+    # deprecated since violates set property of each item in a set is unique
+    # this is needed to remove non-idempotently appended items which violate
+    # set property
     def delIoSetIokey(self, db, iokey):  # change this to key, ion
         """
         Deletes val at at actual iokey that includes ordinal key suffix.
+        Need this to delete value that is non-idempotently added with
+        appendIoSetVal  where multiple of same value exist at same key because
+        delIoSetVal will only delete the first one in list.
 
         Returns:
             result (bool): True if val was deleted at iokey. False otherwise

@@ -765,7 +765,7 @@ class IoSetSuber(SuberBase):
                                     val=self._ser(val),
                                     sep=self.sep))
 
-
+    # deprecated since violates set property of each item in a set is unique
     def append(self, keys: str | bytes | memoryview | Iterable,
                      val: str | bytes | memoryview):
         """Append val non-idempotently to insertion ordered set of values all with
@@ -899,7 +899,8 @@ class IoSetSuber(SuberBase):
                                        key=self._tokey(keys),
                                        sep=self.sep)
 
-
+    # deprecated since violates set property of each item in a set is unique
+    # this is to be able to remove non idempotent append
     def remIokey(self, iokeys: str | bytes | memoryview | Iterable):
         """
         Removes entries at iokeys

@@ -827,16 +827,11 @@ def test_ioset_komer():
             assert iokeys == iokeysall[i]
             i += 1
 
-        i = 0
-        for iokeys, end in endDB.getFullItemIter():
-            assert end == ends[i]
-            assert iokeys == iokeysall[i]
-            i += 1
-            assert endDB.remIokey(iokeys)
+        #for iokeys, val in endDB.getFullItemIter():
+            #assert endDB.remIokey(iokeys=iokeys)
 
-        assert endDB.cnt(keys0) == 0
-        assert endDB.cnt(keys1) == 0
-
+        #assert endDB.cnt(keys=keys0) == 0
+        #assert endDB.cnt(keys=keys1) == 0
 
     assert not os.path.exists(db.path)
     assert not db.opened

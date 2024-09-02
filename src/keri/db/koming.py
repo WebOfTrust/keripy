@@ -596,19 +596,20 @@ class IoSetKomer(KomerBase):
                                        key=self._tokey(keys),
                                        sep=self.sep)
 
-    def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
-        """
-        Removes entry at iokeys
+    #def remIokey(self, iokeys: str | bytes | memoryview | Iterable):
+        #"""
+        #Removes entries at iokeys
 
-        Parameters:
-            iokeys (tuple): of key str or tuple of key strs to be combined in
-                            order to form key
+        #Parameters:
+            #iokeys (str | bytes | memoryview | Iterable): of key str or
+                    #tuple of key strs to be combined in order to form key
 
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+        #Returns:
+           #result (bool): True if key exists so delete successful. False otherwise
 
-        """
-        return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
+        #"""
+        #return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
+
 
 
     def getItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
