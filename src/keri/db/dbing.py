@@ -1921,6 +1921,71 @@ class LMDBer(filing.Filer):
                     for key, val in cursor.iternext_dup(keys=True):
                         yield (key, val[33:]) # slice off prepended ordering prefix
 
+
+    # methods for OnIoDup that combines IoDup value proem with On ordinal numbered
+    # trailing prefix
+    # this is so we do the proem add and strip here not in some higher level class
+    # like suber
+
+    # used in OnIoDupSuber
+    def appendOnIoDupVal(self, db, key, val, *, sep=b'.'):
+        """
+        Appends val in order after last previous key with same pre in db where
+        full key has key prefix and serialized on suffix attached with sep and
+        value has ordinal proem prefixed.
+        Returns ordinal number in, on, of appended entry. Appended on is 1 greater
+        than previous latest on at pre.
+        Uses onKey(pre, on) for entries.
+
+        Works with either dupsort==True or False since always creates new full
+        key.
+
+        Append val to end of db entries with same pre but with on incremented by
+        1 relative to last preexisting entry at pre.
+
+        Returns:
+            on (int): ordinal number of newly appended val
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+            val (bytes): serialized value to append
+            sep (bytes): separator character for split
+        """
+        val = (b'%032x.' % (0)) +  val  # prepend ordering proem
+        return (self.appendOnVal(db=db, key=key, val=val, sep=sep))
+
+    # used in OnIoDupSuber
+    def getOnIoDupItemIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """
+        Returns iterator of triples (key, on, val), at each key over all ordinal
+        numbered keys with same key + sep + on in db. Values are sorted by
+        onKey(key, on) where on is ordinal number int and key is prefix sans on.
+        Values duplicates are sorted internally by hidden prefixed insertion order
+        proem ordinal
+        Returned items are triples of (key, on, val)
+        When dupsort==true then duplicates are included in items since .iternext
+        includes duplicates.
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when empty.
+
+        Returns:
+            items (Iterator[(key, on, val)]): triples of key, on, val
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        for key, on, val in self.getOnItemIter(db=db, key=key, on=on, sep=sep):
+            val = val[33:] # strip proem
+            yield (key, on, val)
+
+
+
 # Should not need this in OnIoDupSuber because can replace with get getIoDupItemIter
 
     def getIoDupValsAllPreIter(self, db, pre, on=0):
@@ -1996,12 +2061,12 @@ class LMDBer(filing.Filer):
                     yield val[33:]
                 key = snKey(pre, cnt:=cnt-1)
 
-
+# need to fix this so it is not stopped by gaps in on
     def getIoDupValLastAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of last only of dup vals of each key in insertion order
-        for all entries with same prefix across all sequence numbers in increasing order
-        without gaps starting with on (default = 0). Stops if gap or different pre.
+        for all entries with same key across all sequence numbers in increasing order
+        without gaps starting with on (default = 0). Stops if gap or different key.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -2028,10 +2093,11 @@ class LMDBer(filing.Filer):
             key = snKey(pre, cnt:=on)
             while cursor.set_key(key):  # moves to first_dup
                 if cursor.last_dup(): # move to last_dup
-                    yield cursor.value()[33:]  # slice off prepended ordering prefix
+                    yield cursor.value()[33:]  # slice off prepended ordering proem
                 key = snKey(pre, cnt:=cnt+1)
 
-# used by .dels  getIoDupItemIter
+# used by .dels  should be able to replace with self.getTopIoDupItemIter which
+# gets used by IoDupSuber.getIoDupItemIter
     def getIoDupValsAnyPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for any entries
@@ -2074,65 +2140,3 @@ class LMDBer(filing.Filer):
                 cnt = int(back, 16)
                 key = snKey(pre, cnt:=cnt+1)
 
-
-    # methods for OnIoDup that combines IoDup value proem with On ordinal numbered
-    # trailing prefix
-    # this is so we do the proem add and strip here not in some higher level class
-    # like suber
-
-    # used in OnIoDupSuber
-    def appendOnIoDupVal(self, db, key, val, *, sep=b'.'):
-        """
-        Appends val in order after last previous key with same pre in db where
-        full key has key prefix and serialized on suffix attached with sep and
-        value has ordinal proem prefixed.
-        Returns ordinal number in, on, of appended entry. Appended on is 1 greater
-        than previous latest on at pre.
-        Uses onKey(pre, on) for entries.
-
-        Works with either dupsort==True or False since always creates new full
-        key.
-
-        Append val to end of db entries with same pre but with on incremented by
-        1 relative to last preexisting entry at pre.
-
-        Returns:
-            on (int): ordinal number of newly appended val
-
-        Parameters:
-            db (subdb): named sub db in lmdb
-            key (bytes): key within sub db's keyspace plus trailing part on
-            val (bytes): serialized value to append
-            sep (bytes): separator character for split
-        """
-        val = (b'%032x.' % (0)) +  val  # prepend ordering proem
-        return (self.appendOnVal(db=db, key=key, val=val, sep=sep))
-
-    # used in OnIoDupSuber
-    def getOnIoDupItemIter(self, db, key=b'', on=0, *, sep=b'.'):
-        """
-        Returns iterator of triples (key, on, val), at each key over all ordinal
-        numbered keys with same key + sep + on in db. Values are sorted by
-        onKey(key, on) where on is ordinal number int and key is prefix sans on.
-        Values duplicates are sorted internally by hidden prefixed insertion order
-        proem ordinal
-        Returned items are triples of (key, on, val)
-        When dupsort==true then duplicates are included in items since .iternext
-        includes duplicates.
-        when key is empty then retrieves whole db
-
-        Raises StopIteration Error when empty.
-
-        Returns:
-            items (Iterator[(key, on, val)]): triples of key, on, val
-
-        Parameters:
-            db (subdb): named sub db in lmdb
-            key (bytes): key within sub db's keyspace plus trailing part on
-                when key is empty then retrieves whole db
-            on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
-        for key, on, val in self.getOnItemIter(db=db, key=key, on=on, sep=sep):
-            val = val[33:] # strip proem
-            yield (key, on, val)
