@@ -837,6 +837,11 @@ def test_lmdber():
                          (b'Z', 2, b'm'),
                          (b'Z', 3, b'n')]
 
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(edb, key=key, on=2)]
+        assert items == [
+                         (b'Z', 2, b'm'),
+                         (b'Z', 3, b'n')]
+
 
 
         # test IoSetVals insertion order set of vals methods.
