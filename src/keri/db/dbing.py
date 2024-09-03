@@ -589,6 +589,7 @@ class LMDBer(filing.Filer):
             return count
 
     # Suber subclasses don't need this since they always split keys int tuple to return
+    # replace this everywhere with getTopItemIter
     def getAllItemIter(self, db, key=b'', split=True, sep=b'.'):
         """
         Returns iterator of item duple (key, val), at each key over all
@@ -947,65 +948,6 @@ class LMDBer(filing.Filer):
             iokey = suffix(key, ion, sep=sep)  # ion is at add on amount
             return cursor.put(iokey, val, dupdata=False, overwrite=False)
 
-    # deprecated since violates set property of each item in a set is unique
-    def appendIoSetVal(self, db, key, val, *, sep=b'.'):
-        """
-        Append val non-idempotently to insertion ordered set of values all with
-        the same apparent effective key.  If val already in set at key then
-        after append there will be multiple entries in database with val at key
-        each with different insertion order (iokey).
-        Uses hidden ordinal key suffix for insertion ordering.
-        The suffix is appended and stripped transparently.
-
-        Works by walking backward to find last iokey for key instead of reading
-        all vals for ioky.
-
-        Returns:
-           ion (int): hidden insertion ordering ordinal of appended val
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
-            val (bytes): value to append
-        """
-        ion = 0  # default is zeroth insertion at key
-        iokey = suffix(key, ion=MaxSuffix, sep=sep)  # make iokey at max and walk back
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            cursor = txn.cursor()  # create cursor to walk back
-            if not cursor.set_range(iokey):  # max is past end of database
-                # Three possibilities for max past end of database
-                # 1. last entry in db is for same key
-                # 2. last entry in db is for other key before key
-                # 3. database is empty
-                if cursor.last():  # not 3. empty db, so either 1. or 2.
-                    ckey, cion = unsuffix(cursor.key(), sep=sep)
-                    if ckey == key:  # 1. last is last entry for same key
-                        ion = cion + 1  # so set ion to the increment of cion
-            else:  # max is not past end of database
-                # Two possibilities for max not past end of databseso
-                # 1. cursor at max entry at key
-                # 2. other key after key with entry in database
-                ckey, cion = unsuffix(cursor.key(), sep=sep)
-                if ckey == key:  # 1. last entry for key is already at max
-                    raise ValueError("Number part of key {} at maximum"
-                                     " size.".format(ckey))
-                else:  # 2. other key after key so backup one entry
-                    # Two possibilities: 1. no prior entry 2. prior entry
-                    if cursor.prev():  # prev entry, maybe same or earlier pre
-                        # 2. prior entry with two possiblities:
-                        # 1. same key
-                        # 2. other key before key
-                        ckey, cion = unsuffix(cursor.key(), sep=sep)
-                        if ckey == key:  # prior (last) entry at key
-                            ion = cion + 1  # so set ion to the increment of cion
-
-            iokey = suffix(key, ion=ion, sep=sep)
-            if not cursor.put(iokey, val, overwrite=False):
-                raise  ValueError("Failed appending {} at {}.".format(val, key))
-
-            return ion
-
-
 
     def setIoSetVals(self, db, key, vals, *, sep=b'.'):
         """
@@ -1223,31 +1165,6 @@ class LMDBer(filing.Filer):
                     if val == cval:
                         return cursor.delete()  # delete also moves to next so doubly moved
             return False
-
-    # deprecated since violates set property of each item in a set is unique
-    # this is needed to remove non-idempotently appended items which violate
-    # set property
-    def delIoSetIokey(self, db, iokey):  # change this to key, ion
-        """
-        Deletes val at at actual iokey that includes ordinal key suffix.
-        Need this to delete value that is non-idempotently added with
-        appendIoSetVal  where multiple of same value exist at same key because
-        delIoSetVal will only delete the first one in list.
-
-        Returns:
-            result (bool): True if val was deleted at iokey. False otherwise
-                if no val at iokey
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            iokey (bytes): actual key with ordinal key suffix
-        """
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            try:
-                return txn.delete(iokey)
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{iokey}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
     def getTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
@@ -1713,8 +1630,6 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
         return False
 
-    #def delIoDupIonVal(self, db, key, ion):  # to match delIoSetIoKey
-
 
     def cntIoDupVals(self, db, key):
         """
@@ -1960,7 +1875,7 @@ class LMDBer(filing.Filer):
 
 # without gaps is used for replay with on to provide partial replay
 # Consider using ItemIter instead of just replaying vals since ItemIter already
-# works with either dupsort==True or False
+# works with either dupsort==True or False. also skips gaps.
 
     def getOnIoDupValsAllPreIter(self, db, pre, on=0):
         """
@@ -1998,15 +1913,23 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt+1)
 
 
+    # Create multiple methods
+    # getTopItemBackIter symmetric with getTopItemIter
+    # getTopIoSetItemBackIter symmetric getTopIoSetItemIter
+    # getTopIoDupItemBackIter  symmetric with getTopIoDupItemIter
+    # getOnItemBackIter symmetric with getOnItemIter
+
+
+    # instead of just replaying vals replay items since
+    # getTopItemIter already works with either dupsort==True or False
+    # so if we create getTopBackItemIter then we can use that everywhere
 
     # ToDo need  unit tests in dbing  Used to replay backwards all duplicate
     # values starting at on
     # need to fix this so it is not stopped by gaps or if gap raises error as
     # gap is normally a problem for replay so maybe a parameter to raise error on gap
 
-    # Consider creating BackItemIter instead of just replaying vals since
-    # ItemIter already works with either dupsort==True or False
-    # so if we create TopBackItemIter then we can use that everywhere
+
     def getOnIoDupValsAllPreBackIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
@@ -2044,6 +1967,7 @@ class LMDBer(filing.Filer):
                     yield val[33:]
                 key = snKey(pre, cnt:=cnt-1)
 
+# Last is special so need method.
 # Used to replay forward all last duplicate values starting at on
 # need to fix this so it is not stopped by gaps or if gap raises error as
 # gap is normally a problem for replay so maybe a parameter to raise error on gap
@@ -2086,8 +2010,9 @@ class LMDBer(filing.Filer):
 # ToDo do we need a replay last backwards?
 
 
-
-    # use this method to inform how to cross gaps in other replays above with parameter
+    # not used anymore.
+    # before deleting this method use it inform how to cross gaps in other
+    # replays above with parameter such as replay last above.
     # to raise error if detect gap when should not be one for event logs vs escrows
     # then remove this method since not used otherwise
 

@@ -813,35 +813,6 @@ class IoSetSuber(SuberBase):
                                     val=self._ser(val),
                                     sep=self.sep))
 
-    # deprecated since violates set property of each item in a set is unique
-    def append(self, keys: str | bytes | memoryview | Iterable,
-                     val: str | bytes | memoryview):
-        """Append val non-idempotently to insertion ordered set of values all with
-        the same apparent effective key.  If val already in set at key then
-        after append there will be multiple entries in database with val at key
-        each with different insertion order (iokey).
-        Uses hidden ordinal key suffix for insertion ordering.
-        The suffix is appended and stripped transparently.
-
-        Works by walking backward to find last iokey for key instead of reading
-        all vals for iokey.
-
-        Returns:
-           ion (int): hidden insertion ordering ordinal of appended val
-
-        Parameters:
-            keys (str | bytes | memoryview | Iterable): of key parts to be
-                    combined in order to form key
-            val (str | bytes | memoryview): serialization
-
-
-        """
-        return (self.db.appendIoSetVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=self._ser(val),
-                                       sep=self.sep))
-
-
 
     def pin(self, keys: str | bytes | memoryview | Iterable,
                   vals: str | bytes | memoryview | Iterable):
@@ -946,22 +917,6 @@ class IoSetSuber(SuberBase):
             return self.db.delIoSetVals(db=self.sdb,
                                        key=self._tokey(keys),
                                        sep=self.sep)
-
-    # deprecated since violates set property of each item in a set is unique
-    # this is to be able to remove non idempotent append
-    def remIokey(self, iokeys: str | bytes | memoryview | Iterable):
-        """
-        Removes entries at iokeys
-
-        Parameters:
-            iokeys (str | bytes | memoryview | Iterable): of key str or
-                    tuple of key strs to be combined in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
 
 
     def cnt(self, keys: str | bytes | memoryview | Iterable):

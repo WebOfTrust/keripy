@@ -934,19 +934,6 @@ def test_lmdber():
         assert dber.getIoSetVals(db, key1) == vals1
         assert dber.getIoSetVals(db, key2) == vals2
 
-        assert dber.appendIoSetVal(db, key1, val=b"k") == 4
-        assert dber.getIoSetVals(db, key1) == [b"w", b"n", b"y", b"d", b"k"]
-
-
-        #assert ([(bytes(iokey), bytes(val)) for iokey, val in dber.getIoSetItemIter(db, key0)] ==
-                #[(b'ABC.ZYX.00000000000000000000000000000000', b'z'),
-                #(b'ABC.ZYX.00000000000000000000000000000001', b'm'),
-                #(b'ABC.ZYX.00000000000000000000000000000002', b'x'),
-                #(b'ABC.ZYX.00000000000000000000000000000003', b'a')])
-
-        #for iokey, val in dber.getIoSetItemIter(db, key0):
-            #assert dber.delIoSetIokey(db, iokey)
-        #assert dber.getIoSetVals(db, key0) == []
 
         vals3 = [b"q", b"e"]
         assert dber.setIoSetVals(db, key2, vals3)
@@ -968,16 +955,12 @@ def test_lmdber():
         dber.putIoSetVals(db, empty_key, [some_value])
         dber.addIoSetVal(db, empty_key, some_value)
         dber.setIoSetVals(db, empty_key, [some_value])
-        dber.appendIoSetVal(db, empty_key, some_value)
         dber.getIoSetVals(db, empty_key)
         [_ for _ in dber.getIoSetValsIter(db, empty_key)]
         dber.getIoSetValLast(db, empty_key)
         dber.cntIoSetVals(db, empty_key)
         dber.delIoSetVals(db, empty_key)
         dber.delIoSetVal(db, empty_key, some_value)
-        #dber.getIoSetItemIter(db, empty_key)
-        with pytest.raises(KeyError):
-            dber.delIoSetIokey(db, empty_key)
         with pytest.raises(KeyError):
             dber.putVals(db, empty_key, [some_value])
         with pytest.raises(KeyError):

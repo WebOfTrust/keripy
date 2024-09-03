@@ -913,11 +913,6 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
-        for iokeys, val in iosuber.getFullItemIter():
-            assert iosuber.remIokey(iokeys=iokeys)
-
-        assert iosuber.cnt(keys=keys0) == 0
-        assert iosuber.cnt(keys=keys1) == 0
 
 
         # test with keys as string not tuple
@@ -949,8 +944,6 @@ def test_ioset_suber():
         assert iosuber.trim()  # default trims whole database
         assert iosuber.put(keys=keys1, vals=[bob, bil])
         assert iosuber.get(keys=keys1) == [bob, bil]
-        assert iosuber.append(keys=keys1, val=bob) == 2
-        assert iosuber.get(keys=keys1) == [bob, bil, bob]
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -1141,11 +1134,6 @@ def test_cesr_ioset_suber():
                             ((*keys0, '00000000000000000000000000000001'), said2),
                         ]
 
-        for iokeys, val in cisuber.getFullItemIter():
-            assert cisuber.remIokey(iokeys=iokeys)
-
-        assert cisuber.cnt(keys=keys0) == 0
-        assert cisuber.cnt(keys=keys1) == 0
 
 
     assert not os.path.exists(db.path)
@@ -1921,12 +1909,6 @@ def test_cat_cesr_ioset_suber():
                         (keys0 + ('00000000000000000000000000000001', ), [sqr1.qb64, dgr1.qb64]),
                         ]
 
-        for iokeys, val in sdb.getFullItemIter():
-            assert sdb.remIokey(iokeys=iokeys)
-
-        assert sdb.cnt(keys=keys0) == 0
-        assert sdb.cnt(keys=keys1) == 0
-        assert sdb.cnt(keys=keys2) == 0
 
         # Try Siger Indexer Subclass
         sdb = subing.CatCesrIoSetSuber(db=db, subkey='pigs.', klas=(indexing.Siger, ))
