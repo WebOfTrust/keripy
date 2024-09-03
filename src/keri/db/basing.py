@@ -1467,7 +1467,7 @@ class Baser(dbing.LMDBer):
                         cpydb.add(keys=keys, val=val)
 
                 # Insecure raw imgs database copy.
-                for (key, val) in self.getAllItemIter(self.imgs):
+                for (key, val) in self.getTopItemIter(self.imgs):
                     copy.imgs.setVal(key=key, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb
@@ -2286,19 +2286,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.ures, key)
 
-    def getUreItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of partial signed escrowed event triple items at next
-        key after key.
-        Item is (key, val) where proem has already been stripped from val
-        val is triple dig+pre+cig
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.ures, key, skip)
 
     def getUreItemsNextIter(self, key=b'', skip=True):
         """
@@ -2452,20 +2439,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoDupValLast(self.vres, key)
-
-    def getVreItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of partial signed escrowed event quintuple items at next
-        key after key.
-        Item is (key, val) where proem has already been stripped from val
-        val is Quinlet is edig + spre + ssnu + sdig +sig
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.vres, key, skip)
 
     def getVreItemsNextIter(self, key=b'', skip=True):
         """
@@ -2683,18 +2656,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.pses, key)
 
-    def getPseItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of partial signed escrowed event dig items at next key after key.
-        Item is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.pses, key, skip)
-
     def getPseItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -2782,18 +2743,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoDupValLast(self.pwes, key)
-
-    def getPweItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of partial witnessed escrowed event dig items at next key after key.
-        Item is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.pwes, key, skip)
 
     def getPweItemsNextIter(self, key=b'', skip=True):
         """
@@ -2899,20 +2848,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.uwes, key)
 
-    def getUweItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of partial signed escrowed receipt couple items at next
-        key after key.
-        Item is (key, val) where proem has already been stripped from val
-        val is couple edig+wig
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.uwes, key, skip)
-
     def getUweItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -2993,18 +2928,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.ooes, key)
 
-    def getOoeItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of out of order escrowed event dig items at next key after key.
-        Item is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.ooes, key, skip)
-
     def getOoeItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -3083,18 +3006,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoDupValLast(self.qnfs, key)
-
-    def getQnfItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of out of order escrowed event dig items at next key after key.
-        Item is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.qnfs, key, skip)
 
     def getQnfItemsNextIter(self, key=b'', skip=True):
         """
@@ -3249,18 +3160,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoDupValLast(self.ldes, key)
-
-    def getLdeItemsNext(self, key=b'', skip=True):
-        """
-        Use snKey()
-        Return all dups of likely duplicitous escrowed event dig items at next key after key.
-        Item is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNext(self.ldes, key, skip)
 
     def getLdeItemsNextIter(self, key=b'', skip=True):
         """

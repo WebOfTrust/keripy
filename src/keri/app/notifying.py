@@ -184,7 +184,8 @@ class DicterSuber(subing.Suber):
             each entry in db
 
         """
-        for key, val in self.db.getAllItemIter(db=self.sdb, key=self._tokey(keys), split=False):
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                               top=self._tokey(keys)):
             yield self._tokeys(key), self.klas(raw=bytes(val))
 
     def cntAll(self):

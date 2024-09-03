@@ -491,64 +491,6 @@ def test_baser():
         assert db.putUres(key=cKey, vals=cVals)
         assert db.putUres(key=dKey, vals=dVals)
 
-        # Test getUreItemsNext( key=b"")
-        # aVals
-        items = db.getUreItemsNext()  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getUreItemsNext(key=aKey, skip=False)  #  get aKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getUreItemsNext(key=aKey)  #  get bKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = db.getUreItemsNext(key=b'', skip=False)  #  get frist key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = db.getUreItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-
-        # cVals
-        items = db.getUreItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-
-        # dVals
-        items = db.getUreItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = db.getUreItemsNext(key=ikey)
-        assert items == []  # empty
-        assert not items
 
         # Test getUreItemsNextIter(key=b"")
         #  get dups at first key in database
@@ -613,10 +555,6 @@ def test_baser():
         for key, val in items:
             assert db.delUre(ikey, val) == True
 
-        # none
-        items = [item for item in db.getUreItemsNext(key=ikey)]
-        assert items == []  # empty
-        assert not items
 
         # Validator (transferable) Receipts
         # test .vrcs sub db methods dgkey
@@ -698,64 +636,6 @@ def test_baser():
         assert db.putVres(key=cKey, vals=cVals)
         assert db.putVres(key=dKey, vals=dVals)
 
-        # Test getVreItemsNext( key=b"")
-        # aVals
-        items = db.getVreItemsNext()  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getVreItemsNext(key=aKey, skip=False)  #  get aKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getVreItemsNext(key=aKey)  #  get bKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = db.getVreItemsNext(key=b'', skip=False)  #  get frist key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = db.getVreItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-
-        # cVals
-        items = db.getVreItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-
-        # dVals
-        items = db.getVreItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = db.getVreItemsNext(key=ikey)
-        assert items == []  # empty
-        assert not items
 
         # Test getVreItemsNextIter(key=b"")
         #  get dups at first key in database
@@ -820,10 +700,6 @@ def test_baser():
         for key, val in items:
             assert db.delVre(ikey, val) == True
 
-        # none
-        items = [item for item in db.getVreItemsNext(key=ikey)]
-        assert items == []  # empty
-        assert not items
 
 
         # test .kels insertion order dup methods.  dup vals are insertion order
@@ -883,64 +759,6 @@ def test_baser():
         assert db.putPses(key=cKey, vals=cVals)
         assert db.putPses(key=dKey, vals=dVals)
 
-        # Test getPseItemsNext( key=b"")
-        # aVals
-        items = db.getPseItemsNext()  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getPseItemsNext(key=aKey, skip=False)  #  get aKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getPseItemsNext(key=aKey)  #  get bKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = db.getPseItemsNext(key=b'', skip=False)  #  get frist key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = db.getPseItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-
-        # cVals
-        items = db.getPseItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-
-        # dVals
-        items = db.getPseItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = db.getPseItemsNext(key=ikey)
-        assert items == []  # empty
-        assert not items
 
         # Test getPseItemsNextIter(key=b"")
         #  get dups at first key in database
@@ -1005,10 +823,6 @@ def test_baser():
         for key, val in items:
             assert db.delPse(ikey, val) == True
 
-        # none
-        items = [item for item in db.getPseItemsNext(key=ikey)]
-        assert items == []  # empty
-        assert not items
 
         # Test .udes partial delegated escrow seal source couples
         key = dgKey(preb, digb)
@@ -1085,64 +899,6 @@ def test_baser():
         assert db.putPwes(key=cKey, vals=cVals)
         assert db.putPwes(key=dKey, vals=dVals)
 
-        # Test getPweItemsNext( key=b"")
-        # aVals
-        items = db.getPweItemsNext()  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getPweItemsNext(key=aKey, skip=False)  #  get aKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getPweItemsNext(key=aKey)  #  get bKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = db.getPweItemsNext(key=b'', skip=False)  #  get frist key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = db.getPweItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-
-        # cVals
-        items = db.getPweItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-
-        # dVals
-        items = db.getPweItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = db.getPweItemsNext(key=ikey)
-        assert items == []  # empty
-        assert not items
 
         # Test getPweItemsNextIter(key=b"")
         #  get dups at first key in database
@@ -1207,10 +963,6 @@ def test_baser():
         for key, val in items:
             assert db.delPwe(ikey, val) == True
 
-        # none
-        items = [item for item in db.getPweItemsNext(key=ikey)]
-        assert items == []  # empty
-        assert not items
 
         # Unverified Witness Receipt Escrows
         # test .uwes insertion order dup methods.  dup vals are insertion order
@@ -1249,64 +1001,6 @@ def test_baser():
         assert db.putUwes(key=cKey, vals=cVals)
         assert db.putUwes(key=dKey, vals=dVals)
 
-        # Test getUweItemsNext( key=b"")
-        # aVals
-        items = db.getUweItemsNext()  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getUweItemsNext(key=aKey, skip=False)  #  get aKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getUweItemsNext(key=aKey)  #  get bKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = db.getUweItemsNext(key=b'', skip=False)  #  get frist key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = db.getUweItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-
-        # cVals
-        items = db.getUweItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-
-        # dVals
-        items = db.getUweItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = db.getUweItemsNext(key=ikey)
-        assert items == []  # empty
-        assert not items
 
         # Test getUweItemsNextIter(key=b"")
         #  get dups at first key in database
@@ -1371,10 +1065,7 @@ def test_baser():
         for key, val in items:
             assert db.delUwe(ikey, val) == True
 
-        # none
-        items = [item for item in db.getUweItemsNext(key=ikey)]
-        assert items == []  # empty
-        assert not items
+
 
         # test .ooes insertion order dup methods.  dup vals are insertion order
         key = b'A'
@@ -1410,65 +1101,6 @@ def test_baser():
         assert db.putOoes(key=bKey, vals=bVals)
         assert db.putOoes(key=cKey, vals=cVals)
         assert db.putOoes(key=dKey, vals=dVals)
-
-        # Test getOoeItemsNext( key=b"")
-        # aVals
-        items = db.getOoeItemsNext()  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getOoeItemsNext(key=aKey, skip=False)  #  get aKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getOoeItemsNext(key=aKey)  #  get bKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = db.getOoeItemsNext(key=b'', skip=False)  #  get frist key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = db.getOoeItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-
-        # cVals
-        items = db.getOoeItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-
-        # dVals
-        items = db.getOoeItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = db.getOoeItemsNext(key=ikey)
-        assert items == []  # empty
-        assert not items
 
         # Test getOoeItemsNextIter(key=b"")
         #  get dups at first key in database
@@ -1533,12 +1165,6 @@ def test_baser():
         for key, val in items:
             assert db.delOoe(ikey, val) == True
 
-        # none
-        items = [item for item in db.getOoeItemsNext(key=ikey)]
-        assert items == []  # empty
-        assert not items
-
-
         # test .dels insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
@@ -1591,64 +1217,6 @@ def test_baser():
         assert db.putLdes(key=cKey, vals=cVals)
         assert db.putLdes(key=dKey, vals=dVals)
 
-        # Test getOoeItemsNext( key=b"")
-        # aVals
-        items = db.getLdeItemsNext()  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getLdeItemsNext(key=aKey, skip=False)  #  get aKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = db.getLdeItemsNext(key=aKey)  #  get bKey  in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = db.getLdeItemsNext(key=b'', skip=False)  #  get frist key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = db.getLdeItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-
-        # cVals
-        items = db.getLdeItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-
-        # dVals
-        items = db.getLdeItemsNext(key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = db.getLdeItemsNext(key=ikey)
-        assert items == []  # empty
-        assert not items
 
         # Test getLdeItemsNextIter(key=b"")
         #  get dups at first key in database
@@ -1712,13 +1280,6 @@ def test_baser():
         assert vals == dVals
         for key, val in items:
             assert db.delLde(ikey, val) == True
-
-        # none
-        items = [item for item in db.getLdeItemsNext(key=ikey)]
-        assert items == []  # empty
-        assert not items
-
-
 
     assert not os.path.exists(db.path)
 

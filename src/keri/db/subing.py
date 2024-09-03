@@ -36,6 +36,37 @@ Also for using the dupsort==true mechanism is
 DupSuber
 CesrDupSuber
 
+Class Architecture
+
+Suber is simple lexographic database with only one value per key
+OnSuber is simple lexographic database where trailing part of key is serialized
+    ordinal number so that the ordering within each key prefix is monotonically
+    increasing numeric
+
+The term 'set' of values means that no value may appear more than once in the set.
+
+DupSuber provides set of lexicographic ordered values at each key. Each value has
+    a limited size (key + value <= 511 byes). The set is performant. Good for indices.
+
+IoDupSuber provides set of insertion ordered values at each key. Each value has
+    a limited size (key + value <= 511 byes). The set is less perfromant than DupSuber
+    but more performant than IoSetSuber. Good for insertion ordered indices
+
+IoSetSuber proves set of insertion ordered values at each key. Value size is not limited
+    Good for any insertion ordered set where size may be too large for IoDupSuber
+
+OnIoDupSuber provides set of insertion ordered values where the where trailing
+    part of key is serialized ordinal number so that the ordering within each
+    key prefix is monotonically increasing numeric.
+
+Each of these base types for managing the key space may be mixed with other
+Classes that provide different types of values these include.
+
+Cesr
+CatCesr
+Serder
+etc.
+
 
 """
 from typing import Type, Union

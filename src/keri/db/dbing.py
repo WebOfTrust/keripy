@@ -588,39 +588,6 @@ class LMDBer(filing.Filer):
                 count += 1
             return count
 
-    # Suber subclasses don't need this since they always split keys int tuple to return
-    # replace this everywhere with getTopItemIter
-    def getAllItemIter(self, db, key=b'', split=True, sep=b'.'):
-        """
-        Returns iterator of item duple (key, val), at each key over all
-        keys in db. If split is true then the key is split at sep and instead
-        of returing duple it results tuple with one entry for each key split
-        as well as the value.
-
-        Works for both dupsort==False and dupsort==True
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            db is opened named sub db with dupsort=False
-            key is key location in db to resume replay,
-                   If empty then start at first key in database
-            split (bool): True means split key at sep before returning
-            sep (bytes): separator char for key
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
-                return  # no values end of db
-
-            for key, val in cursor.iternext():  # return key, val at cursor
-                if split:
-                    splits = bytes(key).split(sep)
-                    splits.append(val)
-                else:
-                    splits = (bytes(key), val)
-                yield tuple(splits)
-
 
     def getTopItemIter(self, db, top=b''):
         """
@@ -1714,51 +1681,51 @@ class LMDBer(filing.Filer):
 
 # not needed in IoDupSuber since not used anywhere always uses the Iter version
 # below. confirm this in general and refactor any that do use to use the iter verio
-    def getIoDupItemsNext(self, db, key=b"", skip=True):
-        """
-        Return list of all dup items at next key after key in db in insertion order.
-        Item is (key, val) with proem stripped from val stored in db.
-        If key == b'' then returns list of dup items at first key in db.
-        If skip is False and key is not empty then returns dup items at key
-        Returns empty list if no entries at next key after key
+    #def getIoDupItemsNext(self, db, key=b"", skip=True):
+        #"""
+        #Return list of all dup items at next key after key in db in insertion order.
+        #Item is (key, val) with proem stripped from val stored in db.
+        #If key == b'' then returns list of dup items at first key in db.
+        #If skip is False and key is not empty then returns dup items at key
+        #Returns empty list if no entries at next key after key
 
-        If key is empty then gets io items (key, io value) at first key in db
-        Use the return key from items as next key for next call to function in
-        order to iterate through the database
+        #If key is empty then gets io items (key, io value) at first key in db
+        #Use the return key from items as next key for next call to function in
+        #order to iterate through the database
 
-        Assumes DB opened with dupsort=True
+        #Assumes DB opened with dupsort=True
 
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order.
+        #Duplicates at a given key preserve insertion order of duplicate.
+        #Because lmdb is lexocographic an insertion ordering proem is prepended to
+        #all values that makes lexocographic order that same as insertion order.
 
-        Duplicates are ordered as a pair of key plus value so prepending proem
-        to each value changes duplicate ordering. Proem is 33 characters long.
-        With 32 character hex string followed by '.' for essentiall unlimited
-        number of values which will be limited by memory.
+        #Duplicates are ordered as a pair of key plus value so prepending proem
+        #to each value changes duplicate ordering. Proem is 33 characters long.
+        #With 32 character hex string followed by '.' for essentiall unlimited
+        #number of values which will be limited by memory.
 
-        With prepended proem ordinal must explicity check for duplicate values
-        before insertion. Uses a python set for the duplicate inclusion test.
-        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+        #With prepended proem ordinal must explicity check for duplicate values
+        #before insertion. Uses a python set for the duplicate inclusion test.
+        #Set inclusion scales with O(1) whereas list inclusion scales with O(n).
 
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace or empty string
-            skip is Boolean If True skips to next key if key is not empty string
-                    Othewise don't skip for first pass
-        """
+        #Parameters:
+            #db is opened named sub db with dupsort=True
+            #key is bytes of key within sub db's keyspace or empty string
+            #skip is Boolean If True skips to next key if key is not empty string
+                    #Othewise don't skip for first pass
+        #"""
 
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            items = []
-            if cursor.set_range(key):  # moves to first_dup at key
-                found = True
-                if skip and key and cursor.key() == key:  # skip to next key
-                    found = cursor.next_nodup()  # skip to next key not dup if any
-                if found:
-                    # slice off prepended ordering prefix on value in item
-                    items = [(key, val[33:]) for key, val in cursor.iternext_dup(keys=True)]
-            return items
+        #with self.env.begin(db=db, write=False, buffers=True) as txn:
+            #cursor = txn.cursor()
+            #items = []
+            #if cursor.set_range(key):  # moves to first_dup at key
+                #found = True
+                #if skip and key and cursor.key() == key:  # skip to next key
+                    #found = cursor.next_nodup()  # skip to next key not dup if any
+                #if found:
+                    ## slice off prepended ordering prefix on value in item
+                    #items = [(key, val[33:]) for key, val in cursor.iternext_dup(keys=True)]
+            #return items
 
 # don't need this in IoDupSuber because can replace with self.getTopIoDupItemIter
 # which in turen can be replaced with IoDupSuber.getItemIter

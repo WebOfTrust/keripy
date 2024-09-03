@@ -809,7 +809,8 @@ class Reger(dbing.LMDBer):
         Return iterator of all items in .taes
 
         """
-        return self.getAllItemIter(self.taes, split=True)
+        return self.getTopItemIter(self.taes)
+
 
     def delTae(self, key):
         """
@@ -852,7 +853,8 @@ class Reger(dbing.LMDBer):
         Return iterator of all items in .taes
 
         """
-        return self.getAllItemIter(self.oots, split=True)
+        return self.getTopItemIter(self.oots)
+
 
     def delOot(self, key):
         """
