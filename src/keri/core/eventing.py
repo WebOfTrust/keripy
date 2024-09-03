@@ -5873,7 +5873,7 @@ class Kevery:
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, etriplet in self.db.getUreItemsNextIter(key=key):
+            for ekey, etriplet in self.db.getUreItemIter(key=key):
                 try:
                     pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     rsaider, sprefixer, cigar = deReceiptTriple(etriplet)

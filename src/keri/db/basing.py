@@ -2287,7 +2287,7 @@ class Baser(dbing.LMDBer):
         return self.getIoDupValLast(self.ures, key)
 
 
-    def getUreItemsNextIter(self, key=b'', skip=True):
+    def getUreItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of partial signed escrowed event triple items at next
@@ -2299,7 +2299,8 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsNextIter(self.ures, key, skip)
+        return self.getTopIoDupItemIter(self.ures, key)
+        #return self.getIoDupItemsNextIter(self.ures, key, skip)
 
     def cntUres(self, key):
         """
