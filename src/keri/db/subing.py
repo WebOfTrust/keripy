@@ -463,16 +463,17 @@ class OnSuberBase(SuberBase):
 
     def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
-        Returns
-            items (Iterator[(top keys, on, val)]): triples of (top keys, on int,
-                  deserialized val)
+        Returns:
+            items (Iterator[(key, on, val)]): triples of key, on, val with same
+                key but increments of on >= on i.e. all key.on beginning with on
 
         Parameters:
-            keys (str | bytes | memoryview | iterator): top keys as prefix to be
-                combined with serialized on suffix and sep to form key
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form actual key
                 When keys is empty then retrieves whole database including
                 duplicates if any
-            on (int): ordinal number used with onKey(pre,on) to form key.
+            on (int): ordinal number used with onKey(pre,on) to form key at at
+                      which to initiate retrieval
             sep (bytes): separator character for split
         """
         for keys, on, val in (self.db.getOnItemIter(db=self.sdb,

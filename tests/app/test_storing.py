@@ -9,7 +9,7 @@ import lmdb
 
 from keri.app import keeping
 from keri.core import coring, serdering
-from keri.db import dbing, basing
+from keri.db import dbing, basing, subing
 from keri.peer import exchanging
 from keri.app.storing import Mailboxer
 
@@ -28,7 +28,8 @@ def test_mailboxing():
     assert mber.env.path() == mber.path
     assert os.path.exists(mber.path)
 
-    assert isinstance(mber.tpcs, lmdb._Database)
+    #assert isinstance(mber.tpcs, lmdb._Database)
+    assert isinstance(mber.tpcs, subing.OnSuber)
 
     mber.close(clear=True)
     assert not os.path.exists(mber.path)

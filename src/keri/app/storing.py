@@ -34,6 +34,17 @@ class Mailboxer(dbing.LMDBer):
             perm:
             reopen:
             kwa:
+
+        Mailboxer uses two dbs for mailbox messages these are .tpcs and .msgs.
+        The message index is in .tpcs (topics).
+            Each .tpcs index key consists of topic.on where topic is bytes
+                identifier or prefix/topic for message and on is serialized
+                ordinal number to orders the appearance of a topic message.
+            Eash .tpcs val is the digest of the message.
+        The message itself is stored in .msgs where the key is the msg digest
+            and the value is the serialized messag itself.
+        Multiple messages can share the same topic but with a different ordinal.
+
         """
         self.tpcs = None
         self.msgs = None
@@ -48,91 +59,131 @@ class Mailboxer(dbing.LMDBer):
         """
         super(Mailboxer, self).reopen(**kwa)
 
-        self.tpcs = self.env.open_db(key=b'tpcs.', dupsort=True)
+        #self.tpcs = self.env.open_db(key=b'tpcs.', dupsort=True)
+        self.tpcs = subing.OnSuber(db=self, subkey='tpcs.')
         self.msgs = subing.Suber(db=self, subkey='msgs.')  # key states
 
         return self.env
 
-    def delTopic(self, key):
+    def delTopic(self, key, on=0):
+        """Removes topic index from .tpcs without deleting message from .msgs
+
+        Returns:
+            result (boo): True if full key consisting of key and serialized on
+                             exists in database so removed
+                          False otherwise (not removed)
         """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoSetVals(self.tpcs, key)
+        #return self.delIoSetVals(self.tpcs, key)
+        return self.tpcs.remOn(keys=key, on=on)
 
     def appendToTopic(self, topic, val):
-        """
-        Return first seen order number int, fn, of appended entry.
-        Computes fn as next fn after last entry.
+        """Appends val to end of db entries with same topic but with on
+        incremented by 1 relative to last preexisting entry at topic.
 
-        Append val to end of db entries with same topic but with fn incremented by
-        1 relative to last preexisting entry at pre.
+        Returns:
+            on (int): order number int, on, of appended entry.
+                      Computes on as next on after last entry.
 
         Parameters:
-            topic is bytes identifier prefix/topic for message
-            val is event digest
+            topic (bytes):  topic identifier for message
+            val (bytes): msg digest
         """
-        return self.appendIoSetVal(db=self.tpcs, key=topic, val=val)
+        #return self.appendIoSetVal(db=self.tpcs, key=topic, val=val)
+        return self.tpcs.appendOn(key=topic, val=val)
+
 
     def getTopicMsgs(self, topic, fn=0):
         """
         Returns:
-             ioset (oset): the insertion ordered set of values at same apparent
-             effective key.
-             Uses hidden ordinal key suffix for insertion ordering.
-             The suffix is appended and stripped transparently.
+            msgs (Iterable[bytes]): belonging to topic indices with same topic but all
+                on >= fn i.e. all topic.on beginning with fn
 
          Parameters:
-             topic (Option(bytes|str)): Apparent effective key
-             fn (int) starting index
+             topic (Option(bytes|str)): key prefix combined with serialized on
+                    to form full actual key.  When key is empty then retrieves
+                    whole database.
+             fn (int): starting index ordinal number used with onKey(pre,on)
+                    to form key at at which to initiate retrieval
         """
-        if hasattr(topic, "encode"):
-            topic = topic.encode("utf-8")
-
-        digs = self.getIoSetVals(db=self.tpcs, key=topic, ion=fn)
         msgs = []
-        for dig in digs:
+        for keys, on, dig in self.tpcs.getOnItemIter(keys=topic, on=fn):
             if msg := self.msgs.get(keys=dig):
-                msgs.append(msg.encode("utf-8"))
+                msgs.append(msg.encode())  # want bytes not str
         return msgs
+
+        #if hasattr(topic, "encode"):
+            #topic = topic.encode("utf-8")
+
+        #digs = self.getIoSetVals(db=self.tpcs, key=topic, ion=fn)
+        #msgs = []
+        #for dig in digs:
+            #if msg := self.msgs.get(keys=dig):
+                #msgs.append(msg.encode("utf-8"))
+        #return msgs
 
     def storeMsg(self, topic, msg):
         """
-        Add exn event to mailbox of dest identifier
+        Add exn event to mailbox topic and on that is 1 greater than last msg
+        at topic.
+
+        Returns:
+            result (bool): True if msg successfully stored and indexed at topic
+                           False otherwise
 
         Parameters:
-            msg (bytes):
-            topic (qb64b):
+            topic (str | bytes):  topic (Option(bytes|str)): key prefix combined
+                with serialized on to form full actual key.
+            msg (bytes): serialized message
 
         """
-        if hasattr(topic, "encode"):
-            topic = topic.encode("utf-8")
-
         if hasattr(msg, "encode"):
             msg = msg.encode("utf-8")
 
         digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
-        self.appendToTopic(topic=topic, val=digb)
+        on = self.tpcs.appendOn(keys=topic, val=digb)
         return self.msgs.pin(keys=digb, val=msg)
+
+        #if hasattr(topic, "encode"):
+            #topic = topic.encode("utf-8")
+
+        #if hasattr(msg, "encode"):
+            #msg = msg.encode("utf-8")
+
+        #digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
+        #self.appendToTopic(topic=topic, val=digb)
+        #return self.msgs.pin(keys=digb, val=msg)
+
 
     def cloneTopicIter(self, topic, fn=0):
         """
-        Returns iterator of first seen exn messages with attachments for the
-        identifier prefix pre starting at first seen order number, fn.
+        Returns:
+            triple (Iterator[(on, topic, msg): iterator of messages at topic
+            beginning with ordinal fn.
+
+        topic (Option(bytes|str)): key prefix combined with serialized on
+                    to form full actual key.  When key is empty then retrieves
+                    whole database.
+             fn (int): starting index ordinal number used with onKey(pre,on)
+                    to form key at at which to initiate retrieval
+
+
 
         ToDo looks like misuse of IoSet this should not be IoSet but simply
         Ordinal Numbered db.  since should not be using hidden ion has not
         hidden.
 
         """
-        if hasattr(topic, 'encode'):
-            topic = topic.encode("utf-8")
+        for keys, on, dig in self.tpcs.getOnItemIter(keys=topic, on=fn):
+            if msg := self.msgs.get(keys=dig):
+                yield (on, topic, msg.encode("utf-8"))
 
-        for ion, (topic, dig) in enumerate(self.getTopIoSetItemIter(self.tpcs, topic)):
-            if ion >= fn:
-                if msg := self.msgs.get(keys=dig):
-                    yield ion, topic, msg.encode("utf-8")
+        #if hasattr(topic, 'encode'):
+            #topic = topic.encode("utf-8")
+
+        #for ion, (topic, dig) in enumerate(self.getTopIoSetItemIter(self.tpcs, topic)):
+            #if ion >= fn:
+                #if msg := self.msgs.get(keys=dig):
+                    #yield ion, topic, msg.encode("utf-8")
 
         #for (key, dig) in self.getIoSetItemIter(self.tpcs, key=topic, ion=fn):
             #topic, ion = dbing.unsuffix(key)

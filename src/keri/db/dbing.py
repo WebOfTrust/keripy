@@ -522,7 +522,9 @@ class LMDBer(filing.Filer):
         """
         Write serialized bytes val to location key in db
         Overwrites existing val if any
-        Returns True If val successfully written Else False
+        Returns:
+            result (bool): True If val successfully written
+                           False otherwise
 
         Parameters:
             db is opened named sub db with dupsort=False
@@ -829,7 +831,8 @@ class LMDBer(filing.Filer):
         Raises StopIteration Error when empty.
 
         Returns:
-            items (Iterator[(key, on, val)]): triples of key, on, val
+            items (Iterator[(key, on, val)]): triples of key, on, val with same
+                key but increments of on beginning with on
 
         Parameters:
             db (subdb): named sub db in lmdb
@@ -856,7 +859,7 @@ class LMDBer(filing.Filer):
 
 
     # IoSet insertion order in val so can have effective dups but with
-    # dupsort = False so val not limited to 511 bytes
+    # dupsort==False so val not limited to 511 bytes
     # For databases that support set of insertion ordered values with apparent
     # effective duplicate key but with (dupsort==False). Actual key uses hidden
     # key suffix ordinal to provide insertion ordering of value members of set
