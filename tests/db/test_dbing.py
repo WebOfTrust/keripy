@@ -413,7 +413,8 @@ def test_lmdber():
         assert dber.cntOnVals(db, key=b'') == 6  # all keys
         assert dber.cntOnVals(db) == 6  # all keys
 
-        # replay preB events in database
+        # iter replay
+        # replay preB event items in database
         items = [item for item in dber.getOnItemIter(db, preB)]
         assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
                          (preB, 3, digX), (preB, 4, digY)]
@@ -458,6 +459,49 @@ def test_lmdber():
         # resume replay all starting at preC on=1
         items = [item for item in dber.getOnItemIter(db, key=preC, on=1)]
         assert items == []
+
+        # val replay
+        # replay preB event vals in database
+        vals = [val for val in dber.getOnValIter(db, preB)]
+        assert vals == [digU, digV, digW, digX, digY]
+
+        # resume replay preB events at on = 3
+        vals = [val for val in dber.getOnValIter(db, preB, on=3)]
+        assert vals == [digX, digY]
+
+        # resume replay preB events at on = 5
+        vals = [val for val in dber.getOnValIter(db, preB, on=5)]
+        assert vals == []
+
+        vals = [val  for val in dber.getOnValIter(db, key=b'')]
+        assert vals == [digA,
+                        digY,
+                        digU,
+                        digV,
+                        digW,
+                        digX,
+                        digY,
+                        digC]
+
+        vals = [val  for val in dber.getOnValIter(db)]
+        assert vals == [digA,
+                        digY,
+                        digU,
+                        digV,
+                        digW,
+                        digX,
+                        digY,
+                        digC]
+
+        # resume replay all starting at preB on=2
+        top, on = splitOnKey(keyB2)
+        vals = [val for val in dber.getOnValIter(db, key=top, on=on)]
+        assert vals == [digW, digX, digY]
+
+        # resume replay all starting at preC on=1
+        vals = [val for val in dber.getOnValIter(db, key=preC, on=1)]
+        assert vals == []
+
 
         # test delOnVal
         assert dber.delOnVal(db, key=preB)  # default on=0
@@ -778,6 +822,12 @@ def test_lmdber():
                          (b'Z', 2, b'm'),
                          (b'Z', 3, b'n')]
 
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValIter(edb, key=key)]
+        assert vals == [b'k', b'l', b'm', b'n']
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValIter(edb, key=key, on=2)]
+        assert vals == [ b'm', b'n']
 
 
         # test IoSetVals insertion order set of vals methods.

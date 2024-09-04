@@ -255,6 +255,12 @@ def test_on_suber():
                         (('a', '00000000000000000000000000000003'), 'White snow')]
 
         # test getOnItemIter
+        items = [item for item in onsuber.getOnItemIter()]
+        assert items == [(('a',), 0, 'Blue dog'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 3, 'White snow')]
+
         items = [item for item in onsuber.getOnItemIter(keys='a')]
         assert items == [(('a',), 0, 'Blue dog'),
                         (('a',), 1, 'Green tree'),
@@ -264,6 +270,23 @@ def test_on_suber():
         items = [item for item in onsuber.getOnItemIter(keys='a', on=2)]
         assert items == [(('a',), 2, 'Red apple'),
                          (('a',), 3, 'White snow')]
+
+        # test getOnIter
+        vals = [val for val in onsuber.getOnIter()]
+        assert vals == ['Blue dog',
+                        'Green tree',
+                        'Red apple',
+                        'White snow']
+
+        vals = [val for val in onsuber.getOnIter(keys='a')]
+        assert vals == ['Blue dog',
+                        'Green tree',
+                        'Red apple',
+                        'White snow']
+
+        vals = [val for val in onsuber.getOnIter(keys='a', on=2)]
+        assert vals == ['Red apple',
+                        'White snow']
 
 
         assert 0 == onsuber.appendOn(keys=("b",), val=w)

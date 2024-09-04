@@ -2560,7 +2560,10 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
+        for key, on, val in self.getOnIoDupItemIter(self.kels, pre, on=sn):
+            yield val
+
+        #return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
 
 
     def getKelBackIter(self, pre, sn=0):

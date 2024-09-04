@@ -492,6 +492,27 @@ class OnSuberBase(SuberBase):
                                      on=on,
                                      sep=self.sep.encode()))
 
+
+    def getOnIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """
+        Returns:
+            items (Iterator[bytes]): of val with same key but increments of
+                                on >= on i.e. all key.on beginning with on
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form actual key
+                When keys is empty then retrieves whole database including
+                duplicates if any
+            on (int): ordinal number used with onKey(pre,on) to form key at at
+                      which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        for val in (self.db.getOnValIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._des(val))
+
+
     def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns:
@@ -2096,6 +2117,25 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
+
+
+    def getOnIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """
+        Returns
+            items (Iterator[(top keys, on, val)]): triples of (top keys, on int,
+                  deserialized val)
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): top keys as prefix to be
+                combined with serialized on suffix and sep to form key
+                When keys is empty then retrieves whole database including duplicates
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for val in (self.db.getOnIoDupValIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._des(val))
+
 
 
     def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):

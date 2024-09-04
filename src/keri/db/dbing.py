@@ -662,9 +662,7 @@ class LMDBer(filing.Filer):
 
     # For subdbs  the use keys with trailing part the is  monotonically
     # ordinal number serialized as 32 hex bytes
-
-
-
+    # used in OnSuberBase
     def appendOnVal(self, db, key, val, *, sep=b'.'):
         """
         Appends val in order after last previous onkey in db where
@@ -723,7 +721,7 @@ class LMDBer(filing.Filer):
                 raise  ValueError(f"Failed appending {val=} at {key=}.")
             return on
 
-
+    # used in OnSuberBase
     def delOnVal(self, db, key, on=0, *, sep=b'.'):
         """
         Deletes value at onkey consisting of key + sep + serialized on in db.
@@ -746,7 +744,7 @@ class LMDBer(filing.Filer):
                 raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
-
+    # used in OnSuberBase
     def cntOnVals(self, db, key=b'', on=0, *, sep=b'.'):
         """
         Returns (int): count of of all ordinal keyed vals with key
@@ -785,7 +783,34 @@ class LMDBer(filing.Filer):
 
             return count
 
+    # used in OnSuberBase
+    def getOnValIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """
+        Returns iterator of the val at each key over all ordinal
+        numbered keys with same key + sep + on in db. Values are sorted by
+        onKey(key, on) where on is ordinal number int and key is prefix sans on.
+        Returned items are triples of (key, on, val)
+        When dupsort==true then duplicates are included in items since .iternext
+        includes duplicates.
+        when key is empty then retrieves whole db
 
+        Raises StopIteration Error when empty.
+
+        Returns:
+            items (Iterator[bytes]): val with same
+                key but increments of on beginning with on
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        for (key, on, val) in self.getOnItemIter(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+    # used in OnSuberBase
     def getOnItemIter(self, db, key=b'', on=0, *, sep=b'.'):
         """
         Returns iterator of triples (key, on, val), at each key over all ordinal
@@ -1713,6 +1738,36 @@ class LMDBer(filing.Filer):
         val = (b'%032x.' % (0)) +  val  # prepend ordering proem
         return (self.appendOnVal(db=db, key=key, val=val, sep=sep))
 
+
+    # used in OnIoDupSuber
+    def getOnIoDupValIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """
+        Returns iterator of triples (key, on, val), at each key over all ordinal
+        numbered keys with same key + sep + on in db. Values are sorted by
+        onKey(key, on) where on is ordinal number int and key is prefix sans on.
+        Values duplicates are sorted internally by hidden prefixed insertion order
+        proem ordinal
+        Returned items are triples of (key, on, val)
+        When dupsort==true then duplicates are included in items since .iternext
+        includes duplicates.
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when empty.
+
+        Returns:
+            items (Iterator[(key, on, val)]): triples of key, on, val
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        for key, on, val in self.getOnIoDupItemIter(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+
     # used in OnIoDupSuber
     def getOnIoDupItemIter(self, db, key=b'', on=0, *, sep=b'.'):
         """
@@ -1748,6 +1803,8 @@ class LMDBer(filing.Filer):
 # without gaps is used for replay with on to provide partial replay
 # Consider using ItemIter instead of just replaying vals since ItemIter already
 # works with either dupsort==True or False. also skips gaps.
+
+# replace with getOnIoDupItemIter which iterates over all pre starting at given on
 
     def getOnIoDupValsAllPreIter(self, db, pre, on=0):
         """
