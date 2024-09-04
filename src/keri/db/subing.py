@@ -2154,3 +2154,38 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
+
+    def getOnBackIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """
+        Returns
+            val (Iterator[bytes]):  deserialized val of of each
+                onkey in reverse order
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+                When keys is empty then retrieves whole database including duplicates
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for val in (self.db.getOnIoDupValBackIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._des(val))
+
+
+    def getOnItemBackIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """
+        Returns:
+            items (Iterator[(top keys, on, val)]): triples of (onkeys, on int,
+                  deserialized val) in reverse order
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+                When keys is empty then retrieves whole database including duplicates
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for keys, on, val in (self.db.getOnIoDupItemBackIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._tokeys(keys), on, self._des(val))

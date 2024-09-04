@@ -731,41 +731,17 @@ def test_on_iodup_suber():
                         (('b', '00000000000000000000000000000001'), 'Green tree'),
                         (('bc', '00000000000000000000000000000000'), 'Red apple')]
 
-        # test getOnIter
+
+        # test getOnItemIter   getOnIter
+        items = [item for item in onsuber.getOnItemIter(keys='b')]
+        assert items == [(('b',), 0, 'Blue dog'),
+                         (('b',), 1, 'Green tree')]
+
         vals = [val for val in onsuber.getOnIter(keys='b')]
         assert vals == ['Blue dog', 'Green tree']
 
         vals = [val for val in onsuber.getOnIter(keys=('b', ))]
         assert vals == ['Blue dog', 'Green tree']
-
-        vals = [val for val in onsuber.getOnIter(keys=('b', ""))]
-        assert vals == []
-
-        vals = [val for val in onsuber.getOnIter(keys='')]
-        assert vals == ['Blue dog',
-                        'Green tree',
-                        'Red apple',
-                        'White snow',
-                        'White snow',
-                        'Blue dog',
-                        'Green tree',
-                        'Red apple']
-
-        vals = [val for val in onsuber.getOnIter()]
-        assert vals == ['Blue dog',
-                        'Green tree',
-                        'Red apple',
-                        'White snow',
-                        'White snow',
-                        'Blue dog',
-                        'Green tree',
-                        'Red apple']
-
-
-        # test getOnItemIter
-        items = [item for item in onsuber.getOnItemIter(keys='b')]
-        assert items == [(('b',), 0, 'Blue dog'),
-                         (('b',), 1, 'Green tree')]
 
         items = [item for item in onsuber.getOnItemIter(keys=('b', ))]
         assert items == [(('b',), 0, 'Blue dog'),
@@ -773,6 +749,9 @@ def test_on_iodup_suber():
 
         items = [item for item in onsuber.getOnItemIter(keys=('b', ""))]
         assert items == []
+
+        vals = [val for val in onsuber.getOnIter(keys=('b', ""))]
+        assert vals == []
 
         items = [item for item in onsuber.getOnItemIter(keys='')]
         assert items == [(('a',), 0, 'Blue dog'),
@@ -784,6 +763,16 @@ def test_on_iodup_suber():
                         (('b',), 1, 'Green tree'),
                         (('bc',), 0, 'Red apple')]
 
+        vals = [val for val in onsuber.getOnIter(keys='')]
+        assert vals == ['Blue dog',
+                        'Green tree',
+                        'Red apple',
+                        'White snow',
+                        'White snow',
+                        'Blue dog',
+                        'Green tree',
+                        'Red apple']
+
         items = [item for item in onsuber.getOnItemIter()]
         assert items == [(('a',), 0, 'Blue dog'),
                         (('a',), 1, 'Green tree'),
@@ -793,6 +782,16 @@ def test_on_iodup_suber():
                         (('b',), 0, 'Blue dog'),
                         (('b',), 1, 'Green tree'),
                         (('bc',), 0, 'Red apple')]
+
+        vals = [val for val in onsuber.getOnIter()]
+        assert vals == ['Blue dog',
+                        'Green tree',
+                        'Red apple',
+                        'White snow',
+                        'White snow',
+                        'Blue dog',
+                        'Green tree',
+                        'Red apple']
 
         # test with duplicates
         assert onsuber.add(keys=dbing.onKey("a", 0), val=z)
@@ -814,7 +813,7 @@ def test_on_iodup_suber():
                         (('a', '00000000000000000000000000000003'), 'White snow'),
                         (('a', '00000000000000000000000000000003'), 'Blue dog')]
 
-        # test getOnItemIter
+        # test getOnItemIter getOnIter getOnItemBackIter getOnBackIter
         items = [item for item in onsuber.getOnItemIter(keys='a')]
         assert items == [(('a',), 0, 'Blue dog'),
                         (('a',), 0, 'White snow'),
@@ -825,17 +824,71 @@ def test_on_iodup_suber():
                         (('a',), 3, 'White snow'),
                         (('a',), 3, 'Blue dog')]
 
+        vals = [val for val in onsuber.getOnIter(keys='a')]
+        assert vals == ['Blue dog',
+                        'White snow',
+                        'Green tree',
+                        'Red apple',
+                        'Red apple',
+                        'Green tree',
+                        'White snow',
+                        'Blue dog',
+                        ]
+
+
+        items = [item for item in onsuber.getOnItemBackIter(keys='a', on=4)]
+        assert items == [(('a',), 3, 'Blue dog'),
+                        (('a',), 3, 'White snow'),
+                        (('a',), 2, 'Green tree'),
+                        (('a',), 2, 'Red apple'),
+                        (('a',), 1, 'Red apple'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 0, 'White snow'),
+                        (('a',), 0, 'Blue dog')]
+
+
+        vals = [val for val in onsuber.getOnBackIter(keys='a', on=4)]
+        assert vals == ['Blue dog',
+                        'White snow',
+                        'Green tree',
+                        'Red apple',
+                        'Red apple',
+                        'Green tree',
+                        'White snow',
+                        'Blue dog']
+
         items = [item for item in onsuber.getOnItemIter(keys='a', on=2)]
         assert items ==[(('a',), 2, 'Red apple'),
                         (('a',), 2, 'Green tree'),
                         (('a',), 3, 'White snow'),
                         (('a',), 3, 'Blue dog')]
 
+        vals = [val for val in onsuber.getOnIter(keys='a', on=2)]
+        assert vals == [
+                        'Red apple',
+                        'Green tree',
+                        'White snow',
+                        'Blue dog',
+                        ]
+
+        items = [item for item in onsuber.getOnItemBackIter(keys='a', on=1)]
+        assert items ==[(('a',), 1, 'Red apple'),
+                        (('a',), 1, 'Green tree'),
+                        (('a',), 0, 'White snow'),
+                        (('a',), 0, 'Blue dog')]
+
+
+        vals = [val for val in onsuber.getOnBackIter(keys='a', on=1)]
+        assert vals == ['Red apple',
+                        'Green tree',
+                        'White snow',
+                        'Blue dog']
 
         # test append with duplicates
         assert 4 == onsuber.appendOn(keys=("a",), val=x)
         assert onsuber.cntOn(keys=("a",)) == 9
 
+        # test remove
         assert onsuber.remOn(keys='a', on=1)
         assert not onsuber.remOn(keys='a', on=1)
         assert onsuber.remOn(keys='a', on=3)
@@ -849,6 +902,16 @@ def test_on_iodup_suber():
                         (('a',), 2, 'Red apple'),
                         (('a',), 2, 'Green tree'),
                         (('a',), 4, 'Green tree')]
+
+        vals = [val for val in onsuber.getOnIter(keys='a')]
+        assert vals == [
+                        'Blue dog',
+                        'White snow',
+                        'Red apple',
+                        'Green tree',
+                        'Green tree',
+                        ]
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
