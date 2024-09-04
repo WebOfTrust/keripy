@@ -1799,49 +1799,6 @@ class LMDBer(filing.Filer):
 
 
 
-
-# without gaps is used for replay with on to provide partial replay
-# Consider using ItemIter instead of just replaying vals since ItemIter already
-# works with either dupsort==True or False. also skips gaps.
-
-# replace with getOnIoDupItemIter which iterates over all pre starting at given on
-
-    def getOnIoDupValsAllPreIter(self, db, pre, on=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all ordinal numbers in increasing order
-        without gaps between ordinal numbers
-        starting with on, default 0. Stops if gap or different pre.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-        Removes prepended proem ordinal from each val before returning
-
-        Raises StopIteration Error when empty.
-
-        Duplicates are retrieved in insertion order.
-
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 17 characters long.
-        With 16 character hex string followed by '.'.
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            on (int): ordinal number to begin iteration at
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = snKey(pre, cnt:=on)
-            while cursor.set_key(key):  # moves to first_dup
-                for val in cursor.iternext_dup():
-                    # slice off prepended ordering prefix
-                    yield val[33:]
-                key = snKey(pre, cnt:=cnt+1)
-
-
     # Create multiple methods
     # getTopItemBackIter symmetric with getTopItemIter
     # getTopIoSetItemBackIter symmetric getTopIoSetItemIter
