@@ -619,7 +619,7 @@ def test_lmdber():
         key = snKey(pre, sn)
         assert dber.putIoDupVals(db, key, vals2) == True
 
-        vals = [bytes(val) for val in dber.getIoDupValLastAllPreIter(db, pre)]
+        vals = [bytes(val) for val in dber.getOnIoDupValLastAllPreIter(db, pre)]
         lastvals = [vals0[-1], vals1[-1], vals2[-1]]
         assert vals == lastvals
 

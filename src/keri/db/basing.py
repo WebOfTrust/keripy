@@ -2611,7 +2611,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoDupValLastAllPreIter(self.kels, pre, on=sn)
+        return self.getOnIoDupValLastAllPreIter(self.kels, pre, on=sn)
 
 
     def putPses(self, key, vals):

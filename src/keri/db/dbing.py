@@ -1802,7 +1802,7 @@ class LMDBer(filing.Filer):
     # Used to replay forward all last duplicate values starting at on
     # need to fix this so it is not stopped by gaps or if gap raises error as
     # gap is normally a problem for replay so maybe a parameter to raise error on gap
-    def getIoDupValLastAllPreIter(self, db, pre, on=0):
+    def getOnIoDupValLastAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of last only of dup vals of each key in insertion order
         for all entries with same key across all sequence numbers in increasing order
