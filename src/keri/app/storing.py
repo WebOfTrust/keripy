@@ -58,8 +58,6 @@ class Mailboxer(dbing.LMDBer):
         :return:
         """
         super(Mailboxer, self).reopen(**kwa)
-
-        #self.tpcs = self.env.open_db(key=b'tpcs.', dupsort=True)
         self.tpcs = subing.OnSuber(db=self, subkey='tpcs.')
         self.msgs = subing.Suber(db=self, subkey='msgs.')  # key states
 
@@ -73,7 +71,6 @@ class Mailboxer(dbing.LMDBer):
                              exists in database so removed
                           False otherwise (not removed)
         """
-        #return self.delIoSetVals(self.tpcs, key)
         return self.tpcs.remOn(keys=key, on=on)
 
     def appendToTopic(self, topic, val):
@@ -88,7 +85,6 @@ class Mailboxer(dbing.LMDBer):
             topic (bytes):  topic identifier for message
             val (bytes): msg digest
         """
-        #return self.appendIoSetVal(db=self.tpcs, key=topic, val=val)
         return self.tpcs.appendOn(key=topic, val=val)
 
 
@@ -111,15 +107,6 @@ class Mailboxer(dbing.LMDBer):
                 msgs.append(msg.encode())  # want bytes not str
         return msgs
 
-        #if hasattr(topic, "encode"):
-            #topic = topic.encode("utf-8")
-
-        #digs = self.getIoSetVals(db=self.tpcs, key=topic, ion=fn)
-        #msgs = []
-        #for dig in digs:
-            #if msg := self.msgs.get(keys=dig):
-                #msgs.append(msg.encode("utf-8"))
-        #return msgs
 
     def storeMsg(self, topic, msg):
         """
@@ -142,16 +129,6 @@ class Mailboxer(dbing.LMDBer):
         digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
         on = self.tpcs.appendOn(keys=topic, val=digb)
         return self.msgs.pin(keys=digb, val=msg)
-
-        #if hasattr(topic, "encode"):
-            #topic = topic.encode("utf-8")
-
-        #if hasattr(msg, "encode"):
-            #msg = msg.encode("utf-8")
-
-        #digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
-        #self.appendToTopic(topic=topic, val=digb)
-        #return self.msgs.pin(keys=digb, val=msg)
 
 
     def cloneTopicIter(self, topic, fn=0):
@@ -176,19 +153,6 @@ class Mailboxer(dbing.LMDBer):
         for keys, on, dig in self.tpcs.getOnItemIter(keys=topic, on=fn):
             if msg := self.msgs.get(keys=dig):
                 yield (on, topic, msg.encode("utf-8"))
-
-        #if hasattr(topic, 'encode'):
-            #topic = topic.encode("utf-8")
-
-        #for ion, (topic, dig) in enumerate(self.getTopIoSetItemIter(self.tpcs, topic)):
-            #if ion >= fn:
-                #if msg := self.msgs.get(keys=dig):
-                    #yield ion, topic, msg.encode("utf-8")
-
-        #for (key, dig) in self.getIoSetItemIter(self.tpcs, key=topic, ion=fn):
-            #topic, ion = dbing.unsuffix(key)
-            #if msg := self.msgs.get(keys=dig):
-                #yield ion, topic, msg.encode("utf-8")
 
 
 

@@ -1978,29 +1978,6 @@ class IoDupSuber(DupSuber):
         return (self.db.cntIoDupVals(db=self.sdb, key=self._tokey(keys)))
 
 
-    #def getIoDupItemIter(self, keys: str|bytes|memoryview|Iterable = ''):
-        #"""
-        #Gets (iokeys, val) ioitems  iterator at key made from keys where key is
-        #apparent effective key and items all have same apparent effective key
-
-        #Parameters:
-            #keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                    #in order to form key. When keys is empty then retrieves
-                    #all items in database.
-
-        #Returns:
-            #items (Iterator):  each item iterated is tuple (keys, val) where
-                #each keys is actual keys tuple and each val is dup without
-                #prefixed insertion ordering proem.
-                #Empty list if no entry at keys.
-                #Raises StopIteration when done
-
-        #"""
-        #for key, val in self.db.getIoDupItemIter(db=self.sdb,
-                                                    #key=self._tokey(keys)):
-            #yield (self._tokeys(key), self._des(val))
-
-
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """
