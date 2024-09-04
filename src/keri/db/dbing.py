@@ -1798,12 +1798,53 @@ class LMDBer(filing.Filer):
             yield (key, on, val)
 
 
+    # Last is special so need method.
+    # Used to replay forward all last duplicate values starting at on
+    # need to fix this so it is not stopped by gaps or if gap raises error as
+    # gap is normally a problem for replay so maybe a parameter to raise error on gap
+    def getIoDupValLastAllPreIter(self, db, pre, on=0):
+        """
+        Returns iterator of last only of dup vals of each key in insertion order
+        for all entries with same key across all sequence numbers in increasing order
+        without gaps starting with on (default = 0). Stops if gap or different key.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+        Removes prepended proem ordinal from each val before returning
 
-    # Create multiple methods
+        Raises StopIteration Error when empty.
+
+        Duplicates are retrieved in insertion order.
+
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+            on (int): ordinal number to being iteration
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = snKey(pre, cnt:=on)
+            while cursor.set_key(key):  # moves to first_dup
+                if cursor.last_dup(): # move to last_dup
+                    yield cursor.value()[33:]  # slice off prepended ordering proem
+                key = snKey(pre, cnt:=cnt+1)
+
+
+    # Create Two methods
+    # getOnItemBackIter symmetric with getOnItemIter
+    # getOnIoDupItemBackIter symmetric with getOnIoDupItemIter
+
     # getTopItemBackIter symmetric with getTopItemIter
     # getTopIoSetItemBackIter symmetric getTopIoSetItemIter
     # getTopIoDupItemBackIter  symmetric with getTopIoDupItemIter
-    # getOnItemBackIter symmetric with getOnItemIter
+
 
 
     # instead of just replaying vals replay items since
@@ -1852,44 +1893,6 @@ class LMDBer(filing.Filer):
                     # slice off prepended ordering prefix
                     yield val[33:]
                 key = snKey(pre, cnt:=cnt-1)
-
-# Last is special so need method.
-# Used to replay forward all last duplicate values starting at on
-# need to fix this so it is not stopped by gaps or if gap raises error as
-# gap is normally a problem for replay so maybe a parameter to raise error on gap
-    def getIoDupValLastAllPreIter(self, db, pre, on=0):
-        """
-        Returns iterator of last only of dup vals of each key in insertion order
-        for all entries with same key across all sequence numbers in increasing order
-        without gaps starting with on (default = 0). Stops if gap or different key.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-        Removes prepended proem ordinal from each val before returning
-
-        Raises StopIteration Error when empty.
-
-        Duplicates are retrieved in insertion order.
-
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 17 characters long.
-        With 16 character hex string followed by '.'.
-
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            on (int): ordinal number to being iteration
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = snKey(pre, cnt:=on)
-            while cursor.set_key(key):  # moves to first_dup
-                if cursor.last_dup(): # move to last_dup
-                    yield cursor.value()[33:]  # slice off prepended ordering proem
-                key = snKey(pre, cnt:=cnt+1)
 
 
 
