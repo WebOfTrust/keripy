@@ -2441,7 +2441,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.vres, key)
 
-    def getVreItemsNextIter(self, key=b'', skip=True):
+    def getVreItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of partial signed escrowed event quintuple items at next
@@ -2453,7 +2453,8 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsNextIter(self.vres, key, skip)
+        return self.getTopIoDupItemIter(self.vres, key)
+        #return self.getIoDupItemsNextIter(self.vres, key, skip)
 
     def cntVres(self, key):
         """
@@ -2657,7 +2658,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.pses, key)
 
-    def getPseItemsNextIter(self, key=b'', skip=True):
+    def getPseItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of partial signed escrowed event dig items at next key after key.
@@ -2667,7 +2668,8 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsNextIter(self.pses, key, skip)
+        return self.getTopIoDupItemIter(self.pses, key)
+        #return self.getIoDupItemsNextIter(self.pses, key, skip)
 
     def cntPses(self, key):
         """
@@ -2745,19 +2747,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.pwes, key)
 
-    def getPweItemsNextIter(self, key=b'', skip=True):
-        """
-        Use sgKey()
-        Return iterator of partial witnessed escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupItemsNextIter(self.pwes, key, skip)
-
-    def getPweIoDupItemIter(self, key=b''):
+    def getPweItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of partial witnessed escrowed event dig items at next key after key.
@@ -2768,6 +2758,19 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getTopIoDupItemIter(self.pwes, key)
+        #return self.getIoDupItemsNextIter(self.pwes, key, skip)
+
+    #def getPweIoDupItemIter(self, key=b''):
+        #"""
+        #Use sgKey()
+        #Return iterator of partial witnessed escrowed event dig items at next key after key.
+        #Items is (key, val) where proem has already been stripped from val
+        #If key is b'' empty then returns dup items at first key.
+        #If skip is False and key is not b'' empty then returns dup items at key
+        #Raises StopIteration Error when empty
+        #Duplicates are retrieved in insertion order.
+        #"""
+        #return self.getTopIoDupItemIter(self.pwes, key)
 
     def cntPwes(self, key):
         """
@@ -2849,7 +2852,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.uwes, key)
 
-    def getUweItemsNextIter(self, key=b'', skip=True):
+    def getUweItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of partial signed escrowed receipt couple items at next
@@ -2861,7 +2864,8 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsNextIter(self.uwes, key, skip)
+        return self.getTopIoDupItemIter(self.uwes, key)
+        #return self.getIoDupItemsNextIter(self.uwes, key, skip)
 
     def cntUwes(self, key):
         """
@@ -2929,7 +2933,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.ooes, key)
 
-    def getOoeItemsNextIter(self, key=b'', skip=True):
+    def getOoeItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of out of order escrowed event dig items at next key after key.
@@ -2939,7 +2943,8 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsNextIter(self.ooes, key, skip)
+        return self.getTopIoDupItemIter(self.ooes, key)
+        #return self.getIoDupItemsNextIter(self.ooes, key, skip)
 
     def cntOoes(self, key):
         """
@@ -3008,7 +3013,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.qnfs, key)
 
-    def getQnfItemsNextIter(self, key=b'', skip=True):
+    def getQnfItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of out of order escrowed event dig items at next key after key.
@@ -3018,7 +3023,8 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsNextIter(self.qnfs, key, skip)
+        return self.getTopIoDupItemIter(self.qnfs, key)
+        #return self.getIoDupItemsNextIter(self.qnfs, key, skip)
 
     def cntQnfs(self, key):
         """
@@ -3162,7 +3168,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoDupValLast(self.ldes, key)
 
-    def getLdeItemsNextIter(self, key=b'', skip=True):
+    def getLdeItemIter(self, key=b''):
         """
         Use sgKey()
         Return iterator of likely duplicitous escrowed event dig items at next key after key.
@@ -3172,7 +3178,8 @@ class Baser(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupItemsNextIter(self.ldes, key, skip)
+        return self.getTopIoDupItemIter(self.ldes, key)
+        #return self.getIoDupItemsNextIter(self.ldes, key, skip)
 
     def cntLdes(self, key):
         """

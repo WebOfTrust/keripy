@@ -625,22 +625,22 @@ def test_baser():
         # Test getVreItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getVreItemsNextIter()]
+        items = [item for item in db.getVreItemIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals + bVals + cVals + dVals
+
+        items = [item for item in db.getVreItemIter(key=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals == aVals
 
-        items = [item for item in db.getVreItemsNextIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
         # bVals
-        items = [item for item in db.getVreItemsNextIter(key=ikey)]
+        items = [item for item in db.getVreItemIter(key=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
@@ -650,7 +650,7 @@ def test_baser():
             assert db.delVre(ikey, val) == True
 
         # cVals
-        items = [item for item in db.getVreItemsNextIter(key=ikey)]
+        items = [item for item in db.getVreItemIter(key=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
@@ -660,7 +660,7 @@ def test_baser():
             assert db.delVre(ikey, val) == True
 
         # dVals
-        items = [item for item in db.getVreItemsNextIter(key=ikey)]
+        items = [item for item in db.getVreItemIter(key=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey
@@ -732,38 +732,24 @@ def test_baser():
         # Test getPseItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getPseItemsNextIter()]
+        items = [item for item in db.getPseItemIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals ==  aVals + bVals + cVals + dVals
+
+
+        items = [item for item in db.getPseItemIter(key=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals == aVals
 
-        items = [item for item in db.getPseItemsNextIter(key=aKey, skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = [item for item in db.getPseItemsNextIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = [item for item in db.getPseItemsNextIter(key=b'', skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-        for key, val in items:
-            assert db.delPse(ikey, val) == True
 
         # bVals
-        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        items = [item for item in db.getPseItemIter(key=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
@@ -773,7 +759,7 @@ def test_baser():
             assert db.delPse(ikey, val) == True
 
         # cVals
-        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        items = [item for item in db.getPseItemIter(key=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
@@ -783,7 +769,7 @@ def test_baser():
             assert db.delPse(ikey, val) == True
 
         # dVals
-        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        items = [item for item in db.getPseItemIter(key=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey
@@ -872,38 +858,22 @@ def test_baser():
         # Test getPweItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getPweItemsNextIter()]
+        items = [item for item in db.getPweItemIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals ==  aVals + bVals + cVals + dVals
+
+        items = [item for item in db.getPweItemIter(key=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals == aVals
-
-        items = [item for item in db.getPweItemsNextIter(key=aKey, skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = [item for item in db.getPweItemsNextIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = [item for item in db.getPweItemsNextIter(key=b'', skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-        for key, val in items:
-            assert db.delPwe(ikey, val) == True
 
         # bVals
-        items = [item for item in db.getPweItemsNextIter(key=ikey)]
+        items = [item for item in db.getPweItemIter(key=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
@@ -913,7 +883,7 @@ def test_baser():
             assert db.delPwe(ikey, val) == True
 
         # cVals
-        items = [item for item in db.getPweItemsNextIter(key=ikey)]
+        items = [item for item in db.getPweItemIter(key=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
@@ -923,7 +893,7 @@ def test_baser():
             assert db.delPwe(ikey, val) == True
 
         # dVals
-        items = [item for item in db.getPweItemsNextIter(key=ikey)]
+        items = [item for item in db.getPweItemIter(key=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey
@@ -974,38 +944,22 @@ def test_baser():
         # Test getUweItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getUweItemsNextIter()]
+        items = [item for item in db.getUweItemIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals ==  aVals + bVals + cVals + dVals
+
+        items = [item for item in db.getUweItemIter(key=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals == aVals
-
-        items = [item for item in db.getUweItemsNextIter(key=aKey, skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = [item for item in db.getUweItemsNextIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = [item for item in db.getUweItemsNextIter(key=b'', skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-        for key, val in items:
-            assert db.delUwe(ikey, val) == True
 
         # bVals
-        items = [item for item in db.getUweItemsNextIter(key=ikey)]
+        items = [item for item in db.getUweItemIter(key=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
@@ -1015,7 +969,7 @@ def test_baser():
             assert db.delUwe(ikey, val) == True
 
         # cVals
-        items = [item for item in db.getUweItemsNextIter(key=ikey)]
+        items = [item for item in db.getUweItemIter(key=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
@@ -1025,7 +979,7 @@ def test_baser():
             assert db.delUwe(ikey, val) == True
 
         # dVals
-        items = [item for item in db.getUweItemsNextIter(key=ikey)]
+        items = [item for item in db.getUweItemIter(key=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey
@@ -1074,38 +1028,22 @@ def test_baser():
         # Test getOoeItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getOoeItemsNextIter()]
+        items = [item for item in db.getOoeItemIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals ==  aVals + bVals + cVals + dVals
+
+        items = [item for item in db.getOoeItemIter(key=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals == aVals
-
-        items = [item for item in db.getOoeItemsNextIter(key=aKey, skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = [item for item in db.getOoeItemsNextIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = [item for item in db.getOoeItemsNextIter(key=b'', skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-        for key, val in items:
-            assert db.delOoe(ikey, val) == True
 
         # bVals
-        items = [item for item in db.getOoeItemsNextIter(key=ikey)]
+        items = [item for item in db.getOoeItemIter(key=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
@@ -1115,7 +1053,7 @@ def test_baser():
             assert db.delOoe(ikey, val) == True
 
         # cVals
-        items = [item for item in db.getOoeItemsNextIter(key=ikey)]
+        items = [item for item in db.getOoeItemIter(key=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
@@ -1125,7 +1063,7 @@ def test_baser():
             assert db.delOoe(ikey, val) == True
 
         # dVals
-        items = [item for item in db.getOoeItemsNextIter(key=ikey)]
+        items = [item for item in db.getOoeItemIter(key=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey
@@ -1190,38 +1128,22 @@ def test_baser():
         # Test getLdeItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getLdeItemsNextIter()]
+        items = [item for item in db.getLdeItemIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals ==  aVals + bVals + cVals + dVals
+
+        items = [item for item in db.getLdeItemIter(key=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals == aVals
-
-        items = [item for item in db.getLdeItemsNextIter(key=aKey, skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        items = [item for item in db.getLdeItemsNextIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
-
-        items = [item for item in db.getLdeItemsNextIter(key=b'', skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
 
         # bVals
-        items = [item for item in db.getLdeItemsNextIter(key=ikey)]
+        items = [item for item in db.getLdeItemIter(key=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
@@ -1231,7 +1153,7 @@ def test_baser():
             assert db.delLde(ikey, val) == True
 
         # cVals
-        items = [item for item in db.getLdeItemsNextIter(key=ikey)]
+        items = [item for item in db.getLdeItemIter(key=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
@@ -1241,7 +1163,7 @@ def test_baser():
             assert db.delLde(ikey, val) == True
 
         # dVals
-        items = [item for item in db.getLdeItemsNextIter(key=ikey)]
+        items = [item for item in db.getLdeItemIter(key=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey

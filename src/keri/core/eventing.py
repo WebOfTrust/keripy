@@ -5209,7 +5209,7 @@ class Kevery:
 
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, edig in self.db.getOoeItemsNextIter(key=key):
+            for ekey, edig in self.db.getOoeItemIter(key=key):
                 try:
                     pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     dgkey = dgKey(pre, bytes(edig))
@@ -5347,7 +5347,7 @@ class Kevery:
 
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, edig in self.db.getPseItemsNextIter(key=key):
+            for ekey, edig in self.db.getPseItemIter(key=key):
                 eserder = None
                 try:
                     pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
@@ -5528,7 +5528,7 @@ class Kevery:
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
-        for ekey, edig in self.db.getPweIoDupItemIter(key=b''):  #self.db.getPweItemsNextIter(key=key)
+        for ekey, edig in self.db.getPweItemIter(key=b''):  #self.db.getPweItemsNextIter(key=key)
             try:
                 pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                 dgkey = dgKey(pre, bytes(edig))
@@ -5753,7 +5753,7 @@ class Kevery:
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, ecouple in self.db.getUweItemsNextIter(key=key):
+            for ekey, ecouple in self.db.getUweItemIter(key=key):
                 try:
                     pre, sn = splitSnKey(ekey)  # get pre and sn from escrow db key
 
@@ -6139,7 +6139,7 @@ class Kevery:
         pre = b''
         sn = 0
         while True:  # break when done
-            for ekey, edig in self.db.getQnfItemsNextIter(key=key):
+            for ekey, edig in self.db.getQnfItemIter(key=key):
                 try:
                     pre, _ = splitKey(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
@@ -6386,7 +6386,7 @@ class Kevery:
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, equinlet in self.db.getVreItemsNextIter(key=key):
+            for ekey, equinlet in self.db.getVreItemIter(key=key):
                 try:
                     pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
@@ -6556,7 +6556,7 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, edig in self.db.getLdeItemsNextIter(key=key):
+            for ekey, edig in self.db.getLdeItemIter(key=key):
                 try:
                     pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     dgkey = dgKey(pre, bytes(edig))
