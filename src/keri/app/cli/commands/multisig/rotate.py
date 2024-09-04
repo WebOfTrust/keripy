@@ -203,7 +203,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn+1)
-        rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
+        rot = ghab.rotate(smids=smids, rmids=rmids, isith=self.isith, nsith=self.nsith,
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
                           verfers=merfers, digers=migers)
 
