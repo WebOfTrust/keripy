@@ -2015,21 +2015,6 @@ class IoDupSuber(DupSuber):
                                          top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
-# ToDo
-# OnIoDupSuber methods instead of pre just use key prefix parts top val so
-# can work with any key space that has last part has ordinal
-# try refactoring these to use cursor.iternext cursor.iterpre cursor.next cursor.prev
-# so they work across prefixes without having the extra burden doing repeated
-# iter within a given pre dups. This way they could work with or without duplicates
-# and then the IoDupIter could just strip the proem whereas OrdSuber would not care
-
-# used by .kels
-    # getIoDupValsAllPreIter(self, db, pre, on=0):
-    # getIoDupValsAllPreBackIter(self, db, pre, on=0):
-    # getIoDupValLastAllPreIter(self.kels, pre, on=sn)
-# used by .dels
-    # getIoDupValsAnyPreIter(self, db, pre, on=0)
-
 
 class OnIoDupSuber(OnSuberBase, IoDupSuber):
     """
@@ -2099,12 +2084,12 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
     def getOnIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns
-            items (Iterator[(top keys, on, val)]): triples of (top keys, on int,
-                  deserialized val)
+            val (Iterator[bytes]):  deserialized val of of each
+                onkey
 
         Parameters:
-            keys (str | bytes | memoryview | iterator): top keys as prefix to be
-                combined with serialized on suffix and sep to form key
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
                 When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
@@ -2114,12 +2099,29 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             yield (self._des(val))
 
 
-
     def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
-        Returns
-            items (Iterator[(top keys, on, val)]): triples of (top keys, on int,
+        Returns:
+            items (Iterator[(top keys, on, val)]): triples of (onkeys, on int,
                   deserialized val)
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+                When keys is empty then retrieves whole database including duplicates
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for keys, on, val in (self.db.getOnIoDupItemIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._tokeys(keys), on, self._des(val))
+
+
+    def getOnLastIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """
+        Returns
+            last (Iterator[bytes]):  deserialized last duplicate val of of each
+                onkey
 
         Parameters:
             keys (str | bytes | memoryview | iterator): top keys as prefix to be
@@ -2128,6 +2130,27 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
-        for keys, on, val in (self.db.getOnIoDupItemIter(db=self.sdb,
+        for val in (self.db.getOnIoDupLastValIter(db=self.sdb,
+                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._des(val))
+
+
+
+    def getOnLastItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """
+        Returns
+            items (Iterator[(top keys, on, val)]): triples of (keys, on int,
+                  deserialized val) last duplicate item as each onkey where onkey
+                  is the key+serialized on
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form key
+                When keys is empty then retrieves whole database including duplicates
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for keys, on, val in (self.db.getOnIoDupLastItemIter(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
+

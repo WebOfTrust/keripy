@@ -688,6 +688,18 @@ def test_on_iodup_suber():
                         (('a', '00000000000000000000000000000002'), 'Red apple'),
                         (('a', '00000000000000000000000000000003'), 'White snow')]
 
+
+        # test getOnIter
+        vals = [val for val in onsuber.getOnIter(keys='a')]
+        assert vals == ['Blue dog',
+                        'Green tree',
+                        'Red apple',
+                        'White snow']
+
+        vals = [val for val in onsuber.getOnIter(keys='a', on=2)]
+        assert vals == ['Red apple',
+                        'White snow']
+
         # test getOnItemIter
         items = [item for item in onsuber.getOnItemIter(keys='a')]
         assert items == [(('a',), 0, 'Blue dog'),
@@ -718,6 +730,37 @@ def test_on_iodup_suber():
                         (('b', '00000000000000000000000000000000'), 'Blue dog'),
                         (('b', '00000000000000000000000000000001'), 'Green tree'),
                         (('bc', '00000000000000000000000000000000'), 'Red apple')]
+
+        # test getOnIter
+        vals = [val for val in onsuber.getOnIter(keys='b')]
+        assert vals == ['Blue dog', 'Green tree']
+
+        vals = [val for val in onsuber.getOnIter(keys=('b', ))]
+        assert vals == ['Blue dog', 'Green tree']
+
+        vals = [val for val in onsuber.getOnIter(keys=('b', ""))]
+        assert vals == []
+
+        vals = [val for val in onsuber.getOnIter(keys='')]
+        assert vals == ['Blue dog',
+                        'Green tree',
+                        'Red apple',
+                        'White snow',
+                        'White snow',
+                        'Blue dog',
+                        'Green tree',
+                        'Red apple']
+
+        vals = [val for val in onsuber.getOnIter()]
+        assert vals == ['Blue dog',
+                        'Green tree',
+                        'Red apple',
+                        'White snow',
+                        'White snow',
+                        'Blue dog',
+                        'Green tree',
+                        'Red apple']
+
 
         # test getOnItemIter
         items = [item for item in onsuber.getOnItemIter(keys='b')]

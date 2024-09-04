@@ -4947,7 +4947,7 @@ def test_load_event(mockHelpingNowUTC):
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
     #test_process_manual()
-    #test_keyeventsequence_0()
+    test_keyeventsequence_0()
     #test_process_transferable()
     #test_messagize()
     test_direct_mode()

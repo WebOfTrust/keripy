@@ -3245,6 +3245,8 @@ class Kever:
         pre = self.prefixer.qb64
         if sn is None:
             sn = self.lastEst.s - 1
+        if sn < 0:
+            return None
 
         for digb in self.db.getKelBackIter(pre, sn):
             dgkey = dgKey(pre, digb)

@@ -697,21 +697,21 @@ class LMDBer(filing.Filer):
                 #  so either empty database or last is earlier pre or
                 #  last is last entry  at same pre
                 if cursor.last():  # not empty db. last entry earlier than max
-                    ckey = cursor.key()
-                    ckey, cn = splitOnKey(ckey, sep=sep)
+                    onkey = cursor.key()
+                    ckey, cn = splitOnKey(onkey, sep=sep)
                     if ckey == key:  # last is last entry for same pre
                         on = cn + 1  # increment
             else:  # not past end so not empty either later pre or max entry at pre
-                ckey = cursor.key()
-                ckey, cn = splitOnKey(ckey, sep=sep)
+                onkey = cursor.key()
+                ckey, cn = splitOnKey(onkey, sep=sep)
                 if ckey == key:  # last entry for pre is already at max
                     raise ValueError(f"Number part {cn=} for key part {ckey=}"
                                      f"exceeds maximum size.")
                 else:  # later pre so backup one entry
                     # either no entry before last or earlier pre with entry
                     if cursor.prev():  # prev entry, maybe same or earlier pre
-                        ckey = cursor.key()
-                        ckey, cn = splitOnKey(ckey, sep=sep)
+                        onkey = cursor.key()
+                        ckey, cn = splitOnKey(onkey, sep=sep)
                         if ckey == key:  # last entry at pre
                             on = cn + 1  # increment
 
@@ -849,6 +849,9 @@ class LMDBer(filing.Filer):
                     break
                 yield (ckey, cn, cval)
 
+    # ToDo
+    # getOnItemBackIter symmetric with getOnItemIter
+    # getOnValBackIter symmetric with getOnValIter
 
 
     # IoSet insertion order in val so can have effective dups but with
@@ -1777,8 +1780,6 @@ class LMDBer(filing.Filer):
         Values duplicates are sorted internally by hidden prefixed insertion order
         proem ordinal
         Returned items are triples of (key, on, val)
-        When dupsort==true then duplicates are included in items since .iternext
-        includes duplicates.
         when key is empty then retrieves whole db
 
         Raises StopIteration Error when empty.
@@ -1798,151 +1799,166 @@ class LMDBer(filing.Filer):
             yield (key, on, val)
 
 
-    # Last is special so need method.
-    # Used to replay forward all last duplicate values starting at on
-    # need to fix this so it is not stopped by gaps or if gap raises error as
-    # gap is normally a problem for replay so maybe a parameter to raise error on gap
-    def getOnIoDupValLastAllPreIter(self, db, pre, on=0):
+    def getOnIoDupLastValIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Returns iterator of val of last insertion ordered duplicate at each
+        key over all ordinal numbered keys with same full key
+        of key + sep + on in db. Values are sorted by onKey(key, on) where on
+        is ordinal number int and key is prefix sans on.
+        Values duplicates are sorted internally by hidden prefixed insertion order
+        proem ordinal
+
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when empty.
+        Returns:
+            val (Iterator[bytes]): last dup val at each onkey
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
         """
-        Returns iterator of last only of dup vals of each key in insertion order
-        for all entries with same key across all sequence numbers in increasing order
-        without gaps starting with on (default = 0). Stops if gap or different key.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-        Removes prepended proem ordinal from each val before returning
+        for key, on, val in self.getOnIoDupLastItemIter(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+
+    def getOnIoDupLastItemIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Returns iterator of triples (key, on, val), of last insertion ordered
+        duplicate at each key over all ordinal numbered keys with same full key
+        of key + sep + on in db. Values are sorted by
+        onKey(key, on) where on is ordinal number int and key is prefix sans on.
+        Values duplicates are sorted internally by hidden prefixed insertion order
+        proem ordinal
+        Returned items are triples of (key, on, val)
+
+        when key is empty then retrieves whole db
 
         Raises StopIteration Error when empty.
 
-        Duplicates are retrieved in insertion order.
-
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 17 characters long.
-        With 16 character hex string followed by '.'.
-
+        Returns:
+            items (Iterator[(key, on, val)]): triples of key, on, val
 
         Parameters:
-            db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            on (int): ordinal number to being iteration
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt:=on)
-            while cursor.set_key(key):  # moves to first_dup
-                if cursor.last_dup(): # move to last_dup
-                    yield cursor.value()[33:]  # slice off prepended ordering proem
-                key = snKey(pre, cnt:=cnt+1)
+            if key:  # not empty
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:  # empty
+                onkey = key
 
+            if not cursor.set_range(onkey):  # # moves to first_dup at key>=onkey
+                return  # no values end of db raises StopIteration
 
-    # Create Two methods
-    # getOnItemBackIter symmetric with getOnItemIter
-    # getOnIoDupItemBackIter symmetric with getOnIoDupItemIter
-
-    # getTopItemBackIter symmetric with getTopItemIter
-    # getTopIoSetItemBackIter symmetric getTopIoSetItemIter
-    # getTopIoDupItemBackIter  symmetric with getTopIoDupItemIter
-
-
-
-    # instead of just replaying vals replay items since
-    # getTopItemIter already works with either dupsort==True or False
-    # so if we create getTopBackItemIter then we can use that everywhere
-
-    # ToDo need  unit tests in dbing  Used to replay backwards all duplicate
-    # values starting at on
-    # need to fix this so it is not stopped by gaps or if gap raises error as
-    # gap is normally a problem for replay so maybe a parameter to raise error on gap
-
-
-    def getOnIoDupValsAllPreBackIter(self, db, pre, on=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers in decreasing order without gaps
-        between ordinals at a given pre.
-        Starting with on (default = 0) as begining ordinal number or sequence number.
-        Stops if gap or different pre.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-        Removes prepended proem ordinal from each val before returning
-
-        Raises StopIteration Error when empty.
-
-        Duplicates are retrieved in insertion order.
-
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 17 characters long.
-        With 16 character hex string followed by '.'.
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            pre is bytes of identifier prefix prepended to sn in key
-                within sub db's keyspace
-            on (int): is ordinal number to begin iteration
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = snKey(pre, cnt := on)
-            # set_key returns True if exact key else false
-            while cursor.set_key(key):  # moves to first_dup if valid key
-                for val in cursor.iternext_dup():
-                    # slice off prepended ordering prefix
-                    yield val[33:]
-                key = snKey(pre, cnt:=cnt-1)
-
-
-
-# ToDo do we need a replay last backwards?
-
-
-    # not used anymore.
-    # before deleting this method use it inform how to cross gaps in other
-    # replays above with parameter such as replay last above.
-    # to raise error if detect gap when should not be one for event logs vs escrows
-    # then remove this method since not used otherwise
-
-    def getOnIoDupValsAnyPreIter(self, db, pre, on=0):
-        """
-        Returns iterator of all dup vals in insertion order for any entries
-        with same prefix across all ordinal numbers in order including gaps
-        between ordinals at a given pre. Staring with on (default = 0).
-        Stops when pre is different.
-
-        Duplicates that may be deleted such as duplicitous event logs need
-        to be able to iterate across gaps in ordinal number.
-
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-        Removes prepended proem ordinal from each val before returning
-
-        Raises StopIteration Error when empty.
-
-        Duplicates are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 17 characters long.
-        With 16 character hex string followed by '.'.
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            on (int): beginning ordinal number to start iteration
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = snKey(pre, cnt:=on)
-            while cursor.set_range(key):  #  moves to first dup of key >= key
-                key = cursor.key()  # actual key
-                front, back = bytes(key).split(sep=b'.', maxsplit=1)
-                if front != pre:  # set range may skip pre if none
+            while cursor.last_dup(): # move to last_dup at current ckey
+                onkey, cval = cursor.item() # get ckey cval of last dup
+                ckey, on = splitOnKey(onkey, sep=sep)  # get key on
+                if key and not ckey == key:
                     break
-                for val in cursor.iternext_dup():
-                    yield val[33:]  # slice off prepended ordering prefix
-                cnt = int(back, 16)
-                key = snKey(pre, cnt:=cnt+1)
+
+                yield (ckey, on, cval[33:])  # slice off prepended ordering proem
+                onkey = onKey(ckey, on+1)
+                if not cursor.set_range(onkey):  # # moves to first_dup at key>=onkey
+                    return  # no values end of db raises StopIteration
+
+
+
+
+    # getOnIoDupItemBackIter symmetric with getOnIoDupItemIter
+    # getOnIoDupValBackIter  symmetric with getOnIoDupValIter
+
+
+    def getOnIoDupValBackIter(self, db,  key=b'', on=0, *, sep=b'.'):
+        """Returns iterator going backwards of values,
+        of insertion ordered item at each key over all ordinal numbered keys
+        with same full key of key + sep + on in db.
+        Values are sorted by onKey(key, on) where on is ordinal number int and
+        key is prefix sans on.
+        Values duplicates are sorted internally by hidden prefixed insertion order
+        proem ordinal
+        Backwards means decreasing numerical value of duplicate proem, for each on,
+        decreasing numerical value on for each key and decresing lexocogrphic
+        order of each key prefix.
+
+        Returned items are vals
+
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when empty.
+
+        Returns:
+            val (Iterator[bytes]): at key including duplicates in backwards order
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        for key, on, val in self.getOnIoDupItemBackIter(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+
+    def getOnIoDupItemBackIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Returns iterator going backwards of triples (key, on, val),
+        of insertion ordered item at each key over all ordinal numbered keys
+        with same full key of key + sep + on in db.
+        Values are sorted by onKey(key, on) where on is ordinal number int and
+        key is prefix sans on.
+        Values duplicates are sorted internally by hidden prefixed insertion order
+        proem ordinal
+        Backwards means decreasing numerical value of duplicate proem, for each on,
+        decreasing numerical value on for each key and decresing lexocogrphic
+        order of each key prefix.
+
+        Returned items are triples of (key, on, val)
+
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when empty.
+
+        Returns:
+            items (Iterator[(key, on, val)]): triples of key, on, val
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.last():  # pre-position cursor at last dup of last key
+                return  # empty database so raise StopIteration
+
+            if key:  # not empty so attempt to position at starting key not last
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+                if cursor.set_range(onkey):  #  found key >= onkey
+                    ckey, cn = splitOnKey(cursor.key(), sep=sep)
+                    if ckey == key: # onkey in db
+                        cursor.last_dup()  # start at its last dup
+                    else:  # get closest key < onkey
+                        if not cursor.prev():  # last dup of previous key
+                            return  # no earlier keys to designated start
+
+            # cursor should now be correctly positioned for start either at
+            # last dup of either last key or onkey
+            for onkey, cval in cursor.iterprev(): # iterate backwards
+                ckey, on = splitOnKey(onkey, sep=sep)
+                if key and ckey != key:
+                    return
+                yield (ckey, on, cval[33:])
+
+
+
+    # ToDo do we need a replay last backwards?
+
