@@ -73,7 +73,7 @@ from typing import Type, Union
 from collections.abc import Iterable, Iterator
 
 from .. import help
-from ..help.helping import nonStringIterable
+from ..help.helping import nonStringIterable, Reb64
 from .. import core
 from ..core import coring, scheming, serdering
 from . import dbing
@@ -133,8 +133,8 @@ class SuberBase():
         by partial keys by appending separator to end of partial key
 
         Returns:
-           key (bytes): each element of keys is joined by .sep. If top then last
-                        char of key is also .sep
+           key (bytes): each element of keys is joined by .sep. If topive then
+                        last char of key is .sep
 
         Parameters:
            keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
@@ -145,7 +145,7 @@ class SuberBase():
                        False means treat as full branch in key space. Resultant key
                        does not end in .sep character.
                        When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+                       partial ending in sep regardless of topive value
 
         """
         if hasattr(keys, "encode"):  # str
@@ -190,11 +190,11 @@ class SuberBase():
         return (val.encode("utf-8") if hasattr(val, "encode") else val)
 
 
-    def _des(self, val: str | bytes | memoryview):
+    def _des(self, val: bytes | memoryview):
         """
         Deserialize val to str
         Parameters:
-            val (str | bytes | memoryview): decodable as str
+            val (bytes | memoryview): decodable as str
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
@@ -536,7 +536,8 @@ class OnSuberBase(SuberBase):
 
 class OnSuber(OnSuberBase, Suber):
     """
-    Subclass of Suber that adds methods for keys with ordinal numbered suffixes.
+    Subclass of OnSuberBase andSuber that adds methods for keys with ordinal
+    numbered suffixes.
     Each key consistes of pre joined with .sep to ordinal suffix
 
     Assumes dupsort==False
@@ -559,6 +560,154 @@ class OnSuber(OnSuberBase, Suber):
         super(OnSuber, self).__init__(*pa, **kwa)
 
 
+class B64SuberBase(SuberBase):
+    """
+    Base Class whose values are Iterables of Base64 str or bytes that are stored
+    in db as .sep joined Base64 bytes. Separator character must not be valid
+    Base64 character so the split will work unambiguously.
+
+    Automatically joins and splits along separator to Iterable (tuple) of Base64
+
+     Attributes:
+        db (dbing.LMDBer): base LMDB db
+        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        sep (str): separator for combining keys tuple of strs into key bytes
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+                       Must not be Base64 character.
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+
+        """
+        super(B64SuberBase, self).__init__(*pa, **kwa)
+        if Reb64.match(self.sep.encode()):
+            raise ValueError("Invalid sep={self.sep}, must not be Base64 char.")
+
+
+    def _toval(self, vals: str|bytes|memoryview|Iterable[str|bytes|memoryview]):
+        """
+        Converts vals to val bytes with proper separators and returns val bytes.
+        If vals is already str or bytes or memoryview then returns val bytes.
+        Else If vals is iterable (non-str) of strs or bytes or memoryview then
+        joins with .sep and converts to val bytes and returns.
+
+        Returns:
+           val (bytes): each element of vals is joined by .sep.
+
+        Parameters:
+           vals (str | bytes | memoryview | Iterable[str | bytes]): db val or
+                        Iterable of (str | bytes | memoryview) to form val.
+                        Note, join of bytes sep works with memoryview.
+
+        """
+        if hasattr(vals, "encode"):  # str
+            val = vals.encode("utf-8")
+            if not (Reb64.match(val)):
+                raise ValueError(f"Non Base64 {val=}.")
+            return val
+        if isinstance(vals, memoryview):  # memoryview of bytes
+            val = bytes(vals)  # return bytes
+            if not (Reb64.match(val)):
+                raise ValueError(f"Non Base64 {val=}.")
+            return val
+        elif hasattr(vals, "decode"): # bytes
+            val = vals
+            if not (Reb64.match(val)):
+                raise ValueError(f"Non Base64 {val=}.")
+            return val
+        return (self.sep.join(val.decode() if hasattr(val, "decode") else val
+                              for val in vals).encode("utf-8"))
+
+
+    def _tovals(self, val: bytes | memoryview):
+        """
+        Converts val bytes to vals tuple of strs by decoding and then splitting
+        at separator .sep.
+
+        Returns:
+           vals (tuple[str]): makes tuple by splitting val at .sep
+
+        Parameters:
+           val (bytes | memoryview): db Base64 val.
+
+        """
+        if isinstance(val, memoryview):  # memoryview of bytes
+            val = bytes(val)
+        if hasattr(val, "decode"):  # bytes
+            val = val.decode("utf-8")  # convert to str
+        return tuple(val.split(self.sep))
+
+
+    def _ser(self, val: Union[Iterable, str, bytes]):
+        """
+        Serialize val to bytes to store in db
+        When val is Iterable then joins each elements with .sep returns val bytes
+
+        Returns:
+           val (bytes): .sep join of each Base64 bytes in val
+
+        Parameters:
+           val (Union[Iterable, bytes]): of Base64 bytes
+
+        """
+        if not nonStringIterable(val):  # not iterable
+            val = (val, )  # make iterable
+        return (self._toval(val))
+
+
+    def _des(self, val: memoryview | bytes):
+        """
+        Converts val bytes to vals tuple of subclass instances by deserializing
+        .qb64b  concatenation in order of each instance in .klas
+
+        Returns:
+           vals (tuple): subclass instances
+
+        Parameters:
+           val (Union[bytes, memoryview]):  of concatenation of .qb64b
+
+        """
+        return self._tovals(val)
+
+
+class B64Suber(B64SuberBase, Suber):
+    """
+    Subclass of B64SuberBase and Suber that serializes and deserializes values
+    as .sep joined strings of Base64 components.
+
+    .sep must not be Base64 character.
+
+    Each key consistes of pre joined with .sep to ordinal suffix
+
+    Assumes dupsort==False
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+                       Must not be Base64 character.
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(B64Suber, self).__init__(*pa, **kwa)
 
 
 
@@ -601,11 +750,11 @@ class CesrSuberBase(SuberBase):
         return val.qb64b
 
 
-    def _des(self, val: Union[str, memoryview, bytes]):
+    def _des(self, val: memoryview | bytes):
         """
         Deserialize val to str
         Parameters:
-            val (Union[str, memoryview, bytes]): convertable to coring.matter
+            val (memoryview | bytes): convertable to coring.matter
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
@@ -710,13 +859,13 @@ class CatCesrSuberBase(CesrSuberBase):
     def _ser(self, val: Union[Iterable, coring.Matter]):
         """
         Serialize val to bytes to store in db
-        Concatenates .qb64b of each instance in objs and returns val bytes
+        Concatenates .qb64b of each instance in val and returns val bytes
 
         Returns:
-           val (bytes): concatenation of .qb64b of each object instance in vals
+           cat (bytes): concatenation of .qb64b of each object instance in vals
 
         Parameters:
-           subs (Union[Iterable, coring.Matter]): of subclass instances.
+           val (Union[Iterable, coring.Matter]): of subclass instances.
 
         """
         if not nonStringIterable(val):  # not iterable
@@ -724,7 +873,7 @@ class CatCesrSuberBase(CesrSuberBase):
         return (b''.join(obj.qb64b for obj in val))
 
 
-    def _des(self, val: Union[str, memoryview, bytes]):
+    def _des(self, val: memoryview | bytes | bytearray):
         """
         Converts val bytes to vals tuple of subclass instances by deserializing
         .qb64b  concatenation in order of each instance in .klas

@@ -356,6 +356,91 @@ def test_on_suber():
     assert not db.opened
 
 
+def test_B64_suber():
+    """
+    Test B64Suber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        # Test Single klas
+        buber = subing.B64Suber(db=db, subkey='bags.')  # default klas is [Matter]
+        assert isinstance(buber, subing.B64Suber)
+        assert not buber.sdb.flags()["dupsort"]
+
+        vals0 = ("alpha", "beta")
+        vals1 = ("gamma", )
+
+        keys0 = ("cat", "dog")
+        assert buber.put(keys=keys0, val=vals0)
+        actuals = buber.get(keys=keys0)
+        assert actuals == vals0
+
+        assert buber.rem(keys0)
+        assert not buber.get(keys=keys0)
+
+        assert buber.put(keys=keys0, val=vals0)
+        actuals = buber.get(keys=keys0)
+        assert actuals == vals0
+
+        assert not buber.put(keys=keys0, val=vals1)
+
+        assert buber.pin(keys=keys0, val=vals1)
+        actuals = buber.get(keys=keys0)
+        assert actuals == vals1
+
+        assert buber.rem(keys0)
+        assert not buber.get(keys=keys0)
+
+        # test with vals as non Iterable or put but Iterable on get
+        assert buber.put(keys=keys0, val="gamma")
+        actuals = buber.get(keys=keys0)
+        assert actuals == vals1
+
+        assert buber.rem(keys0)
+        assert buber.put(keys=keys0, val="alpha.beta")
+        actuals = buber.get(keys=keys0)
+        assert actuals == vals0
+        assert buber.rem(keys0)
+
+        # test with keys as string not tuple
+        keys1 = "{}.{}".format("bird", "fish")
+
+        assert buber.put(keys=keys1, val=vals1)
+        actuals = buber.get(keys=keys1)
+        assert actuals == vals1
+
+        assert buber.rem(keys1)
+        assert not buber.get(keys=keys1)
+
+        # test missing entry at keys
+        badkey = "badkey"
+        assert not buber.get(badkey)
+
+        # test iteritems
+        assert buber.put(keys0, vals0)
+        assert buber.put(keys1, vals1)
+
+        items = [ items for items in buber.getItemIter()]
+        assert items == [(('bird', 'fish'), ('gamma',)), (('cat', 'dog'), ('alpha', 'beta'))]
+
+        buber.put(keys=("b","1"), val=vals0)
+        buber.put(keys=("b","2"), val=vals1)
+        buber.put(keys=("c","1"), val=vals0)
+        buber.put(keys=("c","2"), val=vals1)
+
+        topkeys = ("b","")  # last element empty to force trailing separator
+        items = [items for items in  buber.getItemIter(keys=topkeys)]
+        assert items == [(('b', '1'), ('alpha', 'beta')),
+                         (('b', '2'), ('gamma',))]
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+    """Done Test"""
+
 
 def test_dup_suber():
     """
@@ -1818,9 +1903,9 @@ def test_cesr_on_suber():
 
 
 
-def test_cat_suber():
+def test_cat_cesr_suber():
     """
-    Test CatSuber LMDBer sub database class
+    Test CatCesrSuber LMDBer sub database class
     """
 
     with dbing.openLMDB() as db:
@@ -2621,11 +2706,12 @@ def test_crypt_signer_suber():
 if __name__ == "__main__":
     test_suber()
     test_on_suber()
+    test_B64_suber()
     test_dup_suber()
     test_iodup_suber()
     test_on_iodup_suber()
     test_ioset_suber()
-    test_cat_suber()
+    test_cat_cesr_suber()
     test_cesr_suber()
     test_cesr_on_suber()
     test_cesr_ioset_suber()
