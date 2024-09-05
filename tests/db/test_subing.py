@@ -1351,7 +1351,6 @@ def test_serder_suber():
         assert items == [(('b', '1'), srdr0.said),
                          (('b', '2'), srdr1.said)]
 
-
     assert not os.path.exists(db.path)
     assert not db.opened
 
