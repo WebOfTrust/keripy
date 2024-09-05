@@ -1498,7 +1498,9 @@ class SchemerSuber(SerderSuberBase, Suber):
             klas (Type[scheming.Schemer]): Class reference to ducktyped subclass
                 of Serder  intercepts passed in klas and forces it to Schemer
         """
-        super(SchemerSuber, self).__init__(*pa, klas=scheming.Schemer, **kwa)
+        if not issubclass(klas, scheming.Schemer):
+            raise TypeError(f"Invalid {klas=}, not subclass of {scheming.Schemer}.")
+        super(SchemerSuber, self).__init__(*pa, klas=klas, **kwa)
 
 
 class DupSuber(SuberBase):

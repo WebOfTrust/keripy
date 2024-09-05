@@ -1351,6 +1351,7 @@ def test_serder_suber():
         assert items == [(('b', '1'), srdr0.said),
                          (('b', '2'), srdr1.said)]
 
+
     assert not os.path.exists(db.path)
     assert not db.opened
 
@@ -1559,6 +1560,10 @@ def test_schemer_suber():
         items = [(keys, srdr.said) for keys, srdr in scmber.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), scmr0.said),
                          (('b', '2'), scmr1.said)]
+
+        with pytest.raises(TypeError):
+            scmber = subing.SchemerSuber(db=db, subkey='bags.', klas=coring.Matter)
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
