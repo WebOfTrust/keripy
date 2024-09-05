@@ -2747,25 +2747,26 @@ class GroupHab(BaseHab):
 
     def rotate(self, smids=None, rmids=None, serder=None, **kwargs):
 
-        if serder is None:
-            return super(GroupHab, self).rotate(**kwargs)
-
         if (habord := self.db.habs.get(keys=(self.pre,))) is None:
             raise kering.ValidationError(f"Missing HabitatRecord for pre={self.pre}")
 
-        # sign handles group hab with .mhab case
-        sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
+        if serder is None:
+            msg = super(GroupHab, self).rotate(**kwargs)
+        else:
 
-        # update own key event verifier state
-        msg = eventing.messagize(serder, sigers=sigers)
+            # sign handles group hab with .mhab case
+            sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
 
-        try:
-            self.kvy.processEvent(serder=serder, sigers=sigers)
-        except MissingSignatureError:
-            pass
-        except Exception as ex:
-            raise kering.ValidationError("Improper Habitat rotation for "
-                                         "pre={self.pre}.") from ex
+            # update own key event verifier state
+            msg = eventing.messagize(serder, sigers=sigers)
+
+            try:
+                self.kvy.processEvent(serder=serder, sigers=sigers)
+            except MissingSignatureError:
+                pass
+            except Exception as ex:
+                raise kering.ValidationError("Improper Habitat rotation for "
+                                             "pre={self.pre}.") from ex
 
         self.smids = smids
         self.rmids = rmids
