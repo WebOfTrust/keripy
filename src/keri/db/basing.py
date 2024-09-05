@@ -764,22 +764,23 @@ class Baser(dbing.LMDBer):
             More than one value per DB key is allowed
 
         .pses is named sub DB of partially signed key event escrows
-            that map sequence numbers to serialized event digests.
+            that each map pre + sequence number to serialized event digest.
             snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-
         .pwes is named sub DB of partially witnessed key event escrowes
-            that map sequence numbers to serialized event digests.
+            that each map pre + sequence number to serialized event digest.
+            these are for escrows of events with verified signatures but not
+            yet verified witness reciepts.
             snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .pdes is named sub DB of partially delegated key event escrows
-            that map sequence numbers to serialized event digests. This is
+            that each map pre + sequence number to serialized event digest. This is
             used in conjunction with .udes which escrows the associated seal
             source couple.
             snKey
@@ -798,6 +799,8 @@ class Baser(dbing.LMDBer):
             KEL.
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
+            Once escrow is accepted then delegation approval source seal couples
+            go into .aess database of authorizing event source seal couples
 
         .uwes is named sub DB of unverified event indexed escrowed couples from
             witness signers. Witnesses are from witness list of latest establishment
@@ -1012,11 +1015,10 @@ class Baser(dbing.LMDBer):
         self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
-        #self.pdes = self.env.open_db(key=b'pdes.')
-        self.pdes = subing.IoSetSuber(db=self, subkey='pdes.')
+        self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
+        self.pdes = subing.IoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
-        self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
         self.uwes = self.env.open_db(key=b'uwes.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)

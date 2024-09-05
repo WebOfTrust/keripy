@@ -3111,35 +3111,6 @@ class Kever:
                      "event = %s\n", serder.ked)
 
 
-    def escrowPACouple(self, serder, seqner, saider, local=True):
-        """
-        Update associated logs for escrow of partially authenticated issued event.
-        Assuming signatures are provided elsewhere. Partial authentication results
-        from either a partially signed event or a fully signed delegated event
-        but whose delegation is not yet verified.
-
-        Escrow allows escrow processor to retrieve serder from key and source
-        couple from val in order to to re-verify authentication status. Sigs
-        are escrowed elsewhere.
-
-        Parameters:
-            serder is SerderKERI instance of delegated or issued event
-            seqner is Seqner instance of sn of seal source event of delegator/issuer
-            saider is Saider instance of said of delegator/issuer
-            local (bool): event source for validation logic
-                True means event source is local (protected).
-                False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
-        local = True if local else False  # ignored since not escrowing serder here
-        dgkey = dgKey(serder.preb, serder.saidb)
-        #couple = seqner.qb64b + saider.qb64b
-        #self.db.putUde(dgkey, couple)  # idempotent
-        self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
-        logger.debug("Kever state: Escrowed source couple for partially signed "
-                    "or delegated event = %s\n", serder.ked)
-
-
     def escrowPWEvent(self, serder, wigers, sigers=None,
                       seqner=None, saider=None, local=True):
         """
@@ -3165,8 +3136,6 @@ class Kever:
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if seqner and saider:
-            #couple = seqner.qb64b + saider.qb64b
-            #self.db.putUde(dgkey, couple)
             self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
 
         self.db.putEvt(dgkey, serder.raw)
@@ -3183,6 +3152,91 @@ class Kever:
         logger.debug("Kever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)
         return self.db.addPwe(snKey(serder.preb, serder.sn), serder.saidb)
+
+
+    def escrowPDEvent(self, serder, sigers=None, wigers=None,
+                      seqner=None, saider=None, local=True):
+        """
+        Update associated logs for escrow of partially delegated or otherwise
+        authorized issued event.
+        Assumes controller signatures, sigs, and witness signatures, wigs are
+        provided elsewhere. Partial authentication occurs once an event is
+        fully signed and witnessed but the authorizing (delegating) source
+        seal in the authorizer's (delegator's) key has not yet been verified.
+
+        Escrow allows escrow processor to retrieve serder from key and source
+        couple from val in order to to re-verify authentication status.
+
+        Parameters:
+            serder is SerderKERI instance of  event
+            wigers is list of Siger instance of indexed witness sigs
+            sigers is optional list of Siger instances of indexed controller sigs
+            seqner is Seqner instance of sn of seal source event of delegator/issuer
+            saider is Diger instance of digest of delegator/issuer
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
+
+        """
+        local = True if local else False
+        dgkey = dgKey(serder.preb, serder.saidb)
+        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+
+        if sigers:  # idempotent
+            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        if wigers:  # idempotent
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        if seqner and saider:  # idempotent
+            self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
+            logger.debug(f"Kever state: Escrowed source couple sn={seqner.sn}, "
+                         f"said={saider.said} for partially delegated/authorized"
+                         f" event said={serder.said}.")
+
+        self.db.putEvt(dgkey, serder.raw)  # idempotent
+
+        # update event source local or remote
+        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
+            if local and not esr.local:  # local overwrites prexisting remote
+                esr.local = local
+                self.db.esrs.pin(keys=dgkey, val=esr)
+            # otherwise don't change
+        else: # not preexisting so put
+            esr = basing.EventSourceRecord(local=local)
+            self.db.esrs.put(keys=dgkey, val=esr)
+
+        logger.debug(f"Kever state: Escrowed partially delegated event=\n"
+                     f"{serder.ked}\n.")
+        return self.db.pdes.add(keys =(serder.preb, serder.sn), val=serder.saidb)
+
+
+    def escrowPACouple(self, serder, seqner, saider, local=True):
+        """
+        Update associated logs for escrow of partially authenticated issued event.
+        Assuming signatures are provided elsewhere. Partial authentication results
+        from either a partially signed event or a fully signed delegated event
+        but whose delegation is not yet verified.
+
+        Escrow allows escrow processor to retrieve serder from key and source
+        couple from val in order to to re-verify authentication status. Sigs
+        are escrowed elsewhere.
+
+        Parameters:
+            serder is SerderKERI instance of delegated or issued event
+            seqner is Seqner instance of sn of seal source event of delegator/issuer
+            saider is Saider instance of said of delegator/issuer
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
+        """
+        local = True if local else False  # ignored since not escrowing serder here
+        dgkey = dgKey(serder.preb, serder.saidb)
+        self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
+        logger.debug("Kever state: Escrowed source couple for partially signed "
+                    "or delegated event = %s\n", serder.ked)
+
+
 
 
     def state(self):
@@ -5347,149 +5401,150 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        key = ekey = b''  # both start same. when not same means escrows found
-        while True:  # break when done
-            for ekey, edig in self.db.getPseItemIter(key=key):
-                eserder = None
-                try:
-                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
-                    dgkey = dgKey(pre, bytes(edig))
-                    if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
-                        # no local sourde so raise ValidationError which unescrows below
-                        raise ValidationError("Missing escrowed event source "
-                                              "at dig = {}.".format(bytes(edig)))
+        #key = ekey = b''  # both start same. when not same means escrows found
+        #while True:  # break when done
+        for ekey, edig in self.db.getPseItemIter(key=b''):
+            eserder = None
+            try:
+                pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+                dgkey = dgKey(pre, bytes(edig))
+                if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
+                    # no local sourde so raise ValidationError which unescrows below
+                    raise ValidationError("Missing escrowed event source "
+                                          "at dig = {}.".format(bytes(edig)))
 
-                    # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgkey)
-                    if dtb is None:  # othewise is a datetime as bytes
-                        # no date time so raise ValidationError which unescrows below
-                        logger.info("Kevery unescrow error: Missing event datetime"
-                                    " at dig = %s", bytes(edig))
+                # check date if expired then remove escrow.
+                dtb = self.db.getDts(dgkey)
+                if dtb is None:  # othewise is a datetime as bytes
+                    # no date time so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event datetime"
+                                " at dig = %s", bytes(edig))
 
-                        raise ValidationError("Missing escrowed event datetime "
-                                              "at dig = {}.".format(bytes(edig)))
+                    raise ValidationError("Missing escrowed event datetime "
+                                          "at dig = {}.".format(bytes(edig)))
 
-                    # do date math here and discard if stale nowIso8601() bytes
-                    dtnow = helping.nowUTC()
-                    dte = helping.fromIso8601(bytes(dtb))
-                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
-                        # escrow stale so raise ValidationError which unescrows below
-                        logger.info("Kevery unescrow error: Stale event escrow "
-                                    " at dig = %s", bytes(edig))
+                # do date math here and discard if stale nowIso8601() bytes
+                dtnow = helping.nowUTC()
+                dte = helping.fromIso8601(bytes(dtb))
+                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Stale event escrow "
+                                " at dig = %s", bytes(edig))
 
-                        raise ValidationError("Stale event escrow "
-                                              "at dig = {}.".format(bytes(edig)))
+                    raise ValidationError("Stale event escrow "
+                                          "at dig = {}.".format(bytes(edig)))
 
-                    # get the escrowed event using edig
-                    eraw = self.db.getEvt(dgkey)
-                    if eraw is None:
-                        # no event so so raise ValidationError which unescrows below
-                        logger.info("Kevery unescrow error: Missing event at."
-                                    "dig = %s", bytes(edig))
+                # get the escrowed event using edig
+                eraw = self.db.getEvt(dgkey)
+                if eraw is None:
+                    # no event so so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event at."
+                                "dig = %s", bytes(edig))
 
-                        raise ValidationError("Missing escrowed evt at dig = {}."
-                                              "".format(bytes(edig)))
+                    raise ValidationError("Missing escrowed evt at dig = {}."
+                                          "".format(bytes(edig)))
 
-                    eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
-                    #  get sigs and attach
-                    sigs = self.db.getSigs(dgkey)
-                    if not sigs:  # otherwise its a list of sigs
-                        # no sigs so raise ValidationError which unescrows below
-                        logger.info("Kevery unescrow error: Missing event sigs at."
-                                    "dig = %s", bytes(edig))
+                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
+                #  get sigs and attach
+                sigs = self.db.getSigs(dgkey)
+                if not sigs:  # otherwise its a list of sigs
+                    # no sigs so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event sigs at."
+                                "dig = %s", bytes(edig))
 
-                        raise ValidationError("Missing escrowed evt sigs at "
-                                              "dig = {}.".format(bytes(edig)))
-                    wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
-                    if not wigs:  # empty list wigs witness sigs not wits
-                        # wigs maybe empty  if not wits or if wits while waiting
-                        # for first witness signature
-                        # which may not arrive until some time after event is fully signed
-                        # so just log for debugging but do not unescrow by raising
-                        # ValidationError
-                        logger.debug("Kevery unescrow wigs: No event wigs yet at."
-                                     "dig = %s", bytes(edig))
+                    raise ValidationError("Missing escrowed evt sigs at "
+                                          "dig = {}.".format(bytes(edig)))
+                wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
+                if not wigs:  # empty list wigs witness sigs not wits
+                    # wigs maybe empty  if not wits or if wits while waiting
+                    # for first witness signature
+                    # which may not arrive until some time after event is fully signed
+                    # so just log for debugging but do not unescrow by raising
+                    # ValidationError
+                    logger.debug("Kevery unescrow wigs: No event wigs yet at."
+                                 "dig = %s", bytes(edig))
 
-                    # seal source (delegator issuer if any)
-                    delseqner = delsaider = None
-                    if (couple := self.db.udes.get(keys=dgkey)):
-                        delseqner, delsaider = couple
-                    #couple = self.db.getUde(dgkey)
-                    #if couple is not None:
-                        #delseqner, delsaider = deSourceCouple(couple)
-                    elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
-                        if eserder.pre in self.kevers:
-                            delpre = self.kevers[eserder.pre].delpre
-                        else:
-                            delpre = eserder.ked["di"]
-                        seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                        srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
-                        if srdr is not None:
-                            delseqner = coring.Seqner(sn=srdr.sn)
-                            delsaider = coring.Saider(qb64=srdr.said)
-                            #couple = delseqner.qb64b + delsaider.qb64b
-                            #self.db.putUde(dgkey, couple)
-                             # idempotent
-                            self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
-
-                    # process event
-                    sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
-                    wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
-                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                      delseqner=delseqner, delsaider=delsaider, local=esr.local)
-
-                    # If process does NOT validate sigs or delegation seal (when delegated),
-                    # but there is still one valid signature then process will
-                    # attempt to re-escrow and then raise MissingSignatureError
-                    # or MissingDelegationSealError (subclass of ValidationError)
-                    # so we can distinquish between ValidationErrors that are
-                    # re-escrow vs non re-escrow. We want process to be idempotent
-                    # with respect to processing events that result in escrow items.
-                    # On re-escrow attempt by process, Pse escrow is called by
-                    # Kever.self.escrowPSEvent Which calls
-                    # self.db.addPse(snKey(pre, sn), serder.digb)
-                    # which in turn will not enter dig as dup if one already exists.
-                    # So re-escrow attempt will not change the escrowed pse db.
-                    # Non re-escrow ValidationError means some other issue so unescrow.
-                    # No error at all means processed successfully so also unescrow.
-
-                except (MissingSignatureError, MissingDelegationError) as ex:
-                    # still waiting on missing sigs or missing seal to validate
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrow failed: %s", ex.args[0])
-
-                except Exception as ex:  # log diagnostics errors etc
-                    # error other than waiting on sigs or seal so remove from escrow
-                    self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                    #self.db.delUde(dgkey)  # remove escrow if any
-                    self.db.udes.rem(keys=dgkey)  # remove escrow if any
-
-                    if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
-                        self.cues.push(dict(kin="psUnescrow", serder=eserder))
-
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrowed: %s", ex.args[0])
+                # seal source (delegator issuer if any)
+                delseqner = delsaider = None
+                if (couple := self.db.udes.get(keys=dgkey)):
+                    delseqner, delsaider = couple
+                #couple = self.db.getUde(dgkey)
+                #if couple is not None:
+                    #delseqner, delsaider = deSourceCouple(couple)
+                elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
+                    if eserder.pre in self.kevers:
+                        delpre = self.kevers[eserder.pre].delpre
                     else:
-                        logger.error("Kevery unescrowed: %s", ex.args[0])
+                        delpre = eserder.ked["di"]
+                    seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                    srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                    if srdr is not None:
+                        delseqner = coring.Seqner(sn=srdr.sn)
+                        delsaider = coring.Saider(qb64=srdr.said)
+                        #couple = delseqner.qb64b + delsaider.qb64b
+                        #self.db.putUde(dgkey, couple)
+                         # idempotent
+                        self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
-                else:  # unescrow succeeded, remove from escrow
-                    # We don't remove all escrows at pre,sn because some might be
-                    # duplicitous so we process remaining escrows in spite of found
-                    # valid event escrow.
-                    self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                    #self.db.delUde(dgkey)  # remove escrow if any
-                    self.db.udes.rem(keys=dgkey)  # remove escrow if any
+                # process event
+                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+                self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
+                                  delseqner=delseqner, delsaider=delsaider, local=esr.local)
 
-                    if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
-                        self.cues.push(dict(kin="psUnescrow", serder=eserder))
+                # If process does NOT validate sigs or delegation seal (when delegated),
+                # but there is still one valid signature then process will
+                # attempt to re-escrow and then raise MissingSignatureError
+                # or MissingDelegationSealError (subclass of ValidationError)
+                # so we can distinquish between ValidationErrors that are
+                # re-escrow vs non re-escrow. We want process to be idempotent
+                # with respect to processing events that result in escrow items.
+                # On re-escrow attempt by process, Pse escrow is called by
+                # Kever.self.escrowPSEvent Which calls
+                # self.db.addPse(snKey(pre, sn), serder.digb)
+                # which in turn will not enter dig as dup if one already exists.
+                # So re-escrow attempt will not change the escrowed pse db.
+                # Non re-escrow ValidationError means some other issue so unescrow.
+                # No error at all means processed successfully so also unescrow.
 
-                    logger.info("Kevery unescrow succeeded in valid event: "
-                                "event=%s", eserder.said)
-                    logger.debug(f"event=\n{eserder.pretty()}\n")
+            except (MissingSignatureError, MissingDelegationError) as ex:
+                # still waiting on missing sigs or missing seal to validate
+                # processEvent idempotently reescrowed
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrow failed: %s", ex.args[0])
 
-            if ekey == key:  # still same so no escrows found on last while iteration
-                break
-            key = ekey  # setup next while iteration, with key after ekey
+            except Exception as ex:  # log diagnostics errors etc
+                # error other than waiting on sigs or seal so remove from escrow
+                self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                #self.db.delUde(dgkey)  # remove escrow if any
+                self.db.udes.rem(keys=dgkey)  # remove escrow if any
+
+                if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
+                    self.cues.push(dict(kin="psUnescrow", serder=eserder))
+
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrowed: %s", ex.args[0])
+                else:
+                    logger.error("Kevery unescrowed: %s", ex.args[0])
+
+            else:  # unescrow succeeded, remove from escrow
+                # We don't remove all escrows at pre,sn because some might be
+                # duplicitous so we process remaining escrows in spite of found
+                # valid event escrow.
+                self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                #self.db.delUde(dgkey)  # remove escrow if any
+                self.db.udes.rem(keys=dgkey)  # remove escrow if any
+
+                if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
+                    self.cues.push(dict(kin="psUnescrow", serder=eserder))
+
+                logger.info("Kevery unescrow succeeded in valid event: "
+                            "event=%s", eserder.said)
+                logger.debug(f"event=\n{eserder.pretty()}\n")
+
+            #if ekey == key:  # still same so no escrows found on last while iteration
+                #break
+            #key = ekey  # setup next while iteration, with key after ekey
 
     def processEscrowPartialWigs(self):
         """
@@ -5527,10 +5582,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-
-        #key = ekey = b''  # both start same. when not same means escrows found
-        #while True:  # break when done
-        for ekey, edig in self.db.getPweItemIter(key=b''):  #self.db.getPweItemsNextIter(key=key)
+        for ekey, edig in self.db.getPweItemIter(key=b''):
             try:
                 pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                 dgkey = dgKey(pre, bytes(edig))
@@ -5645,6 +5697,7 @@ class Kevery:
 
             except (MissingWitnessSignatureError, MissingDelegationError) as ex:
                 # still waiting on missing witness sigs or delegation
+                # processEvent idempotently reescrowed
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrow failed: %s", ex.args[0])
 
@@ -5669,9 +5722,6 @@ class Kevery:
                             "event=%s", eserder.said)
                 logger.debug(f"event=\n{eserder.pretty()}\n")
 
-            #if ekey == key:  # still same so no escrows found on last while iteration
-                #break
-            #key = ekey  # setup next while iteration, with key after ekey
 
     def processEscrowPartialDels(self):
         """
@@ -5700,7 +5750,135 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        pass
+        for ekey, edig in self.db.pdes.getItemIter(key=b''):
+            try:
+                pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+                dgkey = dgKey(pre, bytes(edig))
+                if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
+                    # no local sourde so raise ValidationError which unescrows below
+                    raise ValidationError("Missing escrowed event source "
+                                          "at dig = {}.".format(bytes(edig)))
+
+                # check date if expired then remove escrow.
+                dtb = self.db.getDts(dgkey)
+                if dtb is None:  # othewise is a datetime as bytes
+                    # no date time so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event datetime"
+                                " at dig = %s", bytes(edig))
+
+                    raise ValidationError("Missing escrowed event datetime "
+                                          "at dig = {}.".format(bytes(edig)))
+
+                # do date math here and discard if stale nowIso8601() bytes
+                dtnow = helping.nowUTC()
+                dte = helping.fromIso8601(bytes(dtb))
+                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPWE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Stale event escrow "
+                                " at dig = %s", bytes(edig))
+
+                    raise ValidationError("Stale event escrow "
+                                          "at dig = {}.".format(bytes(edig)))
+
+                # get the escrowed event using edig
+                eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
+                if eraw is None:
+                    # no event so so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event at."
+                                "dig = %s", bytes(edig))
+
+                    raise ValidationError("Missing escrowed evt at dig = {}."
+                                          "".format(bytes(edig)))
+
+                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
+
+                #  get sigs
+                sigs = self.db.getSigs(dgKey(pre, bytes(edig)))  # list of sigs
+                if not sigs:  # empty list
+                    # no sigs so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event sigs at."
+                                "dig = %s", bytes(edig))
+
+                    raise ValidationError("Missing escrowed evt sigs at "
+                                          "dig = {}.".format(bytes(edig)))
+
+                # get witness signatures (wigs not wits) assumes wont be in this
+                # escrow if wigs not needed because no wits
+                wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
+                if not wigs:  # empty list
+                     # no wigs so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Missing event wigs at."
+                                "dig = %s", bytes(edig))
+
+                    raise ValidationError("Missing escrowed evt wigs at "
+                                          "dig = {}.".format(bytes(edig)))
+
+                # setup parameters to process event
+                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+
+                # seal source (delegator issuer if any)
+                delseqner = delsaider = None
+                if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
+                    delseqner, delsaider = couple  # provided
+                elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,): # walk kel to find
+                    if eserder.pre in self.kevers:
+                        delpre = self.kevers[eserder.pre].delpre
+                    else:
+                        delpre = eserder.ked["di"]
+                    seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                    srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                    if srdr is not None:  # found seal in srdr
+                        delseqner = coring.Seqner(sn=srdr.sn)
+                        delsaider = coring.Saider(qb64=srdr.said)
+                        self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
+
+                self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
+                                  delseqner=delseqner, delsaider=delsaider, local=esr.local)
+
+                # If process does NOT validate delegation then process will attempt
+                # to re-escrow and then raise MissingDelegationError
+                # (subclass of ValidationError)
+                # so we can distinquish between ValidationErrors that are
+                # re-escrow vs non re-escrow. We want process to be idempotent
+                # with respect to processing events that result in escrow items.
+                # On re-escrow attempt by process, Pses escrow is called by
+                # Kever.self.escrowPDEvent Which calls
+                # self.db.pdes.add(snKey(pre, sn), serder.digb)
+                # which in turn will NOT enter dig as dup if one already exists.
+                # So re-escrow attempt will not change the escrows in db.pdes.
+                # Non re-escrow ValidationError means some other issue so unescrow.
+                # No error at all means processed successfully so also unescrow.
+                # Assumes that controller signature validation and delegation
+                # validation will be successful as event would not be in
+                # partially witnessed escrow unless they had already validated
+
+            except MissingDelegationError as ex:
+                # still waiting on missing delegation source seal
+                # processEvent idempotently reescrowed
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrow failed: %s", ex.args[0])
+
+            except Exception as ex:  # log diagnostics errors etc
+                # error other than waiting on sigs or seal so remove from escrow
+                # removes one event escrow at key val
+                self.db.pdes.rem(keys=(pre, sn), val=edig)  # event idx escrow
+                self.db.udes.rem(keys=dgkey)  # remove source seal escrow if any
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrowed: %s", ex.args[0])
+                else:
+                    logger.error("Kevery unescrowed: %s", ex.args[0])
+
+            else:  # unescrow succeeded, remove from escrow
+                # We don't remove all escrows at pre,sn because some might be
+                # duplicitous so we process remaining escrows in spite of found
+                # valid event escrow.
+                 # removes one event escrow at key val
+                self.db.pdes.rem(keys=(pre, sn), val=edig)  # event idx escrow
+                self.db.udes.rem(keys=dgkey)  # remove source seal escrow if any
+                logger.info("Kevery unescrow succeeded in valid event: "
+                            "event=%s", eserder.said)
+                logger.debug(f"event=\n{eserder.pretty()}\n")
 
 
     def processEscrowUnverWitness(self):

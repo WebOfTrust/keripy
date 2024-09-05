@@ -44,6 +44,8 @@ OnSuber is simple lexographic database where trailing part of key is serialized
     increasing numeric
 
 The term 'set' of values means that no value may appear more than once in the set.
+Sets support idempotent adds and puts to db. This means one can add or put the same
+(key, val) pair multiple times and not change the db.
 
 DupSuber provides set of lexicographic ordered values at each key. Each value has
     a limited size (key + value <= 511 byes). The set is performant. Good for indices.
