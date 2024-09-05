@@ -1470,116 +1470,35 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
 
 
 
-class SchemerSuber(Suber):
+class SchemerSuber(SerderSuberBase, Suber):
     """
-    Sub class of Suber where data is serialized Schemer instance
+    Sub class of SerderSuberBase and Suber where data is serialized Schemer instance
+    Schemer ser/des is ducktype of Serder using .raw
     Automatically serializes and deserializes using Schemer methods
-
-    ToDo XXXX make this a subclass of SerderSuber since from a ser des interface
-    Schemer is duck type of Serder, Then can get rid of the redundant put, add,
-    pin, get etc definitions
-
     """
 
-    def __init__(self, *pa, **kwa):
+    def __init__(self, *pa,
+                 klas: Type[ scheming.Schemer] = scheming.Schemer,
+                 **kwa):
         """
-        Parameters:
+        Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Type[scheming.Schemer]): Class reference to ducktyped subclass
+                of Serder
+
+        Overridden Parameters:
+            klas (Type[scheming.Schemer]): Class reference to ducktyped subclass
+                of Serder  intercepts passed in klas and forces it to Schemer
         """
-        super(SchemerSuber, self).__init__(*pa, **kwa)
-
-    def put(self, keys: Union[str, Iterable], val: scheming.Schemer):
-        """
-        Puts val at key made from keys. Does not overwrite
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Schemer): instance
-
-        Returns:
-            result (bool): True If successful, False otherwise, such as key
-                              already in database.
-        """
-        return (self.db.putVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.raw))
-
-    def pin(self, keys: Union[str, Iterable], val: scheming.Schemer):
-        """
-        Pins (sets) val at key made from keys. Overwrites.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Schemer): instance
-
-        Returns:
-            result (bool): True If successful. False otherwise.
-        """
-        return (self.db.setVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.raw))
-
-    def get(self, keys: Union[str, Iterable]):
-        """
-        Gets Serder at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            Schemer:
-            None: if no entry at keys
-
-        Usage:
-            Use walrus operator to catch and raise missing entry
-            if (srder := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use srdr here
-
-        """
-        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return scheming.Schemer(raw=bytes(val)) if val is not None else None
-
-    def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-        """
-        return self.db.delVal(db=self.sdb, key=self._tokey(keys))
-
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
-                    *, topive=False):
-        """
-        Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (str | bytes | memoryview | Iterable): tuple of bytes or
-                strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-            topive (bool): True means treat as partial key tuple from top branch of
-                key space given by partial keys. Resultant key ends in .sep
-                character.
-                False means treat as full branch in key space. Resultant key
-                does not end in .sep character.
-                When last item in keys is empty str then will treat as
-                partial ending in sep regardless of top value
-
-        """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb,
-                                        top=self._tokey(keys, topive=topive)):
-            yield self._tokeys(iokey), scheming.Schemer(raw=bytes(val))
+        super(SchemerSuber, self).__init__(*pa, klas=scheming.Schemer, **kwa)
 
 
 class DupSuber(SuberBase):

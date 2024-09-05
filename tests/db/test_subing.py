@@ -12,7 +12,7 @@ import pysodium
 from keri import help
 
 from keri import core
-from keri.core import coring, eventing, serdering, indexing
+from keri.core import coring, eventing, serdering, indexing, scheming
 
 from keri.db import dbing, subing
 from keri.app import keeping
@@ -1468,6 +1468,102 @@ def test_serder_ioset_suber():
     assert not db.opened
 
 
+def test_schemer_suber():
+    """
+    Test SchemerSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        scmber = subing.SchemerSuber(db=db, subkey='bags.')
+        assert isinstance(scmber, subing.SchemerSuber)
+        assert not scmber.sdb.flags()["dupsort"]
+        assert scmber.klas == scheming.Schemer
+
+        pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+
+        raw0 = (b'{"$id":"EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw","$schema":"http://json'
+                b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"str'
+                b'ing"},"b":{"type":"number"},"c":{"type":"string","format":"date-time"}}}')
+
+        scmr0 = scheming.Schemer(raw=raw0)
+
+        keys = (pre, scmr0.said)
+        scmber.put(keys=keys, val=scmr0)
+        actual = scmber.get(keys=keys)
+        assert isinstance(actual, scheming.Schemer)
+        assert actual.said == scmr0.said
+
+        assert scmber.rem(keys)
+        actual = scmber.get(keys=keys)
+        assert actual is None
+
+        scmber.put(keys=keys, val=scmr0)
+        actual = scmber.get(keys=keys)
+        assert isinstance(actual, scheming.Schemer)
+        assert actual.said == scmr0.said
+
+        raw1 = (b'{"$id":"ENQKl3r1Z6HiLXOD-050aVvKziCWJtXWg3vY2FWUGSxG","$schema":"http://json'
+         b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"obj'
+         b'ect","properties":{"b":{"type":"number"},"c":{"type":"string","format":"date'
+         b'-time"}}}}}')
+        scmr1 = scheming.Schemer(raw=raw1)
+
+        result = scmber.put(keys=keys, val=scmr1)
+        assert not result
+        actual = scmber.get(keys=keys)
+        assert isinstance(actual, scheming.Schemer)
+        assert actual.said == scmr0.said
+
+        result = scmber.pin(keys=keys, val=scmr1)
+        assert result
+        actual = scmber.get(keys=keys)
+        assert isinstance(actual, scheming.Schemer)
+        assert actual.said == scmr1.said
+
+        # test with keys as string not tuple
+        keys = "{}.{}".format(pre, scmr1.said)
+
+        scmber.put(keys=keys, val=scmr1)
+        actual = scmber.get(keys=keys)
+        assert isinstance(actual, scheming.Schemer)
+        assert actual.said == scmr1.said
+
+        assert scmber.rem(keys)
+        actual = scmber.get(keys=keys)
+        assert actual is None
+
+        # test missing entry at keys
+        badkey = "badkey"
+        actual = scmber.get(badkey)
+        assert actual is None
+
+        # test iteritems
+        scmber = subing.SchemerSuber(db=db, subkey='pugs.')
+        assert isinstance(scmber, subing.SchemerSuber)
+        scmber.put(keys=("a","1"), val=scmr0)
+        scmber.put(keys=("a","2"), val=scmr1)
+
+        items = [(keys, srdr.said) for keys, srdr in scmber.getItemIter()]
+        assert items == [(('a', '1'), scmr0.said),
+                         (('a', '2'), scmr1.said)]
+
+        assert scmber.put(keys=("b","1"), val=scmr0)
+        assert scmber.put(keys=("b","2"), val=scmr1)
+        assert scmber.put(keys=("bc","1"), val=scmr0)
+
+        topkeys =  ("b", "")  # append empty str to force trailing .sep
+        items = [(keys, srdr.said) for keys, srdr in scmber.getItemIter(keys=topkeys)]
+        assert items == [(('b', '1'), scmr0.said),
+                         (('b', '2'), scmr1.said)]
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
 def test_cesr_suber():
     """
     Test CesrSuber LMDBer sub database class
@@ -2533,5 +2629,6 @@ if __name__ == "__main__":
     test_cesr_dup_suber()
     test_serder_suber()
     test_serder_ioset_suber()
+    test_schemer_suber()
     test_signer_suber()
     test_crypt_signer_suber()

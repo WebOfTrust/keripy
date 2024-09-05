@@ -561,8 +561,11 @@ class Serder:
                 Either provided by parser from stream genus version or desired when
                 generating Serder instance to stream
             verify (bool): True means verify said(s) of given raw or sad.
-                Raises ValidationError if verification fails
-                Ignore when raw not provided or when raw and saidify is True
+                           False means don't verify. Useful to avoid unnecessary
+                           reverification when deserializing from database
+                           as opposed to over the wire reception.
+                           Raises ValidationError if verification fails
+                           Ignore when raw empty or when raw and saidify is True
             makify (bool): True means compute fields for sad including size and
                 saids.
             proto (str | None): desired protocol type str value of Protocols
