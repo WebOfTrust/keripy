@@ -1694,13 +1694,13 @@ class Baser(dbing.LMDBer):
         return None
 
 
-    def findAnchoringSeal(self, pre, seal, sn=0):
-        """
-        Search through a KEL for the event that contains an anchored
-        Seal with same Seal type as provided seal but in dict form.
-        Searchs from sn forward (default = 0). Only searches last event at any
-        sn therefore does not search any disputed or superseded events.
-        Returns the Serder of the first event with the anchored Seal seal,
+    def findAnchoringSealLast(self, pre, seal, sn=0):
+        """Only searches last event at any sn therefore does not search
+        any disputed or superseded events.
+        Search through last event at each sn in KEL for the event that contains
+        an anchored Seal with same Seal type as provided seal but in dict form.
+        Searchs from sn forward (default = 0).
+        Returns the Serder of the first found event with the anchored Seal seal,
             None if not found
 
         Parameters:

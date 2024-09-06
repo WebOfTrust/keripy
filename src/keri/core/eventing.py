@@ -2721,16 +2721,25 @@ class Kever:
             raise ValidationError(f"Delegator = {delpre} for evt = {serder.ked},"
                                   f" does not allow delegation.")
 
+        dserder = None  # no delegation event yet
+        if delseqner is None or delsaider is None: # missing delegation seal ref
+            # If eager could walk KEL here to attempt to find in delegator's KEL
+            # if not found then escrow to be found later delegating event may
+            # not yet have been created.
+            if eager:
+                seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
+                dserder = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                if dserder is not None:  # found seal in dserder
+                    delseqner = coring.Seqner(sn=dserder.sn)
+                    delsaider = coring.Saider(qb64=dserder.said)
 
         if delseqner is None or delsaider is None: # missing delegation seal ref
-            # If eager should walk KEL here to attempt to find in delegator's KEL
-            # if not found then escrow to be found later delegating event may
-            # not yet have been created
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
                                seqner=delseqner, saider=delsaider, local=local)
             raise MissingDelegationError(f"No delegation seal for delegator "
                                          f"{delpre} of evt = {serder.ked}.")
 
+        # if delseqner and delsaider and not dserder
         # ToDo XXXX need to replace Seqners with Numbers
         # Get delegating event from delseqner and delpre
         ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
