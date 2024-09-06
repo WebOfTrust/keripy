@@ -2651,22 +2651,18 @@ class Kever:
         if self.kevers is None or delpre not in self.kevers:   # missing delegator
             # ToDo XXXX cue a trigger to get the KEL of the delegator. This may
             # require OOBIing with the delegator.
-            # The processPSEvent should also cue a trigger to get KEL
+            # The processPDEvent should also cue a trigger to get KEL
             # of delegator if still missing when processing escrow later.
-            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+            self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
                                seqner=delseqner, saider=delsaider, local=local)
-            #if delseqner and delsaider:  # save in case not attached later
-                #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError(f"Missing KEL of delegator "
                                          f"{delpre} of evt = {serder.ked}.")
 
 
-
-        dkever = self.kevers[delpre]
+        dkever = self.kevers[delpre]  # get delegator's KEL
         if dkever.doNotDelegate:  # drop event if delegation not allowed
             raise ValidationError(f"Delegator = {delpre} for evt = {serder.ked},"
                                   f" does not allow delegation.")
-
 
         # Delegator accepts here without waiting for delegation seal to be anchored in
         # delegator's KEL. But has already waited for fully receipted above.
@@ -2685,18 +2681,15 @@ class Kever:
                                                     f" delegation by {delpre} of"
                                                     f"event = {serder.ked}.")
 
-            else:  # not local delegator so escrow PSEvent
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+            else:  # otherwise escrow PDEvent since no source seal
+                # If eager should attempt to walk KEL to find it in delegator's KEL
+                self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
                                    seqner=delseqner, saider=delsaider, local=local)
-                # since delseqner or delsaider is None there is no PACouple to escrow here
-                #if delseqner and delsaider:  # save in case not attached later
-                    #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
                 raise MissingDelegationError(f"No delegation seal for delegator "
                                              f"{delpre} of evt = {serder.ked}.")
 
-        ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
         # ToDo XXXX need to replace Seqners with Numbers
-
+        ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
         # get the dig of the delegating event. Using getKeLast ensures delegating
         #  event has not already been superceded
         key = snKey(pre=delpre, sn=ssn)  # database key
@@ -2712,12 +2705,9 @@ class Kever:
 
             #  escrow event here
             inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
-            #sn = validateSN(sn=serder.snh, inceptive=inceptive)
             sn = Number(num=serder.sn).validate(inceptive=inceptive).sn
-            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+            self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
                                seqner=delseqner, saider=delsaider, local=local)
-            #if delseqner and delsaider:  # save in case not attached later
-                #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError("No delegating event from {} at {} for "
                                          "evt = {}.".format(delpre,
                                                             delsaider.qb64,
@@ -2738,7 +2728,6 @@ class Kever:
         if not dserder.compare(said=delsaider.qb64):  # drop event
             raise ValidationError("Invalid delegation from {} at event dig = {} for evt = {}."
                                   "".format(delpre, ddig, serder.ked))
-
 
         found = False  # find event seal of delegated event in delegating data
         # purported delegating event from source seal couple
@@ -5862,6 +5851,8 @@ class Kevery:
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # seal source (delegator issuer if any)
+                # If delegator KEL not available should also cue a trigger to
+                # get it if still missing when processing escrow.
                 delseqner = delsaider = None
                 if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
                     delseqner, delsaider = couple  # provided
