@@ -1494,7 +1494,7 @@ class Kever:
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
                  db=None, estOnly=None, delseqner=None, delsaider=None, firner=None,
-                 dater=None, cues=None, local=True, check=False):
+                 dater=None, cues=None, eager=False, local=True, check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1522,6 +1522,11 @@ class Kever:
                 When dater provided then use dater for first seen datetime
             cues (Deck | None): reference to Kevery.cues Deck when provided
                 i.e. notices of events or requests to respond to
+            eager (bool): True means try harder to find validate events by
+                            walking KELs. Enables only being eager
+                            in escrow processing not initial parsing.
+                          False means only use pre-existing information
+                            if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -1569,9 +1574,10 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=self.toader,
                                                         wits=self.wits,
-                                                        local=local,
                                                         delseqner=delseqner,
-                                                        delsaider=delsaider)
+                                                        delsaider=delsaider,
+                                                        eager=eager,
+                                                        local=local)
 
         self.delpre = delpre  # may be None
         self.delegated = True if self.delpre else False
@@ -1884,7 +1890,7 @@ class Kever:
 
 
     def update(self, serder, sigers, wigers=None, delseqner=None, delsaider=None,
-               firner=None, dater=None, local=True, check=False):
+               firner=None, dater=None, eager=False, local=True, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
         in sigers and update state
@@ -1908,6 +1914,11 @@ class Kever:
             dater (Dater | None): Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            eager (bool): True means try harder to find validate events by
+                            walking KELs. Enables only being eager
+                            in escrow processing not initial parsing.
+                          False means only use pre-existing information
+                            if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -1953,9 +1964,10 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=toader,
                                                         wits=wits,
-                                                        local=local,
                                                         delseqner=delseqner,
-                                                        delsaider=delsaider)
+                                                        delsaider=delsaider,
+                                                        eager=eager,
+                                                        local=local)
 
 
 
@@ -2021,6 +2033,7 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=self.toader,
                                                         wits=self.wits,
+                                                        eager=eager,
                                                         local=local)
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
@@ -2226,11 +2239,11 @@ class Kever:
                 If this event is not delegated then seqner is ignored
             delsaider (Saider | None): instance of of delegating event said.
                 If this event is not delegated then saider is ignored
-            eager (bool): True means try harder to find delegation seals by
-                            walking KEL of delegator. Enables only being eager
+            eager (bool): True means try harder to find validate events by
+                            walking KELs. Enables only being eager
                             in escrow processing not initial parsing.
-                          False means only use pre-existing source seal couples
-                            if any, either attached or in database.
+                          False means only use pre-existing information
+                            if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -2477,11 +2490,11 @@ class Kever:
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
                 Event validation logic is a function of local or remote
-            eager (bool): True means try harder to find delegation seals by
-                            walking KEL of delegator. Enables only being eager
+            eager (bool): True means try harder to validate event by
+                            walking KELs. Enables only being eager
                             in escrow processing not initial parsing.
-                          False means only use pre-existing source seal couples
-                            if any, either attached or in database.
+                          False means only use pre-existing information
+                            if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3619,7 +3632,7 @@ class Kevery:
 
     def processEvent(self, serder, sigers, *, wigers=None,
                      delseqner=None, delsaider=None,
-                     firner=None, dater=None, local=None):
+                     firner=None, dater=None, eager=False, local=None):
         """
         Process one event serder with attached indexd signatures sigers
 
@@ -3639,6 +3652,11 @@ class Kevery:
             dater (Dater|None): instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            eager (bool): True means try harder to find validate events by
+                            walking KELs. Enables only being eager
+                            in escrow processing not initial parsing.
+                          False means only use pre-existing information
+                            if any, either percolated attached or in database.
             local (bool|None): True means local (protected) event source.
                                False means remote (unprotected).
                                None means use default .local .
@@ -3677,6 +3695,7 @@ class Kevery:
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
+                              eager=eager,
                               local=local,
                               check=self.check)
                 self.kevers[pre] = kever  # not exception so add to kevers
@@ -3763,7 +3782,7 @@ class Kevery:
                                  delseqner=delseqner, delsaider=delsaider,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
-                                 local=local, check=self.check)
+                                 eager=eager, local=local, check=self.check)
 
                     # At this point the non-inceptive event (rot, drt, or ixn)
                     # given by serder together with its attachments has been
@@ -5520,7 +5539,8 @@ class Kevery:
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delseqner, delsaider=delsaider, local=esr.local)
+                                  delseqner=delseqner, delsaider=delsaider,
+                                  eager=True, local=esr.local)
 
                 # If process does NOT validate sigs or delegation seal (when delegated),
                 # but there is still one valid signature then process will
@@ -5706,7 +5726,8 @@ class Kevery:
                         self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delseqner, delsaider=delsaider, local=esr.local)
+                                  delseqner=delseqner, delsaider=delsaider,
+                                  eager=True, local=esr.local)
 
                 # If process does NOT validate wigs then process will attempt
                 # to re-escrow and then raise MissingWitnessSignatureError
@@ -5866,7 +5887,8 @@ class Kevery:
                         self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delseqner, delsaider=delsaider, local=esr.local)
+                                  delseqner=delseqner, delsaider=delsaider,
+                                  eager=True, local=esr.local)
 
                 # If process does NOT validate delegation then process will attempt
                 # to re-escrow and then raise MissingDelegationError
