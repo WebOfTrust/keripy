@@ -2253,9 +2253,10 @@ class Kever:
 
         # escrow if not fully signed vs signing threshold
         if not tholder.satisfy(indices):  # at least one but not enough
-            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
-            if delseqner and delsaider:
-                self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+                               seqner=delseqner, saider=delsaider, local=local)
+            #if delseqner and delsaider:
+                #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingSignatureError(f"Failure satisfying sith = {tholder.sith}"
                                         f" on sigs for {[siger.qb64 for siger in sigers]}"
                                         f" for evt = {serder.ked}.")
@@ -2266,9 +2267,10 @@ class Kever:
             # prior next threshold in .ntholder and digers in .ndigers
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
-                if delseqner and delsaider:  # save in case not attached later
-                    self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                   seqner=delseqner, saider=delsaider,local=local)
+                #if delseqner and delsaider:  # save in case not attached later
+                    #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
                 raise MissingSignatureError(f"Failure satisfying prior nsith="
                                             f"{self.ntholder.sith} with exposed "
                                             f"sigs= {[siger.qb64 for siger in sigers]}"
@@ -2628,9 +2630,9 @@ class Kever:
             # The processPSEvent should also cue a trigger to get KEL
             # of delegator if still missing when processing escrow later.
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               local=local)
-            if delseqner and delsaider:  # save in case not attached later
-                self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+                               seqner=delseqner, saider=delsaider, local=local)
+            #if delseqner and delsaider:  # save in case not attached later
+                #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError(f"Missing KEL of delegator "
                                          f"{delpre} of evt = {serder.ked}.")
 
@@ -2660,7 +2662,8 @@ class Kever:
                                                     f"event = {serder.ked}.")
 
             else:  # not local delegator so escrow PSEvent
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                   seqner=delseqner, saider=delsaider, local=local)
                 # since delseqner or delsaider is None there is no PACouple to escrow here
                 #if delseqner and delsaider:  # save in case not attached later
                     #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
@@ -2687,9 +2690,10 @@ class Kever:
             inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
             #sn = validateSN(sn=serder.snh, inceptive=inceptive)
             sn = Number(num=serder.sn).validate(inceptive=inceptive).sn
-            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
-            if delseqner and delsaider:  # save in case not attached later
-                self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
+                               seqner=delseqner, saider=delsaider, local=local)
+            #if delseqner and delsaider:  # save in case not attached later
+                #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError("No delegating event from {} at {} for "
                                          "evt = {}.".format(delpre,
                                                             delsaider.qb64,
@@ -3073,7 +3077,8 @@ class Kever:
         logger.debug("Kever state: escrowed delegable event=\n%s\n",
                      json.dumps(serder.ked, indent=1))
 
-    def escrowPSEvent(self, serder, sigers, wigers=None, local=True):
+    def escrowPSEvent(self, serder, *, sigers=None, wigers=None,
+                      seqner=None, saider=None, local=True):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but not yet verified delegation.
@@ -3082,6 +3087,8 @@ class Kever:
             serder is SerderKERI instance of event
             sigers is list of Siger instances of indexed controller sigs
             wigers is optional list of Siger instance of indexed witness sigs
+            seqner is Seqner instance of sn of seal source event of delegator/issuer
+            saider is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3090,9 +3097,12 @@ class Kever:
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
-        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        if sigers:
+            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        if seqner and saider:
+            self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
 
         self.db.putEvt(dgkey, serder.raw)
         # update event source
@@ -3111,15 +3121,15 @@ class Kever:
                      "event = %s\n", serder.ked)
 
 
-    def escrowPWEvent(self, serder, wigers, sigers=None,
+    def escrowPWEvent(self, serder, *, sigers=None, wigers=None,
                       seqner=None, saider=None, local=True):
         """
         Update associated logs for escrow of partially witnessed event
 
         Parameters:
             serder is SerderKERI instance of  event
-            wigers is list of Siger instance of indexed witness sigs
             sigers is optional list of Siger instances of indexed controller sigs
+            wigers is list of Siger instance of indexed witness sigs
             seqner is Seqner instance of sn of seal source event of delegator/issuer
             saider is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
@@ -3131,10 +3141,11 @@ class Kever:
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
-        if wigers:
-            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        if wigers:
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
             self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
 
@@ -3154,7 +3165,7 @@ class Kever:
         return self.db.addPwe(snKey(serder.preb, serder.sn), serder.saidb)
 
 
-    def escrowPDEvent(self, serder, sigers=None, wigers=None,
+    def escrowPDEvent(self, serder, *, sigers=None, wigers=None,
                       seqner=None, saider=None, local=True):
         """
         Update associated logs for escrow of partially delegated or otherwise
@@ -3169,8 +3180,8 @@ class Kever:
 
         Parameters:
             serder is SerderKERI instance of  event
-            wigers is list of Siger instance of indexed witness sigs
             sigers is optional list of Siger instances of indexed controller sigs
+            wigers is list of Siger instance of indexed witness sigs
             seqner is Seqner instance of sn of seal source event of delegator/issuer
             saider is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
@@ -3209,7 +3220,7 @@ class Kever:
                      f"{serder.ked}\n.")
         return self.db.pdes.add(keys =(serder.preb, serder.sn), val=serder.saidb)
 
-
+    # not used anymore deprecate?
     def escrowPACouple(self, serder, seqner, saider, local=True):
         """
         Update associated logs for escrow of partially authenticated issued event.
