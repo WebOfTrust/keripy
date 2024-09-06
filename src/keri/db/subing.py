@@ -627,8 +627,14 @@ class B64SuberBase(SuberBase):
             if not (Reb64.match(val)):
                 raise ValueError(f"Non Base64 {val=}.")
             return val
-        return (self.sep.join(val.decode() if hasattr(val, "decode") else val
-                              for val in vals).encode("utf-8"))
+        vals = tuple(v.encode() if hasattr(v, "encode") else v for v in vals)  # make bytes
+        for val in vals:
+            if not (Reb64.match(val)):
+                raise ValueError(f"Non Base64 {val=}.")
+        return (self.sep.encode().join(vals))
+
+        #return (self.sep.join(val.decode() if hasattr(val, "decode") else val
+                              #for val in vals).encode("utf-8"))
 
 
     def _tovals(self, val: bytes | memoryview):

@@ -401,7 +401,13 @@ def test_B64_suber():
         assert actuals == vals1
 
         assert buber.rem(keys0)
-        assert buber.put(keys=keys0, val="alpha.beta")
+
+        # test val as already joined string
+        with pytest.raises(ValueError):
+            assert buber.put(keys=keys0, val="alpha.beta")
+
+        # test bytes for val
+        assert buber.put(keys=keys0, val=(b"alpha", b"beta"))
         actuals = buber.get(keys=keys0)
         assert actuals == vals0
         assert buber.rem(keys0)
