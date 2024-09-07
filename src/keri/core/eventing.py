@@ -2993,7 +2993,6 @@ class Kever:
         Found delegation may not be superseding so do not repair .aess unless
         delegate was already accepted.
         """
-        dserder = None  # when not found and not eager so caller should reescrow
         dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key of delegate
 
         if (couple := self.db.getAes(dgkey)):  # delegation source couple at delegate
@@ -3001,18 +3000,20 @@ class Kever:
             deldig = saider.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
             #  fner = first seen Number instance index
-            if not self.db.fons.get(keys=(delpre, deldig)):  # Not first seen
-                raise ValidationError(f"Invalid delegation authorizing source "
-                                      f"seal couple for {serder.ked}")
+            if not self.db.fons.get(keys=(delpre, deldig)):  # Not first seen yet?
+                if original:  # should not happen aes database broken
+                    # repair by deleting aes and returning None so it escrows
+                    # and then next time around find below with repair it
+                    self.db.delAes(dgkey)  # delete aes so next time repairs it
+                # superseding may not have happened yet so let it escrow
+                return None
             ddgkey = dgKey(pre=delpre, dig=deldig)  # database key of delegation
-            if not (raw := self.db.getEvt(ddgkey)):
-                # database broken this should never happen so do not supersede
-                # ToDo XXXX repair by deleting the erroneous aes and
-                # returning None so gets escrowed and subsequent check will
-                # search below and repair
+            if not (raw := self.db.getEvt(ddgkey)):  # in fons but no event
+                # database broken this should never happen
                 raise ValidationError(f"Missing delegation event for {serder.ked}")
             # original delegating event i.e. boss original
             dserder = serdering.SerderKERI(raw=bytes(raw))
+            return dserder
 
         elif eager:  #missing aes but try to find seal by walking delegator's KEL
             seal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)._asdict
@@ -3020,20 +3021,20 @@ class Kever:
                 if not (dserder:=self.db.fetchAllSealingEventByEventSeal(pre=delpre,
                                                                         seal=seal)):
                     # database broken this should never happen so do not validate
+                    # since original must have been validated so it must have
+                    # all its delegation chain.
                     raise ValidationError(f"Missing delegation source seal for {serder.ked}")
             else: # only search last events in delegator's kel
                 if not (dserder:=self.db.fetchLastSealingEventByEventSeal(pre=delpre,
                                                                          seal=seal)):
-                    # database broken this should never happen so do not validate
-                    raise ValidationError(f"Missing delegation source seal for {serder.ked}")
+                    # superseding delegation may not have happened yet so escrow
+                    # ToDo XXXX  need to cue up to get latest events in
+                    # delegator's kel.
+                    #raise ValidationError(f"Missing delegation source seal for {serder.ked}")
+                    return None
 
-            # extra careful double check that found event is/was accepted event
-            #  fner = first seen Number instance index of delegation from .fons
-            if not self.db.fons.get(keys=(dserder.pre, dserder.dig)):  # None
-                raise ValidationError(f"Invalid delegation authorizing source "
-                                      f"seal couple for {serder.ked}")
-
-            # Only repair when delegated has been accepted i.e has .fons entry
+            # Only repair .aess when found delegation is for delegated event that
+            # has been accepted delegated event i.e has .fons entry
             if self.db.fons.get(keys=(serder.pre, serder.said)):
                 # Repair .aess of delegated event by writing found source
                 # seal couple of delegation. This is safe becaause we confirmed
@@ -3041,9 +3042,11 @@ class Kever:
                 couple = dserder.sner.huge.encode() + dserder.saidb
                 self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
 
-        #else not found so return None to escrow and get fixed later
+            return dserder
 
-        return dserder # extract delseqner, delsaider from actually found dserder
+        else:  # not found so return None to escrow and get fixed later
+            return None
+
 
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,

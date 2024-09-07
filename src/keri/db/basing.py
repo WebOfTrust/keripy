@@ -1908,7 +1908,6 @@ class Baser(dbing.LMDBer):
 
         for dig in self.getKelIter(pre, sn=sn):
             try:
-
                 dgkey = dbing.dgKey(pre, dig)  # get message
                 if not (raw := self.getEvt(key=dgkey)):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
