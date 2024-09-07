@@ -4888,7 +4888,7 @@ class Kevery:
 
             kever = self.kevers[pre]
             if anchor:
-                if not self.db.findAnchoringSealEvent(pre=pre, seal=anchor):
+                if not self.db.fetchAllSealingEventByEventSeal(pre=pre, seal=anchor):
                     self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                     raise QueryNotFoundError("Query not found error={}.".format(ked))
 
