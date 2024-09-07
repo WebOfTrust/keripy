@@ -1686,7 +1686,7 @@ class Baser(dbing.LMDBer):
 
         for evt in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
             srdr = serdering.SerderKERI(raw=evt.tobytes())
-            for eseal in srdr.seals or []:
+            for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
                     if seal == eseal and self.fullyWitnessed(srdr):
@@ -1694,7 +1694,44 @@ class Baser(dbing.LMDBer):
         return None
 
 
-    def findAnchoringSealLast(self, pre, seal, sn=0):
+    def FetchSealingEventLastByEventSeal(self, pre, seal, sn=0):
+        """
+        Search through a KEL for the last event at any sn but that contains a
+        specific anchored event seal of namedtuple SealEvent type that matches
+        the provided seal in dict form and is also fully witnessed.
+        Searchs from provided sn forward (default = 0).
+        Searches only last events in KEL of pre so does not include disputed
+        and/or superseded events.
+
+        Returns:
+            srdr (Serder): instance of the first event with the matching
+                           anchoring SealEvent seal,
+                        None if not found
+
+        Parameters:
+            pre (bytes|str): identifier of the KEL to search
+            seal (dict): dict form of Seal of any type SealEvent to find in anchored
+                seals list of each event
+            sn (int): beginning sn to search
+
+        """
+        if tuple(seal) != eventing.SealEvent._fields:  # wrong type of seal
+            return None
+
+        seal = eventing.SealEvent(**seal)  #convert to namedtuple
+
+        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
+            srdr = serdering.SerderKERI(raw=evt.tobytes())
+            for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
+                if tuple(eseal) == eventing.SealEvent._fields:
+                    eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
+                        return srdr
+        return None
+
+
+
+    def FetchSealingEventLastBySeal(self, pre, seal, sn=0):
         """Only searches last event at any sn therefore does not search
         any disputed or superseded events.
         Search through last event at each sn in KEL for the event that contains
@@ -1715,7 +1752,7 @@ class Baser(dbing.LMDBer):
 
         for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
             srdr = serdering.SerderKERI(raw=evt.tobytes())
-            for eseal in srdr.seals or []:
+            for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == Seal._fields:  # same type of seal
                     eseal = Seal(**eseal)  #convert to namedtuple
                     if seal == eseal and self.fullyWitnessed(srdr):

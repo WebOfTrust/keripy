@@ -2705,7 +2705,7 @@ class Kever:
                 self.locallyWitnessed(wits=wits)):
             return (None, None) # not validated so delseqner delsaider must be None
 
-        if self.kevers is None or delpre not in self.kevers:   # missing delegator
+        if self.kevers is None or delpre not in self.kevers:  # missing delegator KEL
             # ToDo XXXX cue a trigger to get the KEL of the delegator. This may
             # require OOBIing with the delegator.
             # The processPDEvent should also cue a trigger to get KEL
@@ -2725,10 +2725,11 @@ class Kever:
         if delseqner is None or delsaider is None: # missing delegation seal ref
             if eager:  # walk kel here to find
                 seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
-                dserder = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                dserder = self.db.FetchSealingEventLastByEventSeal(pre=delpre,
+                                                                     seal=seal)
                 if dserder is not None:  # found seal in dserder
-                    delseqner = coring.Seqner(sn=dserder.sn)
-                    delsaider = coring.Saider(qb64=dserder.said)
+                    delseqner = coring.Seqner(sn=dserder.sn)  # replace with found
+                    delsaider = coring.Saider(qb64=dserder.said)  # replace with found
 
             if not dserder: # just escrow and try later
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
@@ -2743,9 +2744,9 @@ class Kever:
             # get the dig of the delegating event. Using getKeLast ensures delegating
             #  event has not already been superceded
             key = snKey(pre=delpre, sn=ssn)  # database key
-            raw = self.db.getKeLast(key)  # get dig of delegating event as index last
-
-            if raw is None:  # no index to delegating event at key pre, sn
+            # get dig of last delegating event purported at sn
+            raw = self.db.getKeLast(key)  # last means not disputed or superseded
+            if raw is None:  # no delegatint event yet. no index at key pre, sn
                 # Have to wait until delegating event at sn shows up in kel
                 # ToDo XXXX process  this cue of query to fetch delegating event from
                 # delegator
@@ -2764,7 +2765,7 @@ class Kever:
                                                  f" at {delsaider.qb64} for "
                                                  f"evt = {serder.ked}.")
 
-            # get the delegating event from dig
+            # get the latest delegating event candidate from dig given by pre,sn index
             ddig = bytes(raw)
             key = dgKey(pre=delpre, dig=ddig)  # database key
             raw = self.db.getEvt(key)  # get actual last event
@@ -2774,22 +2775,17 @@ class Kever:
 
             dserder = serdering.SerderKERI(raw=bytes(raw))  # purported delegating event
 
-            # compare saids to ensure match of delegating event and source seal
-            # should never fail unless database broken
-            if not dserder.compare(said=delsaider.qb64):  # drop event
-                raise ValidationError(f"Invalid delegation from {delpre} at event"
-                                      f" dig={ddig} for evt={serder.ked}.")
-
             found = False  # find event seal of delegated event in delegating data
-            # purported delegating event from source seal couple
-            # XXXX ToDo need to change logic here to support native CESR seals not just dicts
-            # for JSON, CBOR, MGPK
+            # search purported delegating event from source seal couple
+
             for dseal in dserder.seals:  # find delegating seal anchor
+                # XXXX ToDo need to change logic here to support native CESR seals not just dicts
+                # for JSON, CBOR, MGPK
                 if tuple(dseal) == SealEvent._fields:
-                    seal = SealEvent(**dseal)
-                    if (seal.i == serder.pre and
-                        seal.s == serder.sner.numh and
-                        serder.compare(said=seal.d)):
+                    dseal = SealEvent(**dseal)
+                    if (dseal.i == serder.pre and
+                        dseal.s == serder.sner.numh and
+                        serder.compare(said=dseal.d)):
                             found = True
                             break
 
@@ -2801,14 +2797,18 @@ class Kever:
                                            seqner=delseqner, saider=delsaider, local=local)
                 raise MissingDelegationError(f"No delegation seal for delegator "
                                                      f"{delpre} of evt = {serder.ked}.")
-                # Assumes bad and unrepairable so raise ValidationError
-                #raise ValidationError(f"Missing delegation seal in designated event"
-                                      #f"from {delpre} in {dserder.seals} for "
-                                      #f"evt = {serder.ked}.")
 
-            # Found valid anchoring seal of delegator delpre
-            delseqner = Seqner(snh=dserder.snh)
-            delsaider = Saider(qb64=dserder.said)
+            ## Found valid anchoring seal of delegator delpre
+            ## compare saids to ensure match of delegating event and source seal
+            ## repair source seal to match last event at sn in source seal.
+            ## Original delegating event in seal may have been disputed or
+            ## superseded, but if latest matches then we want to repair
+            #if not dserder.compare(said=delsaider.qb64):  # drop event
+                #raise ValidationError(f"Invalid delegation from {delpre} at event"
+                                      #f" dig={ddig} for evt={serder.ked}.")
+
+            delseqner = Seqner(snh=dserder.snh)  # replace with found
+            delsaider = Saider(qb64=dserder.said)  # replace with found
 
         # Since found valid anchoring seal so can confirm delegation successful
         # unless its one of the superseding conditions.
@@ -3262,10 +3262,14 @@ class Kever:
         """
         Update associated logs for escrow of partially delegated or otherwise
         authorized issued event.
-        Assumes controller signatures, sigs, and witness signatures, wigs are
+        Assumes sigs (controller signatures) and wigs (witness signatures)  are
         provided elsewhere. Partial authentication occurs once an event is
         fully signed and witnessed but the authorizing (delegating) source
         seal in the authorizer's (delegator's) key has not yet been verified.
+
+        The escrow of the authorizing event ref via source seal is not idempotent
+        so that malicious or erroneous source seals may be nullified and/or
+        replaced by found source seals.
 
         Escrow allows escrow processor to retrieve serder from key and source
         couple from val in order to to re-verify authentication status.
@@ -3290,11 +3294,16 @@ class Kever:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:  # idempotent
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
-        if seqner and saider:  # idempotent
-            self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
-            logger.debug(f"Kever state: Escrowed source couple sn={seqner.sn}, "
-                         f"said={saider.said} for partially delegated/authorized"
-                         f" event said={serder.said}.")
+        if seqner and saider:  # non-idempotent pin to repair replace
+            self.db.udes.pin(keys=dgkey, val=(seqner, saider))  # non-idempotent
+            logger.debug(f"Kever state: Replaced escrow source couple sn="
+                         f"{seqner.sn}, said={saider.said} for partially "
+                         f"delegated/authorized event said={serder.said}.")
+        else:
+            self.db.udes.rem(keys=dgkey)  # nullify non-idempotent
+            logger.debug(f"Kever state: Nullified escrow source couple for "
+                         f"partially delegated/authorized event said="
+                         f"{serder.said}.")
 
         self.db.putEvt(dgkey, serder.raw)  # idempotent
 
@@ -3311,35 +3320,6 @@ class Kever:
         logger.debug(f"Kever state: Escrowed partially delegated event=\n"
                      f"{serder.ked}\n.")
         return self.db.pdes.add(keys =(serder.preb, serder.sn), val=serder.saidb)
-
-    # not used anymore deprecate?
-    #def escrowPACouple(self, serder, seqner, saider, local=True):
-        #"""
-        #Update associated logs for escrow of partially authenticated issued event.
-        #Assuming signatures are provided elsewhere. Partial authentication results
-        #from either a partially signed event or a fully signed delegated event
-        #but whose delegation is not yet verified.
-
-        #Escrow allows escrow processor to retrieve serder from key and source
-        #couple from val in order to to re-verify authentication status. Sigs
-        #are escrowed elsewhere.
-
-        #Parameters:
-            #serder is SerderKERI instance of delegated or issued event
-            #seqner is Seqner instance of sn of seal source event of delegator/issuer
-            #saider is Saider instance of said of delegator/issuer
-            #local (bool): event source for validation logic
-                #True means event source is local (protected).
-                #False means event source is remote (unprotected).
-                #Event validation logic is a function of local or remote
-        #"""
-        #local = True if local else False  # ignored since not escrowing serder here
-        #dgkey = dgKey(serder.preb, serder.saidb)
-        #self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
-        #logger.debug("Kever state: Escrowed source couple for partially signed "
-                    #"or delegated event = %s\n", serder.ked)
-
-
 
 
     def state(self):
