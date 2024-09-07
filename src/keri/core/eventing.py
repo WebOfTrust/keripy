@@ -5883,17 +5883,18 @@ class Kevery:
                 delseqner = delsaider = None
                 if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
                     delseqner, delsaider = couple  # provided
-                elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,): # walk kel to find
-                    if eserder.pre in self.kevers:
-                        delpre = self.kevers[eserder.pre].delpre
-                    else:
-                        delpre = eserder.ked["di"]
-                    seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                    srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
-                    if srdr is not None:  # found seal in srdr
-                        delseqner = coring.Seqner(sn=srdr.sn)
-                        delsaider = coring.Saider(qb64=srdr.said)
-                        self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
+
+                #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,): # walk kel to find
+                    #if eserder.pre in self.kevers:
+                        #delpre = self.kevers[eserder.pre].delpre
+                    #else:
+                        #delpre = eserder.ked["di"]
+                    #seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                    #srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                    #if srdr is not None:  # found seal in srdr
+                        #delseqner = coring.Seqner(sn=srdr.sn)
+                        #delsaider = coring.Saider(qb64=srdr.said)
+                        #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
                                   delseqner=delseqner, delsaider=delsaider,
