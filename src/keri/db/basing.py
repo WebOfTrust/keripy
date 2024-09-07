@@ -1662,7 +1662,7 @@ class Baser(dbing.LMDBer):
             for dmsg in self.clonePreIter(pre=kever.delpre, fn=0):
                 yield dmsg
 
-    def findAnchoringSealEvent(self, pre, seal, sn=0):
+    def fetchAllSealingEventByEventSeal(self, pre, seal, sn=0):
         """
         Search through a KEL for the event that contains a specific anchored
         SealEvent type of provided seal but in dict form and is also fully
@@ -1693,8 +1693,11 @@ class Baser(dbing.LMDBer):
                         return srdr
         return None
 
+    # use alias here until can change everywhere for  backwards compatibility
+    findAnchoringSealEvent = fetchAllSealingEventByEventSeal  # alias
 
-    def FetchSealingEventLastByEventSeal(self, pre, seal, sn=0):
+
+    def fetchLastSealingEventByEventSeal(self, pre, seal, sn=0):
         """
         Search through a KEL for the last event at any sn but that contains a
         specific anchored event seal of namedtuple SealEvent type that matches
@@ -1731,7 +1734,7 @@ class Baser(dbing.LMDBer):
 
 
 
-    def FetchSealingEventLastBySeal(self, pre, seal, sn=0):
+    def fetchLastSealingEventBySeal(self, pre, seal, sn=0):
         """Only searches last event at any sn therefore does not search
         any disputed or superseded events.
         Search through last event at each sn in KEL for the event that contains

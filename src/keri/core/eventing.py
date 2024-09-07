@@ -2638,17 +2638,27 @@ class Kever:
             at the same sn under either of the following conditions:
 
             B1.  The superseding rotation's delegating event is later than
-            the superseded rotation's delegating event in the delegator's KEL, i.e. the
-            sn of the superseding event's delegation is higher than the superseded event's
-            delegation.
+            the superseded rotation's delegating event in the delegator's KEL,
+            i.e. the sn of the superseding event's delegation is higher than
+            the superseded event's delegation.
 
-            B2. The sn of the superseding rotation's delegating event is the same as
-            the sn of the superseded rotation's delegating event in the delegator's KEL
-            and the superseding rotation's delegating event is a rotation and the
-            superseded rotation's delegating event is an interaction,
-            i.e. the superseding rotation's delegating event is itself a superseding
-            rotation of the superseded rotations delegating interaction event in the
-            delgator's KEL
+            B2. The sn of the superseding rotation's delegating event is the
+            same as the sn of the superseded rotation's delegating event in the
+            delegator's KEL both have the same delegating event and the index
+            of the delegating seal of the superceding delegation seal is later
+            (higher) than the index of the delegating seal of the supderseded
+            rotation. In other words the delegating event is the same event but
+            the superseding delegation seal appears later in the seal list of the
+            delegating event than the superseded delegation seal.
+
+            B3. The sn of the superseding rotation's delegating event is the
+            same as the sn of the superseded rotation's delegating event in the
+            delegator's KEL and the superseding rotation's delegating event is
+            a rotation and the superseded rotation's delegating event is an
+            interaction, i.e. the delegating events are not the same event and
+            the superseding rotation's delegating event is itself a superseding
+            rotation of the superseded rotations delegating interaction event
+            in the delgator's KEL.
 
         C. IF Neither A nor B is satisfied, then recursively apply rules A. and B. to
             the delegating events of those delegating events and so on until
@@ -2663,22 +2673,41 @@ class Kever:
             A. or B. must be satisfied, or else the superseding rotation must
             be discarded.
 
-        Note: The latest seen deleagated rotation constraint means that any earlier
-        delegated rotations can NOT be superseded. This greatly simplifies the
+        Note: The latest seen delegated rotation constraint means that any earlier
+        delegated rotations CAN NOT be superseded. This greatly simplifies the
         validation logic and avoids a potential infinite regress of forks in the
-        delegated identifier's KEL.
+        delegated identifier's KEL while allowing the delegate to
+        detect that a compromised delegation has occurred and give an
+        opportunity for the delegator to refuse to approve a subsequent
+        delegated rotation without additional verification with the delegate
+        that the subsequent delegated rotation was not compromised.
 
         In order to capture control of a delegated identifier the attacker must
         issue a delegated rotation that rotates to keys under the control of the
         attacker that must be approved by the delegator. A recovery rotation must
-        therefore superseded the compromised rotation. If the attacker is able
-        to issue and get approved by the delegator a second rotation
+        therefore supersede the compromised rotation. If the attacker is able
+        to issue and get approved by the delegator a subsequent rotation
         that follows but does not supersede the compromising rotation then
         recovery is no longer possible because the delegatee would no longer
         control the privete keys needed to verifiably sign a recovery rotation.
 
+        One way that detectability may be assured is when the delegator imposes
+        a minimum time between approvals of a delegated rotation that is
+        sufficient for the delgate to detect a compromised rotation recovery.
+        Attempts to rotate sooner than the minimum time since the immediately
+        prior rotation are refused until further verification has occurred.
 
-        Repair of approval soruce seal couple in 'aes' database on recursive
+        A delegated rotation that occurs after the minimum time since the
+        immediately prior delegated rotation might be automatically approved
+        to minimize latency. While a subsequent delegated rotation that occurs
+        within the minimum time would not be approed to maximize safety.
+        The minimum time window is designed to give the delegate enough time
+        to detect a comprimised or duplicitious superseding rotation and
+        prevent the additional verification from proceding.
+
+        ToDo:
+
+        Repair the approval source seal couple in the 'aess' database on recursive
         climb the kel tree.  Once an event has been accepted into its kel.
         Later adding a source seal couple to 'aes' should then be OK from a
         security perspective since its only making discovery less expensive.
@@ -2725,7 +2754,7 @@ class Kever:
         if delseqner is None or delsaider is None: # missing delegation seal ref
             if eager:  # walk kel here to find
                 seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
-                dserder = self.db.FetchSealingEventLastByEventSeal(pre=delpre,
+                dserder = self.db.fetchLastSealingEventByEventSeal(pre=delpre,
                                                                      seal=seal)
                 if dserder is not None:  # found seal in dserder
                     delseqner = coring.Seqner(sn=dserder.sn)  # replace with found
@@ -2819,12 +2848,12 @@ class Kever:
         # Returning delegator indicates success and eventually results in acceptance
         # via Kever.logEvent which also writes the delgating event source couple to
         # db.aess so we can find it later
-        if ((serder.ilk == Ilks.dip) or  # delegated inception
-            (serder.sner.num == self.sner.num + 1) or  # inorder event
-            (serder.sner.num == self.sner.num and  # superseding event
-                self.ilk == Ilks.ixn and  # superseded is ixn and
-                serder.ilk == Ilks.drt)):  # recovery rotation superseding ixn
-                    return (None, None) # not validated so delseqner delsaider must be None  # indicates delegation valid
+        if ((serder.ilk == Ilks.dip) or  # superseding is delegated inception or
+            (serder.sner.num == self.sner.num + 1) or  # superseding is inorder later or
+            (serder.sner.num == self.sner.num and  # superseding event at same sn and
+                self.ilk == Ilks.ixn and  # superseded is interaction and
+                serder.ilk == Ilks.drt)):  # superseding is rotation
+                    return (delseqner, delsaider) # indicates delegation valid
 
         # get to here means drt rotation superseding another drt rotation
         # Kever.logEvent saves authorizer (delegator) seal source couple in
@@ -2832,39 +2861,46 @@ class Kever:
         # recusively look up delegating events
 
         # set up recursive search for superseding delegations
-        serfn = serder  # new potentially superseding delegated event i.e. serf new
-        bossn = dserder # new delegating event of superseding delegated event i.e. boss new
+        # get original potentially superseded delegation
         serfo = self.serder  # original accepted delegated event i.e. serf original
-        if not (bosso := self.fetchDelegatingEvent(delpre, serfo, eager=eager)):
+        if not (bosso := self.fetchDelegatingEvent(delpre, serfo, original=True,
+                                                   eager=eager)):
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                           seqner=delseqner, saider=delsaider, local=local)
+                                seqner=delseqner, saider=delsaider, local=local)
             raise MissingDelegationError(f"No delegating event from {delpre}"
                                                      f" at {delsaider.qb64} for "
                                                      f"evt = {serder.ked}.")
+        # already have new potential superseding delegation
+        serfn = serder  # new potentially superseding delegated event i.e. serf new
+        bossn = dserder # new delegating event of superseding delegated event i.e. boss new
 
         while (True):  # superseding delegated rotation of rotation recovery rules
-            # Only get to here if same sn for drt existing and drt superseding
-
-            if (bossn.sn > bosso.sn or  # later supersedes
-                (bossn.Ilk == Ilks.drt and
-                 bosso.Ilk == Ilks.ixn) ): # drt supersedes ixn
+            # Only get to here if same sn for delegated event and both
+            # existing and superseding delegated events are rotations
+            if (bossn.sn > bosso.sn or  # superseding delgation is later or
+                (bossn.Ilk == Ilks.drt and  # superseding  delegation is rotation and
+                 bosso.Ilk == Ilks.ixn) ): # superseded delegation is interaction
                     # valid superseding delegation up chain so tail link valid
                     return (delseqner, delsaider)  # tail event's delegation source
 
             if bossn.said == bosso.said: # same delegating event
                 nseals = [SealEvent(**seal) for seal in bossn.seals
                                   if tuple(seal) == SealEvent._fields]
-                nindex = nseals.index(SealEvent(i=serfn.pre, s=serfn.snh, d=serfn.said))
+                nindex = nseals.index(SealEvent(i=serfn.pre,
+                                                s=serfn.snh,
+                                                d=serfn.said))
                 oseals = [SealEvent(**seal) for seal in bosso.seals
                                       if tuple(seal) == SealEvent._fields]
-                oindex = oseals.index(SealEvent(i=serfo.pre, s=serfo.snh, d=serfo.said))
+                oindex = oseals.index(SealEvent(i=serfo.pre,
+                                                s=serfo.snh,
+                                                d=serfo.said))
 
-                if nindex > oindex:  # later seal supersedes
+                if nindex > oindex:  # superseding delegation seal is later
                     # assumes index can't be None
                     # valid superseding delegation up chain so tail link valid
                     return (delseqner, delsaider)  # tail event's delegation source
 
-                else:
+                else:  # not superseded
                     # ToDo: XXXX may want to cue up business logic for delegator
                     # if self.mine(delegator):  # failed attempt at recovery
                     raise ValidationError(f"Invalid delegation recovery rotation"
@@ -2872,14 +2908,18 @@ class Kever:
 
             # tie condition same sn and drt so need to climb delegation chain
             serfn = bossn
-            if not (bossn := self.fetchDelegatingEvent(delpre, serfn, eager=eager)):
+            if not (bossn := self.fetchDelegatingEvent(delpre, serfn,
+                                                       original=False,
+                                                       eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 seqner=delseqner, saider=delsaider, local=local)
                 raise MissingDelegationError(f"No delegating event from {delpre}"
                                              f" at {delsaider.qb64} for "
                                              f"evt = {serder.ked}.")
             serfo = bosso
-            if not (bosso := self.fetchDelegatingEvent(delpre, serfo, eager=eager)):
+            if not (bosso := self.fetchDelegatingEvent(delpre, serfo,
+                                                       original=True,
+                                                       eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 seqner=delseqner, saider=delsaider, local=local)
                 raise MissingDelegationError(f"No delegating event from {delpre}"
@@ -2890,7 +2930,7 @@ class Kever:
 
 
 
-    def fetchDelegatingEvent(self, delpre, serder, *, eager=False):
+    def fetchDelegatingEvent(self, delpre, serder, *, original=True, eager=False):
         """Returns delegating event of delegator given by its aid delpre of
         delegated event given by serder otherwise raises ValidationError.
 
@@ -2912,6 +2952,12 @@ class Kever:
         Parameters:
             delpre (str): qb64 of identifier prefix of delegator
             serder (SerderKERI): delegated serder
+            original (bool): True means delegated event is the original candidate
+                             to be superseded. This means kel walk search should
+                             include superseded or disputed events.
+                             False means the delegated event is new candidate to
+                             supersede. This means kel walk search should not
+                             include superseded or disputed events.
             eager (bool): True means do more expensive KEL walk instead of escrow
                           False means do not do expensive KEL walk now.
 
@@ -2949,39 +2995,46 @@ class Kever:
         """
         dserder = None  # when not found and not eager so caller should reescrow
         dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key of delegate
-        # extra careful double check that delegate has been accepted by checkin
-        #  fner = first seen Number instance index
+
         if (couple := self.db.getAes(dgkey)):  # delegation source couple at delegate
             seqner, saider = deSourceCouple(couple)
             deldig = saider.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
             #  fner = first seen Number instance index
-            if not self.db.fons.get(keys=(delpre, deldig)):  # None
+            if not self.db.fons.get(keys=(delpre, deldig)):  # Not first seen
                 raise ValidationError(f"Invalid delegation authorizing source "
                                       f"seal couple for {serder.ked}")
             ddgkey = dgKey(pre=delpre, dig=deldig)  # database key of delegation
             if not (raw := self.db.getEvt(ddgkey)):
                 # database broken this should never happen so do not supersede
-                # ToDo XXXX should repair by deleting the erroneous aes entry and
-                # returning found one
+                # ToDo XXXX repair by deleting the erroneous aes and
+                # returning None so gets escrowed and subsequent check will
+                # search below and repair
                 raise ValidationError(f"Missing delegation event for {serder.ked}")
-
             # original delegating event i.e. boss original
             dserder = serdering.SerderKERI(raw=bytes(raw))
 
-        elif eager:  #missing but try to find seal by walking delegator's KEL
+        elif eager:  #missing aes but try to find seal by walking delegator's KEL
             seal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)._asdict
-            if not (dserder := self.db.findAnchoringSealEvent(pre=delpre, seal=seal)):
-                # database broken this should never happen so do not validate
-                raise ValidationError(f"Missing delegation source seal for {serder.ked}")
+            if original:  # search all events in delegator's kel not just last
+                if not (dserder:=self.db.fetchAllSealingEventByEventSeal(pre=delpre,
+                                                                        seal=seal)):
+                    # database broken this should never happen so do not validate
+                    raise ValidationError(f"Missing delegation source seal for {serder.ked}")
+            else: # only search last events in delegator's kel
+                if not (dserder:=self.db.fetchLastSealingEventByEventSeal(pre=delpre,
+                                                                         seal=seal)):
+                    # database broken this should never happen so do not validate
+                    raise ValidationError(f"Missing delegation source seal for {serder.ked}")
 
-            # extra careful double check that .aes is valid by getting
-            #  fner = first seen Number instance index of delegation
+            # extra careful double check that found event is/was accepted event
+            #  fner = first seen Number instance index of delegation from .fons
             if not self.db.fons.get(keys=(dserder.pre, dserder.dig)):  # None
                 raise ValidationError(f"Invalid delegation authorizing source "
                                       f"seal couple for {serder.ked}")
-            # Only repair when delegated has been accepted
-            if self.db.fons.get(keys=(preb, serder.saidb)):
+
+            # Only repair when delegated has been accepted i.e has .fons entry
+            if self.db.fons.get(keys=(serder.pre, serder.said)):
                 # Repair .aess of delegated event by writing found source
                 # seal couple of delegation. This is safe becaause we confirmed
                 # delegation event was accepted in delegator's kel.
