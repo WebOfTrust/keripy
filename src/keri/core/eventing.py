@@ -2723,91 +2723,92 @@ class Kever:
 
         dserder = None  # no delegation event yet
         if delseqner is None or delsaider is None: # missing delegation seal ref
-            # If eager could walk KEL here to attempt to find in delegator's KEL
-            # if not found then escrow to be found later delegating event may
-            # not yet have been created.
-            if eager:
+            if eager:  # walk kel here to find
                 seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
                 dserder = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
                 if dserder is not None:  # found seal in dserder
                     delseqner = coring.Seqner(sn=dserder.sn)
                     delsaider = coring.Saider(qb64=dserder.said)
 
-        if delseqner is None or delsaider is None: # missing delegation seal ref
-            self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               seqner=delseqner, saider=delsaider, local=local)
-            raise MissingDelegationError(f"No delegation seal for delegator "
-                                         f"{delpre} of evt = {serder.ked}.")
+            if not dserder: # just escrow and try later
+                self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                   seqner=delseqner, saider=delsaider, local=local)
+                raise MissingDelegationError(f"No delegation seal for delegator "
+                                             f"{delpre} of evt = {serder.ked}.")
 
-        # if delseqner and delsaider and not dserder
-        # ToDo XXXX need to replace Seqners with Numbers
-        # Get delegating event from delseqner and delpre
-        ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
-        # get the dig of the delegating event. Using getKeLast ensures delegating
-        #  event has not already been superceded
-        key = snKey(pre=delpre, sn=ssn)  # database key
-        raw = self.db.getKeLast(key)  # get dig of delegating event as index last
+        if delseqner and delsaider and not dserder:  # given couple not found
+            # ToDo XXXX need to replace Seqners with Numbers
+            # Get delegating event from delseqner and delpre
+            ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
+            # get the dig of the delegating event. Using getKeLast ensures delegating
+            #  event has not already been superceded
+            key = snKey(pre=delpre, sn=ssn)  # database key
+            raw = self.db.getKeLast(key)  # get dig of delegating event as index last
 
-        if raw is None:  # no index to delegating event at key pre, sn
-            # Have to wait until delegating event at sn shows up in kel
-            # ToDo XXXX process  this cue of query to fetch delegating event from
-            # delegator
-            self.cues.push(dict(kin="query", q=dict(pre=delpre,
-                                                              sn=delseqner.snh,
-                                                              dig=delsaider.qb64)))
-            #  escrow event here
-            inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
-            sn = Number(num=serder.sn).validate(inceptive=inceptive).sn
-            # if we were to allow for malicous local delegator source seal then we
-            # must check for locallyOwned(delpre) first and escrowDelegable.
-            # otherwise escrowPDEvent
-            self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               seqner=delseqner, saider=delsaider, local=local)
-            raise MissingDelegationError(f"No delegating event from {delpre}"
-                                             f" at {delsaider.qb64} for "
-                                             f"evt = {serder.ked}.")
+            if raw is None:  # no index to delegating event at key pre, sn
+                # Have to wait until delegating event at sn shows up in kel
+                # ToDo XXXX process  this cue of query to fetch delegating event from
+                # delegator
+                self.cues.push(dict(kin="query", q=dict(pre=delpre,
+                                                                  sn=delseqner.snh,
+                                                                  dig=delsaider.qb64)))
+                #  escrow event here
+                inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
+                sn = Number(num=serder.sn).validate(inceptive=inceptive).sn
+                # if we were to allow for malicous local delegator source seal then we
+                # must check for locallyOwned(delpre) first and escrowDelegable.
+                # otherwise escrowPDEvent
+                self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                   seqner=delseqner, saider=delsaider, local=local)
+                raise MissingDelegationError(f"No delegating event from {delpre}"
+                                                 f" at {delsaider.qb64} for "
+                                                 f"evt = {serder.ked}.")
 
-        # get the delegating event from dig
-        ddig = bytes(raw)
-        key = dgKey(pre=delpre, dig=ddig)  # database key
-        raw = self.db.getEvt(key)  # get actual last event
-        if raw is None:   # drop event should never happen unless database is broken
-            raise ValidationError(f"Missing delegation from {delpre} at event "
-                                  f"dig = {ddig} for evt = {serder.ked}.")
+            # get the delegating event from dig
+            ddig = bytes(raw)
+            key = dgKey(pre=delpre, dig=ddig)  # database key
+            raw = self.db.getEvt(key)  # get actual last event
+            if raw is None:   # drop event should never happen unless database is broken
+                raise ValidationError(f"Missing delegation from {delpre} at event "
+                                      f"dig = {ddig} for evt = {serder.ked}.")
 
-        dserder = serdering.SerderKERI(raw=bytes(raw))  # purported delegating event
+            dserder = serdering.SerderKERI(raw=bytes(raw))  # purported delegating event
 
-        # compare saids to ensure match of delegating event and source seal
-        # should never fail unless database broken
-        if not dserder.compare(said=delsaider.qb64):  # drop event
-            raise ValidationError(f"Invalid delegation from {delpre} at event"
-                                  f" dig={ddig} for evt={serder.ked}.")
+            # compare saids to ensure match of delegating event and source seal
+            # should never fail unless database broken
+            if not dserder.compare(said=delsaider.qb64):  # drop event
+                raise ValidationError(f"Invalid delegation from {delpre} at event"
+                                      f" dig={ddig} for evt={serder.ked}.")
 
-        found = False  # find event seal of delegated event in delegating data
-        # purported delegating event from source seal couple
-        # XXXX ToDo need to change logic here to support native CESR seals not just dicts
-        # for JSON, CBOR, MGPK
-        for dseal in dserder.seals:  # find delegating seal anchor
-            if tuple(dseal) == SealEvent._fields:
-                seal = SealEvent(**dseal)
-                if (seal.i == serder.pre and
-                    seal.s == serder.sner.numh and
-                    serder.compare(said=seal.d)):
-                        found = True
-                        break
+            found = False  # find event seal of delegated event in delegating data
+            # purported delegating event from source seal couple
+            # XXXX ToDo need to change logic here to support native CESR seals not just dicts
+            # for JSON, CBOR, MGPK
+            for dseal in dserder.seals:  # find delegating seal anchor
+                if tuple(dseal) == SealEvent._fields:
+                    seal = SealEvent(**dseal)
+                    if (seal.i == serder.pre and
+                        seal.s == serder.sner.numh and
+                        serder.compare(said=seal.d)):
+                            found = True
+                            break
 
-        if not found:  # drop event but may want to try harder here.
-            # if try harder assume source seal was malicious so nullify it and
-            # attempt to repair by searching for valid one in KEL
-            # may not find it in KEL because not yet delegated.
-            # Assumes bad and unrepairable so raise ValidationError
-            raise ValidationError(f"Missing delegation seal in designated event"
-                                  f"from {delpre} in {dserder.seals} for "
-                                  f"evt = {serder.ked}.")
+            if not found:  # nullify and escrow to try harder later
+                # worst case assume source seal was malicious so nullify it and
+                # attempt to repair by escrowing and eager search later
+                delseqner = delsaider = None  # nullify
+                self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                           seqner=delseqner, saider=delsaider, local=local)
+                raise MissingDelegationError(f"No delegation seal for delegator "
+                                                     f"{delpre} of evt = {serder.ked}.")
+                # Assumes bad and unrepairable so raise ValidationError
+                #raise ValidationError(f"Missing delegation seal in designated event"
+                                      #f"from {delpre} in {dserder.seals} for "
+                                      #f"evt = {serder.ked}.")
 
-        # Found valid anchoring seal of delegator delpre
-        delseqner = Seqner(snh=dserder.snh)
-        delsaider = Saider(qb64=dserder.said)
+            # Found valid anchoring seal of delegator delpre
+            delseqner = Seqner(snh=dserder.snh)
+            delsaider = Saider(qb64=dserder.said)
 
         # Since found valid anchoring seal so can confirm delegation successful
         # unless its one of the superseding conditions.
