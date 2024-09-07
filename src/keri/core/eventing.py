@@ -5538,23 +5538,19 @@ class Kevery:
                 delseqner = delsaider = None
                 if (couple := self.db.udes.get(keys=dgkey)):
                     delseqner, delsaider = couple
-                #couple = self.db.getUde(dgkey)
-                #if couple is not None:
-                    #delseqner, delsaider = deSourceCouple(couple)
-                elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
-                    if eserder.pre in self.kevers:
-                        delpre = self.kevers[eserder.pre].delpre
-                    else:
-                        delpre = eserder.ked["di"]
-                    seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                    srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
-                    if srdr is not None:
-                        delseqner = coring.Seqner(sn=srdr.sn)
-                        delsaider = coring.Saider(qb64=srdr.said)
-                        #couple = delseqner.qb64b + delsaider.qb64b
-                        #self.db.putUde(dgkey, couple)
-                         # idempotent
-                        self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
+
+                #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
+                    #if eserder.pre in self.kevers:
+                        #delpre = self.kevers[eserder.pre].delpre
+                    #else:
+                        #delpre = eserder.ked["di"]
+                    #seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                    #srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                    #if srdr is not None:
+                        #delseqner = coring.Seqner(sn=srdr.sn)
+                        #delsaider = coring.Saider(qb64=srdr.said)
+                         ## idempotent
+                        #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 # process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
@@ -5578,17 +5574,16 @@ class Kevery:
                 # Non re-escrow ValidationError means some other issue so unescrow.
                 # No error at all means processed successfully so also unescrow.
 
-            except (MissingSignatureError, MissingDelegationError) as ex:
+            except MissingSignatureError  as ex:  # MissingDelegationError)
                 # still waiting on missing sigs or missing seal to validate
                 # processEvent idempotently reescrowed
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrow failed: %s", ex.args[0])
 
             except Exception as ex:  # log diagnostics errors etc
-                # error other than waiting on sigs or seal so remove from escrow
+                # error other than waiting on sigs  so remove from escrow
                 self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                #self.db.delUde(dgkey)  # remove escrow if any
-                self.db.udes.rem(keys=dgkey)  # remove escrow if any
+                #self.db.udes.rem(keys=dgkey)  # leave here since could PartialDelegationEscrow
 
                 if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                     self.cues.push(dict(kin="psUnescrow", serder=eserder))
@@ -5603,7 +5598,6 @@ class Kevery:
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
                 self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                #self.db.delUde(dgkey)  # remove escrow if any
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
 
                 if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
@@ -5728,23 +5722,19 @@ class Kevery:
                 delseqner = delsaider = None
                 if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
                     delseqner, delsaider = couple
-                #couple = self.db.getUde(dgKey(pre, bytes(edig)))
-                #if couple is not None:
-                    #delseqner, delsaider = deSourceCouple(couple)
-                elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
-                    if eserder.pre in self.kevers:
-                        delpre = self.kevers[eserder.pre].delpre
-                    else:
-                        delpre = eserder.ked["di"]
-                    seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                    srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
-                    if srdr is not None:
-                        delseqner = coring.Seqner(sn=srdr.sn)
-                        delsaider = coring.Saider(qb64=srdr.said)
-                        #couple = delseqner.qb64b + delsaider.qb64b
-                        #self.db.putUde(dgkey, couple)
-                        # idempotent
-                        self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
+
+                #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
+                    #if eserder.pre in self.kevers:
+                        #delpre = self.kevers[eserder.pre].delpre
+                    #else:
+                        #delpre = eserder.ked["di"]
+                    #seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                    #srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
+                    #if srdr is not None:
+                        #delseqner = coring.Seqner(sn=srdr.sn)
+                        #delsaider = coring.Saider(qb64=srdr.said)
+                        ## idempotent
+                        #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
                                   delseqner=delseqner, delsaider=delsaider,
@@ -5767,17 +5757,16 @@ class Kevery:
                 # validation will be successful as event would not be in
                 # partially witnessed escrow unless they had already validated
 
-            except (MissingWitnessSignatureError, MissingDelegationError) as ex:
+            except MissingWitnessSignatureError as ex:  # MissingDelegationError
                 # still waiting on missing witness sigs or delegation
                 # processEvent idempotently reescrowed
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrow failed: %s", ex.args[0])
 
             except Exception as ex:  # log diagnostics errors etc
-                # error other than waiting on sigs or seal so remove from escrow
+                # error other than waiting on wigs so remove from escrow
                 self.db.delPwe(snKey(pre, sn), edig)  # removes one escrow at key val
-                #self.db.delUde(dgkey)  # remove escrow if any
-                self.db.udes.rem(keys=dgkey)  # remove escrow if any
+                #self.db.udes.rem(keys=dgkey)  # leave here since could PartialDelegationEscrow
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed: %s", ex.args[0])
                 else:
@@ -5788,7 +5777,6 @@ class Kevery:
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
                 self.db.delPwe(snKey(pre, sn), edig)  # removes one escrow at key val
-                #self.db.delUde(dgkey)  # remove escrow if any
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
                 logger.info("Kevery unescrow succeeded in valid event: "
                             "event=%s", eserder.said)
