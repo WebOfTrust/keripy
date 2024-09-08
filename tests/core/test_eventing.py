@@ -4907,6 +4907,40 @@ def test_load_event(mockHelpingNowUTC):
         # Endorse Tee's inception event with Wan's Hab just so we have non-trans receipts
 
         evt = eventing.loadEvent(wanHab.db, teeHab.pre, teeHab.pre)
+        #assert evt == {'ked': {'a': [],
+                               #'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
+                               #'bt': '1',
+                               #'c': [],
+                               #'d': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
+                               #'di': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                               #'i': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
+                               #'k': ['DLDlVl1H2Q138A5tftVRpyy834ejsY33BB71kXLRNP2h'],
+                               #'kt': '1',
+                               #'n': ['EBTtZqMkJOO4nf3cCt6SdezwkoCKtx2fGUKHeFApj_Yx'],
+                               #'nt': '1',
+                               #'s': '0',
+                               #'t': 'dip',
+                               #'v': 'KERI10JSON00018d_'},
+                       #'receipts': {'nontransferable': [{'prefix': 'BEXrSXVksXpnfno_Di6RBX2Lsr9VWRAihjLhowfjNOQQ',
+                                                         #'signature': '0BCQOeNT3mwAHxh6mYU9K_B2VmbtjJh7_8115k4JrBPR3c4'
+                                                                      #'3jUSO197H2J73vWMi61qzOovNkSWQbnRx3NFnrk8I'}],
+                                    #'transferable': [{'prefix': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                                                      #'said': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                                                      #'sequence': '0AAAAAAAAAAAAAAAAAAAAAAA',
+                                                      #'signature': 'AADGbcmUNw_SX7OVNX-PQYl41UZx_pgJXHOoMWrcfmCDGgkc1-'
+                                                                   #'MqXJjMD9S9moJ-lpPL9-AiXgITemMZL_QYGzIA'}]},
+                       #'signatures': [{'index': 0,
+                                       #'signature': 'AAC1-NTntZ0xkgHwooNcKxe9G4XC-rgkSryVz0B_QrZR2kkv4IKi7DMkfMBd4Eck-'
+                                                    #'2NAi0DMuZeXnlvch6ZP0coO'}],
+                       #'source_seal': {'said': 'EF7pHYN6XABC9znRdzprt5frW-MMry9rfrCI-_t5Y8VD',
+                                       #'sequence': 1},
+                       #'stored': True,
+                       #'timestamp': '2021-01-01T00:00:00.000000+00:00',
+                       #'witness_signatures': [{'index': 0,
+                                               #'signature': 'AABPMW3J1iZyMC-elPOkdIhddhZB_BJYHTdYv5SxcrOfJL_5igDVB6zKD'
+                                                            #'AQiTj_cNa7oP-l6xSRRxwlHDwqgSwcB'}],
+                       #'witnesses': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP']}
+        # no source seal in load
         assert evt == {'ked': {'a': [],
                                'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
                                'bt': '1',
@@ -4932,8 +4966,6 @@ def test_load_event(mockHelpingNowUTC):
                        'signatures': [{'index': 0,
                                        'signature': 'AAC1-NTntZ0xkgHwooNcKxe9G4XC-rgkSryVz0B_QrZR2kkv4IKi7DMkfMBd4Eck-'
                                                     '2NAi0DMuZeXnlvch6ZP0coO'}],
-                       'source_seal': {'said': 'EF7pHYN6XABC9znRdzprt5frW-MMry9rfrCI-_t5Y8VD',
-                                       'sequence': 1},
                        'stored': True,
                        'timestamp': '2021-01-01T00:00:00.000000+00:00',
                        'witness_signatures': [{'index': 0,

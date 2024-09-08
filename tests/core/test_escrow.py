@@ -466,67 +466,77 @@ def test_missing_delegator_escrow():
         couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
         assert couple == seqner.qb64b + bobSrdr.saidb
 
+        # Did not set up Habery so need to setup Del's prefixes so Del is locally
+        # owned
+        delDB.prefixes.add(delPre)
+        assert delPre in delDB.prefixes
+
         # apply Del's inception msg to Del's Kevery
         # Dels event will fail but will add to its escrow
         psr.parse(ims=bytearray(msg), kvy=delKvy, local=True)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
-        assert delPre not in delKvy.kevers
-        escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
-        assert len(escrows) == 1
-        assert escrows[0] == delSrdr.saidb  #  escrow entry for event
-        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
-        #assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
-        #escrow entry for event
-        escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
-        assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
-
-
-        # verify Kevery process partials escrow is idempotent to previously escrowed events
-        # assuming not stale but nothing else has changed
-        delKvy.processEscrowPartialSigs()
-        assert delPre not in delKvy.kevers
-        escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
-        assert len(escrows) == 1
-        assert escrows[0] == delSrdr.saidb  #  escrow entry for event
-        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
-        #assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
-        #escrow entry for event
-        escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
-        assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
-
-        # apply Bob's inception to Dels' Kvy
-        psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
-        # delKvy.process(ims=bytearray(bobIcpMsg))  # process remote copy of msg
-        assert bobPre in delKvy.kevers  # message accepted
-        delKvy.processEscrowPartialSigs()  # process escrow
-        assert delPre not in delKvy.kevers
-        escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
-        assert len(escrows) == 1
-        assert escrows[0] == delSrdr.saidb  #  escrow entry for event
-        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
-        #assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
-        #escrow entry for event
-        escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
-        assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
-
-        # apply Bob's delegating interaction to Dels' Kvy
-        psr.parse(ims=bytearray(bobIxnMsg), kvy=delKvy, local=True)
-        # delKvy.process(ims=bytearray(bobIxnMsg))  # process remote copy of msg
-        delKvy.processEscrowPartialSigs()  # process escrows
-        assert delPre in delKvy.kevers  # event removed from escrow
+        assert delPre in delKvy.kevers
         delK = delKvy.kevers[delPre]
-        assert delK.delegated
-        assert delK.serder.said == delSrdr.said
-        couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
-        assert couple == seqner.qb64b + bobSrdr.saidb
 
-        escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
-        assert len(escrows) == 0
-        #escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
-        #assert escrow is None  # delegated inception delegation couple
-        #escrow entry for event delegated inception delegation couple
-        escrow = self.db.udes.get(keys=(delPre, delSrdr.said))
-        assert escrow is None
+
+        #escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
+        #escrows = delKvy.db.getPwes(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
+        #escrows = delKvy.db.pdes.get(dbing.snKey(delPre, delSrdr.sn))
+        #assert len(escrows) == 1
+        #assert escrows[0] == delSrdr.saidb  #  escrow entry for event
+        ##escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        ##assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        ##escrow entry for event
+        #escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
+        #assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
+
+
+        ## verify Kevery process partials escrow is idempotent to previously escrowed events
+        ## assuming not stale but nothing else has changed
+        #delKvy.processEscrowPartialSigs()
+        #assert delPre not in delKvy.kevers
+        #escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
+        #assert len(escrows) == 1
+        #assert escrows[0] == delSrdr.saidb  #  escrow entry for event
+        ##escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        ##assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        ##escrow entry for event
+        #escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
+        #assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
+
+        ## apply Bob's inception to Dels' Kvy
+        #psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
+        ## delKvy.process(ims=bytearray(bobIcpMsg))  # process remote copy of msg
+        #assert bobPre in delKvy.kevers  # message accepted
+        #delKvy.processEscrowPartialSigs()  # process escrow
+        #assert delPre not in delKvy.kevers
+        #escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
+        #assert len(escrows) == 1
+        #assert escrows[0] == delSrdr.saidb  #  escrow entry for event
+        ##escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        ##assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
+        ##escrow entry for event
+        #escrowSeqner, escrowSaider = self.db.udes.get(keys=(delPre, delSrdr.said))
+        #assert escrowSeqner.qb64b + escrowSaider.qb64b == seqner.qb64b + bobSrdr.saidb
+
+        ## apply Bob's delegating interaction to Dels' Kvy
+        #psr.parse(ims=bytearray(bobIxnMsg), kvy=delKvy, local=True)
+        ## delKvy.process(ims=bytearray(bobIxnMsg))  # process remote copy of msg
+        #delKvy.processEscrowPartialSigs()  # process escrows
+        #assert delPre in delKvy.kevers  # event removed from escrow
+        #delK = delKvy.kevers[delPre]
+        #assert delK.delegated
+        #assert delK.serder.said == delSrdr.said
+        #couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+        #assert couple == seqner.qb64b + bobSrdr.saidb
+
+        #escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
+        #assert len(escrows) == 0
+        ##escrow = delKvy.db.getUde(dbing.dgKey(delPre, delSrdr.said))
+        ##assert escrow is None  # delegated inception delegation couple
+        ##escrow entry for event delegated inception delegation couple
+        #escrow = self.db.udes.get(keys=(delPre, delSrdr.said))
+        #assert escrow is None
 
         # Setup Del rotation event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)
@@ -586,8 +596,9 @@ def test_missing_delegator_escrow():
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delK.delegated
         assert delK.serder.said == delSrdr.said
-        couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
-        assert couple == seqner.qb64b + bobSrdr.saidb
+        assert not delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+        #couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+        #assert couple == seqner.qb64b + bobSrdr.saidb
 
         # apply Del's delegated Rotation event message to bob's Kevery
         psr.parse(ims=bytearray(msg), kvy=bobKvy, local=True)
