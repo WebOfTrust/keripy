@@ -1023,7 +1023,7 @@ class Baser(dbing.LMDBer):
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
-        self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
+        self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=core.Number)
@@ -1135,6 +1135,10 @@ class Baser(dbing.LMDBer):
 
         # exchange message partial signature escrow
         self.epse = subing.SerderSuber(db=self, subkey="epse.")
+
+        # exchange message PS escrow date time of message
+        self.epsd = subing.CesrSuber(db=self, subkey="epsd.",
+                                     klas=coring.Dater)
 
         # exchange messages
         # TODO: clean
@@ -3019,85 +3023,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoDupVal(self.ooes, key, val)
 
-    def putQnfs(self, key, vals):
-        """
-        Use snKey()
-        Write each out of order escrow event dig entry from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.qnfs, key, vals)
-
-    def addQnf(self, key, val):
-        """
-        Use snKey()
-        Add out of order escrow val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.qnfs, key, val)
-
-    def getQnfs(self, key):
-        """
-        Use snKey()
-        Return list of out of order escrow event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.qnfs, key)
-
-    def getQnfLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup val of out of order escrow event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.qnfs, key)
-
-    def getQnfItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of out of order escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.qnfs, key)
-        #return self.getIoDupItemsNextIter(self.qnfs, key, skip)
-
-    def cntQnfs(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.qnfs, key)
-
-    def delQnfs(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.qnfs, key)
-
-    def delQnf(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.qnfs, key, val)
 
     def putDes(self, key, vals):
         """

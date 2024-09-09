@@ -7,7 +7,8 @@ from hio.base import doing
 
 from keri.app import habbing
 from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
-from keri.core import parsing, eventing
+from keri.core import parsing, eventing, serdering
+from keri.db.dbing import dgKey
 
 
 def test_querying():
@@ -37,7 +38,7 @@ def test_querying():
         assert msg["src"] == inqHab.pre
         assert msg["pre"] == subHab.pre
         assert msg["r"] == "ksn"
-        assert msg["q"] == {'s': '0'}
+        assert msg["q"] == {'fn': '0', 's': '0'}
         assert msg["wits"] is None
 
         doist.recur(deeds=deeds)
@@ -108,6 +109,12 @@ def test_querying():
         doist.recur(deeds=deeds)
         assert len(sdoer.witq.msgs) == 1
 
+        sdoer = SeqNoQuerier(hby=hby, hab=inqHab, pre=subHab.pre, fn=2, sn=4)
+        assert len(sdoer.witq.msgs) == 1
+        msg = sdoer.witq.msgs.pull()
+        query = msg['q']
+        assert query == {'fn': '2', 's': '4'}
+
         # Test with originally unknown AID
         sdoer = SeqNoQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", sn=1)
         assert len(sdoer.witq.msgs) == 1
@@ -131,7 +138,8 @@ def test_querying():
         assert len(sdoer.witq.msgs) == 1
 
         # Test with originally unknown AID
-        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", anchor={'s': '5'})
+        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA",
+                              anchor={'s': '5'})
         assert len(adoer.witq.msgs) == 1
 
         tock = 0.03125
@@ -141,3 +149,22 @@ def test_querying():
         doist.recur(deeds=deeds)
         assert len(adoer.witq.msgs) == 1
 
+def test_query_not_found_escrow():
+    with habbing.openHby() as hby, \
+            habbing.openHby() as hby1:
+        inqHab = hby.makeHab(name="inquisitor")
+        subHab = hby1.makeHab(name="subject")
+
+        icp = inqHab.makeOwnInception()
+        subHab.psr.parseOne(ims=icp)
+        assert inqHab.pre in subHab.kevers
+
+        qry = inqHab.query(subHab.pre, route="/foo", src=inqHab.pre)
+        serder = serdering.SerderKERI(raw=qry)
+        dgkey = dgKey(inqHab.pre, serder.saidb)
+
+        subHab.db.putEvt(dgkey, serder.raw)
+        subHab.db.qnfs.add(keys=(inqHab.pre, serder.said), val=serder.saidb)
+
+        subHab.kvy.processQueryNotFound()
+        assert subHab.db.qnfs.get(dgkey) == []

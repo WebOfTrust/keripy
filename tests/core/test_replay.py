@@ -135,6 +135,12 @@ def test_replay():
             b'OOJVAAAjEg-3N4cNT_yot5wWlcKaz-1xPAgteGCsYZhq9dax3sQPD5HFI7M13Bhp'
             b'kRttBEq92pAaIG')
 
+        assert debHab.kever.sn == 6
+        msgs = next(debHab.db.clonePreIter(debHab.pre, fn=4))
+        serder = serdering.SerderKERI(raw=msgs)
+        assert serder.ilk == kering.Ilks.ixn
+        assert serder.sn == 4
+
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb
         camKevery = eventing.Kevery(db=camHab.db,

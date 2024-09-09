@@ -90,13 +90,17 @@ class LogQuerier(doing.DoDoer):
 
 class SeqNoQuerier(doing.DoDoer):
 
-    def __init__(self, hby, hab, pre, sn, wits=None, **opts):
+    def __init__(self, hby, hab, pre, sn, fn=None, wits=None, **opts):
         self.hby = hby
         self.hab = hab
         self.pre = pre
         self.sn = sn
+        self.fn = fn if fn is not None else 0
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        self.witq.query(src=self.hab.pre, pre=self.pre, sn="{:x}".format(self.sn), wits=wits)
+        self.witq.query(src=self.hab.pre, pre=self.pre,
+                        sn="{:x}".format(self.sn),
+                        fn="{:x}".format(self.fn),
+                        wits=wits)
         super(SeqNoQuerier, self).__init__(doers=[self.witq], **opts)
 
     def recur(self, tyme, deeds=None):

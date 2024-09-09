@@ -105,7 +105,7 @@ class Adjudicator:
         for watcher in watchers:
             saider = self.hab.db.knas.get(keys=(watched, watcher))
             if saider is None:
-                print(f"No key state from watcher {watcher} for {watched}")
+                logger.info(f"No key state from watcher {watcher} for {watched}")
                 continue
 
             ksn = self.hab.db.ksns.get(keys=(saider.qb64,))
