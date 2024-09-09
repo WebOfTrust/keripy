@@ -5973,7 +5973,7 @@ class Kevery:
             except Exception as ex:  # log diagnostics errors etc
                 # error other than waiting on sigs or seal so remove from escrow
                 # removes one event escrow at key val
-                self.db.pdes.remOn(keys=snKey(epre, esn), val=edig)  # event idx escrow
+                self.db.pdes.rem(keys=snKey(epre, esn), val=edig)  # event idx escrow
                 self.db.udes.rem(keys=dgkey)  # remove source seal escrow if any
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed: %s", ex.args[0])

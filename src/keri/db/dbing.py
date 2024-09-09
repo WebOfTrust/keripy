@@ -1869,12 +1869,6 @@ class LMDBer(filing.Filer):
                     return  # no values end of db raises StopIteration
 
 
-
-
-    # getOnIoDupItemBackIter symmetric with getOnIoDupItemIter
-    # getOnIoDupValBackIter  symmetric with getOnIoDupValIter
-
-
     def getOnIoDupValBackIter(self, db,  key=b'', on=0, *, sep=b'.'):
         """Returns iterator going backwards of values,
         of insertion ordered item at each key over all ordinal numbered keys
