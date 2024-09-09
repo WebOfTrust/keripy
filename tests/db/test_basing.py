@@ -784,7 +784,7 @@ def test_baser():
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         # test .pdes SerderIoSetSuber methods
-        assert isinstance(db.pdes, subing.IoDupSuber)
+        assert isinstance(db.pdes, subing.OnIoDupSuber)
 
 
         # test .udes CatCesrSuber sub db methods

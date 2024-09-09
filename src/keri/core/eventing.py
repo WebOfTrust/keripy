@@ -1683,7 +1683,10 @@ class Kever:
 
     def locallyDelegated(self, pre: str):
         """Returns True if pre is in .prefixes and not in .groups
-        False otherwise.
+        False otherwise. Use when pre is a delegator for some event and
+        want to confirm that pre is also locallyOwned thereby making the
+        associated event locallyDelegated.
+
         Indicates that provided identifier prefix is controlled by a local
         controller from .prefixes but is not a group with local member.
         i.e pre is a locally owned (controlled) AID (identifier prefix)
@@ -2155,6 +2158,7 @@ class Kever:
                                  "(wits)={wits} for event={ked}.")
 
         return tholder, toader, wits, cuts, adds
+
 
     def deriveBacks(self, serder):
         """Derives and return tuple of (wits, cuts, adds) for backers  given
@@ -3353,7 +3357,7 @@ class Kever:
         if seqner and saider:  # non-idempotent pin to repair replace
             self.db.udes.pin(keys=dgkey, val=(seqner, saider))  # non-idempotent
             logger.debug(f"Kever state: Replaced escrow source couple sn="
-                         f"{seqner.sn}, said={saider.said} for partially "
+                         f"{seqner.sn}, said={saider.qb64} for partially "
                          f"delegated/authorized event said={serder.said}.")
         else:
             self.db.udes.rem(keys=dgkey)  # nullify non-idempotent
@@ -3375,7 +3379,7 @@ class Kever:
 
         logger.debug(f"Kever state: Escrowed partially delegated event=\n"
                      f"{serder.ked}\n.")
-        return self.db.pdes.add(keys =(serder.preb, serder.sn), val=serder.saidb)
+        return self.db.pdes.add(keys=snKey(serder.preb, serder.sn), val=serder.saidb)
 
 
     def state(self):
@@ -5472,6 +5476,7 @@ class Kevery:
                 break
             key = ekey  # setup next while iteration, with key after ekey
 
+
     def processEscrowPartialSigs(self):
         """
         Process events escrowed by Kever that were only partially fulfilled,
@@ -5846,10 +5851,10 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for ekey, edig in self.db.pdes.getItemIter(keys=b''):
+        for (epre,), esn, edig in self.db.pdes.getOnItemIter(keys=b''):
             try:
-                pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
-                dgkey = dgKey(pre, bytes(edig))
+                #pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+                dgkey = dgKey(epre, edig)
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local sourde so raise ValidationError which unescrows below
                     raise ValidationError("Missing escrowed event source "
@@ -5877,7 +5882,7 @@ class Kevery:
                                           "at dig = {}.".format(bytes(edig)))
 
                 # get the escrowed event using edig
-                eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
+                eraw = self.db.getEvt(dgkey)
                 if eraw is None:
                     # no event so so raise ValidationError which unescrows below
                     logger.info("Kevery unescrow error: Missing event at."
@@ -5889,7 +5894,7 @@ class Kevery:
                 eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                 #  get sigs
-                sigs = self.db.getSigs(dgKey(pre, bytes(edig)))  # list of sigs
+                sigs = self.db.getSigs(dgkey)  # list of sigs
                 if not sigs:  # empty list
                     # no sigs so raise ValidationError which unescrows below
                     logger.info("Kevery unescrow error: Missing event sigs at."
@@ -5900,14 +5905,20 @@ class Kevery:
 
                 # get witness signatures (wigs not wits) assumes wont be in this
                 # escrow if wigs not needed because no wits
-                wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
-                if not wigs:  # empty list
-                     # no wigs so raise ValidationError which unescrows below
-                    logger.info("Kevery unescrow error: Missing event wigs at."
-                                "dig = %s", bytes(edig))
+                wigs = self.db.getWigs(dgkey)  # list of wigs if any
+                # may want to checks wits and wigs here. We are assuming that
+                # never get to this escrow if wits and not wigs
+                #if wits and not wigs:  # non empty wits but empty wigs
+                    ## wigs maybe empty  if not wits or if wits while waiting
+                    ## for first witness signature
+                    ## which may not arrive until some time after event is fully signed
+                    ## so just log for debugging but do not unescrow by raising
+                    ## ValidationError
+                    #logger.info("Kevery unescrow error: Missing event wigs at."
+                                #"dig = %s", bytes(edig))
 
-                    raise ValidationError("Missing escrowed evt wigs at "
-                                          "dig = {}.".format(bytes(edig)))
+                    #raise ValidationError("Missing escrowed evt wigs at "
+                                          #"dig = {}.".format(bytes(edig)))
 
                 # setup parameters to process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
@@ -5917,7 +5928,7 @@ class Kevery:
                 # If delegator KEL not available should also cue a trigger to
                 # get it if still missing when processing escrow.
                 delseqner = delsaider = None
-                if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
+                if (couple := self.db.udes.get(keys=(epre, edig))):
                     delseqner, delsaider = couple  # provided
 
                 #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,): # walk kel to find
@@ -5962,7 +5973,7 @@ class Kevery:
             except Exception as ex:  # log diagnostics errors etc
                 # error other than waiting on sigs or seal so remove from escrow
                 # removes one event escrow at key val
-                self.db.pdes.rem(keys=(pre, sn), val=edig)  # event idx escrow
+                self.db.pdes.remOn(keys=snKey(epre, esn), val=edig)  # event idx escrow
                 self.db.udes.rem(keys=dgkey)  # remove source seal escrow if any
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed: %s", ex.args[0])
@@ -5974,7 +5985,7 @@ class Kevery:
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
                  # removes one event escrow at key val
-                self.db.pdes.rem(keys=(pre, sn), val=edig)  # event idx escrow
+                self.db.pdes.rem(keys=snKey(epre, esn), val=edig)  # event idx escrow
                 self.db.udes.rem(keys=dgkey)  # remove source seal escrow if any
                 logger.info("Kevery unescrow succeeded in valid event: "
                             "event=%s", eserder.said)
