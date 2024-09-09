@@ -56,8 +56,8 @@ def escrows(tymth, tock=0.0, **opts):
                 oots = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:
-                    for ekey, edig in hby.db.getOoeItemsNextIter(key=key):
-                        pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    for ekey, edig in hby.db.getOoeItemIter(key=key):
+                        pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
 
                         try:
                             oots.append(eventing.loadEvent(hby.db, pre, edig))
@@ -74,8 +74,8 @@ def escrows(tymth, tock=0.0, **opts):
                 pwes = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for ekey, edig in hby.db.getPweItemsNextIter(key=key):
-                        pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    for ekey, edig in hby.db.getPweItemIter(key=key):
+                        pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
 
                         try:
                             pwes.append(eventing.loadEvent(hby.db, pre, edig))
@@ -92,8 +92,8 @@ def escrows(tymth, tock=0.0, **opts):
                 pses = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for ekey, edig in hby.db.getPseItemsNextIter(key=key):
-                        pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    for ekey, edig in hby.db.getPseItemIter(key=key):
+                        pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
 
                         try:
                             pses.append(eventing.loadEvent(hby.db, pre, edig))
@@ -110,8 +110,8 @@ def escrows(tymth, tock=0.0, **opts):
                 ldes = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for ekey, edig in hby.db.getLdeItemsNextIter(key=key):
-                        pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    for ekey, edig in hby.db.getLdeItemIter(key=key):
+                        pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
 
                         try:
                             ldes.append(eventing.loadEvent(hby.db, pre, edig))

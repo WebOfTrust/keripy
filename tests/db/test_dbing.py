@@ -17,7 +17,7 @@ from hio.base import doing
 from keri.db import dbing
 from keri.db.dbing import clearDatabaserDir, openLMDB
 from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
-                           splitKeyON, splitKeyFN, splitKeySN, splitKeyDT)
+                           splitOnKey, splitKeyFN, splitSnKey, splitKeyDT)
 from keri.db.dbing import LMDBer
 
 
@@ -35,11 +35,41 @@ def test_key_funcs():
     sn = 3
     dts = b'2021-02-13T19:16:50.750302+00:00'
 
+
+    # test onKey generator of key from top key and trailing ordinal number
+    assert onKey(pre, 0) == pre + b'.' + b"%032x" % 0
+    assert onKey(pre, 1) == pre + b'.' + b"%032x" % 1
+    assert onKey(pre, 2) == pre + b'.' + b"%032x" % 2
+    assert onKey(pre, 3) == pre + b'.' + b"%032x" % 3
+    assert onKey(pre, 4) == pre + b'.' + b"%032x" % 4
+
+    assert onKey(pre, 0, sep=b'|') == pre + b'|' + b"%032x" % 0
+    assert onKey(pre, 4, sep=b'|') == pre + b'|' + b"%032x" % 4
+
+    assert (onkey := onKey(top=pre, on=0)) == pre + b'.' + b"%032x" % 0
+    assert splitKey(key=onkey) == (pre, b"%032x" % 0)
+    assert splitOnKey(onkey) == (pre, 0)
+    assert (onkey := onKey(top=pre, on=1)) == pre + b'.' + b"%032x" % 1
+    assert splitKey(key=onkey) == (pre, b"%032x" % 1)
+    assert splitOnKey(onkey) == (pre, 1)
+    assert (onkey := onKey(top=pre, on=15)) == pre + b'.' + b"%032x" % 15
+    assert splitKey(key=onkey) == (pre, b"%032x" % 15)
+    assert splitOnKey(onkey) == (pre, 15)
+
+    assert (onkey := onKey(top=pre, on=0, sep=b'|')) == pre + b'|' + b"%032x" % 0
+    assert splitKey(key=onkey, sep=b'|') == (pre, b"%032x" % 0)
+    assert splitOnKey(onkey, sep=b'|') == (pre, 0)
+    assert (onkey := onKey(top=pre, on=15, sep=b'|')) == pre + b'|' + b"%032x" % 15
+    assert splitKey(key=onkey, sep=b'|') == (pre, b"%032x" % 15)
+    assert splitOnKey(onkey, sep=b'|') == (pre, 15)
+
+
+    # test snKey
     assert snKey(pre, sn) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                         b'.00000000000000000000000000000003')
 
     assert splitKey(snKey(pre, sn)) == (pre, b'%032x' % sn)
-    assert splitKeySN(snKey(pre, sn)) == (pre, sn)
+    assert splitSnKey(snKey(pre, sn)) == (pre, sn)
 
     assert dgKey(pre, dig) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -63,7 +93,7 @@ def test_key_funcs():
                                         b'.00000000000000000000000000000003')
 
     assert splitKey(snKey(pre, sn).decode("utf-8")) == (pre, '%032x' % sn)
-    assert splitKeySN(snKey(pre, sn).decode("utf-8")) == (pre, sn)
+    assert splitSnKey(snKey(pre, sn).decode("utf-8")) == (pre, sn)
 
     assert dgKey(pre, dig) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -83,8 +113,7 @@ def test_key_funcs():
     with pytest.raises(ValueError):
         splitKey(pre)
 
-    with pytest.raises(ValueError):
-        splitKey(dgKey(pre, dgKey(pre, dig)))
+    assert splitKey(dgKey(pre, dgKey(pre, dig)))  # rsplit on gets trailing part
 
     # memoryview
     # Bytes
@@ -95,7 +124,7 @@ def test_key_funcs():
 
     key = memoryview(snKey(pre, sn))
     assert splitKey(key) == (pre, b'%032x' % sn)
-    assert splitKeySN(key) == (pre, sn)
+    assert splitSnKey(key) == (pre, sn)
 
     key = memoryview(dgKey(pre, dig))
     assert splitKey(key) == (pre, dig)
@@ -263,7 +292,7 @@ def test_lmdber():
         assert dber.delVal(db, key) == True
         assert dber.getVal(db, key) == None
 
-        # Test getAllItemIter(self, db, key=b'', split=True, sep=b'.')
+        # Test getTopItemIter
         key = b"a.1"
         val = b"wow"
         assert dber.putVal(db, key, val) == True
@@ -273,12 +302,12 @@ def test_lmdber():
         key = b"b.1"
         val = b"woo"
         assert dber.putVal(db, key, val) == True
-        assert [(bytes(pre), bytes(num), bytes(val)) for pre, num, val
-                     in dber.getAllItemIter(db=db)] == [(b'a', b'1', b'wow'),
-                                                        (b'a', b'2', b'wee'),
-                                                        (b'b', b'1', b'woo')]
+        assert [(bytes(key), bytes(val)) for key, val
+                     in dber.getTopItemIter(db=db)] == [(b'a.1', b'wow'),
+                                                        (b'a.2', b'wee'),
+                                                        (b'b.1', b'woo')]
 
-        assert dber.delTopVal(db, key=b"a.")
+        assert dber.delTopVal(db, top=b"a.")
         items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]
         assert items == [(b'b.1', b'woo')]
 
@@ -288,6 +317,7 @@ def test_lmdber():
         preA = b'BBKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
         preC = b'EIDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+        preD = b'EAYC49i5zY_qrIZIicQgIDA1n-WiBA0A8YOqnKrB-wWQ'
 
         keyA0 = onKey(preA, 0)
 
@@ -319,10 +349,10 @@ def test_lmdber():
         assert dber.delVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
 
-        #  test appendOrdValPre
+        #  test appendOnValPre
         # empty database
         assert dber.getVal(db, keyB0) == None
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -330,7 +360,7 @@ def test_lmdber():
 
         # earlier pre in database only
         assert dber.putVal(db, keyA0, val=digA) == True
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -339,7 +369,7 @@ def test_lmdber():
         # earlier and later pre in db but not same pre
         assert dber.getVal(db, keyA0) == digA
         assert dber.putVal(db, keyC0, val=digC) == True
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
         assert dber.delVal(db, keyB0) == True
@@ -349,13 +379,13 @@ def test_lmdber():
         assert dber.delVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
         assert dber.getVal(db, keyC0) == digC
-        on = dber.appendOrdValPre(db, preB, digU)
+        on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
 
         # earlier pre and later pre and earlier entry for same pre
         assert dber.putVal(db, keyA0, val=digA) == True
-        on = dber.appendOrdValPre(db, preB, digV)
+        on = dber.appendOnVal(db, preB, digV)
         assert on == 1
         assert dber.getVal(db, keyB1) == digV
 
@@ -365,50 +395,125 @@ def test_lmdber():
         assert dber.delVal(db, keyC0) == True
         assert dber.getVal(db, keyC0) == None
         # another value for preB
-        on = dber.appendOrdValPre(db, preB, digW)
+        on = dber.appendOnVal(db, preB, digW)
         assert on == 2
         assert dber.getVal(db, keyB2) == digW
         # yet another value for preB
-        on = dber.appendOrdValPre(db, preB, digX)
+        on = dber.appendOnVal(db, preB, digX)
         assert on == 3
         assert dber.getVal(db, keyB3) == digX
         # yet another value for preB
-        on = dber.appendOrdValPre(db, preB, digY )
+        on = dber.appendOnVal(db, preB, digY )
         assert on == 4
         assert dber.getVal(db, keyB4) == digY
 
-        assert dber.cntValsAllPre(db, preB) == 5
+        assert dber.appendOnVal(db, preD, digY ) == 0
 
-        # replay preB events in database
-        items = [item for item in dber.getAllOrdItemPreIter(db, preB)]
-        assert items == [(0, digU), (1, digV), (2, digW), (3, digX), (4, digY)]
+        assert dber.cntOnVals(db, key=preB) == 5
+        assert dber.cntOnVals(db, key=b'') == 6  # all keys
+        assert dber.cntOnVals(db) == 6  # all keys
+
+        # iter replay
+        # replay preB event items in database
+        items = [item for item in dber.getOnItemIter(db, preB)]
+        assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
+                         (preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 3
-        items = [item for item in dber.getAllOrdItemPreIter(db, preB, on=3)]
-        assert items == [(3, digX), (4, digY)]
+        items = [item for item in dber.getOnItemIter(db, preB, on=3)]
+        assert items == [(preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 5
-        items = [item for item in dber.getAllOrdItemPreIter(db, preB, on=5)]
+        items = [item for item in dber.getOnItemIter(db, preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
         assert dber.putVal(db, keyA0, val=digA) == True
         assert dber.putVal(db, keyC0, val=digC) == True
 
-        items = [item  for item in dber.getAllOrdItemAllPreIter(db)]
-        assert items == [(preA, 0, digA), (preB, 0, digU), (preB, 1, digV),
-                         (preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
+        items = [item  for item in dber.getOnItemIter(db, key=b'')]
+        assert items == [(preA, 0, digA),
+                         (preD, 0, digY),
+                         (preB, 0, digU),
+                         (preB, 1, digV),
+                         (preB, 2, digW),
+                         (preB, 3, digX),
+                         (preB, 4, digY),
                          (preC, 0, digC)]
 
+        items = [item  for item in dber.getOnItemIter(db)]
+        assert items == [(preA, 0, digA),
+                         (preD, 0, digY),
+                         (preB, 0, digU),
+                         (preB, 1, digV),
+                         (preB, 2, digW),
+                         (preB, 3, digX),
+                         (preB, 4, digY),
+                         (preC, 0, digC)]
 
         # resume replay all starting at preB on=2
-        items = [item for item in dber.getAllOrdItemAllPreIter(db, key=keyB2)]
-        assert items == [(preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
-                             (preC, 0, digC)]
+        top, on = splitOnKey(keyB2)
+        items = [item for item in dber.getOnItemIter(db, key=top, on=on)]
+        assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
 
         # resume replay all starting at preC on=1
-        items = [item for item in dber.getAllOrdItemAllPreIter(db, key=onKey(preC, 1))]
+        items = [item for item in dber.getOnItemIter(db, key=preC, on=1)]
         assert items == []
+
+        # val replay
+        # replay preB event vals in database
+        vals = [val for val in dber.getOnValIter(db, preB)]
+        assert vals == [digU, digV, digW, digX, digY]
+
+        # resume replay preB events at on = 3
+        vals = [val for val in dber.getOnValIter(db, preB, on=3)]
+        assert vals == [digX, digY]
+
+        # resume replay preB events at on = 5
+        vals = [val for val in dber.getOnValIter(db, preB, on=5)]
+        assert vals == []
+
+        vals = [val  for val in dber.getOnValIter(db, key=b'')]
+        assert vals == [digA,
+                        digY,
+                        digU,
+                        digV,
+                        digW,
+                        digX,
+                        digY,
+                        digC]
+
+        vals = [val  for val in dber.getOnValIter(db)]
+        assert vals == [digA,
+                        digY,
+                        digU,
+                        digV,
+                        digW,
+                        digX,
+                        digY,
+                        digC]
+
+        # resume replay all starting at preB on=2
+        top, on = splitOnKey(keyB2)
+        vals = [val for val in dber.getOnValIter(db, key=top, on=on)]
+        assert vals == [digW, digX, digY]
+
+        # resume replay all starting at preC on=1
+        vals = [val for val in dber.getOnValIter(db, key=preC, on=1)]
+        assert vals == []
+
+
+        # test delOnVal
+        assert dber.delOnVal(db, key=preB)  # default on=0
+        assert not dber.delOnVal(db, key=preB, on=0)
+        assert dber.delOnVal(db, key=preB, on=1)
+        assert not dber.delOnVal(db, key=preB, on=1)
+
+        items = [item for item in dber.getOnItemIter(db, key=preB)]
+        assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
+
+        with pytest.raises(KeyError):
+            assert dber.delOnVal(db, key=b'')  #  empty key
 
 
         # test Vals dup methods.  dup vals are lexocographic
@@ -445,104 +550,65 @@ def test_lmdber():
         vals = [b"z", b"m", b"x", b"a"]
         db = dber.env.open_db(key=b'peep.', dupsort=True)
 
-        assert dber.getIoVals(db, key) == []
-        assert dber.getIoValLast(db, key) == None
-        assert dber.cntIoVals(db, key) == 0
-        assert dber.delIoVals(db, key) == False
-        assert dber.putIoVals(db, key, vals) == True
-        assert dber.getIoVals(db, key) == vals  # preserved insertion order
-        assert dber.cntIoVals(db, key) == len(vals) == 4
-        assert dber.getIoValLast(db, key) == vals[-1]
-        assert dber.putIoVals(db, key, vals=[b'a']) == False   # duplicate
-        assert dber.getIoVals(db, key) == vals  #  no change
-        assert dber.addIoVal(db, key, val=b'b') == True
-        assert dber.addIoVal(db, key, val=b'a') == False
-        assert dber.getIoVals(db, key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in dber.getIoValsIter(db, key)] == [b"z", b"m", b"x", b"a", b'b']
-        assert dber.delIoVals(db, key) == True
-        assert dber.getIoVals(db, key) == []
-        assert dber.putIoVals(db, key, vals) == True
+        assert dber.getIoDupVals(db, key) == []
+        assert dber.getIoDupValLast(db, key) == None
+        assert dber.cntIoDupVals(db, key) == 0
+        assert dber.delIoDupVals(db, key) == False
+        assert dber.putIoDupVals(db, key, vals) == True
+        assert dber.getIoDupVals(db, key) == vals  # preserved insertion order
+        assert dber.cntIoDupVals(db, key) == len(vals) == 4
+        assert dber.getIoDupValLast(db, key) == vals[-1]
+        assert dber.putIoDupVals(db, key, vals=[b'a']) == False   # duplicate
+        assert dber.getIoDupVals(db, key) == vals  #  no change
+        assert dber.addIoDupVal(db, key, val=b'b') == True
+        assert dber.addIoDupVal(db, key, val=b'a') == False
+        assert dber.getIoDupVals(db, key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert [val for val in dber.getIoDupValsIter(db, key)] == [b"z", b"m", b"x", b"a", b'b']
+        assert dber.delIoDupVals(db, key) == True
+        assert dber.getIoDupVals(db, key) == []
+        assert dber.putIoDupVals(db, key, vals) == True
         for val in vals:
-            assert dber.delIoVal(db, key, val)
-        assert dber.getIoVals(db, key) == []
-        assert dber.putIoVals(db, key, vals) == True
+            assert dber.delIoDupVal(db, key, val)
+        assert dber.getIoDupVals(db, key) == []
+        assert dber.putIoDupVals(db, key, vals) == True
         for val in sorted(vals):
-            assert dber.delIoVal(db, key, val)
-        assert dber.getIoVals(db, key) == []
+            assert dber.delIoDupVal(db, key, val)
+        assert dber.getIoDupVals(db, key) == []
         #delete and add in odd order
-        assert dber.putIoVals(db, key, vals) == True
-        assert dber.delIoVal(db, key, vals[2])
-        assert dber.addIoVal(db, key, b'w')
-        assert dber.delIoVal(db, key, vals[0])
-        assert dber.addIoVal(db, key, b'e')
-        assert dber.getIoVals(db, key) == [b'm', b'a', b'w', b'e']
+        assert dber.putIoDupVals(db, key, vals) == True
+        assert dber.delIoDupVal(db, key, vals[2])
+        assert dber.addIoDupVal(db, key, b'w')
+        assert dber.delIoDupVal(db, key, vals[0])
+        assert dber.addIoDupVal(db, key, b'e')
+        assert dber.getIoDupVals(db, key) == [b'm', b'a', b'w', b'e']
 
-        # Test getIoValsAllPreIter(self, db, pre)
-        vals0 = [b"gamma", b"beta"]
-        sn = 0
-        key = snKey(pre, sn)
-        assert dber.addIoVal(db, key, vals0[0]) == True
-        assert dber.addIoVal(db, key, vals0[1]) == True
 
-        vals1 = [b"mary", b"peter", b"john", b"paul"]
-        sn += 1
-        key = snKey(pre, sn)
-        assert dber.putIoVals(db, key, vals1) == True
-
-        vals2 = [b"dog", b"cat", b"bird"]
-        sn += 1
-        key = snKey(pre, sn)
-        assert dber.putIoVals(db, key, vals2) == True
-
-        vals = [bytes(val) for val in dber.getIoValsAllPreIter(db, pre)]
-        allvals = vals0 + vals1 + vals2
-        assert vals == allvals
-
-        # Test getIoValsLastAllPreIter(self, db, pre)
-        pre = b'BAejWzwQPYGGwTmuupUhPx5_yZ-Wk1xEHHzq7K0gzhcc'
-        vals0 = [b"gamma", b"beta"]
-        sn = 0
-        key = snKey(pre, sn)
-        assert dber.addIoVal(db, key, vals0[0]) == True
-        assert dber.addIoVal(db, key, vals0[1]) == True
-
-        vals1 = [b"mary", b"peter", b"john", b"paul"]
-        sn += 1
-        key = snKey(pre, sn)
-        assert dber.putIoVals(db, key, vals1) == True
-
-        vals2 = [b"dog", b"cat", b"bird"]
-        sn += 1
-        key = snKey(pre, sn)
-        assert dber.putIoVals(db, key, vals2) == True
-
-        vals = [bytes(val) for val in dber.getIoValLastAllPreIter(db, pre)]
-        lastvals = [vals0[-1], vals1[-1], vals2[-1]]
-        assert vals == lastvals
-
-        # Test getIoValsAnyPreIter(self, db, pre)
+        # Test TopIoDupItemIter(self, db, pre)
         pre = b'BBPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcc'
         vals0 = [b"gamma", b"beta"]
         sn = 1  # not start at zero
         key = snKey(pre, sn)
-        assert dber.addIoVal(db, key, vals0[0]) == True
-        assert dber.addIoVal(db, key, vals0[1]) == True
+        assert dber.addIoDupVal(db, key, vals0[0]) == True
+        assert dber.addIoDupVal(db, key, vals0[1]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
         key = snKey(pre, sn)
-        assert dber.putIoVals(db, key, vals1) == True
+        assert dber.putIoDupVals(db, key, vals1) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 2  # gap
         key = snKey(pre, sn)
-        assert dber.putIoVals(db, key, vals2) == True
+        assert dber.putIoDupVals(db, key, vals2) == True
 
-        vals = [bytes(val) for val in dber.getIoValsAnyPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
+        vals = [bytes(val) for key, val in dber.getTopIoDupItemIter(db, pre)]
+        # dber.getTopIoDupItemIter()
         assert vals == allvals
 
-        # Setup Tests for getIoItemsNext and getIoItemsNextIter
+
+
+        # Setup Tests for TopIoDupItemsIter
         edb = dber.env.open_db(key=b'escrow.', dupsort=True)
         aKey = snKey(pre=b'A', sn=1)
         aVals = [b"z", b"m", b"x"]
@@ -553,137 +619,369 @@ def test_lmdber():
         dKey = snKey(pre=b'A', sn=7)
         dVals = [b"k", b"b"]
 
-        assert dber.putIoVals(edb, key=aKey, vals=aVals)
-        assert dber.putIoVals(edb, key=bKey, vals=bVals)
-        assert dber.putIoVals(edb, key=cKey, vals=cVals)
-        assert dber.putIoVals(edb, key=dKey, vals=dVals)
 
-        # Test getIoItemsNext(self, db, key=b"")
-        # aVals
-        items = dber.getIoItemsNext(edb)  #  get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        # Test  variousItemIter
+        assert dber.putIoDupVals(edb, key=aKey, vals=aVals)
+        assert dber.putIoDupVals(edb, key=bKey, vals=bVals)
+        assert dber.putIoDupVals(edb, key=cKey, vals=cVals)
+        assert dber.putIoDupVals(edb, key=dKey, vals=dVals)
 
-        items = dber.getIoItemsNext(edb, key=aKey, skip=False)  # get aKey in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        # test getTopIoDupItemIter
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb)]  # default all
+        assert items == [(b'A.00000000000000000000000000000001', b'z'),
+                        (b'A.00000000000000000000000000000001', b'm'),
+                        (b'A.00000000000000000000000000000001', b'x'),
+                        (b'A.00000000000000000000000000000002', b'o'),
+                        (b'A.00000000000000000000000000000002', b'r'),
+                        (b'A.00000000000000000000000000000002', b'z'),
+                        (b'A.00000000000000000000000000000004', b'h'),
+                        (b'A.00000000000000000000000000000004', b'n'),
+                        (b'A.00000000000000000000000000000007', b'k'),
+                        (b'A.00000000000000000000000000000007', b'b')]
 
-        items = dber.getIoItemsNext(edb, key=aKey)  # get bKey in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
+        # dups at aKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=aKey)]
+        assert items == [(b'A.00000000000000000000000000000001', b'z'),
+                        (b'A.00000000000000000000000000000001', b'm'),
+                        (b'A.00000000000000000000000000000001', b'x')]
 
-        items = dber.getIoItemsNext(edb, key=b'', skip=False)  # get first key in database
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        # dups at bKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=bKey)]
+        assert items == [(b'A.00000000000000000000000000000002', b'o'),
+                        (b'A.00000000000000000000000000000002', b'r'),
+                        (b'A.00000000000000000000000000000002', b'z')]
 
-        # bVals
-        items = dber.getIoItemsNext(edb, key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
+        # dups at cKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=cKey)]
+        assert items == [(b'A.00000000000000000000000000000004', b'h'),
+                         (b'A.00000000000000000000000000000004', b'n')]
 
-        # cVals
-        items = dber.getIoItemsNext(edb, key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
+        # dups at dKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=dKey)]
+        assert items == [(b'A.00000000000000000000000000000007', b'k'),
+                         (b'A.00000000000000000000000000000007', b'b')]
 
-        # dVals
-        items = dber.getIoItemsNext(edb, key=ikey)
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-
-        # none
-        items = dber.getIoItemsNext(edb, key=ikey)
-        assert items == []  # empty
+        # dups at missing key
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=b"B.")]
         assert not items
 
-        # Test getIoItemsNextIter(self, db, key=b"")
-        #  get dups at first key in database
-        # aVals
-        items = [item for item in dber.getIoItemsNextIter(edb)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
 
-        items = [item for item in dber.getIoItemsNextIter(edb, key=aKey, skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        # test getIoDupItemIter
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb)]  # default all
+        assert items == [(b'A.00000000000000000000000000000001', b'z'),
+                        (b'A.00000000000000000000000000000001', b'm'),
+                        (b'A.00000000000000000000000000000001', b'x'),
+                        (b'A.00000000000000000000000000000002', b'o'),
+                        (b'A.00000000000000000000000000000002', b'r'),
+                        (b'A.00000000000000000000000000000002', b'z'),
+                        (b'A.00000000000000000000000000000004', b'h'),
+                        (b'A.00000000000000000000000000000004', b'n'),
+                        (b'A.00000000000000000000000000000007', b'k'),
+                        (b'A.00000000000000000000000000000007', b'b')]
 
-        items = [item for item in dber.getIoItemsNextIter(edb, key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, val in items]
-        assert vals == bVals
 
-        items = [item for item in dber.getIoItemsNextIter(edb, key=b'', skip=False)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-        for key, val in items:
-            assert dber.delIoVal(edb, ikey, val) == True
+        # dups at aKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=aKey)]
+        assert items == [(b'A.00000000000000000000000000000001', b'z'),
+                        (b'A.00000000000000000000000000000001', b'm'),
+                        (b'A.00000000000000000000000000000001', b'x')]
+        # dups at bKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=bKey)]
+        assert items == [(b'A.00000000000000000000000000000002', b'o'),
+                        (b'A.00000000000000000000000000000002', b'r'),
+                        (b'A.00000000000000000000000000000002', b'z')]
 
-        # bVals
-        items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert dber.delIoVal(edb, ikey, val) == True
+        # dups at cKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=cKey)]
+        assert items == [(b'A.00000000000000000000000000000004', b'h'),
+                        (b'A.00000000000000000000000000000004', b'n')]
 
-        # cVals
-        items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert dber.delIoVal(edb, ikey, val) == True
+        # dups at dKey
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=dKey)]
+        assert items == [(b'A.00000000000000000000000000000007', b'k'),
+                         (b'A.00000000000000000000000000000007', b'b')]
 
-        # dVals
-        items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert dber.delIoVal(edb, ikey, val) == True
-
-        # none
-        items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
-        assert items == []  # empty
+        # dups at missing key
+        items = [(ikey, bytes(ival)) for ikey, ival in dber.getTopIoDupItemIter(edb, top=b"B.")]
         assert not items
+
+
+        # test OnIoDup methods
+        ldb = dber.env.open_db(key=b'log.', dupsort=True)
+        # first pre
+        sn = 0
+        key = snKey(preA, sn)
+        valsA0 = [b"echo", b"bravo"]
+        itemsA0 = [
+                    (preA, sn, valsA0[0]),
+                    (preA, sn, valsA0[1])
+                 ]
+        assert dber.addIoDupVal(ldb, key, valsA0[0]) == True
+        assert dber.addIoDupVal(ldb, key, valsA0[1]) == True
+
+        sn += 1
+        key = snKey(preA, sn)
+        valsA1 = [b"sue", b"bob", b"val", b"zoe"]
+        itemsA1 = [
+                   (preA, sn, valsA1[0]),
+                   (preA, sn, valsA1[1]),
+                   (preA, sn, valsA1[2]),
+                   (preA, sn, valsA1[3]),
+                 ]
+        assert dber.putIoDupVals(ldb, key, valsA1) == True
+
+        sn += 1
+        key = snKey(preA, sn)
+        valsA2 = [b"fish", b"bat", b"snail"]
+        itemsA2 = [
+                   (preA, sn, valsA2[0]),
+                   (preA, sn, valsA2[1]),
+                   (preA, sn, valsA2[2]),
+                 ]
+        assert dber.putIoDupVals(ldb, key, valsA2) == True
+
+        # second pre
+        sn = 0
+        key = snKey(preB, sn)
+        valsB0 = [b"gamma", b"beta"]
+        itemsB0 = [
+                    (preB, sn, valsB0[0]),
+                    (preB, sn, valsB0[1])
+                 ]
+        assert dber.addIoDupVal(ldb, key, valsB0[0]) == True
+        assert dber.addIoDupVal(ldb, key, valsB0[1]) == True
+
+        sn += 1
+        key = snKey(preB, sn)
+        valsB1 = [b"mary", b"peter", b"john", b"paul"]
+        itemsB1 = [
+                   (preB, sn, valsB1[0]),
+                   (preB, sn, valsB1[1]),
+                   (preB, sn, valsB1[2]),
+                   (preB, sn, valsB1[3]),
+                 ]
+        assert dber.putIoDupVals(ldb, key, valsB1) == True
+
+
+        sn += 1
+        key = snKey(preB, sn)
+        valsB2 = [b"dog", b"cat", b"bird"]
+        itemsB2 = [
+                   (preB, sn, valsB2[0]),
+                   (preB, sn, valsB2[1]),
+                   (preB, sn, valsB2[2]),
+                 ]
+        assert dber.putIoDupVals(ldb, key, valsB2) == True
+
+
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupLastItemIter(ldb, preA)]
+        lastitems = [itemsA0[-1], itemsA1[-1], itemsA2[-1]]
+        assert items == lastitems
+
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupLastItemIter(ldb, preA, on=1)]
+        lastitems = [itemsA1[-1], itemsA2[-1]]
+        assert items == lastitems
+
+        vals = [bytes(val) for val in dber.getOnIoDupLastValIter(ldb, preA)]
+        lastvals = [valsA0[-1], valsA1[-1], valsA2[-1]]
+        assert vals == lastvals
+
+        vals = [bytes(val) for val in dber.getOnIoDupLastValIter(ldb, preA, on=1)]
+        lastvals = [valsA1[-1], valsA2[-1]]
+        assert vals == lastvals
+
+
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupLastItemIter(ldb, preB)]
+        lastitems = [itemsB0[-1], itemsB1[-1], itemsB2[-1]]
+        assert items == lastitems
+
+        vals = [bytes(val) for val in dber.getOnIoDupLastValIter(ldb, preB)]
+        lastvals = [valsB0[-1], valsB1[-1], valsB2[-1]]
+        assert vals == lastvals
+
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupLastItemIter(ldb)]
+        lastitems = [itemsA0[-1], itemsA1[-1], itemsA2[-1], itemsB0[-1], itemsB1[-1], itemsB2[-1]]
+        assert items == lastitems
+
+        vals = [bytes(val) for val in dber.getOnIoDupLastValIter(ldb)]
+        lastvals = [valsA0[-1], valsA1[-1], valsA2[-1], valsB0[-1], valsB1[-1], valsB2[-1]]
+        assert vals == lastvals
+
+        # test back iter
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb, key=preB, on=3)]
+        assert items ==[(preB, 2, b'bird'),
+                        (preB, 2, b'cat'),
+                        (preB, 2, b'dog'),
+                        (preB, 1, b'paul'),
+                        (preB, 1, b'john'),
+                        (preB, 1, b'peter'),
+                        (preB, 1, b'mary'),
+                        (preB, 0, b'beta'),
+                        (preB, 0, b'gamma')]
+
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValBackIter(ldb, key=preB, on=3)]
+        assert vals ==[
+                        b'bird',
+                        b'cat',
+                        b'dog',
+                        b'paul',
+                        b'john',
+                        b'peter',
+                        b'mary',
+                        b'beta',
+                        b'gamma'
+                      ]
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb, key=preB, on=1)]
+        assert items ==[
+                        (preB, 1, b'paul'),
+                        (preB, 1, b'john'),
+                        (preB, 1, b'peter'),
+                        (preB, 1, b'mary'),
+                        (preB, 0, b'beta'),
+                        (preB, 0, b'gamma')
+                       ]
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValBackIter(ldb, key=preB, on=1)]
+        assert vals ==[
+                        b'paul',
+                        b'john',
+                        b'peter',
+                        b'mary',
+                        b'beta',
+                        b'gamma'
+                      ]
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb, key=preA, on=5)]
+        assert items ==[(preA, 2, b'snail'),
+                        (preA, 2, b'bat'),
+                        (preA, 2, b'fish'),
+                        (preA, 1, b'zoe'),
+                        (preA, 1, b'val'),
+                        (preA, 1, b'bob'),
+                        (preA, 1, b'sue'),
+                        (preA, 0, b'bravo'),
+                        (preA, 0, b'echo')]
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValBackIter(ldb, key=preA, on=5)]
+        assert vals ==[
+                        b'snail',
+                        b'bat',
+                        b'fish',
+                        b'zoe',
+                        b'val',
+                        b'bob',
+                        b'sue',
+                        b'bravo',
+                        b'echo'
+                      ]
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb, key=preA, on=0)]
+        assert items ==[
+                        (preA, 0, b'bravo'),
+                        (preA, 0, b'echo')]
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValBackIter(ldb, key=preA, on=0)]
+        assert vals ==[
+                        b'bravo',
+                        b'echo'
+                      ]
+
+        # all items from last to first
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb)]
+        assert items ==[
+                        (preB, 2, b'bird'),
+                        (preB, 2, b'cat'),
+                        (preB, 2, b'dog'),
+                        (preB, 1, b'paul'),
+                        (preB, 1, b'john'),
+                        (preB, 1, b'peter'),
+                        (preB, 1, b'mary'),
+                        (preB, 0, b'beta'),
+                        (preB, 0, b'gamma'),
+                        (preA, 2, b'snail'),
+                        (preA, 2, b'bat'),
+                        (preA, 2, b'fish'),
+                        (preA, 1, b'zoe'),
+                        (preA, 1, b'val'),
+                        (preA, 1, b'bob'),
+                        (preA, 1, b'sue'),
+                        (preA, 0, b'bravo'),
+                        (preA, 0, b'echo'),
+                       ]
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValBackIter(ldb)]
+        assert vals ==[
+                        b'bird',
+                        b'cat',
+                        b'dog',
+                        b'paul',
+                        b'john',
+                        b'peter',
+                        b'mary',
+                        b'beta',
+                        b'gamma',
+                        b'snail',
+                        b'bat',
+                        b'fish',
+                        b'zoe',
+                        b'val',
+                        b'bob',
+                        b'sue',
+                        b'bravo',
+                        b'echo'
+                      ]
+
+
+        # test OnIoDup methods
+        key = b'Z'
+        assert 0 == dber.appendOnIoDupVal(ldb, key, val=b'k')
+        assert 1 == dber.appendOnIoDupVal(ldb, key, val=b'l')
+        assert 2 == dber.appendOnIoDupVal(ldb, key, val=b'm')
+        assert 3 == dber.appendOnIoDupVal(ldb, key, val=b'n')
+
+        assert dber.cntOnVals(ldb, key) == 4
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValIter(ldb, key=key)]
+        assert vals == [b'k', b'l', b'm', b'n']
+
+        vals = [ bytes(val) for val in dber.getOnIoDupValIter(ldb, key=key, on=2)]
+        assert vals == [ b'm', b'n']
+
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key)]
+        assert items == [(b'Z', 0, b'k'),
+                         (b'Z', 1, b'l'),
+                         (b'Z', 2, b'm'),
+                         (b'Z', 3, b'n')]
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key, on=2)]
+        assert items == [
+                         (b'Z', 2, b'm'),
+                         (b'Z', 3, b'n')]
+
+        # test back iter
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb, key=key, on=3)]
+        assert items ==[(b'Z', 3, b'n'),
+                        (b'Z', 2, b'm'),
+                        (b'Z', 1, b'l'),
+                        (b'Z', 0, b'k')]
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb, key=key, on=4)]
+        assert items ==[(b'Z', 3, b'n'),
+                        (b'Z', 2, b'm'),
+                        (b'Z', 1, b'l'),
+                        (b'Z', 0, b'k')]
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemBackIter(ldb, key=key, on=2)]
+        assert items == [(b'Z', 2, b'm'),
+                         (b'Z', 1, b'l'),
+                         (b'Z', 0, b'k')]
+
+
 
         # test IoSetVals insertion order set of vals methods.
         key0 = b'ABC.ZYX'
@@ -766,23 +1064,6 @@ def test_lmdber():
         assert dber.getIoSetVals(db, key1) == vals1
         assert dber.getIoSetVals(db, key2) == vals2
 
-        assert dber.appendIoSetVal(db, key1, val=b"k") == 4
-        assert dber.getIoSetVals(db, key1) == [b"w", b"n", b"y", b"d", b"k"]
-
-        assert dber.getIoSetItems(db, key0) == [(b'ABC.ZYX.00000000000000000000000000000000', b'z'),
-                                                (b'ABC.ZYX.00000000000000000000000000000001', b'm'),
-                                                (b'ABC.ZYX.00000000000000000000000000000002', b'x'),
-                                                (b'ABC.ZYX.00000000000000000000000000000003', b'a')]
-
-        assert ([(bytes(iokey), bytes(val)) for iokey, val in dber.getIoSetItemsIter(db, key0)] ==
-                [(b'ABC.ZYX.00000000000000000000000000000000', b'z'),
-                (b'ABC.ZYX.00000000000000000000000000000001', b'm'),
-                (b'ABC.ZYX.00000000000000000000000000000002', b'x'),
-                (b'ABC.ZYX.00000000000000000000000000000003', b'a')])
-
-        for iokey, val in dber.getIoSetItemsIter(db, key0):
-            assert dber.delIoSetIokey(db, iokey)
-        assert dber.getIoSetVals(db, key0) == []
 
         vals3 = [b"q", b"e"]
         assert dber.setIoSetVals(db, key2, vals3)
@@ -804,17 +1085,12 @@ def test_lmdber():
         dber.putIoSetVals(db, empty_key, [some_value])
         dber.addIoSetVal(db, empty_key, some_value)
         dber.setIoSetVals(db, empty_key, [some_value])
-        dber.appendIoSetVal(db, empty_key, some_value)
         dber.getIoSetVals(db, empty_key)
         [_ for _ in dber.getIoSetValsIter(db, empty_key)]
         dber.getIoSetValLast(db, empty_key)
         dber.cntIoSetVals(db, empty_key)
         dber.delIoSetVals(db, empty_key)
         dber.delIoSetVal(db, empty_key, some_value)
-        dber.getIoSetItems(db, empty_key)
-        dber.getIoSetItemsIter(db, empty_key)
-        with pytest.raises(KeyError):
-            dber.delIoSetIokey(db, empty_key)
         with pytest.raises(KeyError):
             dber.putVals(db, empty_key, [some_value])
         with pytest.raises(KeyError):
@@ -830,21 +1106,21 @@ def test_lmdber():
         with pytest.raises(KeyError):
             dber.delVals(db, empty_key)
         with pytest.raises(KeyError):
-            dber.putIoVals(db, empty_key, [some_value])
+            dber.putIoDupVals(db, empty_key, [some_value])
         with pytest.raises(KeyError):
-            dber.addIoVal(db, empty_key, some_value)
+            dber.addIoDupVal(db, empty_key, some_value)
         with pytest.raises(KeyError):
-            dber.getIoVals(db, empty_key)
+            dber.getIoDupVals(db, empty_key)
         with pytest.raises(KeyError):
-            [_ for _ in dber.getIoValsIter(db, empty_key)]
+            [_ for _ in dber.getIoDupValsIter(db, empty_key)]
         with pytest.raises(KeyError):
-            dber.getIoValLast(db, empty_key)
+            dber.getIoDupValLast(db, empty_key)
         with pytest.raises(KeyError):
-            dber.cntIoVals(db, empty_key)
+            dber.cntIoDupVals(db, empty_key)
         with pytest.raises(KeyError):
-            dber.delIoVals(db, empty_key)
+            dber.delIoDupVals(db, empty_key)
         with pytest.raises(KeyError):
-            dber.delIoVal(db, empty_key, some_value)
+            dber.delIoDupVal(db, empty_key, some_value)
 
     assert not os.path.exists(dber.path)
 
@@ -853,4 +1129,6 @@ def test_lmdber():
 
 if __name__ == "__main__":
     test_key_funcs()
+    test_suffix()
     test_lmdber()
+    test_opendatabaser()

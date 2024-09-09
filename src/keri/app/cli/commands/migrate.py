@@ -148,7 +148,7 @@ def migrateKeys(db):
     digs = subing.CatCesrIoSetSuber(db=db, subkey="digs.",
                                     klas=(coring.Prefixer, coring.Seqner))
 
-    for pre, fn, dig in db.getFelItemAllPreIter(key=b''):
+    for pre, fn, dig in db.getFelItemAllPreIter():
         dgkey = dbing.dgKey(pre, dig)  # get message
         if not (raw := db.getEvt(key=dgkey)):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))

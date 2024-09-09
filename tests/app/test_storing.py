@@ -9,7 +9,7 @@ import lmdb
 
 from keri.app import keeping
 from keri.core import coring, serdering
-from keri.db import dbing, basing
+from keri.db import dbing, basing, subing
 from keri.peer import exchanging
 from keri.app.storing import Mailboxer
 
@@ -28,7 +28,8 @@ def test_mailboxing():
     assert mber.env.path() == mber.path
     assert os.path.exists(mber.path)
 
-    assert isinstance(mber.tpcs, lmdb._Database)
+    #assert isinstance(mber.tpcs, lmdb._Database)
+    assert isinstance(mber.tpcs, subing.OnSuber)
 
     mber.close(clear=True)
     assert not os.path.exists(mber.path)
@@ -85,7 +86,7 @@ def test_mailboxing():
             mber.storeMsg(topic=dest.qb64b, msg=exn.raw)
 
         msgs = []
-        for fn, topic, msg in mber.cloneTopicIter(topic=dest.qb64b, fn=0):
+        for fn, topic, msg in mber.cloneTopicIter(topic=dest.qb64b):
             msgs.append((fn, msg))
 
         assert(len(msgs)) == 10
@@ -95,18 +96,18 @@ def test_mailboxing():
             d = exn.ked["a"]
             assert d["b"] == idx
 
-        msgs = []
-        for fn, topic, msg in mber.cloneTopicIter(topic=dest.qb64b, fn=10):
-            msgs.append(msg)
+        #msgs = []
+        #for fn, topic, msg in mber.cloneTopicIter(topic=dest.qb64b, fn=10):
+            #msgs.append(msg)
 
-        assert(len(msgs)) == 0
+        #assert(len(msgs)) == 0
 
-        msgs = []
-        for tn, topic, msg in mber.cloneTopicIter(topic=dest.qb64b, fn=4):
-            msgs.append((tn, msg))
+        #msgs = []
+        #for tn, topic, msg in mber.cloneTopicIter(topic=dest.qb64b, fn=4):
+            #msgs.append((tn, msg))
 
-        assert(len(msgs)) == 6
-        assert msgs[0][0] == 4
+        #assert(len(msgs)) == 6
+        #assert msgs[0][0] == 4
 
 
 

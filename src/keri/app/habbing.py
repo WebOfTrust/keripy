@@ -1538,7 +1538,7 @@ class BaseHab:
 
         return msgs
 
-    def replayAll(self, key=b''):
+    def replayAll(self):
         """
         Returns replay of FEL first seen event log for all pre starting at key
 
@@ -1547,7 +1547,7 @@ class BaseHab:
 
         """
         msgs = bytearray()
-        for msg in self.db.cloneAllPreIter(key=key):
+        for msg in self.db.cloneAllPreIter():
             msgs.extend(msg)
         return msgs
 
@@ -2284,6 +2284,9 @@ class Hab(BaseHab):
         # may want db method that updates .habs. and .prefixes together
         habord = basing.HabitatRecord(hid=self.pre, name=self.name, domain=self.ns)
 
+        # must add self.pre to self.prefixes before calling processEvent so that
+        # Kever.locallyOwned or Kever.locallyDelegated or Kever.locallyWitnessed
+        # evaluates correctly when processing own inception event.
         if not hidden:
             self.save(habord)
             self.prefixes.add(self.pre)

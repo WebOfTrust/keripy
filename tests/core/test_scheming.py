@@ -172,6 +172,7 @@ def test_json_schema_dict():
     sce = Schemer(sed=sed, code=MtrDex.Blake3_256)
     said = 'ENQKl3r1Z6HiLXOD-050aVvKziCWJtXWg3vY2FWUGSxG'
     assert sce.said == said
+
     payload = b'{"a": {"b": 123, "c": "2018-11-13T20:20:39+00:00"}}'
     assert sce.verify(payload)
 

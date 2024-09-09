@@ -508,7 +508,7 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for fn, dig in self.getTelItemPreIter(pre, fn=fn):
+        for _, fn, dig in self.getTelItemPreIter(pre, fn=fn):
             msg = self.cloneTvt(pre, dig)
             yield msg
 
@@ -671,7 +671,7 @@ class Reger(dbing.LMDBer):
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
         """
-        return self.getAllOrdItemPreIter(db=self.tels, pre=pre, on=fn)
+        return self.getOnItemIter(db=self.tels, key=pre, on=fn)
 
     def cntTels(self, pre, fn=0):
         """
@@ -685,7 +685,7 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
-        return self.cntValsAllPre(db=self.tels, pre=pre, on=fn)
+        return self.cntOnVals(db=self.tels, key=pre, on=fn)
 
     def getTibs(self, key):
         """
@@ -809,7 +809,8 @@ class Reger(dbing.LMDBer):
         Return iterator of all items in .taes
 
         """
-        return self.getAllItemIter(self.taes, split=True)
+        return self.getTopItemIter(self.taes)
+
 
     def delTae(self, key):
         """
@@ -852,7 +853,8 @@ class Reger(dbing.LMDBer):
         Return iterator of all items in .taes
 
         """
-        return self.getAllItemIter(self.oots, split=True)
+        return self.getTopItemIter(self.oots)
+
 
     def delOot(self, key):
         """
@@ -907,7 +909,7 @@ class Reger(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoVals(self.baks, key, vals)
+        return self.putIoDupVals(self.baks, key, vals)
 
 
     def addBak(self, key, val):
@@ -918,7 +920,7 @@ class Reger(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.addIoVal(self.baks, key, val)
+        return self.addIoDupVal(self.baks, key, val)
 
 
     def getBaks(self, key):
@@ -928,7 +930,7 @@ class Reger(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoVals(self.baks, key)
+        return self.getIoDupVals(self.baks, key)
 
 
     def getBaksIter(self, key):
@@ -938,7 +940,7 @@ class Reger(dbing.LMDBer):
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsIter(self.baks, key)
+        return self.getIoDupValsIter(self.baks, key)
 
     def cntBaks(self, key):
         """
@@ -946,7 +948,7 @@ class Reger(dbing.LMDBer):
         Return count of backer prefixes at key
         Returns zero if no entry at key
         """
-        return self.cntIoVals(self.baks, key)
+        return self.cntIoDupVals(self.baks, key)
 
 
     def delBaks(self, key):
@@ -955,7 +957,7 @@ class Reger(dbing.LMDBer):
         Deletes all values at key in db.
         Returns True If key exists in database Else False
         """
-        return self.delIoVals(self.baks, key)
+        return self.delIoDupVals(self.baks, key)
 
 
     def delBak(self, key, val):
@@ -968,7 +970,7 @@ class Reger(dbing.LMDBer):
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
-        return self.delIoVal(self.baks, key, val)
+        return self.delIoDupVal(self.baks, key, val)
 
 
 def buildProof(prefixer, seqner, diger, sigers):

@@ -266,7 +266,8 @@ class Schemer:
 
     """
 
-    def __init__(self, raw=b'', sed=None, kind=None, typ=JSONSchema(), code=MtrDex.Blake3_256):
+    def __init__(self, raw=b'', sed=None, kind=None, typ=JSONSchema(),
+                       code=MtrDex.Blake3_256, verify=True):
         """  Initialize instance of Schemer
 
         Deserialize if raw provided
@@ -274,14 +275,19 @@ class Schemer:
         When serializing if kind provided then use kind instead of field in sed
 
         Parameters:
-          raw (bytes): of serialized schema
-          sed (dict): dict or None
-            if None its deserialized from raw
-          typ (JSONSchema): type of schema
-          kind (serialization): kind string value or None (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-            if kind (None): then its extracted from ked or raw
-          code (MtrDex): default digest code
+            raw (bytes): of serialized schema
+            sed (dict): dict or None
+                  if None its deserialized from raw
+            typ (JSONSchema): type of schema
+            kind (serialization): kind string value or None (see namedtuple coring.Serials)
+                supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+                 if kind (None): then its extracted from ked or raw
+            code (MtrDex): default digest code
+            verify (bool): True means verify said(s) of given raw or sad.
+                           Raises ValidationError if verification fails
+                           False means don't verify. Useful to avoid unnecessary
+                           reverification when deserializing from database
+                           as opposed to over the wire reception.
 
         """
 
@@ -295,7 +301,7 @@ class Schemer:
         else:
             raise ValueError("Improper initialization need raw or sed.")
 
-        if not self._verify_schema():
+        if verify and not self._verify_schema():
             raise ValidationError("invalid kind {} for schema {}"
                                   "".format(self.kind, self.sed))
 

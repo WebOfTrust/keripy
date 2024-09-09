@@ -73,23 +73,43 @@ class KomerBase:
         self.sep = sep if sep is not None else self.Sep
 
 
-    def _tokey(self, keys: Union[str, bytes, memoryview, Iterable]):
+    def _tokey(self, keys: str|bytes|memoryview|Iterable[str|bytes|memoryview],
+                topive: bool=False):
         """
-        Converts key to key str with proper separators and returns key bytes.
-        If key is already str then returns. Else If key is iterable (non-str)
-        of strs then joins with separator converts to bytes and returns
+        Converts keys to key bytes with proper separators and returns key bytes.
+        If keys is already str or bytes or memoryview then returns key bytes.
+        Else If keys is iterable (non-str) of strs or bytes then joins with
+        separator converts to key bytes and returns. When keys is iterable and
+        topive is True then enables partial key from top branch of key space given
+        by partial keys by appending separator to end of partial key
+
+        Returns:
+           key (bytes): each element of keys is joined by .sep. If top then last
+                        char of key is also .sep
 
         Parameters:
-           keys (Union[str, bytes, Iterable]): str, bytes, or Iterable of str.
+           keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
+                        Iterable of (str | bytes) to form key.
+           topive (bool): True means treat as partial key tuple from top branch of
+                       key space given by partial keys. Resultant key ends in .sep
+                       character.
+                       False means treat as full branch in key space. Resultant key
+                       does not end in .sep character.
+                       When last item in keys is empty str then will treat as
+                       partial ending in sep regardless of top value
 
         """
+        if hasattr(keys, "encode"):  # str
+            return keys.encode("utf-8")
         if isinstance(keys, memoryview):  # memoryview of bytes
             return bytes(keys)  # return bytes
-        if hasattr(keys, "encode"):  # str
-            return keys.encode("utf-8")  # convert to bytes
         elif hasattr(keys, "decode"): # bytes
-            return keys  # return as is
-        return (self.sep.join(keys).encode("utf-8"))  # iterable so join
+            return keys
+        if topive and keys[-1]:  # topive and keys is not already partial
+            keys = tuple(keys) + ('',)  # cat empty str so join adds trailing sep
+        return (self.sep.join(key.decode() if hasattr(key, "decode") else key
+                              for key in keys).encode("utf-8"))
+
 
 
     def _tokeys(self, key: Union[str, bytes, memoryview]):
@@ -110,7 +130,13 @@ class KomerBase:
 
 
     def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
+        """Iterator over items in .db subclasses that do special hidden transforms
+        on either the keyspace or valuespace should override this method to hide
+        hidden parts from the returned items. For example, adding either
+        a hidden key space suffix or hidden val space proem to ensure insertion
+        order. Use getFullItemIter instead to return full items with hidden parts
+        shown for debugging or testing.
+
         Returns:
             items (Iterator): of (key, val) tuples  over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
@@ -124,7 +150,28 @@ class KomerBase:
                 all items in database.
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
+            yield (self._tokeys(key), self.deserializer(val))
+
+
+    def getFullItemIter(self, keys: Union[str, Iterable]=b""):
+        """Iterator over items in .db that returns full items with subclass
+        specific special hidden parts shown for debugging or testing.
+
+        Returns:
+            items (Iterator): of (key, val) tuples  over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             yield (self._tokeys(key), self.deserializer(val))
 
 
@@ -328,7 +375,7 @@ class Komer(KomerBase):
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
         """
-        return(self.db.delTopVal(db=self.sdb, key=self._tokey(keys)))
+        return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys)))
 
 
     def cntAll(self):
@@ -549,8 +596,23 @@ class IoSetKomer(KomerBase):
                                        key=self._tokey(keys),
                                        sep=self.sep)
 
+    #def remIokey(self, iokeys: str | bytes | memoryview | Iterable):
+        #"""
+        #Removes entries at iokeys
 
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
+        #Parameters:
+            #iokeys (str | bytes | memoryview | Iterable): of key str or
+                    #tuple of key strs to be combined in order to form key
+
+        #Returns:
+           #result (bool): True if key exists so delete successful. False otherwise
+
+        #"""
+        #return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
+
+
+
+    def getItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
         """Get items iterator
         Returns:
             items (Iterator): of (key, val) tuples over the all the items in
@@ -560,96 +622,27 @@ class IoSetKomer(KomerBase):
             Returned key in each item has ordinal suffix removed.
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database. Append "" to end of keys Iterable to
-                ensure get properly separated top branch key.
-
-        """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            key, ion = dbing.unsuffix(iokey, sep=self.sep)
-            yield (self._tokeys(key), self.deserializer(val))
-
-
-    def getIoSetItem(self, keys: Union[str, Iterable]):
-        """
-        Gets (iokeys, val) ioitems list at key made from keys where key is
-        apparent effective key and ioitems all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-
-        Returns:
-            ioitems (Iterable):  each item in list is tuple (iokeys, val) where each
-                    iokeys is actual key tuple including hidden suffix and
-                    each val is str
-                    empty list if no entry at keys
-
-
-        """
-        return ([(self._tokeys(iokey), self.deserializer(val)) for iokey, val
-                    in self.db.getIoSetItems(db=self.sdb,
-                                             key=self._tokey(keys),
-                                             sep=self.sep)])
-
-
-    def getIoSetItemIter(self, keys: Union[str, Iterable]):
-        """
-        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
-        apparent effective key and items all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-
-        Returns:
-            ioitems (Iterator):  each item iterated is tuple (iokeys, val) where
-                each iokeys is actual keys tuple including hidden suffix and
-                each val is str
-                empty list if no entry at keys.
-                Raises StopIteration when done
-
-        """
-        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
-                                                    key=self._tokey(keys),
-                                                    sep=self.sep):
-            yield (self._tokeys(iokey), self.deserializer(val))
-
-
-    def getIoItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            items (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith effective key made from keys.
-            Keys may be keyspace prefix to return branches of key space.
-            When keys is empty then returns all items in subdb.
-
-
-        Parameters:
             keys (Iterable): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
+                a full keys tuple in  in order to address all the items from
                 multiple branches of the key space. If keys is empty then gets
-                all items in database. Append "" to end of keys Iterable to
-                ensure get properly separated top branch key.
+                all items in database.
+                Either append "" to end of keys Iterable to ensure get properly
+                separated top branch key or use top=True.
+                In Python str.startswith('') always returns True so if branch
+                key is empty string it matches all keys in db with startswith.
 
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
         """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+        for iokey, val in self.db.getTopIoSetItemIter(db=self.sdb,
+                                            top=self._tokey(keys, topive=topive),
+                                            sep=self.sep.encode()):
             yield (self._tokeys(iokey), self.deserializer(val))
-
-
-    def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
-        """
-        Removes entry at iokeys
-
-        Parameters:
-            iokeys (tuple): of key str or tuple of key strs to be combined in
-                            order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
 
 
 
