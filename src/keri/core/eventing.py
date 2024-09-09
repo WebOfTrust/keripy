@@ -2380,7 +2380,8 @@ class Kever:
         # Doesn't get to here until fully signed and witnessed.
 
         if self.locallyDelegated(delpre):  # local delegator
-            if delseqner is None or delsaider is None or not local: # missing delegation seal
+            # must be local if locallyDelegated or caught above as misfit
+            if delseqner is None or delsaider is None: # missing delegation seal
                 # so escrow delegable. So local delegator can approve OOB.
                 # and create delegator event with valid event seal of this
                 # delegated event and then reprocess event with attached source
