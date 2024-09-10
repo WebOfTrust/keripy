@@ -527,7 +527,7 @@ def test_missing_delegator_escrow():
         psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
         assert not bobPre in watKvy.kevers
         assert not delPre in watKvy.kevers
-        escrows = watKvy.db.pdes.get(dbing.snKey(delPre, delSrdr.sn))
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.said  # escrow entry for event
 
@@ -538,14 +538,14 @@ def test_missing_delegator_escrow():
         assert watBobK.sn == 0
         watKvy.processEscrows()
         assert not delPre in watKvy.kevers
-        escrows = watKvy.db.pdes.get(dbing.snKey(delPre, delSrdr.sn))
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.said  # escrow entry for event
 
         # Now apply Bob's ixn to wat's kvy and process escrow
         psr.parse(ims=bytearray(bobIxnMsg1), kvy=watKvy, local=False)
         watKvy.processEscrows()
-        escrows = watKvy.db.pdes.get(dbing.snKey(delPre, delSrdr.sn))
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
         assert len(escrows) == 0
         assert watBobK.sn == 1
 

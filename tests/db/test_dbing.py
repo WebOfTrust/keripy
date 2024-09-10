@@ -311,7 +311,7 @@ def test_lmdber():
         items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]
         assert items == [(b'b.1', b'woo')]
 
-        # test OrdVal OrdItem ordinal numbered event sub db
+        # test Ordinal Numbered ON keyed value methods
         db = dber.env.open_db(key=b'seen.')
 
         preA = b'BBKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
@@ -346,8 +346,18 @@ def test_lmdber():
         assert dber.putVal(db, keyA0, val=digA) == False
         assert dber.setVal(db, keyA0, val=digA) == True
         assert dber.getVal(db, keyA0) == digA
+        assert dber.getOnVal(db, preA, 0) == digA
         assert dber.delVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
+        assert dber.getOnVal(db, preA, 0) == None
+
+        assert dber.putOnVal(db, preA, 0, val=digA) == True
+        assert dber.getOnVal(db, preA, 0) == digA
+        assert dber.putOnVal(db, preA, 0, val=digA) == False
+        assert dber.setOnVal(db, preA, 0, val=digA) == True
+        assert dber.getOnVal(db, preA, 0) == digA
+        assert dber.delOnVal(db, preA, 0) == True
+        assert dber.getOnVal(db, preA, 0) == None
 
         #  test appendOnValPre
         # empty database
@@ -981,7 +991,24 @@ def test_lmdber():
                          (b'Z', 1, b'l'),
                          (b'Z', 0, b'k')]
 
+        key = b'Y'
+        assert dber.addOnIoDupVal(ldb, key, on=0, val=b'r')
+        assert dber.addOnIoDupVal(ldb, key, on=0, val=b's')
+        assert dber.addOnIoDupVal(ldb, key, on=1, val=b't')
+        assert dber.addOnIoDupVal(ldb, key, on=1, val=b'u')
 
+        assert dber.cntOnVals(ldb, key) == 4
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key)]
+        assert items == [(b'Y', 0, b'r'),
+                         (b'Y', 0, b's'),
+                         (b'Y', 1, b't'),
+                         (b'Y', 1, b'u')]
+
+        assert dber.delOnIoDupVal(ldb, key, on=0, val=b's')
+        assert dber.delOnIoDupVals(ldb, key, on=1)
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key)]
+        assert items == [(b'Y', 0, b'r')]
 
         # test IoSetVals insertion order set of vals methods.
         key0 = b'ABC.ZYX'

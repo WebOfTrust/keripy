@@ -662,6 +662,65 @@ class LMDBer(filing.Filer):
 
     # For subdbs  the use keys with trailing part the is  monotonically
     # ordinal number serialized as 32 hex bytes
+
+    # used in OnSuberBase
+    def putOnVal(self, db, key,  on=0, val=b'', *, sep=b'.'):
+        """Write serialized bytes val to location at onkey consisting of
+        key + sep + serialized on in db.
+        Does not overwrite.
+
+        Returns:
+            result (bool): True if successful write i.e onkey not already in db
+                           False otherwise
+
+        Parameters:
+            db (lmdbsubdb): named sub db of lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+            on (int): ordinal number at which write
+            val (bytes): to be written at onkey
+            sep (bytes): separator character for split
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            if key:  # not empty
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:
+                onkey = key
+            try:
+                return (txn.put(onkey, val, overwrite=False))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+    # used in OnSuberBase
+    def setOnVal(self, db, key, on=0, val=b'',  *, sep=b'.'):
+        """
+        Write serialized bytes val to location at onkey consisting of
+        key + sep + serialized on in db.
+        Overwrites pre-existing value at onkey if any.
+
+        Returns:
+            result (bool): True if successful write i.e onkey not already in db
+                           False otherwise
+
+        Parameters:
+            db (lmdbsubdb): named sub db of lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+            on (int): ordinal number at which write
+            val (bytes): to be written at onkey
+            sep (bytes): separator character for split
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            if key:  # not empty
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:
+                onkey = key
+            try:
+                return (txn.put(onkey, val))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+
     # used in OnSuberBase
     def appendOnVal(self, db, key, val, *, sep=b'.'):
         """
@@ -720,6 +779,35 @@ class LMDBer(filing.Filer):
             if not cursor.put(onkey, val, overwrite=False):
                 raise  ValueError(f"Failed appending {val=} at {key=}.")
             return on
+
+
+    # used in OnSuberBase
+    def getOnVal(self, db, key, on=0, *, sep=b'.'):
+        """Gets value at onkey consisting of key + sep + serialized on in db.
+
+        Returns:
+            val (bytes | memoryview):  entry at onkey consisting of key + sep +
+                                       serialized on in db.
+                                      None if no entry at key
+
+        Parameters:
+            db (lmdbsubdb): named sub db of lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+            on (int): ordinal number at which to retrieve
+            sep (bytes): separator character for split
+
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            if key:  # not empty
+                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            else:
+                onkey = key
+            try:
+                return(txn.get(onkey))
+            except lmdb.BadValsizeError as ex:
+                raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
+                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
 
     # used in OnSuberBase
     def delOnVal(self, db, key, on=0, *, sep=b'.'):
@@ -1713,6 +1801,34 @@ class LMDBer(filing.Filer):
     # this is so we do the proem add and strip here not in some higher level class
     # like suber
 
+    def addOnIoDupVal(self, db, key, on=0, val=b'', sep=b'.'):
+        """
+        Add val bytes as dup at onkey consisting of key + sep + serialized on in db.
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        Lmdb does not insert a duplicate unless it is a unique value for that
+        key.
+
+        Does inclusion test to dectect of duplicate already exists
+        Uses a python set for the duplicate inclusion test. Set inclusion scales
+        with O(1) whereas list inclusion scales with O(n).
+
+        Returns:
+           result (bool): True if duplicate val added at onkey idempotent
+                          False if duplicate val preexists at onkey
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key (bytes): key within sub db's keyspace plus trailing part on
+            val (bytes): serialized value to add at onkey as dup
+            sep (bytes): separator character for split
+        """
+        onkey = onKey(key, on, sep=sep)
+        return (self.addIoDupVal(db, key=onkey, val=val))
+
+
     # used in OnIoDupSuber
     def appendOnIoDupVal(self, db, key, val, *, sep=b'.'):
         """
@@ -1742,10 +1858,66 @@ class LMDBer(filing.Filer):
         return (self.appendOnVal(db=db, key=key, val=val, sep=sep))
 
 
+    def delOnIoDupVals(self, db, key, on=0, sep=b'.'):
+        """Deletes all dup iovals at onkey consisting of key + sep + serialized
+        on in db.
+
+        Assumes DB opened with dupsort=True
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        Lmdb does not insert a duplicate unless it is a unique value for that
+        key.
+
+        Does inclusion test to dectect of duplicate already exists
+        Uses a python set for the duplicate inclusion test. Set inclusion scales
+        with O(1) whereas list inclusion scales with O(n).
+
+        Returns:
+           result (bool): True if onkey present so all dups at onkey deleted
+                          False if onkey not present
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key (bytes): key within sub db's keyspace plus trailing part on
+            sep (bytes): separator character for split
+        """
+        onkey = onKey(key, on, sep=sep)
+        return (self.delIoDupVals(db, key=onkey))
+
+
+    def delOnIoDupVal(self, db, key, on=0, val=b'', sep=b'.'):
+        """Deletes dup ioval at key onkey consisting of key + sep + serialized
+        on in db.
+        Returns True if deleted else False if dup val not present
+        Assumes DB opened with dupsort=True
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        Lmdb does not insert a duplicate unless it is a unique value for that
+        key.
+
+        Does inclusion test to dectect of duplicate already exists
+        Uses a python set for the duplicate inclusion test. Set inclusion scales
+        with O(1) whereas list inclusion scales with O(n).
+
+        Returns:
+           result (bool): True if duplicate val found and deleted
+                          False if duplicate val does not exist at onkey
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key (bytes): key within sub db's keyspace plus trailing part on
+            val (bytes): serialized dup value to del at onkey
+            sep (bytes): separator character for split
+        """
+        onkey = onKey(key, on, sep=sep)
+        return (self.delIoDupVal(db, key=onkey, val=val))
+
+
+
     # used in OnIoDupSuber
     def getOnIoDupValIter(self, db, key=b'', on=0, *, sep=b'.'):
         """
-        Returns iterator of triples (key, on, val), at each key over all ordinal
+        Returns iterator of val at each key over all ordinal
         numbered keys with same key + sep + on in db. Values are sorted by
         onKey(key, on) where on is ordinal number int and key is prefix sans on.
         Values duplicates are sorted internally by hidden prefixed insertion order
