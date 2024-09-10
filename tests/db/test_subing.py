@@ -773,9 +773,13 @@ def test_on_iodup_suber():
 
         # test addOn remOn
         assert onsuber.addOn(keys="z", on=0, val=w)
+        assert onsuber.getOn(keys="z", on=0) == [w]
         assert onsuber.addOn(keys="z", on=0, val=x)
+        assert onsuber.getOn(keys="z", on=0) == [w, x]
         assert onsuber.addOn(keys="z", on=1, val=y)
+        assert onsuber.getOn(keys="z", on=1) == [y]
         assert onsuber.addOn(keys="z", on=1, val=z)
+        assert onsuber.getOn(keys="z", on=1) == [y, z]
 
         assert onsuber.cntOn(keys=("z",)) == 4
 

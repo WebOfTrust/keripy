@@ -2242,6 +2242,28 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
 
+
+    def getOn(self, keys: str | bytes | memoryview | Iterable, on: int = 0):
+        """
+        Gets dup vals list at key made from keys
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): of key strs to be
+                combined in order to form key
+            on (int): ordinal number used with onKey(pre,on) to form key.
+
+        Returns:
+            vals (list):  each item in list is str
+                          empty list if no entry at keys
+
+        """
+        return [self._des(val) for val in
+                        self.db.getOnIoDupValIter(db=self.sdb,
+                                                  key=self._tokey(keys),
+                                                  on=on,
+                                                  sep=self.sep.encode())]
+
+
     def remOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
                    val: str | bytes | memoryview = ''):
         """

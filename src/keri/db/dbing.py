@@ -1917,7 +1917,7 @@ class LMDBer(filing.Filer):
     # used in OnIoDupSuber
     def getOnIoDupValIter(self, db, key=b'', on=0, *, sep=b'.'):
         """
-        Returns iterator of triples (key, on, val), at each key over all ordinal
+        Returns iterator of val at each key over all ordinal
         numbered keys with same key + sep + on in db. Values are sorted by
         onKey(key, on) where on is ordinal number int and key is prefix sans on.
         Values duplicates are sorted internally by hidden prefixed insertion order
