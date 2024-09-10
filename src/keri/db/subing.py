@@ -436,6 +436,47 @@ class OnSuberBase(SuberBase):
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
+    def putOn(self, keys: str | bytes | memoryview, on: int=0,
+                    val: str | bytes | memoryview=''):
+        """
+        Returns
+            result (bool): True if onkey made from key+sep+serialized on is
+                               not found in database so value is written
+                               idempotently.
+                           False otherwise
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+            on (int): ordinal number used with onKey(key ,on) to form key.
+            val (str | bytes | memoryview): serialization
+        """
+        return (self.db.putOnVal(db=self.sdb,
+                                 key=self._tokey(keys),
+                                 on=on,
+                                 val=self._ser(val),
+                                 sep=self.sep.encode()))
+
+    def pinOn(self, keys: str | bytes | memoryview, on: int=0,
+                    val: str | bytes | memoryview=''):
+        """
+        Returns
+            result (bool): True if value is written or overwritten at onkey
+                           False otherwise
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+            on (int): ordinal number used with onKey(key ,on) to form key.
+            val (str | bytes | memoryview): serialization
+        """
+        return (self.db.setOnVal(db=self.sdb,
+                                 key=self._tokey(keys),
+                                 on=on,
+                                 val=self._ser(val),
+                                 sep=self.sep.encode()))
+
+
     def appendOn(self, keys: str | bytes | memoryview,
                        val: str | bytes | memoryview):
         """
@@ -446,12 +487,30 @@ class OnSuberBase(SuberBase):
             keys (str | bytes | memoryview | Iterable): top keys as prefix to be
                 combined with serialized on suffix and sep to form key
             val (str | bytes | memoryview): serialization
-            on (int): ordinal number used with onKey(key,on) to form key.
         """
         return (self.db.appendOnVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
+
+
+    def getOn(self, keys: str | bytes | memoryview, on: int=0):
+        """
+        Returns
+            val (str): serialization at onkey if any
+                       None if no entry at onkey
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+            on (int): ordinal number used with onKey(key ,on) to form key.
+        """
+        val = self.db.getOnVal(db=self.sdb,
+                                key=self._tokey(keys),
+                                on=on,
+                                sep=self.sep.encode())
+        return (self._des(val) if val is not None else None)
+
 
 
     def remOn(self, keys: str | bytes | memoryview, on: int=0):
@@ -2018,7 +2077,7 @@ class IoDupSuber(DupSuber):
 
 
     def rem(self, keys: str | bytes | memoryview | Iterable,
-                   val: str | bytes | memoryview = b''):
+                   val: str | bytes | memoryview = ''):
         """
         Removes entry at key made from keys and dup val that matches val if any,
         notwithstanding hidden ordinal proem. Otherwise deletes all dup values
@@ -2141,6 +2200,32 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         super(OnIoDupSuber, self).__init__(*pa, **kwa)
 
 
+    def addOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
+                  val: str | bytes | memoryview = ''):
+        """
+        Add val idempotently  at key made from keys in insertion order using hidden
+        ordinal proem. Idempotently means do not add val that is already in
+        dup vals at key. Does not overwrite.
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): top keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+            on (int): ordinal number used with onKey(pre,on) to form onkey.
+            val (str | bytes | memoryview): serialization
+
+        Returns:
+            result (bool): True means unique value added among duplications,
+                            False means duplicate of same value already exists.
+
+        """
+        return (self.db.addOnIoDupVal(db=self.sdb,
+                                    key=self._tokey(keys),
+                                    on=on,
+                                    val=self._ser(val),
+                                    sep=self.sep.encode()))
+
+
+
     def appendOn(self, keys: str | bytes | memoryview,
                        val: str | bytes | memoryview):
         """
@@ -2151,12 +2236,45 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             keys (str | bytes | memoryview | Iterable): top keys as prefix to be
                 combined with serialized on suffix and sep to form key
             val (str | bytes | memoryview): serialization
-            on (int): ordinal number used with onKey(pre,on) to form key.
         """
         return (self.db.appendOnIoDupVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
+
+    def remOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
+                   val: str | bytes | memoryview = ''):
+        """
+        Removes entry at key made from keys and dup val that matches val if any,
+        notwithstanding hidden ordinal proem. Otherwise deletes all dup values
+        at key if any.
+
+        Parameters:
+            keys (str | bytes | memoryview | iterator): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+
+            on (int): ordinal number used with onKey(pre,on) to form key.
+            val (str):  value at key to delete. Subclass ._ser method may
+                        accept different value types
+                        if val is empty then remove all values at key
+
+        Returns:
+           result (bool): True if onkey with dup val exists so rem successful.
+                           False otherwise
+
+        """
+        if val:
+            return self.db.delOnIoDupVal(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       on=on,
+                                       val=self._ser(val),
+                                       sep=self.sep.encode())
+        else:
+            return self.db.delOnIoDupVals(db=self.sdb,
+                                          key=self._tokey(keys),
+                                          on=on,
+                                          sep=self.sep.encode())
+
 
 
     def getOnIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):

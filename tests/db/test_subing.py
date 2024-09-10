@@ -351,6 +351,14 @@ def test_on_suber():
         assert items == [(('a',), 0, 'Blue dog'),
                          (('a',), 2, 'Red apple')]
 
+        assert onsuber.putOn(keys='d', on=0, val='moon')
+        assert onsuber.getOn(keys='d', on=0) == 'moon'
+        assert not onsuber.putOn(keys='d', on=0, val='moon')
+        assert onsuber.pinOn(keys='d', on=0, val='sun')
+        assert onsuber.getOn(keys='d', on=0) == 'sun'
+        assert onsuber.remOn(keys='d', on=0)
+
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -763,6 +771,29 @@ def test_on_iodup_suber():
         y = "Red apple"
         z = "White snow"
 
+        # test addOn remOn
+        assert onsuber.addOn(keys="z", on=0, val=w)
+        assert onsuber.addOn(keys="z", on=0, val=x)
+        assert onsuber.addOn(keys="z", on=1, val=y)
+        assert onsuber.addOn(keys="z", on=1, val=z)
+
+        assert onsuber.cntOn(keys=("z",)) == 4
+
+        items = [item for item in onsuber.getOnItemIter(keys='z')]
+        assert items == [(('z',), 0, 'Blue dog'),
+                        (('z',), 0, 'Green tree'),
+                        (('z',), 1, 'Red apple'),
+                        (('z',), 1, 'White snow')]
+
+        assert onsuber.remOn(keys='z', on=0, val=w)
+        assert onsuber.remOn(keys='z', on=1)
+        items = [item for item in onsuber.getOnItemIter(keys='z')]
+        assert items == [(('z',), 0, 'Green tree')]
+        assert onsuber.remOn(keys='z', on=0, val=x)
+
+        assert onsuber.cntOn(keys=("z",)) == 0
+
+
         # test append
         assert 0 == onsuber.appendOn(keys=("a",), val=w)
         assert 1 == onsuber.appendOn(keys=("a",), val=x)
@@ -1002,6 +1033,8 @@ def test_on_iodup_suber():
                         'Green tree',
                         'Green tree',
                         ]
+
+
 
 
     assert not os.path.exists(db.path)
