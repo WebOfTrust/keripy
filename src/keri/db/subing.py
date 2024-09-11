@@ -43,9 +43,14 @@ OnSuber is simple lexographic database where trailing part of key is serialized
     ordinal number so that the ordering within each key prefix is monotonically
     increasing numeric
 
+B64Suber provides separated fields of B64 primitives for values. Useful when don't
+    need to CESR ser/des the primitives or performance
+
 The term 'set' of values means that no value may appear more than once in the set.
 Sets support idempotent adds and puts to db. This means one can add or put the same
 (key, val) pair multiple times and not change the db.
+
+
 
 DupSuber provides set of lexicographic ordered values at each key. Each value has
     a limited size (key + value <= 511 byes). The set is performant. Good for indices.
