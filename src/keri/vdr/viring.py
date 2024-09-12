@@ -406,11 +406,15 @@ class Reger(dbing.LMDBer):
             status = self.tevers[regk].vcState(saider.qb64)
             schemer = db.schema.get(creder.schema)
 
-            iss = bytearray(self.cloneTvtAt(creder.said, sn=0 if status.et == coring.Ilks.iss else 1))
+            iss = bytearray(self.cloneTvtAt(creder.said, sn=0))
             iserder = serdering.SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
-
             del iss[0:iserder.size]
+            if status.et in [coring.Ilks.rev, coring.Ilks.brv]:
+                rev = bytearray(self.cloneTvtAt(creder.said, sn=1))
+                rserder = serdering.SerderKERI(raw=rev)
+                revatc = bytes(rev[rserder.size:])
+                del rev[0:rserder.size]
 
             chainSaids = []
             for k, p in (creder.edge.items() if creder.edge is not None else {}):
@@ -428,6 +432,8 @@ class Reger(dbing.LMDBer):
                 atc=atc.decode("utf-8"),
                 iss=iserder.sad,
                 issatc=issatc.decode("utf-8"),
+                rev=rserder.sad if status.et in [coring.Ilks.rev, coring.Ilks.brv] else None,
+                revatc=revatc.decode("utf-8") if status.et in [coring.Ilks.rev, coring.Ilks.brv] else None,
                 pre=creder.issuer,
                 schema=schemer.sed,
                 chains=chains,
@@ -452,6 +458,21 @@ class Reger(dbing.LMDBer):
                 ancatc = bytes(anc[aserder.size:])
                 cred['anc'] = aserder.sad
                 cred['ancatc'] = ancatc.decode("utf-8"),
+            
+            if status.et in [coring.Ilks.rev, coring.Ilks.brv]:
+                ctr = core.Counter(qb64b=rev, strip=True, gvrsn=kering.Vrsn_1_0)
+                if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
+                    ctr = core.Counter(qb64b=rev, strip=True, gvrsn=kering.Vrsn_1_0)
+
+                if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
+                    coring.Seqner(qb64b=rev, strip=True)
+                    saider = coring.Saider(qb64b=rev)
+
+                    anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
+                    aserder = serdering.SerderKERI(raw=anc)
+                    ancatc = bytes(anc[aserder.size:])
+                    cred['revanc'] = aserder.sad
+                    cred['revancatc'] = ancatc.decode("utf-8"),
 
             creds.append(cred)
 
