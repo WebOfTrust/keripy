@@ -138,10 +138,10 @@ class InceptDoer(doing.DoDoer):
                                     reopen=True,
                                     clear=False)
         self.endpoint = endpoint
-        self.proxy = proxy
         self.hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
+        self.proxy = self.hby.habByName(proxy) if proxy is not None else None
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.hby.habByName(self.proxy))
+        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.proxy)
         self.postman = forwarding.Poster(hby=self.hby)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
@@ -185,7 +185,11 @@ class InceptDoer(doing.DoDoer):
                     _ = yield self.tock
 
         if hab.kever.delpre:
-            yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
+            if self.proxy is not None:
+                sender = self.proxy
+            else:
+                sender = hab
+            yield from self.postman.sendEventToDelegator(hab=hab, sender=sender, fn=hab.kever.sn)
 
         print(f'Prefix  {hab.pre}')
         for idx, verfer in enumerate(hab.kever.verfers):

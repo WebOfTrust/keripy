@@ -33,14 +33,15 @@ from keri.kering import Version, Versionage, VersionError, Vrsn_1_0, Vrsn_2_0
 from keri.kering import Protocols, Protocolage, Ilkage, Ilks, TraitDex
 
 from keri.help import helping
-from keri.help.helping import (sceil, intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
+from keri.help.helping import (sceil, intToB64, intToB64b, b64ToInt,
+                               codeB64ToB2, codeB2ToB64,
                               B64_CHARS, Reb64, nabSextets)
 
 from keri import core
 from keri.core import coring
 from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
                               Dater, Bexter, Texter,
-                              TagDex, Tagger, Ilker, Traitor,
+                              TagDex, Tagger, Ilker, Traitor, Labeler, LabelDex,
                               Verser, Versage, )
 from keri.core.coring import Kindage, Kinds
 from keri.core.coring import (Sizage, MtrDex, Matter)
@@ -4270,6 +4271,194 @@ def test_pather():
     """ Done Test """
 
 
+def test_labeler():
+    """
+    Test Labeler subclass of Matter
+    """
+    with pytest.raises(EmptyMaterialError):
+        labeler = Labeler()  # defaults
+
+    # test taggable label
+    label = 'z'
+    raw = b''
+    code = LabelDex.Tag1
+    qb64 = '0J_z'
+    qb2 = decodeB64(qb64)
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.code == code
+    assert labeler.soft == label
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code, soft=label)
+    assert labeler.label == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+
+
+    # Test all sizes taggable labels
+    labels = ('A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF', 'ABCDEFG', 'ABCDEFGH',
+              'ABCDEFGHI', 'ABCDEFGHIJ')
+
+    raw = b''
+    for i, label in enumerate(labels):
+        code = astuple(LabelDex)[i]
+        xs = Matter._xtraSize(code)
+        qb64 = code + ('_' * xs) + label
+        qb2 = decodeB64(qb64)
+
+        labeler = Labeler(label=label)
+        assert labeler.label == label
+        assert labeler.code == code
+        assert labeler.soft == label
+        assert labeler.raw == raw
+        assert labeler.qb64 == qb64
+        assert labeler.qb2 == qb2
+
+        labeler = Labeler(raw=raw, code=code, soft=label)
+        assert labeler.label == label
+
+        labeler = Labeler(qb64=qb64)
+        assert labeler.label == label
+
+        labeler = Labeler(qb2=qb2)
+        assert labeler.label == label
+
+
+    # test bextable labels
+    label = 'zyxwvutsrqponm'
+    code = LabelDex.StrB64_L1
+    qb64 = '5AAEAAzyxwvutsrqponm'
+    qb2 = decodeB64(qb64)
+    raw = qb2[4:]  # skip 3 for code and 1 for lead pad
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.code == code
+    rs = (len(label) + len(label) % 4) // 4
+    assert labeler.soft == intToB64(rs, 2) == 'AE'
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code, soft=label)
+    assert labeler.label == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+
+    # test textable labels
+    # fixed size short
+    label = '@'
+    code = LabelDex.Label1
+    raw = label.encode()
+    qb64 = 'VABA'
+    qb2 = decodeB64(qb64) # b'T\x00@'
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.code == code
+    assert labeler.soft == ''
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    assert labeler.label == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+
+    label = '!$'
+    code = LabelDex.Label2
+    raw = label.encode()
+    qb64 = 'WCEk'
+    qb2 = decodeB64(qb64) # b'X!$'
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.code == code
+    assert labeler.soft == ''
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    assert labeler.label == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+
+
+    # variable sized
+    label = '#yxwvutsrqponm'
+    code = LabelDex.Bytes_L1
+    raw = label.encode()
+    qb64 = '5BAFACN5eHd2dXRzcnFwb25t'
+    qb2 = decodeB64(qb64)
+
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.code == code
+    assert labeler.soft == 'AF'
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    assert labeler.label == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+
+    # test base64 that starts with 'A' get encoded as textable, is not bextable
+    label = 'Ayxwvutsrqponm'
+    code = LabelDex.Bytes_L1
+    raw = label.encode()
+    qb64 = '5BAFAEF5eHd2dXRzcnFwb25t'
+    qb2 = decodeB64(qb64)
+
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.code == code
+    assert labeler.soft == 'AF'
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    assert labeler.label == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+
+    """ Done Test """
+
+
 def test_verfer():
     """
     Test the support functionality for verifier subclass of crymat
@@ -5390,14 +5579,14 @@ if __name__ == "__main__":
     test_traitor()
     test_verser()
     test_diger()
-    #test_texter()
+    test_texter()
+    test_bexter()
+    test_labeler()
     #test_prodex()
-    #test_indexer()
     test_number()
     #test_seqner()
     #test_siger()
     #test_nexter()
     #test_tholder()
-    #test_labels()
-    #test_prefixer()
+    test_prefixer()
 

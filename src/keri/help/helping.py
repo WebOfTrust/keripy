@@ -264,9 +264,9 @@ B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
 B64_CHARS = tuple(B64ChrByIdx.values())  # tuple of characters in Base64
 
 
-B64REX = rb'^[0-9A-Za-z_-]*\Z'   # [A-Za-z0-9\-\_]
+B64REX = rb'^[0-9A-Za-z_-]*\Z'   # [A-Za-z0-9\-\_]  bytes
 Reb64 = re.compile(B64REX)  # compile is faster
-# Usage: if Reb64.match(bext): or if not Reb64.match(bext):
+# Usage: if Reb64.match(bext): or if not Reb64.match(bext): bext is bytes
 
 
 def intToB64(i, l=1):

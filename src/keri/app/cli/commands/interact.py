@@ -26,6 +26,9 @@ parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness re
                     dest="endpoint", action='store_true')
 parser.add_argument("--authenticate", '-z', help="Prompt the controller for authentication codes for each witness",
                     action='store_true')
+parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
+                    default=[], action="append", required=False)
+parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
 
 
 def interact(args):
@@ -57,7 +60,7 @@ def interact(args):
         data = None
 
     ixnDoer = InteractDoer(name=name, base=base, alias=alias, bran=bran, data=data, authenticate=args.authenticate,
-                           endpoint=args.endpoint)
+                           endpoint=args.endpoint, codes=args.code, codeTime=args.code_time)
 
     return [ixnDoer]
 
@@ -68,7 +71,8 @@ class InteractDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, data: list = None, endpoint=False, authenticate=False):
+    def __init__(self, name, base, bran, alias, data: list = None, endpoint=False, authenticate=False,
+                 codes=None, codeTime=None):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
 
@@ -82,6 +86,8 @@ class InteractDoer(doing.DoDoer):
         self.data = data
         self.endpoint = endpoint
         self.authenticate = authenticate
+        self.codes = codes if codes is not None else []
+        self.codeTime = codeTime
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
@@ -105,7 +111,14 @@ class InteractDoer(doing.DoDoer):
 
         auths = {}
         if self.authenticate:
+            codeTime = helping.fromIso8601(self.codeTime) if self.codeTime is not None else helping.nowIso8601()
+            for arg in self.codes:
+                (wit, code) = arg.split(":")
+                auths[wit] = f"{code}#{codeTime}"
+
             for wit in hab.kever.wits:
+                if wit in auths:
+                    continue
                 code = input(f"Entire code for {wit}: ")
                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 

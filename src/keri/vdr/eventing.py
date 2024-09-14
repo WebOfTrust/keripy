@@ -23,7 +23,7 @@ from ..core.coring import (MtrDex, Kinds, versify, Prefixer,
 from ..core.signing import (Salter,)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs
 from ..db import basing, dbing
-from ..db.dbing import dgKey, snKey
+from ..db.dbing import dgKey, snKey, splitSnKey
 from ..help import helping
 from ..kering import (MissingWitnessSignatureError, Version,
                       MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
@@ -1172,7 +1172,7 @@ class Tever:
             status (Serder): transaction event state notification message
         """
         digs = []
-        for _, dig in self.reger.getTelItemPreIter(pre=vci.encode("utf-8")):
+        for _, _, dig in self.reger.getTelItemPreIter(pre=vci.encode("utf-8")):
             digs.append(dig)
 
         if len(digs) == 0:
@@ -2031,9 +2031,10 @@ class Tevery:
            5. Remove event digest from oots if processed successfully or a non-out-of-order event occurs.
 
         """
-        for (pre, snb, digb) in self.reger.getOotItemIter():
+        for key, digb in self.reger.getOotItemIter(): # (pre, snb, digb) in self.reger.getOotItemIter()
             try:
-                sn = int(snb, 16)
+                #sn = int(snb, 16)
+                pre, sn = splitSnKey(key)
                 dgkey = dgKey(pre, digb)
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
@@ -2099,8 +2100,9 @@ class Tevery:
            6. Remove event digest from oots if processed successfully or a non-anchorless event occurs.
 
         """
-        for (pre, snb, digb) in self.reger.getTaeItemIter():
-            sn = int(snb, 16)
+        for key, digb in self.reger.getTaeItemIter():  #(pre, snb, digb) in self.reger.getTaeItemIter()
+            pre, sn = splitSnKey(key)
+            #sn = int(snb, 16)
             try:
                 dgkey = dgKey(pre, digb)
                 traw = self.reger.getTvt(dgkey)

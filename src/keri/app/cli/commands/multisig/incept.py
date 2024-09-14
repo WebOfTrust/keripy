@@ -175,7 +175,7 @@ class GroupMultisigIncept(doing.DoDoer):
             yield self.tock
 
         if ghab.kever.delpre:
-            yield from self.postman.sendEvent(hab=ghab, fn=ghab.kever.sn)
+            yield from self.postman.sendEventToDelegator(hab=ghab, sender=ghab.mhab, fn=ghab.kever.sn)
 
         print()
         displaying.printIdentifier(self.hby, ghab.pre)

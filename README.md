@@ -88,3 +88,17 @@ pytest tests/demo/
 * Build with Sphinx in `/docs`: 
   * `$ make html`
 
+## Publishing containers
+
+Enable the containerd image store
+
+The containerd image store isn't enabled by default. To enable the feature for Docker Desktop:
+
+Navigate to Settings in Docker Desktop.
+In the General tab, check Use containerd for pulling and storing images.
+Select Apply & Restart.
+
+```shell
+make build-keri
+make publish-keri
+```

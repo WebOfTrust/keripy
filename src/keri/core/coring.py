@@ -550,6 +550,46 @@ class TagCodex:
 TagDex = TagCodex()  # Make instance
 
 
+@dataclass(frozen=True)
+class LabelCodex:
+    """
+    LabelCodex is codex of.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
+    Tag2:  str = '0K'  # 2 B64 char tag
+    Tag3:  str = 'X'  # 3 B64 char tag
+    Tag4:  str = '1AAF'  # 4 B64 char tag
+    Tag5:  str = '0L'  # 5 B64 char tag with 1 pre pad
+    Tag6:  str = '0M'  # 6 B64 char tag
+    Tag7:  str = 'Y'  # 7 B64 char tag
+    Tag8:  str = '1AAN'  # 8 B64 char tag
+    Tag9:  str = '0N'  # 9 B64 char tag with 1 pre pad
+    Tag10: str = '0O'  # 10 B64 char tag
+    StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1:     str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2:     str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
+    Label1:        str = 'V'  # Label1 1 bytes for label lead size 1
+    Label2:        str = 'W'  # Label2 2 bytes for label lead size 0
+    Bytes_L0:     str = '4B'  # Byte String lead size 0
+    Bytes_L1:     str = '5B'  # Byte String lead size 1
+    Bytes_L2:     str = '6B'  # Byte String lead size 2
+    Bytes_Big_L0: str = '7AAB'  # Byte String big lead size 0
+    Bytes_Big_L1: str = '8AAB'  # Byte String big lead size 1
+    Bytes_Big_L2: str = '9AAB'  # Byte String big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+LabelDex = LabelCodex()  # Make instance
+
+
 
 @dataclass(frozen=True)
 class PreCodex:
@@ -2013,7 +2053,7 @@ class Tagger(Matter):
         composable (bool): True when .qb64b and .qb2 are 24 bit aligned and round trip
 
     Properties:
-        tag (str): B64 primitive without prepad (alias of .soft)
+        tag (str): B64 .soft portion of code but without prepad
 
 
     Inherited Hidden:  (See Matter)
@@ -2059,16 +2099,13 @@ class Tagger(Matter):
 
         """
         if tag:
-            if hasattr(tag, "decode"):  # make tag str
-                tag = tag.decode("utf-8")
-            if not Reb64.match(tag.encode("utf-8")):
+            if hasattr(tag, "encode"):  # make tag bytes for regex
+                tag = tag.encode("utf-8")
+
+            if not Reb64.match(tag):
                 raise InvalidSoftError(f"Non Base64 chars in {tag=}.")
-            # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
-            codes = astuple(TagDex)
-            l = len(tag)  # soft not empty so l > 0
-            if l > len(codes):
-                raise InvalidSoftError("Oversized tag={soft}.")
-            code = codes[l-1]  # get code for for tag of len where (index = len - 1)
+
+            code = self._codify(tag=tag)
             soft = tag
 
 
@@ -2076,6 +2113,27 @@ class Tagger(Matter):
 
         if (not self._special(self.code)) or self.code not in TagDex:
             raise InvalidCodeError(f"Invalid code={self.code} for Tagger.")
+
+
+    @staticmethod
+    def _codify(tag):
+        """Returns code for tag when tag is appropriately sized Base64
+
+        Parameters:
+           tag (str | bytes):  Base64 value
+
+        Returns:
+           code (str): derivation code for tag
+
+        """
+        # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
+        codes = astuple(TagDex)
+        l = len(tag)
+        if l < 1 or l > len(codes):
+            raise InvalidSoftError(f"Invalid {tag=} size {l=}, empty or oversized.")
+        return codes[l-1]  # return code at index = len - 1
+
+
 
     @property
     def tag(self):
@@ -2646,7 +2704,8 @@ class Bexter(Matter):
             raise ValidationError("Invalid code = {} for Bexter."
                                   "".format(self.code))
 
-    def _rawify(self, bext):
+    @staticmethod
+    def _rawify(bext):
         """Returns raw value equivalent of Base64 text.
         Suitable for variable sized matter
 
@@ -2660,14 +2719,15 @@ class Bexter(Matter):
         raw = decodeB64(base)[ls:]  # convert and remove leader
         return raw  # raw binary equivalent of text
 
-    @property
-    def bext(self):
+    @classmethod
+    def _derawify(cls, raw, code):
+        """Returns decoded raw as B64 str aka bext value
+
+        Returns:
+           bext (str): decoded raw as B64 str aka bext value
         """
-        Property bext: Base64 text value portion of qualified b64 str
-        Returns the value portion of .qb64 with text code and leader removed
-        """
-        _, _, _, _, ls = self.Sizes[self.code]
-        bext = encodeB64(bytes([0] * ls) + self.raw)
+        _, _, _, _, ls = cls.Sizes[code]
+        bext = encodeB64(bytes([0] * ls) + raw)
         ws = 0
         if ls == 0 and bext:
             if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
@@ -2675,6 +2735,15 @@ class Bexter(Matter):
         else:
             ws = (ls + 1) % 4
         return bext.decode('utf-8')[ws:]
+
+
+    @property
+    def bext(self):
+        """
+        Property bext: Base64 text value portion of qualified b64 str
+        Returns the value portion of .qb64 with text code and leader removed
+        """
+        return self._derawify(raw=self.raw, code=self.code)
 
 
 class Pather(Bexter):
@@ -2907,6 +2976,95 @@ class Pather(Bexter):
             raise KeyError("invalid traversal type")
 
         return self._resolve(cur, ptr)
+
+
+class Labeler(Matter):
+    """
+    Labeler is subclass of Matter for CESR native field map labels and/or generic
+    textual field values. Labeler auto sizes the instance code to minimize
+    the total encoded size of associated field label or textual field value.
+
+
+
+    Attributes:
+
+    Inherited Properties:
+        (See Matter)
+
+
+    Properties:
+        label (str):  base value without encoding
+
+    Inherited Hidden:
+        (See Matter)
+
+    Hidden:
+
+    Methods:
+
+    """
+
+
+    def __init__(self, label='', raw=None, code=None, soft=None, **kwa):
+        """
+        Inherited Parameters:
+            (see Matter)
+
+        Parameters:
+            label (str | bytes):  base value before encoding
+
+        """
+        if label:
+            if hasattr(label, "encode"):  # make label bytes
+                label = label.encode("utf-8")
+
+            if Reb64.match(label):  # candidate for Base64 compact encoding
+                try:
+                    code = Tagger._codify(tag=label)
+                    soft = label
+
+                except InvalidSoftError as ex:  # too big
+                    if label[0] != ord(b'A'):  # use Bexter code
+                        code = LabelDex.StrB64_L0
+                        raw = Bexter._rawify(label)
+
+                    else:  # use Texter code since ambiguity if starts with 'A'
+                        code = LabelDex.Bytes_L0
+                        raw = label
+
+            else:
+                if len(label) == 1:
+                    code = LabelDex.Label1
+
+                elif len(label) == 2:
+                    code = LabelDex.Label2
+
+                else:
+                    code = LabelDex.Bytes_L0
+
+                raw = label
+
+        super(Labeler, self).__init__(raw=raw, code=code, soft=soft, **kwa)
+
+        if self.code not in LabelDex:
+            raise InvalidCodeError(f"Invalid code={self.code} for Labeler.")
+
+
+
+    @property
+    def label(self):
+        """Extracts and returns label from .code and .soft or .code and .raw
+
+        Returns:
+            label (str): base value without encoding
+        """
+        if self.code in TagDex:  # tag
+            return self.soft  # soft part of code
+
+        if self.code in BexDex:  # bext
+            return Bexter._derawify(raw=self.raw, code=self.code)  # derawify
+
+        return self.raw.decode()  # everything else is just raw as str
 
 
 
@@ -3417,13 +3575,11 @@ class Saider(Matter):
             raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
 
         ser = dict(sad)
-        if ignore:
+        if ignore:  # delete ignore fields in said calculation from ser dict
             for f in ignore:
                 del ser[f]
 
-        # string now has correct size
-        # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = clas._serialize(ser, kind=kind)  # raw pos arg class
+        cpa = clas._serialize(ser, kind=kind) # serialize ser
         return (Diger._digest(ser=cpa, code=code), sad)   # raw digest and sad
 
 

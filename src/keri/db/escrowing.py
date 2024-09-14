@@ -79,7 +79,7 @@ class Broker:
             extype (Type[Exception]): the expected exception type if the message should remain in escrow
 
         """
-        for (typ, pre, aid, ion), saider in self.escrowdb.getIoItemIter(keys=(typ,)):
+        for (typ, pre, aid), saider in self.escrowdb.getItemIter(keys=(typ, '')):
             try:
                 tsgs = eventing.fetchTsgs(db=self.tigerdb, saider=saider)
 
@@ -117,20 +117,20 @@ class Broker:
                         logger.exception("Kevery unescrow attempt failed: %s", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
+                    self.escrowdb.rem(keys=(typ, pre, aid), val=saider)   # remove escrow
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed due to error: %s", ex.args[0])
                     else:
                         logger.error("Kevery unescrowed due to error: %s", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow only
+                    self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow
                     logger.info("Kevery unescrow succeeded for txn state=%s",
                                 serder.said)
                     logger.debug(f"event=\n{serder.pretty()}\n")
 
             except Exception as ex:  # log diagnostics errors etc
-                self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
+                self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow
                 self.removeState(saider)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed due to error: %s", ex.args[0])
@@ -170,7 +170,7 @@ class Broker:
         for cigar in cigars:  # process each couple to verify sig and write to db
             self.cigardb.put(keys=keys, vals=[(cigar.verfer, cigar)])
 
-        return self.escrowdb.put(keys=(typ, pre, aid), vals=[saider])  # overwrite
+        return self.escrowdb.put(keys=(typ, pre, aid), vals=[saider])  # does not overwrite
 
     def updateReply(self, aid, serder, saider, dater):
         """

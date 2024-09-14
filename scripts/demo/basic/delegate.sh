@@ -30,3 +30,16 @@ PID_LIST+=" $pid"
 wait $PID_LIST
 
 kli status --name delegate --alias delegate
+
+kli init --name validator --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWxtbm9vAl
+
+OOBI=$(kli oobi generate --name delegator --alias delegator --role witness | head -n 1)
+kli oobi resolve --name validator --oobi-alias delegator --oobi "${OOBI}"
+OOBI=$(kli oobi generate --name delegate --alias delegate --role witness | head -n 1)
+kli oobi resolve --name validator --oobi-alias delegate --oobi "${OOBI}"
+
+AID=$(kli aid --name delegate --alias delegate)
+kli kevers --name validator --prefix "${AID}"
+
+
+

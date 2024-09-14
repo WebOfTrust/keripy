@@ -138,7 +138,7 @@ class Anchorer(doing.DoDoer):
             dkever = self.hby.kevers[kever.delpre]
 
             seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
-            if dserder := self.hby.db.findAnchoringSealEvent(dkever.prefixer.qb64, seal=seal):
+            if dserder := self.hby.db.fetchAllSealingEventByEventSeal(dkever.prefixer.qb64, seal=seal):
                 seqner = coring.Seqner(sn=dserder.sn)
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
@@ -173,10 +173,14 @@ class Anchorer(doing.DoDoer):
                     if not witnessed:
                         continue
                 logger.info(f"Witness receipts complete, waiting for delegation approval.")
+                if pre not in self.hby.habs:
+                    continue
+
                 hab = self.hby.habs[pre]
                 delpre = hab.kever.delpre  # get the delegator identifier
                 dkever = hab.kevers[delpre]  # and the delegator's kever
                 smids = []
+
                 if isinstance(hab, GroupHab):
                     phab = hab.mhab
                     smids = hab.smids
@@ -208,6 +212,9 @@ class Anchorer(doing.DoDoer):
 
         """
         for (pre, said), serder in self.hby.db.dpub.getItemIter():  # group partial witness escrow
+            if pre not in self.publishers:
+                continue
+
             publisher = self.publishers[pre]
 
             if not publisher.idle:
@@ -220,8 +227,11 @@ class Anchorer(doing.DoDoer):
             self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
 
     def publishDelegator(self, pre):
-        hab = self.hby.habs[pre]
+        if pre not in self.publishers:
+            return
+
         publisher = self.publishers[pre]
+        hab = self.hby.habs[pre]
         self.extend([publisher])
         for msg in hab.db.cloneDelegation(hab.kever):
             publisher.msgs.append(dict(pre=hab.pre, msg=bytes(msg)))

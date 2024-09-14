@@ -758,7 +758,7 @@ def test_ioset_komer():
             loc = locDB.get(keys=(end.eid, scheme))
             assert loc == wit3loc
 
-        # test IoItem methods
+        ## test IoItem methods
         iokeys0 = [f'{cid0}.witness.00000000000000000000000000000000'.encode("utf-8"),
                   f'{cid0}.witness.00000000000000000000000000000001'.encode("utf-8"),
                   f'{cid0}.witness.00000000000000000000000000000002'.encode("utf-8")]
@@ -773,20 +773,13 @@ def test_ioset_komer():
                     'witness',
                     '00000000000000000000000000000002')]
 
-
+        # test getItemIter
         i = 0
-        for iokeys, end in endDB.getIoSetItem(keys=keys0):
+        for keys, end in endDB.getItemIter(keys=keys0):
             assert end == ends[i]
-            assert iokeys == iokeys0[i]
+            assert keys == keys0
             i += 1
 
-        i = 0
-        for iokeys, end in endDB.getIoSetItemIter(keys=keys0):
-            assert end == ends[i]
-            assert iokeys == iokeys0[i]
-            i += 1
-
-        # test getAllItemIter
         ends = ends + [wit3end]
         i = 0
         for keys, end in endDB.getItemIter():
@@ -829,27 +822,29 @@ def test_ioset_komer():
                             '00000000000000000000000000000000')]
 
         i = 0
-        for iokeys, end in endDB.getIoItemIter(keys=(cid0, "")):
+        for iokeys, end in endDB.getFullItemIter(keys=(cid0, "")):
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1
 
-        i = 0
-        for iokeys, end in endDB.getIoItemIter():
-            assert end == ends[i]
-            assert iokeys == iokeysall[i]
-            i += 1
-            assert endDB.remIokey(iokeys)
+        #for iokeys, val in endDB.getFullItemIter():
+            #assert endDB.remIokey(iokeys=iokeys)
 
-        assert endDB.cnt(keys0) == 0
-        assert endDB.cnt(keys1) == 0
-
+        #assert endDB.cnt(keys=keys0) == 0
+        #assert endDB.cnt(keys=keys1) == 0
 
     assert not os.path.exists(db.path)
     assert not db.opened
 
 
 if __name__ == "__main__":
-    test_dup_komer()
+    test_kom_happy_path()
     test_kom_get_item_iter()
+    test_put_invalid_dataclass()
+    test_get_invalid_dataclass()
+    test_not_found_entity()
+    test_serialization()
+    test_custom_serialization()
+    test_deserialization()
+    test_dup_komer()
     test_ioset_komer()

@@ -135,6 +135,12 @@ def test_replay():
             b'OOJVAAAjEg-3N4cNT_yot5wWlcKaz-1xPAgteGCsYZhq9dax3sQPD5HFI7M13Bhp'
             b'kRttBEq92pAaIG')
 
+        assert debHab.kever.sn == 6
+        msgs = next(debHab.db.clonePreIter(debHab.pre, fn=4))
+        serder = serdering.SerderKERI(raw=msgs)
+        assert serder.ilk == kering.Ilks.ixn
+        assert serder.sn == 4
+
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb
         camKevery = eventing.Kevery(db=camHab.db,
@@ -232,6 +238,7 @@ def test_replay():
 
         # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
         debCamVrcs = debHab.processCues(debKevery.cues)
+        assert len(debKevery.cues) == 0
         assert debCamVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBp-SQb9fTgeoQkIkOd2xegv'
                         b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
                         b'6JDIEuj","s":"0"}-FABELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIp'
@@ -259,6 +266,7 @@ def test_replay():
 
         # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
         bevMsgs = bevHab.processCues(bevKevery.cues)
+        assert len(bevKevery.cues) == 0
         assert bevMsgs == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EBXqe7Xzsw2aolT09Ouh5Zw9'
                         b'kNn2sgoHmo4zCn7Q7ZSC","i":"BAqph4mAWcf7mkIgk1Xrpvr7dWT7YvHIam_hq'
                         b'UAT2rqw","s":"0","kt":"1","k":["BAqph4mAWcf7mkIgk1Xrpvr7dWT7YvHI'
@@ -306,6 +314,7 @@ def test_replay():
 
         # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
         debBevVrcs = debHab.processCues(debKevery.cues)
+        assert len(debKevery.cues) == 0
         assert debBevVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBXqe7Xzsw2aolT09Ouh5Zw9'
                         b'kNn2sgoHmo4zCn7Q7ZSC","i":"BAqph4mAWcf7mkIgk1Xrpvr7dWT7YvHIam_hq'
                         b'UAT2rqw","s":"0"}-FABELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIp'
@@ -552,6 +561,7 @@ def test_replay_all():
 
         # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
         camMsgs = camHab.processCues(camKevery.cues)
+        assert len(camKevery.cues) == 0
 
         # Play camMsgs to Deb
         # create non-local kevery for Deb to process msgs from Cam
@@ -566,6 +576,7 @@ def test_replay_all():
 
         # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
         debCamVrcs = debHab.processCues(debKevery.cues)
+        assert len(debKevery.cues) == 0
 
         # Play disjoints debCamVrcs to Cam
         parsing.Parser().parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
@@ -584,6 +595,7 @@ def test_replay_all():
 
         # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
         bevMsgs = bevHab.processCues(bevKevery.cues)
+        assert len(bevKevery.cues) == 0
 
         # Play bevMsgs to Deb
         parsing.Parser().parse(ims=bytearray(bevMsgs), kvy=debKevery)
@@ -594,6 +606,7 @@ def test_replay_all():
 
         # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
         debBevVrcs = debHab.processCues(debKevery.cues)
+        assert len(debKevery.cues) == 0
 
         # Play disjoints debBevVrcs to Bev
         parsing.Parser().parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
