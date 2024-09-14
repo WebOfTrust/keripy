@@ -9,7 +9,7 @@ import logging
 
 from ..kering import Vrsn_1_0, Vrsn_2_0
 from .coring import (Ilks, Seqner, Cigar,
-                     Dater, Verfer, Prefixer, Saider, Pather, Texter)
+                     Dater, Verfer, Prefixer, Saider, Pather, Matter)
 from .counting import Counter, Codens, CtrDex_1_0
 from .indexing import (Siger, )
 from . import serdering
@@ -960,7 +960,7 @@ class Parser:
                     elif ctr.code == CtrDex_1_0.ESSRPayloadGroup:
                         for i in range(ctr.count):
                             texter = yield from self._extractor(ims,
-                                                                klas=Texter,
+                                                                klas=Matter,
                                                                 cold=cold,
                                                                 abort=pipelined)
                             essrs.append(texter)
