@@ -239,7 +239,7 @@ def test_standalone_kli_commands(helpers, capsys):
                            '\t3. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
                            '\n')
 
-    args = parser.parse_args(["escrow", "--name", "test"])
+    args = parser.parse_args(["escrow", "list", "--name", "test"])
     assert args.handler is not None
     doers = args.handler(args)
     directing.runController(doers=doers)

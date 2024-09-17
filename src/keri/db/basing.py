@@ -1367,6 +1367,29 @@ class Baser(dbing.LMDBer):
 
         self.version = keri.__version__
 
+    def clearEscrows(self):
+        """
+        Clear all escrows
+        """
+        for (k, _) in self.getUreItemIter():
+            self.delUres(key=k)
+        for (k, _) in self.getVreItemIter():
+            self.delVres(key=k)
+        for (k, _) in self.getPseItemIter():
+            self.delPses(key=k)
+        for (k, _) in self.getPweItemIter():
+            self.delPwes(key=k)
+        for (k, _) in self.getUweItemIter():
+            self.delUwes(key=k)
+        for (k, _) in self.getOoeItemIter():
+            self.delOoes(key=k)
+        for (k, _) in self.getLdeItemIter():
+            self.delLdes(key=k)
+
+        for escrow in [self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
+                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
+            escrow.trim()
+
     @property
     def current(self):
         """ Current property determines if we are at the current database migration state.

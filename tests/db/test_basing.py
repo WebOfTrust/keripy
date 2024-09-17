@@ -7,28 +7,23 @@ import json
 import os
 from dataclasses import dataclass, asdict
 
-import lmdb
 import pytest
+
+import lmdb
 from hio.base import doing
-
-from keri.help.helping import datify, dictify
-
 from keri import core
-from keri.core import coring, eventing, serdering
-
-from keri.core.coring import Kinds, versify
-
-from keri.core.eventing import incept, rotate, interact, Kever
-
 from keri.app import habbing
-
+from keri.core import coring, eventing, serdering
+from keri.core.coring import Kinds, versify, Seqner
+from keri.core.eventing import incept, rotate, interact, Kever
+from keri.core.serdering import Serder
 from keri.db import basing
 from keri.db import dbing
 from keri.db import subing
-from keri.db.basing import openDB, Baser, KeyStateRecord
+from keri.db.basing import openDB, Baser, KeyStateRecord, OobiRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
-
+from keri.help.helping import datify, dictify
 # this breaks when running as __main__ better to do a custom import call to
 # walk the directory tree and import explicity rather than depend on it
 # being a known package. Works with pytest because pytest contructs a path
@@ -184,9 +179,6 @@ def test_baser():
         actual = db.esrs.get(key)
         assert actual.local == record.local
         assert db.esrs.get(key) == record
-
-
-
 
         # test first seen event log .fels sub db
         preA = b'BAKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
@@ -1823,6 +1815,93 @@ def test_KERI_BASER_MAP_SIZE_handles_bad_values(caplog):
         assert err_msg in caplog.messages
     os.environ.pop("KERI_BASER_MAP_SIZE")
 
+
+def test_clear_escrows():
+    with openDB() as db:
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        db.putUres(key, vals)
+        db.putVres(key, vals)
+        db.putPses(key, vals)
+        db.putPwes(key, vals)
+        db.putUwes(key, vals)
+        db.putOoes(key, vals)
+        db.putLdes(key, vals)
+
+        pre = b'k'
+        snh = b'snh'
+        saidb = b'saidb'
+        db.misfits.add(keys=(pre, snh), val=saidb)
+        assert db.misfits.cnt(keys=(pre, snh)) == 1
+
+        db.delegables.add(snKey(pre, 0), saidb)
+        assert db.delegables.cnt(keys=snKey(pre, 0)) == 1
+
+        db.pdes.addOn(keys=pre, on=0, val=saidb)
+        assert db.pdes.cnt(keys=snKey(pre, 0)) == 1
+
+        udesKey = dgKey('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8"),
+                    'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8"))
+        db.udes.put(keys=udesKey, val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
+                                   coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
+        assert db.udes.get(keys=udesKey) is not None
+
+        saider = coring.Saider(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        db.rpes.put(keys=('route',), vals=[saider])
+        assert db.rpes.cnt(keys=('route',)) == 1
+
+        db.epsd.put(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',), val=coring.Dater())
+        assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is not None
+
+        db.eoobi.pin(keys=('url',), val=OobiRecord())
+        assert db.eoobi.cntAll() == 1
+
+        serder = Serder(raw=b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG8WAmM29ZBdoXbnb87yiPxQw4Y7gcQjqZS74vBAKsRm","i":"DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","a":[]}')
+        db.dpub.put(keys=(pre, 'said'), val=serder)
+        assert db.dpub.get(keys=(pre, 'said')) is not None
+
+        db.gpwe.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        assert db.gpwe.cnt(keys=(pre,)) == 1
+
+        db.gdee.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        assert db.gdee.cnt(keys=(pre,)) == 1
+
+        db.dpwe.pin(keys=(pre, 'said'), val=serder)
+        assert db.dpwe.get(keys=(pre, 'said')) is not None
+
+        db.gpse.add(keys=('qb64',), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        assert db.gpse.cnt(keys=('qb64',)) == 1
+
+        db.epse.put(keys=('dig',), val=serder)
+        assert db.epse.get(keys=('dig',)) is not None
+
+        db.dune.pin(keys=(pre, 'said'), val=serder)
+        assert db.dune.get(keys=(pre, 'said')) is not None
+
+        db.clearEscrows()
+
+        assert db.getUres(key) == []
+        assert db.getVres(key) == []
+        assert db.getPses(key) == []
+        assert db.getPwes(key) == []
+        assert db.getUwes(key) == []
+        assert db.getOoes(key) == []
+        assert db.getLdes(key) == []
+        assert db.misfits.cnt(keys=(pre, snh)) == 0
+        assert db.delegables.cnt(keys=snKey(pre, 0)) == 0
+        assert db.pdes.cnt(keys=snKey(pre, 0)) == 0
+        assert db.udes.get(keys=udesKey) is None
+        assert db.rpes.cnt(keys=('route',)) == 0
+        assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is None
+        assert db.eoobi.cntAll() == 0
+        assert db.dpub.get(keys=(pre, 'said')) is None
+        assert db.gpwe.cnt(keys=(pre,)) == 0
+        assert db.gdee.cnt(keys=(pre,)) == 0
+        assert db.dpwe.get(keys=(pre, 'said')) is None
+        assert db.gpse.cnt(keys=('qb64',)) == 0
+        assert db.epse.get(keys=('dig',)) is None
+        assert db.dune.get(keys=(pre, 'said')) is None
 
 if __name__ == "__main__":
     test_baser()
