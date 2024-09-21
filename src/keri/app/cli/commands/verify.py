@@ -19,8 +19,6 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-
-parser.add_argument("--prefix", help="Identifier prefix of the signer", required=True)
 parser.add_argument('--text', '-t', help='Original signed text or file (starts with "@")', required=True)
 parser.add_argument('--signature', '-s', default=[], help='list of signatures to verify (can appear multiple times)',
                     action="append", required=True)
@@ -54,7 +52,7 @@ def verify(tymth, tock=0.0, **opts):
     try:
         with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
 
-            kever = hab.kevers[args.prefix]
+            kever = hab.kevers[hab.pre]
 
             txt = args.text
             if txt.startswith("@"):
