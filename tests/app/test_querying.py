@@ -5,9 +5,13 @@ keri.app.querying module
 """
 from hio.base import doing
 
+from keri import kering
 from keri.app import habbing
-from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
-from keri.core import parsing, eventing, serdering
+from keri.app.querying import (QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier,
+                               TelStateNoticer, RegistryLogQuerier, VcLogQuerier)
+from keri.core import parsing, eventing, serdering, coring, scheming, Counter, Codens
+from keri.vdr import credentialing, verifying, eventing as teventing
+from keri.vc.proving import credential
 from keri.db.dbing import dgKey
 
 
@@ -168,3 +172,235 @@ def test_query_not_found_escrow():
 
         subHab.kvy.processQueryNotFound()
         assert subHab.db.qnfs.get(dgkey) == []
+
+
+def test_tel_querying(seeder):
+    with habbing.openHby() as hby, \
+            habbing.openHby() as hby1:
+        seeder.seedSchema(hby.db)
+        seeder.seedSchema(hby1.db)
+
+        inqHab = hby.makeHab(name="inquisitor")
+        subHab = hby1.makeHab(name="subject")
+
+        icp = subHab.makeOwnInception()
+        parsing.Parser().parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
+
+        subRgy = credentialing.Regery(hby=hby1, temp=True)
+        subVer = verifying.Verifier(hby=hby1, reger=subRgy.reger)
+
+        inqTvy = teventing.Tevery(db=hby.db, lax=True)
+
+        # create management registry
+        issuer = subRgy.makeRegistry(prefix=subHab.pre, name="subject")
+        rseal = eventing.SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        subHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=subHab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=subHab.kever.serder.said))
+        subRgy.processEscrows()
+
+        # tsn against management registry
+        tsnDoer = TelStateNoticer(hby=hby, hab=inqHab, tvy=inqTvy, pre=subHab.pre, ri=issuer.regk)
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[tsnDoer])
+        tever = subVer.reger.tevers.get(issuer.regk)
+        rsr = tever.state()
+
+        # first wrong registry
+        rsr.i = "DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
+        cue = dict(kin="txnStateSaved", record=rsr)
+        inqTvy.cues.append(cue)
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        assert tsnDoer.done is False
+
+        # now correct
+        inqTvy.cues.clear()
+        rsr = tever.state()
+        cue = dict(kin="txnStateSaved", record=rsr)
+        inqTvy.cues.append(cue)
+
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        regLogDoer = tsnDoer.doers[0]
+        assert isinstance(regLogDoer, RegistryLogQuerier)
+        assert tsnDoer.done is True
+        assert len(regLogDoer.doers) == 1
+
+        anc = subHab.makeOwnEvent(1)
+        parsing.Parser().parseOne(ims=bytearray(anc), kvy=inqHab.kvy)
+
+        for msg in subRgy.reger.clonePreIter(pre=issuer.regk, fn=0):
+            parsing.Parser().parseOne(ims=msg, tvy=inqTvy)
+
+        deeds = doist.enter(doers=[regLogDoer])
+        doist.recur(deeds=deeds)
+        assert len(regLogDoer.doers) == 0
+        assert regLogDoer.done is True
+
+        # tsn against management regsitry - no update needed
+        inqTvy.cues.append(cue)
+        tsnDoer = TelStateNoticer(hby=hby, hab=inqHab, tvy=inqTvy, pre=subHab.pre, ri=issuer.regk)
+        deeds = doist.enter(doers=[tsnDoer])
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 0
+        assert tsnDoer.done is True
+
+        # issue credential in registry
+        schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
+        credSubject = dict(
+            d="",
+            i=subHab.pre,
+            dt="2021-06-27T21:26:21.233257+00:00",
+            LEI="254900OPPU84GM83MG36",
+        )
+        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+
+        creder = credential(issuer=subHab.pre,
+                            schema=schema,
+                            data=d,
+                            status=issuer.regk)
+
+        iss = issuer.issue(said=creder.said)
+        rseal = eventing.SealEvent(iss.pre, "0", iss.said)._asdict()
+        subHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=subHab.kever.sn)
+        issuer.anchorMsg(pre=iss.pre,
+                         regd=iss.said,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=subHab.kever.serder.said))
+        subRgy.processEscrows()
+
+        msg = creder.raw
+        atc = bytearray(msg)
+        atc.extend(Counter(Codens.SealSourceTriples, count=1, gvrsn=kering.Vrsn_1_0).qb64b)
+        atc.extend(coring.Prefixer(qb64=iss.pre).qb64b)
+        atc.extend(coring.Seqner(sn=0).qb64b)
+        atc.extend(iss.saidb)
+        parsing.Parser().parseOne(ims=bytes(atc), vry=subVer)
+
+        assert subVer.reger.saved.get(keys=(creder.said,)) is not None
+
+        # tsn against vc
+        tsnDoer = TelStateNoticer(hby=hby, hab=inqHab, tvy=inqTvy, pre=subHab.pre, ri=issuer.regk, i=iss.pre)
+        deeds = doist.enter(doers=[tsnDoer])
+
+        vsr = tever.vcState(iss.pre)
+
+        # wrong ri
+        vsr.ri = "DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
+        cue = dict(kin="txnStateSaved", record=vsr)
+        inqTvy.cues.append(cue)
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        assert tsnDoer.done is False
+
+        # wrong i
+        inqTvy.cues.clear()
+        vsr = tever.vcState(iss.pre)
+        vsr.i = "DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
+        cue = dict(kin="txnStateSaved", record=vsr)
+        inqTvy.cues.append(cue)
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        assert tsnDoer.done is False
+
+        # now correct
+        inqTvy.cues.clear()
+        vsr = tever.vcState(iss.pre)
+        cue = dict(kin="txnStateSaved", record=vsr)
+        inqTvy.cues.append(cue)
+
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        vcLogDoer = tsnDoer.doers[0]
+        assert isinstance(vcLogDoer, VcLogQuerier)
+        assert tsnDoer.done is True
+        assert len(vcLogDoer.doers) == 1
+
+        # receive vc updates
+        anc = subHab.makeOwnEvent(2)
+        parsing.Parser().parseOne(ims=bytearray(anc), kvy=inqHab.kvy)
+
+        for msg in subRgy.reger.clonePreIter(pre=creder.said, fn=0):
+            parsing.Parser().parseOne(ims=msg, tvy=inqTvy)
+
+        deeds = doist.enter(doers=[vcLogDoer])
+        doist.recur(deeds=deeds)
+        assert len(vcLogDoer.doers) == 0
+        assert vcLogDoer.done is True
+
+        # vc update against querier without i
+        tsnDoer = TelStateNoticer(hby=hby, hab=inqHab, tvy=inqTvy, pre=subHab.pre, ri=issuer.regk)
+        deeds = doist.enter(doers=[tsnDoer])
+        inqTvy.cues.clear()
+        vsr = tever.vcState(iss.pre)
+        cue = dict(kin="txnStateSaved", record=vsr)
+        inqTvy.cues.append(cue)
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        assert tsnDoer.done is False
+
+        # now do a revocation
+        rev = issuer.revoke(said=creder.said)
+        rseal = eventing.SealEvent(rev.pre, "1", rev.said)._asdict()
+        subHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=subHab.kever.sn)
+        issuer.anchorMsg(pre=rev.pre,
+                         regd=rev.said,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=subHab.kever.serder.said))
+        subRgy.processEscrows()
+
+        msg = creder.raw
+        atc = bytearray(msg)
+        atc.extend(Counter(Codens.SealSourceTriples, count=1, gvrsn=kering.Vrsn_1_0).qb64b)
+        atc.extend(coring.Prefixer(qb64=rev.pre).qb64b)
+        atc.extend(coring.Seqner(sn=1).qb64b)
+        atc.extend(rev.saidb)
+        parsing.Parser().parseOne(ims=bytes(atc), vry=subVer)
+
+        assert tever.vcState(vci=creder.said).et == coring.Ilks.rev
+
+        # tsn with rev
+        tsnDoer = TelStateNoticer(hby=hby, hab=inqHab, tvy=inqTvy, pre=subHab.pre, ri=issuer.regk, i=iss.pre)
+        deeds = doist.enter(doers=[tsnDoer])
+        inqTvy.cues.clear()
+        vsr = tever.vcState(iss.pre)
+        cue = dict(kin="txnStateSaved", record=vsr)
+        inqTvy.cues.append(cue)
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        vcLogDoer = tsnDoer.doers[0]
+        assert isinstance(vcLogDoer, VcLogQuerier)
+        assert tsnDoer.done is True
+
+        # receive vc updates
+        anc = subHab.makeOwnEvent(3)
+        parsing.Parser().parseOne(ims=bytearray(anc), kvy=inqHab.kvy)
+
+        for msg in subRgy.reger.clonePreIter(pre=creder.said, fn=0):
+            parsing.Parser().parseOne(ims=msg, tvy=inqTvy)
+
+        deeds = doist.enter(doers=[vcLogDoer])
+        doist.recur(deeds=deeds)
+        assert len(vcLogDoer.doers) == 0
+        assert vcLogDoer.done is True
+
+        # tsn with vc if management registry does not exist
+        inqTvyEmpty = teventing.Tevery(db=hby.db, lax=True)
+        inqTvyEmpty.cues.append(cue)
+
+        tsnDoer = TelStateNoticer(hby=hby, hab=inqHab, tvy=inqTvyEmpty, pre=subHab.pre, ri=issuer.regk, i=iss.pre)
+        deeds = doist.enter(doers=[tsnDoer])
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 1
+        vcLogDoer = tsnDoer.doers[0]
+        assert isinstance(vcLogDoer, VcLogQuerier)
+        assert tsnDoer.done is True

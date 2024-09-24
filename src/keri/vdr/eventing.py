@@ -1644,14 +1644,15 @@ class Tevery:
                 self.cues.append(dict(kin="replay", src=src, dest=source.qb64, msgs=msgs))
         elif route == "tsn":
             ri = qry["ri"]
+            src = qry["src"]
             if ri in self.tevers:
                 tever = self.tevers[ri]
                 tsn = tever.state()
-                self.cues.push(dict(kin="reply", route="/tsn/registry", data=asdict(tsn), dest=source))
+                self.cues.push(dict(kin="reply", route=f"/tsn/registry/{src}", data=asdict(tsn), dest=source.qb64))
 
                 if vcpre := qry["i"]:
-                    tsn = tever.vcState(vcpre=vcpre)
-                    self.cues.push(dict(kin="reply", route="/tsn/credential", data=asdict(tsn), dest=source))
+                    tsn = tever.vcState(vci=vcpre)
+                    self.cues.push(dict(kin="reply", route=f"/tsn/credential/{src}", data=asdict(tsn), dest=source.qb64))
 
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
@@ -1784,24 +1785,17 @@ class Tevery:
 
         ldig = self.reger.getTel(key=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
 
-        # Only accept key state if for last seen version of event at sn
-        if ldig is None:  # escrow because event does not yet exist in database
-            if self.reger.txnsb.escrowStateNotice(typ="registry-ooo", pre=regk, aid=aid, serder=serder, saider=saider,
-                                                  dater=dater, cigars=cigars, tsgs=tsgs):
-                self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
-
-            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(rsr))
-
         tsaider = coring.Saider(qb64=rsr.d)
-        ldig = bytes(ldig)
-        # retrieve last event itself of signer given sdig
-        sraw = self.reger.getTvt(key=dgKey(pre=regk, dig=ldig))
-        # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = serdering.SerderKERI(raw=bytes(sraw))
+        if ldig is not None:  # escrow because event does not yet exist in database
+            ldig = bytes(ldig)
+            # retrieve last event itself of signer given sdig
+            sraw = self.reger.getTvt(key=dgKey(pre=regk, dig=ldig))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = serdering.SerderKERI(raw=bytes(sraw))
 
-        if sserder.said != tsaider.qb64:  # mismatch events problem with replay
-            raise ValidationError("Mismatch keystate at sn = {} with db."
-                                  "".format(rsr.s))
+            if sserder.said != tsaider.qb64:  # mismatch events problem with replay
+                raise ValidationError("Mismatch keystate at sn = {} with db."
+                                      "".format(rsr.s))
 
         self.reger.txnsb.updateReply(aid=aid, serder=serder, saider=tsaider, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", record=rsr))
@@ -1924,28 +1918,21 @@ class Tevery:
 
         ldig = self.reger.getTel(key=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
 
-        # Only accept key state if for last seen version of event at sn
-        if ldig is None:  # escrow because event does not yet exist in database
-            if self.reger.txnsb.escrowStateNotice(typ="credential-ooo", pre=vci, aid=aid, serder=serder,
-                                                  saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
-                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vci)))
-
-            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(vsr))
-
         tsaider = coring.Saider(qb64=vsr.d)
-        ldig = bytes(ldig)
-        # retrieve last event itself of signer given sdig
-        sraw = self.reger.getTvt(key=dgKey(pre=vci, dig=ldig))
-        # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = serdering.SerderKERI(raw=bytes(sraw))
+        if ldig is not None:
+            ldig = bytes(ldig)
+            # retrieve last event itself of signer given sdig
+            sraw = self.reger.getTvt(key=dgKey(pre=vci, dig=ldig))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = serdering.SerderKERI(raw=bytes(sraw))
 
-        if sn < sserder.sn:
-            raise ValidationError("Stale txn state at sn = {} with db."
-                                  "".format(vsr.s))
+            if sn < sserder.sn:
+                raise ValidationError("Stale txn state at sn = {} with db."
+                                      "".format(vsr.s))
 
-        if sserder.said != tsaider.qb64:  # mismatch events problem with replay
-            raise ValidationError("Mismatch txn state at sn = {} with db."
-                                  "".format(vsr.s))
+            if sserder.said != tsaider.qb64:  # mismatch events problem with replay
+                raise ValidationError("Mismatch txn state at sn = {} with db."
+                                      "".format(vsr.s))
 
         self.reger.txnsb.updateReply(aid=aid, serder=serder, saider=tsaider, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", record=vsr))
@@ -2007,12 +1994,8 @@ class Tevery:
                                                 extype=kering.MissingRegistryError)
             self.reger.txnsb.processEscrowState(typ="credential-mae", processReply=self.processReplyCredentialTxnState,
                                                 extype=kering.MissingAnchorError)
-            self.reger.txnsb.processEscrowState(typ="credential-ooo", processReply=self.processReplyCredentialTxnState,
-                                                extype=kering.OutOfOrderTxnStateError)
             self.reger.txnsb.processEscrowState(typ="registry-mae", processReply=self.processReplyRegistryTxnState,
                                                 extype=kering.MissingAnchorError)
-            self.reger.txnsb.processEscrowState(typ="registry-ooo", processReply=self.processReplyRegistryTxnState,
-                                                extype=kering.OutOfOrderTxnStateError)
 
         except Exception as ex:  # log diagnostics errors etc
             if logger.isEnabledFor(logging.DEBUG):
