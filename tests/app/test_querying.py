@@ -393,6 +393,15 @@ def test_tel_querying(seeder):
         assert len(vcLogDoer.doers) == 0
         assert vcLogDoer.done is True
 
+        # tsn against vc - no update needed
+        inqTvy.cues.clear()
+        inqTvy.cues.append(cue)
+        tsnDoer = TelStateNoticer(hby=hby, hab=inqHab, tvy=inqTvy, pre=subHab.pre, ri=issuer.regk, i=iss.pre)
+        deeds = doist.enter(doers=[tsnDoer])
+        doist.recur(deeds=deeds)
+        assert len(tsnDoer.doers) == 0
+        assert tsnDoer.done is True
+
         # tsn with vc if management registry does not exist
         inqTvyEmpty = teventing.Tevery(db=hby.db, lax=True)
         inqTvyEmpty.cues.append(cue)
