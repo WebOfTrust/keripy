@@ -202,7 +202,8 @@ class TelStateNoticer(doing.DoDoer):
                             self.extend([VcLogQuerier(hby=self.hby, tvy=self.tvy, hab=self.hab, pre=self.pre, record=record)])
 
                     self.remove([self.witq])
-                    return True
+                    if not behind:
+                        return True
                 case _:
                     self.cues.append(cue)
 

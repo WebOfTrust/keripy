@@ -230,7 +230,6 @@ def test_tel_querying(seeder):
         assert len(tsnDoer.doers) == 1
         regLogDoer = tsnDoer.doers[0]
         assert isinstance(regLogDoer, RegistryLogQuerier)
-        assert tsnDoer.done is True
         assert len(regLogDoer.doers) == 1
 
         anc = subHab.makeOwnEvent(1)
@@ -321,7 +320,6 @@ def test_tel_querying(seeder):
         assert len(tsnDoer.doers) == 1
         vcLogDoer = tsnDoer.doers[0]
         assert isinstance(vcLogDoer, VcLogQuerier)
-        assert tsnDoer.done is True
         assert len(vcLogDoer.doers) == 1
 
         # receive vc updates
@@ -379,7 +377,6 @@ def test_tel_querying(seeder):
         assert len(tsnDoer.doers) == 1
         vcLogDoer = tsnDoer.doers[0]
         assert isinstance(vcLogDoer, VcLogQuerier)
-        assert tsnDoer.done is True
 
         # receive vc updates
         anc = subHab.makeOwnEvent(3)
@@ -412,4 +409,3 @@ def test_tel_querying(seeder):
         assert len(tsnDoer.doers) == 1
         vcLogDoer = tsnDoer.doers[0]
         assert isinstance(vcLogDoer, VcLogQuerier)
-        assert tsnDoer.done is True
