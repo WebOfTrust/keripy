@@ -1832,6 +1832,9 @@ def test_clear_escrows():
         pre = b'k'
         snh = b'snh'
         saidb = b'saidb'
+        db.qnfs.add(keys=(pre, saidb), val=b"z")
+        assert db.qnfs.cnt(keys=(pre, saidb)) == 1
+
         db.misfits.add(keys=(pre, snh), val=saidb)
         assert db.misfits.cnt(keys=(pre, snh)) == 1
 
@@ -1888,6 +1891,7 @@ def test_clear_escrows():
         assert db.getUwes(key) == []
         assert db.getOoes(key) == []
         assert db.getLdes(key) == []
+        assert db.qnfs.cnt(keys=(pre, saidb)) == 0
         assert db.misfits.cnt(keys=(pre, snh)) == 0
         assert db.delegables.cnt(keys=snKey(pre, 0)) == 0
         assert db.pdes.cnt(keys=snKey(pre, 0)) == 0

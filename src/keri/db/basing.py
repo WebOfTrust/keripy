@@ -1385,8 +1385,11 @@ class Baser(dbing.LMDBer):
             self.delOoes(key=k)
         for (k, _) in self.getLdeItemIter():
             self.delLdes(key=k)
+        for (pre, said), edig in self.qnfs.getItemIter():
+            self.qnfs.rem(keys=(pre, said))
 
-        for escrow in [self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
+
+        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
             escrow.trim()
 
