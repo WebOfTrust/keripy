@@ -205,7 +205,7 @@ class GroupMultisigRotate(doing.DoDoer):
         seqner = coring.Seqner(sn=ghab.kever.sn+1)
         rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
-                          verfers=merfers, digers=migers)
+                          verfers=merfers, digers=migers, smids=smids, rmids=rmids)
 
         rserder = serdering.SerderKERI(raw=rot)
         # Create a notification EXN message to send to the other agents
