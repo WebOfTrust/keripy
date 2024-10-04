@@ -107,6 +107,11 @@ class OobiDoer(doing.DoDoer):
             yield 0.25
 
         obr = self.obi.hby.db.roobi.get(keys=(self.oobi,))
+        if self.force:
+            while obr.cid not in self.hby.kevers:
+                self.hby.kvy.processEscrows()
+                yield 0.25
+
         print(self.oobi, obr.state)
 
         self.remove([self.hbyDoer, *self.obi.doers, *self.authn.doers])

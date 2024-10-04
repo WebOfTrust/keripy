@@ -16,6 +16,7 @@ from hio.help import Hict
 from keri.app import httping, connecting
 from keri.app.agenting import httpClient
 from keri.app.cli.common import existing
+from keri.app.httping import CESR_DESTINATION_HEADER
 from keri.core import coring
 
 logger = help.ogler.getLogger()
@@ -107,7 +108,8 @@ class AuthDoer(doing.DoDoer):
             fargs['delkel'] = delkel.decode("utf-8")
 
         headers = (Hict([
-            ("Content-Type", "multipart/form-data")
+            ("Content-Type", "multipart/form-data"),
+            (CESR_DESTINATION_HEADER, self.witness)
         ]))
 
         client, clientDoer = httpClient(self.hab, self.witness)
