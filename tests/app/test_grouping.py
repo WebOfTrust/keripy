@@ -37,7 +37,7 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
         smids = [hab1.pre, hab2.pre, hab3.pre]
-        rmids = None  # need to fixe this
+        rmids = [hab1.pre, hab2.pre, hab3.pre]
         inits = dict(isith='["1/2", "1/2", "1/2"]', nsith='["1/2", "1/2", "1/2"]', toad=0, wits=[])
 
         # Create group hab with init params
@@ -84,7 +84,7 @@ def test_counselor():
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(smids=smids, rmids=rmids, isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
@@ -139,7 +139,7 @@ def test_counselor():
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(smids=smids, rmids=rmids, isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
@@ -195,7 +195,7 @@ def test_counselor():
         migers = [hab1.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(smids=smids, rmids=rmids, isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
@@ -274,7 +274,7 @@ def test_the_seven():
             parsing.Parser().parse(ims=bytearray(icp), kvy=kev)
 
         smids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre, hab5.pre, hab6.pre, hab7.pre]
-        rmids = None  # need to fixe this
+        rmids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre, hab5.pre, hab6.pre, hab7.pre]
         inits = dict(isith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                      nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                      toad=0, wits=[])
@@ -376,7 +376,7 @@ def test_the_seven():
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
+        rot = ghab.rotate(smids=smids, rmids=rmids, isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
@@ -440,7 +440,7 @@ def test_the_seven():
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
+        rot = ghab.rotate(smids=smids, rmids=rmids, isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
@@ -519,7 +519,7 @@ def test_the_seven():
         migers = [hab4.kever.ndigers[0], hab5.kever.ndigers[0], hab6.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
-        rot = ghab4.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3"]',
+        rot = ghab4.rotate(smids=smids, rmids=rmids, isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3"]',
                            toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
@@ -672,6 +672,100 @@ def test_multisig_rotate(mockHelpingNowUTC):
         assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
         assert "rot" in exn.ked["e"]
+
+def test_multisig_rotate_new_group_member_updates_smids(mockHelpingNowUTC):
+    # Create a multisig with three members, test_1, test_2, and test_3
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+        # Create a new member, test_4
+        with habbing.openHab(name="test_4", salt=b'0123456789abcdef', transferable=True, temp=True) as (hby4, hab4):
+            icp4 = hab4.makeOwnEvent(sn=0) # Get test_4's inception event to introduce to group members
+
+            hab1 = hby1.habByName("test_1")
+            hab2 = hby2.habByName("test_2")
+            hab3 = hby3.habByName("test_3")
+            # Create member Kevery instances to parse each other's events and update their keystate
+            kev1 = eventing.Kevery(db=hab1.db, lax=True, local=False)
+            kev2 = eventing.Kevery(db=hab2.db, lax=True, local=False)
+            kev3 = eventing.Kevery(db=hab3.db, lax=True, local=False)
+            kev4 = eventing.Kevery(db=hab4.db, lax=True, local=False)
+
+             # Introduce test_4 member to group by parsing test_4's inception event (latest key state)
+            parsing.Parser().parse(ims=bytearray(icp4), kvy=kev1)
+            parsing.Parser().parse(ims=bytearray(icp4), kvy=kev2)
+            parsing.Parser().parse(ims=bytearray(icp4), kvy=kev3)
+            # introduce each member to 4
+            parsing.Parser().parse(ims=bytearray(hab1.makeOwnEvent(sn=0)), kvy=kev4)
+            parsing.Parser().parse(ims=bytearray(hab2.makeOwnEvent(sn=0)), kvy=kev4)
+            parsing.Parser().parse(ims=bytearray(hab3.makeOwnEvent(sn=0)), kvy=kev4)
+
+            # rotate each individual hab to satisfy the rotation threshold with new keys
+            hab1.rotate()
+            hab2.rotate()
+            hab3.rotate()
+
+            # Update keystate in each hab for each other member
+            rot1 = hab1.makeOwnEvent(sn=1) # get latest event for hab1 and update keystate for other members
+            parsing.Parser().parse(ims=bytearray(rot1), kvy=kev2)
+            parsing.Parser().parse(ims=bytearray(rot1), kvy=kev3)
+            parsing.Parser().parse(ims=bytearray(rot1), kvy=kev4)
+
+            rot2 = hab2.makeOwnEvent(sn=1) # get latest event for hab2 and update keystate for other members
+            parsing.Parser().parse(ims=bytearray(rot2), kvy=kev1)
+            parsing.Parser().parse(ims=bytearray(rot2), kvy=kev3)
+            parsing.Parser().parse(ims=bytearray(rot2), kvy=kev4)
+
+            rot3 = hab3.makeOwnEvent(sn=1) # get latest event for hab3 and update keystate for other members
+            parsing.Parser().parse(ims=bytearray(rot3), kvy=kev1)
+            parsing.Parser().parse(ims=bytearray(rot3), kvy=kev2)
+            parsing.Parser().parse(ims=bytearray(rot3), kvy=kev4)
+
+            # create signing and rotation member AID lists for upcoming rotation
+            smids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre]
+            rmids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre]
+
+            # make group hab for test_4
+            ghab4 = hby4.joinGroupHab(hab4.pre, group="test_group4", mhab=hab4, smids=smids, rmids=rmids)
+
+            isith = '["1/4", "1/4", "1/4", "1/4"]'
+            nsith = '["1/4", "1/4", "1/4", "1/4"]'
+            merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0], hab4.kever.verfers[0]]
+            migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0]]
+            rot = ghab1.rotate(smids=smids, rmids=rmids, isith=isith, nsith=nsith, toad=None, cuts=None, adds=None, data=None,
+                               verfers=merfers, digers=migers)
+            rserder = serdering.SerderKERI(raw=rot)
+
+            # start counselor for group hab 1
+            prefixer = coring.Prefixer(qb64=ghab1.pre)
+            seqner = coring.Seqner(sn=ghab1.kever.sn + 1)
+            saider = coring.Saider(qb64=rserder.said)
+            counselor = grouping.Counselor(hby=hby1)
+            counselor.start(ghab=ghab1, prefixer=prefixer, seqner=seqner, saider=saider)
+
+            # hab2 signs rotation event and parse into hab1 Kevery
+            sigers2 = hab2.mgr.sign(rserder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
+            msg2 = eventing.messagize(serder=rserder, sigers=sigers2)
+            parsing.Parser().parse(ims=bytearray(msg2), kvy=kev1)
+
+            # hab3 signs rotation event and parse into hab1 Kevery
+            sigers3 = hab3.mgr.sign(rserder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
+            msg3 = eventing.messagize(serder=rserder, sigers=sigers3)
+            parsing.Parser().parse(ims=bytearray(msg3), kvy=kev1)
+
+            # hab4 signs rotation event and parse into hab1 Kevery. This should commit the event
+            sigers4 = hab4.mgr.sign(rserder.raw, verfers=hab4.kever.verfers, indexed=True, indices=[3])
+            msg4 = eventing.messagize(serder=rserder, sigers=sigers4)
+            parsing.Parser().parse(ims=bytearray(msg4), kvy=kev1)
+
+            kev1.processEscrows() # Runs escrows for Kevery1 so he processes all sigs together
+
+            counselor.processEscrows()  # Get the rest of the way through counselor.
+            assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
+            assert ghab4.smids == smids
+            assert ghab4.rmids == rmids
+            hby1.loadHabs()
+            ghab1 = hby1.habByName("test_group1") # reload hab to get updated smids and rmids values
+            assert ghab1.smids == smids
+            assert ghab1.rmids == rmids
 
 
 def test_multisig_interact(mockHelpingNowUTC):

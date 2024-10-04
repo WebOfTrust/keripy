@@ -330,7 +330,7 @@ class Habery:
             if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                               name=name, pre=pre, temp=self.temp, smids=habord.smids)
+                               name=name, pre=pre, temp=self.temp, smids=habord.smids, rmids=habord.rmids)
                 groups.append(habord)
             elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
@@ -2736,24 +2736,34 @@ class GroupHab(BaseHab):
 
         self.inited = True
 
-    def rotate(self, serder=None, **kwargs):
+    def rotate(self, serder=None, smids=None, rmids=None, **kwargs):
+
+        if (habord := self.db.habs.get(keys=(self.name,))) is None:
+            raise kering.ValidationError(f"Missing HabitatRecord for name={self.name}")
 
         if serder is None:
-            return super(GroupHab, self).rotate(**kwargs)
+            msg = super(GroupHab, self).rotate(**kwargs)
+        else:
 
-        # sign handles group hab with .mhab case
-        sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
+            # sign handles group hab with .mhab case
+            sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
 
-        # update own key event verifier state
-        msg = eventing.messagize(serder, sigers=sigers)
+            # update own key event verifier state
+            msg = eventing.messagize(serder, sigers=sigers)
 
-        try:
-            self.kvy.processEvent(serder=serder, sigers=sigers)
-        except MissingSignatureError:
-            pass
-        except Exception as ex:
-            raise kering.ValidationError("Improper Habitat rotation for "
-                                         "pre={self.pre}.") from ex
+            try:
+                self.kvy.processEvent(serder=serder, sigers=sigers)
+            except MissingSignatureError:
+                pass
+            except Exception as ex:
+                raise kering.ValidationError("Improper Habitat rotation for "
+                                             "pre={self.pre}.") from ex
+
+        self.smids = smids
+        self.rmids = rmids
+        habord.smids = smids
+        habord.rmids = rmids
+        self.db.habs.pin(keys=(self.name,), val=habord)
 
         return msg
 
@@ -2869,7 +2879,6 @@ class GroupHab(BaseHab):
         serder = eventing.query(query=query, **kwa)
 
         return self.mhab.endorse(serder, last=True)
-
 
     def witnesser(self):
         """This method name does not match logic???
