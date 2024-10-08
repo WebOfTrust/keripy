@@ -3788,7 +3788,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   seqner=delseqner, saider=delsaider, wigers=wigers)
+                                   seqner=delseqner, saider=delsaider, wigers=wigers, local=local)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -3829,7 +3829,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       seqner=delseqner, saider=delsaider, wigers=wigers)
+                                       seqner=delseqner, saider=delsaider, wigers=wigers, local=local)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # inorder event (ixn, rot, drt) or
