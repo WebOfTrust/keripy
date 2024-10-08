@@ -38,6 +38,15 @@ python 3.12.1+
 libsodium 1.0.18+
 
 
+##### Libsodium installation
+
+After installing with Homebrew you need to link the library to the default location that the `ctypes.find_library()` looks in, `/usr/local/lib`, as shown below:
+
+```shell
+sudo ln -s /opt/homebrew/lib /usr/local/lib
+```
+
+
 #### python packages
 lmdb 0.98+
 pysodium 0.7.5+

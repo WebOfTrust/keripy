@@ -47,9 +47,13 @@ class CleanDoer(doing.Doer):
         super(CleanDoer, self).__init__()
 
     def recur(self, tyme):
-
         hby = existing.setupHby(name=self.args.name, base=self.args.base,
                                 bran=self.args.bran, temp=self.args.temp)
+
+        print("Clearing escrows...")
+        hby.db.clearEscrows()
+        print("Finished")
+
         print("Migrating...")
         hby.db.migrate()
         print("Finished")
@@ -59,6 +63,6 @@ class CleanDoer(doing.Doer):
 
         print("Database open, performing clean...")
         hby.db.clean()
-        print("Finished.")
+        print("Finished")
 
         return True
