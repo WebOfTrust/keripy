@@ -4,7 +4,7 @@ from keri.db import koming, basing
 
 
 @dataclass
-class OldHabitatRecord:  # baser.habs
+class HabitatRecordV0_6_8:  # baser.habs
     """
     Habitat application state information keyed by habitat name (baser.habs)
 
@@ -24,8 +24,19 @@ class OldHabitatRecord:  # baser.habs
     sid: str | None = None  # Signify identifier qb64 when hid is Signify
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
+def _check_if_needed(db):
+    habs = koming.Komer(db=db,
+                        subkey='habs.',
+                        schema=dict, )
+    first = next(habs.getItemIter(), None)
+    if first is None:
+        return False
+    name, habord = first
+    if 'domain' in habord:
+        return False
+    return True
 
-def migrate(db):
+def migrate(db, name, base, temp):
     """ Re-key habs migration for changing the key for .habs and introducing the .names database
 
     This migrations performs the following:
@@ -36,16 +47,24 @@ def migrate(db):
 
     Parameters:
         db(Baser): Baser database object on which to run the migration
-
+        name(str): name of the keystore
+        base(str): additional optional prefix to file location of KERI keystore
+        temp(bool): create a temporary keystore, used for testing
     """
+    # May be running on a database that is already in the right state yet has no migrations run
+    # so we need to check if the migration is needed
+    if not _check_if_needed(db):
+        print(f"{__name__} migration not needed, database already in correct state")
+        return
+
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=OldHabitatRecord, )
+                        schema=HabitatRecordV0_6_8, )
 
     # habitat application state keyed by habitat namespace + b'\x00' + name, includes prefix
     nmsp = koming.Komer(db=db,
                         subkey='nmsp.',
-                        schema=OldHabitatRecord, )
+                        schema=HabitatRecordV0_6_8, )
 
     habords = dict()
     # Update Hab records from .habs with name

@@ -18,16 +18,16 @@ logger = help.ogler.getLogger()
 
 def handler(args):
     """
-    Launch KERI database initialization
+    Launch KERI database migrator
 
     Args:
         args(Namespace): arguments object from command line
     """
-    clean = MigrateDoer(args)
-    return [clean]
+    migrator = MigrateDoer(args)
+    return [migrator]
 
 
-parser = argparse.ArgumentParser(description='Cleans and migrates a database and keystore')
+parser = argparse.ArgumentParser(description='Cleans and migrates a database and keystore up to the latest source code version')
 parser.set_defaults(handler=handler,
                     transferable=True)
 
@@ -60,8 +60,8 @@ class MigrateDoer(doing.Doer):
         except kering.DatabaseError:
             pass
 
-        print("Migrating...")
-        db.migrate()
-        print("Finished")
+        print(f"Migrating {self.args.name}...")
+        db.migrate(name=self.args.name, base=self.args.base, temp=self.args.temp)
+        print(f"Finished migrating {self.args.name}")
 
         return True
