@@ -1347,7 +1347,8 @@ class Baser(dbing.LMDBer):
         """
         for (version, migrations) in MIGRATIONS:
             # Check to see if this is for an older version
-            if self.version is not None and semver.compare(version, self.version) != 1:
+            if self.version is not None and semver.compare(version.replace('dev', ''),
+                                                           self.version.replace('dev', '')) != 1:
                 continue
 
             for migration in migrations:
@@ -1408,7 +1409,8 @@ class Baser(dbing.LMDBer):
             return True
 
         # If database version is ahead of library version, throw exception
-        if self.version is not None and semver.compare(self.version, keri.__version__) == 1:
+        if self.version is not None and semver.compare(self.version.replace('dev', ''),
+                                                       keri.__version__.replace('dev', '')) == 1:
             raise kering.ConfigurationError(
                 f"Database version={self.version} is ahead of library version={keri.__version__}")
 
