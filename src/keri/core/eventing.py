@@ -3020,22 +3020,22 @@ class Kever:
             dserder = serdering.SerderKERI(raw=bytes(raw))
             return dserder
 
-        elif eager:  #missing aes but try to find seal by walking delegator's KEL
+        elif eager:  # missing aes but try to find seal by walking delegator's KEL
             seal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)._asdict
             if original:  # search all events in delegator's kel not just last
-                if not (dserder:=self.db.fetchAllSealingEventByEventSeal(pre=delpre,
-                                                                        seal=seal)):
+                if not (dserder := self.db.fetchLastSealingEventByEventSeal(pre=delpre,
+                                                                            seal=seal)):
                     # database broken this should never happen so do not validate
                     # since original must have been validated so it must have
                     # all its delegation chain.
                     raise ValidationError(f"Missing delegation source seal for {serder.ked}")
-            else: # only search last events in delegator's kel
-                if not (dserder:=self.db.fetchLastSealingEventByEventSeal(pre=delpre,
-                                                                         seal=seal)):
+            else:  # only search last events in delegator's kel
+                if not (dserder := self.db.fetchLastSealingEventByEventSeal(pre=delpre,
+                                                                            seal=seal)):
                     # superseding delegation may not have happened yet so escrow
                     # ToDo XXXX  need to cue up to get latest events in
                     # delegator's kel.
-                    #raise ValidationError(f"Missing delegation source seal for {serder.ked}")
+                    # raise ValidationError(f"Missing delegation source seal for {serder.ked}")
                     return None
 
             # Only repair .aess when found delegation is for delegated event that

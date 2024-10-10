@@ -11,6 +11,9 @@ kli ends add --name cha2 --alias cha2 --eid BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZE
 cha1_oobi="$(kli oobi generate --name cha1 --alias cha1 --role witness | sed -n '2 p')"
 cha2_oobi="$(kli oobi generate --name cha2 --alias cha2 --role witness | sed -n '2 p')"
 
+echo "${cha1_oobi}"
+echo "${cha2_oobi}"
+
 kli oobi resolve --name cha1 --oobi-alias cha2 --oobi "${cha2_oobi}"
 kli oobi resolve --name cha2 --oobi-alias cha1 --oobi "${cha1_oobi}"
 
