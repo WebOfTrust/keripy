@@ -1726,7 +1726,6 @@ class Baser(dbing.LMDBer):
     # use alias here until can change everywhere for  backwards compatibility
     findAnchoringSealEvent = fetchAllSealingEventByEventSeal  # alias
 
-
     def fetchLastSealingEventByEventSeal(self, pre, seal, sn=0):
         """
         Search through a KEL for the last event at any sn but that contains a

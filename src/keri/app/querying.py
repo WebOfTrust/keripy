@@ -140,8 +140,7 @@ class AnchorQuerier(doing.DoDoer):
         if self.pre not in self.hab.kevers:
             return False
 
-        kever = self.hab.kevers[self.pre]
-        if self.hby.db.fetchAllSealingEventByEventSeal(self.pre, seal=self.anchor):
+        if self.hby.db.fetchLastSealingEventByEventSeal(self.pre, seal=self.anchor):
             self.remove([self.witq])
             return True
 

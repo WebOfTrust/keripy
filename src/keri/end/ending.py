@@ -275,7 +275,7 @@ def siginput(name, method, path, headers, fields, hab=None, signers=None, expire
         expires (str): iso8601 formated date string indicating exiration of header signature
         signers (list): Optional signer objects used to sign the values
         hab (Hab): Optional Hab used to sign the values.  One of signers or Hab is required
-        fields (str): Fields in request to sign.  Includes special fields as well as Header fields
+        fields (list): Fields in request to sign.  Includes special fields as well as Header fields
         headers (dict): HTTP request headers
         path (str): HTTP request path
         method (str): HTTP request method (POST, GET, PUT, etc)
