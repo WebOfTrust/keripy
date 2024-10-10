@@ -61,7 +61,7 @@ class MigrateDoer(doing.Doer):
             pass
 
         print(f"Migrating {self.args.name}...")
-        db.migrate(name=self.args.name, base=self.args.base, temp=self.args.temp)
+        db.migrate()
         print(f"Finished migrating {self.args.name}")
 
         return True

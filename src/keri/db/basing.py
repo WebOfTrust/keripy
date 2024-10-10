@@ -1337,7 +1337,7 @@ class Baser(dbing.LMDBer):
         for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
 
-    def migrate(self, name, base, temp):
+    def migrate(self):
         """ Run all migrations required
 
         Run all migrations  that are required from the current version of database up to the current version
@@ -1367,7 +1367,7 @@ class Baser(dbing.LMDBer):
 
                 mod = importlib.import_module(modName)
                 try:
-                    mod.migrate(self, name=name, base=base, temp=temp)
+                    mod.migrate(self)
                 except Exception as e:
                     print(f"\nAbandoning migration {migration} at version {version} with error: {e}")
                     return

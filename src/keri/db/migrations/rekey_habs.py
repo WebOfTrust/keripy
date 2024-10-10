@@ -36,7 +36,7 @@ def _check_if_needed(db):
         return False
     return True
 
-def migrate(db, name, base, temp):
+def migrate(db):
     """ Re-key habs migration for changing the key for .habs and introducing the .names database
 
     This migrations performs the following:
@@ -47,9 +47,6 @@ def migrate(db, name, base, temp):
 
     Parameters:
         db(Baser): Baser database object on which to run the migration
-        name(str): name of the keystore
-        base(str): additional optional prefix to file location of KERI keystore
-        temp(bool): create a temporary keystore, used for testing
     """
     # May be running on a database that is already in the right state yet has no migrations run
     # so we need to check if the migration is needed

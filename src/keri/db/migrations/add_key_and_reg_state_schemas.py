@@ -20,7 +20,7 @@ def _check_if_needed(db):
         return False
     return True
 
-def migrate(db, name, base, temp):
+def migrate(db):
     """Adds schema for KeyStateRecord, RegStateRecord, and migrates the rgy.cancs., hby.db.pubs.,
     and hby.db.digs. to be up to date as of 2022-??-??
     This migration performs the following:
@@ -36,9 +36,6 @@ def migrate(db, name, base, temp):
         Value: (prefix, sn) of each event
     Parameters:
         db(Baser): Baser database object on which to run the migration
-        name(str): name of the keystore
-        base(str): additional optional prefix to file location of KERI keystore
-        temp(bool): create a temporary keystore, used for testing
     """
     # May be running on a database that is already in the right state yet has no migrations run
     # so we need to check if the migration is needed
@@ -78,7 +75,7 @@ def migrate(db, name, base, temp):
 
             nstates.pin(keys=keys, val=ksr)
 
-        rgy = viring.Reger(name=name, base=base, db=db, temp=temp, reopen=True)
+        rgy = viring.Reger(name=db.name, base=db.base, db=db, temp=db.temp, reopen=True)
 
         rstates = koming.Komer(db=rgy,
                                schema=dict,
@@ -122,7 +119,7 @@ def migrate(db, name, base, temp):
         db.qnfs.trim()
 
     except ConfigurationError:
-        logger.error(f"identifier prefix for {name} does not exist, incept must be run first", )
+        logger.error(f"identifier prefix for {db.name} does not exist, incept must be run first", )
         return -1
 
 

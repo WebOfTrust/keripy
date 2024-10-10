@@ -61,7 +61,7 @@ def _check_if_needed(db):
         return True
     return False
 
-def migrate(db, name, base, temp):
+def migrate(db):
     """Rename data in HabitatRecord from the old labels to the new labels as of 2022-10-17
 
     This migration performs the following:
@@ -71,9 +71,6 @@ def migrate(db, name, base, temp):
 
     Parameters:
         db(Baser): Baser database object on which to run the migration
-        name(str): name of the keystore
-        base(str): additional optional prefix to file location of KERI keystore
-        temp(bool): create a temporary keystore, used for testing
     """
     # May be running on a database that is already in the right state yet has no migrations run
     # so we need to check if the migration is needed
