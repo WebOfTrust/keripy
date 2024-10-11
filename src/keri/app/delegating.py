@@ -138,7 +138,7 @@ class Anchorer(doing.DoDoer):
             dkever = self.hby.kevers[kever.delpre]
 
             seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
-            if dserder := self.hby.db.fetchAllSealingEventByEventSeal(dkever.prefixer.qb64, seal=seal):
+            if dserder := self.hby.db.fetchLastSealingEventByEventSeal(dkever.prefixer.qb64, seal=seal):
                 seqner = coring.Seqner(sn=dserder.sn)
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
