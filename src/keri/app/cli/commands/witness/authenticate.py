@@ -117,7 +117,7 @@ class AuthDoer(doing.DoDoer):
 
         client.request(
             method="POST",
-            path=f"{client.requester.path}/aids",
+            path=f"{client.requester.path.rstrip('/')}/aids",
             headers=headers,
             fargs=fargs
         )
@@ -131,7 +131,7 @@ class AuthDoer(doing.DoDoer):
             totp = data["totp"]
             m = coring.Matter(qb64=totp)  # refactor this to use cipher
             d = coring.Matter(qb64=self.hab.decrypt(ser=m.raw))
-            otpurl = f"otpauth://totp/KERIpy:{self.witness}?secret={d.raw.decode('utf-8')}&issuer=KERIpy"
+            otpurl = f"otpauth://totp/KERI:{self.witness}?secret={d.raw.decode('utf-8')}&issuer=KERIpy"
 
             if not self.urlOnly:
                 qr = qrcode.QRCode()

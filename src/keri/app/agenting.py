@@ -70,7 +70,7 @@ class Receiptor(doing.DoDoer):
         ser = serdering.SerderKERI(raw=msg)
 
         # If we are a rotation event, may need to catch new witnesses up to current key state
-        if ser.ked['t'] in (coring.Ilks.rot,):
+        if ser.ked['t'] in (coring.Ilks.rot, coring.Ilks.drt,):
             adds = ser.ked["ba"]
             for wit in adds:
                 yield from self.catchup(ser.pre, wit)
@@ -351,7 +351,7 @@ class WitnessReceiptor(doing.DoDoer):
                             witer.msgs.append(bytearray(dmsg))
 
                         if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip) or \
-                                "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
+                                "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must catch up
                             for fmsg in hab.db.clonePreIter(pre=pre):
                                 witer.msgs.append(bytearray(fmsg))
 
