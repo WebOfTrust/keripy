@@ -49,8 +49,7 @@ logger = help.ogler.getLogger()
 
 MIGRATIONS = [
     ("0.6.8", ["hab_data_rename"]),
-    ("1.0.0", ["add_key_and_reg_state_schemas"]),
-    ("1.2.0", ["rekey_habs"])
+    ("1.0.0", ["add_key_and_reg_state_schemas"])
 ]
 
 
@@ -1118,7 +1117,7 @@ class Baser(dbing.LMDBer):
         for keys in removes:  # remove bare .habs records
             self.nmsp.rem(keys=keys)
 
-    def migrate(self, name, base, temp):
+    def migrate(self):
         """ Run all migrations required
 
         Run all migrations  that are required from the current version of database up to the current version
@@ -1132,7 +1131,7 @@ class Baser(dbing.LMDBer):
             # Only run migration if current source code version is at or below the migration version
             ver = semver.VersionInfo.parse(keri.__version__)
             ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
-            if self.version is not None and semver.compare(version, ver_no_prerelease) > 0:
+            if self.version is not None and semver.compare(version, str(ver_no_prerelease)) > 0:
                 print(f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
                 continue
             # Check to see if migration version is for an older database version
@@ -1153,6 +1152,8 @@ class Baser(dbing.LMDBer):
                     return
 
                 self.migs.pin(keys=(migration,), val=coring.Dater())
+
+            # update database version after successful migration
             self.version = version
 
         self.version = keri.__version__
@@ -1174,7 +1175,7 @@ class Baser(dbing.LMDBer):
         # If database version is ahead of library version, throw exception
         ver = semver.VersionInfo.parse(keri.__version__)
         ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
-        if self.version is not None and semver.compare(self.version, ver_no_prerelease) == 1:
+        if self.version is not None and semver.compare(self.version, str(ver_no_prerelease)) == 1:
             raise kering.ConfigurationError(
                 f"Database version={self.version} is ahead of library version={keri.__version__}")
 
@@ -1206,8 +1207,9 @@ class Baser(dbing.LMDBer):
                         dater = self.migs.get(keys=(mig,))
                         migrations.append((mig, dater))
         else:
-            if name not in MIGRATIONS or not self.migs.get(keys=(name,)):
-                raise ValueError(f"No migration named {name}")
+            for version, migs in MIGRATIONS:  # check all migrations for each version
+                if name not in migs or not self.migs.get(keys=(name,)):
+                    raise ValueError(f"No migration named {name}")
             migrations.append((name, self.migs.get(keys=(name,))))
 
         return migrations

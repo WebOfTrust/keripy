@@ -76,12 +76,13 @@ def migrate(db):
             sid=None,
             watchers=habord_0_6_7.watchers
         )
-        habords[habord_0_6_8.hid] = habord_0_6_8
+        habords[name] = habord_0_6_8
 
     habs.trim() # remove existing records
 
     # Add in the renamed records
-    for pre, habord in habords.items():
-        db.habs.pin(keys=(pre,), val=habord)
+    for name, habord in habords.items():
+        (name,) = name
+        db.habs.pin(keys=(name,), val=habord)
 
 

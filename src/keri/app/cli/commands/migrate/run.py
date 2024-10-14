@@ -1,34 +1,30 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.commands module
+keri.kli.commands.migrate.run module
 
 """
 import argparse
-import logging
 
-import keri
-from keri import help
 from hio.base import doing
-from keri import kering
 
-from keri.app.cli.common import existing
+from keri import help
+from keri import kering
 from keri.db import basing
-from keri.vdr import viring
 
 logger = help.ogler.getLogger("keri")
 
 def handler(args):
     """
-    Launch KERI database initialization
+    Launch KERI database migrator
 
     Args:
         args(Namespace): arguments object from command line
     """
-    clean = MigrateDoer(args)
-    return [clean]
+    migrator = MigrateDoer(args)
+    return [migrator]
 
 
-parser = argparse.ArgumentParser(description='Cleans and migrates a database and keystore')
+parser = argparse.ArgumentParser(description='Migrates a database and keystore')
 parser.set_defaults(handler=handler,
                     transferable=True)
 
