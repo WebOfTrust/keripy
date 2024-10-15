@@ -1,6 +1,6 @@
-==================================================
-Python Implementation of the KERI Core Libraries
-==================================================
+==========================================================
+Python Reference Implementation of the KERI Core Libraries
+==========================================================
 
 .. image:: https://img.shields.io/pypi/v/keri.svg
     :target: https://pypi.org/project/keri/
@@ -35,11 +35,13 @@ API Reference
     keri_app
     keri_core
     keri_db
+    keri_demo
     keri_end
     keri_help
     keri_peer
     keri_vc
     keri_vdr
+    naming
 
 Indices and tables
 ==================

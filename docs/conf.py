@@ -28,7 +28,7 @@ except ImportError:
     sphinx_rtd_theme = None
 
 project = 'keri'
-copyright = '2022, Dr. Samuel Smith and contributors'
+copyright = '2024, Dr. Samuel Smith and contributors'
 author = 'Dr. Samuel Smith'
 
 version = release = keri.__version__
