@@ -12,7 +12,7 @@ from keri import kering
 from keri.app import habbing, keeping
 
 
-def setupHby(name, base="", bran=None, cf=None):
+def setupHby(name, base="", bran=None, cf=None, temp=False):
     """ Create Habery off of existing directory
 
     Parameters:
@@ -27,7 +27,7 @@ def setupHby(name, base="", bran=None, cf=None):
     """
     ks = keeping.Keeper(name=name,
                         base=base,
-                        temp=False,
+                        temp=temp,
                         cf=cf,
                         reopen=True)
     aeid = ks.gbls.get('aeid')

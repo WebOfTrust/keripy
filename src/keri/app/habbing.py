@@ -2763,7 +2763,7 @@ class GroupHab(BaseHab):
         self.rmids = rmids
         habord.smids = smids
         habord.rmids = rmids
-        self.db.habs.pin(keys=(self.name,), val=habord)
+        self.db.habs.pin(keys=self.name, val=habord)
 
         return msg
 
