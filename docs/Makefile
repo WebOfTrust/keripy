@@ -27,3 +27,6 @@ html:
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 	@echo
+
+open:
+	open _build/html/index.html

@@ -32,16 +32,15 @@ API Reference
 .. toctree::
     :maxdepth: 1
 
+    naming
     keri_app
     keri_core
     keri_db
-    keri_demo
     keri_end
     keri_help
     keri_peer
     keri_vc
     keri_vdr
-    naming
 
 Indices and tables
 ==================
