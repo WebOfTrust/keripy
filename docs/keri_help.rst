@@ -1,5 +1,5 @@
 KERI Help API
-============
+=============
 
 keri.help.helping
 -----------------

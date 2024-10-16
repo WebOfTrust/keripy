@@ -25,6 +25,12 @@ keri.db.koming
 .. automodule:: keri.db.koming
     :members:
 
+keri.db.migrations
+------------------
+
+.. automodule:: keri.db.migrations
+    :members:
+
 keri.db.subing
 --------------
 

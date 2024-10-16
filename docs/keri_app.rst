@@ -13,12 +13,6 @@ keri.app.apping
 .. automodule:: keri.app.apping
     :members:
 
-keri.app.booting
-----------------
-
-.. automodule:: keri.app.booting
-    :members:
-
 keri.app.challenging
 --------------------
 
@@ -32,7 +26,7 @@ keri.app.configing
     :members:
 
 keri.app.connecting
-------------------
+-------------------
 
 .. automodule:: keri.app.connecting
     :members:
@@ -85,12 +79,6 @@ keri.app.keeping
 .. automodule:: keri.app.keeping
     :members:
 
-keri.app.kiwiing
-----------------
-
-.. automodule:: keri.app.kiwiing
-    :members:
-
 keri.app.notifying
 ------------------
 
@@ -100,7 +88,7 @@ keri.app.notifying
 keri.app.oobing
 ---------------
 
-.. automodule:: keri.app.oobing
+.. automodule:: keri.app.oobiing
     :members:
 
 keri.app.signaling

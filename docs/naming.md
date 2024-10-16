@@ -1,5 +1,5 @@
-
-# Python Style Guide for keripy
+# Naming and Style guide
+## Python Style Guide for KERIpy
 
 The Python PEPs on style have many options or allowed variants.
 The purpose of this document is to select a single preferred style
