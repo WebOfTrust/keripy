@@ -15,7 +15,9 @@ kli incept --name multisig2 --alias multisig2 --file ${KERI_DEMO_SCRIPT_DIR}/dat
 
 # Exchange OOBIs between multisig group
 kli oobi resolve --name multisig1 --oobi-alias multisig2 --oobi http://127.0.0.1:5642/oobi/EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1/witness
+kli contacts replace --name multisig1 --prefix EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --alias multisig2
 kli oobi resolve --name multisig2 --oobi-alias multisig1 --oobi http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4/witness
+kli contacts replace --name multisig2 --prefix EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --alias multisig1
 
 # Create the identifier to which the credential will be issued
 kli init --name holder --salt 0ACDEyMzQ1Njc4OWxtbm9qWc --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
@@ -23,11 +25,15 @@ kli incept --name holder --alias holder --file ${KERI_DEMO_SCRIPT_DIR}/data/glei
 
 # Introduce multisig to Holder
 kli oobi resolve --name holder --oobi-alias multisig2 --oobi http://127.0.0.1:5642/oobi/EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1/witness
+kli contacts replace --name holder --prefix EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --alias multisig2
 kli oobi resolve --name holder --oobi-alias multisig1 --oobi http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4/witness
+kli contacts replace --name holder --prefix EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --alias multisig1
 
 # Introduce the holder to all participants in the multisig group
 kli oobi resolve --name multisig1 --oobi-alias holder --oobi http://127.0.0.1:5642/oobi/ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k/witness
+kli contacts replace --name multisig1 --prefix ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --alias holder
 kli oobi resolve --name multisig2 --oobi-alias holder --oobi http://127.0.0.1:5642/oobi/ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k/witness
+kli contacts replace --name multisig2 --prefix ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --alias holder
 
 # Load Data OOBI for schema of credential to issue
 kli oobi resolve --name multisig1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
@@ -48,6 +54,7 @@ kli multisig join --name multisig2
 
 wait $PID_LIST
 kli oobi resolve --name holder --oobi-alias multisig --oobi http://127.0.0.1:5642/oobi/EC61gZ9lCKmHAS7U5ehUfEbGId5rcY0D7MirFZHDQcE2/witness
+kli contacts replace --name holder --prefix EC61gZ9lCKmHAS7U5ehUfEbGId5rcY0D7MirFZHDQcE2 --alias multisig
 
 # Create a credential registry owned by the multisig issuer
 kli vc registry incept --name multisig1 --alias multisig --registry-name vLEI --usage "Issue vLEIs" --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s &

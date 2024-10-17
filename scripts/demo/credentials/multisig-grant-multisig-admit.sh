@@ -28,7 +28,9 @@ kli incept --name issuer2 --alias issuer2 --file ${KERI_DEMO_SCRIPT_DIR}/data/is
 
 # Exchange OOBIs between issuer group
 kli oobi resolve --name issuer1 --oobi-alias issuer2 --oobi http://127.0.0.1:5642/oobi/EFJtDtSoE6XOOqLoLvYoB7ctCzMtJDiAJltnXiK_EdlM/witness
+kli contacts replace --name issuer1 --prefix EFJtDtSoE6XOOqLoLvYoB7ctCzMtJDiAJltnXiK_EdlM --alias issuer2
 kli oobi resolve --name issuer2 --oobi-alias issuer1 --oobi http://127.0.0.1:5642/oobi/EEVlFHcMWAQNwezHjyKK5cKKzF6zgLlnrLyi_CcAEXCs/witness
+kli contacts replace --name issuer2 --prefix EEVlFHcMWAQNwezHjyKK5cKKzF6zgLlnrLyi_CcAEXCs --alias issuer1
 
 # Create the identifier to which the credential will be issued
 kli init --name issuee1 --salt 0ACDEyMzQ1Njc4OWxtbm9qWc --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
@@ -40,19 +42,29 @@ kli incept --name issuee2 --alias issuee2 --file ${KERI_DEMO_SCRIPT_DIR}/data/is
 
 # Exchange OOBIs between issuee group
 kli oobi resolve --name issuee1 --oobi-alias issuee2 --oobi http://127.0.0.1:5642/oobi/EPw5WQAFcNXXSbg_pTKgh8-K_rfXnD1uDKS13OeNHkKE/witness
+kli contacts replace --name issuee1 --prefix EPw5WQAFcNXXSbg_pTKgh8-K_rfXnD1uDKS13OeNHkKE --alias issuee2
 kli oobi resolve --name issuee2 --oobi-alias issuee1 --oobi http://127.0.0.1:5642/oobi/EI0IoYyHxXc7_uQyaN2WocSC3lRZsvrDAPbREOw7fM0_/witness
+kli contacts replace --name issuee2 --prefix EI0IoYyHxXc7_uQyaN2WocSC3lRZsvrDAPbREOw7fM0_ --alias issuee1
 
 # Introduce issuer to issuee
 kli oobi resolve --name issuee1 --oobi-alias issuer1 --oobi http://127.0.0.1:5642/oobi/EEVlFHcMWAQNwezHjyKK5cKKzF6zgLlnrLyi_CcAEXCs/witness
+kli contacts replace --name issuee1 --prefix EEVlFHcMWAQNwezHjyKK5cKKzF6zgLlnrLyi_CcAEXCs --alias issuer1
 kli oobi resolve --name issuee2 --oobi-alias issuer1 --oobi http://127.0.0.1:5642/oobi/EEVlFHcMWAQNwezHjyKK5cKKzF6zgLlnrLyi_CcAEXCs/witness
+kli contacts replace --name issuee2 --prefix EEVlFHcMWAQNwezHjyKK5cKKzF6zgLlnrLyi_CcAEXCs --alias issuer1
 kli oobi resolve --name issuee1 --oobi-alias issuer2 --oobi http://127.0.0.1:5642/oobi/EFJtDtSoE6XOOqLoLvYoB7ctCzMtJDiAJltnXiK_EdlM/witness
+kli contacts replace --name issuee1 --prefix EFJtDtSoE6XOOqLoLvYoB7ctCzMtJDiAJltnXiK_EdlM --alias issuer2
 kli oobi resolve --name issuee2 --oobi-alias issuer2 --oobi http://127.0.0.1:5642/oobi/EFJtDtSoE6XOOqLoLvYoB7ctCzMtJDiAJltnXiK_EdlM/witness
+kli contacts replace --name issuee2 --prefix EFJtDtSoE6XOOqLoLvYoB7ctCzMtJDiAJltnXiK_EdlM --alias issuer2
 
 # Introduce the issuee to issuer
 kli oobi resolve --name issuer1 --oobi-alias issuee1 --oobi http://127.0.0.1:5642/oobi/EI0IoYyHxXc7_uQyaN2WocSC3lRZsvrDAPbREOw7fM0_/witness
+kli contacts replace --name issuer1 --prefix EI0IoYyHxXc7_uQyaN2WocSC3lRZsvrDAPbREOw7fM0_ --alias issuee1
 kli oobi resolve --name issuer2 --oobi-alias issuee1 --oobi http://127.0.0.1:5642/oobi/EI0IoYyHxXc7_uQyaN2WocSC3lRZsvrDAPbREOw7fM0_/witness
+kli contacts replace --name issuer2 --prefix EI0IoYyHxXc7_uQyaN2WocSC3lRZsvrDAPbREOw7fM0_ --alias issuee1
 kli oobi resolve --name issuer1 --oobi-alias issuee2 --oobi http://127.0.0.1:5642/oobi/EPw5WQAFcNXXSbg_pTKgh8-K_rfXnD1uDKS13OeNHkKE/witness
+kli contacts replace --name issuer1 --prefix EPw5WQAFcNXXSbg_pTKgh8-K_rfXnD1uDKS13OeNHkKE --alias issuee2
 kli oobi resolve --name issuer2 --oobi-alias issuee2 --oobi http://127.0.0.1:5642/oobi/EPw5WQAFcNXXSbg_pTKgh8-K_rfXnD1uDKS13OeNHkKE/witness
+kli contacts replace --name issuer2 --prefix EPw5WQAFcNXXSbg_pTKgh8-K_rfXnD1uDKS13OeNHkKE --alias issuee2
 
 ## Load Data OOBI for schema of credential to issue
 kli oobi resolve --name issuer1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
@@ -84,10 +96,14 @@ wait $PID_LIST
 
 # Introduce issuer issuer issuer to issuees
 kli oobi resolve --name issuer1 --oobi-alias issuee --oobi http://127.0.0.1:5642/oobi/ELkmm28zQEyxkryJZQ4WVT4fjukklM4dR91l2DQfQHZK/witness
+kli contacts replace --name issuer1 --prefix ELkmm28zQEyxkryJZQ4WVT4fjukklM4dR91l2DQfQHZK --alias issuee
 kli oobi resolve --name issuer2 --oobi-alias issuee --oobi http://127.0.0.1:5642/oobi/ELkmm28zQEyxkryJZQ4WVT4fjukklM4dR91l2DQfQHZK/witness
+kli contacts replace --name issuer2 --prefix ELkmm28zQEyxkryJZQ4WVT4fjukklM4dR91l2DQfQHZK --alias issuee
 
 kli oobi resolve --name issuee1 --oobi-alias issuer --oobi http://127.0.0.1:5642/oobi/ELrnb8aI_wy2q_sSbCAwkgy2kOdMpRI1urFrhQiMJGLW/witness
+kli contacts replace --name issuee1 --prefix ELrnb8aI_wy2q_sSbCAwkgy2kOdMpRI1urFrhQiMJGLW --alias issuer
 kli oobi resolve --name issuee2 --oobi-alias issuer --oobi http://127.0.0.1:5642/oobi/ELrnb8aI_wy2q_sSbCAwkgy2kOdMpRI1urFrhQiMJGLW/witness
+kli contacts replace --name issuee2 --prefix ELrnb8aI_wy2q_sSbCAwkgy2kOdMpRI1urFrhQiMJGLW --alias issuer
 
 # Create a credential registry owned by the issuer issuer
 kli vc registry incept --name issuer1 --alias issuer --registry-name vLEI --usage "Issue vLEIs" --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s &

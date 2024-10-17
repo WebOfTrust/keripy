@@ -14,6 +14,12 @@ cha2_oobi="$(kli oobi generate --name cha2 --alias cha2 --role witness | sed -n 
 kli oobi resolve --name cha1 --oobi-alias cha2 --oobi "${cha2_oobi}"
 kli oobi resolve --name cha2 --oobi-alias cha1 --oobi "${cha1_oobi}"
 
+cha1_pre="$(kli aid --name cha1 --alias cha1)"
+cha2_pre="$(kli aid --name cha2 --alias cha2)"
+
+kli contacts replace --name cha1 --prefix "${cha2_pre}" --alias cha2
+kli contacts replace --name cha2 --prefix "${cha1_pre}" --alias cha1
+
 words1="$(kli challenge generate --out string)"
 words2="$(kli challenge generate --out string)"
 
