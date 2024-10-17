@@ -1,11 +1,12 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.kli.commands module
+keri.kli.commands.contacts module
 
 """
 import argparse
 import json
+import sys
 
 from hio import help
 from hio.base import doing
@@ -76,4 +77,4 @@ def list(tymth, tock=0.0, **opts):
 
     except ConfigurationError as e:
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
-        return -1
+        sys.exit(-1)
