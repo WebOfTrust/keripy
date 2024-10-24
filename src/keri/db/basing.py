@@ -849,9 +849,6 @@ class Baser(dbing.LMDBer):
                                  subkey='habs.',
                                  schema=HabitatRecord, )
 
-        # habitat name database mapping (domain,name) as key to Prefixer
-        self.names = subing.Suber(db=self, subkey='names.', sep="^")
-
         # habitat application state keyed by habitat namespace + b'\x00' + name, includes prefix
         self.nmsp = koming.Komer(db=self,
                                  subkey='nmsp.',
