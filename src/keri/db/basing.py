@@ -18,7 +18,7 @@ database will never have these flags set.
 So only need to set dupsort first time opened each other opening does not
 need to call it
 """
-
+import importlib
 import os
 import shutil
 from collections import namedtuple
@@ -30,10 +30,12 @@ import json
 import cbor2 as cbor
 import msgpack
 import lmdb
+import semver
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
+import keri
 from . import dbing, koming, subing
 from .. import kering
 
@@ -44,6 +46,11 @@ from ..help import helping
 
 
 logger = help.ogler.getLogger()
+
+MIGRATIONS = [
+    ("0.6.8", ["hab_data_rename"]),
+    ("1.0.0", ["add_key_and_reg_state_schemas"])
+]
 
 
 class dbdict(dict):
@@ -826,6 +833,10 @@ class Baser(dbing.LMDBer):
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
+
+        self.migs = subing.CesrSuber(db=self, subkey="migs.", klas=coring.Dater)
+        self.vers = subing.Suber(db=self, subkey="vers.")
+
         # Kever state made of KeyStateRecord key states
         self.states = koming.Komer(db=self,
                                    schema=KeyStateRecord,
@@ -1060,6 +1071,10 @@ class Baser(dbing.LMDBer):
         Reload stored prefixes and Kevers from .habs
 
         """
+        # Check migrations to see if this database is up to date.  Error otherwise
+        if not self.current:
+            raise kering.DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
+
         removes = []
         for keys, data in self.habs.getItemIter():
             if (ksr := self.states.get(keys=data.hid)) is not None:
@@ -1099,6 +1114,102 @@ class Baser(dbing.LMDBer):
         for keys in removes:  # remove bare .habs records
             self.nmsp.rem(keys=keys)
 
+    def migrate(self):
+        """ Run all migrations required
+
+        Run all migrations  that are required from the current version of database up to the current version
+         of the software that have not already been run.
+
+         Sets the version of the database to the current version of the software after successful completion
+         of required migrations
+
+        """
+        for (version, migrations) in MIGRATIONS:
+            # Only run migration if current source code version is at or below the migration version
+            ver = semver.VersionInfo.parse(keri.__version__)
+            ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
+            if self.version is not None and semver.compare(version, str(ver_no_prerelease)) > 0:
+                print(f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
+                continue
+            # Check to see if migration version is for an older database version
+            if self.version is not None and semver.compare(version, self.version) != 1:
+                continue
+            print(f"Migrating database v{self.version} --> v{version} ...")
+
+            for migration in migrations:
+                modName = f"keri.db.migrations.{migration}"
+                if self.migs.get(keys=(migration,)) is not None:
+                    continue
+
+                mod = importlib.import_module(modName)
+                try:
+                    mod.migrate(self)
+                except Exception as e:
+                    print(f"\nAbandoning migration {migration} at version {version} with error: {e}")
+                    return
+
+                self.migs.pin(keys=(migration,), val=coring.Dater())
+
+            # update database version after successful migration
+            self.version = version
+
+        self.version = keri.__version__
+
+    @property
+    def current(self):
+        """ Current property determines if we are at the current database migration state.
+
+         If the database version matches the library version return True
+         If the current database version is behind the current library version, check for migrations
+            - If there are migrations to run, return False
+            - If there are no migrations to run, reset database version to library version and return True
+         If the current database version is ahead of the current library version, raise exception
+
+         """
+        if self.version == keri.__version__:
+            return True
+
+        # If database version is ahead of library version, throw exception
+        ver = semver.VersionInfo.parse(keri.__version__)
+        ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
+        if self.version is not None and semver.compare(self.version, str(ver_no_prerelease)) == 1:
+            raise kering.ConfigurationError(
+                f"Database version={self.version} is ahead of library version={keri.__version__}")
+
+        last = MIGRATIONS[-1]
+        # If we aren't at latest version, but there are no outstanding migrations,
+        # reset version to latest (rightmost (-1) migration is latest)
+        if self.migs.get(keys=(last[1][-1],)) is not None:
+            return True
+
+        # We have migrations to run
+        return False
+
+    def complete(self, name=None):
+        """ Returns list of tuples of migrations completed with date of completion
+
+        Parameters:
+            name(str): optional name of migration to check completeness
+
+        Returns:
+            list: tuples of migration,date of completed migration names and the date of completion
+
+        """
+        migrations = []
+        if not name:
+            for version, migs in MIGRATIONS:
+                # Only get migration completion dates for migrations that have been run
+                if self.version is not None and semver.compare(version, self.version) <= 0:
+                    for mig in migs:
+                        dater = self.migs.get(keys=(mig,))
+                        migrations.append((mig, dater))
+        else:
+            for version, migs in MIGRATIONS:  # check all migrations for each version
+                if name not in migs or not self.migs.get(keys=(name,)):
+                    raise ValueError(f"No migration named {name}")
+            migrations.append((name, self.migs.get(keys=(name,))))
+
+        return migrations
 
     def clean(self):
         """
