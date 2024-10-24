@@ -28,7 +28,7 @@ except ImportError:
     sphinx_rtd_theme = None
 
 project = 'keri'
-copyright = '2022, Dr. Samuel Smith and contributors'
+copyright = '2022 - 2024, Dr. Samuel Smith and contributors'
 author = 'Dr. Samuel Smith'
 
 version = release = keri.__version__
@@ -62,7 +62,6 @@ napoleon_include_init_with_doc = True
 #
 if sphinx_rtd_theme:
     html_theme = "sphinx_rtd_theme"
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 else:
     html_theme = "default"
 
