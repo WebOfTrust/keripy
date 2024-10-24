@@ -49,7 +49,9 @@ logger = help.ogler.getLogger()
 
 
 MIGRATIONS = [
-    ("1.1.0", ["rekey_habs"])
+    ("0.6.8", ["hab_data_rename"]),
+    ("1.0.0", ["add_key_and_reg_state_schemas"]),
+    ("1.2.0", ["rekey_habs"])
 ]
 
 
@@ -1312,7 +1314,7 @@ class Baser(dbing.LMDBer):
         """
         # Check migrations to see if this database is up to date.  Error otherwise
         if not self.current:
-            raise kering.DatabaseError("Database migrations must be run.")
+            raise kering.DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
 
         removes = []
         for keys, data in self.habs.getItemIter():
@@ -1346,10 +1348,18 @@ class Baser(dbing.LMDBer):
 
         """
         for (version, migrations) in MIGRATIONS:
-            # Check to see if this is for an older version
+            # Only run migration if current source code version is at or below the migration version
+            ver = semver.VersionInfo.parse(keri.__version__)
+            ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
+            if self.version is not None and semver.compare(version, str(ver_no_prerelease)) > 0:
+                print(
+                    f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
+                continue
+            # Skip migrations already run - where version less than (-1) or equal to (0) database version
             if self.version is not None and semver.compare(version, self.version) != 1:
                 continue
 
+            print(f"Migrating database v{self.version} --> v{version}")
             for migration in migrations:
                 modName = f"keri.db.migrations.{migration}"
                 if self.migs.get(keys=(migration,)) is not None:
@@ -1360,10 +1370,13 @@ class Baser(dbing.LMDBer):
                     print(f"running migration {modName}")
                     mod.migrate(self)
                 except Exception as e:
-                    print(f"\nAbandoning migration {migration} with error: {e}")
+                    print(f"\nAbandoning migration {migration} at version {version} with error: {e}")
                     return
 
                 self.migs.pin(keys=(migration,), val=coring.Dater())
+
+            # update database version after successful migration
+            self.version = version
 
         self.version = keri.__version__
 
@@ -1407,14 +1420,16 @@ class Baser(dbing.LMDBer):
         if self.version == keri.__version__:
             return True
 
-        # If database version is ahead of library version, throw exception
-        if self.version is not None and semver.compare(self.version, keri.__version__) == 1:
+        ver = semver.VersionInfo.parse(keri.__version__)
+        ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
+        if self.version is not None and semver.compare(self.version, str(ver_no_prerelease)) == 1:
             raise kering.ConfigurationError(
                 f"Database version={self.version} is ahead of library version={keri.__version__}")
 
         last = MIGRATIONS[-1]
-        # If we aren't at latest version, but there are no outstanding migrations, reset version to latest
-        if self.migs.get(keys=(last[1][0],)) is not None:
+        # If we aren't at latest version, but there are no outstanding migrations,
+        # reset version to latest (rightmost (-1) migration is latest)
+        if self.migs.get(keys=(last[1][-1],)) is not None:
             return True
 
         # We have migrations to run
@@ -1433,12 +1448,15 @@ class Baser(dbing.LMDBer):
         migrations = []
         if not name:
             for version, migs in MIGRATIONS:
-                for mig in migs:
-                    dater = self.migs.get(keys=(mig,))
-                    migrations.append((mig, dater))
+                # Print entries only for migrations that have been run
+                if self.version is not None and semver.compare(version, self.version) <= 0:
+                    for mig in migs:
+                        dater = self.migs.get(keys=(mig,))
+                        migrations.append((mig, dater))
         else:
-            if name not in MIGRATIONS or not self.migs.get(keys=(name,)):
-                raise ValueError(f"No migration named {name}")
+            for version, migs in MIGRATIONS:  # check all migrations for each version
+                if name not in migs or not self.migs.get(keys=(name,)):
+                    raise ValueError(f"No migration named {name}")
             migrations.append((name, self.migs.get(keys=(name,))))
 
         return migrations
