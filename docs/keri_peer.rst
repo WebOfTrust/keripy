@@ -1,5 +1,5 @@
 KERI Peer API
-============
+=============
 
 keri.peer.exchanging
 --------------------

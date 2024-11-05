@@ -1,6 +1,6 @@
-==================================================
-Python Implementation of the KERI Core Libraries
-==================================================
+==========================================================
+Python Reference Implementation of the KERI Core Libraries
+==========================================================
 
 .. image:: https://img.shields.io/pypi/v/keri.svg
     :target: https://pypi.org/project/keri/
@@ -32,6 +32,7 @@ API Reference
 .. toctree::
     :maxdepth: 1
 
+    naming
     keri_app
     keri_core
     keri_db

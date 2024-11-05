@@ -4,7 +4,6 @@ keri.kli.commands.oobi module
 
 """
 import argparse
-from urllib.parse import urlparse
 
 import sys
 from hio import help
@@ -66,21 +65,21 @@ def generate(tymth, tock=0.0, **opts):
                 sys.exit(-1)
 
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) \
+                       or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
                 if not urls:
                     raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
             
-                url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-                up = urlparse(url)
-                print(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/witness")
+                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+                print(f"{url.rstrip("/")}/oobi/{hab.pre}/witness")
         elif role in (kering.Roles.controller,):
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) \
+                   or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
             if not urls:
                 print(f"{alias} identifier {hab.pre} does not have any controller endpoints")
                 return
-            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-            up = urlparse(url)
-            print(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+            print(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
         elif role in (kering.Roles.mailbox,):
             for (_, _, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, kering.Roles.mailbox, )):
                 if not (end.allowed and end.enabled is not False):
@@ -91,6 +90,5 @@ def generate(tymth, tock=0.0, **opts):
                 if not urls:
                     print(f"{alias} identifier {hab.pre} does not have any mailbox endpoints")
                     return
-                url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-                up = urlparse(url)
-                print(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/mailbox/{eid}")
+                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+                print(f"{url.rstrip("/")}/oobi/{hab.pre}/mailbox/{eid}")

@@ -112,8 +112,9 @@ def test_verifier(seeder):
         # also try it via the cloneCreds function
         creds = regery.reger.cloneCreds(saids=saider, db=hab.db)
 
-        for idx, cred in enumerate(creds):
+        for cred in creds:
             assert dcre.sad == cred["sad"]
+            assert cred['rev'] is None
 
         with pytest.raises(kering.MissingEntryError):
             regery.reger.cloneCred(said="nonexistantsaid")
@@ -658,5 +659,16 @@ def test_verifier_chained_credential(seeder):
         with pytest.raises(kering.RevokedChainError):
             vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
                                         saider=coring.Saider(qb64=ian.kever.serder.said))
+        
+        creds = ronreg.reger.cloneCreds(saids=[coring.Saider(qb64=creder.said)], db=ronHby.db)
+        for cred in creds:
+            assert cred['status']['et'] == 'rev'
+            assert cred['rev'] is not None
+            assert cred['rev']['i'] == creder.said
+            assert cred['revatc'] is not None
+            assert cred['revanc'] is not None
+            assert cred['revanc']['s'] == '3'
+            assert cred['revanc']['a'][0]['s'] == '1'
+            assert cred['revancatc'] is not None
 
     """End Test"""
