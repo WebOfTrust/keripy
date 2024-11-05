@@ -16,9 +16,10 @@ parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+
+parser.add_argument("--prefix", help="Identifier prefix of the signer", required=True)
 parser.add_argument('--text', '-t', help='Original signed text or file (starts with "@")', required=True)
 parser.add_argument('--signature', '-s', default=[], help='list of signatures to verify (can appear multiple times)',
                     action="append", required=True)
@@ -43,16 +44,15 @@ def verify(tymth, tock=0.0, **opts):
     args = opts["args"]
 
     name = args.name
-    alias = args.alias
     base = args.base
     bran = args.bran
 
     sigers = [indexing.Siger(qb64=sig) for sig in args.signature]
 
     try:
-        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
+        with existing.existingHby(name=name, base=base, bran=bran) as hby:
 
-            kever = hab.kevers[hab.pre]
+            kever = hby.kevers[args.prefix]
 
             txt = args.text
             if txt.startswith("@"):
