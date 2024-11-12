@@ -10,21 +10,14 @@ import falcon
 from falcon import testing
 import hio
 import pytest
-from hio.core import tcp, http
+
+from hio.core import http
 from hio.base import doing, tyming
 from hio.help import decking
 
 from keri import kering
 from keri import core
-from keri.app import indirecting, storing, habbing
-from keri.core import coring, serdering
-
-from keri import core
-from keri.core import eventing, parsing, coring
-
-from keri.app import habbing, delegating, indirecting, agenting, notifying
-
-from keri.db import dbing
+from keri.app import indirecting, storing, habbing, agenting
 
 
 def test_mailbox_iter():
@@ -116,9 +109,9 @@ def test_qrymailbox_iter():
     with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         icp = hab.makeOwnInception()
-        icpSrdr = serdering.SerderKERI(raw=icp)
+        icpSrdr = core.serdering.SerderKERI(raw=icp)
         qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx")
-        srdr = serdering.SerderKERI(raw=qry)
+        srdr = core.serdering.SerderKERI(raw=qry)
 
         cues = decking.Deck()
         mbx = storing.Mailboxer(temp=True)
