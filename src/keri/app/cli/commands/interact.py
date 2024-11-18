@@ -119,7 +119,7 @@ class InteractDoer(doing.DoDoer):
             for wit in hab.kever.wits:
                 if wit in auths:
                     continue
-                code = input(f"Entire code for {wit}: ")
+                code = input(f"Enter code for {wit}: ")
                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 
         if self.endpoint:
