@@ -204,7 +204,7 @@ def test_standalone_kli_commands(helpers, capsys):
                            '3. '
                            'ACCLl9pVv7OM4Y261GZkpPWQu__1mw8ffzcFY1lJ62CGjiEh3mvESu_N7a01YOCKqicqEe5TOXSf0j_8qBxPKxwO\n')
 
-    args = parser.parse_args(["verify", "--name", "test", "--alias", "trans",
+    args = parser.parse_args(["verify", "--name", "test",
                               "--prefix",
                               'EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU',
                               "--text",
