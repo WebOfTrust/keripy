@@ -11,7 +11,7 @@ from keri import help
 from keri import kering
 from keri.db import basing
 
-logger = help.ogler.getLogger("keri")
+logger = help.ogler.getLogger()
 
 def handler(args):
     """

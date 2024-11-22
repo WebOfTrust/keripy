@@ -54,16 +54,10 @@ def escrows(tymth, tock=0.0, **opts):
             # KEL / Baser escrows
 
             if (not escrow) or escrow == "unverified-receipts":
-                count = 0
-                for key, _ in hby.db.getUreItemIter():
-                    count += 1
-                escrows["unverified-receipts"] = count
+                escrows["unverified-receipts"] = sum(1 for key, _ in hby.db.getUreItemIter())
 
             if (not escrow) or escrow == "verified-receipts":
-                count = 0
-                for key, _ in hby.db.getVreItemIter():
-                    count += 1
-                escrows["verified-receipts"] = count
+                escrows["verified-receipts"] = sum(1 for key, _ in hby.db.getVreItemIter())
 
             if (not escrow) or escrow == "partially-signed-events":
                 pses = list()
@@ -102,10 +96,7 @@ def escrows(tymth, tock=0.0, **opts):
                 escrows["partially-witnessed-events"] = pwes
 
             if (not escrow) or escrow == "unverified-event-indexed-couples":
-                count = 0
-                for key, _ in hby.db.getUweItemIter():
-                    count += 1
-                escrows["unverified-event-indexed-couples"] = count
+                escrows["unverified-event-indexed-couples"] = sum(1 for key, _ in hby.db.getUweItemIter())
 
             if (not escrow) or escrow == "out-of-order-events":
                 oots = list()
@@ -144,85 +135,46 @@ def escrows(tymth, tock=0.0, **opts):
                 escrows["likely-duplicitous-events"] = ldes
 
             if (not escrow) or escrow == "query-not-found":
-                count  = 0
-                for key, _ in hby.db.getQnfItemsNextIter():
-                    count += 1
-                escrows["query-not-found"] = count
+                escrows["query-not-found"] = sum(1 for key, _ in hby.db.getQnfItemsNextIter())
 
             if (not escrow) or escrow == "partially-delegated-events":
-                count = 0
-                for key, _ in hby.db.getPdesItemsNextIter():
-                    count += 1
-                escrows["partially-delegated-events"] = count
+                escrows["partially-delegated-events"] = sum(1 for key, _ in hby.db.getPdesItemsNextIter())
 
             if (not escrow) or escrow == "reply":
-                count = 0
-                for key, _ in hby.db.rpes.getItemIter():
-                    count += 1
-                escrows["reply"] = count
+                escrows["reply"] = sum(1 for key, _ in hby.db.rpes.getItemIter())
 
             if (not escrow) or escrow == "failed-oobi":
-                count = 0
-                for key, _ in hby.db.eoobi.getItemIter():
-                    count += 1
-                escrows["failed-oobi"] = count
+                escrows["failed-oobi"] = sum(1 for key, _ in hby.db.eoobi.getItemIter())
 
             if (not escrow) or escrow == 'group-partial-witness':
-                count = 0
-                for key, _ in hby.db.gpwe.getItemIter():
-                    count += 1
-                escrows["group-partial-witness"] = count
+                escrows["group-partial-witness"] = sum(1 for key, _ in hby.db.gpwe.getItemIter())
 
             if (not escrow) or escrow == 'group-delegate':
-                count = 0
-                for key, _ in hby.db.gdee.getItemIter():
-                    count += 1
-                escrows["group-delegate"] = count
+                escrows["group-delegate"] = sum(1 for key, _ in hby.db.gdee.getItemIter())
 
             if (not escrow) or escrow == 'delegated-partial-witness':
-                count = 0
-                for key, _ in hby.db.dpwe.getItemIter():
-                    count += 1
-                escrows["delegated-partial-witness"] = count
+                escrows["delegated-partial-witness"] = sum(1 for key, _ in hby.db.dpwe.getItemIter())
 
             if (not escrow) or escrow == 'group-partial-signed':
-                count = 0
-                for key, _ in hby.db.gpse.getItemIter():
-                    count += 1
-                escrows["group-partial-signed"] = count
+                escrows["group-partial-signed"] = sum(1 for key, _ in hby.db.gpse.getItemIter())
 
             if (not escrow) or escrow == 'exchange-partial-signed':
-                count = 0
-                for key, _ in hby.db.epse.getItemIter():
-                    count += 1
-                escrows["exchange-partial-signed"] = count
+                escrows["exchange-partial-signed"] = sum(1 for key, _ in hby.db.epse.getItemIter())
 
             if (not escrow) or escrow == 'delegated-unanchored':
-                count = 0
-                for key, _ in hby.db.dune.getItemIter():
-                    count += 1
-                escrows["delegated-unanchored"] = count
+                escrows["delegated-unanchored"] = sum(1 for key, _ in hby.db.dune.getItemIter())
 
             # TEL / Reger escrows
             reger = viring.Reger(name=hby.name, db=hby.db, temp=False)
 
             if (not escrow) or escrow == 'tel-out-of-order':
-                count = 0
-                for key, _ in reger.getOotItemIter():
-                    count += 1
-                escrows["tel-out-of-order"] = count
+                escrows["tel-out-of-order"] = sum(1 for key, _ in reger.getOotItemIter())
 
             if (not escrow) or escrow == 'tel-partially-witnessed':
-                count = 0
-                for key, _ in reger.getAllItemIter(reger.twes):
-                    count += 1
-                escrows["tel-partially-witnessed"] = count
+                escrows["tel-partially-witnessed"] = sum(1 for key, _ in reger.getAllItemIter(reger.twes))
 
             if (not escrow) or escrow == 'tel-anchorless':
-                count = 0
-                for key, _ in reger.getAllItemIter(reger.taes):
-                    count += 1
-                escrows["tel-anchorless"] = count
+                escrows["tel-anchorless"] = sum(1 for key, _ in reger.getAllItemIter(reger.taes))
 
             if (not escrow) or escrow == "missing-registry-escrow":
                 creds = list()
@@ -249,28 +201,16 @@ def escrows(tymth, tock=0.0, **opts):
                 escrows["missing-schema-escrow"] = creds
 
             if (not escrow) or escrow == 'tel-missing-signature':
-                count = 0
-                for key, _ in reger.cmse.getItemIter():
-                    count += 1
-                escrows["tel-missing-signature"] = count
+                escrows["tel-missing-signature"] = sum(1 for key, _ in reger.cmse.getItemIter())
 
             if (not escrow) or escrow == 'tel-partial-witness-escrow':
-                count = 0
-                for (regk, snq), (prefixer, seqner, saider) in reger.tpwe.getItemIter():
-                    count += 1
-                escrows["tel-partial-witness-escrow"] = count
+                escrows["tel-partial-witness-escrow"] = sum(1 for key, _ in reger.tpwe.getItemIter())
 
             if (not escrow) or escrow == 'tel-multisig':
-                count = 0
-                for key, _ in reger.tmse.getItemIter():
-                    count += 1
-                escrows["tel-multisig"] = count
+                escrows["tel-multisig"] = sum(1 for key, _ in reger.tmse.getItemIter())
 
             if (not escrow) or escrow == 'tel-event-dissemination':
-                count = 0
-                for key, _ in reger.tede.getItemIter():
-                    count += 1
-                escrows["tel-event-dissemination"] = count
+                escrows["tel-event-dissemination"] = sum(1 for key, _ in reger.tede.getItemIter())
 
             print(json.dumps(escrows, indent=2))
 
