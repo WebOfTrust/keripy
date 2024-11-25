@@ -22,6 +22,10 @@ from ..help import helping
 from ..vc import proving
 from ..vdr import eventing
 
+from hio import help
+
+logger = help.ogler.getLogger()
+
 
 class rbdict(dict):
     """ Reger backed read through cache for registry state
@@ -383,6 +387,42 @@ class Reger(dbing.LMDBer):
         self.ccrd = subing.SerderSuber(db=self, subkey="ccrd.", klas=serdering.SerderACDC)
 
         return self.env
+
+    def clearEscrows(self):
+        """Clear credential event escrows"""
+        # self.oots, self.twes, self.taes
+        count = 0
+        for (k, _) in self.getOotItemIter():
+            count += 1
+            self.delOot(k)
+        logger.info(f"TEL: Cleared {count} out of order escrows.")
+
+        count = 0
+        for (k, ) in self.getAllItemIter(self.twes):
+            count += 1
+            self.delTwe(k)
+        logger.info(f"TEL: Cleared {count} partially witnessed escrows.")
+
+        count = 0
+        for (k, _) in self.getAllItemIter(self.taes):
+            count += 1
+            self.delTae(k)
+        logger.info(f"TEL: Cleared {count} anchorless escrows.")
+
+        for name, sub, desc in [
+                ( 'mre',  self.mre, 'missing registry escrows'),
+                ( 'mce',  self.mce, 'broken chain escrows'),
+                ( 'mse',  self.mse, 'missing schema escrows'),
+                ('cmse', self.cmse, 'missing signature escrows'),
+                ('tpwe', self.tpwe, 'partial witness escrows'),
+                ('tmse', self.tmse, 'multisig escrows'),
+                ('tede', self.tede, 'event dissemination escrows'),
+            ]:
+            count = 0
+            for (k, _) in sub.getItemIter():
+                count += 1
+            sub.trim()
+            logger.info(f"TEL: Cleared {count} escrows from ({name.ljust(5)}): {desc}")
 
     def cloneCreds(self, saids, db):
         """ Returns fully expanded credential with chained credentials attached.
