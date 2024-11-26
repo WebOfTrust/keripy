@@ -1228,7 +1228,8 @@ class Baser(dbing.LMDBer):
             for (k, _) in escrow.getItemIter():
                 count += 1
             escrow.trim()
-            logger.info(f"KEL: Cleared {count} escrows from ({name.ljust(5)}): {desc}")
+            # logger.info(f"KEL: Cleared {count} escrows from ({name.ljust(5)}): {desc}")
+        logger.info(f"Cleared all escrows")
 
     @property
     def current(self):
