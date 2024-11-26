@@ -1223,7 +1223,7 @@ class Baser(dbing.LMDBer):
             ('dpwe',  self.dpwe,  'delegated partial witness escrow'),
             ('gpse',  self.gpse,  'group partial signature escrow'),
             ('epse',  self.epse,  'exchange partial signature escrow'),
-            ('dune',  self.dune,  'delegated unanchored escrow'),]:
+            ('dune',  self.dune,  'delegated unanchored escrow')]:
             count = 0
             for (k, _) in escrow.getItemIter():
                 count += 1
