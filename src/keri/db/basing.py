@@ -1224,12 +1224,9 @@ class Baser(dbing.LMDBer):
             ('gpse',  self.gpse,  'group partial signature escrow'),
             ('epse',  self.epse,  'exchange partial signature escrow'),
             ('dune',  self.dune,  'delegated unanchored escrow')]:
-            count = 0
-            for (k, _) in escrow.getItemIter():
-                count += 1
             escrow.trim()
-            # logger.info(f"KEL: Cleared {count} escrows from ({name.ljust(5)}): {desc}")
-        logger.info(f"Cleared all escrows")
+            logger.info(f"KEL: Cleared escrow ({name.ljust(5)}): {desc}")
+        logger.info("Cleared KEL escrows")
 
     @property
     def current(self):

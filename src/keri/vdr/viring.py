@@ -416,13 +416,11 @@ class Reger(dbing.LMDBer):
                 ('cmse', self.cmse, 'missing signature escrows'),
                 ('tpwe', self.tpwe, 'partial witness escrows'),
                 ('tmse', self.tmse, 'multisig escrows'),
-                ('tede', self.tede, 'event dissemination escrows'),
+                ('tede', self.tede, 'event dissemination escrows')
             ]:
-            count = 0
-            for (k, _) in sub.getItemIter():
-                count += 1
             sub.trim()
-            logger.info(f"TEL: Cleared {count} escrows from ({name.ljust(5)}): {desc}")
+            logger.info(f"TEL: Cleared escrow ({name.ljust(5)}): {desc}")
+        logger.info("Cleared TEL escrows")
 
     def cloneCreds(self, saids, db):
         """ Returns fully expanded credential with chained credentials attached.
