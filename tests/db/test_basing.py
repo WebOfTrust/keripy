@@ -11,6 +11,7 @@ import lmdb
 import pytest
 from hio.base import doing
 
+from keri.core.serdering import Serder
 from tests.app import openMultiSig
 from keri.kering import Versionage
 from keri.app import habbing
@@ -21,7 +22,7 @@ from keri.core.coring import Salter
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
 from keri.db import dbing
-from keri.db.basing import openDB, Baser, KeyStateRecord
+from keri.db.basing import openDB, Baser, KeyStateRecord, OobiRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
 from keri.help.helping import datify, dictify
@@ -2273,6 +2274,76 @@ def test_group_members():
 
     """End Test"""
 
+
+def test_clear_escrows():
+    with openDB() as db:
+        key = b'A.a'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        db.putUres(key, vals)
+        db.putVres(key, vals)
+        db.putPses(key, vals)
+        db.putPwes(key, vals)
+        db.putUwes(key, vals)
+        db.putOoes(key, vals)
+        db.putLdes(key, vals)
+        db.putQnfs(key, vals)
+
+        preb = 'DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
+        digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
+        key = dgKey(preb, digb)
+        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        val1 = ssnu1 + sdig1
+
+        db.putPde(key, val1)
+
+        pre = 'k'
+        saider = coring.Saider(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        db.rpes.put(keys=('route',), vals=[saider])
+        assert db.rpes.cnt(keys=('route',)) == 1
+
+        db.eoobi.pin(keys=('url',), val=OobiRecord())
+        assert db.eoobi.cntAll() == 1
+
+        db.gpwe.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        assert db.gpwe.cnt(keys=(pre,)) == 1
+
+        db.gdee.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        assert db.gdee.cnt(keys=(pre,)) == 1
+
+        serder = Serder(raw=b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG8WAmM29ZBdoXbnb87yiPxQw4Y7gcQjqZS74vBAKsRm","i":"DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","a":[]}')
+        db.dpwe.pin(keys=(pre, 'said'), val=serder)
+        assert db.dpwe.get(keys=(pre, 'said')) is not None
+
+        db.gpse.add(keys=('qb64',), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        assert db.gpse.cnt(keys=('qb64',)) == 1
+
+        db.epse.put(keys=('dig',), val=serder)
+        assert db.epse.get(keys=('dig',)) is not None
+
+        db.dune.pin(keys=(pre, 'said'), val=serder)
+        assert db.dune.get(keys=(pre, 'said')) is not None
+
+        db.clearEscrows()
+
+        assert db.getUres(key) == []
+        assert db.getVres(key) == []
+        assert db.getPses(key) == []
+        assert db.getPwes(key) == []
+        assert db.getUwes(key) == []
+        assert db.getOoes(key) == []
+        assert db.getLdes(key) == []
+        assert db.getQnfs(key) == []
+        assert db.getPdes(key) == []
+        assert db.rpes.cnt(keys=('route',)) == 0
+        assert db.eoobi.cntAll() == 0
+        assert db.gpwe.cnt(keys=(pre,)) == 0
+        assert db.gdee.cnt(keys=(pre,)) == 0
+        assert db.dpwe.get(keys=(pre, 'said')) is None
+        assert db.gpse.cnt(keys=('qb64',)) == 0
+        assert db.epse.get(keys=('dig',)) is None
+        assert db.dune.get(keys=(pre, 'said')) is None
 
 if __name__ == "__main__":
     test_baser()
