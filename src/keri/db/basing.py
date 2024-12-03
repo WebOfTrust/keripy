@@ -1022,6 +1022,9 @@ class Baser(dbing.LMDBer):
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
         self.uwes = self.env.open_db(key=b'uwes.', dupsort=True)
+        #self.uwes = subing.CatCesrIoSetSuber(db=self, subkey='uwes.',
+                                        #klas=(coring.Saider, indexing.Siger))
+
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)

@@ -298,7 +298,7 @@ class MatterCodex:
     Big:                  str = 'N'  # Big 8 byte b2 number
     X25519_Private:       str = 'O'  # X25519 private decryption key/seed, may be converted from Ed25519
     X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
-    ECDSA_256r1_Seed:     str = "Q"  # ECDSA secp256r1 256 bit random Seed for private key
+    ECDSA_256r1_Seed:     str = 'Q'  # ECDSA secp256r1 256 bit random Seed for private key
     Tall:                 str = 'R'  # Tall 5 byte b2 number
     Large:                str = 'S'  # Large 11 byte b2 number
     Great:                str = 'T'  # Great 14 byte b2 number

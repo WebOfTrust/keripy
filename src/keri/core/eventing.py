@@ -2710,19 +2710,19 @@ class Kever:
         to detect a comprimised or duplicitious superseding rotation and
         prevent the additional verification from proceding.
 
-        ToDo:
+        Mitigations of malicious source seal couples:
 
         Repair the approval source seal couple in the 'aess' database on recursive
         climb the kel tree.  Once an event has been accepted into its kel.
         Later adding a source seal couple to 'aes' should then be OK from a
         security perspective since its only making discovery less expensive.
 
-        When malicious source seal couple is received but event is validly
-        delegated and the delegation source seal is repaired then need to replace
+        When a malicious source seal couple is received but event is validly
+        delegated and the delegation source seal is repaired then replace
         malicious source seal couple with repaired seal so repaired seal not
         malicous seal gets written to 'aes' db. When the event is valid but
         non-delegated then need to nullify malicous source seal couple so it
-        does not get written to 'aes' datable
+        does not get written to 'aes' database.
 
         """
         if not delpre:  # not delegable so no delegation validation needed
