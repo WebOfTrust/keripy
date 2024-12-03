@@ -804,7 +804,7 @@ class Matter:
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
         '1AAD': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
-        '1AAE': Sizage(hs=4, ss=0, xs=0, fs=56, ls=0),
+        '1AAE': Sizage(hs=4, ss=0, xs=0, fs=156, ls=0),
         '1AAF': Sizage(hs=4, ss=4, xs=0, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, xs=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, xs=0, fs=100, ls=0),
