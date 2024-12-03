@@ -1173,7 +1173,7 @@ class Baser(dbing.LMDBer):
         logger.info(f"KEL: Cleared {count} verified receipt escrows")
 
         count = 0
-        for (k, _) in self.getPseItemIter():
+        for (k, _) in self.getPseItemsNextIter():
             count += 1
             self.delPses(key=k)
         logger.info(f"KEL: Cleared {count} partially signed escrows")
@@ -1203,14 +1203,12 @@ class Baser(dbing.LMDBer):
         logger.info(f"KEL: Cleared {count} likely duplicitous escrows")
 
         count = 0
-        for ekey, edig in self.getQnfItemsNextIter():
-            count += 1
-            pre, _ = splitKey(ekey)
-            self.delQnf(dgKey(pre, edig), edig)
+        for k, _ in self.getQnfItemsNextIter():
+            self.delQnfs(key=k)
         logger.info(f"KEL: Cleared {count} query not found escrows")
 
         count = 0
-        for (key, on, val) in self.getPdesItemsNextIter():
+        for (key, _) in self.getPdeItemsNextIter():
             count += 1
             self.delPde(key=key)
         logger.info(f"KEL: Cleared {count} partially delegated key event escrows")
@@ -1224,8 +1222,11 @@ class Baser(dbing.LMDBer):
             ('gpse',  self.gpse,  'group partial signature escrow'),
             ('epse',  self.epse,  'exchange partial signature escrow'),
             ('dune',  self.dune,  'delegated unanchored escrow')]:
+            count = 0
+            for (k, _) in escrow.getItemIter():
+                count += 1
             escrow.trim()
-            logger.info(f"KEL: Cleared escrow ({name.ljust(5)}): {desc}")
+            logger.info(f"KEL: Cleared {count} escrows from ({name.ljust(5)}): {desc}")
         logger.info("Cleared KEL escrows")
 
     @property
@@ -2637,18 +2638,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValLast(self.pses, key)
 
-    def getPseItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial signed escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.pses, key)
-
     def getPseItemsNext(self, key=b'', skip=True):
         """
         Use snKey()
@@ -2727,6 +2716,24 @@ class Baser(dbing.LMDBer):
         Returns None if no entry at key
         """
         return self.getVal(self.pdes, key)
+
+    def getPdes(self, key):
+        """
+        Use dgKey()
+        Return list of out of order escrow event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.pdes, key)
+
+    def getPdeItemsNextIter(self, key=b'', skip=True):
+        """
+        Use dgKey()
+        Return list of witnessed signed escrowed event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.pdes, key, skip)
 
     def delPde(self, key):
         """
@@ -3133,9 +3140,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoItemsNextIter(self.qnfs, key, skip)
-
-    def getPdesItemsNextIter(self, key=b'', skip=True):
-        return self.getOnIoDupItemIter(self.pdes, key, skip)
 
     def cntQnfs(self, key):
         """
