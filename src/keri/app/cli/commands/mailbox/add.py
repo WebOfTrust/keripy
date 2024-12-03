@@ -6,15 +6,13 @@ keri.kli.commands module
 """
 import argparse
 
-from hio import help
 from hio.base import doing
 from hio.help import Hict
 
-from keri import kering
-from keri.app import connecting, habbing, forwarding
+from keri import help, kering
+from keri.app import connecting, habbing
 from keri.app.agenting import httpClient, WitnessPublisher
 from keri.app.cli.common import existing
-from keri.core import serdering
 
 logger = help.ogler.getLogger()
 

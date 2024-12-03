@@ -1,15 +1,12 @@
 import argparse
 import json
 
-from hio import help
 from hio.base import doing
 
-from keri import kering
-from keri import core
-from keri.core import coring, eventing, serdering
-
+from keri import core, help, kering
 from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
+from keri.core import coring, eventing, serdering
 from keri.help import helping
 from keri.peer import exchanging
 from keri.vdr import credentialing, verifying

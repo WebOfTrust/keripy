@@ -5,10 +5,10 @@ keri.kli.commands.migrate.run module
 """
 import argparse
 
-from hio import help
 from hio.base import doing
 from keri import kering
 
+from keri import help
 from keri.db import basing
 
 logger = help.ogler.getLogger()

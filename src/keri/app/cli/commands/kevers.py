@@ -8,12 +8,12 @@ import argparse
 import datetime
 
 import sys
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app import indirecting
 from keri.app.cli.common import displaying, existing
-from keri.core import coring, serdering
+from keri.core import serdering
 from keri.help import helping
 
 logger = help.ogler.getLogger()
