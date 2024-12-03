@@ -46,16 +46,16 @@ isSuccess
 kli sign --name test --base "${KERI_TEMP_DIR}"  --alias trans --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
 isSuccess
 
-kli verify --name test --base "${KERI_TEMP_DIR}"  --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AABuQervAG8QLyvho99362U8TScec_4zYDVF1pUMWfWfKbl5thR6QakpvSvVMdcPcGYxi0McgNtW-Z3EhpC01I4A
+kli verify --name test --base "${KERI_TEMP_DIR}" --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AABuQervAG8QLyvho99362U8TScec_4zYDVF1pUMWfWfKbl5thR6QakpvSvVMdcPcGYxi0McgNtW-Z3EhpC01I4A
 isSuccess
 
-kli verify --name test --base "${KERI_TEMP_DIR}"  --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ABBJcS2ZbcHEdEEnaJE1CFUxdsKqkoU5TS34CImGh3s0cs-k3cNcy2PJxQ8WjIvAot1-cZ71o1E-WkqZ-tCTNZsJ
+kli verify --name test --base "${KERI_TEMP_DIR}" --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ABBJcS2ZbcHEdEEnaJE1CFUxdsKqkoU5TS34CImGh3s0cs-k3cNcy2PJxQ8WjIvAot1-cZ71o1E-WkqZ-tCTNZsJ
 isSuccess
 
-kli verify --name test --base "${KERI_TEMP_DIR}"  --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACBieMVQBXvIxeqQuHc4Db_-GUoFE9e37TW8t6DomwXdMcSxBiHJpDp3EJH1Dcz9lHKbFuCRqoNo4wywZGtUpOcB
+kli verify --name test --base "${KERI_TEMP_DIR}" --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACBieMVQBXvIxeqQuHc4Db_-GUoFE9e37TW8t6DomwXdMcSxBiHJpDp3EJH1Dcz9lHKbFuCRqoNo4wywZGtUpOcB
 isSuccess
 
-kli verify --name test --base "${KERI_TEMP_DIR}"  --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
+kli verify --name test --base "${KERI_TEMP_DIR}" --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
 ret=$?
 if [ $ret -eq 0 ]; then
    echo "Testing invalid signature should fail $ret"

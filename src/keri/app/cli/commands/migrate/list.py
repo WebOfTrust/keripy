@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.commands module
+keri.kli.commands.migrate.list module
 
 """
 import argparse
@@ -16,7 +16,7 @@ logger = help.ogler.getLogger()
 
 def handler(args):
     """
-    Launch KERI database initialization
+    List local LMDB database migrations and their completion status
 
     Args:
         args(Namespace): arguments object from command line
@@ -25,7 +25,7 @@ def handler(args):
     return [lister]
 
 
-parser = argparse.ArgumentParser(description='Cleans and migrates a database and keystore')
+parser = argparse.ArgumentParser(description='Lists the local LMDB migrations and their completion status')
 parser.set_defaults(handler=handler,
                     transferable=True)
 

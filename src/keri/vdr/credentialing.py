@@ -968,7 +968,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
-    if isse != recp:
+    if isse is not None and isse != recp:
         ikever = hby.db.kevers[isse]
         for msg in hby.db.cloneDelegation(ikever):
             serder = serdering.SerderKERI(raw=msg)

@@ -18,7 +18,6 @@ from keri.core import coring
 from . import httping
 from .. import help
 from .. import kering
-from ..app import connecting
 from ..core import routing, eventing, parsing, scheming, serdering
 from ..db import basing
 from ..end import ending
@@ -115,15 +114,15 @@ class OobiResource:
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) \
+                       or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
                 if not urls:
                     rep.status = falcon.HTTP_404
                     rep.text = f"unable to query witness {wit}, no http endpoint"
                     return
 
-                url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-                up = urlparse(url)
-                oobis.append(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+                oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/witness/{wit}")
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
@@ -134,8 +133,7 @@ class OobiResource:
                 rep.text = f"unable to query controller {hab.pre}, no http endpoint"
                 return
             url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-            up = urlparse(url)
-            oobis.append(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
             res["oobis"] = oobis
         else:
             rep.status = falcon.HTTP_404
@@ -291,7 +289,6 @@ class Oobiery:
             self.registerReplyRoutes(self.rvy.rtr)
 
         self.clienter = clienter or httping.Clienter()
-        self.org = connecting.Organizer(hby=self.hby)
 
         # Set up a local parser for returned events from OOBI queries.
         rtr = routing.Router()
@@ -502,9 +499,6 @@ class Oobiery:
                     self.parser.parse(ims=bytearray(response["body"]))
                     if ending.OOBI_AID_HEADER in response["headers"]:
                         obr.cid = response["headers"][ending.OOBI_AID_HEADER]
-
-                    if obr.oobialias is not None and obr.cid:
-                        self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
 
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.resolved

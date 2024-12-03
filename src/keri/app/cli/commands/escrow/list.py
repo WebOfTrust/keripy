@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.kli.commands module
+keri.kli.commands.escrow module
 
 """
 import argparse
