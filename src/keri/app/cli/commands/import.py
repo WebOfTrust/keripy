@@ -68,7 +68,7 @@ class ImportDoer(doing.DoDoer):
 
         with open(self.file, 'rb') as f:
             ims = f.read()
-            parsing.Parser(kvy=self.hby.kvy, local=False).parse(ims=ims)
+            parsing.Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False).parse(ims=ims)
             self.hby.kvy.processEscrows()
 
         self.exit()
