@@ -752,6 +752,268 @@ def test_iodup_suber():
     assert not db.opened
 
 
+def test_B64_iodup_suber():
+    """
+    Test B64IoDupSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        # Test Single klas
+        iobuber = subing.B64IoDupSuber(db=db, subkey='bags.')
+        assert isinstance(iobuber, subing.B64IoDupSuber)
+        assert iobuber.sdb.flags()["dupsort"]
+        assert iobuber.sep == '.'
+        assert not help.Reb64.match(iobuber.sep.encode())
+
+        # val as joined iterator
+        vals0 = ("alpha", "beta")
+        vals1 = ("gamma", )
+
+        keys0 = ("cat", "dog")  # keys as tuple
+        keys1 = "{}.{}".format("bird", "fish")  # keys as string not tuple
+
+
+        assert iobuber.put(keys=keys0, vals=(vals0,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0]
+
+        assert iobuber.rem(keys0)
+        assert not iobuber.get(keys=keys0)
+
+        assert iobuber.put(keys=keys0, vals=(vals0,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0]
+
+        assert iobuber.put(keys=keys0, vals=(vals1,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0, vals1]
+
+        assert iobuber.pin(keys=keys0, vals=(vals1,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals1]
+
+        assert iobuber.rem(keys0)
+        assert not iobuber.get(keys=keys0)
+
+        # test with vals as non Iterable on put but Iterable on get
+        assert iobuber.put(keys=keys0, vals=["gamma"])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals1]
+
+        assert iobuber.rem(keys0)
+
+        # test val as already joined string since has non Base64
+        with pytest.raises(ValueError):
+            assert iobuber.put(keys=keys0, vals=["alpha.beta"])
+
+        # test bytes for val
+        assert iobuber.put(keys=keys0, vals=[(b"alpha", b"beta")])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0]
+        assert iobuber.rem(keys0)
+
+        # test with keys1
+        assert iobuber.put(keys=keys1, vals=[vals1])
+        actuals = iobuber.get(keys=keys1)
+        assert actuals == [vals1]
+
+        assert iobuber.rem(keys1)
+        assert not iobuber.get(keys=keys1)
+
+        # test missing entry at keys
+        badkey = "badkey"
+        assert not iobuber.get(badkey)
+
+        # test iteritems
+        assert iobuber.put(keys0, [vals0])
+        assert iobuber.put(keys1, [vals1])
+
+        items = [ items for items in iobuber.getItemIter()]
+        assert items == [(('bird', 'fish'), ('gamma',)), (('cat', 'dog'), ('alpha', 'beta'))]
+
+        keys3 = ("b","1")
+        keys4 = ("b","2")
+        keys5 = ("c","1")
+        keys6 = ("c","2")
+
+        iobuber.put(keys=keys3, vals=[vals0])
+        iobuber.put(keys=keys4, vals=[vals1])
+        iobuber.put(keys=keys5, vals=[vals0])
+        iobuber.put(keys=keys6, vals=[vals1])
+
+        topkeys = ("b","")  # last element empty to force trailing separator
+        items = [items for items in  iobuber.getItemIter(keys=topkeys)]
+        assert items == [(('b', '1'), ('alpha', 'beta')),
+                         (('b', '2'), ('gamma',))]
+
+        assert iobuber.rem(keys0)
+        assert iobuber.rem(keys1)
+        assert iobuber.rem(keys3)
+        assert iobuber.rem(keys4)
+        assert iobuber.rem(keys5)
+        assert iobuber.rem(keys6)
+
+
+        # iodup testing
+        # singular values B64
+        sue = "Hello"
+        sal = "Toodles"
+        sam = "Bye"
+
+        keys0 = ("test_key", "0001")
+        keys1 = ("test_key", "0002")
+
+        assert iobuber.put(keys=keys0, vals=[sal, sue])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [(sal,), (sue,)]  # insertion order not lexicographic
+        assert iobuber.cnt(keys0) == 2
+        actual = iobuber.getLast(keys=keys0)
+        assert actual == (sue,)
+
+        assert iobuber.rem(keys0)
+        actuals = iobuber.get(keys=keys0)
+        assert not actuals
+        assert actuals == []
+        assert iobuber.cnt(keys0) == 0
+
+        assert iobuber.put(keys=keys0, vals=[sue, sal])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [(sue,), (sal, )]  # insertion order
+        actual = iobuber.getLast(keys=keys0)
+        assert actual == (sal,)
+
+
+        assert iobuber.add(keys=keys0, val=sam)
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [(sue,), (sal,), (sam,)]   # insertion order
+
+
+        sue = ("Hello",)
+        sal = ("Toodles",)
+        sam = ("Bye",)
+        zoe = ('later', 'alligator')
+        zia = ('soon', 'baboon')
+
+        assert iobuber.pin(keys=keys0, vals=[zoe, zia])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [zoe, zia]  # insertion order
+
+        assert iobuber.put(keys=keys1, vals=[sal, sue, sam])
+        actuals = iobuber.get(keys=keys1)
+        assert actuals == [sal, sue, sam]
+
+        for i, val in enumerate(iobuber.getIter(keys=keys1)):
+            assert val == actuals[i]
+
+        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        assert items == [(('test_key', '0001'), ('later', 'alligator')),
+                         (('test_key', '0001'), ('soon', 'baboon')),
+                         (('test_key', '0002'), ('Toodles',)),
+                         (('test_key', '0002'), ('Hello',)),
+                         (('test_key', '0002'), ('Bye',))]
+
+        items = list(iobuber.getFullItemIter())
+        assert items ==  [
+            (('test_key', '0001'), ('00000000000000000000000000000000', 'later', 'alligator')),
+            (('test_key', '0001'), ('00000000000000000000000000000001', 'soon', 'baboon')),
+            (('test_key', '0002'), ('00000000000000000000000000000000', 'Toodles')),
+            (('test_key', '0002'), ('00000000000000000000000000000001', 'Hello')),
+            (('test_key', '0002'), ('00000000000000000000000000000002', 'Bye'))
+        ]
+
+        items = [(keys, val) for keys,  val in iobuber.getItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), ('Toodles',)),
+                         (('test_key', '0002'), ('Hello',)),
+                         (('test_key', '0002'), ('Bye',))]
+
+        items = [(keys, val) for keys,  val in  iobuber.getItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), ('later', 'alligator')),
+                         (('test_key', '0001'), ('soon', 'baboon'))]
+
+        # Test with top keys
+        assert iobuber.put(keys=("test", "pop"), vals=[sal, sue, sam])
+        topkeys = ("test", "")
+        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=topkeys)]
+        assert items == [(('test', 'pop'), ('Toodles',)),
+                         (('test', 'pop'), ('Hello',)),
+                         (('test', 'pop'), ('Bye',))]
+
+        # test with top parameter
+        keys = ("test", )
+        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=keys, topive=True)]
+        assert items == [(('test', 'pop'), ('Toodles',)),
+                         (('test', 'pop'), ('Hello',)),
+                         (('test', 'pop'), ('Bye',))]
+
+        # IoItems
+        items = list(iobuber.getFullItemIter(keys=topkeys))
+        assert items == [(('test', 'pop'), ('00000000000000000000000000000000', 'Toodles')),
+                         (('test', 'pop'), ('00000000000000000000000000000001', 'Hello')),
+                         (('test', 'pop'), ('00000000000000000000000000000002', 'Bye'))]
+
+        # test remove with a specific val
+        assert iobuber.rem(keys=("test_key", "0002"), val=sue)
+        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        assert items ==[(('test', 'pop'), ('Toodles',)),
+                        (('test', 'pop'), ('Hello',)),
+                        (('test', 'pop'), ('Bye',)),
+                        (('test_key', '0001'), ('later', 'alligator')),
+                        (('test_key', '0001'), ('soon', 'baboon')),
+                        (('test_key', '0002'), ('Toodles',)),
+                        (('test_key', '0002'), ('Bye',))]
+
+
+        assert iobuber.trim(keys=("test", ""))
+        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        assert items == [(('test_key', '0001'), ('later', 'alligator')),
+                         (('test_key', '0001'), ('soon', 'baboon')),
+                         (('test_key', '0002'), ('Toodles',)),
+                         (('test_key', '0002'), ('Bye',))]
+
+
+        assert iobuber.cnt(keys=keys0) == 2
+        assert iobuber.cnt(keys=keys1) == 2
+
+        # test with keys as string not tuple
+        keys2 = "keystr"
+        bob = ("go", "figure")
+        assert iobuber.put(keys=keys2, vals=[bob])
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bob]
+        assert iobuber.cnt(keys2) == 1
+        assert iobuber.rem(keys2)
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == []
+        assert iobuber.cnt(keys2) == 0
+
+        assert iobuber.put(keys=keys2, vals=[bob])
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bob]
+
+        bil = ("Go", "away")
+        assert iobuber.pin(keys=keys2, vals=[bil])
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bil]
+
+        assert iobuber.add(keys=keys2, val=bob)
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bil, bob]
+
+        # Test trim
+        assert iobuber.trim()  # default trims whole database
+        assert iobuber.put(keys=keys1, vals=[bob, bil])
+        assert iobuber.get(keys=keys1) == [bob, bil]
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+    """Done Test"""
+
+
 def test_on_iodup_suber():
     """
     Test OnIoDupSuber LMDBer sub database class
@@ -2752,6 +3014,7 @@ if __name__ == "__main__":
     test_B64_suber()
     test_dup_suber()
     test_iodup_suber()
+    test_B64_iodup_suber()
     test_on_iodup_suber()
     test_ioset_suber()
     test_cat_cesr_suber()
