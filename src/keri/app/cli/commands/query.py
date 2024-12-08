@@ -7,10 +7,10 @@ import argparse
 import datetime
 import json
 
-from hio import help
 from hio.base import doing
 from hio.help import decking
 
+from keri import help
 from keri.app import indirecting, habbing, querying
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing

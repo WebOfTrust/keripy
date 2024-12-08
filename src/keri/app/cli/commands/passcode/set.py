@@ -6,20 +6,16 @@ keri.kli.common.passcode.set module
 import argparse
 import getpass
 
-from hio import help
-
 from hio.base import doing
 
-from keri.kering import ConfigurationError
-
-from keri import core
+from keri import core, help
 from keri.core import coring
+from keri.kering import ConfigurationError
 
 from keri.app.cli.common import existing
 
 
-
-logger = help.ogler.getLogger()  # I think this should be keri.help not hio.help
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
 parser.set_defaults(handler=lambda args: set_passcode(args),

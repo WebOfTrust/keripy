@@ -6,9 +6,9 @@ keri.kli.commands module
 import argparse
 from ordered_set import OrderedSet as oset
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app import habbing, forwarding, grouping
 from keri.app.cli.common import existing
 from keri.core.coring import Ilks

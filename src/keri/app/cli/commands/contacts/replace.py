@@ -7,9 +7,9 @@ keri.kli.commands.contacts module
 import argparse
 import sys
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app import connecting
 from keri.app.cli.common import existing
 from keri.kering import ConfigurationError

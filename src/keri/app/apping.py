@@ -4,7 +4,6 @@ KERI
 keri.app.apping module
 
 """
-import cmd
 
 from hio.base import doing
 from hio.core.serial import serialing

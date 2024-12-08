@@ -6,9 +6,9 @@ keri.kli.commands module
 import argparse
 import json
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.core import coring
 
 logger = help.ogler.getLogger()

@@ -6,9 +6,9 @@ keri.kli.commands module
 """
 import argparse
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app.cli.common import displaying, existing
 from keri.core import serdering
 from keri.kering import ConfigurationError

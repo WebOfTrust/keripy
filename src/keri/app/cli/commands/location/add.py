@@ -7,10 +7,10 @@ keri.kli.commands module
 import argparse
 from urllib.parse import urlparse
 
-from hio import help
+
 from hio.base import doing
 
-from keri import kering
+from keri import help, kering
 from keri.app import habbing, grouping, indirecting, forwarding
 from keri.app.agenting import WitnessPublisher
 from keri.app.cli.common import existing

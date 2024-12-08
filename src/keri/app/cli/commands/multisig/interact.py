@@ -7,10 +7,9 @@ keri.kli.commands.multisig module
 import argparse
 from ordered_set import OrderedSet as oset
 
-from hio import help
 from hio.base import doing
 
-from keri import kering
+from keri import help, kering
 from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, displaying, config
 from keri.app.notifying import Notifier

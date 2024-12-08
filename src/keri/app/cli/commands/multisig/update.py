@@ -6,10 +6,9 @@ keri.kli.commands module
 import argparse
 import time
 
-from hio import help
 from hio.base import doing
 
-from keri import kering
+from keri import help, kering
 from keri.app import agenting, indirecting, habbing
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing

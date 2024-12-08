@@ -6,13 +6,12 @@ keri.kli.commands module
 """
 import argparse
 import json
-import sys
 
 import qrcode
-from hio import help
 from hio.base import doing
 from hio.help import Hict
 
+from keri import help
 from keri.app import httping, connecting
 from keri.app.agenting import httpClient
 from keri.app.cli.common import existing

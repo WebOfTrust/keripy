@@ -8,10 +8,9 @@ import argparse
 import json
 import sys
 
-from hio import help
 from hio.base import doing
-from keri import kering
 
+from keri import help, kering
 from keri.app import connecting
 from keri.app.cli.common import existing
 from keri.kering import ConfigurationError
