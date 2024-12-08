@@ -364,7 +364,7 @@ def test_on_suber():
     assert not db.opened
 
 
-def test_B64_suber():
+def test_b64_suber():
     """
     Test B64Suber LMDBer sub database class
     """
@@ -752,7 +752,7 @@ def test_iodup_suber():
     assert not db.opened
 
 
-def test_B64_iodup_suber():
+def test_b64_iodup_suber():
     """
     Test B64IoDupSuber LMDBer sub database class
     """
@@ -1306,6 +1306,284 @@ def test_on_iodup_suber():
     assert not os.path.exists(db.path)
     assert not db.opened
 
+def test_b64_oniodup_suber():
+    """
+    Test B64OnIoDupSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        onbuber = subing.B64OnIoDupSuber(db=db, subkey='bags.')
+        assert isinstance(onbuber, subing.B64OnIoDupSuber)
+        assert onbuber.sdb.flags()["dupsort"]
+
+        k = "a"
+        j = "b"
+
+        w = ("Blue", "dog")
+        x = ("Green", "tree")
+        y = "Red"
+        z = ("White",)
+
+        # test addOn remOn
+        assert onbuber.addOn(keys=k, on=0, val=w)
+        assert onbuber.getOn(keys=k, on=0) == [w]
+        assert onbuber.addOn(keys=k, on=0, val=x)
+        assert onbuber.getOn(keys=k, on=0) == [w, x]
+        assert onbuber.addOn(keys=k, on=1, val=y)
+        assert onbuber.getOn(keys=k, on=1) == [(y,)]
+        assert onbuber.addOn(keys=k, on=1, val=z)
+        assert onbuber.getOn(keys=k, on=1) == [(y,), z]
+
+        assert onbuber.cntOn(keys=(k,)) == 4
+
+        items = [item for item in onbuber.getOnItemIter(keys=k)]
+        assert items == [(('a',), 0, ('Blue', 'dog')),
+                            (('a',), 0, ('Green', 'tree')),
+                            (('a',), 1, ('Red',)),
+                            (('a',), 1, ('White',))]
+
+        assert onbuber.remOn(keys=k, on=0, val=w)
+        assert onbuber.remOn(keys=k, on=1)
+        items = [item for item in onbuber.getOnItemIter(keys=k)]
+        assert items == [(('a',), 0, ('Green', 'tree'))]
+
+        assert onbuber.remOn(keys=k, on=0, val=x)
+        assert onbuber.cntOn(keys=(k,)) == 0
+
+        # test append
+        assert 0 == onbuber.appendOn(keys=(j,), val=w)
+        assert 1 == onbuber.appendOn(keys=(j,), val=x)
+        assert 2 == onbuber.appendOn(keys=(j,), val=y)
+        assert 3 == onbuber.appendOn(keys=(j,), val=z)
+
+        assert onbuber.cntOn(keys=(j,)) == 4
+        assert onbuber.cntOn(keys=(j,), on=2) == 2
+        assert onbuber.cntOn(keys=(j,), on=4) == 0
+
+        items = [(keys, val) for keys, val in onbuber.getItemIter()]
+        assert items == [(('b', '00000000000000000000000000000000'), ('Blue', 'dog')),
+                         (('b', '00000000000000000000000000000001'), ('Green', 'tree')),
+                         (('b', '00000000000000000000000000000002'), ('Red',)),
+                         (('b', '00000000000000000000000000000003'), ('White',))]
+
+
+
+        # test getOnIter
+        vals = [val for val in onbuber.getOnIter(keys=j)]
+        assert vals == [w, x, (y,), z]
+
+        vals = [val for val in onbuber.getOnIter(keys=j, on=2)]
+        assert vals == [(y,), z]
+
+        # test getOnItemIter
+        items = [item for item in onbuber.getOnItemIter(keys=j)]
+        assert items == [(('b',), 0, ('Blue', 'dog')),
+                            (('b',), 1, ('Green', 'tree')),
+                            (('b',), 2, ('Red',)),
+                            (('b',), 3, ('White',))]
+
+
+        items = [item for item in onbuber.getOnItemIter(keys=j, on=2)]
+        assert items == [(('b',), 2, ('Red',)), (('b',), 3, ('White',))]
+
+        # test add duplicates
+        assert onbuber.add(keys=dbing.onKey(k, 0), val=w)
+        assert onbuber.add(keys=dbing.onKey(k, 1), val=x)
+        assert onbuber.add(keys=dbing.onKey("bc", 0), val=y)
+        assert onbuber.add(keys=dbing.onKey("ac", 0), val=z)
+
+        assert onbuber.cntOn(keys=(k,)) == 2
+        assert onbuber.cntOn(keys=("bc",), on=2) == 0
+        assert onbuber.cntOn(keys="") == 8
+
+        items = [(keys, val) for keys, val in onbuber.getItemIter()]
+        assert items == [(('a', '00000000000000000000000000000000'), ('Blue', 'dog')),
+                        (('a', '00000000000000000000000000000001'), ('Green', 'tree')),
+                        (('ac', '00000000000000000000000000000000'), ('White',)),
+                        (('b', '00000000000000000000000000000000'), ('Blue', 'dog')),
+                        (('b', '00000000000000000000000000000001'), ('Green', 'tree')),
+                        (('b', '00000000000000000000000000000002'), ('Red',)),
+                        (('b', '00000000000000000000000000000003'), ('White',)),
+                        (('bc', '00000000000000000000000000000000'), ('Red',))]
+
+        # test getOnItemIter   getOnIter
+        items = [item for item in onbuber.getOnItemIter(keys=k)]
+        assert items == [(('a',), 0, ('Blue', 'dog')), (('a',), 1, ('Green', 'tree'))]
+
+        vals = [val for val in onbuber.getOnIter(keys=k)]
+        assert vals == [('Blue', 'dog'), ('Green', 'tree')]
+
+        vals = [val for val in onbuber.getOnIter(keys=(k, ))]
+        assert vals == [('Blue', 'dog'), ('Green', 'tree')]
+
+        items = [item for item in onbuber.getOnItemIter(keys=(k, ))]
+        assert items == [(('a',), 0, ('Blue', 'dog')),
+                         (('a',), 1, ('Green', 'tree'))]
+
+        items = [item for item in onbuber.getOnItemIter(keys=(k, ""))]
+        assert items == []
+
+        vals = [val for val in onbuber.getOnIter(keys=(k, ""))]
+        assert vals == []
+
+        items = [item for item in onbuber.getOnItemIter(keys='')]
+        assert items == [(('a',), 0, ('Blue', 'dog')),
+                            (('a',), 1, ('Green', 'tree')),
+                            (('ac',), 0, ('White',)),
+                            (('b',), 0, ('Blue', 'dog')),
+                            (('b',), 1, ('Green', 'tree')),
+                            (('b',), 2, ('Red',)),
+                            (('b',), 3, ('White',)),
+                            (('bc',), 0, ('Red',))]
+
+
+        vals = [val for val in onbuber.getOnIter(keys='')]
+        assert vals == [('Blue', 'dog'),
+                        ('Green', 'tree'),
+                        ('White',),
+                        ('Blue', 'dog'),
+                        ('Green', 'tree'),
+                        ('Red',),
+                        ('White',),
+                        ('Red',)]
+
+        items = [item for item in onbuber.getOnItemIter()]
+        assert items == [(('a',), 0, ('Blue', 'dog')),
+                            (('a',), 1, ('Green', 'tree')),
+                            (('ac',), 0, ('White',)),
+                            (('b',), 0, ('Blue', 'dog')),
+                            (('b',), 1, ('Green', 'tree')),
+                            (('b',), 2, ('Red',)),
+                            (('b',), 3, ('White',)),
+                            (('bc',), 0, ('Red',))]
+
+
+        vals = [val for val in onbuber.getOnIter()]
+        assert vals == [('Blue', 'dog'),
+                        ('Green', 'tree'),
+                        ('White',),
+                        ('Blue', 'dog'),
+                        ('Green', 'tree'),
+                        ('Red',),
+                        ('White',),
+                        ('Red',)]
+
+        # test with duplicates
+        assert onbuber.add(keys=dbing.onKey(j, 0), val=z)
+        assert onbuber.add(keys=dbing.onKey(j, 1), val=y)
+        assert onbuber.add(keys=dbing.onKey(j, 2), val=x)
+        assert onbuber.add(keys=dbing.onKey(j, 3), val=w)
+
+        assert onbuber.cntOn(keys=(j,)) == 8
+        assert onbuber.cntOn(keys=(j,), on=2) == 4
+        assert onbuber.cntOn(keys=(j,), on=4) == 0
+
+        items = [(keys, val) for keys, val in onbuber.getItemIter(keys=(j, ""))]
+        assert items == [(('b', '00000000000000000000000000000000'), ('Blue', 'dog')),
+                        (('b', '00000000000000000000000000000000'), ('White',)),
+                        (('b', '00000000000000000000000000000001'), ('Green', 'tree')),
+                        (('b', '00000000000000000000000000000001'), ('Red',)),
+                        (('b', '00000000000000000000000000000002'), ('Red',)),
+                        (('b', '00000000000000000000000000000002'), ('Green', 'tree')),
+                        (('b', '00000000000000000000000000000003'), ('White',)),
+                        (('b', '00000000000000000000000000000003'), ('Blue', 'dog'))]
+
+
+        # test getOnItemIter getOnIter getOnItemBackIter getOnBackIter
+        items = [item for item in onbuber.getOnItemIter(keys=j)]
+        assert items == [(('b',), 0, ('Blue', 'dog')),
+                            (('b',), 0, ('White',)),
+                            (('b',), 1, ('Green', 'tree')),
+                            (('b',), 1, ('Red',)),
+                            (('b',), 2, ('Red',)),
+                            (('b',), 2, ('Green', 'tree')),
+                            (('b',), 3, ('White',)),
+                            (('b',), 3, ('Blue', 'dog'))]
+
+        vals = [val for val in onbuber.getOnIter(keys=j)]
+        assert vals == [('Blue', 'dog'),
+                        ('White',),
+                        ('Green', 'tree'),
+                        ('Red',),
+                        ('Red',),
+                        ('Green', 'tree'),
+                        ('White',),
+                        ('Blue', 'dog')]
+
+
+        items = [item for item in onbuber.getOnItemBackIter(keys=j, on=4)]
+        assert items == [(('b',), 3, ('Blue', 'dog')),
+                        (('b',), 3, ('White',)),
+                        (('b',), 2, ('Green', 'tree')),
+                        (('b',), 2, ('Red',)),
+                        (('b',), 1, ('Red',)),
+                        (('b',), 1, ('Green', 'tree')),
+                        (('b',), 0, ('White',)),
+                        (('b',), 0, ('Blue', 'dog'))]
+
+
+        vals = [val for val in onbuber.getOnBackIter(keys=j, on=4)]
+        assert vals == [('Blue', 'dog'),
+                        ('White',),
+                        ('Green', 'tree'),
+                        ('Red',),
+                        ('Red',),
+                        ('Green', 'tree'),
+                        ('White',),
+                        ('Blue', 'dog')]
+
+
+        items = [item for item in onbuber.getOnItemIter(keys=j, on=2)]
+        assert items ==[(('b',), 2, ('Red',)),
+                        (('b',), 2, ('Green', 'tree')),
+                        (('b',), 3, ('White',)),
+                        (('b',), 3, ('Blue', 'dog'))]
+
+        vals = [val for val in onbuber.getOnIter(keys=j, on=2)]
+        assert vals == [('Red',), ('Green', 'tree'), ('White',), ('Blue', 'dog')]
+
+
+        items = [item for item in onbuber.getOnItemBackIter(keys=j, on=1)]
+        assert items ==[(('b',), 1, ('Red',)),
+                        (('b',), 1, ('Green', 'tree')),
+                        (('b',), 0, ('White',)),
+                        (('b',), 0, ('Blue', 'dog'))]
+
+        vals = [val for val in onbuber.getOnBackIter(keys=j, on=1)]
+        assert vals == [('Red',), ('Green', 'tree'), ('White',), ('Blue', 'dog')]
+
+        # test append with duplicates
+        assert 4 == onbuber.appendOn(keys=(j,), val=x)
+        assert onbuber.cntOn(keys=(j,)) == 9
+
+        # test remove
+        assert onbuber.remOn(keys=j, on=1)
+        assert not onbuber.remOn(keys=j, on=1)
+        assert onbuber.remOn(keys=j, on=3)
+        assert not onbuber.remOn(keys=j, on=3)
+
+        assert onbuber.cntOn(keys=(j,)) == 5
+
+        items = [item for item in onbuber.getOnItemIter(keys=j)]
+        assert items == [(('b',), 0, ('Blue', 'dog')),
+                        (('b',), 0, ('White',)),
+                        (('b',), 2, ('Red',)),
+                        (('b',), 2, ('Green', 'tree')),
+                        (('b',), 4, ('Green', 'tree'))]
+
+        vals = [val for val in onbuber.getOnIter(keys=j)]
+        assert vals == [('Blue', 'dog'),
+                        ('White',),
+                        ('Red',),
+                        ('Green', 'tree'),
+                        ('Green', 'tree')]
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
 
 
 def test_ioset_suber():
@@ -3011,11 +3289,12 @@ def test_crypt_signer_suber():
 if __name__ == "__main__":
     test_suber()
     test_on_suber()
-    test_B64_suber()
+    test_b64_suber()
     test_dup_suber()
     test_iodup_suber()
-    test_B64_iodup_suber()
+    test_b64_iodup_suber()
     test_on_iodup_suber()
+    test_b64_oniodup_suber()
     test_ioset_suber()
     test_cat_cesr_suber()
     test_cesr_suber()
