@@ -17,4 +17,4 @@ from hio.help import ogling
 ogler = ogling.initOgler(prefix='keri', syslogged=False)  # inits once only on first import
 
 from .helping import (nowIso8601, toIso8601, fromIso8601,
-                      nonStringSequence, nonStringIterable)
+                      nonStringSequence, nonStringIterable, Reb64)

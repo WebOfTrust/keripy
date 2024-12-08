@@ -64,7 +64,8 @@ IoSetSuber proves set of insertion ordered values at each key. Value size is not
 
 OnIoDupSuber provides set of insertion ordered values where the where trailing
     part of key is serialized ordinal number so that the ordering within each
-    key prefix is monotonically increasing numeric.
+    key prefix is monotonically increasing numeric. Useful to provide omndices
+    for sn ordering of superseding KEL events.
 
 Each of these base types for managing the key space may be mixed with other
 Classes that provide different types of values these include.
@@ -638,6 +639,10 @@ class B64SuberBase(SuberBase):
         db (dbing.LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
+            for db key and also used to convert val iterator to val bytes
+            Must not be Base64 character.
+            default is self.Sep == '.'
+
     """
 
     def __init__(self, *pa, **kwa):
@@ -759,8 +764,6 @@ class B64Suber(B64SuberBase, Suber):
 
     .sep must not be Base64 character.
 
-    Each key consistes of pre joined with .sep to ordinal suffix
-
     Assumes dupsort==False
 
     """
@@ -775,6 +778,7 @@ class B64Suber(B64SuberBase, Suber):
                                each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
+                       also used to convert val iterator to val bytes
                        Must not be Base64 character.
             verify (bool): True means reverify when ._des from db when applicable
                            False means do not reverify. Default False
@@ -2158,13 +2162,44 @@ class IoDupSuber(DupSuber):
             yield (self._tokeys(key), self._des(val))
 
 
+class B64IoDupSuber(B64SuberBase, IoDupSuber):
+    """
+    Subclass of B64SuberBase and IoDupSuber that serializes and deserializes
+    values as .sep joined strings of Base64 components in insertion ordered
+    duplicates with leading value proem. Proem + .sep joined value and must fit
+    in 511 bytes of keyspace as duplicate
+
+    Assumes dupsort==True
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator for combining keys tuple of strs into key bytes
+                   for db key and also used to convert val iterator to val bytes
+                   Must not be Base64 character.
+                   default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(B64IoDupSuber, self).__init__(*pa, **kwa)
+
+
+
 class OnIoDupSuber(OnSuberBase, IoDupSuber):
     """
     Sub class of IoDupSuber and OnSuberBase that supports Insertion Ordering
     (IoDup) of duplicates but where the trailing part of the key space is
     a serialized monotonically increasing ordinal number. This is useful for
-    escrows of key events etc where duplicates of likely events are maintained
-    in insertion order.
+    escrows of key events which are ordinally numbered such as sn but where
+    duplicates of likely events are also maintained in insertion order.
+
     Insertion order is maintained by automagically prepending and stripping an
     ordinal ordering proem to/from each duplicate value at a given key.
 
@@ -2412,3 +2447,39 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         for keys, on, val in (self.db.getOnIoDupItemBackIter(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
+
+
+class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
+    """
+    Subclass of B64SuberBase and OnIoDupSuber that serializes and deserializes
+    values as .sep joined strings of Base64 components in insertion ordered
+    duplicates with leading value proem  but where the trailing part of the
+    key space is a serialized monotonically increasing ordinal number.
+    Proem + .sep joined value and must fit n 511 bytes of keyspace as duplicate.
+
+    Insertion order is maintained by automagically prepending and stripping an
+    ordinal ordering proem to/from each duplicate value at a given key.
+
+    OnIoDupSuber adds the convenience methods from OnSuberBase to OnIoDupSuber
+    for those cases where the keyspace has a trailing ordinal part.
+
+    Assumes dupsort==True
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator for combining keys tuple of strs into key bytes
+                   for db key and also used to convert val iterator to val bytes
+                   Must not be Base64 character.
+                   default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(B64OnIoDupSuber, self).__init__(*pa, **kwa)

@@ -2380,7 +2380,7 @@ class Baser(dbing.LMDBer):
 
     def getUreItemIter(self, key=b''):
         """
-        Use sgKey()
+        Use snKey()
         Return iterator of partial signed escrowed event triple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
