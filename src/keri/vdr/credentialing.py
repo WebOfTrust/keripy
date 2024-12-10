@@ -5,6 +5,8 @@ keri.vdr.credentialing module
 
 VC issuer support
 """
+from typing import Optional
+
 from hio.base import doing
 from hio.help import decking
 
@@ -770,7 +772,8 @@ class Credentialer(doing.DoDoer):
 
         super(Credentialer, self).__init__(doers=doers)
 
-    def create(self, regname, recp: str, schema, source, rules, data, private=False):
+    def create(self, regname, recp: str, schema, source, rules, data, private: bool = False,
+               private_credential_nonce: Optional[str] = None, private_subject_nonce: Optional[str] = None):
         """  Create and validate a credential returning the fully populated Creder
 
         Parameters:
@@ -780,7 +783,9 @@ class Credentialer(doing.DoDoer):
             source:
             rules:
             data:
-            private: add nonce for privacy preserving
+            private (bool): apply nonce used for privacy preserving ACDC
+            private_credential_nonce (Optional[str]): nonce used for privacy vc
+            private_subject_nonce (Optional[str]): nonce used for subject
 
         Returns:
             Creder: Creder class for the issued credential
@@ -801,6 +806,8 @@ class Credentialer(doing.DoDoer):
                                     data=data,
                                     source=source,
                                     private=private,
+                                    private_credential_nonce=private_credential_nonce,
+                                    private_subject_nonce=private_subject_nonce,
                                     rules=rules,
                                     status=registry.regk)
         self.validate(creder)
