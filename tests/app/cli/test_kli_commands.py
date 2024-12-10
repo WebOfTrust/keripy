@@ -3,7 +3,7 @@ import os
 import multicommand
 import pytest
 
-from keri.app import directing, habbing
+from keri.app import directing
 from keri.app.cli import commands
 from keri.app.cli.common import existing
 from keri.core import coring

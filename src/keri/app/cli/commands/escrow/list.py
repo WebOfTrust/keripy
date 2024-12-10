@@ -138,7 +138,7 @@ def escrows(tymth, tock=0.0, **opts):
                 escrows["query-not-found"] = sum(1 for key, _ in hby.db.getQnfItemsNextIter())
 
             if (not escrow) or escrow == "partially-delegated-events":
-                escrows["partially-delegated-events"] = sum(1 for key, _ in hby.db.getPdesItemsNextIter())
+                escrows["partially-delegated-events"] = sum(1 for key, _ in hby.db.getPdeItemsNextIter())
 
             if (not escrow) or escrow == "reply":
                 escrows["reply"] = sum(1 for key, _ in hby.db.rpes.getItemIter())
