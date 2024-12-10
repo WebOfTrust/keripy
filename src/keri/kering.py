@@ -742,21 +742,6 @@ class UnverifiedProofError(ValidationError):
     """
 
 
-class OutOfOrderKeyStateError(ValidationError):
-    """
-    Error referenced event missing from log so can't verify this key state event
-    Usage:
-        raise OutOfOrderKeyStateError("error message")
-    """
-
-
-class OutOfOrderTxnStateError(ValidationError):
-    """
-    Error referenced event missing from log so can't verify this txn state event
-    Usage:
-        raise OutOfOrderTxnStateError("error message")
-    """
-
 class MisfitEventSourceError(ValidationError):
     """
     Error referenced event missing from log so can't verify this txn state event

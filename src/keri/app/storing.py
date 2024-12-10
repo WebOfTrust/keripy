@@ -10,7 +10,7 @@ from ordered_set import OrderedSet as oset
 
 from . import forwarding
 from .. import help
-from ..core import coring, serdering
+from ..core import coring, serdering, eventing
 from ..core.coring import MtrDex
 from ..db import dbing, subing
 
@@ -292,8 +292,6 @@ class Respondant(doing.DoDoer):
 
             elif cueKin in ("reply",):
                 src = cue["src"]
-                serder = cue["serder"]
-
                 dest = cue["dest"]
 
                 if dest not in self.hby.kevers:
@@ -302,6 +300,11 @@ class Respondant(doing.DoDoer):
                 hab = self.hby.habByPre(src)
                 if hab is None:
                     continue
+
+                if "serder" in cue:
+                    serder = cue["serder"]
+                else:
+                    serder = eventing.reply(route=cue["route"], data=cue["data"])
 
                 atc = hab.endorse(serder)
                 del atc[:serder.size]
