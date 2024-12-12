@@ -172,6 +172,10 @@ class TelStateNoticer(doing.DoDoer):
                     behind = False
 
                     if isinstance(record, viring.RegStateRecord):
+                        if self.i:  # always sent with VcStateRecord, or could be from diff TelStateNoticer
+                            self.cues.append(cue)
+                            return super(TelStateNoticer, self).recur(tyme, deeds)
+
                         if record.i != self.ri:
                             self.cues.append(cue)  # from a diff TelStateNoticer
                             return super(TelStateNoticer, self).recur(tyme, deeds)
