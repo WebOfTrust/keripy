@@ -1,5 +1,6 @@
 import argparse
 import json
+from typing import Optional
 
 from hio.base import doing
 
@@ -34,6 +35,10 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--private", help="flag to indicate if this credential needs privacy preserving features",
+                    action="store_true")
+parser.add_argument("--private-credential-nonce", help="nonce for vc",
+                    action="store_true")
+parser.add_argument("--private-subject-nonce", help="nonce for subject",
                     action="store_true")
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -98,7 +103,10 @@ def issueCredential(args):
                                  rules=rules,
                                  credential=credential,
                                  timestamp=args.time,
-                                 private=args.private)
+                                 private=args.private,
+                                 private_credential_nonce=args.private_credential_nonce,
+                                 private_subject_nonce=args.private_subject_nonce,
+                                 )
 
     doers = [issueDoer]
     return doers
@@ -111,7 +119,8 @@ class CredentialIssuer(doing.DoDoer):
     """
 
     def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
-                 rules=None, credential=None, timestamp=None, private=False):
+                 rules=None, credential=None, timestamp=None, private:bool=False, private_credential_nonce:Optional[str]=None,
+                 private_subject_nonce:Optional[str]=None,):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
@@ -123,7 +132,9 @@ class CredentialIssuer(doing.DoDoer):
              data: (dict) credential data dict
              credential: (dict) full credential to issue when joining a multisig issuance
              out (str): Filename for credential output
-             private: (bool) privacy preserving
+             private (bool): apply nonce used for privacy preserving ACDC
+             private_credential_nonce (Optional[str]): nonce used for privacy vc
+             private_subject_nonce (Optional[str]): nonce used for subject
 
         """
         self.name = name
@@ -172,7 +183,9 @@ class CredentialIssuer(doing.DoDoer):
                                                        source=edges,
                                                        rules=rules,
                                                        data=data,
-                                                       private=private)
+                                                       private=private,
+                                                       private_credential_nonce=private_credential_nonce,
+                                                       private_subject_nonce=private_subject_nonce)
             else:
                 self.creder = serdering.SerderACDC(sad=credential) # proving.Creder(ked=credential)
                 self.credentialer.validate(creder=self.creder)
