@@ -9,12 +9,11 @@ import datetime
 import random
 import sys
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app import connecting, indirecting, querying, watching
 from keri.app.cli.common import existing
-from keri.app.watching import diffState, States
 from keri.help import helping
 from keri.kering import ConfigurationError
 logger = help.ogler.getLogger()

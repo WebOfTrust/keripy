@@ -4,7 +4,6 @@ KERI
 keri.app.habbing module
 
 """
-import json
 from contextlib import contextmanager
 from math import ceil
 from urllib.parse import urlsplit

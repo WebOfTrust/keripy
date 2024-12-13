@@ -6,10 +6,9 @@ keri.kli.commands module
 """
 import argparse
 
-from hio import help
 from hio.base import doing
 
-from keri import kering
+from keri import kering, help
 from keri.app.cli.common import displaying, existing
 from keri.core import coring, serdering
 from keri.db import dbing, basing

@@ -7,7 +7,6 @@ module for enveloping and forwarding KERI message
 """
 
 from hio.base import doing
-from hio.help import decking
 
 from .. import kering, core
 from .. import help

@@ -8,9 +8,9 @@ import argparse
 import datetime
 import sys
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app import indirecting, challenging, connecting, signaling
 from keri.app.cli.commands.challenge.generate import generateWords
 from keri.app.cli.common import existing

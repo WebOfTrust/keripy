@@ -7,11 +7,11 @@ keri.kli.commands module
 import argparse
 import sys
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app.cli.common import existing
-from keri.core import coring, serdering
+from keri.core import serdering
 
 logger = help.ogler.getLogger()
 

@@ -6,10 +6,10 @@ keri.kli.commands module
 import argparse
 import json
 
-from hio import help
 from hio.base import doing
 from mnemonic import mnemonic
 
+from keri import help
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Generate a cryptographically random challenge phrase')

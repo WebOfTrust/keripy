@@ -5,9 +5,9 @@ keri.kli.commands module
 """
 import argparse
 
-from hio import help
 from hio.base import doing
 
+from keri import help
 from keri.app import habbing, agenting, indirecting
 from keri.app.cli.common import existing, displaying
 from keri.help import helping
