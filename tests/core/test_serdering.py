@@ -39,7 +39,7 @@ def test_serder():
                                          'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
-                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}}),
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'rp': '', 'p': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}}),
                                          'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'n': ''}),
                                          'vrt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 's': '0', 'bt': '0', 'br': [], 'ba': []}),
                                          'iss': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'ri': '', 'dt': ''}),
@@ -56,7 +56,7 @@ def test_serder():
                                          'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'a': []}),
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'a': []}),
-                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}})}},
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'rp': '', 'p': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}})}},
                              'CREL': {Versionage(major=1, minor=1): {'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'u': ''}),
                                          'vrt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 's': '0', 'bt': '0', 'br': [], 'ba': []}),
                                          'iss': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'ri': '', 'dt': ''}),
@@ -2092,10 +2092,11 @@ def test_serderkeri_exn():
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
     serder = SerderKERI(makify=True, ilk=kering.Ilks.exn)  # make with defaults
-    assert serder.sad == {'v': 'KERI10JSON000088_',
+    assert serder.sad == {'v': 'KERI10JSON000090_',
                             't': 'exn',
-                            'd': 'EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0cFC4e-bU',
+                            'd': 'EPx9pShQTfv2FoISZJAZ4dlUcekG8-CSkgJh0i0q_iJn',
                             'i': '',
+                            'rp': '',
                             'p': '',
                             'dt': '',
                             'r': '',
@@ -2103,11 +2104,8 @@ def test_serderkeri_exn():
                             'a': [],
                             'e': {}}
 
-    assert serder.raw == (b'{"v":"KERI10JSON000088_","t":"exn",'
-                           b'"d":"EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0'
-                           b'cFC4e-bU","i":"","p":"","dt":"","r":"","q":{},"a":[],"e":{}}')
-
-
+    assert serder.raw == (b'{"v":"KERI10JSON000090_","t":"exn","d":"EPx9pShQTfv2FoISZJAZ4dlUcekG8-CSkgJh0i0q_iJn",'
+                          b'"i":"","rp":"","p":"","dt":"","r":"","q":{},"a":[],"e":{}}')
 
     assert serder.verify()  # because pre is empty
     assert serder.ilk == kering.Ilks.exn

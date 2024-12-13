@@ -638,12 +638,11 @@ def test_multisig_incept(mockHelpingNowUTC):
                                               icp=hab.makeOwnEvent(sn=hab.kever.sn))
 
         assert exn.ked["r"] == '/multisig/icp'
-        assert exn.saidb == b'EGDEBUZW--n-GqOOwRflzBeqoQsYWKMOQVU_1YglG-BL'
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAC84-o2'
-                       b'HKwKxhL1ttzykB9zuFaGV6OpQ05b1ZJYAeBFrR7kVON1aNjpLgQCG_0bY4FUiP7F'
-                       b'GTVDrBjuFhbeDKAH-LAa5AACAA-e-icp-AABAACihaKoLnoXxRoxGbFfOy67YSh6'
-                       b'UxtgjT2oxupnLDz2FlhevGJKTMObbdex9f0Hqob6uTavSJvsXf5RzitskkkC')
+        assert exn.saidb == b'EJ6Kl50IBicAa8zND_3wMSQ5itw555V7NKid9y1SKobe'
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg'
+                       b'-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
+                       b'-AABAACL4cf7LxzKJgaJbb7wWHLuTfj3wManDV0SW7euFNZDiEhD1kUiP3_wtOIfqB_ZsEceE4oIgOOZwFROyrcf9ScB'
+                       b'-LAa5AACAA-e-icp-AABAACihaKoLnoXxRoxGbFfOy67YSh6UxtgjT2oxupnLDz2FlhevGJKTMObbdex9f0Hqob6uTavSJvsXf5RzitskkkC')
         data = exn.ked["a"]
         assert data["smids"] == aids
         assert "icp" in exn.ked['e']
@@ -662,11 +661,10 @@ def test_multisig_rotate(mockHelpingNowUTC):
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, rot=rot)
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'ENfCk9DUUck6Ixe6cYnbCbJfIsisA3H4kHPwm5Z-2Tf8'
-        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAADChiAf'
-                       b'iExAQ2ETkzzf7MOubXV9mL-r6fPsOI4yn348yeE5dXqdI7ddn5-wnPwNVjqqKkDp'
-                       b'xlOEFYRiBQEbwZQC')
+        assert exn.saidb == b'EC2IKkvJh6_Ukx-ZWP20qyHPWpXYfZdCQkydA9HwYE9c'
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAAAAAAAAAAEH__mobl7NDyyQCB1DoLK'
+                       b'-OPSueraPtZAlWEjfOYkaba-AABAABxikcUcQLQyCuOfQXYBeyFd3hzMaaZ_wHV_KPPX8DyFcold4P8mdGC'
+                       b'-meFY9P7qoJd3lPA1khblmqY5jhK2kAL')
 
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids
@@ -775,12 +773,12 @@ def test_multisig_interact(mockHelpingNowUTC):
                                                 ixn=ixn)
 
         assert exn.ked["r"] == '/multisig/ixn'
-        assert exn.saidb == b'EGQ_DqGlSBx2MKJfHr6liXAngFpQ0UCtV1cdVMUtJHdN'
-        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAB3yX6b'
-                       b'EXb8N63PKaMaFqijZVT5TqVtoO8q1BFnoJW3rDkNuJ9lEMpEN-44HKGtvniWZ6-d'
-                       b'CVPS4fsEXKZAKGkB-LAa5AACAA-e-ixn-AABAABG58m7gibjdrQ8YU-8WQ8A70nc'
-                       b'tYekYr3xdfZ5WgDQOD0bb9pI7SuuaJvzfAQisLAYQnztA82pAo1Skhf1vQwD')
+        assert exn.saidb == b'EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ26c0dUsS5p766q'
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAAAAAAAAAAEH__mobl7NDyyQCB1DoLK'
+                       b'-OPSueraPtZAlWEjfOYkaba'
+                       b'-AABAABFfU5so86inNogCPN7Ko8WXvkMKeiUKPScQ3FYrVmngNpVmW8xmhOTfixuWFlLcQPjEf3bRQhvNvx7azcI_vwB'
+                       b'-LAa5AACAA-e-ixn-AABAABG58m7gibjdrQ8YU'
+                       b'-8WQ8A70nctYekYr3xdfZ5WgDQOD0bb9pI7SuuaJvzfAQisLAYQnztA82pAo1Skhf1vQwD')
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
@@ -795,12 +793,12 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
                                                       usage="Issue vLEI Credentials")
 
         assert exn.ked["r"] == '/multisig/vcp'
-        assert exn.saidb == b'ECKiNFo7fpG4vS5tUeja3EvOqT8ctq4AW8E3HKsP7dJo'
-        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABh6d0m'
-                       b'lebT57L8o2si7DfEvPCoXJP0ekPiBqkzQns3-P7dz36MPXhjNFW6xRRdUstDLAZe'
-                       b'BEqBxBCltMpTZGsD-LAa5AACAA-e-anc-AABAAD2mK9ICW9x1-0NZGkEDOcAbZ58'
-                       b'VWK9LOTwyN2lSfHr2zY638P1SBStoh8mjgy7nOTGMyujOXMKvF_ZDeQ_ISYA')
+        assert exn.saidb == b'ELTlVFjqhqLkGBqItC9P6RADjranADW8FwD7nnz5ngwO'
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAAAAAAAAAAEH__mobl7NDyyQCB1DoLK'
+                       b'-OPSueraPtZAlWEjfOYkaba'
+                       b'-AABAABY2UZSi_FQRViWfk_wdBmbgPUus1PtJzBPUDpfKEYvhHhsT6IB7z3IswPlrwUc0rTwjN1ON9ssFoTtTlMJqG8K'
+                       b'-LAa5AACAA-e-anc-AABAAD2mK9ICW9x1'
+                       b'-0NZGkEDOcAbZ58VWK9LOTwyN2lSfHr2zY638P1SBStoh8mjgy7nOTGMyujOXMKvF_ZDeQ_ISYA')
         data = exn.ked["a"]
         assert data == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
                         'usage': 'Issue vLEI Credentials'}
