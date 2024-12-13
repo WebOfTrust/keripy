@@ -264,14 +264,14 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
     assert cred.size == len(cred.raw)
     assert "u" in cred.sad
 
-    assert cred.raw == (b'{"v":"ACDC10JSON00021c_","d":"ELFOCm58xUlId994cS6m6bsfYOkNHEKoe15Cav-Sj8__",'
-                        b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDl'
-                        b'y2Y6","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSM'
-                        b'Z_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EFwWs1d_fe_VeLZ0vQQKO-gkRvGrpfWAR'
-                        b'bI4e9tzcqlV","u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EM_S2MdMaKgP6P2Yyno6-flV6Gq'
-                        b'rwPencTIw8tCMR7iB","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"254900OPPU'
-                        b'84GM83MG36","personLegalName":"John Doe","engagementContextRole":"Project Ma'
-                        b'nager"}}')
+    assert cred.raw == (b'{"v":"ACDC10JSON00021c_","d":"EMMDzhHHlpQP0XNMRThDeIFkYD1WkDHF7Tp-8kt8X5pn",'
+                        b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6",'
+                        b'"ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",'
+                        b'"s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",'
+                        b'"a":{"d":"EK3MRnlg-bMUnHtYKyZ8HD_IbBeI0v4N8YB4UnNVBqrv","u":"0ABhYmNkZWYwMTIzNDU2Nzg5",'
+                        b'"i":"EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB","dt":"2021-06-27T21:26:21.233257+00:00",'
+                        b'"LEI":"254900OPPU84GM83MG36","personLegalName":"John Doe","engagementContextRole":"Project '
+                        b'Manager"}}')
     """End Test"""
 
 
