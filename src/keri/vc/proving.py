@@ -4,17 +4,14 @@ keri.vc.proving module
 
 """
 
-from collections.abc import Iterable
-from typing import Union
-
-from .. import help
+from typing import Optional
 
 from .. import core
+from .. import help
 from ..core import coring, serdering
 from ..core.coring import (Kinds, versify)
-from ..db import subing
-from ..kering import Version
 from ..help import helping
+from ..kering import Version
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
 
@@ -25,8 +22,9 @@ def credential(schema,
                issuer,
                data,
                recipient=None,
-               private=False,
-               salt=None,
+               private:bool=False,
+               private_credential_nonce:Optional[str]=None,
+               private_subject_nonce:Optional[str]=None,
                status=None,
                source=None,
                rules=None,
@@ -42,7 +40,8 @@ def credential(schema,
         recipient (Option[str|None]): qb64 identifier prefix of the recipient
         data (dict): of the values being assigned to the subject of this credential
         private (bool): apply nonce used for privacy preserving ACDC
-        salt (string): salt for nonce
+        private_credential_nonce (Optional[str]): nonce used for privacy vc
+        private_subject_nonce (Optional[str]): nonce used for subject
         source (dict | list): of source credentials to which this credential is chained
         rules (dict | list): ACDC rules section for credential
         version (Version): version instance
@@ -64,8 +63,8 @@ def credential(schema,
     )
 
     if private:
-        vc["u"] = salt if salt is not None else core.Salter().qb64
-        subject["u"] = salt if salt is not None else core.Salter().qb64
+        vc["u"] = private_credential_nonce if private_credential_nonce is not None else core.Salter().qb64
+        subject["u"] = private_subject_nonce if private_subject_nonce is not None else core.Salter().qb64
 
     if recipient is not None:
         subject['i'] = recipient

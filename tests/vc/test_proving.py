@@ -253,17 +253,17 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
         engagementContextRole="Project Manager",
     )
 
-    salt = core.Salter(raw=b'0123456789abcdef').qb64
     cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       recipient="EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB",
                       private=True,
-                      salt=salt,
+                      private_credential_nonce=core.Salter(raw=b'0123456789abcdef').qb64,
+                      private_subject_nonce=core.Salter(raw=b'abcdef0123456789').qb64,
                       issuer="EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6",
                       data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
     assert "u" in cred.sad
-    print(cred.raw)
+
     assert cred.raw == (b'{"v":"ACDC10JSON00021c_","d":"ELFOCm58xUlId994cS6m6bsfYOkNHEKoe15Cav-Sj8__",'
                         b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDl'
                         b'y2Y6","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSM'
