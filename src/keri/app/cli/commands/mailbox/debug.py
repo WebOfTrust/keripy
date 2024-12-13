@@ -6,15 +6,13 @@ keri.kli.commands module
 """
 import argparse
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import agenting, indirecting, habbing, httping
-from keri.app.cli.common import displaying, existing
+from keri.app import agenting, habbing, httping
+from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
-from keri.core import coring
-from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 

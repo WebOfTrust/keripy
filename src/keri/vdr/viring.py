@@ -17,12 +17,9 @@ from .. import kering
 from ..app import signing
 from ..core import coring, serdering
 from ..db import dbing, basing
-from ..db.dbing import snKey
-from ..help import helping
-from ..vc import proving
 from ..vdr import eventing
 
-from hio import help
+from keri import help
 
 logger = help.ogler.getLogger()
 

@@ -8,7 +8,7 @@ import pytest
 import os
 import logging
 
-from hio.help import ogling
+from keri.help import ogling
 
 from keri import help
 

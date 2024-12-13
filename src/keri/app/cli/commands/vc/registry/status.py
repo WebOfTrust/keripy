@@ -1,11 +1,11 @@
 import argparse
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri.app import indirecting, habbing, grouping
 from keri.app.cli.common import existing
-from keri.core import coring, serdering
+from keri.core import serdering
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()

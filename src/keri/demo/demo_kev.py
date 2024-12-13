@@ -8,11 +8,10 @@ Utilities for demos
 import argparse
 import logging
 
-from hio import help
+from keri import help
 from hio.base import doing
 
-from ..app import habbing, keeping, apping
-from ..db import basing
+from ..app import apping
 
 logger = help.ogler.getLogger()
 

@@ -6,12 +6,12 @@ keri.kli.commands module
 """
 import argparse
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import existing
-from keri.core import coring, eventing
+from keri.core import eventing
 
 logger = help.ogler.getLogger()
 

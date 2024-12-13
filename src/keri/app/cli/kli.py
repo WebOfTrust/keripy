@@ -4,7 +4,7 @@ keri.kli.commands module
 
 """
 import multicommand
-from hio import help
+from keri import help
 
 from keri.app import directing
 from keri.app.cli import commands

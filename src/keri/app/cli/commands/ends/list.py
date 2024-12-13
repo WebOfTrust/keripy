@@ -7,13 +7,11 @@ keri.kli.commands module
 import argparse
 import json
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import indirecting, habbing, forwarding, grouping
 from keri.app.cli.common import existing
-from keri.core import eventing, parsing, coring
 
 logger = help.ogler.getLogger()
 
