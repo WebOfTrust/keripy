@@ -1,7 +1,7 @@
 
 .PHONY: build-keri
 
-VERSION=1.1.26
+VERSION=1.1.27
 
 define DOCKER_WARNING
 In order to use the multi-platform build enable the containerd image store
