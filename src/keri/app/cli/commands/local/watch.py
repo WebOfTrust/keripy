@@ -9,12 +9,11 @@ import sys
 import time
 from collections import namedtuple
 
-from hio import help
+from keri import help
 from hio.base import doing
 from keri.app import agenting, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, terming
 from keri.app.habbing import GroupHab
-from keri.core import coring
 
 logger = help.ogler.getLogger()
 

@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri import kering

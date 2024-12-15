@@ -6,7 +6,7 @@ keri.kli.commands.escrow module
 """
 import argparse
 
-from hio import help
+from keri import help
 from hio.base import doing
 from keri.app.cli.common import existing
 from keri.vdr import viring

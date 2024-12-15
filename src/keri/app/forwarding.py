@@ -9,17 +9,18 @@ import random
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
-from hio.help import decking, ogler
+from hio.help import decking
 
 from keri import kering
 from keri.app import agenting
 from keri.app.habbing import GroupHab
+from keri import help
 from keri.core import coring, eventing, serdering
 from keri.db import dbing
 from keri.kering import Roles
 from keri.peer import exchanging
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 
 class Poster(doing.DoDoer):
