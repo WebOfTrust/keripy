@@ -6,7 +6,6 @@ message stream parsing support
 """
 
 import logging
-import traceback
 from collections import namedtuple
 from dataclasses import dataclass, astuple
 
@@ -1020,8 +1019,8 @@ class Parser:
                 # when present assumes this is source seal of delegating event in delegator's KEL
                 delseqner, delsaider = sscs[-1] if sscs else (None, None)  # use last one if more than one
                 if not sigers:
-                    raise kering.ValidationError("Missing attached signature(s) for evt "
-                                                 "= {}.".format(serder.ked))
+                    logger.debug("Parser: Missing attached signature(s) for evt = \n%s\n", serder.ked)
+                    raise kering.ValidationError(f"Missing attached signature(s) for evt={serder.ked['d']}")
                 try:
                     kvy.processEvent(serder=serder,
                                      sigers=sigers,
@@ -1037,13 +1036,13 @@ class Parser:
                         kvy.processReceiptQuadruples(serder, trqs, firner=firner)
 
                 except AttributeError as ex:
-                    raise kering.ValidationError("No kevery to process so dropped msg"
-                                                 "= {}.".format(serder.pretty())) from ex
+                    logger.debug("Parser: No kevery to process so dropped msg = %s", serder.pretty())
+                    raise kering.ValidationError(f"No kevery to process so dropped msg={serder.ked['d']}") from ex
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
                 if not (cigars or wigers or tsgs):
-                    raise kering.ValidationError("Missing attached signatures on receipt"
-                                                 "msg = {}.".format(serder.ked))
+                    logger.debug("Parser: Missing attached signatures on receipt msg = %s.", serder.ked)
+                    raise kering.ValidationError(f"Missing attached sigs on receipt msg={serder.ked['d']}")
 
                 try:
                     if cigars:
@@ -1074,6 +1073,12 @@ class Parser:
                 except AttributeError as e:
                     raise kering.ValidationError("No kevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
+                except kering.UnverifiedReplyError as e:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.exception("Error processing reply = %s", e)
+                        logger.debug("Reply Body=\n%s\n", serder.pretty())
+                    else:
+                        logger.error("Error processing reply = %s", e)
 
             elif ilk in (Ilks.qry,):  # query message
                 args = dict(serder=serder)
