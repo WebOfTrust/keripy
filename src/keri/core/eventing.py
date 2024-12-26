@@ -2714,8 +2714,8 @@ class Kever:
                         fn, serder.pre, dtsb.decode())
             logger.debug("Event Body=\n%s\n", serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
-        logger.info("Kever: Added to KEL valid event: %s for AID %s", serder.said, serder.pre)
-        logger.debug("Event Body=\n%s\n", serder.pretty())
+        logger.info("Kever: Added to KEL valid %s event %s for AID %s", serder.ilk, serder.said, serder.pre)
+        logger.debug("KEL Event Body=\n%s\n", serder.pretty())
         return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
 
     def escrowPSEvent(self, serder, sigers, wigers=None):
@@ -4125,18 +4125,20 @@ class Kevery:
             if pre not in self.kevers:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                 logger.debug("Query not found error. Query Body=%s", ked)
-                raise QueryNotFoundError(f"Query not found error for evt {ked['d']} at route {ked['r']}")
+                raise QueryNotFoundError(f"Query not found error for at route {ked['r']} for evt {ked['d']}")
 
             kever = self.kevers[pre]
             if anchor:
                 if not self.db.findAnchoringSealEvent(pre=pre, seal=anchor):
                     self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
-                    raise QueryNotFoundError("Query not found error={}.".format(ked))
+                    logger.debug("Query not found error. Query Body=%s", ked)
+                    raise QueryNotFoundError(f"Query not found error at route {ked['r']} for evt {ked['d']}")
 
             elif sn is not None:
                 if kever.sner.num < sn or not self.db.fullyWitnessed(kever.serder):
                     self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
-                    raise QueryNotFoundError("Query not found error={}.".format(ked))
+                    logger.debug("Query not found error. Query Body=%s", ked)
+                    raise QueryNotFoundError(f"Query not found error at route {ked['r']} for evt {ked['d']}")
 
             msgs = list()  # outgoing messages
             for msg in self.db.clonePreIter(pre=pre, fn=0):
@@ -4156,7 +4158,8 @@ class Kevery:
 
             if pre not in self.kevers:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
-                raise QueryNotFoundError("Query not found error={}.".format(ked))
+                logger.debug("Query not found error. Query Body=%s", ked)
+                raise QueryNotFoundError(f"Query not found error at route {ked['r']} for evt {ked['d']}")
 
             kever = self.kevers[pre]
 
@@ -4166,7 +4169,8 @@ class Kevery:
 
             if len(wigers) < kever.toader.num:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
-                raise QueryNotFoundError("Query not found error={}.".format(ked))
+                logger.debug("Query not found error. Query Body=%s", ked)
+                raise QueryNotFoundError(f"Query not found error at route {ked['r']} for evt {ked['d']}")
 
             rserder = reply(route=f"/ksn/{src}", data=kever.state()._asdict())
             self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=rserder,
@@ -4179,7 +4183,8 @@ class Kevery:
 
             if pre not in self.kevers:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
-                raise QueryNotFoundError("Query not found error={}.".format(ked))
+                logger.debug("Query not found error. Query Body=%s", ked)
+                raise QueryNotFoundError(f"Query not found error at route {ked['r']} for evt {ked['d']}")
 
             self.cues.push(dict(kin="stream", serder=serder, pre=pre, src=src, topics=topics))
             # if pre in self.kevers:
@@ -4188,7 +4193,8 @@ class Kevery:
             #         self.cues.push(dict(kin="stream", serder=serder, pre=pre, src=src, topics=topics))
         else:
             self.cues.push(dict(kin="invalid", serder=serder))
-            raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
+            logger.debug("Invalid Query error. Query Body=%s", ked)
+            raise ValidationError(f"invalid query message {ilk} at route {ked['r']} for evt = {ked['d']}")
 
     def fetchEstEvent(self, pre, sn):
         """

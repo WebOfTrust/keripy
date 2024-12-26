@@ -1101,6 +1101,12 @@ class Parser:
                     except AttributeError:
                         raise kering.ValidationError("No kevery to process so dropped msg"
                                                      "= {}.".format(serder.pretty()))
+                    except kering.QueryNotFoundError as e: # catch escrow error and log it
+                        if logger.isEnabledFor(logging.TRACE):
+                            logger.exception("Error processing query = %s", e)
+                            logger.trace("Query Body=\n%s\n", serder.pretty())
+                        else:
+                            logger.error("Error processing query = %s", e)
 
                 elif route in ["tels", "tsn"]:
                     try:
