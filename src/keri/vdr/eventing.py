@@ -1588,7 +1588,8 @@ class Tevery:
             if ilk in (Ilks.vcp,):
                 # we don't have multiple signatures to verify so this
                 # is already first seen and then lifely duplicitious
-                raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
+                logger.debug("Likely Duplicitous event Body=%s", serder.pretty())
+                raise LikelyDuplicitousError(f"Likely Duplicitous event={serder.said}")
 
             tever = self.tevers[regk]
             tever.cues = self.cues
@@ -1614,7 +1615,8 @@ class Tevery:
                     # self.cues.append(dict(kin="receipt", serder=serder))
                     pass
             else:  # duplicitious
-                raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
+                logger.debug("Likely Duplicitous event Body=%s", serder.pretty())
+                raise LikelyDuplicitousError(f"Likely Duplicitous event={serder.said} with sn {serder.sn}")
 
     def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """ Process TEL query event message (qry)

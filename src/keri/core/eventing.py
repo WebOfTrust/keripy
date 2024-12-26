@@ -3208,7 +3208,8 @@ class Kevery:
 
                 else:  # escrow likely duplicitous event
                     self.escrowLDEvent(serder=serder, sigers=sigers)
-                    raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
+                    logger.debug("Likely Duplicitous event Body=%s", serder.pretty())
+                    raise LikelyDuplicitousError(f"Likely Duplicitous event={serder.said}")
 
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
@@ -3218,7 +3219,8 @@ class Kevery:
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
                                        seqner=delseqner, saider=delsaider, wigers=wigers)
-                    raise OutOfOrderError("Out-of-order event={}.".format(ked))
+                    logger.debug("Out of Order event Body=%s", serder.pretty())
+                    raise OutOfOrderError(f"Out-of-order event={serder.said}")
 
                 elif ((sn == sno) or  # inorder event (ixn, rot, drt) or
                       (ilk == Ilks.rot and  # superseding recovery rot or
@@ -3280,7 +3282,8 @@ class Kevery:
 
                     else:  # escrow likely duplicitous event
                         self.escrowLDEvent(serder=serder, sigers=sigers)
-                        raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
+                        logger.debug("Likely Duplicitous event Body=%s", serder.pretty())
+                        raise LikelyDuplicitousError(f"Likely Duplicitous event={serder.said}")
 
     def processReceiptWitness(self, serder, wigers):
         """
@@ -4611,7 +4614,7 @@ class Kevery:
                     # error other than out of order so remove from OO escrow
                     self.db.delOoe(snKey(pre, sn), edig)  # removes one escrow at key val
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.trace("Kevery: ooo escrow other error on escrow: %s\n", ex.args[0])
+                        logger.debug("Kevery: ooo escrow other error on escrow: %s\n", ex.args[0])
                         logger.exception("Kevery: ooo escrow other error on : %s\n", ex.args[0])
 
                 else:  # unescrow succeeded, remove from escrow
