@@ -125,7 +125,7 @@ class Exchanger:
                 logger.debug(f"exn body=\n{serder.ked}\n")
                 return
         except AttributeError:
-            logger.info(f"Behavior for {route} missing or does not have verify for exn={serder.said}")
+            logger.debug(f"Behavior for {route} missing or does not have verify for exn={serder.said}")
             logger.debug(f"exn Body=\n{serder.ked}\n")
 
         # Always persis events
