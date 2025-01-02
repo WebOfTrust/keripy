@@ -40,9 +40,9 @@ parser.add_argument('--alias', '-a', help='human readable alias for the new iden
 parser.add_argument("--private", help="flag to indicate if this credential needs privacy preserving features",
                     action="store_true")
 parser.add_argument("--private-credential-nonce", help="nonce for vc",
-                    action="store_true")
+                    action="store")
 parser.add_argument("--private-subject-nonce", help="nonce for subject",
-                    action="store_true")
+                    action="store")
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--time", help="timestamp for the credential creation", required=False, default=None)
