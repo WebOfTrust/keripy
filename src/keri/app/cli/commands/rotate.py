@@ -8,11 +8,11 @@ from dataclasses import dataclass
 
 from hio.base import doing
 
-from keri import kering
+from keri import kering, mailbox
 from keri.app.cli.common import rotating, existing, config
 from keri.core import coring
 from keri.help import helping
-from ... import habbing, agenting, indirecting, delegating, forwarding
+from ... import habbing, agenting, delegating, forwarding
 
 parser = argparse.ArgumentParser(description='Rotate keys')
 parser.set_defaults(handler=lambda args: rotate(args))
@@ -162,7 +162,7 @@ class RotateDoer(doing.DoDoer):
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
         self.swain = delegating.Anchorer(hby=self.hby, proxy=self.proxy)
         self.postman = forwarding.Poster(hby=self.hby)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.mbx = mailbox.Director(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers)

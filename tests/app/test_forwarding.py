@@ -8,11 +8,9 @@ import time
 
 from hio.base import doing, tyming
 
-from keri import core
+from keri import core, witness
+from keri.app import forwarding, habbing, storing
 from keri.core import coring, eventing, parsing, serdering
-
-from keri.app import forwarding, habbing, indirecting, storing
-
 from keri.peer import exchanging
 
 
@@ -22,7 +20,7 @@ def test_postman(seeder):
             habbing.openHby(name="repTest", temp=True) as recpHby:
 
         mbx = storing.Mailboxer(name="wes", temp=True)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        wesDoers = witness.setup(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
         wesHab = wesHby.habByName("wes")
         seeder.seedWitEnds(hby.db, witHabs=[wesHab])
         seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])

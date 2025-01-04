@@ -7,7 +7,8 @@ import argparse
 
 from hio.base import doing
 
-from keri.app import connecting, habbing, grouping, indirecting, agenting, forwarding
+from keri import mailbox
+from keri.app import connecting, habbing, grouping, agenting, forwarding
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
 from keri.core import parsing, coring, eventing
@@ -15,7 +16,6 @@ from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import credentialing, verifying
 from keri.vdr import eventing as teventing
-
 
 parser = argparse.ArgumentParser(description='Accept a credential being issued or presented in response to an IPEX '
                                              'grant')
@@ -70,7 +70,7 @@ class AdmitDoer(doing.DoDoer):
         grouping.loadHandlers(self.exc, mux)
         protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
+        mbx = mailbox.Director(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry)
 

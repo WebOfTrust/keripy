@@ -9,9 +9,10 @@ from dataclasses import dataclass
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
+from keri.app import habbing, agenting, configing, delegating, forwarding
 from keri.app.cli.common import existing, incepting, config
 from keri.core import coring
+from keri.mailbox import director
 
 logger = help.ogler.getLogger()
 
@@ -143,7 +144,7 @@ class InceptDoer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.swain = delegating.Anchorer(hby=self.hby, proxy=self.proxy)
         self.postman = forwarding.Poster(hby=self.hby)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.mbx = director.Director(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa

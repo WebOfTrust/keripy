@@ -6,12 +6,11 @@ keri.kli.commands module
 """
 import argparse
 import datetime
-
 import sys
+
 from hio.base import doing
 
-from keri import help
-from keri.app import indirecting
+from keri import help, mailbox
 from keri.app.cli.common import displaying, existing
 from keri.core import serdering
 from keri.help import helping
@@ -46,7 +45,7 @@ class KeverDoer(doing.DoDoer):
         self.poll = poll
         self.verbose = verbose
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby,
+        self.mbx = mailbox.Director(hby=self.hby,
                                                topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
                                                        "/challenge", "/oobi"])
         doers = [self.mbx, doing.doify(self.kevers)]

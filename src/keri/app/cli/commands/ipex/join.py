@@ -9,8 +9,8 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
+from keri import help, mailbox
+from keri.app import habbing, agenting, notifying, grouping, connecting, forwarding
 from keri.app.cli.common import existing
 from keri.core import parsing, routing, serdering, coring
 from keri.peer import exchanging
@@ -80,7 +80,7 @@ class JoinDoer(doing.DoDoer):
         self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
 
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
+        self.mbx = mailbox.Director(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                                    '/delegate'])
         self.postman = forwarding.Poster(hby=self.hby)
 

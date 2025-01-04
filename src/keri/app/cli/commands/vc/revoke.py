@@ -7,8 +7,8 @@ import argparse
 
 from hio.base import doing
 
-from keri import kering
-from keri.app import indirecting, habbing, grouping, forwarding, connecting, notifying
+from keri import kering, mailbox
+from keri.app import habbing, grouping, forwarding, connecting, notifying
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
 from keri.core import coring, serdering
@@ -63,7 +63,7 @@ class RevokeDoer(doing.DoDoer):
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         grouping.loadHandlers(exc, mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
+        mbx = mailbox.Director(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
                                           verifier=self.verifier, exc=exc)
 
         doers = [self.hbyDoer, mbx, self.counselor, self.registrar, self.postman]

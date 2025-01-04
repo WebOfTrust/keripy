@@ -8,15 +8,13 @@ Witness command line interface
 
 import argparse
 import logging
+import warnings
 
 from hio.base import doing
 
-from keri import help
-
-from keri.app import habbing, indirecting, configing
-
+from keri import help, witness
+from keri.app import habbing, configing
 from keri.core import Salter
-
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
 parser.set_defaults(handler=lambda args: demo(args))
@@ -25,6 +23,13 @@ parser.set_defaults(handler=lambda args: demo(args))
 help.ogler.level = logging.INFO
 logger = help.ogler.getLogger()
 
+warnings.simplefilter("default")
+warnings.warn(
+    "Witness commands will be removed in a future release. "
+    "Functionality has been moved to its own repository: https://github.com/keri-foundation/witness",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 def demo(_):
     """
@@ -69,12 +74,12 @@ class InitDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        wanDoers = indirecting.setupWitness(alias="wan", hby=self.wan, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=self.wil, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=self.wes, tcpPort=5634, httpPort=5644)
+        wanDoers = witness.setup(alias="wan", hby=self.wan, tcpPort=5632, httpPort=5642)
+        wilDoers = witness.setup(alias="wil", hby=self.wil, tcpPort=5633, httpPort=5643)
+        wesDoers = witness.setup(alias="wes", hby=self.wes, tcpPort=5634, httpPort=5644)
 
-        witDoers = indirecting.setupWitness(alias="wit", hby=self.wit, tcpPort=5635, httpPort=5645)
-        wubDoers = indirecting.setupWitness(alias="wub", hby=self.wub, tcpPort=5636, httpPort=5646)
-        wyzDoers = indirecting.setupWitness(alias="wyz", hby=self.wyz, tcpPort=5637, httpPort=5647)
+        witDoers = witness.setup(alias="wit", hby=self.wit, tcpPort=5635, httpPort=5645)
+        wubDoers = witness.setup(alias="wub", hby=self.wub, tcpPort=5636, httpPort=5646)
+        wyzDoers = witness.setup(alias="wyz", hby=self.wyz, tcpPort=5637, httpPort=5647)
 
         self.extend(wanDoers + wilDoers + wesDoers + witDoers + wubDoers + wyzDoers)

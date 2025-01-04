@@ -7,17 +7,17 @@ keri.kli.commands.multisig module
 
 import argparse
 import json
+import sys
 from json import JSONDecodeError
+
+from hio.base import doing
 from ordered_set import OrderedSet as oset
 
-import sys
-from hio.base import doing
-
-from keri import help, kering
-from keri.app import indirecting, grouping, habbing, forwarding
+from keri import help, kering, mailbox
+from keri.app import grouping, habbing, forwarding
 from keri.app.cli.common import existing, displaying
 from keri.app.notifying import Notifier
-from keri.core import coring, serdering
+from keri.core import coring
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -94,7 +94,7 @@ class GroupMultisigIncept(doing.DoDoer):
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         grouping.loadHandlers(exc, mux)
 
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics, exc=exc)
+        self.mbx = mailbox.Director(hby=self.hby, topics=topics, exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 

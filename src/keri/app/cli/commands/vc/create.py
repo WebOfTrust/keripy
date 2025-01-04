@@ -4,8 +4,8 @@ from typing import Optional
 
 from hio.base import doing
 
-from keri import core, help, kering
-from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
+from keri import core, help, kering, mailbox
+from keri.app import habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
 from keri.core import coring, eventing, serdering
 from keri.help import helping
@@ -157,7 +157,7 @@ class CredentialIssuer(doing.DoDoer):
         grouping.loadHandlers(exc, mux)
 
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
+        mbx = mailbox.Director(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
                                           verifier=self.verifier, exc=exc)
         self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)

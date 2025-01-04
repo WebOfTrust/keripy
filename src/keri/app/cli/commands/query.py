@@ -10,8 +10,8 @@ import json
 from hio.base import doing
 from hio.help import decking
 
-from keri import help
-from keri.app import indirecting, habbing, querying
+from keri import help, mailbox
+from keri.app import habbing, querying
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
 from keri.help import helping
@@ -58,7 +58,7 @@ class LaunchDoer(doing.DoDoer):
         self.anchor = anchor
         self.loaded = False
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        self.mbd = mailbox.Director(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         doers.extend([self.hbyDoer, self.mbd])
 
         self.toRemove = list(doers)

@@ -7,7 +7,8 @@ import argparse
 
 from hio.base import doing
 
-from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
+from keri import mailbox
+from keri.app import forwarding, connecting, habbing, grouping, signing
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
 from keri.core import coring, parsing, serdering
@@ -64,7 +65,7 @@ class GrantDoer(doing.DoDoer):
         grouping.loadHandlers(self.exc, mux)
         protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
+        mbx = mailbox.Director(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc)
 

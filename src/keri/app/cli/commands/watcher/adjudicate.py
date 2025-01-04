@@ -11,11 +11,12 @@ import sys
 
 from hio.base import doing
 
-from keri import help
-from keri.app import connecting, indirecting, querying, watching
+from keri import help, mailbox
+from keri.app import connecting, querying, watching
 from keri.app.cli.common import existing
 from keri.help import helping
 from keri.kering import ConfigurationError
+
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Perform key event adjudication on any new key state from watchers.')
@@ -61,7 +62,7 @@ class AdjudicationDoer(doing.DoDoer):
         self.toad = args.toad
 
         self.hby = existing.setupHby(name=self.name, base=base, bran=bran)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/reply', '/replay'])
+        self.mbx = mailbox.Director(hby=self.hby, topics=['/reply', '/replay'])
         doers = [doing.doify(self.adjudicate, **kwa), self.mbx]
 
         super(AdjudicationDoer, self).__init__(**kwa, doers=doers)

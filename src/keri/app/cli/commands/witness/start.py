@@ -7,11 +7,20 @@ Witness command line interface
 """
 import argparse
 import logging
+import warnings
 
-from keri import __version__
+from keri import __version__, witness
 from keri import help
-from keri.app import directing, indirecting, habbing, keeping, configing
+from keri.app import directing, habbing, keeping, configing
 from keri.app.cli.common import existing
+
+warnings.simplefilter("default")
+warnings.warn(
+    "Witness commands will be removed in a future release. "
+    "Functionality has been moved to its own repository: https://github.com/keri-foundation/witness",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -H 5631 -t 5632\n"
@@ -104,7 +113,7 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
     doers = [hbyDoer]
 
-    doers.extend(indirecting.setupWitness(alias=alias,
+    doers.extend(witness.setup(alias=alias,
                                           hby=hby,
                                           tcpPort=tcp,
                                           httpPort=http,

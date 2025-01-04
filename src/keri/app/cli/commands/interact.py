@@ -8,10 +8,10 @@ import json
 
 from hio.base import doing
 
-from keri import kering
+from keri import kering, mailbox
 from keri.help import helping
 from ..common import existing
-from ... import habbing, agenting, indirecting
+from ... import habbing, agenting
 
 parser = argparse.ArgumentParser(description='Create and publish an interaction event')
 parser.set_defaults(handler=lambda args: interact(args))
@@ -91,7 +91,7 @@ class InteractDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.mbx = mailbox.Director(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, doing.doify(self.interactDo)]
 
         super(InteractDoer, self).__init__(doers=doers)

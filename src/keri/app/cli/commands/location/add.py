@@ -7,11 +7,10 @@ keri.kli.commands module
 import argparse
 from urllib.parse import urlparse
 
-
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import habbing, grouping, indirecting, forwarding
+from keri import help, kering, mailbox
+from keri.app import habbing, grouping, forwarding
 from keri.app.agenting import WitnessPublisher
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
@@ -66,7 +65,7 @@ class LocationDoer(doing.DoDoer):
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         grouping.loadHandlers(exc, mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
+        mbx = mailbox.Director(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 
         if self.hab is None:
             raise kering.ConfigurationError(f"unknown alias={alias}")

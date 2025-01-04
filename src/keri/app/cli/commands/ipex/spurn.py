@@ -8,16 +8,16 @@ import os
 
 from hio.base import doing
 
-from keri.app import forwarding, connecting, habbing, grouping, indirecting
+from keri import mailbox
+from keri.app import forwarding, connecting, habbing, grouping
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
-from keri.core import parsing, coring, eventing
+from keri.core import parsing, eventing
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vc.protocoling import Ipex
 from keri.vdr import credentialing, verifying
 from keri.vdr import eventing as teventing
-
 
 parser = argparse.ArgumentParser(description='Reject an IPEX apply, offer, agree or grant message')
 parser.set_defaults(handler=lambda args: handler(args))
@@ -67,7 +67,7 @@ class SpurnDoer(doing.DoDoer):
         grouping.loadHandlers(self.exc, mux)
         protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
+        mbx = mailbox.Director(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc)
 
