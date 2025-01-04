@@ -5,6 +5,7 @@ keri.kli.commands module
 
 """
 import argparse
+import warnings
 
 from hio.base import doing
 
@@ -14,6 +15,13 @@ from keri.app.cli.common import existing
 from keri.kering import ConfigurationError, Roles
 
 logger = help.ogler.getLogger()
+
+warnings.warn(
+    "Mailbox commands will be removed in a future release. "
+    "Functionality has been moved to its own repository: https://github.com/keri-foundation/mailbox",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 parser = argparse.ArgumentParser(description='List current mailboxes')
 parser.set_defaults(handler=lambda args: handle(args),
@@ -25,7 +33,6 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
                     required=False, default="")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-
 
 def handle(args):
     """ Command line handler for adding an aid to a watcher's list of AIds to watch

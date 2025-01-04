@@ -5,15 +5,15 @@ keri.kli.commands.delegate module
 
 """
 import argparse
-from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from ordered_set import OrderedSet as oset
 
-from keri import help
-from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
+from keri import core
+from keri import help, mailbox
+from keri.app import habbing, agenting, grouping, forwarding, delegating, notifying
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
-from keri import core
 from keri.core import coring, serdering
 from keri.db import dbing
 from keri.help import helping
@@ -82,7 +82,7 @@ class ConfirmDoer(doing.DoDoer):
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
         grouping.loadHandlers(exc=exc, mux=self.mux)
 
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
+        self.mbx = mailbox.Director(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
                                                exc=exc)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)

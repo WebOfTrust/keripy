@@ -4,6 +4,7 @@ keri.kli.commands module
 
 """
 import argparse
+import warnings
 
 from hio.base import doing
 
@@ -13,6 +14,13 @@ from keri.db import basing
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
+
+warnings.warn(
+    "Mailbox commands will be removed in a future release. "
+    "Functionality has been moved to its own repository: https://github.com/keri-foundation/mailbox",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 parser = argparse.ArgumentParser(description='Update the index for a given topic for a witness')
 parser.set_defaults(handler=lambda args: handler(args), transferable=True)

@@ -7,24 +7,24 @@ import time
 
 from hio.base import doing, tyming
 
-from keri import kering, core
+from keri import kering, core, witness
+from keri.app import habbing, agenting, directing
 from keri.core import coring, serdering
 from keri.core.coring import Seqner
-from keri.help import nowIso8601
-from keri.app import habbing, indirecting, agenting, directing
 from keri.db import dbing
+from keri.help import nowIso8601
 from keri.vdr import eventing, viring
 
 
-def test_withness_receiptor(seeder):
+def test_witness_receiptor(seeder):
     with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
             habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
             habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        wanDoers = witness.setup(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wilDoers = witness.setup(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
+        wesDoers = witness.setup(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
@@ -127,9 +127,9 @@ def test_witness_sender(seeder):
 class PublishDoer(doing.DoDoer):
 
     def __init__(self, wanHby, wilHby, wesHby, palHby, seeder):
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        wanDoers = witness.setup(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wilDoers = witness.setup(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
+        wesDoers = witness.setup(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
@@ -189,9 +189,9 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
             habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             habbing.openHby(name="qin", salt=core.Salter(raw=b'abcdef0123456789').qb64) as qinHby:
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        wanDoers = witness.setup(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wilDoers = witness.setup(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
+        wesDoers = witness.setup(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")

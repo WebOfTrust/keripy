@@ -2,8 +2,8 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app import indirecting, habbing, grouping
+from keri import help, mailbox
+from keri.app import habbing, grouping
 from keri.app.cli.common import existing
 from keri.core import serdering
 from keri.vdr import credentialing
@@ -54,7 +54,7 @@ class RegistryStatusor(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         counselor = grouping.Counselor(hby=self.hby)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"])
+        mbx = mailbox.Director(hby=self.hby, topics=["/receipt", "/multisig", "/replay"])
         doers = [self.hbyDoer, counselor, mbx]
         self.toRemove = list(doers)
 

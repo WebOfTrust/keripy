@@ -4,15 +4,13 @@ tests.app.delegating module
 
 """
 import time
+
 from hio.base import doing, tyming
 
-from keri import kering
-
 from keri import core
+from keri import kering, witness
+from keri.app import habbing, delegating, agenting, notifying
 from keri.core import eventing, parsing, coring
-
-from keri.app import habbing, delegating, indirecting, agenting, notifying
-
 from keri.db import dbing
 
 
@@ -21,7 +19,7 @@ def test_anchorer(seeder):
             habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             habbing.openHby(name="del", salt=core.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        wesDoers = witness.setup(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
         witDoer = agenting.Receiptor(hby=palHby)
         bts = delegating.Anchorer(hby=delHby)
 

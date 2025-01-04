@@ -8,8 +8,8 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app import indirecting, grouping, agenting
+from keri import help, mailbox
+from keri.app import grouping, agenting
 from keri.app.cli.common import existing, displaying
 from keri.app.habbing import GroupHab
 
@@ -40,7 +40,7 @@ class ContinueDoer(doing.DoDoer):
         self.alias = alias
         self.counselor = grouping.Counselor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby,
+        self.mbx = mailbox.Director(hby=self.hby,
                                                topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
                                                        "/challenge", "/oobi"])
         doers = [self.mbx, self.counselor, self.witq, doing.doify(self.recover)]

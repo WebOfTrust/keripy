@@ -10,8 +10,8 @@ import sys
 
 from hio.base import doing
 
-from keri import help
-from keri.app import indirecting, challenging, connecting, signaling
+from keri import help, mailbox
+from keri.app import challenging, connecting, signaling
 from keri.app.cli.commands.challenge.generate import generateWords
 from keri.app.cli.common import existing
 from keri.help import helping
@@ -82,7 +82,7 @@ class VerifyDoer(doing.DoDoer):
 
         challenging.loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
+        self.mbd = mailbox.Director(hby=self.hby, topics=['/challenge'], exc=self.exc)
 
         doers = [self.mbd, doing.doify(self.verifyDo)]
 

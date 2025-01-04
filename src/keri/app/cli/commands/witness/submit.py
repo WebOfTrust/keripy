@@ -7,8 +7,8 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app import habbing, agenting, indirecting
+from keri import help, mailbox
+from keri.app import habbing, agenting
 from keri.app.cli.common import existing, displaying
 from keri.help import helping
 
@@ -66,7 +66,7 @@ class SubmitDoer(doing.DoDoer):
 
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
+        self.mbx = mailbox.Director(hby=hby, topics=['/receipt', "/replay", "/reply"])
         self.alias = alias
         self.hby = hby
         self.force = force

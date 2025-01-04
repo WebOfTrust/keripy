@@ -5,6 +5,7 @@ keri.kli.commands module
 
 """
 import argparse
+import warnings
 
 from hio.base import doing
 
@@ -14,6 +15,13 @@ from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
 
 logger = help.ogler.getLogger()
+
+warnings.warn(
+    "Mailbox commands will be removed in a future release. "
+    "Functionality has been moved to its own repository: https://github.com/keri-foundation/mailbox",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 parser = argparse.ArgumentParser(description='Display mailbox status for an identifier and witness')
 parser.set_defaults(handler=lambda args: handler(args),

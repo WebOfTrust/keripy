@@ -9,8 +9,9 @@ import sys
 import time
 
 from hio.base import doing
-from keri import help
-from keri.app import agenting, indirecting, habbing, forwarding
+
+from keri import help, mailbox
+from keri.app import agenting, habbing, forwarding
 from keri.app.cli.common import existing, terming
 from keri.app.habbing import GroupHab
 from keri.app.watching import States, diffState
@@ -46,7 +47,7 @@ class WatchDoer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.cues = help.decking.Deck()
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        self.mbd = mailbox.Director(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         self.postman = forwarding.Poster(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.postman, doing.doify(self.cueDo)])
 

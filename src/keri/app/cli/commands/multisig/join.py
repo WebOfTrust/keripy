@@ -6,13 +6,13 @@ keri.kli.commands.multisig module
 """
 import argparse
 import json
-from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from ordered_set import OrderedSet as oset
 from prettytable import PrettyTable
 
-from keri import help, kering
-from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
+from keri import help, kering, mailbox
+from keri.app import habbing, agenting, notifying, grouping, connecting, forwarding
 from keri.app.cli.common import existing, displaying
 from keri.core import coring, eventing, scheming, parsing, routing, serdering
 from keri.peer import exchanging
@@ -87,7 +87,7 @@ class JoinDoer(doing.DoDoer):
         self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
 
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
+        self.mbx = mailbox.Director(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                                    '/delegate'])
         self.postman = forwarding.Poster(hby=self.hby)
 

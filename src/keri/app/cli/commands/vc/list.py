@@ -11,8 +11,7 @@ import sys
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import indirecting
+from keri import help, kering, mailbox
 from keri.app.cli.common import existing, terming
 from keri.core import scheming
 from keri.help import helping
@@ -73,7 +72,7 @@ class ListDoer(doing.DoDoer):
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/credential'], verifier=self.vry)
+        self.mbx = mailbox.Director(hby=self.hby, topics=['/credential'], verifier=self.vry)
 
         doers = [self.mbx, doing.doify(self.listDo)]
 

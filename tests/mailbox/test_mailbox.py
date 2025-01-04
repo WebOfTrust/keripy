@@ -5,20 +5,18 @@ tests.app.indirecting module
 """
 import json
 
-import falcon
-import hio
 import pytest
-from hio.core import tcp, http
 from hio.help import decking
 
-from keri.app import indirecting, storing, habbing
-from keri.core import coring, serdering
+from keri import mailbox
+from keri.app import storing, habbing
+from keri.core import serdering
 
 
 def test_mailbox_iter():
     pre = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
     mbx = storing.Mailboxer(temp=True)
-    mb = indirecting.MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 1, "/multisig": 0},
+    mb = mailbox.Iterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 1, "/multisig": 0},
                                      retry=1000)
 
     mbi = iter(mb)
@@ -76,7 +74,7 @@ def test_mailbox_multiple_iter():
     mbx = storing.Mailboxer(temp=True)
     mbx.storeMsg(topic=f"{pre}/challenge", msg=json.dumps(msg).encode("utf-8"))
 
-    mb = indirecting.MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 0, "/multisig": 0},
+    mb = mailbox.Iterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 0, "/multisig": 0},
                                      retry=1000)
     mbi = iter(mb)
 
@@ -110,7 +108,7 @@ def test_qrymailbox_iter():
 
         cues = decking.Deck()
         mbx = storing.Mailboxer(temp=True)
-        mb = indirecting.QryRpyMailboxIterable(mbx=mbx, cues=cues, said=srdr.said, retry=1000)
+        mb = mailbox.QueryReplyIterable(mbx=mbx, cues=cues, said=srdr.said, retry=1000)
 
         mbi = iter(mb)
         assert mb.iter is None
@@ -150,35 +148,6 @@ def test_qrymailbox_iter():
         mb.iter.TimeoutMBX = 0  # Force the iter to timeout
         with pytest.raises(StopIteration):
             next(mbi)
-
-
-class MockServerTls:
-    def __init__(self,  certify, keypath, certpath, cafilepath, port):
-        pass
-
-
-class MockHttpServer:
-    def __init__(self, host, port, app, servant=None):
-        self.servant = servant
-
-
-def test_createHttpServer(monkeypatch):
-    host = "0.0.0.0"
-    port = 5632
-    app = falcon.App()
-    server = indirecting.createHttpServer(host, port, app)
-    assert isinstance(server, http.Server)
-
-    monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
-    monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)
-
-    server = indirecting.createHttpServer(host, port, app, keypath='keypath', certpath='certpath', cafilepath='cafilepath')
-
-    assert isinstance(server, MockHttpServer)
-    assert isinstance(server.servant, MockServerTls)
-
-
-
 
 if __name__ == "__main__":
     test_mailbox_iter()

@@ -7,14 +7,14 @@ keri.kli.commands module
 
 import argparse
 import datetime
-import os
 import json
+import os
 import sys
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import indirecting, notifying, connecting
+from keri import help, kering, mailbox
+from keri.app import notifying, connecting
 from keri.app.cli.common import existing, terming
 from keri.core import scheming
 from keri.help import helping
@@ -82,7 +82,7 @@ class ListDoer(doing.DoDoer):
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         protocoling.loadHandlers(self.hby, self.exc, self.notifier)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/replay', '/reply', '/credential'],
+        self.mbx = mailbox.Director(hby=self.hby, topics=['/replay', '/reply', '/credential'],
                                                exc=self.exc, verifier=self.vry)
 
         self.doers = [self.mbx]

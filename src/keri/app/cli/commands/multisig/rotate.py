@@ -5,12 +5,12 @@ keri.kli.commands.multisig module
 """
 
 import argparse
-from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from ordered_set import OrderedSet as oset
 
-from keri import help, kering
-from keri.app import grouping, indirecting, habbing, forwarding
+from keri import help, kering, mailbox
+from keri.app import grouping, habbing, forwarding
 from keri.app.cli.common import rotating, existing, displaying, config
 from keri.app.notifying import Notifier
 from keri.core import coring, serdering
@@ -91,7 +91,7 @@ class GroupMultisigRotate(doing.DoDoer):
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         grouping.loadHandlers(exc, mux)
 
-        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc)
+        mbd = mailbox.Director(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 
