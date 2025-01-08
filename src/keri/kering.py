@@ -342,8 +342,9 @@ SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror peer mailbox agent indexer')
-Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
+
+Rolage = namedtuple("Rolage", 'controller witness registrar gateway watcher judge juror peer mailbox agent indexer')
+Roles = Rolage(controller='controller', witness='witness', registrar='registrar', gateway="gateway",
                watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox", agent="agent", indexer="indexer")
 
 

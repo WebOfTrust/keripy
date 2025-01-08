@@ -51,7 +51,7 @@ parser.add_argument('--config-file',
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)
 parser.add_argument('--nopasscode', help='create an unencrypted keystore', action='store_true')
-parser.add_argument('--aeid', '-a', help='qualified base64 of non-transferable identifier prefix for  authentication '
+parser.add_argument('--aeid', '-a', help='qualified base64 of non-transferable identifier prefix for authentication '
                                          'and encryption of secrets in keystore', default=None)
 parser.add_argument('--seed', '-e', help='qualified base64 private-signing key (seed) for the aeid from which the '
                                          'private decryption key may be derived', default=None)

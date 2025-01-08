@@ -3,6 +3,8 @@
 tests.peer.test_exchanging module
 
 """
+import json
+
 import pysodium
 import pytest
 
@@ -57,10 +59,10 @@ def test_essrs():
         ims = hab.makeOwnInception()
         parsing.Parser().parse(ims=ims, kvy=recHby.kvy)
         # create the test message with essr attachment
-        msg = "This is a test message that must be secured"
+        msg = dict(msg="This is a test message that must be secured", i=hab.pre)
         rkever = recHab.kever
         pubkey = pysodium.crypto_sign_pk_to_box_pk(rkever.verfers[0].raw)
-        raw = pysodium.crypto_box_seal(msg.encode("utf-8"), pubkey)
+        raw = pysodium.crypto_box_seal(json.dumps(msg).encode("utf-8"), pubkey)
 
         texter = coring.Texter(raw=raw)
         diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
@@ -84,7 +86,7 @@ def test_essrs():
         # Pull the logged ESSR attachment and verify it is the one attached
         texter = recHby.db.essrs.get(keys=(serder.said,))
         raw = recHab.decrypt(ser=texter[0].raw)
-        assert raw.decode("utf-8") == msg
+        assert json.loads(raw.decode("utf-8")) == msg
 
         # Test with invalid diger
         diger = coring.Diger(qb64="EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o")
