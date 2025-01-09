@@ -160,7 +160,7 @@ class Respondant(doing.DoDoer):
     """
     Respondant processes buffer of response messages from inbound 'exn' messages and
     routes them to the appropriate mailbox.  If destination has witnesses, send response to
-    one of the (randomly selected) witnesses.  Otherwise store the response in the recipients
+    one of the (randomly selected) witnesses.  Otherwise, store the response in the recipients
     mailbox locally.
 
     """
@@ -188,7 +188,7 @@ class Respondant(doing.DoDoer):
 
     def responseDo(self, tymth=None, tock=0.0):
         """
-        Doifiable Doist compatibile generator method to process response messages from `exn` handlers.
+        Doifiable Doist compatible generator method to process response messages from `exn` handlers.
         If dest is not in local environment, ignore the response (for now).  If dest has witnesses,
         pick one at random and send the response to that witness for storage in the recipients mailbox
         on that witness.  Otherwise this is a peer to peer HTTP message and should be stored in a mailbox

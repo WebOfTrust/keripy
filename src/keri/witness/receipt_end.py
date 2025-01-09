@@ -147,7 +147,7 @@ class ReceiptEnd(doing.DoDoer):
 
     def interceptDo(self, tymth=None, tock=0.0):
         """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatible generator method (doer dog) to process
             Kevery and Tevery cues deque
 
         Usage:

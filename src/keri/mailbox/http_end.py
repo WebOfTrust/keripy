@@ -26,18 +26,22 @@ class HttpEnd:
     """
 
     TimeoutQNF = 30
+    TimeoutMBX = 5
 
-    def __init__(self, rxbs=None, qrycues=None):
+    def __init__(self, rxbs=None, mbx=None, qrycues=None):
         """
         Create the KEL HTTP server from the Habitat with an optional Falcon App to
         register the routes with.
 
         Parameters
              rxbs (bytearray): output queue of bytes for message processing
+             mbx (Mailboxer): Mailbox storage
              qrycues (Deck): inbound qry response queues
 
         """
         self.rxbs = rxbs if rxbs is not None else bytearray()
+
+        self.mbx = mbx
         self.qrycues = qrycues if qrycues is not None else decking.Deck()
 
     def on_post(self, req, rep):
@@ -85,15 +89,11 @@ class HttpEnd:
             rep.status = falcon.HTTP_204
         else:
             ilk = sadder.ked["t"]
-            if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
-                rep.set_header('Content-Type', "application/json")
-                rep.status = falcon.HTTP_204
-            elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-                rep.set_header('Content-Type', "application/json")
-                rep.status = falcon.HTTP_204
-            elif ilk in (Ilks.qry,):
-                rep.set_header('Content-Type', "application/json")
-                rep.status = falcon.HTTP_204
+            if ilk in (Ilks.qry,):
+                if sadder.ked["r"] in ("mbx",):
+                    rep.set_header('Content-Type', "text/event-stream")
+                    rep.status = falcon.HTTP_200
+                    rep.stream = QueryReplyIterable(mbx=self.mbx, cues=self.qrycues, said=sadder.said)
 
     def on_put(self, req, rep):
         """

@@ -12,8 +12,7 @@ from hio.help import decking
 
 import keri.app.oobiing
 from .http_end import HttpEnd
-from .receipt_end import ReceiptEnd
-from .witness import Witness
+from .start import Start
 from .. import help
 from ..app import directing, storing, httping, forwarding, oobiing
 from ..core import (eventing, parsing, routing)
@@ -26,7 +25,7 @@ from ..vdr.eventing import Tevery
 logger = help.ogler.getLogger()
 
 # setupWitness
-def setup(hby, alias="witness", aids=None, tcpPort=5631, httpPort=5632,
+def setup(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
           keypath=None, certpath=None, cafilepath=None):
     """
     Setup witness controller and doers
@@ -48,13 +47,16 @@ def setup(hby, alias="witness", aids=None, tcpPort=5631, httpPort=5632,
     reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
     verfer = verifying.Verifier(hby=hby, reger=reger)
 
+    mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
+    forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
+    exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
     clienter = httping.Clienter()
     oobiery = keri.app.oobiing.Oobiery(hby=hby, clienter=clienter)
 
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby, default=hab.pre)
     oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
-    rep = storing.Respondant(hby=hby, aids=aids)
+    rep = storing.Respondant(hby=hby, mbx=mbx, aids=aids)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = eventing.Kevery(db=hby.db,
@@ -73,8 +75,11 @@ def setup(hby, alias="witness", aids=None, tcpPort=5631, httpPort=5632,
     parser = parsing.Parser(framed=True,
                             kvy=kvy,
                             tvy=tvy,
+                            exc=exchanger,
                             rvy=rvy)
 
+    httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
+    app.add_route("/", httpEnd)
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
 
@@ -97,8 +102,9 @@ def setup(hby, alias="witness", aids=None, tcpPort=5631, httpPort=5632,
         directant = directing.Directant(hab=hab, server=server, verifier=verfer)
         doers.extend([directant, serverDoer])
 
-    start = Witness(hab=hab, parser=parser, cues=receiptEnd.outbound,
-                    kvy=kvy, tvy=tvy, rvy=rvy, replies=rep.reps, responses=rep.cues)
+    start = Start(hab=hab, parser=parser, cues=receiptEnd.outbound,
+                            kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,
+                            responses=rep.cues, queries=httpEnd.qrycues)
 
     doers.extend([regDoer, httpServerDoer, rep, start, receiptEnd, *oobiery.doers])
     return doers
