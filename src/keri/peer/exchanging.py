@@ -234,7 +234,7 @@ class Exchanger:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.info("Exchange partially signed unescrow failed: %s", ex.args[0])
                 else:
-                    logger.info("Exchange partially signed failed: %s", ex.args[0])
+                    logger.error("Exchange partially signed failed: %s", ex.args[0])
             except Exception as ex:
                 self.hby.db.epse.rem(dig)
                 self.hby.db.epsd.rem(dig)

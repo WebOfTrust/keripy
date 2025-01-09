@@ -22,10 +22,6 @@ parser = argparse.ArgumentParser(description="Run a demo collection of witnesses
 parser.set_defaults(handler=lambda args: demo(args))
 
 
-help.ogler.level = logging.INFO
-logger = help.ogler.getLogger()
-
-
 def demo(_):
     """
     Run set of three witnesses for demo

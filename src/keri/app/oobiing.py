@@ -18,6 +18,7 @@ from keri.core import coring
 from . import httping
 from .. import help
 from .. import kering
+from ..app import connecting
 from ..core import routing, eventing, parsing, scheming, serdering
 from ..db import basing
 from ..end import ending
@@ -289,6 +290,7 @@ class Oobiery:
             self.registerReplyRoutes(self.rvy.rtr)
 
         self.clienter = clienter or httping.Clienter()
+        self.org = connecting.Organizer(hby=self.hby)
 
         # Set up a local parser for returned events from OOBI queries.
         rtr = routing.Router()
@@ -499,6 +501,9 @@ class Oobiery:
                     self.parser.parse(ims=bytearray(response["body"]))
                     if ending.OOBI_AID_HEADER in response["headers"]:
                         obr.cid = response["headers"][ending.OOBI_AID_HEADER]
+
+                    if obr.oobialias is not None and obr.cid:
+                        self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
 
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.resolved
