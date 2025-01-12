@@ -2379,7 +2379,7 @@ class Kever:
         # seal in this case can't be malicious since sourced locally.
         # Doesn't get to here until fully signed and witnessed.
 
-        if self.locallyDelegated(delpre):  # local delegator
+        if self.locallyDelegated(delpre) and not self.locallyOwned():  # local delegator
             # must be local if locallyDelegated or caught above as misfit
             if delseqner is None or delsaider is None: # missing delegation seal
                 # so escrow delegable. So local delegator can approve OOB.
