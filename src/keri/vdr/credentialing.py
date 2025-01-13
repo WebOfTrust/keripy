@@ -805,6 +805,7 @@ class Credentialer(doing.DoDoer):
                                     recipient=recp,
                                     data=data,
                                     source=source,
+                                    private=private,
                                     private_credential_nonce=private_credential_nonce,
                                     private_subject_nonce=private_subject_nonce,
                                     rules=rules,
