@@ -1351,7 +1351,7 @@ class Baser(dbing.LMDBer):
             # Only run migration if current source code version is at or below the migration version
             ver = semver.VersionInfo.parse(keri.__version__)
             ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
-            if self.version is not None and semver.compare(version, ver_no_prerelease) > 0:
+            if self.version is not None and semver.compare(version, str(ver_no_prerelease)) > 0:
                 print(
                     f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
                 continue
@@ -1367,15 +1367,44 @@ class Baser(dbing.LMDBer):
 
                 mod = importlib.import_module(modName)
                 try:
+                    print(f"running migration {modName}")
                     mod.migrate(self)
                 except Exception as e:
                     print(f"\nAbandoning migration {migration} at version {version} with error: {e}")
                     return
 
                 self.migs.pin(keys=(migration,), val=coring.Dater())
-            self.version = version # update database version after successful migration
+
+            # update database version after successful migration
+            self.version = version
 
         self.version = keri.__version__
+
+    def clearEscrows(self):
+        """
+        Clear all escrows
+        """
+        for (k, _) in self.getUreItemIter():
+            self.delUres(key=k)
+        for (k, _) in self.getVreItemIter():
+            self.delVres(key=k)
+        for (k, _) in self.getPseItemIter():
+            self.delPses(key=k)
+        for (k, _) in self.getPweItemIter():
+            self.delPwes(key=k)
+        for (k, _) in self.getUweItemIter():
+            self.delUwes(key=k)
+        for (k, _) in self.getOoeItemIter():
+            self.delOoes(key=k)
+        for (k, _) in self.getLdeItemIter():
+            self.delLdes(key=k)
+        for (pre, said), edig in self.qnfs.getItemIter():
+            self.qnfs.rem(keys=(pre, said))
+
+
+        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
+                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
+            escrow.trim()
 
     @property
     def current(self):
@@ -1391,10 +1420,9 @@ class Baser(dbing.LMDBer):
         if self.version == keri.__version__:
             return True
 
-        # If database version is ahead of library version, throw exception
         ver = semver.VersionInfo.parse(keri.__version__)
         ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
-        if self.version is not None and semver.compare(self.version, ver_no_prerelease) == 1:
+        if self.version is not None and semver.compare(self.version, str(ver_no_prerelease)) == 1:
             raise kering.ConfigurationError(
                 f"Database version={self.version} is ahead of library version={keri.__version__}")
 
@@ -1426,7 +1454,7 @@ class Baser(dbing.LMDBer):
                         dater = self.migs.get(keys=(mig,))
                         migrations.append((mig, dater))
         else:
-            for version, migs in MIGRATIONS: # check all migrations for each version
+            for version, migs in MIGRATIONS:  # check all migrations for each version
                 if name not in migs or not self.migs.get(keys=(name,)):
                     raise ValueError(f"No migration named {name}")
             migrations.append((name, self.migs.get(keys=(name,))))
@@ -2349,7 +2377,7 @@ class Baser(dbing.LMDBer):
 
     def getUreItemIter(self, key=b''):
         """
-        Use sgKey()
+        Use snKey()
         Return iterator of partial signed escrowed event triple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
