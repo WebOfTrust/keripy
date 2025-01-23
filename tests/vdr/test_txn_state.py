@@ -11,87 +11,6 @@ from keri.vc import proving
 from keri.vdr import viring, credentialing, eventing
 
 
-def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
-    # Bob is the controller
-    # Bam is verifying the key state for Bob with a stale key state in the way
-
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
-
-    with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
-          habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
-
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
-        assert bobHab.pre == 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj'
-
-        regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
-        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=bobHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk,
-                         regd=issuer.regd,
-                         seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
-        regery.processEscrows()
-
-        assert issuer.regk == 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'
-
-        # Gather up Bob's key event log
-        msgs = bytearray()
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
-            msgs.extend(msg)
-
-        # pass key event log to Bam
-        bamRtr = routing.Router()
-        bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
-        bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
-
-        tever = issuer.tevers[issuer.regk]
-        rsr = tever.state()
-
-        assert asdict(rsr) == {'b': [],
-                               'bt': '0',
-                               'c': ['NB'],
-                               'd': 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ',
-                               'dt': '2021-01-01T00:00:00.000000+00:00',
-                               'et': 'vcp',
-                               'i': 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ',
-                               'ii': 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj',
-                               's': '0',
-                               'vn': [1, 0]}
-
-        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=rsr._asdict())
-
-        bamReger = viring.Reger(name="bam", temp=True)
-        bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
-        bamTvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
-
-        assert len(bamTvy.cues) == 1
-        cue = bamTvy.cues.popleft()
-        assert cue["kin"] == "telquery"
-        assert cue['q']['ri'] == issuer.regk
-
-        saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'ECZWYxq_Qgs0J0ls_imRWRYxrojzTKL2REjqe0rN8kWy'
-
-        tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
-        for msg in cloner:
-            tmsgs.extend(msg)
-
-        parsing.Parser().parse(ims=tmsgs, tvy=bamTvy, rvy=bamRvy)
-        assert issuer.regk in bamReger.tevers
-
-        bamTvy.processEscrows()
-        # check to make sure the tsn escrow state is clear
-        assert bamReger.txnsb.escrowdb.get(keys=(issuer.regk, bobHab.pre)) == []
-        # check to make sure the tsn has been saved
-        saider = bamReger.txnsb.saiderdb.get(keys=(issuer.regk, bobHab.pre))
-        assert saider.qb64b == b'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'
-
-
 def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
@@ -160,24 +79,9 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
 
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
-        assert cue["kin"] == "telquery"
-        assert cue['q']['ri'] == issuer.regk
+        assert cue["kin"] == "txnStateSaved"
+        assert cue["record"] == tsn
 
-        saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == said
-
-        tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
-        for msg in cloner:
-            tmsgs.extend(msg)
-
-        parsing.Parser().parse(ims=tmsgs, tvy=bamTvy, rvy=bamRvy)
-        assert issuer.regk in bamReger.tevers
-
-        bamTvy.processEscrows()
-
-        # check to make sure the tsn escrow state is clear
-        assert bamReger.txnsb.escrowdb.get(keys=(issuer.regk, bobHab.pre)) == []
         # check to make sure the tsn has been saved
         saider = bamReger.txnsb.saiderdb.get(keys=(issuer.regk, bobHab.pre))
         assert saider.qb64b == b'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'
@@ -284,20 +188,9 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
 
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
-        assert cue["kin"] == "telquery"
-        assert cue['q']['ri'] == issuer.regk
+        assert cue["kin"] == "txnStateSaved"
+        assert cue["record"] == tsn
 
-        saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, wesHab.pre))
-        assert saider[0].qb64b == said
-
-        parsing.Parser().parse(ims=bytearray(tmsgs), tvy=bamTvy, rvy=bamRvy, local=True)
-
-        assert issuer.regk in bamReger.tevers
-
-        bamTvy.processEscrows()
-
-        # check to make sure the tsn escrow state is clear
-        assert bamReger.txnsb.escrowdb.get(keys=(issuer.regk, wesHab.pre)) == []
         # check to make sure the tsn has been saved
         saider = bamReger.txnsb.saiderdb.get(keys=(issuer.regk, wesHab.pre))
         assert saider.qb64b == b'EH3hN33719ybSg21Kboy-V2jafwvQSHnY1HUGzzBqqk6'
@@ -508,24 +401,9 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
-        assert cue["kin"] == "telquery"
-        assert cue['q']['ri'] == issuer.regk
+        assert cue["kin"] == "txnStateSaved"
+        assert cue["record"] == ctsn
 
-        saider = bamReger.txnsb.escrowdb.get(keys=("credential-ooo", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'EHERhBLfaMik0Ne9ysU3UICXWge0yobK0FQv3QhyeqF7'
-
-        vci = creder.said
-        tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=vci, fn=0)  # create iterator at 0
-        for msg in cloner:
-            tmsgs.extend(msg)
-
-        parsing.Parser().parse(ims=tmsgs, tvy=bamTvy, rvy=bamRvy)
-
-        bamTvy.processEscrows()
-
-        # check to make sure the tsn escrow state is clear
-        assert bamReger.txnsb.escrowdb.get(keys=(creder.said, bobHab.pre)) == []
         # check to make sure the tsn has been saved
         keys = (creder.said, bobHab.pre)
         saider = bamReger.txnsb.saiderdb.get(keys=keys)
