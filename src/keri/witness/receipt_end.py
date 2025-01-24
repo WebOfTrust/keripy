@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.witness.indirecting module
+keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
@@ -9,7 +9,6 @@ simple indirect mode demo support classes
 import falcon
 from hio.base import doing
 from hio.help import decking
-
 from .. import help, kering
 from ..app import httping
 from ..core import (eventing, parsing, serdering,
@@ -147,7 +146,7 @@ class ReceiptEnd(doing.DoDoer):
 
     def interceptDo(self, tymth=None, tock=0.0):
         """
-         Returns doifiable Doist compatible generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             Kevery and Tevery cues deque
 
         Usage:

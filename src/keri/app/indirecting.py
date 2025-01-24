@@ -7,12 +7,10 @@ simple indirect mode demo support classes
 """
 
 from hio.base import doing
-
 from .. import help
 from ..core import (eventing, parsing)
 
 logger = help.ogler.getLogger()
-
 
 class Indirector(doing.DoDoer):
     """
@@ -204,14 +202,3 @@ class Indirector(doing.DoDoer):
         """
         self.client.tx(msg)  # send to remote
         logger.debug("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
-
-
-
-
-
-
-
-
-
-
-

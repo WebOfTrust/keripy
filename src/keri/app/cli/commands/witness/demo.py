@@ -23,19 +23,19 @@ parser.set_defaults(handler=lambda args: demo(args))
 help.ogler.level = logging.INFO
 logger = help.ogler.getLogger()
 
-warnings.simplefilter("default")
-warnings.warn(
-    "Witness commands will be removed in a future release. "
-    "Functionality has been moved to its own repository: https://github.com/keri-foundation/witness",
-    DeprecationWarning,
-    stacklevel=2,
-)
-
 def demo(_):
     """
     Run set of three witnesses for demo
 
     """
+
+    warnings.simplefilter("default")
+    warnings.warn(
+        "Witness commands will be removed in a future release. "
+        "Functionality has been moved to its own repository: https://github.com/keri-foundation/witness",
+        DeprecationWarning,
+        stacklevel=1,
+    )
 
     wancf = configing.Configer(name="wan", headDirPath="scripts", temp=False, reopen=True, clear=False)
     wilcf = configing.Configer(name="wil", headDirPath="scripts", temp=False, reopen=True, clear=False)

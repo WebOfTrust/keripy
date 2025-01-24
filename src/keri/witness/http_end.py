@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.witnessing.http_end module
+keri.app.indirecting module
 
+simple indirect mode demo support classes
 """
 
 import falcon
 from hio.help import decking
-
-from .. import help
 from ..app import httping
+from .. import help
 from ..core import (eventing, coring)
 from ..core.coring import Ilks
 from ..mailbox import QueryReplyIterable
@@ -26,18 +26,22 @@ class HttpEnd:
     """
 
     TimeoutQNF = 30
+    TimeoutMBX = 5
 
-    def __init__(self, rxbs=None, qrycues=None):
+    def __init__(self, rxbs=None, mbx=None, qrycues=None):
         """
         Create the KEL HTTP server from the Habitat with an optional Falcon App to
         register the routes with.
 
         Parameters
              rxbs (bytearray): output queue of bytes for message processing
+             mbx (Mailboxer): Mailbox storage
              qrycues (Deck): inbound qry response queues
 
         """
         self.rxbs = rxbs if rxbs is not None else bytearray()
+
+        self.mbx = mbx
         self.qrycues = qrycues if qrycues is not None else decking.Deck()
 
     def on_post(self, req, rep):

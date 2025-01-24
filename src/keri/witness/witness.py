@@ -1,17 +1,9 @@
-# -*- encoding: utf-8 -*-
-"""
-KERI
-keri.witness module
-
-"""
-
 from hio.base import doing
 from hio.help import decking
 
-from .. import help
+from keri import help
 
 logger = help.ogler.getLogger()
-
 
 class Witness(doing.DoDoer):
     """ Doer to print witness prefix after initialization
@@ -85,7 +77,6 @@ class Witness(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
 
@@ -99,7 +90,7 @@ class Witness(doing.DoDoer):
 
     def cueDo(self, tymth=None, tock=0.0):
         """
-         Returns doifiable Doist compatible generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
 
         Doist Injected Attributes:

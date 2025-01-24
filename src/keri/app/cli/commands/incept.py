@@ -4,6 +4,7 @@ keri.kli.commands module
 
 """
 import argparse
+import warnings
 from dataclasses import dataclass
 
 from hio.base import doing
@@ -12,6 +13,7 @@ from keri import help
 from keri.app import habbing, agenting, configing, delegating, forwarding
 from keri.app.cli.common import existing, incepting, config
 from keri.core import coring
+from keri.kering import ConfigurationError
 from keri.mailbox import director
 
 logger = help.ogler.getLogger()
@@ -24,7 +26,9 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
 parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
-                    dest="endpoint", action='store_true')
+                    dest="receipt_endpoint", action='store_true')
+parser.add_argument("--endpoint", help="method receipt collection, synchronous or asynchronous",
+                    dest="endpoint", action='store', default="sync")
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
@@ -72,8 +76,8 @@ def handler(args):
 
     kwa = mergeArgsWithFile(args).__dict__
 
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, endpoint=endpoint, proxy=proxy,
-                         cnfg=config_dir, **kwa)
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, endpoint=endpoint,
+                         proxy=proxy, cnfg=config_dir, **kwa)
 
     doers = [icpDoer]
     return doers
@@ -128,7 +132,7 @@ class InceptDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, endpoint, proxy=None, cnfg=None, **kwa):
+    def __init__(self, name, base, alias, bran, endpoint, async_receipts=False, proxy=None, cnfg=None, **kwa):
 
         cf = None
         if config is not None:
@@ -139,6 +143,7 @@ class InceptDoer(doing.DoDoer):
                                     reopen=True,
                                     clear=False)
         self.endpoint = endpoint
+        self.async_reciepts = async_receipts
         self.hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
@@ -180,10 +185,13 @@ class InceptDoer(doing.DoDoer):
             print("Waiting for witness receipts...")
             if self.endpoint:
                 yield from receiptor.receipt(hab.pre, sn=0)
-            else:
+            if self.async_reciepts:
                 witDoer.msgs.append(dict(pre=hab.pre))
                 while not witDoer.cues:
                     _ = yield self.tock
+
+            if not self.async_reciepts and not self.endpoint:
+                raise ConfigurationError("No witness endpoint set")
 
         if hab.kever.delpre:
             if self.proxy is not None:

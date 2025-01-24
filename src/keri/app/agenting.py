@@ -340,6 +340,8 @@ class WitnessReceiptor(doing.DoDoer):
                     witers.append(witer)
                     self.extend([witer])
 
+
+
                 # Check to see if we already have all the receipts we need for this event
                 wigs = hab.db.getWigs(dgkey)
                 completed = len(wigs) == len(wits)
