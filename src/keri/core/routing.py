@@ -323,9 +323,10 @@ class Revery:
                     if seqner.sn == osqr.sn:  # sn same so check datetime
                         if odater:
                             if dater.datetime <= odater.datetime:
-                                logger.info("Kevery process: skipped stale key"
-                                            "state sig datetime from %s on reply msg=\n%s\n",
-                                            aid, serder.pretty())
+                                logger.info("Kevery process: skipped stale key "
+                                            "state sig datetime from %s on reply msg = %s",
+                                            aid, serder.said)
+                                logger.debug("Reply Body=\n%s\n", serder.pretty())
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
@@ -500,8 +501,8 @@ class Revery:
 
                 else:  # unescrow succeded
                     self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
-                    logger.info("Kevery unescrow succeeded for reply=\n%s\n",
-                                serder.pretty())
+                    logger.info("Kevery unescrow succeeded for reply = %s", serder.said)
+                    logger.debug("Reply Body=\n%s\n", serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
                 self.db.rpes.rem(keys=(route,), val=saider)  # remove escrow only

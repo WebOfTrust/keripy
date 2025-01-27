@@ -123,7 +123,7 @@ class Broker:
 
                 else:  # unescrow succeded
                     self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow only
-                    logger.info("Broker: %s escrow unescrow succeeded for txn state=%s",
+                    logger.info("Broker: %s escrow unescrow succeeded for txn state = %s",
                                 typ, serder.said)
                     logger.debug("TXN State Body=\n%s\n", serder.pretty())
 

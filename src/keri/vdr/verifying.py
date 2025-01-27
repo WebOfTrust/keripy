@@ -276,7 +276,8 @@ class Verifier:
             else:
                 db.rem(said)
                 logger.info("Verifier unescrow succeeded in valid group op: "
-                            "creder=\n%s\n", creder.pretty())
+                            "creder = %s", creder.said)
+                logger.debug("Creder body=\n%s\n", creder.pretty())
 
     def saveCredential(self, creder, prefixer, seqner, saider):
         """ Write the credential and associated indicies to the database
