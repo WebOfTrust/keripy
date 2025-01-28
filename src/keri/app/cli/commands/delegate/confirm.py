@@ -158,6 +158,10 @@ class ConfirmDoer(doing.DoDoer):
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism
+                            logger.info(
+                                "ConfirmDoer: sending confirm notification exn from %s to %s",
+                                hab.mhab.pre, recpt)
+                            logger.debug("ConfirmDoer: Notification exn body=\n%s\n", exn.pretty())
                             self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=exn,
                                               attachment=atc)
 

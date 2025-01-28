@@ -7,6 +7,7 @@ import argparse
 
 from hio.base import doing
 
+from keri import help
 from keri.app import habbing, forwarding, connecting
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
@@ -25,6 +26,8 @@ parser.add_argument('--words', '-d', help='JSON formatted array of words to sign
                     action="store", required=True)
 parser.add_argument('--recipient', '-r', help='Contact alias of the AID to send the signed words to',
                     action="store", required=True)
+
+logger = help.ogler.getLogger()
 
 
 def respond(args):
@@ -112,6 +115,8 @@ class RespondDoer(doing.DoDoer):
         del ims[:exn.size]
 
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
+        logger.info("RespondDoer: sending challenge exn from %s to %s", senderHab.pre, recp)
+        logger.debug("RespondDoer: Challenge exn body=\n%s\n", exn.pretty())
         self.postman.send(src=senderHab.pre, dest=recp, topic="challenge", serder=exn, attachment=ims)
         while not self.postman.cues:
             yield self.tock

@@ -172,7 +172,7 @@ class Anchorer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                logger.info(f"Witness receipts complete, waiting for delegation approval.")
+                logger.info(f"Anchorer: Witness receipts complete, waiting for delegation approval.")
                 if pre not in self.hby.habs:
                     continue
 
@@ -190,12 +190,19 @@ class Anchorer(doing.DoDoer):
                     raise kering.ValidationError("no proxy to send messages for delegation")
 
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
+                srdr = serdering.SerderKERI(raw=evt)
                 exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
 
+                logger.info(
+                    "Anchorer: Sending delegation request exn for %s from %s to delegator %s",
+                    srdr.ilk, phab.pre, delpre)
+                logger.debug("Delegation request=\n%s\n", exn.pretty())
                 self.postman.send(hab=phab, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)
 
-                srdr = serdering.SerderKERI(raw=evt)
                 del evt[:srdr.size]
+                logger.info("Anchorer: Sending delegation event %s from %s to delegator %s",
+                            srdr.ilk, phab.pre, delpre)
+                logger.debug("Anchorer: Delegated inception=\n%s\n", srdr.pretty())
                 self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
                 seal = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
