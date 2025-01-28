@@ -7,7 +7,7 @@ keri.kli.commands module
 import argparse
 from urllib.parse import urlparse
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri import kering

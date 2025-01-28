@@ -9,7 +9,7 @@ import json
 import sys
 
 import qrcode
-from hio import help
+from keri import help
 from hio.base import doing
 from hio.help import Hict
 

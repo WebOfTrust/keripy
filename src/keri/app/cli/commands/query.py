@@ -7,7 +7,7 @@ import argparse
 import datetime
 import json
 
-from hio import help
+from keri import help
 from hio.base import doing
 from hio.help import decking
 

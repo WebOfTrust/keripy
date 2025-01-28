@@ -6,7 +6,7 @@ keri.app.delegating module
 module for enveloping and forwarding KERI message
 """
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from . import agenting, forwarding
