@@ -104,8 +104,8 @@ class Broker:
                     if ((helping.nowUTC() - dater.datetime) >
                             datetime.timedelta(seconds=self.timeout)):
                         # escrow stale so raise ValidationError which unescrows below
-                        msg = f"Stale txn state escrow at pre = {pre}."
-                        logger.info("Broker %s: unescrow error %s", typ, msg)
+                        msg = f"Escrow unescrow error: Stale txn state escrow at pre = {pre}"
+                        logger.trace("Broker %s: %s", typ, msg)
                         raise kering.ValidationError(msg)
 
                     processReply(serder=serder, saider=saider, route=serder.ked["r"],
@@ -113,7 +113,8 @@ class Broker:
 
                 except extype as ex:
                     # still waiting on missing prior event to validate
-                    if logger.isEnabledFor(logging.DEBUG):
+                    if logger.isEnabledFor(logging.TRACE):
+                        logger.trace("Broker %s: unescrow attempt failed: %s\n", typ, ex.args[0])
                         logger.exception("Broker %s: unescrow attempt failed: %s", typ, ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
@@ -127,7 +128,7 @@ class Broker:
                     self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow
                     logger.info("Broker %s: unescrow succeeded for txn state=%s",
                                 typ, serder.said)
-                    logger.debug("event=\n%s\n", serder.pretty())
+                    logger.debug("TXN State Body=\n%s\n", serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
                 self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow

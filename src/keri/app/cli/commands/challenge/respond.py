@@ -7,6 +7,7 @@ import argparse
 
 from hio.base import doing
 
+from keri import help
 from keri.app import habbing, forwarding, connecting
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
@@ -26,6 +27,7 @@ parser.add_argument('--words', '-d', help='JSON formatted array of words to sign
 parser.add_argument('--recipient', '-r', help='Contact alias of the AID to send the signed words to',
                     action="store", required=True)
 
+logger = help.ogler.getLogger()
 
 def respond(args):
     """

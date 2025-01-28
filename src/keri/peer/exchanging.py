@@ -159,7 +159,7 @@ class Exchanger:
         # Perform behavior specific verification, think IPEX chaining requirements
         try:
             if not behavior.verify(serder=serder, **kwargs):
-                logger.info("exn event for route %s failed behavior verification.  said=%s", route, serder.said)
+                logger.error("exn event for route %s failed behavior verification.  said=%s", route, serder.said)
                 logger.debug(f"Event=\n%s\n", serder.pretty())
                 return
 
@@ -248,10 +248,9 @@ class Exchanger:
                 self.processEvent(serder=serder, tsgs=tsgs, pathed=pathed, **kwargs)
 
             except MissingSignatureError as ex:
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.info("Exchanger: partially signed unescrow failed: %s", ex.args[0])
-                else:
-                    logger.info("Exchanger: partially signed failed: %s", ex.args[0])
+                if logger.isEnabledFor(logging.TRACE):
+                    logger.trace("Exchange partially signed unescrow failed: %s\n", ex.args[0])
+                    logger.debug(f"Event body=\n%s\n", serder.pretty())
             except Exception as ex:
                 self.hby.db.epse.rem(dig)
                 self.hby.db.epsd.rem(dig)

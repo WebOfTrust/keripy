@@ -1255,7 +1255,7 @@ class Tever:
         self.reger.putTel(snKey(pre, sn), dig)
         logger.info("Tever [reg=%.8s iss=%.8s]: Added to TEL valid %s event %s said=%s",
                     self.regk, self.pre, serder.ilk, pre.decode(), serder.said)
-        logger.debug("event=\n%s\n", serder.pretty())
+        logger.debug("TEL Event Body=\n%s\n", serder.pretty())
 
     def valAnchorBigs(self, serder, seqner, saider, bigers, toad, baks):
         """ Validate anchor and backer signatures (bigers) when provided.
@@ -1306,12 +1306,11 @@ class Tever:
 
             if len(bindices) < toad:  # not fully witnessed yet
                 self.escrowPWEvent(serder=serder, seqner=seqner, saider=saider, bigers=bigers)
-
-                raise MissingWitnessSignatureError("Failure satisfying toad = {} "
-                                                   "on witness sigs for {} for evt = {}.".format(toad,
-                                                                                                 [siger.qb64 for siger
-                                                                                                  in bigers],
-                                                                                                 serder.ked))
+                msg = (f"Failure satisfying toad = {toad} on witness sigs "
+                       f"for {[siger.qb64 for siger in bigers]} for evt = {serder.said}")
+                logger.info("Tever: %s", msg)
+                logger.debug(f"Event Body=\n%s\n", serder.pretty())
+                raise MissingWitnessSignatureError(msg)
         return bigers
 
     def verifyAnchor(self, serder, seqner=None, saider=None):
@@ -2071,25 +2070,24 @@ class Tevery:
 
             except OutOfOrderError as ex:
                 # still waiting on missing prior event to validate
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrow failed: %s", ex.args[0])
-                else:
-                    logger.error("Tevery unescrow failed: %s", ex.args[0])
+                if logger.isEnabledFor(logging.TRACE):
+                    logger.trace("Tevery: OOO unescrow failed: %s\n", ex.args[0])
+                    logger.exception("Tevery: OOO unescrow failed: %s\n", ex.args[0])
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
                 self.reger.delOot(snKey(pre, sn))  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrowed: %s", ex.args[0])
+                    logger.exception("Tevery: OOO unescrowed: %s", ex.args[0])
                 else:
-                    logger.error("Tevery unescrowed: %s", ex.args[0])
+                    logger.error("Tevery: OOO unescrowed: %s", ex.args[0])
 
             else:  # unescrow succeeded, remove from escrow
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
                 self.reger.delOot(snKey(pre, sn))  # removes from escrow
-                logger.info("Tevery OOO unescrow succeeded in valid event: "
+                logger.info("Tevery: OOO unescrow succeeded in valid event: "
                             "said=%s", tserder.said)
                 logger.debug("Event=\n%s\n", tserder.pretty())
 
@@ -2113,8 +2111,8 @@ class Tevery:
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
-                    msg = f"Missing escrowed event at dig = {bytes(digb).decode()}"
-                    logger.info("Tevery unescrow error: %s", msg)
+                    msg = f"ANC Missing escrowed event at dig = {bytes(digb).decode()}"
+                    logger.trace("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
                 tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
@@ -2125,8 +2123,8 @@ class Tevery:
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
-                    msg = f"Missing escrowed anchor at dig = {bytes(digb).decode()}"
-                    logger.info("Tevery unescrow error: %s", msg)
+                    msg = f"ANC Missing escrowed anchor at dig = {bytes(digb).decode()}"
+                    logger.trace("Tevery unescrow error: %s", msg)
                     raise MissingAnchorError(msg)
                 ancb = bytearray(couple)
                 seqner = coring.Seqner(qb64b=ancb, strip=True)
@@ -2137,17 +2135,17 @@ class Tevery:
             except MissingAnchorError as ex:
                 # still waiting on missing prior event to validate
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrow failed: %s", ex.args[0])
+                    logger.exception("Tevery ANC unescrow failed: %s", ex.args[0])
                 else:
-                    logger.error("Tevery unescrow failed: %s", ex.args[0])
+                    logger.error("Tevery ANC unescrow failed: %s", ex.args[0])
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
                 self.reger.delTae(snKey(pre, sn))  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Tevery unescrowed: %s", ex.args[0])
+                    logger.exception("Tevery ANC unescrowed: %s", ex.args[0])
                 else:
-                    logger.error("Tevery unescrowed: %s", ex.args[0])
+                    logger.error("Tevery ANC unescrowed: %s", ex.args[0])
 
             else:  # unescrow succeeded, remove from escrow
                 # We don't remove all escrows at pre,sn because some might be
