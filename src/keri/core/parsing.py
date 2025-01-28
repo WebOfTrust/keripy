@@ -1032,8 +1032,10 @@ class Parser:
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
                 if not (cigars or wigers or tsgs):
-                    raise kering.ValidationError("Missing attached signatures on receipt"
-                                                 "msg = {}.".format(serder.ked))
+                    msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
+                    logger.info(msg)
+                    logger.debug("Receipt body=\n%s\n", serder.pretty())
+                    raise kering.ValidationError(msg)
 
                 try:
                     if cigars:

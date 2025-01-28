@@ -224,6 +224,8 @@ class Respondant(doing.DoDoer):
                 # sign the exn to get the signature
                 eattach = senderHab.endorse(exn, last=False, pipelined=False)
                 del eattach[:exn.size]
+                logger.info("Respondant: sending exn on %s from %s to %s", topic, sender, recipient)
+                logger.debug("Respondant: exn body=\n%s\n", exn.pretty())
                 self.postman.send(recipient, topic=topic, serder=exn, hab=forwardHab, attachment=eattach)
 
                 yield self.tock  # throttle just do one cue at a time

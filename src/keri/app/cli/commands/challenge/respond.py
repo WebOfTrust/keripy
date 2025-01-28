@@ -112,6 +112,8 @@ class RespondDoer(doing.DoDoer):
         del ims[:exn.size]
 
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
+        logger.info("RespondDoer: sending challenge exn from %s to %s", senderHab.pre, recp)
+        logger.debug("RespondDoer: Challenge exn body=\n%s\n", exn.pretty())
         self.postman.send(src=senderHab.pre, dest=recp, topic="challenge", serder=exn, attachment=ims)
         while not self.postman.cues:
             yield self.tock
