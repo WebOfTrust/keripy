@@ -813,7 +813,6 @@ class Baser(dbing.LMDBer):
                     witness nontrans identifier prefix from witness list and index
                     is offset into witness list of latest establishment event for
                     receipted event
-            snKey
             DB is keyed by receipted event controller prefix plus sn
             of serialized event
             More than one value per DB key is allowed
@@ -1021,10 +1020,7 @@ class Baser(dbing.LMDBer):
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
-        # self.uwes = self.env.open_db(key=b'uwes.', dupsort=True)
-        # self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.',
-        #                                 klas=(coring.Saider, indexing.Siger), sep=">")
-        self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.', sep='>')
+        self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
@@ -1395,15 +1391,14 @@ class Baser(dbing.LMDBer):
             self.delPses(key=k)
         for (k, _) in self.getPweItemIter():
             self.delPwes(key=k)
-        for (k, _) in self.getUweItemIter():
-            self.delUwes(key=k)
         for (k, _) in self.getOoeItemIter():
             self.delOoes(key=k)
         for (k, _) in self.getLdeItemIter():
             self.delLdes(key=k)
         for (pre, said), edig in self.qnfs.getItemIter():
             self.qnfs.rem(keys=(pre, said))
-
+        for (pre, snh), rdigerWigerTuple in self.uwes.getItemIter():
+            self.uwes.rem(keys=(pre, snh))
 
         for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
@@ -2893,101 +2888,6 @@ class Baser(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoDupVal(self.pwes, key, val)
-
-    def putUwes(self, key, vals):
-        """
-        Use snKey()
-        Write each entry from list of bytes witness receipt couples vals to key
-        Witness couple is edig+wig
-        Adds to existing receipts at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.uwes, key, vals)
-
-    def addUwe(self, key, val):
-        """
-        Use snKey()
-        Add receipt couple val bytes as dup to key in db
-        Witness couple is edig+wig
-        Adds to existing values at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.uwes, key, val)
-
-    def getUwes(self, key):
-        """
-        Use snKey()
-        Return list of receipt couples at key
-        Witness couple is edig+wig
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.uwes, key)
-
-    def getUwesIter(self, key):
-        """
-        Use snKey()
-        Return iterator of receipt couples at key
-        Witness couple is edig+wig
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.uwes, key)
-
-    def getUweLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial signed escrowed receipt couple val at key
-        Witness couple is edig+wig
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.uwes, key)
-
-    def getUweItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial signed escrowed receipt couple items at next
-        key after key.
-        Items is (key, val) where proem has already been stripped from val
-        val is couple edig+wig
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.uwes, key)
-        #return self.getIoDupItemsNextIter(self.uwes, key, skip)
-
-    def cntUwes(self, key):
-        """
-        Use snKey()
-        Return count of receipt couples at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.uwes, key)
-
-    def delUwes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key in db.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.uwes, key)
-
-    def delUwe(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.uwes, key, val)
 
     def putOoes(self, key, vals):
         """

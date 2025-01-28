@@ -114,7 +114,6 @@ StateEvent = namedtuple("StateEvent", 's t d')
 
 
 
-
 # Future make Cues dataclasses  instead of dicts. Dataclasses so may be converted
 # to/from dicts easily  example: dict(kin="receipt", serder=serder)
 
@@ -5157,24 +5156,7 @@ class Kevery:
             # don't know witness pre yet without witness list so no verfer in wiger
             # if wiger.verfer.transferable:  # skip transferable verfers
             # continue  # skip invalid triplets
-            print(f"escrowUWReceipt SERDER: {serder}, SERDER TYPE: {type(serder)}")
-            # couple = said.encode("utf-8") + ">" + wiger.qb64b
-            couple = said + ">" + wiger.qb64
-            # print(f"escrowUWReceipt SERDER.PREB: {serder.preb}, SERDER.PREB TYPE: {type(serder.preb)}")
-            # SERDER.PREB: b'EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9', SERDER.PREB TYPE: <class 'bytes'>
-            print(f"escrowUWReceipt SAID: {said}, SAID TYPE: {type(said)}")
-            # SAID: EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9, SAID TYPE: <class 'str'>
-            print(f"escrowUWReceipt COUPLE: {couple}, COUPLE TYPE: {type(couple)}")
-            # COUPLE: b'EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9AADbyebqZQKwn7TqU92Vtw8n2wy5FptP42F1HEmCc9nQLzbXrXuA9SMl9nCZ-vi2bdaeT3aqInXGFAW70QPzM4kJ', COUPLE TYPE: <class 'bytes'>
-            print(f"escrowUWReceipt SAID.ENCODE(UTF-8): {said.encode("utf-8")}, SAID.ENCODE(UTF-8) TYPE: {type(said.encode("utf-8"))}")
-            # SAID.ENCODE(UTF-8): b'EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9', SAID.ENCODE(UTF-8) TYPE: <class 'bytes'>
-            # print(f"SERDER.SNH {serder.qb64}")
-            print(Saider(qb64=said))
-            # print(Siger(qb64=said))
-            # print(Siger.index)
-            # self.db.addUwe(key=snKey(serder.preb, serder.sn), val=couple)
             self.db.uwes.addOn(keys=serder.preb, on=serder.sn, val=(said, wiger.qb64))
-            # print(self.db.uwes.getItemIter())
 
         # log escrowed
         logger.debug("Kevery process: escrowed unverified witness indexed receipt"
@@ -6035,8 +6017,7 @@ class Kevery:
         This allows FIFO processing of escrows for events with same prefix and
         sn but different digest.
 
-        Uses .uwes reads .db.getUwe
-        was put there by.db.addUwe(self, key, val) which is IOVal with dups.
+        Uses .uwes reads .db.uwes.get() which is B64OnIoDupSuber
 
         Value is couple
 
@@ -6062,47 +6043,18 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        # ims = bytearray()
-        # key = ekey = b''  # both start same. when not same means escrows found
-        # while True:  # break when done
         for (pre, snh), (rdiger, wiger) in self.db.uwes.getItemIter():
-            print(pre, snh, rdiger, wiger)
             try:
-                # print(f"EKEY: {ekey}, EKEY TYPE: {type(ekey)}")
-                # # EKEY: b'EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9.00000000000000000000000000000000', EKEY TYPE: <class 'bytes'>
-                #
-                # pre, sn = splitSnKey(ekey)  # get pre and sn from escrow db key
-                # print(f"PRE: {pre}, PRE TYPE: {type(pre)}")
-                # # PRE: b'EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9', PRE TYPE: <class 'bytes'>
-                #
-                # print(f"SN: {sn}, SN TYPE: {type(sn)}")
-                # # SN: 0, SN TYPE: <class 'int'>
-                #
-                # #  get escrowed receipt's rdiger of receipted event and
-                # # wiger indexed signature of receipted event
-                # print(f"ECOUPLE: {ecouple}, ECOUPLE TYPE: {type(ecouple)}")
-                # # ECOUPLE: <memory at 0x1032d4640>, ECOUPLE TYPE: <class 'memoryview'>
-                #
-                # rdiger, wiger = deWitnessCouple(ecouple)
-                # print(f"RDIGER: {rdiger}, RDIGER TYPE: {type(rdiger)}")
-                # # RDIGER: <keri.core.coring.Diger object at 0x10324ccb0>, RDIGER TYPE: <class 'keri.core.coring.Diger'>
-                # print(f"WIGER: {wiger}, WIGER TYPE: {type(wiger)}")
-                # # WIGER: <keri.core.indexing.Siger object at 0x1032f9dc0>, WIGER TYPE: <class 'keri.core.indexing.Siger'>
-                #
-                # print(f"RDIGER QB64B: {rdiger.qb64b}, RDIGER QB64B TYPE: {type(rdiger.qb64b)}")
-                # # RDIGER QB64B: b'EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9', RDIGER QB64B TYPE: <class 'bytes'>
-                # print(f"RDIGER QB64B BYTES: {bytes(rdiger.qb64b)}, RDIGER QB64B BYTES TYPE: {type(bytes(rdiger.qb64b))}")
-                # # RDIGER QB64B BYTES: b'EJufgwH347N2kobmes1IQw_1pfMipEFFy0RwinZTtah9', RDIGER QB64B BYTES TYPE: <class 'bytes'>
-                brdiger = rdiger.encode('utf-8')
+                rdigerBytes = rdiger.encode('utf-8')
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgKey(pre, bytes(brdiger)))
+                dtb = self.db.getDts(dgKey(pre, bytes(rdigerBytes)))
                 if dtb is None:  # othewise is a datetime as bytes
                     # no date time so raise ValidationError which unescrows below
                     logger.info("Kevery unescrow error: Missing event datetime"
-                                " at dig = %s", brdiger)
+                                " at dig = %s", rdigerBytes)
 
                     raise ValidationError("Missing escrowed event datetime "
-                                          "at dig = {}.".format(brdiger))
+                                          "at dig = {}.".format(rdigerBytes))
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
@@ -6118,12 +6070,12 @@ class Kevery:
                 # lookup database dig of the receipted event in pwes escrow
                 # using pre and sn lastEvt
                 sn = int(snh, 16)
-                rrdiger = Diger(qb64=rdiger)
-                wwiger = Siger(qb64=wiger)
+                rdigerClassed = Diger(qb64=rdiger)
+                wigerClassed = Siger(qb64=wiger)
                 found = self._processEscrowFindUnver(pre=pre,
                                                      sn=sn,
-                                                     rsaider=rrdiger,
-                                                     wiger=wwiger)
+                                                     rsaider=rdigerClassed,
+                                                     wiger=wigerClassed)
 
                 if not found:  # no partial witness escrow of event found
                     # so keep in escrow by raising UnverifiedWitnessReceiptError
@@ -6141,7 +6093,6 @@ class Kevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                # self.db.delUwe(snKey(pre, sn), ecouple)  # removes one escrow at key val
                 self.db.uwes.rem(keys=(pre, snh), val=(rdiger, wiger))
                 if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                     logger.exception("Kevery unescrowed: %s", ex.args[0])
@@ -6152,14 +6103,9 @@ class Kevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                # self.db.delUwe(snKey(pre, sn), ecouple)  # removes one escrow at key val
                 self.db.uwes.rem(keys=(pre, snh), val=(rdiger, wiger))
                 logger.info("Kevery unescrow succeeded for event pre=%s "
                             "sn=%s", pre, sn)
-
-            # if ekey == key:  # still same so no escrows found on last while iteration
-            #     break
-            # key = ekey  # setup next while iteration, with key after ekey
 
     def processEscrowUnverNonTrans(self):
         """
@@ -6595,9 +6541,6 @@ class Kevery:
         # lookup the database dig of the receipted event in pwes escrow using
         # snKey(pre,sn) where pre is controller and sn is event sequence number
         # compare dig to rdiger derived from receipt's dig of receipted event
-        # print(f"_processEscrowFindUnver PRE: {pre}, PRE TYPE: {type(pre)}")
-        # print(f"_processEscrowFindUnver SN: {sn}, SN TYPE: {type(sn)}")
-
         found = False
         for dig in self.db.getPwesIter(key=snKey(pre, sn)):  # search entries
             dig = bytes(dig)  # database dig of receipted event
