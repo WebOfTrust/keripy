@@ -899,52 +899,52 @@ def test_baser():
         # Unverified Witness Receipt Escrows
         # test .uwes insertion order dup methods.  dup vals are insertion order
         key = b'A'
-        vals = [b"z", b"m", b"x", b"a"]
+        vals = [('z',), ('m',), ('x',), ('a',)]
 
-        assert db.getUwes(key) == []
-        assert db.getUweLast(key) == None
-        assert db.cntUwes(key) == 0
-        assert db.delUwes(key) == False
-        assert db.putUwes(key, vals) == True
-        assert db.getUwes(key) == vals  # preserved insertion order
-        assert db.cntUwes(key) == len(vals) == 4
-        assert db.getUweLast(key) == vals[-1]
-        assert db.putUwes(key, vals=[b'a']) == False   # duplicate
-        assert db.getUwes(key) == vals  #  no change
-        assert db.addUwe(key, b'a') == False   # duplicate
-        assert db.addUwe(key, b'b') == True
-        assert db.getUwes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in db.getUwesIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delUwes(key) == True
-        assert db.getUwes(key) == []
+        assert db.uwes.get(key) == []
+        assert db.uwes.getLast(key) == None
+        assert db.uwes.cnt(key) == 0
+        assert db.uwes.rem(key) == False
+        assert db.uwes.put(key, vals) == True
+        assert db.uwes.get(key) == vals # preserved insertion order
+        assert db.uwes.cnt(key) == len(vals) == 4
+        assert db.uwes.getLast(key) == vals[-1]
+        assert db.uwes.put(key, vals=[b'a']) == False   # duplicate
+        assert db.uwes.get(key) == vals  #  no change
+        assert db.uwes.add(key, b'a') == False   # duplicate
+        assert db.uwes.add(key, b'b') == True
+        assert db.uwes.get(key) == [('z',), ('m',), ('x',), ('a',), ('b',)]
+        assert [val for key, val in db.uwes.getItemIter(key)] == [('z',), ('m',), ('x',), ('a',), ('b',)]
+        assert db.uwes.rem(key) == True
+        assert db.uwes.get(key) == []
 
         # Setup Tests for getUweItemsNext and getUweItemsNextIter
-        aKey = snKey(pre=b'A', sn=1)
-        aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
-        bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
-        cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
-        dVals = [b"k", b"b"]
+        aKey = ('A', '00000000000000000000000000000001')
+        aVals = [('z',), ('m',), ('x',)]
+        bKey = ('A', '00000000000000000000000000000002')
+        bVals = [('o',), ('r',), ('z',)]
+        cKey = ('A', '00000000000000000000000000000004')
+        cVals = [('h',), ('n',)]
+        dKey = ('A', '00000000000000000000000000000007')
+        dVals = [('k',), ('b',)]
 
-        assert db.putUwes(key=aKey, vals=aVals)
-        assert db.putUwes(key=bKey, vals=bVals)
-        assert db.putUwes(key=cKey, vals=cVals)
-        assert db.putUwes(key=dKey, vals=dVals)
+        assert db.uwes.put(keys=aKey, vals=aVals)
+        assert db.uwes.put(keys=bKey, vals=bVals)
+        assert db.uwes.put(keys=cKey, vals=cVals)
+        assert db.uwes.put(keys=dKey, vals=dVals)
 
 
         # Test getUweItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getUweItemIter()]
+        items = [item for item in db.uwes.getItemIter()]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals ==  aVals + bVals + cVals + dVals
 
-        items = [item for item in db.getUweItemIter(key=aKey)]
+        items = [item for item in db.uwes.getItemIter(keys=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
@@ -952,34 +952,34 @@ def test_baser():
         assert vals == aVals
 
         # bVals
-        items = [item for item in db.getUweItemIter(key=bKey)]
+        items = [item for item in db.uwes.getItemIter(keys=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
         vals = [val for key, val in items]
         assert vals == bVals
         for key, val in items:
-            assert db.delUwe(ikey, val) == True
+            assert db.uwes.rem(ikey, val) == True
 
         # cVals
-        items = [item for item in db.getUweItemIter(key=cKey)]
+        items = [item for item in db.uwes.getItemIter(keys=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
         vals = [val for key, val in items]
         assert vals == cVals
         for key, val in items:
-            assert db.delUwe(ikey, val) == True
+            assert db.uwes.rem(ikey, val) == True
 
         # dVals
-        items = [item for item in db.getUweItemIter(key=dKey)]
+        items = [item for item in db.uwes.getItemIter(keys=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey
         vals = [val for key, val in items]
         assert vals == dVals
         for key, val in items:
-            assert db.delUwe(ikey, val) == True
+            assert db.uwes.rem(ikey, val) == True
 
 
 
@@ -1825,13 +1825,16 @@ def test_clear_escrows():
         db.putVres(key, vals)
         db.putPses(key, vals)
         db.putPwes(key, vals)
-        db.putUwes(key, vals)
         db.putOoes(key, vals)
         db.putLdes(key, vals)
 
         pre = b'k'
         snh = b'snh'
         saidb = b'saidb'
+
+        db.uwes.add(keys=(pre, snh), val=saidb)
+        assert db.uwes.cnt(keys=(pre, snh)) == 1
+
         db.qnfs.add(keys=(pre, saidb), val=b"z")
         assert db.qnfs.cnt(keys=(pre, saidb)) == 1
 
@@ -1888,7 +1891,7 @@ def test_clear_escrows():
         assert db.getVres(key) == []
         assert db.getPses(key) == []
         assert db.getPwes(key) == []
-        assert db.getUwes(key) == []
+        assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
         assert db.getLdes(key) == []
         assert db.qnfs.cnt(keys=(pre, saidb)) == 0
