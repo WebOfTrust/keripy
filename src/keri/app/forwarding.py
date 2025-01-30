@@ -6,6 +6,7 @@ keri.app.forwarding module
 module for enveloping and forwarding KERI message
 """
 import random
+import pysodium
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
@@ -13,8 +14,7 @@ from hio.help import decking, ogler
 
 from keri import kering
 from keri.app import agenting
-from keri.app.habbing import GroupHab
-from keri.core import coring, eventing, serdering
+from keri.core import coring, eventing, serdering, MtrDex, Counter, Codens
 from keri.db import dbing
 from keri.kering import Roles
 from keri.peer import exchanging
@@ -243,7 +243,7 @@ class StreamPoster:
 
     """
 
-    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None, **kwa):
+    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None, essr=False, **kwa):
         if hab is not None:
             self.hab = hab
         else:
@@ -257,6 +257,7 @@ class StreamPoster:
         self.mbx = mbx
         self.topic = topic
         self.headers = headers
+        self.essr = essr
         self.evts = decking.Deck()
 
     def deliver(self):
@@ -270,6 +271,10 @@ class StreamPoster:
             add result of doify on this method to doers list
         """
         msg = bytearray()
+
+        if self.essr:
+            msg.extend(coring.Tsper(tsp=coring.Tsps.SCS).qb64b)
+            msg.extend(self.hab.kever.prefixer.qb64b)
 
         while self.evts:
             evt = self.evts.popleft()
@@ -344,10 +349,26 @@ class StreamPoster:
 
     def sendDirect(self, hab, ends, msg):
         for ctrl, locs in ends.items():
-            self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=ctrl, urls=locs, msg=msg,
+            ims = self._essrWrapper(hab, msg, ctrl) if self.essr else msg
+            self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=ctrl, urls=locs, msg=ims,
                                                                headers=self.headers))
 
         return self.messagers
+
+    def _essrWrapper(self, hab, msg, ctrl):
+        rkever = self.hby.kevers[ctrl]
+        pubkey = pysodium.crypto_sign_pk_to_box_pk(rkever.verfers[0].raw)
+        raw = pysodium.crypto_box_seal(bytes(msg), pubkey)
+
+        texter = coring.Texter(raw=raw)
+        diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
+        essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
+                                      modifiers=dict(src=hab.pre, dest=ctrl))
+        ims = hab.endorse(serder=essr, pipelined=False)
+        ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
+                           gvrsn=kering.Vrsn_1_0).qb64b)
+        ims.extend(texter.qb64b)
+        return ims
 
     def createForward(self, hab, ends, serder, atc, topic):
         # If we are one of the mailboxes, just store locally in mailbox
