@@ -28,4 +28,15 @@ logging.Logger.trace = trace
 #  want help.ogler always defined by default
 ogler = ogling.initOgler(prefix='keri', syslogged=False)  # inits once only on first import
 
+#  set log formatters with detailed log output
+logFmt = "%(asctime)s [keri] %(levelname)-8s %(message)s"
+formatter = logging.Formatter(logFmt)
+
+ch = logging.StreamHandler()
+ch.setFormatter(formatter)
+ogler.baseConsoleHandler = ch
+ogler.baseFormatter = formatter
+
+ogler.reopen(headDirPath=ogler.headDirPath)
+
 from .helping import nowIso8601, toIso8601, fromIso8601
