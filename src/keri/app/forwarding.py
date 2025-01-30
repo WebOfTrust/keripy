@@ -272,10 +272,6 @@ class StreamPoster:
         """
         msg = bytearray()
 
-        if self.essr:
-            msg.extend(coring.Tsper(tsp=coring.Tsps.SCS).qb64b)
-            msg.extend(self.hab.kever.prefixer.qb64b)
-
         while self.evts:
             evt = self.evts.popleft()
 
@@ -356,14 +352,22 @@ class StreamPoster:
         return self.messagers
 
     def _essrWrapper(self, hab, msg, ctrl):
+        ims = bytearray()
+
+        # Can be added in deliver() once mailbox support added to avoid list copy
+        ims.extend(coring.Tsper(tsp=coring.Tsps.SCS).qb64b)
+        ims.extend(self.hab.kever.prefixer.qb64b)
+        ims.extend(msg)
+
         rkever = self.hby.kevers[ctrl]
         pubkey = pysodium.crypto_sign_pk_to_box_pk(rkever.verfers[0].raw)
-        raw = pysodium.crypto_box_seal(bytes(msg), pubkey)
+        raw = pysodium.crypto_box_seal(bytes(ims), pubkey)
 
         texter = coring.Texter(raw=raw)
         diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
         essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=ctrl))
+
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                            gvrsn=kering.Vrsn_1_0).qb64b)
