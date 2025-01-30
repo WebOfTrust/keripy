@@ -5,10 +5,12 @@ tests.app.forwarding module
 
 """
 import time
+import falcon
 
 from hio.base import doing, tyming
+from hio.core import http
 
-from keri import core
+from keri import core, kering, help
 from keri.core import coring, eventing, parsing, serdering
 from keri.kering import Vrsn_1_0, Vrsn_2_0
 
@@ -84,3 +86,77 @@ def test_forward_handler():
         mbx = storing.Mailboxer()
         forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
         # TODO: implement a real test here
+
+def test_essr_stream(seeder):
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab), \
+            habbing.openHab(name="test", transferable=True, temp=True) as (recpHby, recpHab):
+
+        app = falcon.App()
+        httpEnd = indirecting.HttpEnd(rxbs=recpHab.psr.ims)
+        app.add_route("/", httpEnd)
+        server = http.Server(port=5555, app=app)
+        httpServerDoer = http.ServerDoer(server=server)
+
+        kvy = eventing.Kevery(db=hab.db)
+        parsing.Parser().parseOne(bytearray(recpHab.makeOwnEvent(sn=0)), kvy=kvy, local=True)
+        kvy.processEscrows()
+        assert recpHab.pre in kvy.kevers
+
+        recpKvy = eventing.Kevery(db=recpHab.db)
+        icp = hab.makeOwnEvent(sn=0)
+        parsing.Parser().parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        kvy.processEscrows()
+        assert hab.pre in recpKvy.kevers
+
+        msgs = bytearray()
+        msgs.extend(recpHab.makeEndRole(eid=recpHab.pre,
+                                        role=kering.Roles.controller,
+                                        stamp=help.nowIso8601()))
+
+        msgs.extend(recpHab.makeLocScheme(url='http://127.0.0.1:5555',
+                                          scheme=kering.Schemes.http,
+                                          stamp=help.nowIso8601()))
+        hab.psr.parse(ims=msgs)
+
+        postman = forwarding.StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, essr=True)
+
+        exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test"), sender=hab.pre)
+        atc = hab.endorse(exn, last=False)
+        del atc[:exn.size]
+
+        postman.send(exn, atc)
+
+        doers = [httpServerDoer, doing.DoDoer(doers=postman.deliver())]
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=doers)
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+
+        doist.exit()
+
+        recpHby.psr.parseOne()  # ims already populated from http server
+        exnSaid, exnSerder = next(recpHby.db.exns.getItemIter())
+        assert exnSerder.ked["r"] == "/essr/req"
+        assert exnSerder.ked["q"] == {'src': hab.pre, 'dest': recpHab.pre}
+
+        texter = recpHby.db.essrs.get(exnSaid)[0]
+        ims = bytearray(recpHab.decrypt(texter.raw))
+
+        tag = parsing.Parser.extract(ims, coring.Tsper)
+        assert tag.tsp == coring.Tsps.SCS
+        pre = parsing.Parser.extract(ims, coring.Prefixer)
+        assert pre.qb64 == hab.pre  # encrypt sender
+
+        recpHby.psr.parseOne(ims=ims)
+        serder = recpHby.db.exns.get(exn.said)
+        assert serder.ked["t"] == coring.Ilks.exn
+        assert serder.ked["r"] == "/echo"
+        assert serder.ked["a"] == dict(msg="test")
