@@ -1160,7 +1160,7 @@ class Parser:
 
                 except AttributeError as e:
                     msg = f"No Tevery to process so dropped msg = {serder.said}"
-                    logger.info("Parser: %s", msg)
+                    logger.debug("Parser: %s", msg)
                     logger.debug("Event body=\n%s\n", serder.pretty())
                     raise kering.ValidationError(msg)
             else:
@@ -1178,7 +1178,7 @@ class Parser:
                     vry.processCredential(creder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
                 except AttributeError as e:
                     msg = f"No verifier to process so dropped credential {serder.said}"
-                    logger.info("Parser: %s", msg)
+                    logger.debug("Parser: %s", msg)
                     logger.debug("Credential body=\n%s\n", serder.pretty())
                     raise kering.ValidationError(msg)
             else:

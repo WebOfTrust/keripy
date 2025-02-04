@@ -323,7 +323,7 @@ class Revery:
                     if seqner.sn == osqr.sn:  # sn same so check datetime
                         if odater:
                             if dater.datetime <= odater.datetime:
-                                logger.info("Kevery process: skipped stale key "
+                                logger.debug("Kevery process: skipped stale key "
                                             "state sig datetime from %s on reply msg = %s",
                                             aid, serder.said)
                                 logger.debug("Reply Body=\n%s\n", serder.pretty())
