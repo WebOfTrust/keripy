@@ -93,7 +93,7 @@ class Exchanger:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=pathed):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
                     msg = f"Not enough signatures in {indices} for evt = {serder.said}"
-                    logger.info("Exchanger: %s", msg)
+                    logger.info(msg)
                     logger.debug(f"Event body=\n%20\n", serder.pretty())
                     raise MissingSignatureError(msg)
 
@@ -138,7 +138,7 @@ class Exchanger:
         try:
             behavior.handle(serder=serder, attachments=attachments)
         except AttributeError:
-            logger.debug(f"Exchanger: Behavior for {route} missing or does not have handle for exn={serder.said}")
+            logger.debug(f"Behavior for {route} missing or does not have handle for exn={serder.said}")
             logger.debug(
                 f"exn body=\n{serder.ked}\n")
 
@@ -231,8 +231,8 @@ class Exchanger:
         recipient = serder.ked['rp']
         sender = serder.ked['i']
         route = serder.ked['r']
-        logger.info("Exchanger [%.8s -> %.8s]:  saved exn event route=%s SAID=%s recipient%s",
-                    sender, recipient, route, dig, recipient)
+        logger.info("Saved exn event route = %s SAID = %s sender %s -> recipient %s",
+                    route, dig, sender, recipient)
         logger.debug("EXN Event Body=\n%s\n", serder.pretty())
 
     def lead(self, hab, said):

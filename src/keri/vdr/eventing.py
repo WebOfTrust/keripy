@@ -1267,8 +1267,8 @@ class Tever:
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
         self.reger.putTvt(key, serder.raw)
         self.reger.putTel(snKey(pre, sn), dig)
-        logger.info("Tever [reg=%.8s iss=%.8s]: Added to TEL valid %s event=%s SAID=%s",
-                    self.regk, self.pre, serder.ilk, serder.pre, serder.said)
+        logger.info("Tever: Added to TEL %s valid event=%s SAID=%s reg=%.8s... iss=%s",
+                    serder.ilk, serder.pre, serder.said, self.regk, self.pre)
         logger.debug("TEL Event Body=\n%s\n", serder.pretty())
 
     def valAnchorBigs(self, serder, seqner, saider, bigers, toad, baks):

@@ -104,7 +104,7 @@ class JoinDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        print("IPEX JoinDoer: Waiting for group ipex events...")
+        print("Waiting for group ipex events...")
 
         while True:
 

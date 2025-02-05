@@ -188,7 +188,7 @@ class Sealer(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-                print(f"Sealer: Witness receipts complete, {pre} confirmed.")
+                print(f"Witness receipts complete, {pre} confirmed.")
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.cdel.put(keys=(pre, seqner.qb64), val=coring.Saider(qb64=serder.said))
 

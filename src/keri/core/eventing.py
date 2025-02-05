@@ -2703,7 +2703,7 @@ class Kever:
                 if self.cues is not None:  # cue to notice BadCloneFN
                     self.cues.push(dict(kin="noticeBadCloneFN", serder=serder,
                                           fn=fn, firner=firner, dater=dater))
-                logger.info("Kever: Mismatch Cloned Replay FN: First seen "
+                logger.info("Mismatch Cloned Replay FN: First seen "
                             "ordinal fn %s dig %s and clone fn %s event=%s",
                             fn, serder.pre, firner.sn, serder.said)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -2715,8 +2715,9 @@ class Kever:
                          fn, serder.ilk, serder.said, serder.pre, dtsb.decode("utf-8"))
             logger.debug("Event Body=\n%s\n", serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
-        logger.info("Kever [%.8s]: Added to KEL %s at sn=%s valid event SAID=%s for AID %s",
-                    self.prefixer.qb64, serder.ilk, serder.sn, serder.said, serder.pre)
+        pre = self.prefixer.qb64
+        logger.info("[AID %s...%s]: Added to KEL %s at sn=%s valid event SAID=%s for AID %s",
+                    pre[:4], pre[-4:], serder.ilk, serder.sn, serder.said, serder.pre)
         logger.debug("Event Body=\n%s\n", serder.pretty())
         return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
 
