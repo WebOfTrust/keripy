@@ -98,17 +98,7 @@ class RequestDoer(doing.DoDoer):
         # delegate AID ICP and exn of delegation request EXN
         srdr = serdering.SerderKERI(raw=evt)
         del evt[:srdr.size]
-
-        logger.info(
-            "RequestDoer: sending delegated inception from delegate %s to delegator %s",
-            phab.pre, delpre)
-        logger.debug("RequestDoer: Delegated inception body=\n%s\n", exn.pretty())
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
-
-        logger.info(
-            "RequestDoer: sending request notification exn from delegate %s to delegator %s",
-            phab.pre, delpre)
-        logger.debug("RequestDoer: Notification exn body=\n%s\n", exn.pretty())
         self.postman.send(src=phab.pre, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)
 
         while True:

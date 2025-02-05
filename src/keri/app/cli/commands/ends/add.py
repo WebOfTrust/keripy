@@ -104,10 +104,6 @@ class RoleDoer(doing.DoDoer):
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
                 exn, atc = grouping.multisigRpyExn(ghab=self.hab, rpy=msg)
-                logger.info(
-                    "RoleDoer: sending endpoint role add exn on %s from %s to %s",
-                    "multisig", self.hab.mhab.pre, recp)
-                logger.debug("RoleDoer: Endpoint Role Add Exn body=\n%s\n", exn.pretty())
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
