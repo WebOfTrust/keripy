@@ -6,7 +6,7 @@ keri.kli.common.passcode.set module
 import argparse
 import getpass
 
-from hio import help
+from keri import help
 
 from hio.base import doing
 

@@ -7,7 +7,7 @@ keri.kli.commands.multisig module
 import argparse
 from ordered_set import OrderedSet as oset
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri import kering

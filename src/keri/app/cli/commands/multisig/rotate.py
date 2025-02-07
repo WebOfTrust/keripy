@@ -7,7 +7,7 @@ keri.kli.commands.multisig module
 import argparse
 from ordered_set import OrderedSet as oset
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri import kering
@@ -44,7 +44,7 @@ def rotateGroupIdentifier(args):
     Performs a rotation on the group identifier specified as an argument.  The identifier prefix of the environment
     represented by the name parameter must be a member of the group identifier.  This command will perform a rotation
     of the local identifier if the sequence number of the local identifier is the same as the group identifier sequence
-    number.  It will wait for all other members of the group to acheive the same sequence number (group + 1) and then
+    number.  It will wait for all other members of the group to achieve the same sequence number (group + 1) and then
     publish the signed rotation event for the group identifier to all witnesses and wait for receipts.
 
     Parameters:
