@@ -8,6 +8,7 @@ Witness command line interface
 
 import argparse
 import logging
+import os
 
 from hio.base import doing
 
@@ -19,16 +20,24 @@ from keri.core import Salter
 
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
+parser.add_argument("--loglevel", action="store", required=False, default=os.getenv("KERI_LOG_LEVEL", "CRITICAL"),
+                    help="Set log level to DEBUG | INFO | WARNING | ERROR | CRITICAL. Default is CRITICAL")
 parser.set_defaults(handler=lambda args: demo(args))
 
-help.ogler.level = logging.INFO
 logger = help.ogler.getLogger()
 
-def demo(_):
+def demo(args):
     """
     Run set of three witnesses for demo
 
     """
+    base_formatter = logging.Formatter(
+        '%(asctime)s [keri] %(module)s.%(funcName)s-%(lineno)s %(levelname)-8s %(message)s')
+    base_formatter.default_msec_format = None
+    help.ogler.baseConsoleHandler.setFormatter(base_formatter)
+    help.ogler.level = logging.getLevelName(args.loglevel.upper())
+    logger.setLevel(help.ogler.level)
+    help.ogler.reopen(name="keri", temp=True, clear=True)
 
     wancf = configing.Configer(name="wan", headDirPath="scripts", temp=False, reopen=True, clear=False)
     wilcf = configing.Configer(name="wil", headDirPath="scripts", temp=False, reopen=True, clear=False)

@@ -119,10 +119,6 @@ class GroupMultisigInteract(doing.DoDoer):
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
-            logger.info(
-                "GroupMultisigInteract: sending multisig interact exn from %s to %s",
-                ghab.mhab.pre, recpt)
-            logger.debug("GroupMultisigInteract: interact exn body=\n%s\n", exn.pretty())
             self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         prefixer = coring.Prefixer(qb64=ghab.pre)

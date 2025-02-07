@@ -111,7 +111,7 @@ class JoinDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        print("MS JoinDoer: Waiting for group multisig events...")
+        print("Waiting for group multisig events...")
 
         while self.notifier.noter.notes.cntAll() == 0:
             yield self.tock

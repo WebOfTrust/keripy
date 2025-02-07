@@ -2318,13 +2318,14 @@ class Kever:
         # each wiger now has added to it a werfer of its wit in its .verfer property
 
         # escrow if not fully signed vs signing threshold
+        pre = self.prefixer.qb64
         if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
                                seqner=delseqner, saider=delsaider, local=local)
-            msg = (f"[{self.prefixer.qb64[:8]}] Failure satisfying sith = {tholder.sith} "
+            msg = (f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying sith = {tholder.sith} "
                    f"on sigs {[siger.qb64 for siger in sigers]} "
                    f"for evt = {serder.said}")
-            logger.trace("Kever: %s", msg)
+            logger.trace(msg)
             logger.trace("Event Body=\n%s\n", serder.pretty())
             raise MissingSignatureError(msg)
 
@@ -2337,10 +2338,10 @@ class Kever:
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
                                    seqner=delseqner, saider=delsaider,local=local)
                 msg = (
-                    f"[{self.prefixer.qb64[:8]}] Failure satisfying prior nsith = {self.ntholder.sith} "
+                    f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying prior nsith = {self.ntholder.sith} "
                     f"with exposed sigs {[siger.qb64 for siger in sigers]} "
                     f"for new est evt={serder.said}")
-                logger.trace("Kever: %s", msg)
+                logger.trace(msg)
                 logger.trace("Event Body=\n%s\n", serder.pretty())
                 raise MissingSignatureError(msg)
 
@@ -2370,10 +2371,10 @@ class Kever:
                                           local=local):
                         # cue to query for witness receipts
                         self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.snh)))
-                    msg = (f"[{self.prefixer.qb64[:8]}] Failure satisfying toad={toader.num} "
+                    msg = (f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying toad={toader.num} "
                            f"on witness sigs {[siger.qb64 for siger in wigers]} "
                            f"for event={serder.said}")
-                    logger.info("Kever: %s", msg)
+                    logger.info(msg)
                     logger.debug("Event Body=\n%s\n", serder.pretty())
                     raise MissingWitnessSignatureError(msg)
 
@@ -2397,7 +2398,7 @@ class Kever:
                 self.escrowDelegableEvent(serder=serder, sigers=sigers,
                                           wigers=wigers, local=local)
                 msg = f"Missing approval for delegation by {delpre} of event = {serder.said}"
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegableApprovalError(msg)
 
@@ -2756,7 +2757,7 @@ class Kever:
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
                                seqner=delseqner, saider=delsaider, local=local)
             msg = f"Missing KEL of delegator {delpre} of evt {serder.sn} {serder.ilk} {serder.said}"
-            logger.info("Kever: %s", msg)
+            logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
             raise MissingDelegationError(msg)
 
@@ -2765,7 +2766,7 @@ class Kever:
         if dkever.doNotDelegate:  # drop event if delegation not allowed
             msg = (f"Delegator {delpre} does not allow delegation on evt "
                    f"{serder.sn} {serder.ilk} {serder.said}")
-            logger.info("Kever: %s", msg)
+            logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
             raise ValidationError(msg)
 
@@ -2784,7 +2785,7 @@ class Kever:
                                    seqner=delseqner, saider=delsaider, local=local)
                 msg = (f"No delegation seal for delegator {delpre} on evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
 
@@ -2814,7 +2815,7 @@ class Kever:
                                    seqner=delseqner, saider=delsaider, local=local)
                 msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
 
@@ -2825,7 +2826,7 @@ class Kever:
             if raw is None:   # drop event should never happen unless database is broken
                 msg = (f"Missing delegation from {delpre} at event dig = {ddig} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise ValidationError(msg)
 
@@ -2853,7 +2854,7 @@ class Kever:
                                            seqner=delseqner, saider=delsaider, local=local)
                 msg = (f"No delegation seal for delegator {delpre} of evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
 
@@ -2899,7 +2900,7 @@ class Kever:
                                 seqner=delseqner, saider=delsaider, local=local)
             msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
                    f"{serder.sn} {serder.ilk} {serder.said}")
-            logger.info("Kever: %s", msg)
+            logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
             raise MissingDelegationError(msg)
         # already have new potential superseding delegation
@@ -2936,7 +2937,7 @@ class Kever:
                     # ToDo: XXXX may want to cue up business logic for delegator
                     # if self.mine(delegator):  # failed attempt at recovery
                     msg = f"Invalid delegation recovery rotation of {serfo.pre} by {serfn.pre}"
-                    logger.info("Kever: %s", msg)
+                    logger.info(msg)
                     logger.debug("Delegate Event Body=\n%s\n", serfo.pretty())
                     logger.debug("Delegator Event Body=\n%s\n", serfn.pretty())
                     raise ValidationError(msg)
@@ -2950,7 +2951,7 @@ class Kever:
                                 seqner=delseqner, saider=delsaider, local=local)
                 msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
             serfo = bosso
@@ -2961,7 +2962,7 @@ class Kever:
                                 seqner=delseqner, saider=delsaider, local=local)
                 msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
             # repeat
@@ -3050,7 +3051,7 @@ class Kever:
             if not (raw := self.db.getEvt(ddgkey)):  # in fons but no event
                 # database broken this should never happen
                 msg = f"Missing delegation event for {serder.said}"
-                logger.info("Kever: %s", msg)
+                logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise ValidationError(msg)
             # original delegating event i.e. boss original
@@ -3066,7 +3067,7 @@ class Kever:
                     # since original must have been validated so it must have
                     # all its delegation chain.
                     msg = f"Missing delegation source seal for {serder.said}"
-                    logger.info("Kever: %s", msg)
+                    logger.info(msg)
                     logger.debug("Event Body=\n%s\n", serder.pretty())
                     raise ValidationError(msg)
             else:  # only search last events in delegator's kel
@@ -3165,6 +3166,7 @@ class Kever:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkeys, val=esr)
 
+        pre = self.prefixer.qb64
         if first:  # append event dig to first seen database in order
             fn = self.db.appendFe(serder.preb, serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
@@ -3179,13 +3181,13 @@ class Kever:
                 dtsb = dater.dtsb
             self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
             self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
-            logger.debug("Kever [%.8s]: First seen %s %s SAID=%s for %s at %s",
-                        self.prefixer.qb64, fn, serder.ilk, serder.said,
-                        serder.pre, dtsb.decode("utf-8"))
+            logger.debug("AID %s...%s: First seen %s at sn=%s valid event SAID=%s for %s at %s",
+                         pre[:4], pre[-4:], serder.ilk, fn, serder.said,
+                         serder.pre, dtsb.decode("utf-8"))
             logger.debug("Event Body=\n%s\n", serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
-        logger.info("Kever [%.8s]: Added to KEL %s at sn=%s valid event SAID=%s for AID %s",
-                    self.prefixer.qb64, serder.ilk, serder.sn, serder.said, serder.pre)
+        logger.info("AID %s...%s: Added to KEL %s at sn=%s valid event SAID=%s",
+                    pre[:4], pre[-4:], serder.ilk, serder.sn, serder.said)
         logger.debug("Event Body=\n%s\n", serder.pretty())
         return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
 
@@ -3351,7 +3353,8 @@ class Kever:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        logger.trace("Kever: Escrowed partially witnessed event = \n%s\n", serder.pretty())
+        logger.trace("Kever state: Escrowed partially witnessed event = %s", serder.said)
+        logger.trace("Event Body=\n%s\n", serder.pretty())
         return self.db.addPwe(snKey(serder.preb, serder.sn), serder.saidb)
 
 
@@ -3857,7 +3860,7 @@ class Kevery:
                 else:  # escrow likely duplicitous event
                     self.escrowLDEvent(serder=serder, sigers=sigers)
                     msg = f"Likely Duplicitous Event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
-                    logger.debug("Kevery: %s", msg)
+                    logger.debug(msg)
                     logger.debug("Duplicitous event body=\n%s\n", serder.pretty())
                     raise LikelyDuplicitousError(msg)
 
@@ -3870,7 +3873,7 @@ class Kevery:
                     self.escrowOOEvent(serder=serder, sigers=sigers,
                                        seqner=delseqner, saider=delsaider, wigers=wigers, local=local)
                     msg = f"Out-of-order event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
-                    logger.debug("Kevery: %s", msg)
+                    logger.debug(msg)
                     logger.debug("Out-of-order event body=\n%s\n", serder.pretty())
                     raise OutOfOrderError(msg)
 
@@ -3942,7 +3945,7 @@ class Kevery:
                     else:  # escrow likely duplicitous event
                         self.escrowLDEvent(serder=serder, sigers=sigers)
                         msg = f"Likely Duplicitous Event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
-                        logger.debug("Kevery: %s", msg)
+                        logger.debug(msg)
                         logger.debug("Duplicitous event body=\n%s\n", serder.pretty())
                         raise LikelyDuplicitousError(msg)
 
@@ -3990,7 +3993,7 @@ class Kevery:
 
             if not lserder.compare(said=ked["d"]):  # stale receipt at sn discard
                 msg = f"Stale receipt at sn = {ked['s']} for rct = {serder.said}."
-                logger.info("Kevery: %s", msg)
+                logger.info(msg)
                 logger.debug("Stale receipt event body=\n%s\n", serder.pretty())
                 raise ValidationError(msg)
 
@@ -4026,7 +4029,7 @@ class Kevery:
             # get digest from receipt message not receipted event
             self.escrowUWReceipt(serder=serder, wigers=wigers, said=ked["d"])
             msg = f"Unverified witness receipt={serder.said}"
-            logger.info("Kevery: %s", msg)
+            logger.info(msg)
             logger.debug("Event=\n%s\n", serder.pretty())
             raise UnverifiedWitnessReceiptError(msg)
 
@@ -4110,7 +4113,7 @@ class Kevery:
         else:  # no events to be receipted yet at that sn so escrow
             self.escrowUReceipt(serder, cigars, said=ked["d"])  # digest in receipt
             msg = f"Unverified receipt = {serder.said}"
-            logger.info("Kevery: %s", msg)
+            logger.info(msg)
             logger.debug("event=\n%s\n", serder.pretty())
             raise UnverifiedReceiptError(msg)
 
@@ -4400,7 +4403,7 @@ class Kevery:
                 self.escrowTRQuadruple(serder, sprefixer, sseqner, saider, siger)
                 msg = (f"Unverified receipt: missing associated event for transferable validator"
                        f"receipt quadruple for event {serder.said}")
-                logger.info("Kevery: %s", msg)
+                logger.info(msg)
                 logger.debug("Event=\n%s\n", serder.pretty())
                 raise UnverifiedTransferableReceiptError(msg)
 
@@ -4618,7 +4621,7 @@ class Kevery:
                                       tsgs=tsgs)
         if not accepted:
             msg = f"Unverified loc scheme reply URL={url} SAID={serder.said}"
-            logger.debug("Kevery: %s", msg)
+            logger.debug(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
             raise UnverifiedReplyError(msg)
 
@@ -4946,7 +4949,7 @@ class Kevery:
             if pre not in self.kevers:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                 msg = f"Query not found error on event route={route} SAID={serder.said}"
-                logger.debug("Kevery: %s", msg)
+                logger.debug(msg)
                 logger.debug("Query Body=\n%s\n", serder.pretty())
                 raise QueryNotFoundError(msg)
 
@@ -4955,7 +4958,7 @@ class Kevery:
                 if not self.db.fetchAllSealingEventByEventSeal(pre=pre, seal=anchor):
                     self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                     msg = f"Query not found error on event route={route} SAID={serder.said}"
-                    logger.debug("Kevery: %s", msg)
+                    logger.debug(msg)
                     logger.debug("Query Body=\n%s\n", serder.pretty())
                     raise QueryNotFoundError(msg)
 
@@ -4963,7 +4966,7 @@ class Kevery:
                 if kever.sner.num < sn or not self.db.fullyWitnessed(kever.serder):
                     self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                     msg = f"Query not found error on event route={route} SAID={serder.said}"
-                    logger.debug("Kevery: %s", msg)
+                    logger.debug(msg)
                     logger.debug("Query Body=\n%s\n", serder.pretty())
                     raise QueryNotFoundError(msg)
 
@@ -4986,7 +4989,7 @@ class Kevery:
             if pre not in self.kevers:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                 msg = f"Query not found error on event route={route} SAID={serder.said}"
-                logger.debug("Kevery: %s", msg)
+                logger.debug(msg)
                 logger.debug("Query Body=\n%s\n", serder.pretty())
                 raise QueryNotFoundError(msg)
 
@@ -5027,7 +5030,7 @@ class Kevery:
         else:
             self.cues.push(dict(kin="invalid", serder=serder))
             msg = f"Invalid query message {ilk} for event route={route} SAID={serder.said}"
-            logger.info("Kevery: %s", msg)
+            logger.info(msg)
             logger.debug("Query Body=\n%s\n", serder.pretty())
             raise ValidationError(msg)
 
@@ -5589,7 +5592,7 @@ class Kevery:
                 dgkey = dgKey(pre, bytes(edig))
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local source so raise ValidationError which unescrows below
-                    msg = f"PS Missing escrowed event source at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed event source at dig = {bytes(edig)}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5597,7 +5600,7 @@ class Kevery:
                 dtb = self.db.getDts(dgkey)
                 if dtb is None:  # othewise is a datetime as bytes
                     # no date time so raise ValidationError which unescrows below
-                    msg = f"PS Missing escrowed event datetime at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed event datetime at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5606,7 +5609,7 @@ class Kevery:
                 dte = helping.fromIso8601(bytes(dtb))
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
                     # escrow stale so raise ValidationError which unescrows below
-                    msg = f"PS Stale event escrow at dig = {bytes(edig)}"
+                    msg = f"PSE Stale event escrow at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5614,7 +5617,7 @@ class Kevery:
                 eraw = self.db.getEvt(dgkey)
                 if eraw is None:
                     # no event so so raise ValidationError which unescrows below
-                    msg = f"PS Missing escrowed evt at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed evt at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5623,7 +5626,7 @@ class Kevery:
                 sigs = self.db.getSigs(dgkey)
                 if not sigs:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
-                    msg = f"PS Missing escrowed evt sigs at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
                 wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
