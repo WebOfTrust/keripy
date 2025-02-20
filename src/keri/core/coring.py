@@ -323,6 +323,7 @@ class MatterCodex:
     Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for special values
     Tag9:                 str = '0N'  # Tag9 9 B64 encoded chars + 1 prepad for special values
     Tag10:                str = '0O'  # Tag10 10 B64 encoded chars for special values
+    PartHead:             str = '0P'  # PartHead 24 byte 32 B64 chars MemoGram Part Header
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -800,6 +801,7 @@ class Matter:
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
         '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '0P': Sizage(hs=2, ss=0, xs=0, fs=32, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
