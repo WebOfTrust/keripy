@@ -221,11 +221,11 @@ class ColdCodex:
         0o6 = 110 mgpk2
         007 = 111 cntcode or opcode B2
 
-    status is one of ('evt', 'txt', 'bny' )
+    status is one of ('evt', 'txt', 'bny', 'ano' )
     'evt' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
     'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
     'bny' if tritet in (ColdDex.CtOpB2,)
-    'ann' if trited in (ColdDex.AnB64)
+    'ano' if trited in (ColdDex.AnB64)
 
     otherwise raise ColdStartError
 
@@ -234,7 +234,7 @@ class ColdCodex:
     x[0] >> 5 == 0o1
     True
     """
-    AnB64: int = 0o0  # Annotated CESR
+    AnB64: int = 0o0  # Annotated CESR B64
     CtB64: int = 0o1  # CountCode Base64
     OpB64: int = 0o2  # OpCode Base64
     JSON: int = 0o3  # JSON Map Event Start
@@ -249,8 +249,8 @@ class ColdCodex:
 
 ColdDex = ColdCodex()  # Make instance
 
-Coldage = namedtuple("Coldage", 'msg txt bny')  # stream cold start status
-Colds = Coldage(msg='msg', txt='txt', bny='bny') # add 'ant' for annotated
+Coldage = namedtuple("Coldage", 'msg txt bny ano')  # stream cold start status
+Colds = Coldage(msg='msg', txt='txt', bny='bny', ano='ano') # add 'ant' for annotated
 
 
 def sniff(ims):
@@ -278,7 +278,7 @@ def sniff(ims):
     'msg' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
     'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
     'bny' if tritet in (ColdDex.CtOpB2,)
-    'ano' if tritet in (ColdDex.Anno,)
+    'ano' if tritet in (ColdDex.AnB,)
     """
     if not ims:
         raise ShortageError("Need more bytes.")
@@ -290,7 +290,8 @@ def sniff(ims):
         return Colds.txt
     if tritet in (ColdDex.CtOpB2,):
         return Colds.bny
-    #if tritet in (ColdDex.AnB64, ):
+    if tritet in (ColdDex.AnB64, ):
+        return Colds.ano
 
 
     raise ColdStartError("Unexpected tritet={} at stream start.".format(tritet))
