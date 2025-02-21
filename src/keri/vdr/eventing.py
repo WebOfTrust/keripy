@@ -1267,7 +1267,8 @@ class Tever:
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
         self.reger.putTvt(key, serder.raw)
         self.reger.putTel(snKey(pre, sn), dig)
-        logger.info("Tever: Added to TEL valid %s event=%s for AID %s", serder.ilk, serder.said, serder.pre)
+        logger.info("Tever: Added to TEL %s valid event=%s SAID=%s reg=%.8s... iss=%s",
+                    serder.ilk, serder.pre, serder.said, self.regk, self.pre)
         logger.debug("TEL Event Body=\n%s\n", serder.pretty())
 
     def valAnchorBigs(self, serder, seqner, saider, bigers, toad, baks):
@@ -1423,8 +1424,8 @@ class Tever:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
         self.reger.putTvt(key, serder.raw)
-        logger.info("Tever state: Escrowed anchorless event "
-                    "event = %s\n", serder.ked)
+        logger.info("Tever: Escrowed anchorless event event = %s", serder.said)
+        logger.debug("Event body=\n%s\n", serder.ked)
         return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
 
     def getBackerState(self, ked):
@@ -2096,8 +2097,8 @@ class Tevery:
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
                 self.reger.delOot(snKey(pre, sn))  # removes from escrow
-                logger.info("Tevery unescrow succeeded in valid event: "
-                            "event=\n%s\n", tserder.pretty())
+                logger.info("Tevery unescrow succeeded in valid event: event = %s", tserder.said)
+                logger.debug("Event Body=\n%s\n", tserder.pretty())
 
     def processEscrowAnchorless(self):
         """ Process escrow of TEL events received before the anchoring KEL event.
@@ -2159,4 +2160,5 @@ class Tevery:
                 # valid event escrow.
                 self.reger.delTae(snKey(pre, sn))  # removes from escrow
                 logger.info("Tevery: anchorless escrow unescrow succeeded in valid event: "
-                            "event=\n%s\n", tserder.pretty())
+                            "event = %s", tserder.said)
+                logger.debug("Event body=\n%s\n", tserder.pretty())

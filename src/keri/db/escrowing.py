@@ -88,7 +88,7 @@ class Broker:
 
                 try:
                     if not (dater and serder and (tsgs or vcigars)):
-                        raise ValueError(f"Broker: Missing escrow artifacts at said={saider.qb64}"
+                        raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
                                          f"for pre={pre}.")
 
                     cigars = []
@@ -101,7 +101,7 @@ class Broker:
                     if ((helping.nowUTC() - dater.datetime) >
                             datetime.timedelta(seconds=self.timeout)):
                         # escrow stale so raise ValidationError which unescrows below
-                        msg = f"Broker: {typ} escrow unescrow error: Stale txn state escrow at pre = {pre}"
+                        msg = f"{typ} escrow unescrow error: Stale txn state escrow at pre = {pre}"
                         logger.trace(msg)
                         raise kering.ValidationError(msg)
 
@@ -111,19 +111,19 @@ class Broker:
                 except extype as ex:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.TRACE):
-                        logger.trace("Broker: %s escrow unescrow attempt failed: %s\n", typ, ex.args[0])
-                        logger.exception("Broker: %s escrow  unescrow attempt failed: %s\n", typ, ex.args[0])
+                        logger.trace("%s escrow unescrow attempt failed: %s\n", typ, ex.args[0])
+                        logger.exception("%s escrow  unescrow attempt failed: %s\n", typ, ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
                     self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Broker: %s escrow other error on unescrow: %s\n", typ, ex.args[0])
+                        logger.exception("%s escrow other error on unescrow: %s\n", typ, ex.args[0])
                     else:
-                        logger.error("Broker: %s escrow other error on unescrow: %s\n", typ, ex.args[0])
+                        logger.error("%s escrow other error on unescrow: %s\n", typ, ex.args[0])
 
                 else:  # unescrow succeded
                     self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow only
-                    logger.info("Broker: %s escrow unescrow succeeded for txn state=%s",
+                    logger.info("%s escrow unescrow succeeded for txn state = %s",
                                 typ, serder.said)
                     logger.debug("TXN State Body=\n%s\n", serder.pretty())
 
@@ -131,9 +131,9 @@ class Broker:
                 self.escrowdb.remIokey(iokeys=(typ, pre, aid, ion))  # remove escrow
                 self.removeState(saider)
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Broker: %s escrow unescrowed due to error: %s\n", typ, ex.args[0])
+                    logger.exception("%s escrow unescrowed due to error: %s\n", typ, ex.args[0])
                 else:
-                    logger.error("Broker: %s escrow unescrowed due to error: %s\n", typ, ex.args[0])
+                    logger.error("%s escrow unescrowed due to error: %s\n", typ, ex.args[0])
 
     def escrowStateNotice(self, *, typ, pre, aid, serder, saider, dater, cigars=None, tsgs=None):
         """

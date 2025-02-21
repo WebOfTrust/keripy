@@ -2294,7 +2294,7 @@ class Kever:
             if delseqner and delsaider:
                 self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             msg=(f"Failure satisfying sith = {tholder.sith} "
-                 f"on sigs {[siger.qb64 for siger in sigers]}"
+                 f"on sigs {[siger.qb64 for siger in sigers]} "
                  f"for evt = {serder.said}")
             logger.trace(msg)
             logger.trace("Event Body=\n%s\n", serder.pretty())
@@ -2496,8 +2496,9 @@ class Kever:
         # during initial delegation we just escrow the delcept event
         if delseqner is None and delsaider is None and delegator is not None:
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            raise MissingDelegationError("No delegation seal for delegator {} "
-                                         "with evt = {}.".format(delegator, serder.ked))
+            msg = (f"No delegation seal for delegator {delegator} with event = {serder.said}")
+            logger.debug("Event Body=\n%s\n", serder.pretty())
+            raise MissingDelegationError(msg)
 
         ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
         #ssn = sner.num sner is Number seqner is Seqner need to replace Seqners with Numbers
@@ -2702,7 +2703,7 @@ class Kever:
                 if self.cues is not None:  # cue to notice BadCloneFN
                     self.cues.push(dict(kin="noticeBadCloneFN", serder=serder,
                                           fn=fn, firner=firner, dater=dater))
-                logger.info("Kever: Mismatch Cloned Replay FN: First seen "
+                logger.info("Mismatch Cloned Replay FN: First seen "
                             "ordinal fn %s dig %s and clone fn %s event=%s",
                             fn, serder.pre, firner.sn, serder.said)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -2710,12 +2711,14 @@ class Kever:
                 dtsb = dater.dtsb
             self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
             self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
-            logger.info("Kever: First seen ordinal %s dig: %s at %s",
-                        fn, serder.pre, dtsb.decode())
+            logger.debug("Kever: First seen %s %s SAID=%s for %s at %s",
+                         fn, serder.ilk, serder.said, serder.pre, dtsb.decode("utf-8"))
             logger.debug("Event Body=\n%s\n", serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
-        logger.info("Kever: Added to KEL valid %s event %s for AID %s", serder.ilk, serder.said, serder.pre)
-        logger.debug("KEL Event Body=\n%s\n", serder.pretty())
+        pre = self.prefixer.qb64
+        logger.info("[AID %s...%s]: Added to KEL %s at sn=%s valid event SAID=%s for AID %s",
+                    pre[:4], pre[-4:], serder.ilk, serder.sn, serder.said, serder.pre)
+        logger.debug("Event Body=\n%s\n", serder.pretty())
         return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
 
     def escrowPSEvent(self, serder, sigers, wigers=None):
@@ -2736,7 +2739,7 @@ class Kever:
         self.db.putEvt(dgkey, serder.raw)
         snkey = snKey(serder.preb, serder.sn)
         self.db.addPse(snkey, serder.saidb)  # b'EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk.00000000000000000000000000000001'
-        logger.info("Kever: Escrowed partially signed or delegated "
+        logger.debug("Kever: Escrowed partially signed or delegated "
                     "event %s for AID %s", serder.said, serder.pre)
         logger.debug("Event Body=\n%s\n", serder.pretty())
 
@@ -5037,7 +5040,7 @@ class Kevery:
                     # valid event escrow.
                     self.db.delUwe(snKey(pre, sn), ecouple)  # removes one escrow at key val
                     logger.info("Kevery: unver wit escrow unescrow succeeded for event pre=%s "
-                                "sn=%s\n", pre, sn)
+                                "sn=%s", pre, sn)
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
@@ -5200,7 +5203,7 @@ class Kevery:
                     # valid event escrow.
                     self.db.delUre(snKey(pre, sn), etriplet)  # removes one escrow at key val
                     logger.info("Kevery: unver nontrans escrow unescrow succeeded for event pre=%s "
-                                "sn=%s\n", pre, sn)
+                                "sn=%s", pre, sn)
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
@@ -5578,7 +5581,8 @@ class Kevery:
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
                     self.db.delVre(snKey(pre, sn), equinlet)  # removes one escrow at key val
-                    logger.info("Kevery: unver trans escrow unescrow succeeded for event = %s\n", serder.ked)
+                    logger.info("Kevery: unver trans escrow unescrow succeeded for event = %s", serder.said)
+                    logger.debug("Event Body= \n%s\n", serder.pretty())
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
