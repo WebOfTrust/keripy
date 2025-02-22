@@ -250,7 +250,7 @@ class ColdCodex:
 ColdDex = ColdCodex()  # Make instance
 
 Coldage = namedtuple("Coldage", 'msg txt bny ano')  # stream cold start status
-Colds = Coldage(msg='msg', txt='txt', bny='bny', ano='ano') # add 'ant' for annotated
+Colds = Coldage(msg='msg', txt='txt', bny='bny', ano='ano')
 
 
 def sniff(ims):
