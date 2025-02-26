@@ -166,7 +166,7 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
 
     """
     path = path if path is not None else "/"
-    path = str(Path(client.requester.path) / path)
+    path = parse.urljoin(client.requester.path, path)
 
     cold = kering.sniff(ims)  # check for spurious counters at front of stream
     if cold in (parsing.Colds.txt, parsing.Colds.bny):  # not message error out to flush stream

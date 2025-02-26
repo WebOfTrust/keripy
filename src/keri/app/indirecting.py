@@ -6,7 +6,7 @@ keri.app.indirecting module
 simple indirect mode demo support classes
 """
 import datetime
-
+import platform
 import falcon
 import time
 import sys
@@ -42,6 +42,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 
     """
     host = "0.0.0.0"
+    if platform.system() == "Windows":
+        host = "127.0.0.1"
     cues = decking.Deck()
     doers = []
 
