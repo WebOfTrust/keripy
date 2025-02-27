@@ -310,14 +310,23 @@ def b64ToInt(s):
 
 
 def codeB64ToB2(s):
-    """
-    Returns conversion (decode) of Base64 chars to Base2 bytes.
-    Where the number of total bytes returned is equal to the minimun number of
-    octets sufficient to hold the total converted concatenated sextets from s,
-    with one sextet per each Base64 decoded char of s. Assumes no pad chars in s.
-    Sextets are left aligned with pad bits in last (rightmost) byte.
+    """Convert Base64 chars in s to B2 bytes
+
+    Returns:
+        bs (bytes): conversion (decode) of s Base64 chars to Base2 bytes.
+        Where the number of total bytes returned is equal to the minimun number of
+        chars (octet) sufficient to hold the total converted concatenated chars from s,
+        with one sextet per each Base64 char of s. Assumes no pad chars in s.
+
+
+    Sextets are left aligned with pad bits in last (rightmost) byte to support
+    mid padding of code portion with respect to rest of primitive.
     This is useful for decoding as bytes, code characters from the front of
     a Base64 encoded string of characters.
+
+    Parameters:
+        s (str | bytes): Base64 str or bytes to convert
+
     """
     i = b64ToInt(s)
     i <<= 2 * (len(s) % 4)  # add 2 bits right zero padding for each sextet
@@ -326,13 +335,21 @@ def codeB64ToB2(s):
 
 
 def codeB2ToB64(b, l):
-    """
-    Returns conversion (encode) of l Base2 sextets from front of b to Base64 chars.
+    """Convert l sextets from base2 b to base64
+
+    Returns:
+        cs (bytes): conversion (encode) of l Base2 sextets from front of b
+        to Base64 chars.
+
     One char for each of l sextets from front (left) of b.
     This is useful for encoding as code characters, sextets from the front of
     a Base2 bytes (byte string). Must provide l because of ambiguity between l=3
     and l=4. Both require 3 bytes in b. Trailing pad bits are removed so
     returned sextets as characters are right aligned .
+
+    Parameters:
+        b (bytes | str): target from which to nab sextets
+        l (int): number of sextets to convert from front of b
     """
     if hasattr(b, 'encode'):
         b = b.encode("utf-8")  # convert to bytes
@@ -347,11 +364,17 @@ def codeB2ToB64(b, l):
 
 
 def nabSextets(b, l):
-    """
-    Return first l sextets from front (left) of b as bytes (byte string).
-    Length of bytes returned is minimum sufficient to hold all l sextets.
-    Last byte returned is right bit padded with zeros
-    b is bytes or str
+    """Nab l sextets from front of b
+    Returns:
+        sextets (bytes): first l sextets from front (left) of b as bytes
+        (byte string). Length of bytes returned is minimum sufficient to hold
+        all l sextets. Last byte returned is right bit padded with zeros which
+        is compatible with mid padded codes on front of primitives
+
+    Parameters:
+        b (bytes | str): target from which to nab sextets
+        l (int): number of sextets to nab from front of b
+
     """
     if hasattr(b, 'encode'):
         b = b.encode()  # convert to bytes

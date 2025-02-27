@@ -252,6 +252,10 @@ def test_matter_class():
         'Tag6': '0M',
         'Tag9': '0N',
         'Tag10': '0O',
+        'GramHeadNeck': '0P',
+        'GramHead': '0Q',
+        'GramHeadAIDNeck': '0R',
+        'GramHeadAID': '0S',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -347,6 +351,10 @@ def test_matter_class():
         '0M': 'Tag6',
         '0N': 'Tag9',
         '0O': 'Tag10',
+        '0P': 'GramHeadNeck',
+        '0Q': 'GramHead',
+        '0R': 'GramHeadAIDNeck',
+        '0S': 'GramHeadAID',
         '1AAA': 'ECDSA_256k1N',
         '1AAB': 'ECDSA_256k1',
         '1AAC': 'Ed448N',
@@ -456,6 +464,10 @@ def test_matter_class():
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
         '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
+        '0P': Sizage(hs=2, ss=22, xs=0, fs=32, ls=0),
+        '0Q': Sizage(hs=2, ss=22, xs=0, fs=28, ls=0),
+        '0R': Sizage(hs=2, ss=22, xs=0, fs=76, ls=0),
+        '0S': Sizage(hs=2, ss=22, xs=0, fs=72, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
@@ -1860,6 +1872,8 @@ def test_matter():
     assert matter.composable
 
 
+
+
     """ Done Test """
 
 def test_matter_special():
@@ -1983,6 +1997,172 @@ def test_matter_special():
     assert matter.raw == numraw
     assert not matter.special
     assert matter.composable
+
+    # test PartHeadNeck
+    code = MtrDex.GramHeadNeck
+    assert code == '0P'
+    codeb = code.encode()
+
+    mid = 1
+    midb = mid.to_bytes(16)
+    assert midb == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
+    pn = 1
+    pnb = pn.to_bytes(3)
+    assert pnb == b'\x00\x00\x01'
+    pc = 2
+    pcb = pc.to_bytes(3)
+    assert pcb == b'\x00\x00\x02'
+
+    raw = pnb + pcb
+    assert raw == b'\x00\x00\x01\x00\x00\x02'
+
+    assert mid == int.from_bytes(midb[:16])
+    assert pn == int.from_bytes(raw[0:3])
+    assert pc == int.from_bytes(raw[3:6])
+
+    midb64 = encodeB64(bytes([0] * 2) + midb)[2:] # prepad convert and strip
+    soft = midb64.decode()
+    pnb64 = encodeB64(pnb)
+    pcb64 = encodeB64(pcb)
+
+    qb64b = codeb + midb64 + pnb64 + pcb64
+    assert qb64b == b'0PAAAAAAAAAAAAAAAAAAAAABAAABAAAC'
+    qb64 = qb64b.decode()
+    qb2 = decodeB64(qb64b)
+
+    assert mid == int.from_bytes(decodeB64(b'AA' + qb64b[2:24]))
+    assert pn == int.from_bytes(decodeB64(qb64b[24:28]))
+    assert pc == int.from_bytes(decodeB64(qb64b[28:32]))
+
+    matter = Matter(raw=raw, code=code, soft=soft)
+
+    assert matter.code == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code ==code
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+    # test PartHead
+    code = MtrDex.GramHead
+    assert code == '0Q'
+    codeb = code.encode()
+
+    mid = 1
+    midb = mid.to_bytes(16)
+    assert midb == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
+    pn = 1
+    pnb = pn.to_bytes(3)
+    assert pnb == b'\x00\x00\x01'
+
+    raw = pnb
+    assert raw == b'\x00\x00\x01'
+
+    assert mid == int.from_bytes(midb[:16])
+    assert pn == int.from_bytes(raw[0:3])
+
+    midb64 = encodeB64(bytes([0] * 2) + midb)[2:] # prepad convert and strip
+    soft = midb64.decode()
+    pnb64 = encodeB64(pnb)
+
+    qb64b = codeb + midb64 + pnb64
+    assert qb64b == b'0QAAAAAAAAAAAAAAAAAAAAABAAAB'
+    qb64 = qb64b.decode()
+    qb2 = decodeB64(qb64b)
+
+    assert mid == int.from_bytes(decodeB64(b'AA' + qb64b[2:24]))
+    assert pn == int.from_bytes(decodeB64(qb64b[24:28]))
+
+    matter = Matter(raw=raw, code=code, soft=soft)
+
+    assert matter.code == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code ==code
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+    assert matter.prefixive == False
+    assert matter.special
+    assert matter.composable
+
+
 
     # Test TBD0S  '1__-'
     # soft special but valid non-empty raw as part of primitive

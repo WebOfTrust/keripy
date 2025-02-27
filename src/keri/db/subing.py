@@ -4,6 +4,23 @@ KERI
 keri.db.subing module
 
 Provide variety of mixin classes for LMDB sub-dbs with various behaviors.
+Takes of advantage of multiple inheritance to enable mixtures of behaviors
+with minimal code duplication (more DRY).
+
+New style python classes use the C3 linearization algorithm. Multiple inheritance
+forms a directed acyclic graph called a diamond graph. This graph is linarized
+into the method resolution order.
+Use class.mro() or class.__mro__
+
+(see https://www.geeksforgeeks.org/method-resolution-order-in-python-inheritance/)
+Basically:
+* children always precede their parents
+* immediate parent classes of a child are visited in the order listed in the
+child class statement.
+* a super class is visited only after all sub classes have been visited
+* linearized graph is monotonic (a class is only visted once)
+
+
 
 Principally:
 
