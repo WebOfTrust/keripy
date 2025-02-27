@@ -234,8 +234,8 @@ class BaseRegistry:
         try:
             self.tvy.processEvent(serder=serder)
         except kering.MissingAnchorError:
-            logger.info("Credential registry missing anchor for inception = {}".format(serder.said))
-            logger.debug(f"event=\n{serder.pretty()}\n")
+            logger.info("Credential registry missing anchor for inception = %s", serder.said)
+            logger.debug("Event=\n%s\n", serder.pretty())
 
     def anchorMsg(self, pre, regd, seqner, saider):
         """  Create key event with seal to serder anchored as data.
