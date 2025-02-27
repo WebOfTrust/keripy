@@ -31,7 +31,7 @@ def test_openogler():
         _, path = os.path.splitdrive(os.path.normpath(ogler.dirPath))
         assert path.startswith(os.path.join(os.path.sep, "tmp", "keri", "logs", "test_"))
         assert ogler.dirPath.endswith("_temp")
-        assert ogler.path.endswith(os.path.join("test.log"))
+        assert ogler.path.endswith(os.path.join(os.path.sep, "test.log"))
         assert ogler.opened
 
         # logger console: All should log  because level DEBUG
@@ -85,7 +85,7 @@ def test_openogler():
         assert ogler.prefix == 'keri'
         assert ogler.headDirPath == ogler.HeadDirPath == os.path.join(os.path.sep, "usr", "local", "var")
         assert ogler.dirPath.endswith(os.path.join("keri", "logs"))
-        assert ogler.path.endswith(os.path.join('mine.log'))
+        assert ogler.path.endswith(os.path.join(os.path.sep, 'mine.log'))
         assert ogler.opened
 
         # logger console: All should log  because level DEBUG
@@ -174,7 +174,7 @@ def test_ogler():
     _, path = os.path.splitdrive(os.path.normpath(ogler.dirPath))
     assert path.startswith(os.path.join(os.path.sep, "tmp", "keri", "logs", "test_"))
     assert ogler.dirPath.endswith("_temp")
-    assert ogler.path.endswith(os.path.join("test.log"))
+    assert ogler.path.endswith(os.path.join(os.path.sep, "test.log"))
     assert ogler.opened == True
     with open(ogler.path, 'r') as logfile:
         contents = logfile.read()
@@ -208,7 +208,7 @@ def test_ogler():
     _, path = os.path.splitdrive(os.path.normpath(ogler.dirPath))
     assert path.startswith(os.path.join(os.path.sep, "tmp", "keri", "logs", "test_"))
     assert ogler.dirPath.endswith("_temp")
-    assert ogler.path.endswith(os.path.join("test.log"))
+    assert ogler.path.endswith(os.path.join(os.path.sep, "test.log"))
     assert ogler.opened == True
     with open(ogler.path, 'r') as logfile:
         contents = logfile.read()
@@ -291,7 +291,7 @@ def test_init_ogler():
     _, path = os.path.splitdrive(os.path.normpath(help.ogler.dirPath))
     assert path.startswith(os.path.join(os.path.sep, "tmp", "keri", "logs", "test_"))
     assert help.ogler.dirPath.endswith("_temp")
-    assert help.ogler.path.endswith(os.path.join("main.log"))
+    assert help.ogler.path.endswith(os.path.join(os.path.sep, "main.log"))
     logger = help.ogler.getLogger()
     if platform.system() == "Windows":
         assert len(logger.handlers) == 2
@@ -314,7 +314,7 @@ def test_init_ogler():
     _, path = os.path.splitdrive(os.path.normpath(ogler.dirPath))
     assert path.startswith(os.path.join(os.path.sep, "tmp", "keri", "logs", "test_"))
     assert ogler.dirPath.endswith("_temp")
-    assert ogler.path.endswith(os.path.join("test.log"))
+    assert ogler.path.endswith(os.path.join(os.path.sep, "test.log"))
     with open(ogler.path, 'r') as logfile:
         contents = logfile.read()
         assert contents == ''
@@ -382,7 +382,7 @@ def test_reset_levels():
     _, path = os.path.splitdrive(os.path.normpath(help.ogler.dirPath))
     assert path.startswith(os.path.join(os.path.sep, "tmp", "keri", "logs", "test_"))
     assert help.ogler.dirPath.endswith("_temp")
-    assert help.ogler.path.endswith(os.path.join("main.log"))
+    assert help.ogler.path.endswith(os.path.join(os.path.sep, "main.log"))
     # recreate loggers to pick up file handler
     logger = help.ogler.getLogger()
     if platform.system() == "Windows":
@@ -411,7 +411,7 @@ def test_reset_levels():
     _, path = os.path.splitdrive(os.path.normpath(ogler.dirPath))
     assert path.startswith(os.path.join(os.path.sep, "tmp", "keri", "logs", "test_"))
     assert ogler.dirPath.endswith("_temp")
-    assert ogler.path.endswith(os.path.join("test.log"))
+    assert ogler.path.endswith(os.path.join(os.path.sep, "test.log"))
     # Still have 3 handlers
     if platform.system() == "Windows":
         assert len(logger.handlers) == 2

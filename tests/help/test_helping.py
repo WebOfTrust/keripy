@@ -245,7 +245,7 @@ def test_iso8601():
     dt1 = helping.fromIso8601(dts1)
     
     # Add a small delay to ensure timestamps are different
-    time.sleep(0.001)  # Sleep for 1 millisecond
+    time.sleep(0.001)
     
     dts2 = helping.nowIso8601()
     dt2 = helping.fromIso8601(dts2)
