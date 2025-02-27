@@ -161,12 +161,8 @@ def test_qrymailbox_iter():
 def test_wit_query_ends(seeder):
     with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
-        print(wesHby.ks.path)
-        print(palHby.ks.path)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
         witDoer = agenting.Receiptor(hby=palHby)
-        #C:\tmp\keri_lmdb_z2wqjh2t_test\keri\db\wes
-        #C:\tmp\keri_lmdb_cye2r_mg_test\keri\db\pal
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
@@ -190,8 +186,6 @@ def test_wit_query_ends(seeder):
         tock = 0.03125
         doist = doing.Doist(tock=tock, limit=limit, doers=doers)
         doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
 
         while not testDo.done:
             doist.recur()

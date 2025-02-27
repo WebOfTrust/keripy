@@ -90,6 +90,7 @@ def test_dictersuber():
         n3 = dsub.get(keys=(dt, said))
         assert n3 is None
 
+        # Add a small delay to ensure timestamps are different
         note = notifying.notice(attrs=dict(a=1))
         time.sleep(0.001)
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True

@@ -24,7 +24,7 @@ def test_configer():
     cfr = configing.Configer()  # defaults
     # assert cfr.path == filepath
     # github runner does not allow /usr/local/var
-    assert cfr.path.endswith(os.path.join(os.path.sep, 'keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
     assert cfr.opened
     assert os.path.exists(cfr.path)
     assert cfr.file
@@ -55,7 +55,7 @@ def test_configer():
     assert not cfr.opened
     assert cfr.file.closed
     # assert cfr.path == filepath
-    assert cfr.path.endswith(os.path.join(os.path.sep, 'keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     with pytest.raises(ValueError):
         rdata = cfr.get()
@@ -64,7 +64,7 @@ def test_configer():
     assert cfr.opened
     assert not cfr.file.closed
     # assert cfr.path == filepath
-    assert cfr.path.endswith(os.path.join(os.path.sep, 'keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == wdata  # not empty
 
@@ -72,7 +72,7 @@ def test_configer():
     assert cfr.opened
     assert not cfr.file.closed
     # assert cfr.path == filepath
-    assert cfr.path.endswith(os.path.join(os.path.sep, 'keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == wdata  # not empty
 
@@ -80,7 +80,7 @@ def test_configer():
     assert cfr.opened
     assert not cfr.file.closed
     # assert cfr.path == filepath
-    assert cfr.path.endswith(os.path.join(os.path.sep, 'keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == {}  # empty
     wdata = dict(name="hope", oobi="abc")
@@ -92,7 +92,7 @@ def test_configer():
     assert cfr.opened
     assert not cfr.file.closed
     # assert cfr.path == filepath
-    assert cfr.path.endswith(os.path.join(os.path.sep, 'keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == {}  # empty
     wdata = dict(name="hope", oobi="abc")
@@ -109,7 +109,7 @@ def test_configer():
     cfr = configing.Configer(human=False)
     # assert cfr.path == filepath
     # github runner does not allow /usr/local/var
-    assert cfr.path.endswith(os.path.join(os.path.sep, 'keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
     assert cfr.opened
     assert os.path.exists(cfr.path)
     assert cfr.file
@@ -129,7 +129,6 @@ def test_configer():
     assert not os.path.exists(cfr.path)
 
     # Test with altPath by using not permitted headDirPath /opt/keri to force Alt
-
     filepath = os.path.join(os.path.sep, cfr.AltHeadDirPath, cfr.AltTailDirPath, "main", "conf.json")
     if os.path.exists(filepath):
         os.remove(filepath)
@@ -138,7 +137,7 @@ def test_configer():
     if platform.system() == "Windows":
         headDirPath="C:\\Windows\\System32"
     cfr = configing.Configer(headDirPath=headDirPath)
-    assert cfr.path.endswith(os.path.join(os.path.sep, '.keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
     assert cfr.opened
     assert os.path.exists(cfr.path)
     print(cfr.path)
@@ -163,7 +162,7 @@ def test_configer():
     cfr.close()
     assert not cfr.opened
     assert cfr.file.closed
-    assert cfr.path.endswith(os.path.join(os.path.sep, '.keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     with pytest.raises(ValueError):
         rdata = cfr.get()
@@ -171,14 +170,14 @@ def test_configer():
     cfr.reopen(reuse=True)  # reuse True and clear False so don't remake
     assert cfr.opened
     assert not cfr.file.closed
-    assert cfr.path.endswith(os.path.join(os.path.sep, '.keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == wdata  # not empty
 
     cfr.reopen()  # reuse False so remake but not clear
     assert cfr.opened
     assert not cfr.file.closed
-    assert cfr.path.endswith(os.path.join(os.path.sep, '.keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == wdata  # not empty
 
@@ -188,8 +187,8 @@ def test_configer():
         cfr.reopen(reuse=True, clear=True)
     assert cfr.opened
     assert not cfr.file.closed
-    print(cfr.path)
-    assert cfr.path.endswith(os.path.join(os.path.sep, '.keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
+
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == {}  # empty
     wdata = dict(name="hope", oobi="abc")
@@ -200,7 +199,7 @@ def test_configer():
     cfr.reopen(clear=True)  # clear True so remake
     assert cfr.opened
     assert not cfr.file.closed
-    assert cfr.path.endswith(os.path.join(os.path.sep, '.keri', 'cf', 'main', 'conf.json'))
+    assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == {}  # empty
     wdata = dict(name="hope", oobi="abc")
