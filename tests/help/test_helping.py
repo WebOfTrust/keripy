@@ -8,6 +8,7 @@ import pytest
 import datetime
 import pysodium
 import fractions
+import time
 
 from dataclasses import dataclass, asdict
 
@@ -242,6 +243,10 @@ def test_iso8601():
 
     dts1 = helping.nowIso8601()
     dt1 = helping.fromIso8601(dts1)
+    
+    # Add a small delay to ensure timestamps are different
+    time.sleep(0.001)  # Sleep for 1 millisecond
+    
     dts2 = helping.nowIso8601()
     dt2 = helping.fromIso8601(dts2)
 
@@ -250,6 +255,8 @@ def test_iso8601():
     assert dts1 == helping.toIso8601(dt1)
     assert dts2 == helping.toIso8601(dt2)
 
+    time.sleep(0.001)
+    
     dts3 = helping.toIso8601()
     dt3 = helping.fromIso8601(dts3)
 
