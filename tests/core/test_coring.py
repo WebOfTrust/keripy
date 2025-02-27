@@ -252,8 +252,10 @@ def test_matter_class():
         'Tag6': '0M',
         'Tag9': '0N',
         'Tag10': '0O',
-        'PartHeadNeck': '0P',
-        'PartHead': '0Q',
+        'GramHeadNeck': '0P',
+        'GramHead': '0Q',
+        'GramHeadAIDNeck': '0R',
+        'GramHeadAID': '0S',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -349,8 +351,10 @@ def test_matter_class():
         '0M': 'Tag6',
         '0N': 'Tag9',
         '0O': 'Tag10',
-        '0P': 'PartHeadNeck',
-        '0Q': 'PartHead',
+        '0P': 'GramHeadNeck',
+        '0Q': 'GramHead',
+        '0R': 'GramHeadAIDNeck',
+        '0S': 'GramHeadAID',
         '1AAA': 'ECDSA_256k1N',
         '1AAB': 'ECDSA_256k1',
         '1AAC': 'Ed448N',
@@ -462,6 +466,8 @@ def test_matter_class():
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
         '0P': Sizage(hs=2, ss=22, xs=0, fs=32, ls=0),
         '0Q': Sizage(hs=2, ss=22, xs=0, fs=28, ls=0),
+        '0R': Sizage(hs=2, ss=22, xs=0, fs=76, ls=0),
+        '0S': Sizage(hs=2, ss=22, xs=0, fs=72, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
@@ -1993,7 +1999,7 @@ def test_matter_special():
     assert matter.composable
 
     # test PartHeadNeck
-    code = MtrDex.PartHeadNeck
+    code = MtrDex.GramHeadNeck
     assert code == '0P'
     codeb = code.encode()
 
@@ -2078,7 +2084,7 @@ def test_matter_special():
     assert matter.composable
 
     # test PartHead
-    code = MtrDex.PartHead
+    code = MtrDex.GramHead
     assert code == '0Q'
     codeb = code.encode()
 
