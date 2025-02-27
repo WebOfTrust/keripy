@@ -1404,7 +1404,9 @@ class Baser(dbing.LMDBer):
 
         for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
+            count = escrow.cntAll()
             escrow.trim()
+            logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
 
     @property
     def current(self):
