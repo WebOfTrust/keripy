@@ -337,6 +337,21 @@ class SuberBase():
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
+    def cntAll(self):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and val dataclass instance for
+            each entry in db. Raises StopIteration when done
+
+        Example:
+            if key in database is "a.b" and val is serialization of dataclass
+               with attributes x and y then returns
+               (("a","b"), dataclass(x=1,y=2))
+        """
+        return self.db.cnt(db=self.sdb)
+
 
 class Suber(SuberBase):
     """
