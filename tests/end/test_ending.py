@@ -6,6 +6,7 @@ Includes Falcon ReST endpoints for testing purposes
 
 """
 import logging
+import platform
 
 import falcon
 from falcon import testing
@@ -254,6 +255,8 @@ def test_get_static_sink():
              '        <p>Hello World.</p>\n'
              '    </body>\n'
              '</html>\n')
+    if platform.system() == "Windows":
+        index = index.replace("\n", "\r\n")
 
     # get default at  /  which is index.html
     rep = client.simulate_get('/')
@@ -300,14 +303,20 @@ def test_get_static_sink():
     rep = client.simulate_get('/static/robots.txt')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'text/plain; charset=UTF-8'
-    assert rep.text == '# robotstxt.org\n\nUser-agent: *\n'
+    if platform.system() == "Windows":
+        assert rep.text == '# robotstxt.org\r\n\r\nUser-agent: *\r\n'
+    else:
+        assert rep.text == '# robotstxt.org\n\nUser-agent: *\n'
 
     # get trial.js
     rep = client.simulate_get('/static/index.js')
     assert rep.status == falcon.HTTP_OK
     assert "javascript" in rep.headers['content-type']
     assert len(rep.text) > 0
-    assert rep.text == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
+    if platform.system() == "Windows":
+        assert rep.text == '// vanilla index.js\r\n\r\nm.render(document.body, "Hello world")\r\n'
+    else:
+        assert rep.text == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
 
 
 def test_seid_api():

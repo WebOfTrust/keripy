@@ -5,7 +5,9 @@ tests.app.test_multisig module
 """
 import datetime
 
+import time
 import pytest
+import os
 
 from keri.app import notifying, habbing
 from keri.core import coring
@@ -89,10 +91,13 @@ def test_dictersuber():
         assert n3 is None
 
         note = notifying.notice(attrs=dict(a=1))
+        time.sleep(0.001)
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True
         note = notifying.notice(attrs=dict(a=2))
+        time.sleep(0.001)
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True
         note = notifying.notice(attrs=dict(a=3))
+        time.sleep(0.001)
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True
 
         res = []
@@ -107,12 +112,13 @@ def test_dictersuber():
 
 def test_noter(mockHelpingNowUTC):
     noter = notifying.Noter()
-    assert noter.path.endswith("/not/not")
+    assert noter.path.endswith(os.path.join(os.path.sep, "not", "not"))
     noter.reopen()
     noter.close(clear=True)
 
     noter = notifying.Noter(temp=True)
-    assert noter.path.startswith("/tmp")
+    _, path = os.path.splitdrive(os.path.normpath(noter.path))
+    assert path.startswith(os.path.join(os.path.sep, "tmp"))
 
     payload = dict(name="John", email="john@example.com", msg="test")
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
