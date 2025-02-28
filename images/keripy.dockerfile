@@ -1,6 +1,6 @@
 ARG BASE=python:3.12.2-alpine3.19
 
-FROM ${BASE} as builder
+FROM ${BASE} AS builder
 
 RUN apk add --no-cache bash
 
