@@ -161,7 +161,7 @@ class WitnessStart(doing.DoDoer):
         doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.cueDo)]
         super().__init__(doers=doers, **opts)
 
-    def start(self, tymth=None, tock=0.0):
+    def start(self, tymth=None, tock=0.0, **kwa):
         """ Prints witness name and prefix
 
         Parameters:
@@ -179,7 +179,7 @@ class WitnessStart(doing.DoDoer):
 
         print("Witness", self.hab.name, ":", self.hab.pre)
 
-    def msgDo(self, tymth=None, tock=0.0):
+    def msgDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -201,7 +201,7 @@ class WitnessStart(doing.DoDoer):
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
-    def escrowDo(self, tymth=None, tock=0.0):
+    def escrowDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery and .tevery escrows.
@@ -227,7 +227,7 @@ class WitnessStart(doing.DoDoer):
 
             yield
 
-    def cueDo(self, tymth=None, tock=0.0):
+    def cueDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
@@ -363,7 +363,7 @@ class Indirector(doing.DoDoer):
         super(Indirector, self).wind(tymth)
         self.client.wind(tymth)
 
-    def msgDo(self, tymth=None, tock=0.0):
+    def msgDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -390,7 +390,7 @@ class Indirector(doing.DoDoer):
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
-    def cueDo(self, tymth=None, tock=0.0):
+    def cueDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
@@ -418,7 +418,7 @@ class Indirector(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
 
-    def escrowDo(self, tymth=None, tock=0.0):
+    def escrowDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
@@ -580,7 +580,7 @@ class MailboxDirector(doing.DoDoer):
         """
         super(MailboxDirector, self).wind(tymth)
 
-    def pollDo(self, tymth=None, tock=0.0):
+    def pollDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
            doifiable Doist compatible generator method
@@ -658,7 +658,7 @@ class MailboxDirector(doing.DoDoer):
             msg = mail.pop(0)
             yield msg
 
-    def msgDo(self, tymth=None, tock=0.0):
+    def msgDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -683,7 +683,7 @@ class MailboxDirector(doing.DoDoer):
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
-    def escrowDo(self, tymth=None, tock=0.0):
+    def escrowDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
@@ -1154,7 +1154,7 @@ class ReceiptEnd(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.data = rct
 
-    def interceptDo(self, tymth=None, tock=0.0):
+    def interceptDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             Kevery and Tevery cues deque
@@ -1195,7 +1195,7 @@ class QueryEnd:
     def __init__(self, hab):
         self.hab = hab
         self.reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
-   
+
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.
 
@@ -1216,7 +1216,7 @@ class QueryEnd:
             Response:
                 - 200 OK: Returns event data in "application/json+cesr" format.
                 - 400 Bad Request: Returned if required query parameters are missing or if an invalid `typ` is specified.
-            
+
             Example:
                 - /query?typ=kel&pre=ELZ1KBCFOmdj1RPu6kMUnzgMBTl4YsHfpw7wIGvLgW5W
                 - /query?typ=kel&pre=ELZ1KBCFOmdj1RPu6kMUnzgMBTl4YsHfpw7wIGvLgW5W&sn=5
@@ -1228,13 +1228,13 @@ class QueryEnd:
 
         if not typ:
             raise falcon.HTTPBadRequest(description="'typ' query param is required")
-        
+
         if typ == "kel":
             pre = req.get_param("pre")
 
             if not pre:
                 raise falcon.HTTPBadRequest(description="'pre' query param is required")
-            
+
             evnts = bytearray()
 
             sn = req.get_param_as_int("sn")
@@ -1254,8 +1254,8 @@ class QueryEnd:
             else:
                 for msg in self.hab.db.clonePreIter(pre=pre):
                     evnts.extend(msg)
-                
-            
+
+
             rep.set_header('Content-Type', "application/json+cesr")
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)
@@ -1263,7 +1263,7 @@ class QueryEnd:
         elif typ == "tel":
             regk = req.get_param("reg")
             vcid = req.get_param("vcid")
-            
+
             if not regk and not vcid:
                 raise falcon.HTTPBadRequest(description="Either 'reg' or 'vcid' query param is required for TEL query")
 
@@ -1277,7 +1277,7 @@ class QueryEnd:
                 cloner = self.reger.clonePreIter(pre=vcid)
                 for msg in cloner:
                     evnts.extend(msg)
-            
+
             rep.set_header('Content-Type', "application/json+cesr")
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)

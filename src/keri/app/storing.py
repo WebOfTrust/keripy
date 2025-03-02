@@ -186,7 +186,7 @@ class Respondant(doing.DoDoer):
         doers = [self.postman, doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
 
-    def responseDo(self, tymth=None, tock=0.0):
+    def responseDo(self, tymth=None, tock=0.0, **kwa):
         """
         Doifiable Doist compatibile generator method to process response messages from `exn` handlers.
         If dest is not in local environment, ignore the response (for now).  If dest has witnesses,
@@ -230,7 +230,7 @@ class Respondant(doing.DoDoer):
 
             yield self.tock
 
-    def cueDo(self, tymth=None, tock=0.0):
+    def cueDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             Kevery and Tevery cues deque
