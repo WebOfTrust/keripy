@@ -346,7 +346,7 @@ class KeeperDoer(doing.Doer):
     def enter(self, *, temp=None):
         """"""
         if not self.keeper.opened:
-            self.keeper.reopen(temp=temp)
+            self.keeper.reopen()  # reopen(temp=temp)
 
 
     def exit(self):

@@ -228,7 +228,7 @@ class ConfigerDoer(doing.Doer):
     def enter(self, *, temp=None):
         """"""
         if not self.configer.opened:
-            self.configer.reopen(temp=temp)
+            self.configer.reopen()  # reopen(temp=temp)
 
     def exit(self):
         """"""

@@ -3181,7 +3181,7 @@ class BaserDoer(doing.Doer):
     def enter(self, *, temp=None):
         """"""
         if not self.baser.opened:
-            self.baser.reopen(temp=temp)
+            self.baser.reopen()  # reopen(temp=temp)
 
     def exit(self):
         """"""

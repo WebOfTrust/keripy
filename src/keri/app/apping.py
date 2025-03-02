@@ -29,7 +29,7 @@ class Consoler(doing.Doer):
 
     def enter(self, *, temp=None):
         """"""
-        if not self.console.reopen(temp=temp):
+        if not self.console.reopen():  # reopen(temp=temp)
             raise IOError("Unable to open serial console.")
 
     def recur(self, tyme):
