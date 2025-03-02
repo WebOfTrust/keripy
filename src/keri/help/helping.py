@@ -85,7 +85,7 @@ def datify(cls, d):
 
 def klasify(sers: Iterable, klases: Iterable, args: Iterable = None):
     """
-    Convert each qb64 serialization ser  in sers to instance of corresponding
+    Convert each qb64 serialization ser in sers to instance of corresponding
     klas in klases modified by corresponding arg in args.
     Useful for converting iterable of CESR serializations to associated iterable
     of CESR subclass instances.
@@ -100,8 +100,7 @@ def klasify(sers: Iterable, klases: Iterable, args: Iterable = None):
 
     return tuple(klas(**{arg: ser}) if arg is not None
                  else klas(ser) if klas is not None
-    else ser
-                 for ser, klas, arg in zip(sers, klases, args))
+                 else ser for ser, klas, arg in zip(sers, klases, args))
 
 
 

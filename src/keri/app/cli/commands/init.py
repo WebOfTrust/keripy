@@ -59,11 +59,11 @@ parser.add_argument('--seed', '-e', help='qualified base64 private-signing key (
 
 class InitDoer(doing.DoDoer):
 
-    def __init__(self, args):
+    def __init__(self, args, **kwa):
         self.args = args
         super(InitDoer, self).__init__(doers=[doing.doify(self.initialize)])
 
-    def initialize(self, tymth, tock=0.0):
+    def initialize(self, tymth, tock=0.0, **kwa):
 
         # enter context
         self.wind(tymth)
