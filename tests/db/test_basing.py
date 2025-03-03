@@ -1894,21 +1894,21 @@ def test_clear_escrows():
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
         assert db.getLdes(key) == []
-        assert db.qnfs.cnt(keys=(pre, saidb)) == 0
-        assert db.misfits.cnt(keys=(pre, snh)) == 0
-        assert db.delegables.cnt(keys=snKey(pre, 0)) == 0
-        assert db.pdes.cnt(keys=snKey(pre, 0)) == 0
-        assert db.udes.get(keys=udesKey) is None
-        assert db.rpes.cnt(keys=('route',)) == 0
-        assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is None
+        assert db.qnfs.cntAll() == 0
+        assert db.pdes.cntAll() == 0
+        assert db.rpes.cntAll() == 0
         assert db.eoobi.cntAll() == 0
-        assert db.dpub.get(keys=(pre, 'said')) is None
-        assert db.gpwe.cnt(keys=(pre,)) == 0
-        assert db.gdee.cnt(keys=(pre,)) == 0
-        assert db.dpwe.get(keys=(pre, 'said')) is None
-        assert db.gpse.cnt(keys=('qb64',)) == 0
-        assert db.epse.get(keys=('dig',)) is None
-        assert db.dune.get(keys=(pre, 'said')) is None
+        assert db.gpwe.cntAll() == 0
+        assert db.gdee.cntAll() == 0
+        assert db.dpwe.cntAll() == 0
+        assert db.gpse.cntAll() == 0
+        assert db.epse.cntAll() == 0
+        assert db.dune.cntAll() == 0
+        assert db.misfits.cntAll() == 0
+        assert db.delegables.cntAll() == 0
+        assert db.udes.cntAll() == 0
+        assert db.epsd.cntAll() == 0
+        assert db.dpub.cntAll() == 0
 
 if __name__ == "__main__":
     test_baser()
