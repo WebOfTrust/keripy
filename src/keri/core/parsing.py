@@ -443,9 +443,9 @@ class Parser:
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg extraction error: %s", ex.args[0])
+                    logger.exception("Parser sized group error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg extraction error: %s", ex.args[0])
+                    logger.error("Parser sized group error: %s", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
@@ -457,9 +457,9 @@ class Parser:
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.DEBUG):
+                if logger.isEnabledFor(logging.TRACE):
                     logger.exception("Parser msg non-extraction error: %s", ex)
-                else:
+                if logger.isEnabledFor(logging.DEBUG):
                     logger.error("Parser msg non-extraction error: %s", ex)
             yield
 
@@ -528,9 +528,9 @@ class Parser:
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg extraction error: %s", ex.args[0])
+                    logger.exception("Kevery sized group error: %s", ex.args[0])
                 else:
-                    logger.error("Kevery msg extraction error: %s", ex.args[0])
+                    logger.error("Kevery sized group error: %s", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
@@ -542,9 +542,9 @@ class Parser:
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.DEBUG):
+                if logger.isEnabledFor(logging.TRACE):
                     logger.exception("Kevery msg non-extraction error: %s", ex)
-                else:
+                if logger.isEnabledFor(logging.DEBUG):
                     logger.error("Kevery msg non-extraction error: %s", ex)
             finally:
                 done = True
@@ -618,9 +618,9 @@ class Parser:
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg extraction error: %s", ex.args[0])
+                    logger.exception("Parser sized group error: %s", ex.args[0])
                 else:
-                    logger.error("Parser msg extraction error: %s", ex.args[0])
+                    logger.error("Parser sized group error: %s", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
@@ -632,9 +632,9 @@ class Parser:
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.DEBUG):
+                if logger.isEnabledFor(logging.TRACE):
                     logger.exception("Parser msg non-extraction error: %s", ex.args[0])
-                else:
+                if logger.isEnabledFor(logging.DEBUG):
                     logger.error("Parser msg non-extraction error: %s", ex.args[0])
             yield
 
@@ -1007,8 +1007,10 @@ class Parser:
                 # when present assumes this is source seal of delegating event in delegator's KEL
                 delseqner, delsaider = sscs[-1] if sscs else (None, None)  # use last one if more than one
                 if not sigers:
-                    raise kering.ValidationError("Missing attached signature(s) for evt "
-                                                 "= {}.".format(serder.ked))
+                    msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
+                    logger.info(msg)
+                    logger.debug("Event Body = \n%s\n", serder.pretty())
+                    raise kering.ValidationError(msg)
                 try:
                     kvy.processEvent(serder=serder,
                                      sigers=sigers,
@@ -1027,13 +1029,17 @@ class Parser:
                                                              firner=firner, local=local)
 
                 except AttributeError as ex:
-                    raise kering.ValidationError("No kevery to process so dropped msg"
-                                                 "= {}.".format(serder.pretty())) from ex
+                    msg = f"No kevery to process so dropped msg={serder.said}"
+                    logger.info(msg)
+                    logger.debug("Event Body = \n%s\n", serder.pretty())
+                    raise kering.ValidationError(msg) from ex
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
                 if not (cigars or wigers or tsgs):
-                    raise kering.ValidationError("Missing attached signatures on receipt"
-                                                 "msg = {}.".format(serder.ked))
+                    msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
+                    logger.info(msg)
+                    logger.debug("Receipt body=\n%s\n", serder.pretty())
+                    raise kering.ValidationError(msg)
 
                 try:
                     if cigars:
@@ -1051,6 +1057,12 @@ class Parser:
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
+                except kering.UnverifiedReplyError as e:
+                    if logger.isEnabledFor(logging.TRACE):
+                        logger.exception("Error processing reply = %s", e)
+                        logger.debug("Reply Body=\n%s\n", serder.pretty())
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.error("Error processing reply = %s", e)
 
             elif ilk in (Ilks.rpy,):  # reply message
                 if not (cigars or tsgs):
@@ -1089,6 +1101,12 @@ class Parser:
                     except AttributeError as e:
                         raise kering.ValidationError("No kevery to process so dropped msg"
                                                      "= {} from e = {}".format(serder.pretty(), e))
+                    except kering.QueryNotFoundError as e:  # catch escrow error and log it
+                        if logger.isEnabledFor(logging.TRACE):
+                            logger.exception("Error processing query = %s", e)
+                            logger.trace("Query Body=\n%s\n", serder.pretty())
+                        else:
+                            logger.error("Error processing query = %s", e)
 
                 elif route in ["tels", "tsn"]:
                     try:

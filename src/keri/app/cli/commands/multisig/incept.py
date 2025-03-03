@@ -156,7 +156,7 @@ class GroupMultisigIncept(doing.DoDoer):
                                   serder=exn,
                                   attachment=ims)
 
-            print(f"Group identifier inception initialized for {ghab.pre}")
+            logger.info(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
