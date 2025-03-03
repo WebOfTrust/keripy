@@ -1,7 +1,7 @@
 
 .PHONY: build-keri
 
-VERSION=enc-notifications
+VERSION=1.1.31
 
 define DOCKER_WARNING
 In order to use the multi-platform build enable the containerd image store
@@ -13,18 +13,18 @@ To enable the feature for Docker Desktop:
 endef
 
 build-keri: .warn
-	@docker build --platform=linux/amd64,linux/arm64 -f images/keripy.dockerfile -t gleif/keri:$(VERSION) .
+	@docker build --platform=linux/amd64,linux/arm64 -f images/keripy.dockerfile -t weboftrust/keri:$(VERSION) .
 
 .PHONY: build-witness-demo
 build-witness-demo: .warn
-	@docker build --platform=linux/amd64,linux/arm64 -f images/witness.demo.dockerfile -t gleif/keri-witness-demo:1.1.10 .
+	@docker build --platform=linux/amd64,linux/arm64 -f images/witness.demo.dockerfile -t weboftrust/keri-witness-demo:1.1.10 .
 
 .PHONY: publish-keri-witness-demo
 publish-keri-witness-demo:
-	@docker push gleif/keri-witness-demo --all-tags
+	@docker push weboftrust/keri-witness-demo --all-tags
 
 publish-keri:
-	@docker push gleif/keri:$(VERSION)
+	@docker push weboftrust/keri:$(VERSION)
 
 .warn:
 	@echo -e ${RED}"$$DOCKER_WARNING"${NO_COLOUR}
