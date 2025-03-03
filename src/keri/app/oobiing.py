@@ -503,7 +503,7 @@ class Oobiery:
                         obr.cid = response["headers"][ending.OOBI_AID_HEADER]
 
                     if obr.oobialias is not None and obr.cid:
-                        self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
+                        self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
 
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.resolved
