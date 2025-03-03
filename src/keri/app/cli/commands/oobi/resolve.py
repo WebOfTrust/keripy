@@ -5,7 +5,7 @@ keri.kli.commands.oobi module
 """
 import argparse
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 import keri.app.oobiing

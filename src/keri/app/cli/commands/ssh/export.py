@@ -11,7 +11,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri.app.cli.common import existing

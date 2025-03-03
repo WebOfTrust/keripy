@@ -479,13 +479,11 @@ class MailboxDirector(doing.DoDoer):
         hby (Habitat: local controller's context
 
     Properties:
-        tyme (float): relative cycle time of associated Tymist, obtained
-            via injected .tymth function wrapper closure.
-        tymth (function): function wrapper closure returned by Tymist .tymeth()
-            method.  When .tymth is called it returns associated Tymist .tyme.
-            .tymth provides injected dependency on Tymist tyme base.
-        tock (float): desired time in seconds between runs or until next run,
-            non negative, zero means run asap
+        hby (Habery): the Habery in which mailbox messages are routed
+        verifier (Verifier): TEL event acceptor and validator
+        exchanger (Exchanger): Exchange (exn) message delivery component
+        rep (Respondant): Respondant for reply messages
+        cues (Deck): Queue for new actions to schedule shared between the Revery, Kevery (and Kever), and Tevery (and Tever)
 
 
     Methods:

@@ -6,7 +6,7 @@ keri.kli.commands module
 import argparse
 from dataclasses import dataclass
 
-from hio import help
+from keri import help
 from hio.base import doing
 
 from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
