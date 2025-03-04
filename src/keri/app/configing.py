@@ -70,10 +70,10 @@ class Configer(filing.Filer):
       ]
     }
     """
-    TailDirPath = "keri/cf"
-    CleanTailDirPath = "keri/clean/cf"
-    AltTailDirPath = ".keri/cf"
-    AltCleanTailDirPath = ".keri/clean/cf"
+    TailDirPath = os.path.join("keri", "cf")
+    CleanTailDirPath = os.path.join("keri", "clean", "cf")
+    AltTailDirPath = os.path.join(".keri", "cf")
+    AltCleanTailDirPath = os.path.join(".keri", "clean", "cf")
     TempPrefix = "keri_cf_"
 
     def __init__(self, name="conf", base="main", filed=True, mode="r+b",

@@ -3,6 +3,7 @@
 keri.app.notifying module
 
 """
+import os
 from collections.abc import Iterable
 from typing import Union, Type
 
@@ -204,8 +205,8 @@ class Noter(dbing.LMDBer):
     intended to be read and dismissed by the controller of the agent.
 
     """
-    TailDirPath = "keri/not"
-    AltTailDirPath = ".keri/not"
+    TailDirPath = os.path.join("keri", "not")
+    AltTailDirPath = os.path.join(".keri", "not")
     TempPrefix = "keri_not_"
 
     def __init__(self, name="not", headDirPath=None, reopen=True, **kwa):

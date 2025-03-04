@@ -1472,7 +1472,7 @@ class Baser(dbing.LMDBer):
         """
         # create copy to clone into
         with openDB(name=self.name,
-                    temp=self.temp,
+                    temp=False,
                     headDirPath=self.headDirPath,
                     perm=self.perm,
                     clean=True) as copy:  # copy is Baser instance
@@ -1481,7 +1481,6 @@ class Baser(dbing.LMDBer):
                 if not os.path.exists(self.path):
                     raise ValueError("Error while cleaning, no orig at {}."
                                      "".format(self.path))
-
                 kvy = eventing.Kevery(db=copy)  # promiscuous mode
 
                 # Revise in future to NOT parse msgs but to extract the processed
@@ -1542,35 +1541,39 @@ class Baser(dbing.LMDBer):
                     if exists:  # only copy end if has at least one matching loc
                         copy.ends.put(keys=(cid, role, eid), val=val)
 
+                # replace own kevers with copy kevers by clear and copy
+                # future do this by loading kever from .stts  key state subdb
+                self.kevers.clear()
+                for pre, kever in copy.kevers.items():
+                    self.kevers[pre] = kever
+
+                # replace prefixes with cloned copy prefixes
+
+                # clear and clone .prefixes
+                self.prefixes.clear()
+                self.prefixes.update(copy.prefixes)
+
+                # clear and clone .gids
+                self.groups.clear()
+                self.groups.update(copy.groups)
+
             # remove own db directory replace with clean clone copy
-            if os.path.exists(self.path):
-                shutil.rmtree(self.path)
+        if os.path.exists(self.path):
+            shutil.rmtree(self.path)
 
-            dst = shutil.move(copy.path, self.path)  # move copy back to orig
-            if not dst:  # move failed leave new in place so can manually fix
-                raise ValueError("Error cloning, unable to move {} to {}."
-                                 "".format(copy.path, self.path))
+        dst = shutil.move(copy.path, self.path)  # move copy back to orig
 
-            # replace own kevers with copy kevers by clear and copy
-            # future do this by loading kever from .stts  key state subdb
-            self.kevers.clear()
-            for pre, kever in copy.kevers.items():
-                self.kevers[pre] = kever
+        if os.path.exists(os.path.join(os.path.sep, "usr", "local", "var", "keri", "clean")):
+            shutil.rmtree(os.path.join(os.path.sep, "usr", "local", "var", "keri", "clean"))
 
-            # replace prefixes with cloned copy prefixes
+        if not dst:  # move failed leave new in place so can manually fix
+            raise ValueError("Error cloning, unable to move {} to {}."
+                             "".format(copy.path, self.path))
 
-            # clear and clone .prefixes
-            self.prefixes.clear()
-            self.prefixes.update(copy.prefixes)
-
-            # clear and clone .gids
-            self.groups.clear()
-            self.groups.update(copy.groups)
-
-            with reopenDB(db=self, reuse=True):  # make sure can reopen
-                if not isinstance(self.env, lmdb.Environment):
-                    raise ValueError("Error cloning, unable to reopen."
-                                     "".format(self.path))
+        with reopenDB(db=self, reuse=True):  # make sure can reopen
+            if not isinstance(self.env, lmdb.Environment):
+                raise ValueError("Error cloning, unable to reopen."
+                                 "".format(self.path))
 
         # clone success so remove if still there
         if os.path.exists(copy.path):
