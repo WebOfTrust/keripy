@@ -523,9 +523,20 @@ class Serder:
                 del keys[keys.index(key)]  # remove non required fields
 
         if list(alls.keys()) != keys:  # forces ordering of labels in .sad
-            raise MissingFieldError(f"Missing one or more required fields from"
-                                    f"= {list(alls.keys())} in sad = "
-                                    f"{self._sad}.")
+            # special handling for 1.1.18 -> 1.1.32
+            skip_missing_field = False
+            if self.ilk == Ilks.exn:
+                missing_keys = [key for key in alls.keys() if key not in keys]
+                if missing_keys:
+                    if len(missing_keys) == 1 and 'rp' in missing_keys:
+                        skip_missing_field = True
+
+            if skip_missing_field:
+                pass
+            else:
+                raise MissingFieldError(f"Missing one or more required fields from"
+                                        f"= {list(alls.keys())} in sad = "
+                                        f"{self._sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
