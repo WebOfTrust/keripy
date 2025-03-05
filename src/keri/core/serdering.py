@@ -530,7 +530,6 @@ class Serder:
                 if missing_keys:
                     if len(missing_keys) == 1 and 'rp' in missing_keys:
                         skip_missing_field = True
-
             if skip_missing_field:
                 pass
             else:
@@ -1116,8 +1115,19 @@ class SerderKERI(Serder):
         allkeys = list(self.Fields[self.proto][self.vrsn][self.ilk].alls.keys())
         keys = list(self.sad.keys())
         if allkeys != keys:
-            raise ValidationError(f"Invalid top level field list. Expected "
-                                  f"{allkeys} got {keys}.")
+            # special handling for 1.1.18 -> 1.1.32
+            skip_missing_field = False
+            if self.ilk == Ilks.exn:
+                missing_keys = [key for key in allkeys if key not in keys]
+                if missing_keys:
+                    if len(missing_keys) == 1 and 'rp' in missing_keys:
+                        skip_missing_field = True
+
+            if skip_missing_field:
+                pass
+            else:
+                raise ValidationError(f"Invalid top level field list. Expected "
+                                      f"{allkeys} got {keys}.")
 
         if (self.vrsn.major < 2 and self.vrsn.minor < 1 and
             self.ilk in (Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar, Ilks.exn)):
