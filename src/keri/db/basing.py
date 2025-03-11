@@ -1557,7 +1557,7 @@ class Baser(dbing.LMDBer):
                 self.groups.clear()
                 self.groups.update(copy.groups)
 
-            # remove own db directory replace with clean clone copy
+        # remove own db directory replace with clean clone copy
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
