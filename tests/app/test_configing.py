@@ -135,7 +135,7 @@ def test_configer():
 
     headDirPath = "/root/keri"
     if platform.system() == "Windows":
-        headDirPath="C:\\Windows\\System32\\not\\a\\path"
+        headDirPath="C:\\System Volume Information"
     cfr = configing.Configer(headDirPath=headDirPath)
     assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
     assert cfr.opened
@@ -182,7 +182,7 @@ def test_configer():
     assert (rdata := cfr.get()) == wdata  # not empty
 
     if platform.system() == "Windows":
-        cfr.reopen(reuse=True, clear=True, headDirPath="C:\\Windows\\System32\\keri\\not\\a\\path")  # clear True so remake even if reuse
+        cfr.reopen(reuse=True, clear=True, headDirPath="C:\\System Volume Information")  # clear True so remake even if reuse
     else:
         cfr.reopen(reuse=True, clear=True)
     assert cfr.opened
