@@ -37,6 +37,16 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --ignore=E7,F841,E301,E302,E303 --max-complexity=10 --max-line-length=127 --statistics
         shell: pwsh
+      - name: Create \tmp directory on Windows
+        if: runner.os == 'Windows'
+        run: |
+          if (-not (Test-Path -Path '\tmp')) {
+            New-Item -Path '\tmp' -ItemType Directory -Force
+            Write-Host "Created \tmp directory for testing"
+          } else {
+            Write-Host "\tmp directory already exists"
+          }
+        shell: pwsh
       - name: Run core KERI tests
         run: |
           pytest tests/ --ignore tests/demo/ --ignore test/scripts
