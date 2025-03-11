@@ -198,15 +198,15 @@ def test_wit_query_ends(seeder):
 
 class QueryTestDoer(doing.Doer):
     def __init__(self, **opts):
-        self.opts = opts
+        self.options = opts
         super(QueryTestDoer, self).__init__(**opts)
 
     def recur(self, tyme=0.0, deeds=None):
-
-        wesHab = self.opts["wesHab"]
-        palHby = self.opts["palHby"]
-        witDoer = self.opts["witDoer"]
-        wesClient = self.opts["wesClient"]
+        print(self.options)
+        wesHab = self.options["wesHab"]
+        palHby = self.options["palHby"]
+        witDoer = self.options["witDoer"]
+        wesClient = self.options["wesClient"]
 
         palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True)
 
