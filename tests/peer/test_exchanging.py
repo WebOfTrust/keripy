@@ -4,6 +4,7 @@ tests.peer.test_exchanging module
 
 """
 import json
+import time
 
 import pysodium
 import pytest
@@ -128,8 +129,10 @@ def test_exchanger():
         exc.processEscrowPartialSigned()
         assert recHby.db.epse.get(keys=(fwd.said,)) is not None
 
-        # Set the PSE timeout artifically low to trigger removal
+        # Set the PSE timeout artificially low to trigger removal
         exc.TimeoutPSE = 0.00001
+        # Add a small sleep to allow for processing to complete
+        time.sleep(0.0001)
         exc.processEscrowPartialSigned()
         assert recHby.db.epse.get(keys=(fwd.said,)) is None
 

@@ -1285,7 +1285,7 @@ def test_reply(mockHelpingNowUTC):
 def test_watcher_add_cut():
     salt = core.Salter(raw=b'abcdef0123456789').qb64
 
-    with habbing.openHby(name="con", base="test", salt=salt) as conHby, \
+    with habbing.openHby(name="controller", base="test", salt=salt) as conHby, \
             habbing.openHby(name="wat0", base="test", salt=salt) as wat0hby, \
             habbing.openHby(name="wat1", base="test", salt=salt) as wat1hby, \
             habbing.openHby(name="wat2", base="test", salt=salt) as wat2hby, \
@@ -1293,7 +1293,7 @@ def test_watcher_add_cut():
             habbing.openHby(name="obv1", base="test", salt=salt) as obv1hby, \
             habbing.openHby(name="obv2", base="test", salt=salt) as obv2hby:
 
-        conHab = conHby.makeHab(name="con", isith="1", icount=1, transferable=True)
+        conHab = conHby.makeHab(name="controller", isith="1", icount=1, transferable=True)
         assert conHab.kever.prefixer.transferable
         conKvy = eventing.Kevery(db=conHab.db, lax=False, local=False)
 
