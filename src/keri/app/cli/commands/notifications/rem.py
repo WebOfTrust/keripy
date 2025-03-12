@@ -62,7 +62,7 @@ class RemoveDoer(doing.DoDoer):
 
         super(RemoveDoer, self).__init__(doers=doers)
 
-    def remDoer(self, tymth, tock=0.0):
+    def remDoer(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

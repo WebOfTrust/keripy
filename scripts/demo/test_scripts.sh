@@ -82,3 +82,4 @@ printf "Running rename.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/rename-alias.sh"
 isSuccess
+

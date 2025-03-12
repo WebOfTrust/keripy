@@ -49,7 +49,7 @@ class ExportDoer(doing.DoDoer):
 
         super(ExportDoer, self).__init__(doers=doers)
 
-    def exportDo(self, tymth, tock=0.0):
+    def exportDo(self, tymth, tock=0.0, **kwa):
         """ Export any end reply messages previous saved for the provided AID
 
         Parameters:

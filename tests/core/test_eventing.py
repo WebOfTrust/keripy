@@ -4735,7 +4735,7 @@ def test_reload_kever(mockHelpingNowUTC):
         assert natHab.db.opened
         assert natHab.pre in natHab.kevers
         assert natHab.pre in natHab.prefixes
-        assert natHab.db.path.endswith("/keri/db/test/nat")
+        assert natHab.db.path.endswith(os.path.join(os.path.sep, "keri", "db", "test", "nat"))
         path = natHab.db.path  # save for later
 
         # Create series of events for Nat

@@ -79,7 +79,7 @@ class ListDoer(doing.DoDoer):
 
         super(ListDoer, self).__init__(doers=doers)
 
-    def listDo(self, tymth, tock=0.0):
+    def listDo(self, tymth, tock=0.0, **kwa):
         """ Check for any credential messages in mailboxes and list all held credentials
 
         Parameters:

@@ -18,7 +18,7 @@ def handler(_):
     return [doing.doify(nonce)]
 
 
-def nonce(tymth, tock=0.0):
+def nonce(tymth, tock=0.0, **kwa):
     """ nonce
     """
     _ = (yield tock)

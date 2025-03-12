@@ -92,7 +92,7 @@ class Receiptor(doing.DoDoer):
             if wit in auths:
                 headers["Authorization"] = auths[wit]
 
-            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="receipts", headers=headers)
+            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="/receipts", headers=headers)
             while not client.responses:
                 yield self.tock
 

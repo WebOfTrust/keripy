@@ -17,7 +17,7 @@ def handler(_):
     return [doing.doify(time)]
 
 
-def time(tymth, tock=0.0):
+def time(tymth, tock=0.0, **kwa):
     """ time
     """
     _ = (yield tock)

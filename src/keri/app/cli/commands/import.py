@@ -50,7 +50,7 @@ class ImportDoer(doing.DoDoer):
 
         super(ImportDoer, self).__init__(doers=doers)
 
-    def exportDo(self, tymth, tock=0.0):
+    def exportDo(self, tymth, tock=0.0, **kwa):
         """ Export credential from store and any related material
 
         Parameters:

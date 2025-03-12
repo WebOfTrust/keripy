@@ -6,6 +6,7 @@ tests.app.apping module
 import pytest
 
 import os
+import platform
 import shutil
 
 from hio.base import doing
@@ -40,19 +41,19 @@ def test_habery():
     assert hby.db.name == "test" == hby.name
     assert hby.db.base == "" == hby.base
     assert not hby.db.filed
-    assert hby.db.path.endswith("/keri/db/test")
+    assert hby.db.path.endswith(os.path.join(os.path.sep, "keri", "db", "test"))
     assert hby.db.opened
 
     assert hby.ks.name == "test" == hby.name
     assert hby.ks.base == "" == hby.base
     assert not hby.ks.filed
-    assert hby.ks.path.endswith("/keri/ks/test")
+    assert hby.ks.path.endswith(os.path.join(os.path.sep, "keri", "ks", "test"))
     assert hby.ks.opened
 
     assert hby.cf.name == "test" == hby.name
     assert hby.cf.base == "" == hby.base
     assert hby.cf.filed
-    assert hby.cf.path.endswith("/keri/cf/test.json")
+    assert hby.cf.path.endswith(os.path.join(os.path.sep, "keri", "cf", "test.json"))
     assert hby.cf.opened
     assert not hby.cf.file.closed
 
@@ -249,19 +250,19 @@ def test_habery():
         assert hby.db.name == "test" == hby.name
         assert hby.db.base == "" == hby.base
         assert not hby.db.filed
-        assert hby.db.path.endswith("/keri/db/test")
+        assert hby.db.path.endswith(os.path.join(os.path.sep, "keri", "db", "test"))
         assert hby.db.opened
 
         assert hby.ks.name == "test" == hby.name
         assert hby.ks.base == "" == hby.base
         assert not hby.ks.filed
-        assert hby.ks.path.endswith("/keri/ks/test")
+        assert hby.ks.path.endswith(os.path.join(os.path.sep, "keri", "ks", "test"))
         assert hby.ks.opened
 
         assert hby.cf.name == "test" == hby.name
         assert hby.cf.base == "" == hby.base
         assert hby.cf.filed
-        assert hby.cf.path.endswith("/keri/cf/test.json")
+        assert hby.cf.path.endswith(os.path.join(os.path.sep, "keri", "cf", "test.json"))
         assert hby.cf.opened
         assert not hby.cf.file.closed
 
@@ -297,19 +298,19 @@ def test_habery():
         assert hby.db.name == "test" == hby.name
         assert hby.db.base == "" == hby.base
         assert not hby.db.filed
-        assert hby.db.path.endswith("/keri/db/test")
+        assert hby.db.path.endswith(os.path.join(os.path.sep, "keri", "db", "test"))
         assert hby.db.opened
 
         assert hby.ks.name == "test" == hby.name
         assert hby.ks.base == "" == hby.base
         assert not hby.ks.filed
-        assert hby.ks.path.endswith("/keri/ks/test")
+        assert hby.ks.path.endswith(os.path.join(os.path.sep, "keri", "ks", "test"))
         assert hby.ks.opened
 
         assert hby.cf.name == "test" == hby.name
         assert hby.cf.base == "" == hby.base
         assert hby.cf.filed
-        assert hby.cf.path.endswith("/keri/cf/test.json")
+        assert hby.cf.path.endswith(os.path.join(os.path.sep, "keri", "cf", "test.json"))
         assert hby.cf.opened
         assert not hby.cf.file.closed
 
@@ -381,21 +382,32 @@ def test_make_load_hab_with_habery():
     assert not os.path.exists(hby.ks.path)
 
     # create not temp and then reload from not temp
-    if os.path.exists('/usr/local/var/keri/cf/hold/test.json'):
-        os.remove('/usr/local/var/keri/cf/hold/test.json')
-    if os.path.exists('/usr/local/var/keri/db/hold/test'):
-        shutil.rmtree('/usr/local/var/keri/db/hold/test')
-    if os.path.exists('/usr/local/var/keri/ks/hold/test'):
-        shutil.rmtree('/usr/local/var/keri/ks/hold/test')
+    if platform.system() == "Windows":
+        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
+        for drive in drives:
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json")):
+                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json"))
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test")):
+                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test"))
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test")):
+                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test"))
+    else:
+        if os.path.exists('/usr/local/var/keri/cf/hold/test.json'):
+            os.remove('/usr/local/var/keri/cf/hold/test.json')
+        if os.path.exists('/usr/local/var/keri/db/hold/test'):
+            shutil.rmtree('/usr/local/var/keri/db/hold/test')
+        if os.path.exists('/usr/local/var/keri/ks/hold/test'):
+            shutil.rmtree('/usr/local/var/keri/ks/hold/test')
 
     base = "hold"
     suePre = 'EAxe215BJ4Iy9r0mfoMEGVmHW8A4Avk3RYBC1A1_DZam'  # with temp=False
     bobPre = 'ENya5E5pvc6MVCe75huDK0QQhE4_64J55vCn4aKdXhR9'  # with temp=False
 
     with habbing.openHby(base=base, temp=False, salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
-        assert hby.cf.path.endswith("keri/cf/hold/test.json")
-        assert hby.db.path.endswith("keri/db/hold/test")
-        assert hby.ks.path.endswith('keri/ks/hold/test')
+
+        assert hby.cf.path.endswith(os.path.join("keri", "cf", "hold", "test.json"))
+        assert hby.db.path.endswith(os.path.join("keri", "db", "hold", "test"))
+        assert hby.ks.path.endswith(os.path.join("keri", "ks", "hold", "test"))
 
         sueHab = hby.makeHab(name='Sue')
         assert isinstance(sueHab, habbing.Hab)
@@ -436,9 +448,9 @@ def test_make_load_hab_with_habery():
     # test load from database
     base = "hold"
     with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
-        assert hby.cf.path.endswith("keri/cf/hold/test.json")
-        assert hby.db.path.endswith("keri/db/hold/test")
-        assert hby.ks.path.endswith('keri/ks/hold/test')
+        assert hby.cf.path.endswith(os.path.join("keri", "cf", "hold", "test.json"))
+        assert hby.db.path.endswith(os.path.join("keri", "db", "hold", "test"))
+        assert hby.ks.path.endswith(os.path.join("keri", "ks", "hold", "test"))
 
         assert hby.inited
         assert len(hby.habs) == 2
@@ -474,13 +486,22 @@ def test_hab_rotate_with_witness():
     """
     Reload from disk and rotate hab with witness
     """
-
-    if os.path.exists('/usr/local/var/keri/cf/test/phil-test.json'):
-        os.remove('/usr/local/var/keri/cf/test/phil-test.json')
-    if os.path.exists('/usr/local/var/keri/db/test/phil-test'):
-        shutil.rmtree('/usr/local/var/keri/db/test/phil-test')
-    if os.path.exists('/usr/local/var/keri/ks/test/phil-test'):
-        shutil.rmtree('/usr/local/var/keri/ks/test/phil-test')
+    if platform.system() == "Windows":
+        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
+        for drive in drives:
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "phil-test.json")):
+                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "phil-test.json"))
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "phil-test")):
+                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "phil-test"))
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "phil-test")):
+                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "phil-test"))
+    else:
+        if os.path.exists('/usr/local/var/keri/cf/test/phil-test.json'):
+            os.remove('/usr/local/var/keri/cf/test/phil-test.json')
+        if os.path.exists('/usr/local/var/keri/db/test/phil-test'):
+            shutil.rmtree('/usr/local/var/keri/db/test/phil-test')
+        if os.path.exists('/usr/local/var/keri/ks/test/phil-test'):
+            shutil.rmtree('/usr/local/var/keri/ks/test/phil-test')
 
     name = "phil-test"
 
@@ -514,13 +535,22 @@ def test_hab_rotate_with_witness():
 def test_habery_reinitialization():
     """Test Reinitializing Habery and its Habs
     """
-
-    if os.path.exists('/usr/local/var/keri/cf/test/bob-test.json'):
-        os.remove('/usr/local/var/keri/cf/test/bob-test.json')
-    if os.path.exists('/usr/local/var/keri/db/test/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/db/test/bob-test')
-    if os.path.exists('/usr/local/var/keri/ks/test/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/ks/test/bob-test')
+    if platform.system() == "Windows":
+        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
+        for drive in drives:
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "bob-test.json")):
+                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "bob-test.json"))
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "bob-test")):
+                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "bob-test"))
+            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "bob-test")):
+                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "bob-test"))
+    else:
+        if os.path.exists('/usr/local/var/keri/cf/test/bob-test.json'):
+            os.remove('/usr/local/var/keri/cf/test/bob-test.json')
+        if os.path.exists('/usr/local/var/keri/db/test/bob-test'):
+            shutil.rmtree('/usr/local/var/keri/db/test/bob-test')
+        if os.path.exists('/usr/local/var/keri/ks/test/bob-test'):
+            shutil.rmtree('/usr/local/var/keri/ks/test/bob-test')
 
     name = "bob-test"
 

@@ -70,7 +70,7 @@ class AddDoer(doing.DoDoer):
 
         super(AddDoer, self).__init__(doers=doers)
 
-    def addDo(self, tymth, tock=0.0):
+    def addDo(self, tymth, tock=0.0, **kwa):
         """ Grant credential by creating /ipex/grant exn message
 
         Parameters:

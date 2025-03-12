@@ -88,7 +88,7 @@ class VerifyDoer(doing.DoDoer):
 
         super(VerifyDoer, self).__init__(doers=doers)
 
-    def verifyDo(self, tymth, tock=0.0):
+    def verifyDo(self, tymth, tock=0.0, **kwa):
         """ Check for any credential messages in mailboxes and list all held credentials
 
         Parameters:

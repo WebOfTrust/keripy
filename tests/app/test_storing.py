@@ -24,7 +24,7 @@ def test_mailboxing():
     assert mber.name == "mbx"
     assert mber.temp is False
     assert isinstance(mber.env, lmdb.Environment)
-    assert mber.path.endswith("keri/mbx/mbx")
+    assert mber.path.endswith(os.path.join("keri", "mbx", "mbx"))
     assert mber.env.path() == mber.path
     assert os.path.exists(mber.path)
 
@@ -47,7 +47,7 @@ def test_mailboxing():
     assert mber.opened
     assert mber.path is not None
     assert isinstance(mber.env, lmdb.Environment)
-    assert mber.path.endswith("keri/mbx/mbx")
+    assert mber.path.endswith(os.path.join("keri", "mbx", "mbx"))
     assert mber.env.path() == mber.path
     assert os.path.exists(mber.path)
 

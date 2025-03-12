@@ -3,6 +3,8 @@
 tests.app.keeping module
 
 """
+import platform
+
 import pytest
 
 import os
@@ -185,8 +187,9 @@ def test_openkeeper():
         assert isinstance(ks, keeping.Keeper)
         assert ks.name == "test"
         assert isinstance(ks.env, lmdb.Environment)
-        assert ks.path.startswith("/tmp/keri_ks_")
-        assert ks.path.endswith("_test/keri/ks/test")
+        _, path = os.path.splitdrive(os.path.normpath(ks.path))
+        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_ks_"))
+        assert ks.path.endswith(os.path.join("_test", "keri", "ks", "test"))
         assert ks.env.path() == ks.path
         assert os.path.exists(ks.path)
         assert ks.opened
@@ -198,8 +201,9 @@ def test_openkeeper():
         assert isinstance(ks, keeping.Keeper)
         assert ks.name == "blue"
         assert isinstance(ks.env, lmdb.Environment)
-        assert ks.path.startswith("/tmp/keri_ks_")
-        assert ks.path.endswith("_test/keri/ks/blue")
+        _, path = os.path.splitdrive(os.path.normpath(ks.path))
+        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_ks_"))
+        assert ks.path.endswith(os.path.join("_test", "keri", "ks", "blue"))
         assert ks.env.path() == ks.path
         assert os.path.exists(ks.path)
         assert ks.opened
@@ -251,10 +255,13 @@ def test_keeper():
     assert keeper.name == "main"
     assert keeper.temp == False
     assert isinstance(keeper.env, lmdb.Environment)
-    assert keeper.path.endswith("keri/ks/main")
+    assert keeper.path.endswith(os.path.join("keri", "ks", "main"))
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
-    assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
+    if platform.system() == "Windows":
+        assert oct(os.stat(keeper.path).st_mode)[-4:] == "0777"
+    else:
+        assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
     assert keeper.Perm == perm
 
     assert isinstance(keeper.gbls.sdb, lmdb._Database)
@@ -272,10 +279,13 @@ def test_keeper():
     assert keeper.name == "main"
     assert keeper.temp == False
     assert isinstance(keeper.env, lmdb.Environment)
-    assert keeper.path.endswith("keri/ks/main")
+    assert keeper.path.endswith(os.path.join("keri", "ks", "main"))
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
-    assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
+    if platform.system() == "Windows":
+        assert oct(os.stat(keeper.path).st_mode)[-4:] == "0777"
+    else:
+        assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
 
     assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
@@ -297,7 +307,7 @@ def test_keeper():
     keeper.reopen()
     assert keeper.opened
     assert isinstance(keeper.env, lmdb.Environment)
-    assert keeper.path.endswith("keri/ks/main")
+    assert keeper.path.endswith(os.path.join("keri", "ks", "main"))
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
@@ -315,8 +325,9 @@ def test_keeper():
         assert keeper.name == "test"
         assert keeper.temp == True
         assert isinstance(keeper.env, lmdb.Environment)
-        assert keeper.path.startswith("/tmp/keri_ks_")
-        assert keeper.path.endswith("_test/keri/ks/test")
+        _, path = os.path.splitdrive(os.path.normpath(keeper.path))
+        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_ks_"))
+        assert keeper.path.endswith(os.path.join("_test", "keri", "ks", "test"))
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
@@ -559,7 +570,7 @@ def test_keeperdoer():
     assert [val[1] for val in doist.deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
         assert doer.keeper.opened
-        assert "_test/keri/ks/test" in doer.keeper.path
+        assert os.path.join("_test", "keri", "ks", "test") in doer.keeper.path
 
     doist.recur()
     assert doist.tyme == 0.03125  # on next cycle
