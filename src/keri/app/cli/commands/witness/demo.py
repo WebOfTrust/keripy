@@ -70,7 +70,7 @@ class InitDoer(doing.DoDoer):
 
         super(InitDoer, self).__init__(doers=[doing.doify(self.initialize)])
 
-    def initialize(self, tymth, tock=0.0):
+    def initialize(self, tymth, tock=0.0, **kwa):
         # enter context
         self.wind(tymth)
         self.tock = tock

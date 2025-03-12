@@ -18,6 +18,7 @@ function isSuccess() {
     ret=$?
     if [ $ret -ne 0 ]; then
        echo "Error $ret"
+       read -p "Press Enter to continue..."
        exit $ret
     fi
 }
@@ -82,3 +83,4 @@ printf "Running rename.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/rename-alias.sh"
 isSuccess
+

@@ -200,7 +200,7 @@ class CredentialIssuer(doing.DoDoer):
         doers.extend([doing.doify(self.createDo)])
         super(CredentialIssuer, self).__init__(doers=doers)
 
-    def createDo(self, tymth, tock=0.0):
+    def createDo(self, tymth, tock=0.0, **kwa):
         """  Issue Credential doer method
 
 

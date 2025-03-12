@@ -74,7 +74,7 @@ class SpurnDoer(doing.DoDoer):
         self.toRemove = [mbx]
         super(SpurnDoer, self).__init__(doers=self.toRemove + [doing.doify(self.spurnDo)])
 
-    def spurnDo(self, tymth, tock=0.0):
+    def spurnDo(self, tymth, tock=0.0, **kwa):
         """ Sprun any IPEX message
 
         Parameters:

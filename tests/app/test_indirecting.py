@@ -202,7 +202,6 @@ class QueryTestDoer(doing.Doer):
         super(QueryTestDoer, self).__init__(**opts)
 
     def recur(self, tyme=0.0, deeds=None):
-        print(self.options)
         wesHab = self.options["wesHab"]
         palHby = self.options["palHby"]
         witDoer = self.options["witDoer"]

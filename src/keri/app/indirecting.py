@@ -756,7 +756,7 @@ class Poller(doing.DoDoer):
 
         super(Poller, self).__init__(doers=doers, **kwa)
 
-    def eventDo(self, tymth=None, tock=0.0):
+    def eventDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
            doifiable Doist compatible generator method
