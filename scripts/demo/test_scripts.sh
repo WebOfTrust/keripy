@@ -18,7 +18,6 @@ function isSuccess() {
     ret=$?
     if [ $ret -ne 0 ]; then
        echo "Error $ret"
-       read -p "Press Enter to continue..."
        exit $ret
     fi
 }
