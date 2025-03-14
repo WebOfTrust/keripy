@@ -178,8 +178,9 @@ def test_opendatabaser():
         assert isinstance(databaser, LMDBer)
         assert databaser.name == "test"
         assert isinstance(databaser.env, lmdb.Environment)
-        assert databaser.path.startswith("/tmp/keri_lmdb_")
-        assert databaser.path.endswith("_test/keri/db/test")
+        _, path = os.path.splitdrive(os.path.normpath(databaser.path))
+        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_lmdb_"))
+        assert databaser.path.endswith(os.path.join("_test", "keri", "db", "test"))
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
         assert databaser.opened
@@ -191,8 +192,9 @@ def test_opendatabaser():
         assert isinstance(databaser, LMDBer)
         assert databaser.name == "blue"
         assert isinstance(databaser.env, lmdb.Environment)
-        assert databaser.path.startswith("/tmp/keri_lmdb_")
-        assert databaser.path.endswith("_test/keri/db/blue")
+        _, path = os.path.splitdrive(os.path.normpath(databaser.path))
+        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_lmdb_"))
+        assert databaser.path.endswith(os.path.join("_test", "keri", "db", "blue"))
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
         assert databaser.opened
@@ -229,7 +231,7 @@ def test_lmdber():
     assert databaser.name == "main"
     assert databaser.temp == False
     assert isinstance(databaser.env, lmdb.Environment)
-    assert databaser.path.endswith("keri/db/main")
+    assert databaser.path.endswith(os.path.join("keri", "db", "main"))
     assert databaser.env.path() == databaser.path
     assert os.path.exists(databaser.path)
     assert databaser.opened
@@ -259,7 +261,7 @@ def test_lmdber():
     databaser.reopen()
     assert databaser.opened
     assert isinstance(databaser.env, lmdb.Environment)
-    assert databaser.path.endswith("keri/db/main")
+    assert databaser.path.endswith(os.path.join("keri", "db", "main"))
     assert databaser.env.path() == databaser.path
     assert os.path.exists(databaser.path)
 

@@ -20,7 +20,7 @@ def handler(_):
     return [doing.doify(salt)]
 
 
-def salt(tymth, tock=0.0):
+def salt(tymth, tock=0.0, **kwa):
     """ Command line version handler
     """
     _ = (yield tock)

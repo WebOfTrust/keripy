@@ -40,7 +40,7 @@ def test_baser():
     assert baser.name == "main"
     assert baser.temp == False
     assert isinstance(baser.env, lmdb.Environment)
-    assert baser.path.endswith("keri/db/main")
+    assert baser.path.endswith(os.path.join("keri", "db", "main"))
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
@@ -71,7 +71,7 @@ def test_baser():
     baser.reopen()
     assert baser.opened
     assert isinstance(baser.env, lmdb.Environment)
-    assert baser.path.endswith("keri/db/main")
+    assert baser.path.endswith(os.path.join("keri", "db", "main"))
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
@@ -98,8 +98,9 @@ def test_baser():
         assert baser.name == "test"
         assert baser.temp == True
         assert isinstance(baser.env, lmdb.Environment)
-        assert baser.path.startswith("/tmp/keri_lmdb_")
-        assert baser.path.endswith("_test/keri/db/test")
+        _, path = os.path.splitdrive(os.path.normpath(baser.path))
+        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_lmdb_"))
+        assert baser.path.endswith(os.path.join("_test", "keri", "db", "test"))
         assert baser.env.path() == baser.path
         assert os.path.exists(baser.path)
 
@@ -1188,7 +1189,7 @@ def test_clean_baser():
         assert natHab.db.opened
         assert natHab.pre in natHab.kevers
         assert natHab.pre in natHab.prefixes
-        assert natHab.db.path.endswith("/keri/db/nat")
+        assert natHab.db.path.endswith(os.path.join(os.path.sep, "keri", "db", "nat"))
         path = natHab.db.path  # save for later
 
         # Create series of events for Nat
@@ -1249,7 +1250,7 @@ def test_clean_baser():
                           headDirPath=natHab.db.headDirPath,
                           perm=natHab.db.perm,
                           clean=True) as copy:
-            assert copy.path.endswith("/keri/clean/db/nat")
+            assert copy.path.endswith(os.path.join(os.path.sep, "keri", "clean", "db", "nat"))
             assert copy.env.stat()['entries'] >= 18
 
         # Nat's kever and the signatory kever
@@ -1730,7 +1731,7 @@ def test_baserdoer():
     assert [val[1] for val in doist.deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
         assert doer.baser.opened
-        assert "_test/keri/db/test" in doer.baser.path
+        assert os.path.join("_test", "keri", "db", "test") in doer.baser.path
 
     doist.recur()
     assert doist.tyme == 0.03125  # on next cycle

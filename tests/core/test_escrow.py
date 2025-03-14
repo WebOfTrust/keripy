@@ -76,6 +76,7 @@ def test_partial_signed_escrow():
         assert len(escrows) == 1
         assert escrows[0] == srdr.saidb  #  escrow entry for event
 
+        time.sleep(0.001)
         # verify Kevery process partials escrow is idempotent to previously escrowed events
         # assuming not stale but nothing else has changed
         kvy.processEscrowPartialSigs()
@@ -103,6 +104,7 @@ def test_partial_signed_escrow():
         # get DTS set by escrow date time stamp on event
         edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
 
+        time.sleep(0.001)
         # verify Kevery process partials escrow now unescrows correctly given
         # two signatures and assuming not stale
         kvy.processEscrowPartialSigs()
@@ -221,6 +223,7 @@ def test_partial_signed_escrow():
         # get DTS set by escrow date time stamp on event
         edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
 
+        time.sleep(0.001)
         # Process partials but now escrow not stale
         kvy.processEscrowPartialSigs()
         assert kvr.serder.said == srdr.said  # key state updated so event was validated
@@ -313,6 +316,7 @@ def test_partial_signed_escrow():
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.serder.said != srdr.said  # key state not updated
 
+        time.sleep(0.001)
         # process escrow
         kvy.processEscrowPartialSigs()
         assert kvr.serder.said != srdr.said  # key state not updated
@@ -330,6 +334,7 @@ def test_partial_signed_escrow():
         # get DTS set by escrow date time stamp on event
         edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
 
+        time.sleep(0.001)
         # process escrow
         kvy.processEscrowPartialSigs()
         assert kvr.serder.said == srdr.said  # key state updated

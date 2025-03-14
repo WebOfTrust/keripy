@@ -18,7 +18,7 @@ def handler(_):
     return [doing.doify(passcode)]
 
 
-def passcode(tymth, tock=0.0):
+def passcode(tymth, tock=0.0, **kwa):
     """ Command line version handler
     """
     _ = (yield tock)

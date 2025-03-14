@@ -80,7 +80,7 @@ class OobiDoer(doing.DoDoer):
 
         super(OobiDoer, self).__init__(doers=doers)
 
-    def waitDo(self, tymth, tock=0.0):
+    def waitDo(self, tymth, tock=0.0, **kwa):
         """ Waits for oobis to load
 
         Parameters:

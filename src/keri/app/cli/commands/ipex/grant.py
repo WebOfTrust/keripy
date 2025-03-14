@@ -71,7 +71,7 @@ class GrantDoer(doing.DoDoer):
         self.toRemove = [mbx]
         super(GrantDoer, self).__init__(doers=self.toRemove + [doing.doify(self.grantDo)])
 
-    def grantDo(self, tymth, tock=0.0):
+    def grantDo(self, tymth, tock=0.0, **kwa):
         """ Grant credential by creating /ipex/grant exn message
 
         Parameters:

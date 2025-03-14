@@ -75,7 +75,7 @@ class LocationDoer(doing.DoDoer):
 
         super(LocationDoer, self).__init__(doers=self.toRemove + [doing.doify(self.roleDo)])
 
-    def roleDo(self, tymth, tock=0.0):
+    def roleDo(self, tymth, tock=0.0, **kwa):
         """ Export any end reply messages previous saved for the provided AID
 
         Parameters:

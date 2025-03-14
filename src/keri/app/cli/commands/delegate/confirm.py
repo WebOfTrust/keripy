@@ -94,7 +94,7 @@ class ConfirmDoer(doing.DoDoer):
         self.auto = auto
         super(ConfirmDoer, self).__init__(doers=doers)
 
-    def confirmDo(self, tymth, tock=0.0):
+    def confirmDo(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
