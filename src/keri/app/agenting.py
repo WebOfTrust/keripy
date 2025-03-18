@@ -194,7 +194,7 @@ class Receiptor(doing.DoDoer):
 
         self.remove([clientDoer])
 
-    def witDo(self, tymth=None, tock=0.0):
+    def witDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery and .tevery escrows.
@@ -222,7 +222,7 @@ class Receiptor(doing.DoDoer):
 
             yield self.tock
 
-    def gitDo(self, tymth=None, tock=0.0):
+    def gitDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery and .tevery escrows.
@@ -281,7 +281,7 @@ class WitnessReceiptor(doing.DoDoer):
 
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-    def receiptDo(self, tymth=None, tock=0.0):
+    def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -660,7 +660,7 @@ class TCPMessenger(doing.DoDoer):
 
         super(TCPMessenger, self).__init__(doers=doers)
 
-    def receiptDo(self, tymth=None, tock=0.0):
+    def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -754,7 +754,7 @@ class TCPStreamMessenger(doing.DoDoer):
 
         super(TCPStreamMessenger, self).__init__(doers=doers)
 
-    def receiptDo(self, tymth=None, tock=0.0):
+    def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -854,7 +854,7 @@ class HTTPMessenger(doing.DoDoer):
 
         super(HTTPMessenger, self).__init__(doers=doers, **kwa)
 
-    def msgDo(self, tymth=None, tock=0.0):
+    def msgDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -876,7 +876,7 @@ class HTTPMessenger(doing.DoDoer):
 
             yield self.tock
 
-    def responseDo(self, tymth=None, tock=0.0):
+    def responseDo(self, tymth=None, tock=0.0, **kwa):
         """
         Processes responses from client and adds them to sent cue
 

@@ -105,7 +105,7 @@ class GroupMultisigIncept(doing.DoDoer):
 
         super(GroupMultisigIncept, self).__init__(doers=doers)
 
-    def inceptDo(self, tymth, tock=0.0):
+    def inceptDo(self, tymth, tock=0.0, **kwa):
         """ Create or participate in an inception event for a distributed multisig identifier
 
         Parameters:

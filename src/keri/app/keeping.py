@@ -342,7 +342,7 @@ class KeeperDoer(doing.Doer):
         self.keeper = keeper
 
 
-    def enter(self):
+    def enter(self, *, temp=False):
         """"""
         if not self.keeper.opened:
             self.keeper.reopen()
@@ -1747,7 +1747,7 @@ class ManagerDoer(doing.Doer):
         self.manager = manager
 
 
-    def enter(self):
+    def enter(self, *, temp=False):
         """"""
         if not self.manager.inited:
             self.manager.setup(**self.manager._inits)

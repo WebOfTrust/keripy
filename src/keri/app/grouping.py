@@ -74,7 +74,7 @@ class Counselor(doing.DoDoer):
 
         return True
 
-    def escrowDo(self, tymth, tock=1.0):
+    def escrowDo(self, tymth, tock=1.0, **kwa):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
 
         Steps involve:
