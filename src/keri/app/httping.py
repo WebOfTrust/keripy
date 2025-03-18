@@ -259,7 +259,7 @@ class Clienter(doing.DoDoer):
         (_, doer, _) = tup
         super(Clienter, self).remove([doer])
 
-    def clientDo(self, tymth, tock=0.0):
+    def clientDo(self, tymth, tock=0.0, **kwa):
         """ Periodically prune stale clients
 
         Process existing clients and prune any that have receieved a response longer than timeout

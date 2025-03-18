@@ -150,7 +150,7 @@ class InceptDoer(doing.DoDoer):
         self.alias = alias
         super(InceptDoer, self).__init__(doers=doers)
 
-    def inceptDo(self, tymth, tock=0.0):
+    def inceptDo(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
