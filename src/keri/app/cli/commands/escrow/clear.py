@@ -9,6 +9,7 @@ import argparse
 from hio.base import doing
 from keri import help
 from keri.app.cli.common import existing
+from keri.vdr import viring
 
 logger = help.ogler.getLogger()
 
