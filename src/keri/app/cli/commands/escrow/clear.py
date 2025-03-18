@@ -9,6 +9,7 @@ import argparse
 from hio.base import doing
 from keri import help
 from keri.app.cli.common import existing
+from keri.vdr import viring
 
 logger = help.ogler.getLogger()
 
@@ -50,3 +51,5 @@ def clear(tymth, tock=0.0, **opts):
 
     with existing.existingHby(name=name, base=base, bran=bran) as hby:
         hby.db.clearEscrows()
+        reger = viring.Reger(name=hby.name, db=hby.db, temp=False)
+        reger.clearEscrows()
