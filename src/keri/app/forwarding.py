@@ -39,7 +39,7 @@ class Poster(doing.DoDoer):
         doers = [doing.doify(self.deliverDo)]
         super(Poster, self).__init__(doers=doers, **kwa)
 
-    def deliverDo(self, tymth=None, tock=0.0):
+    def deliverDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:  doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
