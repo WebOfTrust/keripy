@@ -128,7 +128,7 @@ class Signaler(doing.DoDoer):
 
         self.signals.append(sig)
 
-    def expireDo(self, tymth=None, tock=0.0):
+    def expireDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
