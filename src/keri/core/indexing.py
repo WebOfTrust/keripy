@@ -230,6 +230,14 @@ class Indexer:
     Codes = asdict(IdrDex)  # map code name to code
     Names = {val : key for key, val in Codes.items()} # invert map code to code name
 
+    @classmethod
+    def _rawSize(cls, code):
+        """
+        Returns expected raw size in bytes for a given code. Not applicable to
+        codes with fs = None
+        """
+        hs, ss, os, fs, ls = cls.Sizes[code]  # get sizes
+        return ((fs - (hs + ss)) * 3 // 4)
 
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0, ondex=None,
@@ -328,14 +336,6 @@ class Indexer:
                                      "(raw and code and index) or qb64b or "
                                      "qb64 or qb2.")
 
-    @classmethod
-    def _rawSize(cls, code):
-        """
-        Returns expected raw size in bytes for a given code. Not applicable to
-        codes with fs = None
-        """
-        hs, ss, os, fs, ls = cls.Sizes[code]  # get sizes
-        return ((fs - (hs + ss)) * 3 // 4)
 
     @property
     def code(self):
