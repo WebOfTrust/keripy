@@ -14,20 +14,16 @@ from hio.base import doing
 from keri import help
 from keri.app import connecting, indirecting, querying, watching
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.help import helping
 from keri.kering import ConfigurationError
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Perform key event adjudication on any new key state from watchers.')
-parser.set_defaults(handler=lambda args: handle(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser = argparse.ArgumentParser(description='Perform key event adjudication on any new key state from watchers.', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handle(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--toad', '-t', default=None, required=False, type=int,
                     help='int of watcher threshold (threshold of acceptable duplicity)', )
 parser.add_argument("--watched", '-W', help="the watched AID or alias to add", required=True)

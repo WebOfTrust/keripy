@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
 from keri.core import coring, serdering
 from keri.db import dbing
@@ -19,14 +20,10 @@ from keri.db import dbing
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Resend a delegation request message to a delegator that has not '
-                                             'approved a previous delegation.')
+                                             'approved a previous delegation.',
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: request(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 
 def request(args):
     """

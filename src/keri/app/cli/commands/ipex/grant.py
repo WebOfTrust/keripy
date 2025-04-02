@@ -9,6 +9,7 @@ from hio.base import doing
 
 from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.notifying import Notifier
 from keri.core import coring, parsing, serdering
 from keri.peer import exchanging
@@ -16,15 +17,11 @@ from keri.vc import protocoling
 from keri.vdr import credentialing
 
 parser = argparse.ArgumentParser(description='Reply to IPEX agree message or initiate an IPEX exchange with a '
-                                             'credential issuance or presentation')
+                                             'credential issuance or presentation',
+                                parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 
 parser.add_argument("--recipient", "-r", help="alias or qb64 identifier prefix of the self.recp of "
                                               "the credential", required=True)

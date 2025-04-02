@@ -10,24 +10,16 @@ from hio.base import doing
 
 from keri import help, kering
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Generate and print role OOBIs for the AID of the provide alias.')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-
-# Parameters for basic structure of database
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Generate and print role OOBIs for the AID of the provide alias.', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument("--role", "-r", help="role of oobis to generate", required=True)
 
-# Parameters for Manager access
-# passcode => bran
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)
 
 
 def handler(args):

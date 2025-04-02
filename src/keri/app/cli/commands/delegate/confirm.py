@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
 from keri import core
 from keri.core import coring, serdering
@@ -22,14 +23,10 @@ from keri.peer import exchanging
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Confirm success delegate event (icp or rot) and gather and '
-                                             'propagate witness receipts.')
+                                             'propagate witness receipts.',
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: confirm(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--interact", "-i", help="anchor the delegation approval in an interaction event.  "
                                              "Default is to use a rotation event.", action="store_true")
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")

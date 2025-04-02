@@ -9,16 +9,13 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import indexing, coring, MtrDex
 
-parser = argparse.ArgumentParser(description='Decrypt arbitrary data for AIDs with Ed25519 public keys only')
+parser = argparse.ArgumentParser(description='Decrypt arbitrary data for AIDs with Ed25519 public keys only', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--data', '-d', help='Encrypted data or file (starts with "@")', required=True)
 
 

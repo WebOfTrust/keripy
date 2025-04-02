@@ -15,21 +15,17 @@ from keri import help
 from keri.app import httping, connecting
 from keri.app.agenting import httpClient
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.httping import CESR_DESTINATION_HEADER
 from keri.core import coring
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Perform authentication against an witness to get a OTP code')
-parser.set_defaults(handler=lambda args: auth(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser = argparse.ArgumentParser(description='Perform authentication against an witness to get a OTP code', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: auth(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--witness", '-w', help="the witness AID or alias to authenticate against", required=True)
 parser.add_argument("--url-only", '-u', dest="url", help="display only the URL (no QR Code).", required=False,
                     action="store_true")
