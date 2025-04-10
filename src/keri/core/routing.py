@@ -340,7 +340,7 @@ class Revery:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
                 logger.info("Revery: escrowing without key state for signer"
-                            " on reply said=", serder.said)
+                            " on reply said=%s", serder.said)
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  ssaider=ssaider, sigers=sigers)
