@@ -9,19 +9,19 @@ A special purpose Verifiable Data Registry (VDR)
 """
 
 from dataclasses import dataclass, field, asdict
-from  ordered_set import OrderedSet as oset
 
-from ..db import koming, subing, escrowing
+from ordered_set import OrderedSet as oset
 
+from keri import help
 from .. import kering, core
 from ..app import signing
 from ..core import coring, serdering, indexing, counting
 from ..db import dbing, basing
+from ..db import koming, subing, escrowing
 from ..db.dbing import snKey
-from ..help import helping
-from ..vc import proving
 from ..vdr import eventing
 
+logger = help.ogler.getLogger()
 
 class rbdict(dict):
     """ Reger backed read through cache for registry state
@@ -777,6 +777,13 @@ class Reger(dbing.LMDBer):
         """
         return self.delVal(self.twes, key)
 
+    def getTweItemIter(self):
+        """
+        Return iterator of all items in .twes
+
+        """
+        return self.getTopItemIter(self.twes)
+
     def putTae(self, key, val):
         """
         Use snKey()
@@ -971,6 +978,40 @@ class Reger(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoDupVal(self.baks, key, val)
+
+    def clearEscrows(self):
+        """Clear credential event escrows"""
+        # self.oots, self.twes, self.taes
+        count = 0
+        for (k , _) in self.getOotItemIter():
+            count += 1
+            self.delOot(k)
+        logger.info(f"TEL: Cleared {count} out of order escrows.")
+
+        count = 0
+        for (k, _) in self.getTweItemIter():
+            count += 1
+            self.delTwe(k)
+        logger.info(f"TEL: Cleared {count} partially witnessed escrows.")
+
+        count = 0
+        for (k, _) in self.getTaeItemIter():
+            count += 1
+            self.delTae(k)
+        logger.info(f"TEL: Cleared {count} anchorless escrows.")
+
+        for name, sub, desc in [
+            ( 'mre',  self.mre, 'missing registry escrows'),
+            ( 'mce',  self.mce, 'broken chain escrows'),
+            ( 'mse',  self.mse, 'missing schema escrows'),
+            ('cmse', self.cmse, 'missing signature escrows'),
+            ('tpwe', self.tpwe, 'partial witness escrows'),
+            ('tmse', self.tmse, 'multisig escrows'),
+            ('tede', self.tede, 'event dissemination escrows')
+        ]:
+            sub.trim()
+            logger.info(f"TEL: Cleared escrow ({name.ljust(5)}): {desc}")
+        logger.info("Cleared TEL escrows")
 
 
 def buildProof(prefixer, seqner, diger, sigers):
