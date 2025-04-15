@@ -161,7 +161,7 @@ class WitnessStart(doing.DoDoer):
         doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.cueDo)]
         super().__init__(doers=doers, **opts)
 
-    def start(self, tymth=None, tock=0.0):
+    def start(self, tymth=None, tock=0.0, **kwa):
         """ Prints witness name and prefix
 
         Parameters:
@@ -179,7 +179,7 @@ class WitnessStart(doing.DoDoer):
 
         print("Witness", self.hab.name, ":", self.hab.pre)
 
-    def msgDo(self, tymth=None, tock=0.0):
+    def msgDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -201,7 +201,7 @@ class WitnessStart(doing.DoDoer):
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
-    def escrowDo(self, tymth=None, tock=0.0):
+    def escrowDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery and .tevery escrows.
@@ -227,7 +227,7 @@ class WitnessStart(doing.DoDoer):
 
             yield
 
-    def cueDo(self, tymth=None, tock=0.0):
+    def cueDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
@@ -363,7 +363,7 @@ class Indirector(doing.DoDoer):
         super(Indirector, self).wind(tymth)
         self.client.wind(tymth)
 
-    def msgDo(self, tymth=None, tock=0.0):
+    def msgDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -390,7 +390,7 @@ class Indirector(doing.DoDoer):
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
-    def cueDo(self, tymth=None, tock=0.0):
+    def cueDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
@@ -418,7 +418,7 @@ class Indirector(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
 
-    def escrowDo(self, tymth=None, tock=0.0):
+    def escrowDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
@@ -578,7 +578,7 @@ class MailboxDirector(doing.DoDoer):
         """
         super(MailboxDirector, self).wind(tymth)
 
-    def pollDo(self, tymth=None, tock=0.0):
+    def pollDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
            doifiable Doist compatible generator method
@@ -656,7 +656,7 @@ class MailboxDirector(doing.DoDoer):
             msg = mail.pop(0)
             yield msg
 
-    def msgDo(self, tymth=None, tock=0.0):
+    def msgDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -681,7 +681,7 @@ class MailboxDirector(doing.DoDoer):
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
-    def escrowDo(self, tymth=None, tock=0.0):
+    def escrowDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
@@ -754,7 +754,7 @@ class Poller(doing.DoDoer):
 
         super(Poller, self).__init__(doers=doers, **kwa)
 
-    def eventDo(self, tymth=None, tock=0.0):
+    def eventDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
            doifiable Doist compatible generator method
@@ -1152,7 +1152,7 @@ class ReceiptEnd(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.data = rct
 
-    def interceptDo(self, tymth=None, tock=0.0):
+    def interceptDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             Kevery and Tevery cues deque

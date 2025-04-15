@@ -900,7 +900,7 @@ class HaberyDoer(doing.Doer):
         super(HaberyDoer, self).__init__(**kwa)
         self.habery = habery
 
-    def enter(self):
+    def enter(self, *, temp=False):
         """ Enter context and set up Habery """
         if not self.habery.inited:
             self.habery.setup(**self.habery._inits)
