@@ -14,10 +14,11 @@ from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: registryIncept(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser = argparse.ArgumentParser(description='Initialize a new credential registry')
+parser.set_defaults(handler=lambda args: registryIncept(args))
+parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
 parser.add_argument('--nonce', help='Unique random value to seed the credential registry',
@@ -29,8 +30,6 @@ parser.add_argument('--backers', help='New set of backers different from the anc
                     required=False)
 parser.add_argument("--establishment-only", "-eo", help="Only allow establishment events for the anchoring events of "
                                                         "this registry", default=False, action="store")
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran

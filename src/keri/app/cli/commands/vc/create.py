@@ -14,10 +14,11 @@ from keri.vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: issueCredential(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser = argparse.ArgumentParser(description='Issue a verifiable credential')
+parser.set_defaults(handler=lambda args: issueCredential(args))
+parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
 parser.add_argument('--schema', '-s', help='qb64 SAID of Schema to issue',
@@ -31,9 +32,7 @@ parser.add_argument('--recipient', '-R', help='alias or qb64 identifier prefix o
 parser.add_argument('--data', '-d', help='Credential data, \'@\' allowed', default=None, action="store", required=False)
 parser.add_argument('--credential', help='Full credential, \'@\' allowed', default=None, action="store",
                     required=False)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--alias', '-a', help='human readable alias for issuer of the new credential', required=True)
 parser.add_argument("--private", help="flag to indicate if this credential needs privacy preserving features",
                     action="store_true")
 parser.add_argument("--private-credential-nonce", help="nonce for vc",
