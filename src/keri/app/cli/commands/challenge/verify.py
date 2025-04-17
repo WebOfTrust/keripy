@@ -21,11 +21,9 @@ logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Check mailbox for EXN challenge response messages and verify their '
                                              'signatures and data against provided words and signer')
-parser.set_defaults(handler=lambda args: verify(args),
-                    transferable=True)
+parser.set_defaults(handler=lambda args: verify(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
-                    default=None)
+parser.add_argument('--alias', '-a', help='Unused, kept for backwards compatibility', default=None)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
@@ -50,7 +48,6 @@ def verify(args):
 
     """
     ld = VerifyDoer(name=args.name,
-                    alias=args.alias,
                     base=args.base,
                     bran=args.bran,
                     words=args.words,
@@ -63,7 +60,7 @@ def verify(args):
 
 class VerifyDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, words, generate, strength, out, signer):
+    def __init__(self, name, base, bran, words, generate, strength, out, signer):
 
         self.wordstr = words
         self.words = words
@@ -72,10 +69,6 @@ class VerifyDoer(doing.DoDoer):
         self.out = out
         self.signer = signer
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        if alias is None:
-            alias = existing.aliasInput(self.hby)
-
-        self.hab = self.hby.habByName(alias)
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         self.org = connecting.Organizer(hby=self.hby)
         signaler = signaling.Signaler()
