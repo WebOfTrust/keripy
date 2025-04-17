@@ -377,6 +377,18 @@ class MatterCodex:
     X25519_Cipher_QB2_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
     X25519_Cipher_QB2_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
     X25519_Cipher_QB2_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+    HPKEBase_Cipher_L0:     str = '4F'  # HPKE Base cipher bytes of sniffable stream plaintext lead size 0
+    HPKEBase_Cipher_L1:     str = '5F'  # HPKE Base cipher bytes of sniffable stream plaintext lead size 1
+    HPKEBase_Cipher_L2:     str = '6F'  # HPKE Base cipher bytes of sniffable stream plaintext lead size 2
+    HPKEBase_Cipher_Big_L0: str = '7AAF'  # HPKE Base cipher bytes of sniffable stream plaintext big lead size 0
+    HPKEBase_Cipher_Big_L1: str = '8AAF'  # HPKE Base cipher bytes of sniffable stream plaintext big lead size 1
+    HPKEBase_Cipher_Big_L2: str = '9AAF'  # HPKE Base cipher bytes of sniffable stream plaintext big lead size 2
+    HPKEAuth_Cipher_L0:     str = '4G'  # HPKE Auth cipher bytes of sniffable stream plaintext lead size 0
+    HPKEAuth_Cipher_L1:     str = '5G'  # HPKE Auth cipher bytes of sniffable stream plaintext lead size 1
+    HPKEAuth_Cipher_L2:     str = '6G'  # HPKE Auth cipher bytes of sniffable stream plaintext lead size 2
+    HPKEAuth_Cipher_Big_L0: str = '7AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 0
+    HPKEAuth_Cipher_Big_L1: str = '8AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 1
+    HPKEAuth_Cipher_Big_L2: str = '9AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 2
 
 
     def __iter__(self):
@@ -858,6 +870,18 @@ class Matter:
         '7AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
         '8AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
         '9AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
     Codes = asdict(MtrDex)  # map code name to code
