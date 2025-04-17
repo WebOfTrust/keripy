@@ -22,7 +22,7 @@ from ..core.coring import MapDom
 
 
 @dataclass(frozen=True)
-class GenusCodex:
+class GenusCodex(MapDom):
     """GenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.

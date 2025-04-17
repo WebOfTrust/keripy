@@ -305,7 +305,19 @@ def test_matter_class():
         'X25519_Cipher_QB2_L2': '6E',
         'X25519_Cipher_QB2_Big_L0': '7AAE',
         'X25519_Cipher_QB2_Big_L1': '8AAE',
-        'X25519_Cipher_QB2_Big_L2': '9AAE'
+        'X25519_Cipher_QB2_Big_L2': '9AAE',
+        'HPKEBase_Cipher_L0': '4F',
+        'HPKEBase_Cipher_L1': '5F',
+        'HPKEBase_Cipher_L2': '6F',
+        'HPKEBase_Cipher_Big_L0': '7AAF',
+        'HPKEBase_Cipher_Big_L1': '8AAF',
+        'HPKEBase_Cipher_Big_L2': '9AAF',
+        'HPKEAuth_Cipher_L0': '4G',
+        'HPKEAuth_Cipher_L1': '5G',
+        'HPKEAuth_Cipher_L2': '6G',
+        'HPKEAuth_Cipher_Big_L0': '7AAG',
+        'HPKEAuth_Cipher_Big_L1': '8AAG',
+        'HPKEAuth_Cipher_Big_L2': '9AAG',
     }
 
     assert Matter.Names == \
@@ -404,7 +416,19 @@ def test_matter_class():
         '6E': 'X25519_Cipher_QB2_L2',
         '7AAE': 'X25519_Cipher_QB2_Big_L0',
         '8AAE': 'X25519_Cipher_QB2_Big_L1',
-        '9AAE': 'X25519_Cipher_QB2_Big_L2'
+        '9AAE': 'X25519_Cipher_QB2_Big_L2',
+        '4F': 'HPKEBase_Cipher_L0',
+        '5F': 'HPKEBase_Cipher_L1',
+        '6F': 'HPKEBase_Cipher_L2',
+        '7AAF': 'HPKEBase_Cipher_Big_L0',
+        '8AAF': 'HPKEBase_Cipher_Big_L1',
+        '9AAF': 'HPKEBase_Cipher_Big_L2',
+        '4G': 'HPKEAuth_Cipher_L0',
+        '5G': 'HPKEAuth_Cipher_L1',
+        '6G': 'HPKEAuth_Cipher_L2',
+        '7AAG': 'HPKEAuth_Cipher_Big_L0',
+        '8AAG': 'HPKEAuth_Cipher_Big_L1',
+        '9AAG': 'HPKEAuth_Cipher_Big_L2',
     }
 
 
@@ -517,7 +541,19 @@ def test_matter_class():
         '6E': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
         '7AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
         '8AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
-        '9AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2)
+        '9AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
 

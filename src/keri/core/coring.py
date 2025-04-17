@@ -377,6 +377,18 @@ class MatterCodex:
     X25519_Cipher_QB2_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
     X25519_Cipher_QB2_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
     X25519_Cipher_QB2_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+    HPKEBase_Cipher_L0:     str = '4F'  # HPKE Base cipher bytes of sniffable stream plaintext lead size 0
+    HPKEBase_Cipher_L1:     str = '5F'  # HPKE Base cipher bytes of sniffable stream plaintext lead size 1
+    HPKEBase_Cipher_L2:     str = '6F'  # HPKE Base cipher bytes of sniffable stream plaintext lead size 2
+    HPKEBase_Cipher_Big_L0: str = '7AAF'  # HPKE Base cipher bytes of sniffable stream plaintext big lead size 0
+    HPKEBase_Cipher_Big_L1: str = '8AAF'  # HPKE Base cipher bytes of sniffable stream plaintext big lead size 1
+    HPKEBase_Cipher_Big_L2: str = '9AAF'  # HPKE Base cipher bytes of sniffable stream plaintext big lead size 2
+    HPKEAuth_Cipher_L0:     str = '4G'  # HPKE Auth cipher bytes of sniffable stream plaintext lead size 0
+    HPKEAuth_Cipher_L1:     str = '5G'  # HPKE Auth cipher bytes of sniffable stream plaintext lead size 1
+    HPKEAuth_Cipher_L2:     str = '6G'  # HPKE Auth cipher bytes of sniffable stream plaintext lead size 2
+    HPKEAuth_Cipher_Big_L0: str = '7AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 0
+    HPKEAuth_Cipher_Big_L1: str = '8AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 1
+    HPKEAuth_Cipher_Big_L2: str = '9AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 2
 
 
     def __iter__(self):
@@ -858,11 +870,72 @@ class Matter:
         '7AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
         '8AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
         '9AAE': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6F': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAF': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6G': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
     Codes = asdict(MtrDex)  # map code name to code
     Names = {val : key for key, val in Codes.items()} # invert map code to code name
     Pad = '_'  # B64 pad char for special codes with xtra size pre-padded soft values
+
+    @classmethod
+    def _rawSize(cls, code):
+        """
+        Returns raw size in bytes not including leader for a given code
+        Parameters:
+            code (str): derivation code Base64
+        """
+        hs, ss, xs, fs, ls = cls.Sizes[code]  # get sizes
+        cs = hs + ss  # both hard + soft code size
+        if fs is None:
+            raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
+        # assumes .Sizes only has valid entries, cs % 4 != 3, and fs % 4 == 0
+        return (((fs - cs) * 3 // 4) - ls)
+
+
+    @classmethod
+    def _leadSize(cls, code):
+        """
+        Returns lead size in bytes for a given code
+        Parameters:
+            code (str): derivation code Base64
+        """
+        _, _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
+        return ls
+
+    @classmethod
+    def _xtraSize(cls, code):
+        """
+        Returns xtra size in bytes for a given code
+        Parameters:
+            code (str): derivation code Base64
+        """
+        _, _, xs, _, _ = cls.Sizes[code]  # get lead size from .Sizes table
+        return xs
+
+
+    @classmethod
+    def _special(cls, code):
+        """
+        Returns:
+            special (bool): True when code has special soft i.e. when
+                    fs is not None and ss > 0
+                False otherwise
+
+        """
+        hs, ss, xs, fs, ls = cls.Sizes[code]
+
+        return (fs is not None and ss > 0)
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, soft='', rize=None,
@@ -1023,56 +1096,6 @@ class Matter:
                                          f"(raw not None and code) or "
                                          f"(code and soft) or "
                                          f"qb64b or qb64 or qb2.")
-
-
-    @classmethod
-    def _rawSize(cls, code):
-        """
-        Returns raw size in bytes not including leader for a given code
-        Parameters:
-            code (str): derivation code Base64
-        """
-        hs, ss, xs, fs, ls = cls.Sizes[code]  # get sizes
-        cs = hs + ss  # both hard + soft code size
-        if fs is None:
-            raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
-        # assumes .Sizes only has valid entries, cs % 4 != 3, and fs % 4 == 0
-        return (((fs - cs) * 3 // 4) - ls)
-
-
-    @classmethod
-    def _leadSize(cls, code):
-        """
-        Returns lead size in bytes for a given code
-        Parameters:
-            code (str): derivation code Base64
-        """
-        _, _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
-        return ls
-
-    @classmethod
-    def _xtraSize(cls, code):
-        """
-        Returns xtra size in bytes for a given code
-        Parameters:
-            code (str): derivation code Base64
-        """
-        _, _, xs, _, _ = cls.Sizes[code]  # get lead size from .Sizes table
-        return xs
-
-
-    @classmethod
-    def _special(cls, code):
-        """
-        Returns:
-            special (bool): True when code has special soft i.e. when
-                    fs is not None and ss > 0
-                False otherwise
-
-        """
-        hs, ss, xs, fs, ls = cls.Sizes[code]
-
-        return (fs is not None and ss > 0)
 
 
     @property
@@ -2682,6 +2705,23 @@ class Bexter(Matter):
         StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
 
     """
+    @classmethod
+    def _derawify(cls, raw, code):
+        """Returns decoded raw as B64 str aka bext value
+
+        Returns:
+           bext (str): decoded raw as B64 str aka bext value
+        """
+        _, _, _, _, ls = cls.Sizes[code]
+        bext = encodeB64(bytes([0] * ls) + raw)
+        ws = 0
+        if ls == 0 and bext:
+            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
+                ws = 1
+        else:
+            ws = (ls + 1) % 4
+        return bext.decode('utf-8')[ws:]
+
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.StrB64_L0, bext=None, **kwa):
@@ -2726,23 +2766,6 @@ class Bexter(Matter):
         base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
         raw = decodeB64(base)[ls:]  # convert and remove leader
         return raw  # raw binary equivalent of text
-
-    @classmethod
-    def _derawify(cls, raw, code):
-        """Returns decoded raw as B64 str aka bext value
-
-        Returns:
-           bext (str): decoded raw as B64 str aka bext value
-        """
-        _, _, _, _, ls = cls.Sizes[code]
-        bext = encodeB64(bytes([0] * ls) + raw)
-        ws = 0
-        if ls == 0 and bext:
-            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
-                ws = 1
-        else:
-            ws = (ls + 1) % 4
-        return bext.decode('utf-8')[ws:]
 
 
     @property
@@ -3282,6 +3305,25 @@ class Diger(Matter):
         DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
     }
 
+
+    @classmethod
+    def _digest(cls, ser, code=DigDex.Blake3_256):
+        """Returns raw digest of ser using digest algorithm given by code
+
+        Parameters:
+            ser (bytes): serialization from which raw digest is computed
+            code (str): derivation code used to lookup digest algorithm
+        """
+        if code not in cls.Digests:
+            raise InvalidCodeError(f"Unsupported Digest {code=}.")
+
+        klas, size, length = cls.Digests[code]  # digest algo size & length
+        ikwa = dict(digest_size=size) if size else dict()  # opt digest size
+        dkwa = dict(length=length) if length else dict() # opt digest length
+        raw = klas(ser, **ikwa).digest(**dkwa)
+        return (raw)
+
+
     def __init__(self, raw=None, ser=None, code=DigDex.Blake3_256, **kwa):
         """Initialize attributes
 
@@ -3305,23 +3347,6 @@ class Diger(Matter):
 
         if self.code not in DigDex:
             raise InvalidCodeError(f"Unsupported Digest {code=}.")
-
-    @classmethod
-    def _digest(cls, ser, code=DigDex.Blake3_256):
-        """Returns raw digest of ser using digest algorithm given by code
-
-        Parameters:
-            ser (bytes): serialization from which raw digest is computed
-            code (str): derivation code used to lookup digest algorithm
-        """
-        if code not in cls.Digests:
-            raise InvalidCodeError(f"Unsupported Digest {code=}.")
-
-        klas, size, length = cls.Digests[code]  # digest algo size & length
-        ikwa = dict(digest_size=size) if size else dict()  # opt digest size
-        dkwa = dict(length=length) if length else dict() # opt digest length
-        raw = klas(ser, **ikwa).digest(**dkwa)
-        return (raw)
 
 
     def verify(self, ser):
