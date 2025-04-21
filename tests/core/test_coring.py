@@ -4250,6 +4250,10 @@ def test_texter():
     assert texter.code == MtrDex.Bytes_L1
     assert texter.both == '5BAW'
     assert texter.raw == textb
+    rs = len(texter.raw)
+    assert  rs == 65
+    ps = (3 - (rs % 3)) % 3
+    assert ps == 1
     assert texter.qb64 == '5BAWAGRpZDp3ZWJzOmV4YW1wbGUuY29tOkV3LW81ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN'
     assert texter.qb64b == b'5BAWAGRpZDp3ZWJzOmV4YW1wbGUuY29tOkV3LW81ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN'
     assert texter.text == text
