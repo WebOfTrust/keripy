@@ -170,7 +170,7 @@ def test_wit_query_ends(seeder):
         app = falcon.App()
         query_endpoint = indirecting.QueryEnd(wesHab)
         app.add_route("/query", query_endpoint)
-        
+
         wesClient = testing.TestClient(app)
 
         opts = dict(
@@ -201,7 +201,7 @@ class QueryTestDoer(doing.Doer):
         self.options = opts
         super(QueryTestDoer, self).__init__(**opts)
 
-    def recur(self, tyme=0.0, deeds=None):
+    def recur(self, tyme=0.0, deeds=None, **kwa):
         wesHab = self.options["wesHab"]
         palHby = self.options["palHby"]
         witDoer = self.options["witDoer"]

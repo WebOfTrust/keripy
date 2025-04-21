@@ -4256,6 +4256,7 @@ def test_texter():
     assert ps == 1
     assert texter.qb64 == '5BAWAGRpZDp3ZWJzOmV4YW1wbGUuY29tOkV3LW81ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN'
     assert texter.qb64b == b'5BAWAGRpZDp3ZWJzOmV4YW1wbGUuY29tOkV3LW81ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN'
+    assert texter.qb2 == b'\xe4\x10\x16\x00did:webs:example.com:Ew-o5dU5WjDrxDBK4b4HrF82_rYb6MX6xsegjq4n0Y7M'
     assert texter.text == text
 
     """ Done Test """
