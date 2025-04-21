@@ -4242,6 +4242,18 @@ def test_texter():
     with pytest.raises(InvalidVarRawSizeError):
         texter = Texter(text=text)
 
+    # TSP VID Open Mode did:webs
+    text = "did:webs:example.com:Ew-o5dU5WjDrxDBK4b4HrF82_rYb6MX6xsegjq4n0Y7M"
+    textb = text.encode()
+
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.Bytes_L1
+    assert texter.both == '5BAW'
+    assert texter.raw == textb
+    assert texter.qb64 == '5BAWAGRpZDp3ZWJzOmV4YW1wbGUuY29tOkV3LW81ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN'
+    assert texter.qb64b == b'5BAWAGRpZDp3ZWJzOmV4YW1wbGUuY29tOkV3LW81ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN'
+    assert texter.text == text
+
     """ Done Test """
 
 
