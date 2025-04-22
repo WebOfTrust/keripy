@@ -67,7 +67,10 @@ class CounterCodex_1_0(MapDom):
     BigPathedMaterialGroup: str = '-0L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group, dig of content+Texter group
+    GenericGroup: str = '-W'  # Generic Material Quadlets
+    BigGenericGroup: str = '-0W'  # Big Generic Material Quadlets
+    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets
+    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group Quadlets
     KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
 
 
@@ -360,7 +363,10 @@ class Counter:
                 '-0L': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
                 '-0V': Cizage(hs=3, ss=5, fs=8),
+                '-W': Cizage(hs=2, ss=2, fs=4),
+                '-0W': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
+                '-0Z': Cizage(hs=3, ss=5, fs=8),
                 '--AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },

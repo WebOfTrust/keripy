@@ -78,8 +78,11 @@ def test_codexes_tags():
         'PathedMaterialGroup': '-L',
         'BigPathedMaterialGroup': '-0L',
         'AttachmentGroup': '-V',
-        'ESSRPayloadGroup': '-Z',
         'BigAttachmentGroup': '-0V',
+        'GenericGroup': '-W',
+        'BigGenericGroup': '-0W',
+        'ESSRPayloadGroup': '-Z',
+        'BigESSRPayloadGroup': '-0Z',
         'KERIACDCGenusVersion': '--AAA'
     }
 
@@ -316,8 +319,11 @@ def test_counter_class():
                     '-0L': 'BigPathedMaterialGroup',
                     '-V': 'AttachmentGroup',
                     '-0V': 'BigAttachmentGroup',
+                    '-W': 'GenericGroup',
+                    '-0W': 'BigGenericGroup',
                     '-Z': 'ESSRPayloadGroup',
-                    '--AAA': 'KERIACDCGenusVersion'
+                    '-0Z': 'BigESSRPayloadGroup',
+                    '--AAA': 'KERIACDCGenusVersion',
                 }
             },
         2:
@@ -403,7 +409,10 @@ def test_counter_class():
                     '-0L': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
                     '-0V': Cizage(hs=3, ss=5, fs=8),
+                    '-W': Cizage(hs=2, ss=2, fs=4),
+                    '-0W': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
+                    '-0Z': Cizage(hs=3, ss=5, fs=8),
                     '--AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             },
