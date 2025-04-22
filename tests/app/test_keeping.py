@@ -326,7 +326,6 @@ def test_keeper():
         assert keeper.name == "test"
         assert keeper.temp == True
         assert isinstance(keeper.env, lmdb.Environment)
-        print(keeper.path)
         assert keeper.path.startswith(os.path.join(tempDirPath, "keri_ks_"))
         assert keeper.path.endswith(os.path.join("_test", "keri", "ks", "test"))
         assert keeper.env.path() == keeper.path
