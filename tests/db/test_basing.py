@@ -5,6 +5,8 @@ tests.db.dbing module
 """
 import json
 import os
+import platform
+import tempfile
 from dataclasses import dataclass, asdict
 
 import pytest
@@ -35,6 +37,7 @@ def test_baser():
     """
     Test Baser class
     """
+    tempDirPath = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
     baser = Baser(reopen=True)  # default is to not reopen
     assert isinstance(baser, Baser)
     assert baser.name == "main"
@@ -99,7 +102,7 @@ def test_baser():
         assert baser.temp == True
         assert isinstance(baser.env, lmdb.Environment)
         _, path = os.path.splitdrive(os.path.normpath(baser.path))
-        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_lmdb_"))
+        assert path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
         assert baser.path.endswith(os.path.join("_test", "keri", "db", "test"))
         assert baser.env.path() == baser.path
         assert os.path.exists(baser.path)

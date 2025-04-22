@@ -5,6 +5,7 @@ tests.app.configin module
 import os
 import platform
 import shutil
+import tempfile
 
 import pytest
 
@@ -17,6 +18,7 @@ def test_configer():
     Test Configer class
     """
     # Test Filer with file not dir
+    tempDirPath = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
     filepath = os.path.join(os.path.sep, 'usr', 'local', 'var', 'keri', 'cf', 'main', 'conf.json')
     if os.path.exists(filepath):
         os.remove(filepath)
@@ -214,9 +216,9 @@ def test_configer():
 
     #test openCF hjson
     with configing.openCF() as cfr:  # default uses json and temp==True
-        filepath = os.path.join(os.path.sep, 'tmp', 'keri_cf_2_zu01lb_test', 'keri', 'cf', 'main', 'test.json')
+        filepath = os.path.join(tempDirPath, 'keri_cf_2_zu01lb_test', 'keri', 'cf', 'main', 'test.json')
         _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(os.path.sep, 'tmp', 'keri_'))
+        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.json'))
         assert cfr.opened
         assert cfr.human
@@ -231,9 +233,9 @@ def test_configer():
 
     #test openCF json
     with configing.openCF(human=False) as cfr:  # default uses json and temp==True
-        filepath = '/tmp/keri_cf_2_zu01lb_test/keri/cf/main/test.json'
+        filepath = os.path.join(tempDirPath,'keri_cf_2_zu01lb_test/keri/cf/main/test.json')
         _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(os.path.sep, 'tmp', 'keri_'))
+        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.json'))
         assert cfr.opened
         assert not cfr.human
@@ -249,7 +251,7 @@ def test_configer():
     #test openCF mgpk
     with configing.openCF(fext='mgpk') as cfr:  # default uses temp==True
         _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(os.path.sep, 'tmp', 'keri_'))
+        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.mgpk'))
         assert cfr.opened
         assert os.path.exists(cfr.path)
@@ -264,7 +266,7 @@ def test_configer():
     # test openCF cbor
     with configing.openCF(fext='cbor') as cfr:  # default uses temp==True
         _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(os.path.sep, 'tmp', 'keri_'))
+        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.cbor'))
         assert cfr.opened
         assert os.path.exists(cfr.path)
