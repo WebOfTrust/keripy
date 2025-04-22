@@ -65,8 +65,7 @@ def test_issuer():
         assert issuer.name == "test"
         assert issuer.temp is True
         assert isinstance(issuer.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(issuer.path))
-        assert path.startswith(os.path.join(tempDirPath, "keri_reg_"))
+        assert issuer.path.startswith(os.path.join(tempDirPath, "keri_reg_"))
         assert issuer.path.endswith(os.path.join("_test", "keri", "reg", "test"))
         assert issuer.env.path() == issuer.path
         assert os.path.exists(issuer.path)

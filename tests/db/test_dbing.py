@@ -182,8 +182,7 @@ def test_opendatabaser():
         assert isinstance(databaser, LMDBer)
         assert databaser.name == "test"
         assert isinstance(databaser.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(databaser.path))
-        assert path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
+        assert databaser.path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
         assert databaser.path.endswith(os.path.join("_test", "keri", "db", "test"))
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
@@ -196,8 +195,7 @@ def test_opendatabaser():
         assert isinstance(databaser, LMDBer)
         assert databaser.name == "blue"
         assert isinstance(databaser.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(databaser.path))
-        assert path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
+        assert databaser.path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
         assert databaser.path.endswith(os.path.join("_test", "keri", "db", "blue"))
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)

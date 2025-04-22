@@ -217,8 +217,8 @@ def test_configer():
     #test openCF hjson
     with configing.openCF() as cfr:  # default uses json and temp==True
         filepath = os.path.join(tempDirPath, 'keri_cf_2_zu01lb_test', 'keri', 'cf', 'main', 'test.json')
-        _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
+        # _, path = os.path.splitdrive(os.path.normpath(cfr.path))
+        assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.json'))
         assert cfr.opened
         assert cfr.human
@@ -234,8 +234,7 @@ def test_configer():
     #test openCF json
     with configing.openCF(human=False) as cfr:  # default uses json and temp==True
         filepath = os.path.join(tempDirPath,'keri_cf_2_zu01lb_test/keri/cf/main/test.json')
-        _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
+        assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.json'))
         assert cfr.opened
         assert not cfr.human
@@ -250,8 +249,7 @@ def test_configer():
 
     #test openCF mgpk
     with configing.openCF(fext='mgpk') as cfr:  # default uses temp==True
-        _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
+        assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.mgpk'))
         assert cfr.opened
         assert os.path.exists(cfr.path)
@@ -265,8 +263,7 @@ def test_configer():
 
     # test openCF cbor
     with configing.openCF(fext='cbor') as cfr:  # default uses temp==True
-        _, path = os.path.splitdrive(os.path.normpath(cfr.path))
-        assert path.startswith(os.path.join(tempDirPath, 'keri_'))
+        assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.cbor'))
         assert cfr.opened
         assert os.path.exists(cfr.path)

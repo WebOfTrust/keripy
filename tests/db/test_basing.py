@@ -101,8 +101,7 @@ def test_baser():
         assert baser.name == "test"
         assert baser.temp == True
         assert isinstance(baser.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(baser.path))
-        assert path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
+        assert baser.path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
         assert baser.path.endswith(os.path.join("_test", "keri", "db", "test"))
         assert baser.env.path() == baser.path
         assert os.path.exists(baser.path)

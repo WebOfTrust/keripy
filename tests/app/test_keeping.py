@@ -189,8 +189,7 @@ def test_openkeeper():
         assert isinstance(ks, keeping.Keeper)
         assert ks.name == "test"
         assert isinstance(ks.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(ks.path))
-        assert path.startswith(os.path.join(tempDirPath, "keri_ks_"))
+        assert ks.path.startswith(os.path.join(tempDirPath, "keri_ks_"))
         assert ks.path.endswith(os.path.join("_test", "keri", "ks", "test"))
         assert ks.env.path() == ks.path
         assert os.path.exists(ks.path)
@@ -203,8 +202,7 @@ def test_openkeeper():
         assert isinstance(ks, keeping.Keeper)
         assert ks.name == "blue"
         assert isinstance(ks.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(ks.path))
-        assert path.startswith(os.path.join(tempDirPath, "keri_ks_"))
+        assert ks.path.startswith(os.path.join(tempDirPath, "keri_ks_"))
         assert ks.path.endswith(os.path.join("_test", "keri", "ks", "blue"))
         assert ks.env.path() == ks.path
         assert os.path.exists(ks.path)
@@ -328,8 +326,8 @@ def test_keeper():
         assert keeper.name == "test"
         assert keeper.temp == True
         assert isinstance(keeper.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(keeper.path))
-        assert path.startswith(os.path.join(tempDirPath, "keri_ks_"))
+        print(keeper.path)
+        assert keeper.path.startswith(os.path.join(tempDirPath, "keri_ks_"))
         assert keeper.path.endswith(os.path.join("_test", "keri", "ks", "test"))
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
