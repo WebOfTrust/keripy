@@ -19,8 +19,8 @@ words2="$(kli challenge generate --out string)"
 
 echo "Challenging cha1 with ${words1}"
 kli challenge respond --name cha1 --alias cha1 --recipient cha2 --words "${words1}"
-kli challenge verify --name cha2 --alias cha2 --signer cha1 --words "${words1}"
+kli challenge verify --name cha2 --signer cha1 --words "${words1}"
 
 echo "Challenging cha2 with ${words2}"
 kli challenge respond --name cha2 --alias cha2 --recipient cha1 --words "${words2}"
-kli challenge verify --name cha1 --alias cha1 --signer cha2 --words "${words2}"
+kli challenge verify --name cha1 --signer cha2 --words "${words2}"
