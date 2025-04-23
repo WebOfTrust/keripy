@@ -23,6 +23,7 @@ raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 """
 import math
+import os
 from collections import namedtuple, deque
 from dataclasses import dataclass, asdict, field
 
@@ -30,10 +31,13 @@ import pysodium
 from hio.base import doing
 
 from .. import kering
-from .. import core
+from .. import core, help
 from ..core import coring
 from ..db import dbing, subing, koming
+from ..db.basing import KERIBaserMapSizeKey
 from ..help import helping
+
+logger = help.ogler.getLogger()
 
 Algoage = namedtuple("Algoage", 'randy salty group extern')
 Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
@@ -128,6 +132,9 @@ def openKS(name="test", **kwa):
             Otherwise open in persistent directory, do not clear on close
     """
     return dbing.openLMDB(cls=Keeper, name=name, **kwa)
+
+# Env var for configuring LMDB size for the Keeper database
+KERIKeeperMapSizeKey = "KERI_KEEPER_MAP_SIZE"
 
 
 class Keeper(dbing.LMDBer):
@@ -250,6 +257,17 @@ class Keeper(dbing.LMDBer):
         """
         if perm is None:
             perm = self.Perm  # defaults to restricted permissions for non temp
+
+        # support separate Keeper size config yet fall back to baser size if not set
+        keeperSize = os.getenv(KERIKeeperMapSizeKey, None)
+        baserSize = os.getenv(KERIBaserMapSizeKey, None)
+        mapSize = keeperSize if (keeperSize is not None and keeperSize != '') else baserSize
+        if mapSize:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error("KERI_KEEPER_MAP_SIZE and KERI_BASER_MAP_SIZE must be an integer value >1!")
+                raise
 
         super(Keeper, self).__init__(headDirPath=headDirPath, perm=perm,
                                      reopen=reopen, **kwa)
