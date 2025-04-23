@@ -386,7 +386,7 @@ class Oobiery:
         obr = basing.OobiRecord(cid=cid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
-    def scoobiDo(self, tymth=None, tock=0.0):
+    def scoobiDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             .exc responses and pass them on to the HTTPRespondant
@@ -661,7 +661,7 @@ class Authenticator:
         wkan = basing.WellKnownAuthN(url=url, dt=now)
         self.hby.db.wkas.add(keys=(cid,), val=wkan)
 
-    def authzDo(self, tymth=None, tock=0.0):
+    def authzDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             .exc responses and pass them on to the HTTPRespondant

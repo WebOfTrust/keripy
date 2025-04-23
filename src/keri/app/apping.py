@@ -28,9 +28,9 @@ class Consoler(doing.Doer):
         self.db = db if db is not None else basing.Baser()
         self.console = console if console is not None else serialing.Console()
 
-    def enter(self):
+    def enter(self, *, temp=None):
         """"""
-        if not self.console.reopen():
+        if not self.console.reopen(): # reopen(temp=temp)
             raise IOError("Unable to open serial console.")
 
     def recur(self, tyme):
