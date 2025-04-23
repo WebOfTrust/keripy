@@ -3,6 +3,7 @@
 keri.app.storing module
 
 """
+import os
 
 from hio.base import doing
 from hio.help import decking
@@ -13,8 +14,12 @@ from .. import help
 from ..core import coring, serdering
 from ..core.coring import MtrDex
 from ..db import dbing, subing
+from ..db.basing import KERIBaserMapSizeKey
 
 logger = help.ogler.getLogger()
+
+# Env var for configuring LMDB size for the Mailbox database
+KERIMailboxerMapSizeKey = "KERI_MAILBOXER_MAP_SIZE"
 
 
 class Mailboxer(dbing.LMDBer):
@@ -48,6 +53,17 @@ class Mailboxer(dbing.LMDBer):
         """
         self.tpcs = None
         self.msgs = None
+
+        # support separate mailbox size config yet fall back to baser size if not set
+        mailboxerSize = os.getenv(KERIMailboxerMapSizeKey, None)
+        baserSize = os.getenv(KERIBaserMapSizeKey, None)
+        mapSize = mailboxerSize if (mailboxerSize is not None and mailboxerSize != '') else baserSize
+        if mapSize:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error("KERI_MAILBOXER_MAP_SIZE and KERI_BASER_MAP_SIZE must be an integer value >1!")
+                raise
 
         super(Mailboxer, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 
