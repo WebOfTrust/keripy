@@ -5,7 +5,7 @@ kli query --name multisig2 --alias multisig2 --prefix EKYLUMmNPZeEs77Zvclf0bSN5I
 kli rotate --name multisig2 --alias multisig2
 kli query --name multisig1 --alias multisig1 --prefix EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1
 
-# Perform rotation of mulisig AID from local kli AIDs that roll themselves out and the new AIDs in
+# Perform rotation of multisig AID from local kli AIDs that roll themselves out and the new AIDs in
 kli multisig rotate --name multisig1 --alias multisig \
          --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:2 \
          --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:2 \
