@@ -211,7 +211,7 @@ class ConfirmDoer(doing.DoDoer):
                             while not witDoer.cues:
                                 _ = yield self.tock
 
-                        print(f'Delegagtor Prefix  {hab.pre}')
+                        print(f'Delegator Prefix  {hab.pre}')
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
                         # wait for confirmation of fully commited event

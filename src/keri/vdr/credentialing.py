@@ -538,7 +538,7 @@ class Registrar(doing.DoDoer):
 
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
-            print("Waiting for TEL registry vcp event mulisig anchoring event")
+            print("Waiting for TEL registry vcp event multisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
     def issue(self, creder, iserder, anc):
@@ -578,7 +578,7 @@ class Registrar(doing.DoDoer):
 
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
-            print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
+            print(f"Waiting for TEL iss event multisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
 
     def revoke(self, creder, rserder, anc):
@@ -618,7 +618,7 @@ class Registrar(doing.DoDoer):
 
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
-            print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
+            print(f"Waiting for TEL rev event multisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
