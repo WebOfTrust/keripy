@@ -200,6 +200,9 @@ class DicterSuber(subing.Suber):
         """
         return self.db.cnt(db=self.sdb)
 
+# Env var for configuring LMDB size for the Noter database
+KERINoterMapSizeKey = "KERI_NOTER_MAP_SIZE"
+
 
 class Noter(dbing.LMDBer):
     """
