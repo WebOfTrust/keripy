@@ -17,6 +17,8 @@ import pysodium
 from hio.base import doing
 
 from keri import kering
+from keri.app.keeping import Keeper
+from keri.db.dbing import LMDBer
 from keri.help import helping
 
 from keri import core
@@ -1996,6 +1998,34 @@ def test_manager_sign_dual_indices():
     assert not os.path.exists(manager.ks.path)
     assert not manager.ks.opened
     """End Test"""
+
+def test_keeper_db_size_set_from_env_var():
+    new_map_size = 10737418240
+
+    # Default map size works
+    kpr = Keeper(reopen=True)
+    assert kpr.env.info()['map_size'] != new_map_size, "Expected map size to be the default 10MB"
+    assert kpr.env.info()['map_size'] == LMDBer.MapSize, "Expected map size to be the default 10MB"
+
+    # Specific map size works
+    os.environ["KERI_KEEPER_MAP_SIZE"] = f"{new_map_size}"
+
+    kpr = Keeper(reopen=True)
+    assert kpr.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
+    os.environ["KERI_KEEPER_MAP_SIZE"] = ''
+
+    # generic map size works
+    baser_map_size = 10737418240
+    os.environ["KERI_BASER_MAP_SIZE"] = f"{baser_map_size}"
+
+    kpr = Keeper(reopen=True)
+    assert kpr.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
+
+    # Bad map size throws
+    os.environ["KERI_KEEPER_MAP_SIZE"] = f"bad_map_size"
+    with pytest.raises(ValueError) as excinfo:
+        kpr = Keeper(reopen=True)
+    assert "invalid literal for int" in str(excinfo.value), "Expected ValueError when map size is not an integer"
 
 if __name__ == "__main__":
     test_manager_sign_dual_indices()
