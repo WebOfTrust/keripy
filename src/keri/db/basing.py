@@ -501,6 +501,8 @@ def reopenDB(db, clear=False, **kwa):
     finally:
         db.close(clear=clear)
 
+# Env var for configuring LMDB size for the main Baser database
+KERIBaserMapSizeKey = "KERI_BASER_MAP_SIZE"
 
 class Baser(dbing.LMDBer):
     """
