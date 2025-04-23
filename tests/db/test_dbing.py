@@ -231,11 +231,14 @@ def test_lmdber():
     databaser.reopen()
     assert databaser.opened
     assert databaser.env.info()['map_size'] == 2 * 1024**3  # 2GB
+    os.environ.pop('KERI_LMDB_MAP_SIZE')
 
     os.environ['KERI_LMDB_MAP_SIZE'] = f'invalid-size'  # will trigger default
     databaser.reopen()
     assert databaser.opened
-    assert databaser.env.info()['map_size'] == 4 * 1024 ** 3  # 4GB default value
+    assert databaser.env.info()['map_size'] == LMDBer.MapSize  # 10MB default value
+    os.environ.pop('KERI_LMDB_MAP_SIZE')
+
     assert isinstance(databaser.env, lmdb.Environment)
     assert databaser.path.endswith("keri/db/main")
     assert databaser.env.path() == databaser.path

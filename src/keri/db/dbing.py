@@ -310,6 +310,7 @@ class LMDBer(filing.Filer):
     TempSuffix = "_test"
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     MaxNamedDBs = 96
+    MapSize = 104857600
 
 
     def __init__(self, readonly=False, **kwa):
@@ -385,12 +386,17 @@ class LMDBer(filing.Filer):
             self.readonly = readonly
 
         # open lmdb major database instance
-        # creates files data.mdb and lock.mdb in .dbDirPath
-        map_size = os.getenv("KERI_LMDB_MAP_SIZE", '4294967296')  # 4GB
+        # Support old ENV var on 1.1.x branch for backwards compatibility
+        old_map_size = os.getenv("KERI_LMDB_MAP_SIZE", None)
+        # Support new ENV var for 1.2.x and main forwards compatibility
+        baser_size = os.getenv("KERI_BASER_MAP_SIZE", None)
+        map_size = baser_size if (baser_size is not None) else old_map_size if (old_map_size is not None) else self.MapSize
         try:
             map_size = int(map_size)
         except ValueError:
-            map_size = 4 * 1024**3  # 4GB
+            map_size = self.MapSize # defaults to 10MB
+
+        # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=map_size,
                              mode=self.perm, readonly=self.readonly)
 

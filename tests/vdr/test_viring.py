@@ -8,10 +8,12 @@ import json
 import os
 
 import lmdb
+import pytest
 
 from keri.core.coring import Diger, versify, Serials
-from keri.db.dbing import openLMDB, dgKey, snKey
-from keri.vdr.viring import Reger
+from keri.db.basing import KERIBaserMapSizeKey
+from keri.db.dbing import openLMDB, dgKey, snKey, LMDBer
+from keri.vdr.viring import Reger, KERIRegerMapSizeKey
 
 
 def test_issuer():
@@ -340,6 +342,42 @@ def test_clone():
           b'n_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDi'
           b'PjioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA-GAB0AAAAAAAAAAAA'
           b'AAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4')
+
+
+def test_reger_db_size_set_from_env_var():
+    # Clear environment before test
+    if KERIBaserMapSizeKey in os.environ:
+        os.environ.pop(KERIBaserMapSizeKey)
+    if KERIRegerMapSizeKey in os.environ:
+        os.environ.pop(KERIRegerMapSizeKey)
+
+    new_map_size = 10737418240
+    # Default map size works
+    reger = Reger()
+    assert reger.env.info()['map_size'] != new_map_size, "Expected map size to be the default 10MB"
+    assert reger.env.info()['map_size'] == LMDBer.MapSize, "Expected map size to be the default 10MB"
+
+    # Specific map size works
+    os.environ[KERIRegerMapSizeKey] = f"{new_map_size}"
+
+    reger = Reger()
+    assert reger.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
+    os.environ.pop(KERIRegerMapSizeKey)
+
+    # generic map size works
+    baser_map_size = 10737418240
+    os.environ[KERIBaserMapSizeKey] = f"{baser_map_size}"
+
+    reger = Reger()
+    assert reger.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
+
+    # Bad map size throws
+    os.environ[KERIRegerMapSizeKey] = f"bad_map_size"
+    with pytest.raises(ValueError) as excinfo:
+        Reger()
+    assert "invalid literal for int" in str(excinfo.value), "Expected ValueError when map size is not an integer"
+    os.environ.pop(KERIBaserMapSizeKey)
+    os.environ.pop(KERIRegerMapSizeKey)
 
 
 if __name__ == "__main__":

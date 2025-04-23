@@ -4,14 +4,19 @@ keri.app.notifying module
 
 """
 import datetime
+import os
 from collections.abc import Iterable
 from typing import Union, Type
 
-from keri import kering
+from keri.db.basing import KERIBaserMapSizeKey
+
+from keri import kering, help
 from keri.help import helping
 from keri.app import signaling
 from keri.core import coring
 from keri.db import dbing, subing
+
+logger = help.ogler.getLogger()
 
 
 def notice(attrs, dt=None, read=False):
@@ -197,6 +202,9 @@ class DicterSuber(subing.Suber):
         """
         return self.db.cnt(db=self.sdb)
 
+# Env var for configuring LMDB size for the Noter database
+KERINoterMapSizeKey = "KERI_NOTER_MAP_SIZE"
+
 
 class Noter(dbing.LMDBer):
     """
@@ -220,6 +228,17 @@ class Noter(dbing.LMDBer):
         self.notes = None
         self.nidx = None
         self.ncigs = None
+
+        # support separate mailbox size config yet fall back to baser size if not set
+        noterSize = os.getenv(KERINoterMapSizeKey, None)
+        baserSize = os.getenv(KERIBaserMapSizeKey, None)
+        mapSize = noterSize if (noterSize is not None and noterSize != '') else baserSize
+        if mapSize:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error("KERI_NOTER_MAP_SIZE and KERI_BASER_MAP_SIZE must be an integer value >1!")
+                raise
 
         super(Noter, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 

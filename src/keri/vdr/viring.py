@@ -7,7 +7,7 @@ VIR  Verifiable Issuance(Revocation) Registry
 Provides public simple Verifiable Credential Issuance/Revocation Registry
 A special purpose Verifiable Data Registry (VDR)
 """
-
+import os
 from dataclasses import dataclass, field, asdict
 from  ordered_set import OrderedSet as oset
 
@@ -17,6 +17,7 @@ from .. import kering
 from ..app import signing
 from ..core import coring, serdering
 from ..db import dbing, basing
+from ..db.basing import KERIBaserMapSizeKey
 from ..vdr import eventing
 
 from keri import help
@@ -171,6 +172,9 @@ def openReger(name="test", **kwa):
     """
     return dbing.openLMDB(cls=Reger, name=name, **kwa)
 
+# Env var for configuring LMDB size for the Keeper database
+KERIRegerMapSizeKey = "KERI_REGER_MAP_SIZE"
+
 
 class Reger(dbing.LMDBer):
     """ Reger sets up named sub databases for TEL registry
@@ -276,6 +280,17 @@ class Reger(dbing.LMDBer):
             self._tevers.db = kwa["db"]
         else:
             self._tevers = dict()
+
+        # support separate Reger size config yet fall back to baser size if not set
+        regerSize = os.getenv(KERIRegerMapSizeKey, None)
+        baserSize = os.getenv(KERIBaserMapSizeKey, None)
+        mapSize = regerSize if (regerSize is not None and regerSize != '') else baserSize
+        if mapSize:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error("KERI_REGER_MAP_SIZE and KERI_BASER_MAP_SIZE must be an integer value >1!")
+                raise
 
         super(Reger, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
