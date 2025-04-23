@@ -17,9 +17,8 @@ from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials')
-parser.set_defaults(handler=lambda args: export_credentials(args),
-                    transferable=True)
+parser = argparse.ArgumentParser(description='Export credential from store and any related material')
+parser.set_defaults(handler=lambda args: export_credentials(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
