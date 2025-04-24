@@ -2047,7 +2047,7 @@ class Tevery:
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
-                    msg = f"OOO Missing escrowed event at dig = {bytes(digb).decode()}"
+                    msg = f"OOO Missing escrowed event at dig = {digb}"
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -2059,7 +2059,7 @@ class Tevery:
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
-                    msg = f"OOO Missing escrowed anchor at dig = {bytes(digb).decode()}"
+                    msg = f"OOO Missing escrowed anchor at dig = {digb}"
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
                 ancb = bytearray(couple)
@@ -2111,7 +2111,7 @@ class Tevery:
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
-                    msg = f"ANC Missing escrowed event at dig = {bytes(digb).decode()}"
+                    msg = f"ANC Missing escrowed event at dig = {digb}"
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -2123,7 +2123,7 @@ class Tevery:
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
-                    msg = f"ANC Missing escrowed anchor at dig = {bytes(digb).decode()}"
+                    msg = f"ANC Missing escrowed anchor at dig = {digb}"
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise MissingAnchorError(msg)
                 ancb = bytearray(couple)

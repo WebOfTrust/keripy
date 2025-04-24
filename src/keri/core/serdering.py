@@ -735,10 +735,22 @@ class Serder:
         # can't do set math osalls == oskeys - osexts becasue of osexts might be
         # out-of-order so have to iterate to ensure osexts if any appear in oskeys
         # after all fields in osalls
+
+        # Special processing for compatibility with old KERIpy versions prior to 1.1.25 that do not send the 'rp' field in exn messages
+        skip_missing_fields = False
+        missing_keys = [key for key in osalls if key not in oskeys]  # missing keys in sad
+        if missing_keys and self.ilk == Ilks.exn:  # Skip missing fields only for Exn (Exchange) ilk
+            if len(missing_keys) == 1 and 'rp' in missing_keys:
+                skip_missing_fields = True
+        src_index = 0
         for i, label in enumerate(osalls):
-            if oskeys[i] != label:
+            # special missing handling for pre 1.1.25; skips missing fields in the schema, in order
+            if skip_missing_fields and label in missing_keys:
+                continue  # skip incrementing the src_index so it stays in place, in order
+            if oskeys[src_index] != label:
                 raise MissingFieldError(f"Missing or out-of-order field = {label} "
                                          f"from = {list(osalls)} in sad.")
+            src_index += 1 # advance source index only if label found in source oskeys
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
@@ -1555,8 +1567,18 @@ class SerderKERI(Serder):
         allkeys = list(self.Fields[self.proto][self.vrsn][self.ilk].alls)
         keys = list(self.sad)
         if allkeys != keys:
-            raise ValidationError(f"Invalid top level field list. Expected "
-                                  f"{allkeys} got {keys}.")
+            # special handling for pre 1.1.25 KERIpy not sending 'rp' field in exn messages.
+            skip_missing_field = False
+            if self.ilk == Ilks.exn:
+                missing_keys = [key for key in allkeys if key not in keys]
+                if missing_keys:
+                    if len(missing_keys) == 1 and 'rp' in missing_keys:
+                        skip_missing_field = True
+            if skip_missing_field:
+                pass
+            else:
+                raise ValidationError(f"Invalid top level field list. Expected "
+                                      f"{allkeys} got {keys}.")
 
         if (self.vrsn.major < 2 and self.vrsn.minor < 1 and
             self.ilk in (Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar, Ilks.exn)):
