@@ -5960,7 +5960,7 @@ class Kevery:
                 if not sigs:  # empty list
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"PDE Missing escrowed evt sigs at dig = {edig}"
-                    logger.info("Kevery unescrow error: %s", bytes(edig))
+                    logger.info("Kevery unescrow error: %s", edig)
                     raise ValidationError(msg)
 
                 # get witness signatures (wigs not wits) assumes wont be in this
@@ -5975,10 +5975,10 @@ class Kevery:
                     ## so just log for debugging but do not unescrow by raising
                     ## ValidationError
                     #logger.info("Kevery unescrow error: Missing event wigs at."
-                                #"dig = %s", bytes(edig))
+                                #"dig = %s", edig)
 
                     #raise ValidationError("Missing escrowed evt wigs at "
-                                          #"dig = {}.".format(bytes(edig)))
+                                          #"dig = {}.".format(edig))
 
                 # setup parameters to process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
