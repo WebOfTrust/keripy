@@ -5971,10 +5971,10 @@ class Kevery:
                     ## so just log for debugging but do not unescrow by raising
                     ## ValidationError
                     #logger.info("Kevery unescrow error: Missing event wigs at."
-                                #"dig = %s", bytes(edig))
+                                #"dig = %s", edig)
 
                     #raise ValidationError("Missing escrowed evt wigs at "
-                                          #"dig = {}.".format(bytes(edig)))
+                                          #"dig = {}.".format(edig))
 
                 # setup parameters to process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
