@@ -5594,7 +5594,7 @@ class Kevery:
                 dgkey = dgKey(pre, bytes(edig))
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local source so raise ValidationError which unescrows below
-                    msg = f"PSE Missing escrowed event source at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed event source at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5602,7 +5602,7 @@ class Kevery:
                 dtb = self.db.getDts(dgkey)
                 if dtb is None:  # othewise is a datetime as bytes
                     # no date time so raise ValidationError which unescrows below
-                    msg = f"PSE Missing escrowed event datetime at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed event datetime at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5611,7 +5611,7 @@ class Kevery:
                 dte = helping.fromIso8601(bytes(dtb))
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
                     # escrow stale so raise ValidationError which unescrows below
-                    msg = f"PSE Stale event escrow at dig = {bytes(edig)}"
+                    msg = f"PSE Stale event escrow at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5619,7 +5619,7 @@ class Kevery:
                 eraw = self.db.getEvt(dgkey)
                 if eraw is None:
                     # no event so so raise ValidationError which unescrows below
-                    msg = f"PSE Missing escrowed evt at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed evt at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5628,7 +5628,7 @@ class Kevery:
                 sigs = self.db.getSigs(dgkey)
                 if not sigs:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
-                    msg = f"PSE Missing escrowed evt sigs at dig = {bytes(edig)}"
+                    msg = f"PSE Missing escrowed evt sigs at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
                 wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
@@ -5762,7 +5762,7 @@ class Kevery:
                 dgkey = dgKey(pre, bytes(edig))
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local source so raise ValidationError which unescrows below
-                    msg = f"PWE Missing escrowed event source at dig = {bytes(edig)}"
+                    msg = f"PWE Missing escrowed event source at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5770,7 +5770,7 @@ class Kevery:
                 dtb = self.db.getDts(dgkey)
                 if dtb is None:  # othewise is a datetime as bytes
                     # no date time so raise ValidationError which unescrows below
-                    msg = f"PWE Missing escrowed event datetime at dig = {bytes(edig)}"
+                    msg = f"PWE Missing escrowed event datetime at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5779,7 +5779,7 @@ class Kevery:
                 dte = helping.fromIso8601(bytes(dtb))
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPWE):
                     # escrow stale so raise ValidationError which unescrows below
-                    msg = f"PWE Stale event escrow at dig = {bytes(edig)}"
+                    msg = f"PWE Stale event escrow at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5787,7 +5787,7 @@ class Kevery:
                 eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
                 if eraw is None:
                     # no event so so raise ValidationError which unescrows below
-                    msg = f"PWE Missing escrowed evt at dig = {bytes(edig)}"
+                    msg = f"PWE Missing escrowed evt at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -5797,7 +5797,7 @@ class Kevery:
                 sigs = self.db.getSigs(dgKey(pre, bytes(edig)))  # list of sigs
                 if not sigs:  # empty list
                     # no sigs so raise ValidationError which unescrows below
-                    msg = f"PWE Missing escrowed evt sigs at dig = {bytes(edig)}"
+                    msg = f"PWE Missing escrowed evt sigs at dig = {bytes(edig).decode()}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -6351,7 +6351,7 @@ class Kevery:
                 dgkey = dgKey(pre.encode("utf-8"), edig)
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local source so raise ValidationError which unescrows below
-                    msg = f"DEL Missing escrowed event source at dig = {bytes(edig)}"
+                    msg = f"DEL Missing escrowed event source at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -6359,7 +6359,7 @@ class Kevery:
                 dtb = self.db.getDts(dgkey)
                 if dtb is None:  # othewise is a datetime as bytes
                     # no date time so raise ValidationError which unescrows below
-                    msg = f"DEL Missing escrowed event datetime at dig = {bytes(edig)}"
+                    msg = f"DEL Missing escrowed event datetime at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -6368,7 +6368,7 @@ class Kevery:
                 dte = helping.fromIso8601(bytes(dtb))
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
                     # escrow stale so raise ValidationError which unescrows below
-                    msg = f"DEL Stale event escrow at dig = {bytes(edig)}"
+                    msg = f"DEL Stale event escrow at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -6376,7 +6376,7 @@ class Kevery:
                 eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
                 if eraw is None:
                     # no event so raise ValidationError which unescrows below
-                    msg = f"DEL Missing escrowed evt at dig = {bytes(edig)}"
+                    msg = f"DEL Missing escrowed evt at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -6386,7 +6386,7 @@ class Kevery:
                 sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
                 if not sigs:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
-                    msg = f"DEL Missing escrowed evt sigs at dig = {bytes(edig)}"
+                    msg = f"DEL Missing escrowed evt sigs at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -6858,7 +6858,7 @@ class Kevery:
                     dgkey = dgKey(pre, bytes(edig))
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local source so raise ValidationError which unescrows below
-                        msg = f"DUP Missing escrowed event source at dig = {bytes(edig)}"
+                        msg = f"DUP Missing escrowed event source at dig = {bytes(edig).decode()}"
                         logger.info("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
@@ -6866,7 +6866,7 @@ class Kevery:
                     dtb = self.db.getDts(dgkey)
                     if dtb is None:  # othewise is a datetime as bytes
                         # no date time so raise ValidationError which unescrows below
-                        msg = f"DUP Missing escrowed event datetime at dig = {bytes(edig)}"
+                        msg = f"DUP Missing escrowed event datetime at dig = {bytes(edig).decode()}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
@@ -6875,7 +6875,7 @@ class Kevery:
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutLDE):
                         # escrow stale so raise ValidationError which unescrows below
-                        msg = f"DUP Stale event escrow at dig = {bytes(edig)}"
+                        msg = f"DUP Stale event escrow at dig = {bytes(edig).decode()}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
@@ -6883,7 +6883,7 @@ class Kevery:
                     eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
                         # no event so raise ValidationError which unescrows below
-                        msg = f"DUP Missing escrowed evt at dig = {bytes(edig)}"
+                        msg = f"DUP Missing escrowed evt at dig = {bytes(edig).decode()}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
@@ -6893,7 +6893,7 @@ class Kevery:
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
                     if not sigs:  # otherwise its a list of sigs
                         # no sigs so raise ValidationError which unescrows below
-                        msg = f"DUP Missing escrowed evt sigs at dig = {bytes(edig)}"
+                        msg = f"DUP Missing escrowed evt sigs at dig = {bytes(edig).decode()}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
