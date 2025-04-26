@@ -546,6 +546,7 @@ def test_lmdber():
         assert dber.addVal(db, key, val=b'a') == False  # duplicate
         assert dber.addVal(db, key, val=b'b') == True
         assert dber.getVals(db, key) == [b'a', b'b', b'm', b'x', b'z']
+        assert dber.getValLast(db, key) == b'z'
         assert [val for val in dber.getValsIter(db, key)] == [b'a', b'b', b'm', b'x', b'z']
         assert dber.delVals(db, key) == True
         assert dber.getVals(db, key) == []
