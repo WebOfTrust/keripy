@@ -3,19 +3,22 @@
 tests escrows in database primarily logic in Kevery and Kever from keri.core.eventing
 
 """
+import logging
 import os
 import time
 import datetime
 
+import pytest
+
 from keri import help
+from keri.db.dbing import splitSnKey, dgKey, snKey
 from keri.help import helping
 
 from keri import core, kering
 from keri.core import coring, eventing, parsing
 
 from keri.db import dbing, basing
-from keri.app import keeping
-
+from keri.app import keeping, habbing
 
 logger = help.ogler.getLogger()
 
@@ -27,6 +30,7 @@ def test_partial_signed_escrow():
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
     psr = parsing.Parser()
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -349,11 +353,107 @@ def test_partial_signed_escrow():
     """End Test"""
 
 
+def test_partial_signed_escrow_validation_errors():
+    """
+    Test partially signed escrow validation errors which each should remove the invalid escrowed events
+    and not continue to reprocess them.
+    """
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    psr = parsing.Parser()
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+
+    # init event DB and keep DB
+    with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Identifier setup - 3 signers so we can easily trigger the partially signed state
+        # create inception event with 3 keys each in incept and next sets
+        # defaults are algo salty and rooted
+        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
+        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                               isith=sith,
+                               nsith=nxtsith,
+                               ndigs=[diger.qb64 for diger in digers],
+                               code=coring.MtrDex.Blake3_256)
+        pre = srdr.ked["i"]
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        # Create CESR message byte stream with attachments
+        msg = bytearray(srdr.raw) # message
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b) # attachments
+        msg.extend(sigers[0].qb64b) # only add the first signer to trigger partially signed logic
+
+        # apply msg to Kevery to process
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 1
+        assert escrows[0] == srdr.saidb  #  escrow entry for event
+
+        # TEST MISSING EVENT SOURCE
+        for ekey, edig in db.getPseItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            esr = db.esrs.get(keys=dgkey)
+            assert esr is not None
+            db.esrs.rem(keys=dgkey)
+        kvy.processEscrowPartialSigs()
+        escrows = db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows)== 0
+
+        # TEST MISSING DATE TIME
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        escrows = kvy.db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 1
+        for ekey, edig in db.getPseItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            dts = db.getDts(dgkey)
+            assert dts is not None
+            db.delDts(dgkey)
+        kvy.processEscrowPartialSigs()
+        escrows = db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 0
+
+        # TEST MISSING EVENT DATA
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        escrows = kvy.db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 1
+        for ekey, edig in db.getPseItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            evt = db.getEvt(dgkey)
+            assert evt is not None
+            db.delEvt(dgkey)
+        kvy.processEscrowPartialSigs()
+        escrows = db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 0
+
+        # TEST MISSING SIGNATURES
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        escrows = kvy.db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 1
+        for ekey, edig in db.getPseItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            sigs = db.getSigs(dgkey)
+            assert sigs is not None
+            db.delSigs(dgkey)
+        kvy.processEscrowPartialSigs()
+        escrows = db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 0
+
+
 def test_missing_delegator_escrow():
     """
     Test missing delegator escrow
 
-    bod is the delegator
+    bob is the delegator
     del is the delegate
     wat is the watcher
     """
@@ -368,8 +468,8 @@ def test_missing_delegator_escrow():
           keeping.openKS(name="bob") as bobKS,
           basing.openDB(name="del") as delDB,
           keeping.openKS(name="del") as delKS,
-          basing.openDB(name="wat") as watDB, \
-          keeping.openKS(name="wat") as watKS          ):
+          basing.openDB(name="wat") as watDB,
+          keeping.openKS(name="wat") as watKS):
 
         # Init key pair managers
         bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
@@ -660,7 +760,6 @@ def test_misfit_escrow():
     """End Test"""
 
 
-
 def test_out_of_order_escrow():
     """
     Test out of order escrow
@@ -668,6 +767,7 @@ def test_out_of_order_escrow():
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
     psr = parsing.Parser()
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -857,6 +957,132 @@ def test_out_of_order_escrow():
     """End Test"""
 
 
+def test_out_of_order_escrow_validation_errors():
+    """
+    Test out-of-order escrow validation errors which each should remove the invalid escrowed events
+    and not continue to reprocess them.
+    """
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    psr = parsing.Parser()
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+
+    # init event DB and keep DB
+    with basing.openDB(name="dandy") as db, keeping.openKS(name="dandy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Identifier setup
+        sith = ["1/2", "1/2", "1/2"]
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
+
+        srdr = eventing.incept(code=coring.MtrDex.Blake3_256, isith=sith, nsith=nxtsith,
+                               keys=[verfer.qb64 for verfer in verfers],
+                               ndigs=[diger.qb64 for diger in digers])
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        # Create CESR message byte stream with attachments
+        msg = bytearray(srdr.raw) # message
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b) # Attachments
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        icpmsg = bytearray(msg)  # save copy for later
+
+        # create interaction event
+        srdr = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixndig = srdr.said
+
+        # Create CESR message byte stream with attachments
+        msg = bytearray(srdr.raw) # message
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b) # attachments
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        ixnmsg = bytearray(msg)  # save copy for later
+
+        # TEST MISSING EVENT SOURCE
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)  # apply ixn msg, adding to OOO escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        for ekey, edig in db.getOoeItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            esr = db.esrs.get(keys=dgkey)
+            assert esr is not None
+            db.esrs.rem(keys=dgkey)
+        kvy.processEscrowOutOfOrders() # will remove the now invalid escrowed interaction event
+        escrows = db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+        # TEST MISSING DATE TIME
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)  # re-apply ixn msg, adding to OOO escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        for ekey, edig in db.getOoeItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            dtb = db.getDts(dgkey)
+            assert dtb is not None
+            db.delDts(dgkey) # remove the datetime stamp of the event so it will be invalid
+        kvy.processEscrowOutOfOrders() # will remove the now invalid escrowed interaction event
+        escrows = db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+        # stale event escrow test covered by test_out_of_order_escrow above
+
+        # TEST MISSING EVENT DATA
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)  # re-apply ixn msg, adding to OOO escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        for ekey, edig in db.getOoeItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            eraw = db.getEvt(dgkey)
+            assert eraw is not None
+            db.delEvt(dgkey) # remove the datetime stamp of the event so it will be invalid
+        kvy.processEscrowOutOfOrders() # will remove the now invalid escrowed interaction event
+        escrows = db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+        # TEST MISSING SIGNATURES
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)  # re-apply ixn msg, adding to OOO escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        for ekey, edig in db.getOoeItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            sigs = db.getSigs(dgkey)
+            assert sigs is not None
+            db.delSigs(dgkey) # remove the datetime stamp of the event so it will be invalid
+        kvy.processEscrowOutOfOrders() # will remove the now invalid escrowed interaction event
+        escrows = db.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+    # test high level processEscrows exception handler
+    del db.sigs # intentionally breaks the Baser db instance so that an unhandled exception occurs
+    with pytest.raises(Exception):
+        kvy.processEscrows() # will raise exception caught by the Kevery.processEscrows catch all
+        # this is to increase test coverage
+
+
 def test_unverified_receipt_escrow():
     """
     Test unverified receipt escrow
@@ -864,6 +1090,7 @@ def test_unverified_receipt_escrow():
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
     psr = parsing.Parser()
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -1476,6 +1703,428 @@ def test_unverified_trans_receipt_escrow():
     assert not os.path.exists(db.path)
 
     """End Test"""
+
+
+def test_partial_wigs_validation_errors():
+    """
+    Test partial witness receipt escrow validation errors which each should remove the invalid escrowed events
+    and not continue to reprocess them.
+    """
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    psr = parsing.Parser()
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+
+    # init event DB and keep DB
+    with basing.openDB(name="fredy") as db, keeping.openKS(name="fredy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # create witness identifiers
+        verfers, digers = mgr.incept(ncount=0, stem="wit0", transferable=False, temp=True)
+        wit0Verfer = verfers[0]
+        wit0pre = wit0Verfer.qb64
+
+        verfers, digers = mgr.incept(ncount=0, stem="wit1", transferable=False, temp=True)
+        wit1Verfer = verfers[0]
+        wit1pre = wit1Verfer.qb64
+
+        assert wit1pre != wit0pre
+        assert wit1pre <  wit0pre  # means wit1 escrow will get serviced first
+
+        # create inception event with 3 keys each in incept and next sets
+        # defaults are algo salty and rooted
+        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='fredy', temp=True)
+
+        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                               isith=sith,
+                               nsith=nxtsith,
+                               wits=[wit0pre, wit1pre],
+                               ndigs=[diger.qb64 for diger in digers],
+                               code=coring.MtrDex.Blake3_256)
+
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        # Create inception CESR message and attachments byte stream
+        msg = bytearray(srdr.raw) # message
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b) # attachments
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        icpmsg = msg
+
+
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy) # apply icp msg, adding to PW escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 1
+        assert escrows[0] == icpdig.encode("utf-8")  #  escrow entry for event
+
+        # First run of escrow processing should loop and not remove event
+        kvy.processEscrowPartialWigs() # will remove the now invalid escrowed inception event
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 1
+        assert escrows[0] == icpdig.encode("utf-8")  #  escrow entry for event
+
+        # TEST MISSING EVENT SOURCE
+        for ekey, edig in db.getPweItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            esr = db.esrs.get(keys=dgkey)
+            assert esr is not None
+            db.esrs.rem(keys=dgkey) # Removes event source
+        kvy.processEscrowPartialWigs() # will remove the now invalid escrowed inception event
+        escrows = db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 0
+
+        # TEST MISSING DATE TIME
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy) # apply icp msg, adding to PW escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 1
+        assert escrows[0] == icpdig.encode("utf-8")  #  escrow entry for event
+
+        for ekey, edig in db.getPweItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            dtb = db.getDts(dgkey)
+            assert dtb is not None
+            db.delDts(dgkey) # remove the datetime stamp of the event so it will be invalid
+        kvy.processEscrowPartialWigs() # will remove the now invalid escrowed inception event
+        escrows = db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 0
+
+        # TEST MISSING EVENT DATA
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy) # apply icp msg, adding to PW escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 1
+        assert escrows[0] == icpdig.encode("utf-8")  #  escrow entry for event
+
+        for ekey, edig in db.getPweItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            eraw = db.getEvt(dgkey)
+            assert eraw is not None
+            db.delEvt(dgkey) # remove the datetime stamp of the event so it will be invalid
+        kvy.processEscrowPartialWigs() # will remove the now invalid escrowed interaction event
+        escrows = db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 0
+
+        # TEST MISSING SIGNATURES
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy) # apply icp msg, adding to PW escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 1
+        assert escrows[0] == icpdig.encode("utf-8")  #  escrow entry for event
+
+        for ekey, edig in db.getPweItemIter():
+            pre, sn = splitSnKey(ekey)
+            dgkey = dgKey(pre, bytes(edig))
+            sigers = db.getSigs(dgkey)
+            assert sigers is not None
+            db.delSigs(dgkey)
+        kvy.processEscrowPartialWigs() # will remove the now invalid escrowed interaction event
+        escrows = db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 0
+
+        # TEST STALE EVENT
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy) # apply icp msg, adding to PW escrow
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 1
+        assert escrows[0] == icpdig.encode("utf-8")  #  escrow entry for event
+
+        kvy.TimeoutPWE = 0 # forces all escrows to be stale
+        time.sleep(0.001)
+        kvy.processEscrowPartialWigs() # will remove the now invalid escrowed inception event
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.getPwes(dbing.snKey(pre, 0))
+        assert len(escrows) == 0
+
+
+def test_partial_delegation_escrow_validation_errors():
+    """
+    Test partial delegation escrow validation errors which each should remove the invalid escrowed events
+    and not continue to reprocess them.
+    """
+    bobSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    delSalt = core.Salter(raw=b'abcdef0123456789').qb64
+    watSalt = core.Salter(raw=b'wxyzabcdefghijkl').qb64
+
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+
+    psr = parsing.Parser()
+
+    with (basing.openDB(name="bob") as bobDB,
+          keeping.openKS(name="bob") as bobKS,
+          basing.openDB(name="del") as delDB,
+          keeping.openKS(name="del") as delKS,
+          basing.openDB(name="wat") as watDB,
+          keeping.openKS(name="wat") as watKS):
+
+        # Init key pair managers
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
+        watMgr = keeping.Manager(ks=watKS, salt=watSalt)
+
+        # Init Keverys
+        bobKvy = eventing.Kevery(db=bobDB)
+        delKvy = eventing.Kevery(db=delDB)
+        watKvy = eventing.Kevery(db=watDB)
+
+        # Setup Wat with own inception event
+        verfers, digers = watMgr.incept(stem='wat', temp=True)  # algo default salty and rooted
+
+        watSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                  ndigs=[diger.qb64 for diger in digers],
+                                  code=coring.MtrDex.Blake3_256)
+
+        watPre = watSrdr.pre
+        watMgr.move(old=verfers[0].qb64, new=watPre)  # move key pair label to prefix
+        # Setup wat's prefixes so wat's KEL will be Kever.locallyOwned()
+        watDB.prefixes.add(watPre)
+        assert watPre in watDB.prefixes
+        # setup wat's on kel
+        sigers = watMgr.sign(ser=watSrdr.raw, verfers=verfers)
+        msg = bytearray(watSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        watIcpMsg = msg  # save for later
+
+        # apply msg to wats's Kevery
+        psr.parse(ims=bytearray(watIcpMsg), kvy=watKvy, local=True)
+        watK = watKvy.kevers[watPre]
+        assert watK.prefixer.qb64 == watPre
+        assert watK.serder.said == watSrdr.said
+
+        # Setup Bob with own inception event
+        verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
+        bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                  ndigs=[diger.qb64 for diger in digers],
+                                  code=coring.MtrDex.Blake3_256)
+
+        bobPre = bobSrdr.pre
+        bobMgr.move(old=verfers[0].qb64, new=bobPre)  # move key pair label to prefix
+        # Setup Bob's prefixes so bob's KEL will be Kever.locallyOwned() and
+        # Del's KEL will be Kever.locallyDelegated()
+        bobDB.prefixes.add(bobPre)
+        assert bobPre in bobDB.prefixes
+
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
+        msg = bytearray(bobSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        bobIcpMsg = msg  # save for later
+
+        # apply msg to bob's Kevery
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=bobKvy, local=True)
+        bobK = bobKvy.kevers[bobPre]
+        assert bobK.prefixer.qb64 == bobPre
+        assert bobK.serder.said == bobSrdr.said
+        assert bobK.sn == 0
+
+        # apply msg to del's Kevery so he knows about the AID
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
+        assert bobK.prefixer.qb64 in delKvy.kevers
+        delBobK = bobKvy.kevers[bobPre]  # bobs kever in dels kevery
+        assert delBobK.sn == 0
+
+        # Setup Del's inception event assuming that Bob's next event will be
+        # an ixn delegating event
+        verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
+        delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                   delpre=bobPre,
+                                   ndigs=[diger.qb64 for diger in digers])
+
+        delPre = delSrdr.pre
+        delMgr.move(old=verfers[0].qb64, new=delPre)  # move key pair label to prefix
+        # Setup Del's prefixes so Del's KEL will be Kever.locallyOwned()
+        delDB.prefixes.add(delPre)
+        assert delPre in delDB.prefixes
+
+        # Now create delegating event for Bob
+        seal = eventing.SealEvent(i=delPre,
+                                  s=delSrdr.ked["s"],
+                                  d=delSrdr.said)
+        bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+                                    dig=bobK.serder.said,
+                                    sn=bobK.sn+1,
+                                    data=[seal._asdict()])
+
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
+
+        msg = bytearray(bobSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        bobIxnMsg1 = msg  # delegating event with attachments
+
+        # apply msg to bob's Kevery
+        psr.parse(ims=bytearray(bobIxnMsg1), kvy=bobKvy, local=True)
+        assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
+        assert bobK.sn == 1
+
+        # now create Del's delegated inception event msg
+        sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
+
+        msg = bytearray(delSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        counter = core.Counter(core.Codens.SealSourceCouples,
+                               count=1, gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        seqner = coring.Seqner(sn=bobK.sn)
+        msg.extend(seqner.qb64b)
+        msg.extend(bobSrdr.saidb)
+        delIcpMsg = msg
+
+        # apply Del's delegated inception event message to bob's Kevery
+        # because the attachment includes valid source seal then the Delegables
+        # escrow is bypassed and is validated and shows up in AES
+        psr.parse(ims=bytearray(delIcpMsg), kvy=bobKvy, local=True)
+
+        # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert delPre in bobKvy.kevers  # successfully validated
+        bobDelK = bobKvy.kevers[delPre]  # delK in bobs kevery
+        assert bobDelK.delegated
+        assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
+        couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+        assert couple == seqner.qb64b + bobSrdr.saidb
+
+        # apply Del's inception msg to Del's Kevery
+        # Because locallyOwned by delegate event does not validate delegation
+        # and ignores the attached source seal
+        psr.parse(ims=bytearray(delIcpMsg), kvy=delKvy, local=True)
+
+        assert delPre in delKvy.kevers
+        delK = delKvy.kevers[delPre]
+        # no AES entry for del's own delegated event when locallyOwned
+        assert not delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+
+        # apply Del's delegated inception event message to wats's Kevery as remote
+        # because the attachment includes valid source seal but wat does not
+        # yet have Bob's delegating event entry. The event goes into partial
+        # delegated event escrow
+        psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
+        assert not bobPre in watKvy.kevers
+        assert not delPre in watKvy.kevers
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said  # escrow entry for event
+
+        # TEST MISSING EVENT SOURCE
+        for (epre,), esn, edig in watKvy.db.pdes.getOnItemIter():
+            dgkey = dgKey(epre, edig)
+            esr = watKvy.db.esrs.get(keys=dgkey)
+            assert esr is not None
+            watKvy.db.esrs.rem(keys=dgkey)
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
+
+        # TEST MISSING DATE TIME
+        psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
+        assert not bobPre in watKvy.kevers
+        assert not delPre in watKvy.kevers
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said  # escrow entry for event
+
+        for (epre,), esn, edig in watKvy.db.pdes.getOnItemIter():
+            dgkey = dgKey(epre, edig)
+            dtb = watKvy.db.getDts(dgkey)
+            assert dtb is not None
+            watKvy.db.delDts(dgkey) # remove date timestamp of event so it will be invalid
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
+
+        # TEST MISSING EVENT DATA
+        psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
+        assert not bobPre in watKvy.kevers
+        assert not delPre in watKvy.kevers
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said  # escrow entry for event
+
+        for (epre,), esn, edig in watKvy.db.pdes.getOnItemIter():
+            dgkey = dgKey(epre, edig)
+            eraw = watKvy.db.getEvt(dgkey)
+            assert eraw is not None
+            watKvy.db.delEvt(dgkey) # remove event data so it will be invalid
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
+
+        # TEST MISSING SIGNATURES
+        psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
+        assert not bobPre in watKvy.kevers
+        assert not delPre in watKvy.kevers
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said  # escrow entry for event
+
+        for (epre,), esn, edig in watKvy.db.pdes.getOnItemIter():
+            dgkey = dgKey(epre, edig)
+            sigs = watKvy.db.getSigs(dgkey)
+            assert sigs is not None
+            watKvy.db.delSigs(dgkey) # remove event sigs so it will be invalid
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
+
+        # TEST STALE EVENT
+        psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
+        assert not bobPre in watKvy.kevers
+        assert not delPre in watKvy.kevers
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said  # escrow entry for event
+
+        watKvy.TimeoutPWE = 0
+        time.sleep(0.001)
+        watKvy.processEscrowPartialDels()
+        assert not bobPre in watKvy.kevers
+        assert not delPre in watKvy.kevers
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
+
+
+        for (epre,), esn, edig in watKvy.db.pdes.getOnItemIter():
+            dgkey = dgKey(epre, edig)
+            sigs = watKvy.db.getSigs(dgkey)
+            assert sigs is not None
+            watKvy.db.delSigs(dgkey) # remove event sigs so it will be invalid
+        watKvy.processEscrowPartialDels()
+        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
 
 
 if __name__ == "__main__":
