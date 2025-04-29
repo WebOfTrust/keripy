@@ -409,7 +409,6 @@ def test_reset_levels():
                             temp=True, prefix='keri', reopen=True, clear=True)
     assert ogler.opened
     assert ogler.level == logging.DEBUG
-    _, path = os.path.splitdrive(os.path.normpath(ogler.dirPath))
     assert ogler.path.startswith(os.path.join(tempDirPath, "keri", "logs", "test_"))
     assert ogler.dirPath.endswith("_temp")
     assert ogler.path.endswith(os.path.join(os.path.sep, "test.log"))
