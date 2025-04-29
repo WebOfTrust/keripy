@@ -5326,7 +5326,7 @@ class Kevery:
             prefixer is Prefixer instance of prefix of receipter
             seqner is Seqner instance of  sn of est event of receiptor
             saider is Saider instance of said of est event of receiptor
-            igers is list of Siger instances of multi-sig of receiptor
+            sigers is list of Siger instances of multi-sig of receiptor
 
         escrow quintuple for each siger
             quintuple = edig+pre+snu+dig+sig
@@ -5334,7 +5334,7 @@ class Kevery:
                 edig is receipted event dig (serder.dig)
                 pre is receipter prefix
                 snu is receipter est event sn
-                dig is receipt est evant dig
+                dig is receipt est event dig
                 sig is indexed sig of receiptor of receipted event
         """
         # Receipt dig algo may not match database dig. So must always
