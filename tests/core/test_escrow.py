@@ -11,11 +11,12 @@ import datetime
 import pytest
 
 from keri import help
+from keri.core.eventing import deWitnessCouple, deReceiptTriple, deTransReceiptQuintuple
 from keri.db.dbing import splitSnKey, dgKey, snKey
 from keri.help import helping
 
 from keri import core, kering
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, indexing, serdering
 
 from keri.db import dbing, basing
 from keri.app import keeping, habbing
@@ -1379,6 +1380,7 @@ def test_unverified_trans_receipt_escrow():
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
     psr = parsing.Parser()
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -2124,6 +2126,996 @@ def test_partial_delegation_escrow_validation_errors():
             watKvy.db.delSigs(dgkey) # remove event sigs so it will be invalid
         watKvy.processEscrowPartialDels()
         escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
+
+
+def test_unverified_witness_escrow_validation_errors():
+    """
+    Test unverified witness escrow validation errors
+
+    cam is controller
+    van is validator
+    wes is a witness
+    wok is a witness
+    wam is a witness
+
+    """
+    salt = core.Salter(raw=b'abcdef0123456789').qb64
+
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+
+    with habbing.openHby(name="cam", base="test", salt=salt) as camHby, \
+         habbing.openHby(name="van", base="test", salt=salt) as vanHby, \
+         habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
+         habbing.openHby(name="wak", base="test", salt=salt) as wokHby, \
+         habbing.openHby(name="wam", base="test", salt=salt) as wamHby, \
+         habbing.openHby(name="wil", base="test", salt=salt) as wilHby:
+
+        # witnesses first so can set up inception event for cam
+        wsith = '1'
+        # setup Wes's habitat nontrans
+        # Wes's receipts will be rcts with a receipt couple attached
+
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
+        assert not wesHab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
+
+        # setup Wok's habitat nontrans
+        # Wok's receipts will be rcts with a receipt couple attached
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
+        assert not wokHab.kever.prefixer.transferable
+        # create non-local kevery for Wok to process nonlocal msgs
+        wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
+
+        # setup Wam's habitat nontrans
+        # Wams's receipts will be rcts with a receipt couple attached
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+        assert not wamHab.kever.prefixer.transferable
+        # create non-local kevery for Wam to process nonlocal msgs
+        wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
+
+        # setup Wil's habitat nontrans
+        # Wil's receipts will be rcts with a receipt couple attached
+        wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False)
+        assert not wilHab.kever.prefixer.transferable
+        # create non-local kevery for Wam to process nonlocal msgs
+        wilKvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
+
+        # setup Cam's habitat trans multisig
+        wits = [wesHab.pre, wokHab.pre, wamHab.pre]
+        csith = '2'  # hex str of threshold int
+        camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
+        assert camHab.kever.prefixer.transferable
+        assert len(camHab.iserder.berfers) == len(wits)
+        for werfer in camHab.iserder.berfers:
+            assert werfer.qb64 in wits
+        assert camHab.kever.wits == wits
+        assert camHab.kever.toader.num == 2
+        assert camHab.kever.sn == 0
+
+        # create non-local kevery for Cam to process onlocal msgs
+        camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
+
+        # setup Van's habitat trans multisig
+        vsith = '2'  # two of three signing threshold
+        vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
+        assert vanHab.kever.prefixer.transferable
+        # create non-local kevery for Van to process nonlocal msgs
+        vanKvy = eventing.Kevery(db=vanHab.db, lax=False, local=False)
+
+        # make list so easier to batch
+        camWitKvys = [wesKvy, wokKvy, wamKvy]
+        camWitHabs = [wesHab, wokHab, wamHab]
+
+        # Create Cam inception and send to each of Cam's witnesses
+        camIcpMsg = camHab.makeOwnInception()
+        rctMsgs = []  # list of receipts from each witness
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy, local=True)
+            assert kvy.kevers[camHab.pre].sn == 0  # accepted event
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
+            hab = camWitHabs[i]
+            rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
+            assert len(rctMsg) == 626
+            rctMsgs.append(rctMsg)
+
+        for msg in rctMsgs:  # process rct msgs from all witnesses
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
+        for hab in camWitHabs:
+            assert hab.pre in camKvy.kevers
+
+        # get from Cam database copies of witness receipts received by Cam
+        # and send to witnesses so all witnesses have full set of receipts
+        # from all other witnesses
+        # reply one event or receipt one event with all witness attachments
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
+        wigs = camHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
+        rserder = eventing.receipt(pre=camHab.pre,
+                                   sn=camHab.kever.sn,
+                                   said=camHab.kever.serder.said)
+        camIcpWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+        assert len(camIcpWitRctMsg) == 413
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=kvy, local=True)
+            assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
+            assert len(kvy.cues) == 0  # no cues
+
+        # send Cam icp and witness rcts to Van
+        parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=vanKvy, local=True)
+        # should escrow since not witnesses
+        assert camHab.pre not in vanKvy.kevers
+
+        # TEST MISSING DATE TIME
+        # process receipts
+        parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy, local=True)
+
+        assert camHab.pre not in vanKvy.kevers
+        escrows = vanKvy.db.getUwes(dbing.snKey(camHab.pre, 0)) # should be three receipts, one per witness
+        assert len(escrows) == 3
+
+        for ekey, ecouple in vanKvy.db.getUweItemIter():
+            pre, sn = splitSnKey(ekey)
+            rdiger, _wiger = deWitnessCouple(ecouple)
+            dgkey = dgKey(pre, bytes(rdiger.qb64b))
+            vanKvy.db.delDts(dgkey)
+        vanKvy.processEscrowUnverWitness()
+        escrows = vanKvy.db.getUwes(dbing.snKey(camHab.pre, 0)) # should be three receipts, one per witness
+        assert len(escrows) == 0
+
+        # TEST STALE EVENT
+        # process receipts
+        parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy, local=True)
+        assert camHab.pre not in vanKvy.kevers
+        escrows = vanKvy.db.getUwes(dbing.snKey(camHab.pre, 0)) # should be three receipts, one per witness
+        assert len(escrows) == 3
+
+        vanKvy.TimeoutUWE = 0
+        time.sleep(0.001)
+        vanKvy.processEscrowUnverWitness()
+        escrows = vanKvy.db.getUwes(dbing.snKey(camHab.pre, 0)) # should be three receipts, one per witness
+        assert len(escrows) == 0
+
+        vanKvy.TimeoutUWE = 3600
+
+
+def test_unverified_nontransferable_receiptors_escrow_validation_errors():
+    """
+    Test unverified witness escrow validation errors
+
+    cam is controller
+    van is validator
+    wes is a witness
+    wok is a witness
+    wam is a witness
+
+    """
+    salt = core.Salter(raw=b'abcdef0123456789').qb64
+
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+
+    with habbing.openHby(name="cam", base="test", salt=salt) as camHby, \
+            habbing.openHby(name="badEvt", base="test", salt=salt) as badEvtHby, \
+            habbing.openHby(name="van", base="test", salt=salt) as vanHby, \
+            habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
+            habbing.openHby(name="wak", base="test", salt=salt) as wokHby, \
+            habbing.openHby(name="wam", base="test", salt=salt) as wamHby, \
+            habbing.openHby(name="wil", base="test", salt=salt) as wilHby:
+
+        # witnesses first so can set up inception event for cam
+        wsith = '1'
+        # setup Wes's habitat nontrans
+        # Wes's receipts will be rcts with a receipt couple attached
+
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
+        assert not wesHab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
+
+        # setup Wok's habitat nontrans
+        # Wok's receipts will be rcts with a receipt couple attached
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
+        assert not wokHab.kever.prefixer.transferable
+        # create non-local kevery for Wok to process nonlocal msgs
+        wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
+
+        # setup Wam's habitat nontrans
+        # Wams's receipts will be rcts with a receipt couple attached
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+        assert not wamHab.kever.prefixer.transferable
+        # create non-local kevery for Wam to process nonlocal msgs
+        wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
+
+        # setup Wil's habitat nontrans
+        # Wil's receipts will be rcts with a receipt couple attached
+        wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False)
+        assert not wilHab.kever.prefixer.transferable
+        # create non-local kevery for Wam to process nonlocal msgs
+        wilKvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
+
+        # setup Cam's habitat trans multisig
+        wits = [wesHab.pre, wokHab.pre, wamHab.pre]
+        csith = '2'  # hex str of threshold int
+        camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
+        assert camHab.kever.prefixer.transferable
+        assert len(camHab.iserder.berfers) == len(wits)
+        for werfer in camHab.iserder.berfers:
+            assert werfer.qb64 in wits
+        assert camHab.kever.wits == wits
+        assert camHab.kever.toader.num == 2
+        assert camHab.kever.sn == 0
+
+        # create non-local kevery for Cam to process onlocal msgs
+        camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
+
+        # setup Van's habitat trans multisig
+        vsith = '2'  # two of three signing threshold
+        vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
+        assert vanHab.kever.prefixer.transferable
+        # create non-local kevery for Van to process nonlocal msgs
+        vanKvy = eventing.Kevery(db=vanHab.db, lax=False, local=False)
+
+        # make list so easier to batch
+        camWitKvys = [wesKvy, wokKvy, wamKvy]
+        camWitHabs = [wesHab, wokHab, wamHab]
+
+        # Create Cam inception and send to each of Cam's witnesses
+        camIcpMsg = camHab.makeOwnInception()
+        rctMsgs = []  # list of receipts from each witness
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy, local=True)
+            assert kvy.kevers[camHab.pre].sn == 0  # accepted event
+            assert len(kvy.cues) >= 1  # at least queued receipt cue
+            # better to find receipt cue in cues exactly
+            hab = camWitHabs[i]
+            rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
+            assert len(rctMsg) == 626
+            rctMsgs.append(rctMsg)
+
+        for msg in rctMsgs:  # process rct msgs from all witnesses
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
+
+        for hab in camWitHabs:
+            assert hab.pre in camKvy.kevers
+
+        # send receipts one at a time to Van to escrow. Van not yet recieved
+        # icp event from Cam so not accepted Cam's pre
+        # compute keys for latest event in Cam's key state
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
+        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
+
+        # TEST MISSING DATE TIME
+        # Van process rct msgs from all witnesses for Cam's icp message
+        for i, msg in enumerate(rctMsgs):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy, local=True)
+            # escrows to Ure
+            assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
+        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
+        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert camHab.pre not in vanKvy.kevers  # not accepted
+        for hab in camWitHabs:  # Van accepted icp events for Cam's witnesses
+            assert hab.pre in vanKvy.kevers
+
+        vanKvy.processEscrowUnverNonTrans()
+
+        for ekey, etriplet in vanKvy.db.getUreItemIter(key=b''):
+            pre, sn = splitSnKey(ekey)
+            rsaider, _sprefixer, _cigar = deReceiptTriple(etriplet)
+            dgkey = dgKey(pre, bytes(rsaider.qb64b))
+            dtb = vanKvy.db.getDts(dgkey)
+            if dtb is not None:
+                vanKvy.db.delDts(dgkey)
+        vanKvy.processEscrowUnverNonTrans()
+        escrows = vanKvy.db.getUres(dbing.snKey(camHab.pre, 0))
+        assert len(escrows) == 0
+
+        vanKvy.processEscrows()  # process escrows
+        assert vanKvy.db.cntPwes(snkey) == 0  # nothing in partial witness escrow
+        assert vanKvy.db.cntUres(snkey) == 0  # still in escrow
+        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert camHab.pre not in vanKvy.kevers  # still not accepted
+
+        # TEST STALE EVENT
+        for i, msg in enumerate(rctMsgs):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy, local=True)
+            # escrows to Ure
+            assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
+        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
+        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert camHab.pre not in vanKvy.kevers  # not accepted
+        for hab in camWitHabs:  # Van accepted icp events for Cam's witnesses
+            assert hab.pre in vanKvy.kevers
+
+        vanKvy.TimeoutURE = 0
+        time.sleep(0.001)
+        vanKvy.processEscrowUnverNonTrans()
+        escrows = vanKvy.db.getUres(dbing.snKey(camHab.pre, 0))
+        assert len(escrows) == 0
+
+        vanKvy.TimeoutURE = 3600 # reset timeout to normal value
+
+        # TEST INVALID EVENT
+        for i, msg in enumerate(rctMsgs):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy, local=True)
+            # escrows to Ure
+            assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
+        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
+        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert camHab.pre not in vanKvy.kevers  # not accepted
+        for hab in camWitHabs:  # Van accepted icp events for Cam's witnesses
+            assert hab.pre in vanKvy.kevers
+        vanKvy.processEscrowUnverNonTrans()
+
+        # put value in db to trigger other validation errors
+        to_clean_up = []
+        for ekey, etriplet in vanKvy.db.getUreItemIter(key=b''):
+            pre, sn = splitSnKey(ekey)
+            rsaider, _sprefixer, _cigar = deReceiptTriple(etriplet)
+            vanKvy.db.addKe(snKey(pre, sn), rsaider.qb64b) # add arbitrary value as key event
+            to_clean_up.append(snKey(pre, sn))
+        vanKvy.processEscrowUnverNonTrans()
+        escrows = vanKvy.db.getUres(dbing.snKey(camHab.pre, 0))
+        assert len(escrows) == 0
+
+        # cleanup
+        for ureSnKey in to_clean_up:
+            vanKvy.db.delKes(ureSnKey) # remove value to clean up for later tests
+
+        # TEST BAD ESCROWED RECEIPT
+        # put different inception event in the db so the escrow thinks the receipt is bad
+        # Set up bad event hab
+        badEvtHab = badEvtHby.makeHab(name='badEvt', isith='1', icount=1, toad=0, wits=[])
+        badEvtIcpMsg = badEvtHab.makeOwnInception()
+
+        for i, msg in enumerate(rctMsgs):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy, local=True)
+            # escrows to Ure
+            assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
+        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
+        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert camHab.pre not in vanKvy.kevers  # not accepted
+        for hab in camWitHabs:  # Van accepted icp events for Cam's witnesses
+            assert hab.pre in vanKvy.kevers
+        vanKvy.processEscrowUnverNonTrans()
+        escrows = vanKvy.db.getUres(dbing.snKey(camHab.pre, 0))
+        assert len(escrows) == 3 # three receipts in escrow
+
+        # put value in db to trigger other validation errors
+        to_clean_up_ke = []
+        to_clean_up_evt = []
+        evt = serdering.SerderKERI(raw=camIcpMsg)
+        for ekey, etriplet in vanKvy.db.getUreItemIter(key=b''):
+            pre, sn = splitSnKey(ekey)
+            rsaider, _sprefixer, _cigar = deReceiptTriple(etriplet)
+            dig = rsaider.qb64b
+            dgkey = dgKey(pre, dig) # events use dgkey
+            vanKvy.db.addKe(snKey(pre, sn), rsaider.qb64b)  # add mock key event digest
+            vanKvy.db.putEvt(dgkey, badEvtIcpMsg)       # add mock key event
+
+            to_clean_up_ke.append(snKey(pre, sn))
+            to_clean_up_evt.append(dgkey)
+        vanKvy.processEscrowUnverNonTrans()
+        escrows = vanKvy.db.getUres(dbing.snKey(camHab.pre, 0))
+        assert len(escrows) == 0
+        for ureSnKey in to_clean_up_ke:
+            vanKvy.db.delKes(ureSnKey) # remove value to clean up for later tests
+        for ureEvtKey in to_clean_up_evt:
+            vanKvy.db.delEvt(ureEvtKey)
+
+
+def test_delegables_escrow_validation_errors():
+    gateSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    torSalt = core.Salter(raw=b'0123456789defabc').raw
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+
+    with habbing.openHby(name="delegate", temp=True, salt=gateSalt) as gateHby, \
+            habbing.openHab(name="delegator", temp=True, salt=torSalt) as (torHby, torHab):
+
+        gateHab = gateHby.makeHab(name="repTest", transferable=True, delpre=torHab.pre)
+        assert gateHab.pre == "EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"
+
+        gateIcp = gateHab.makeOwnEvent(sn=0)
+        torKvy = eventing.Kevery(db=torHab.db, lax=False, local=False)
+        parsing.Parser().parse(ims=bytearray(gateIcp), kvy=torKvy, local=True) # tell delegate about delegator
+        assert gateHab.pre not in torKvy.kevers # should not be in delegate KELs until delegation finishes (seal arrives)
+        snkey = snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn)
+        assert len(torHab.db.delegables.get(keys=snkey)) == 1
+        # Exercise the MissingDelegableApprovalError case
+        torKvy.processEscrowDelegables()
+
+        # TEST MISSING EVENT SOURCE
+        for (pre, sn), dig in torKvy.db.delegables.getItemIter():
+            edig = dig.encode()
+            dgkey = dgKey(pre.encode(), edig)
+            torKvy.db.esrs.rem(keys=dgkey)
+        torKvy.processEscrowDelegables()
+        escrows = torKvy.db.delegables.get(snkey)
+        assert len(escrows) == 0
+
+        # TEST MISSING DATE TIME
+        parsing.Parser().parse(ims=bytearray(gateIcp), kvy=torKvy, local=True) # tell delegate about delegator
+        assert gateHab.pre not in torKvy.kevers # should not be in delegate KELs until delegation finishes (seal arrives)
+        snkey = snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn)
+        assert len(torHab.db.delegables.get(keys=snkey)) == 1
+
+        for (pre, sn), dig in torKvy.db.delegables.getItemIter():
+            edig = dig.encode()
+            dgkey = dgKey(pre.encode(), edig)
+            dtb = torKvy.db.getDts(dgkey)
+            assert dtb is not None
+            torKvy.db.delDts(dgkey)
+        torKvy.processEscrowDelegables()
+        escrows = torKvy.db.delegables.get(snkey)
+        assert len(escrows) == 0
+
+        # TEST STALE EVENT
+        parsing.Parser().parse(ims=bytearray(gateIcp), kvy=torKvy, local=True) # tell delegate about delegator
+        assert gateHab.pre not in torKvy.kevers # should not be in delegate KELs until delegation finishes (seal arrives)
+        snkey = snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn)
+        assert len(torHab.db.delegables.get(keys=snkey)) == 1
+
+        torKvy.TimeoutOOE = 0
+        time.sleep(0.001)
+        torKvy.processEscrowDelegables()
+        escrows = torKvy.db.delegables.get(snkey)
+        assert len(escrows) == 0
+
+        torKvy.TimeoutOOE = 3600
+
+        # TEST MISSING EVENT DATA
+        parsing.Parser().parse(ims=bytearray(gateIcp), kvy=torKvy, local=True) # tell delegate about delegator
+        assert gateHab.pre not in torKvy.kevers # should not be in delegate KELs until delegation finishes (seal arrives)
+        snkey = snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn)
+        assert len(torHab.db.delegables.get(keys=snkey)) == 1
+
+        for (pre, sn), dig in torKvy.db.delegables.getItemIter():
+            edig = dig.encode()
+            dgkey = dgKey(pre.encode(), edig)
+            eraw = torKvy.db.getEvt(dgkey)
+            assert eraw is not None
+            torKvy.db.delEvt(dgkey)
+        torKvy.processEscrowDelegables()
+        escrows = torKvy.db.delegables.get(snkey)
+        assert len(escrows) == 0
+
+        # TEST MISSING SIGNATURES
+        parsing.Parser().parse(ims=bytearray(gateIcp), kvy=torKvy, local=True) # tell delegate about delegator
+        assert gateHab.pre not in torKvy.kevers # should not be in delegate KELs until delegation finishes (seal arrives)
+        snkey = snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn)
+        assert len(torHab.db.delegables.get(keys=snkey)) == 1
+
+        for (pre, sn), dig in torKvy.db.delegables.getItemIter():
+            edig = dig.encode()
+            dgkey = dgKey(pre.encode(), edig)
+            sigers = torKvy.db.getSigs(dgkey)
+            assert sigers is not None
+            torKvy.db.delSigs(dgkey)
+        torKvy.processEscrowDelegables()
+        escrows = torKvy.db.delegables.get(snkey)
+        assert len(escrows) == 0
+
+
+def test_query_not_found_escrow_validation_errors():
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+    with habbing.openHby() as inqHby, \
+            habbing.openHby() as subjHby:
+        inqHab = inqHby.makeHab(name="inquisitor")
+        subHab = subjHby.makeHab(name="subject")
+        psr = parsing.Parser()
+        icp = inqHab.makeOwnInception()
+        subKvy = eventing.Kevery(db=subHab.db, lax=False, local=False)
+        assert inqHab.pre not in subHab.kevers
+
+        inqKvy = eventing.Kevery(db=inqHab.db, lax=False, local=True)
+        assert subHab.pre not in inqHab.kevers
+
+        qry = inqHab.query(subHab.pre, route="ksn", src=inqHab.pre)
+
+        # TEST MISSING DATE TIME
+        psr.parseOne(ims=bytearray(qry), kvy=inqKvy) # reapply query to inquisitor's escrow
+        for (pre, said), edig in inqKvy.db.qnfs.getItemIter():
+            dgkey = dgKey(pre.encode(), edig.encode())
+            dtb = inqKvy.db.getDts(dgkey)
+            assert dtb is not None
+            inqKvy.db.delDts(dgkey)
+        inqKvy.processQueryNotFound()
+        escrows = inqKvy.db.qnfs.get(dgkey)
+        assert len(escrows) == 0
+
+        # TEST STALE EVENT
+        psr.parseOne(ims=bytearray(qry), kvy=inqKvy) # reapply query to inquisitor's escrow
+        inqKvy.TimeoutQNF = 0
+        time.sleep(0.001)
+        inqKvy.processQueryNotFound()
+        escrows = inqKvy.db.qnfs.get(dgkey)
+        assert len(escrows) == 0
+
+        inqKvy.TimeoutQNF = 3600
+
+        # TEST MISSING EVENT DATA
+        psr.parseOne(ims=bytearray(qry), kvy=inqKvy) # reapply query to inquisitor's escrow
+        for (pre, said), edig in inqKvy.db.qnfs.getItemIter():
+            dgkey = dgKey(pre.encode(), edig.encode())
+            eraw = inqKvy.db.getEvt(dgkey)
+            assert eraw is not None
+            inqKvy.db.delEvt(dgkey)
+        inqKvy.processQueryNotFound()
+        escrows = inqKvy.db.qnfs.get(dgkey)
+        assert len(escrows) == 0
+
+        # TEST MISSING SIGNATURES
+        psr.parseOne(ims=bytearray(qry), kvy=inqKvy) # reapply query to inquisitor's escrow
+        for (pre, said), edig in inqKvy.db.qnfs.getItemIter():
+            dgkey = dgKey(pre.encode(), edig.encode())
+            sigs = inqKvy.db.getSigs(dgkey)
+            assert sigs is not None
+            inqKvy.db.delSigs(dgkey)
+        inqKvy.processQueryNotFound()
+        escrows = inqKvy.db.qnfs.get(dgkey)
+        assert len(escrows) == 0
+
+        # Exercise QueryNotFoundError
+        psr.parseOne(ims=bytearray(qry), kvy=inqKvy) # reapply query to inquisitor's escrow
+        inqKvy.processQueryNotFound()
+
+
+def test_unverified_transferable_receiptors_escrow_validation_errors():
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    psr = parsing.Parser()
+
+    # init event DB and keep DB
+    with basing.openDB(name="ned") as db, keeping.openKS(name="ned") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Set up identifier for event creator, 2 of 3 weighted threshold multisig AID
+        sith = ["1/2", "1/2", "1/2"]
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
+        srdr = eventing.incept(code=coring.MtrDex.Blake3_256, isith=sith, nsith=nxtsith,
+                               keys=[verfer.qb64 for verfer in verfers],
+                               ndigs=[diger.qb64 for diger in digers])
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        # Create CESR message for inception event with local key signatures
+        msg = bytearray(srdr.raw) # message body
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b) # message attachments
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        icpmsg = msg
+
+        # create transferable receipter (validator) inception keys 2 of 3
+        rverfers, rdigers = mgr.incept(icount=3, ncount=3, stem='rob', temp=True)
+        rsith = '2'
+
+        # create receipter's inception event
+        rsrdr = eventing.incept(code=coring.MtrDex.Blake3_256, isith=rsith, nsith=rsith,
+                                keys=[verfer.qb64 for verfer in rverfers],
+                                ndigs=[diger.qb64 for diger in rdigers])
+        rpre = rsrdr.ked["i"]
+        ricpdig = rsrdr.said
+        mgr.move(old=rverfers[0].qb64, new=rpre)  # move receipter key pair label to prefix
+        rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
+
+        # CESR message for receipter inception event with local key signatures
+        msg = bytearray(rsrdr.raw) # message body
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(rsigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)  # message attachments
+        for siger in rsigers:
+            msg.extend(siger.qb64b)
+        ricpmsg = msg
+
+        # create transferable receipt of inception message
+        seal = eventing.SealEvent(i=rpre,
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.said)
+        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig)
+        # sign event not receipt
+        resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
+        rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        assert pre not in kvy.kevers  # no events yet for pre  (receipted)
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 3
+        kvy.processEscrowUnverTrans()
+
+        # TEST MISSING DATE TIME
+        for ekey, equinlet in kvy.db.getVreItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
+            dgkey = dgKey(pre, bytes(esaider.qb64b))
+            kvy.db.getDts(dgkey)
+            kvy.db.delDts(dgkey)
+        kvy.processEscrowUnverTrans()
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 0
+
+        # TEST STALE EVENT
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        assert pre not in kvy.kevers  # no events yet for pre  (receipted)
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 3
+
+        kvy.TimeoutVRE = 0
+        kvy.processEscrowUnverTrans()
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 0
+
+        kvy.TimeoutVRE = 3600
+
+        # TEST MISSING RECEIPTED EVENT
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy) # reapply receipt to escrow
+        assert pre not in kvy.kevers  # no events yet for pre  (receipted)
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 3
+        kvy.processEscrowUnverTrans()
+
+        for ekey, equinlet in kvy.db.getVreItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
+            dgkey = dgKey(pre, bytes(esaider.qb64b))
+            kvy.db.delDts(dgkey) # invalidate events to clear the escrow
+        kvy.processEscrowUnverTrans()
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 0
+
+        # TEST MISSING EVENT DATA
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy) # reapply receipt to escrow
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy) # apply inception event to escrow so key event findable
+        assert pre in kvy.kevers  # icp event present for pre   (receipted)
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 3
+
+        for ekey, equinlet in kvy.db.getVreItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
+            dgkey = dgKey(pre, bytes(esaider.qb64b))
+            kvy.db.delEvt(dgkey)
+        kvy.processEscrowUnverTrans()
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 0
+
+
+def test_unverified_tranferable_receiptors_escrow_invalid_event_data():
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    psr = parsing.Parser()
+
+    # init event DB and keep DB
+    with basing.openDB(name="ned") as db, keeping.openKS(name="ned") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Set up identifier for event creator, 2 of 3 weighted threshold multisig AID
+        sith = ["1/2", "1/2", "1/2"]
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
+        srdr = eventing.incept(code=coring.MtrDex.Blake3_256, isith=sith, nsith=nxtsith,
+                               keys=[verfer.qb64 for verfer in verfers],
+                               ndigs=[diger.qb64 for diger in digers])
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        # Create CESR message for inception event with local key signatures
+        msg = bytearray(srdr.raw) # message body
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b) # message attachments
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        icpmsg = msg
+
+        # create transferable receipter (validator) inception keys 2 of 3
+        rverfers, rdigers = mgr.incept(icount=3, ncount=3, stem='rob', temp=True)
+        rsith = '2'
+
+        # create receipter's inception event
+        rsrdr = eventing.incept(code=coring.MtrDex.Blake3_256, isith=rsith, nsith=rsith,
+                                keys=[verfer.qb64 for verfer in rverfers],
+                                ndigs=[diger.qb64 for diger in rdigers])
+        rpre = rsrdr.ked["i"]
+        ricpdig = rsrdr.said
+        mgr.move(old=rverfers[0].qb64, new=rpre)  # move receipter key pair label to prefix
+        rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
+
+        # CESR message for receipter inception event with local key signatures
+        msg = bytearray(rsrdr.raw) # message body
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(rsigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)  # message attachments
+        for siger in rsigers:
+            msg.extend(siger.qb64b)
+        ricpmsg = msg
+
+        # create transferable receipt of inception message
+        seal = eventing.SealEvent(i=rpre,
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.said)
+        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig)
+        # sign event not receipt
+        resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
+        rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        assert pre not in kvy.kevers  # no events yet for pre  (receipted)
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 3
+        kvy.processEscrowUnverTrans()
+
+        # TEST INVALID EVENT DATA
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy) # reapply receipt to escrow
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy) # apply inception event to escrow so key event findable
+        assert pre in kvy.kevers  # icp event present for pre   (receipted)
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+        kvy.processEscrowUnverTrans()
+
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 3
+
+        for ekey, equinlet in kvy.db.getVreItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
+            dgkey = dgKey(pre, bytes(esaider.qb64b))
+            kvy.db.setEvt(dgkey, ricpmsg)
+        kvy.processEscrowUnverTrans()
+        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 0
+
+
+def test_duplicitous_escrow_validation_errors():
+    """
+    Tests the duplicitous event escrow with a duplicitous interaction event to test validation errors
+    properly remove duplicitous events from the duplicitous event escrow.
+    """
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    psr = parsing.Parser()
+
+    with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+        # Set up identifier for event creator, 2 of 3 weighted threshold multisig AID
+        sith = ["1/2", "1/2", "1/2"]
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
+        srdr = eventing.incept(code=coring.MtrDex.Blake3_256, isith=sith, nsith=nxtsith,
+                               keys=[verfer.qb64 for verfer in verfers],
+                               ndigs=[diger.qb64 for diger in digers])
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        # make CESR message for inception event to give to parser
+        msg = bytearray(srdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        icpmsg = msg
+
+        # create transferable receipter (validator) inception keys 2 of 3
+        rverfers, rdigers = mgr.incept(icount=3, ncount=3, stem='ray', temp=True)
+        rsith = '2'
+
+        # create receipter's inception event
+        rsrdr = eventing.incept(keys=[verfer.qb64 for verfer in rverfers],
+                                isith=rsith,
+                                nsith=rsith,
+                                ndigs=[diger.qb64 for diger in rdigers],
+                                code=coring.MtrDex.Blake3_256)
+
+        rpre = rsrdr.ked["i"]
+        ricpdig = rsrdr.said
+        mgr.move(old=rverfers[0].qb64, new=rpre)  # move receipter key pair label to prefix
+        rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
+
+        # make CESR message for inception event to give to parser
+        msg = bytearray(rsrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(rsigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in rsigers:
+            msg.extend(siger.qb64b)
+        ricpmsg = msg
+
+
+        # create transferable receipt of inception message
+        seal = eventing.SealEvent(i=rpre,
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.said)
+        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig)
+        # sign event not receipt
+        resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
+        rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
+
+        # create interaction event
+        srdr = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixndig = srdr.said
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = bytearray(srdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        ixnmsg = msg
+
+        # create duplicitous interaction event
+        dummyAnchor = dict(i=pre, s=15, d=pre)
+        dupSrdr = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[dummyAnchor])
+        dupIxndig = dupSrdr.said
+        dupSigers = mgr.sign(ser=dupSrdr.raw, verfers=verfers)
+
+        msg = bytearray(dupSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in dupSigers:
+            msg.extend(siger.qb64b)
+
+        dupIxnmsg = msg
+
+        # Create rotation event of receipter
+        # get current keys as verfers and next digests as digers
+        rverfers, rdigers = mgr.rotate(pre=rpre, ncount=3, temp=True)
+
+        rsrdr = eventing.rotate(pre=rpre,
+                                keys=[verfer.qb64 for verfer in rverfers],
+                                isith=rsith,
+                                dig=ricpdig,
+                                nsith=rsith,
+                                ndigs=[diger.qb64 for diger in rdigers],
+                                sn=1,
+                                data=[])
+
+        rrotdig = rsrdr.said
+
+        rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
+
+        msg = bytearray(rsrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(rsigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in rsigers:
+            msg.extend(siger.qb64b)
+
+        rrotmsg = msg
+
+        # create receipt(s) of interaction message with receipter rotation message
+        # create chit receipt(s) of interaction message
+        seal = eventing.SealEvent(i=rpre,
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.said)
+        reserder = eventing.receipt(pre=pre, sn=1, said=ixndig)
+        # sign event not receipt
+        resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
+        rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
+        assert pre not in kvy.kevers  # no events yet for pre
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+        # check escrows are back
+        assert len(kvy.db.getVres(dbing.snKey(pre, 0))) == 3
+        assert len(kvy.db.getVres(dbing.snKey(pre, 1))) == 3
+
+        # apply inception msg to Kevery to process
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(icpmsg))  # process local copy of msg
+        assert pre in kvy.kevers  # event accepted
+        kvr = kvy.kevers[pre]
+        assert kvr.serder.said == icpdig  # key state updated so event was validated
+        assert kvr.sn == 0  # key state successfully updated
+
+        # apply ixn msg to Kevery to process
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert kvr.serder.said == ixndig  # key state updated so event was validated
+        assert kvr.sn == 1  # key state successfully updated
+
+        # TEST MISSING EVENT SOURCE
+        psr.parse(ims=bytearray(dupIxnmsg), kvy=kvy) # apply duplicitous ixn msg to Kevery to process
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+
+        for ekey, edig in kvy.db.getLdeItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            dgkey = dgKey(pre, bytes(edig))
+            esr = kvy.db.esrs.get(keys=dgkey)
+            assert esr is not None
+            kvy.db.esrs.rem(keys=dgkey)
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+        # TEST MISSING DATE TIME
+        psr.parse(ims=bytearray(dupIxnmsg), kvy=kvy) # apply duplicitous ixn msg to Kevery to process
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+
+        for ekey, edig in kvy.db.getLdeItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            dgkey = dgKey(pre, bytes(edig))
+            dtb = kvy.db.getDts(dgkey)
+            assert dtb is not None
+            kvy.db.delDts(dgkey)
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+        # TEST STALE EVENT
+        psr.parse(ims=bytearray(dupIxnmsg), kvy=kvy) # apply duplicitous ixn msg to Kevery to process
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+
+        kvy.TimeoutLDE = 0
+        time.sleep(0.001)
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+        kvy.TimeoutLDE = 3600 # reset timeout to default
+
+        # TEST MISSING EVENT DATA
+        psr.parse(ims=bytearray(dupIxnmsg), kvy=kvy) # apply duplicitous ixn msg to Kevery to process
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+
+        for ekey, edig in kvy.db.getLdeItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            dgkey = dgKey(pre, bytes(edig))
+            eraw = kvy.db.getEvt(dgkey)
+            assert eraw is not None
+            kvy.db.delEvt(dgkey)
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0
+
+        # TEST MISSING SIGNATURES
+        psr.parse(ims=bytearray(dupIxnmsg), kvy=kvy) # apply duplicitous ixn msg to Kevery to process
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+
+        for ekey, edig in kvy.db.getLdeItemIter():
+            pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+            dgkey = dgKey(pre, bytes(edig))
+            sigs = kvy.db.getSigs(dgkey)
+            assert sigs is not None
+            kvy.db.delSigs(dgkey)
+        kvy.processEscrowDuplicitous()
+        escrows = kvy.db.getLdes(dbing.snKey(pre, 1))
         assert len(escrows) == 0
 
 
