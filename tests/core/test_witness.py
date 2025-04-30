@@ -138,7 +138,6 @@ def test_indexed_witness_replay():
         assert camHab.pre not in vanKvy.kevers
         # process receipts
         parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy, local=True)
-        vanKvy.processEscrowUnverWitness()
         vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers  # now accepted
         vcKvr = vanKvy.kevers[camHab.pre]

@@ -5327,7 +5327,7 @@ class Kevery:
             prefixer is Prefixer instance of prefix of receipter
             seqner is Seqner instance of  sn of est event of receiptor
             saider is Saider instance of said of est event of receiptor
-            sigers is list of Siger instances of multi-sig of receiptor
+            igers is list of Siger instances of multi-sig of receiptor
 
         escrow quintuple for each siger
             quintuple = edig+pre+snu+dig+sig
@@ -5335,7 +5335,7 @@ class Kevery:
                 edig is receipted event dig (serder.dig)
                 pre is receipter prefix
                 snu is receipter est event sn
-                dig is receipt est event dig
+                dig is receipt est evant dig
                 sig is indexed sig of receiptor of receipted event
         """
         # Receipt dig algo may not match database dig. So must always
@@ -5960,7 +5960,7 @@ class Kevery:
                 if not sigs:  # empty list
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"PDE Missing escrowed evt sigs at dig = {edig}"
-                    logger.info("Kevery unescrow error: %s", edig)
+                    logger.info("Kevery unescrow error: %s", bytes(edig))
                     raise ValidationError(msg)
 
                 # get witness signatures (wigs not wits) assumes wont be in this
@@ -5975,10 +5975,10 @@ class Kevery:
                     ## so just log for debugging but do not unescrow by raising
                     ## ValidationError
                     #logger.info("Kevery unescrow error: Missing event wigs at."
-                                #"dig = %s", edig)
+                                #"dig = %s", bytes(edig))
 
                     #raise ValidationError("Missing escrowed evt wigs at "
-                                          #"dig = {}.".format(edig))
+                                          #"dig = {}.".format(bytes(edig)))
 
                 # setup parameters to process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
