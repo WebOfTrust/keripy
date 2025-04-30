@@ -2040,6 +2040,7 @@ class Tevery:
 
         """
         for key, digb in self.reger.getOotItemIter(): # (pre, snb, digb) in self.reger.getOotItemIter()
+            dig = bytes(digb).decode()
             try:
                 #sn = int(snb, 16)
                 pre, sn = splitSnKey(key)
@@ -2047,7 +2048,7 @@ class Tevery:
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
-                    msg = f"OOO Missing escrowed event at dig = {digb}"
+                    msg = f"OOO Missing escrowed event at dig = {dig}"
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -2059,7 +2060,7 @@ class Tevery:
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
-                    msg = f"OOO Missing escrowed anchor at dig = {digb}"
+                    msg = f"OOO Missing escrowed anchor at dig = {dig}"
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
                 ancb = bytearray(couple)
@@ -2104,6 +2105,7 @@ class Tevery:
 
         """
         for key, digb in self.reger.getTaeItemIter():  #(pre, snb, digb) in self.reger.getTaeItemIter()
+            dig = bytes(digb).decode()
             pre, sn = splitSnKey(key)
             #sn = int(snb, 16)
             try:
@@ -2111,7 +2113,7 @@ class Tevery:
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
-                    msg = f"ANC Missing escrowed event at dig = {digb}"
+                    msg = f"ANC Missing escrowed event at dig = {dig}"
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
@@ -2123,7 +2125,7 @@ class Tevery:
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
-                    msg = f"ANC Missing escrowed anchor at dig = {digb}"
+                    msg = f"ANC Missing escrowed anchor at dig = {dig}"
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise MissingAnchorError(msg)
                 ancb = bytearray(couple)
