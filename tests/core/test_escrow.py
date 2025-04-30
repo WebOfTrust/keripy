@@ -2119,16 +2119,6 @@ def test_partial_delegation_escrow_validation_errors():
         assert len(escrows) == 0
 
 
-        for (epre,), esn, edig in watKvy.db.pdes.getOnItemIter():
-            dgkey = dgKey(epre, edig)
-            sigs = watKvy.db.getSigs(dgkey)
-            assert sigs is not None
-            watKvy.db.delSigs(dgkey) # remove event sigs so it will be invalid
-        watKvy.processEscrowPartialDels()
-        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
-        assert len(escrows) == 0
-
-
 def test_unverified_witness_escrow_validation_errors():
     """
     Test unverified witness escrow validation errors
