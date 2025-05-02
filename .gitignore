@@ -143,3 +143,4 @@ keripy/
 
 # ctags
 .tags
+.DS_Store
