@@ -46,8 +46,10 @@ l
 """
 
 import os
+import platform
 import shutil
 import stat
+import tempfile
 from collections import abc
 from contextlib import contextmanager
 from typing import Union
@@ -335,7 +337,7 @@ class LMDBer(filing.Filer):
     AltHeadDirPath = os.path.expanduser("~")  # put in ~ as fallback when desired not permitted
     AltTailDirPath = os.path.join(".keri", "db")
     AltCleanTailDirPath = os.path.join(".keri", "clean", "db")
-    TempHeadDir = os.path.join(os.path.sep, "tmp")
+    TempHeadDir = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960

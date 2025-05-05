@@ -6,6 +6,8 @@ tests.vdr.viring module
 
 import json
 import os
+import platform
+import tempfile
 
 import lmdb
 
@@ -18,6 +20,7 @@ def test_issuer():
     """
     Test Issuer Class
     """
+    tempDirPath = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
     issuer = Reger()
 
     assert isinstance(issuer, Reger)
@@ -62,8 +65,7 @@ def test_issuer():
         assert issuer.name == "test"
         assert issuer.temp is True
         assert isinstance(issuer.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(issuer.path))
-        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_reg_"))
+        assert issuer.path.startswith(os.path.join(tempDirPath, "keri_reg_"))
         assert issuer.path.endswith(os.path.join("_test", "keri", "reg", "test"))
         assert issuer.env.path() == issuer.path
         assert os.path.exists(issuer.path)

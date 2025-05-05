@@ -3,6 +3,9 @@
 tests.db.dbing module
 
 """
+import platform
+import tempfile
+
 import pytest
 
 import os
@@ -174,12 +177,12 @@ def test_opendatabaser():
     """
     test contextmanager decorator for test databases
     """
+    tempDirPath = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
     with openLMDB() as databaser:
         assert isinstance(databaser, LMDBer)
         assert databaser.name == "test"
         assert isinstance(databaser.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(databaser.path))
-        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_lmdb_"))
+        assert databaser.path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
         assert databaser.path.endswith(os.path.join("_test", "keri", "db", "test"))
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
@@ -192,8 +195,7 @@ def test_opendatabaser():
         assert isinstance(databaser, LMDBer)
         assert databaser.name == "blue"
         assert isinstance(databaser.env, lmdb.Environment)
-        _, path = os.path.splitdrive(os.path.normpath(databaser.path))
-        assert path.startswith(os.path.join(os.path.sep, "tmp", "keri_lmdb_"))
+        assert databaser.path.startswith(os.path.join(tempDirPath, "keri_lmdb_"))
         assert databaser.path.endswith(os.path.join("_test", "keri", "db", "blue"))
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
@@ -544,6 +546,7 @@ def test_lmdber():
         assert dber.addVal(db, key, val=b'a') == False  # duplicate
         assert dber.addVal(db, key, val=b'b') == True
         assert dber.getVals(db, key) == [b'a', b'b', b'm', b'x', b'z']
+        assert dber.getValLast(db, key) == b'z'
         assert [val for val in dber.getValsIter(db, key)] == [b'a', b'b', b'm', b'x', b'z']
         assert dber.delVals(db, key) == True
         assert dber.getVals(db, key) == []
