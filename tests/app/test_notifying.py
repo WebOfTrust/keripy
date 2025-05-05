@@ -4,6 +4,8 @@ tests.app.test_multisig module
 
 """
 import datetime
+import platform
+import tempfile
 
 import time
 import pytest
@@ -118,8 +120,8 @@ def test_noter(mockHelpingNowUTC):
     noter.close(clear=True)
 
     noter = notifying.Noter(temp=True)
-    _, path = os.path.splitdrive(os.path.normpath(noter.path))
-    assert path.startswith(os.path.join(os.path.sep, "tmp"))
+    tempDirPath = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
+    assert noter.path.startswith(tempDirPath)
 
     payload = dict(name="John", email="john@example.com", msg="test")
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
