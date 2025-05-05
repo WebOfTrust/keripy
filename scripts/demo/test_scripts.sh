@@ -60,6 +60,12 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
+printf "Running multisig-delegator.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/multisig-delegator.sh"
+isSuccess
+
+printf "\n************************************\n"
 printf "Skipping multisig-delegate-delegator.sh"
 printf "\n************************************\n"
 #"${script_dir}/basic/multisig-delegate-delegator.sh"
