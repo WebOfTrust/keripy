@@ -76,14 +76,14 @@ class Signer(Matter):
     """
 
     def __init__(self, raw=None, code=MtrDex.Ed25519_Seed, transferable=True, **kwa):
-        """
-        Assign signing cipher suite function to ._sign
+        """Assign signing cipher suite function to ._sign
 
         Parameters:  See Matter for inherted parameters
-            raw is bytes crypto material seed or private key
-            code is derivation code
-            transferable is Boolean True means make verifier code transferable
-                                    False make non-transferable
+            raw (bytes): crypto material for signing seed from which to generate
+                         private key
+            code (str): derivation code of signing seed
+            transferable (bool):  True means make verifier code transferable
+                                  False make non-transferable
 
         """
         try:
@@ -129,18 +129,18 @@ class Signer(Matter):
 
         self._verfer = verfer
 
+
     @property
     def verfer(self):
-        """
-        Property verfer:
+        """Property verfer:
         Returns Verfer instance
         Assumes ._verfer is correctly assigned
         """
         return self._verfer
 
+
     def sign(self, ser, index=None, only=False, ondex=None, **kwa):
-        """
-        Returns either Cigar or Siger (indexed) instance of cryptographic
+        """Returns either Cigar or Siger (indexed) instance of cryptographic
         signature material on bytes serialization ser
 
         If index is None
@@ -164,10 +164,10 @@ class Signer(Matter):
                            ondex=ondex,
                            **kwa))
 
+
     @staticmethod
     def _ed25519(ser, seed, verfer, index, only=False, ondex=None, **kwa):
-        """
-        Returns signature as either Cigar or Siger instance as appropriate for
+        """Returns signature as either Cigar or Siger instance as appropriate for
         Ed25519 digital signatures given index and ondex values
 
         The seed's code determins the crypto key-pair algorithm and signing suite
@@ -216,8 +216,7 @@ class Signer(Matter):
 
     @staticmethod
     def _secp256r1(ser, seed, verfer, index, only=False, ondex=None, **kwa):
-        """
-        Returns signature as either Cigar or Siger instance as appropriate for
+        """Returns signature as either Cigar or Siger instance as appropriate for
         Ed25519 digital signatures given index and ondex values
 
         The seed's code determins the crypto key-pair algorithm and signing suite
@@ -1010,8 +1009,7 @@ class Decrypter(Matter):
 
     @staticmethod
     def _x25519(cipher, prikey, klas=None, transferable=False, bare=False):
-        """
-        Returns plain text as Salter or Signer instance depending on the cipher
+        """Returns plain text as Salter or Signer instance depending on the cipher
             code and the embedded encrypted plain text derivation code.
 
         Parameters:
