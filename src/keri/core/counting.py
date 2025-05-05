@@ -435,8 +435,7 @@ class Counter:
     def __init__(self, code=None, *, count=None, countB64=None,
                  qb64b=None, qb64=None, qb2=None, strip=False,
                  gvrsn=Vrsn_2_0, **kwa):
-        """
-        Validate as fully qualified
+        """Validate as fully qualified
         Parameters:
             code (str | None):  either stable (hard) part of derivation code or
                                 code name. When code name then look up code from
@@ -542,40 +541,39 @@ class Counter:
 
     @property
     def version(self):
-        """
+        """Makes .version read only
         Returns ._version
-        Makes .version read only
         """
         return self._version
 
+
     @property
     def gvrsn(self):
-        """
-        Returns .version alias for .version
+        """Returns .version alias for .version
 
         """
         return self.version
 
+
     @property
     def codes(self):
-        """
+        """Makes .codes read only
         Returns ._codes
-        Makes .codes read only
         """
         return self._codes
 
 
     @property
     def sizes(self):
-        """
+        """Makes .sizes read only
         Returns ._sizes
-        Makes .sizes read only
         """
         return self._sizes
 
+
     @property
     def code(self):
-        """
+        """Property for code
         Returns:
             code (str): hard part only of full text code.
                 Getter for ._code. Makes .code read only
@@ -584,47 +582,44 @@ class Counter:
         """
         return self._code
 
+
     @property
     def name(self):
-        """
+        """Getter for ._name. Makes .name read only
         Returns:
             name (str): code name for self.code. Match interface
-            for annotation for primitives like Matter
-
-        Getter for ._name. Makes .name read only
-
+                        for annotation for primitives like Matter
         """
         return self._name
 
 
     @property
     def hard(self):
-        """
+        """Alias for .code
         Returns:
             hard (str): hard part only of full text code. Alias for .code.
-
         """
         return self.code
 
 
     @property
     def count(self):
-        """
+        """Getter for ._count. Makes ._count read only
         Returns:
             count (int):  count value in quadlets/triples chars/bytes of material
                 framed by counter.
-                Getter for ._count. Makes ._count read only
+
         """
         return self._count
 
 
     @property
     def soft(self):
-        """
-       Returns:
+        """Converts .count to b64
+        Returns:
             soft (str):  Base64 soft part of full counter code. Count value in
                 quadlets/triples chars/bytes of material framed by counter.
-                Converts .count to b64
+
         """
         _, ss, _ = self.sizes[self.code]
         return intToB64(self._count, l=ss)
@@ -632,7 +627,7 @@ class Counter:
 
     @property
     def both(self):
-        """
+        """Getter for combined hard + soft parts of full text code
         Returns:
             both (str):  hard + soft parts of full text code
         """
@@ -641,8 +636,9 @@ class Counter:
 
     @property
     def fullSize(self):
-        """
-        Returns full size of counter in bytes
+        """Getter for full size of counter in bytes
+        Returns"
+           fs (int): full size of counter in bytes
 
         """
         _, _, fs = self.sizes[self.code]  # get from sizes table
@@ -652,9 +648,9 @@ class Counter:
 
     @property
     def qb64b(self):
-        """
-        Property qb64b:
-        Returns Fully Qualified Base64 Version encoded as bytes
+        """Property qb64b:
+        Returns:
+            Fully Qualified Base64 Version encoded as bytes
         Assumes self.raw and self.code are correctly populated
         """
         return self._infil()
@@ -662,9 +658,9 @@ class Counter:
 
     @property
     def qb64(self):
-        """
-        Property qb64:
-        Returns Fully Qualified Base64 Version
+        """Property qb64:
+        Returns:
+            Fully Qualified Base64 Version
         Assumes self.raw and self.code are correctly populated
         """
         return self.qb64b.decode("utf-8")
@@ -672,8 +668,7 @@ class Counter:
 
     @property
     def qb2(self):
-        """
-        Property qb2:
+        """Property qb2:
         Returns Fully Qualified Binary Version Bytes
         """
         return self._binfil()
@@ -761,8 +756,7 @@ class Counter:
 
 
     def _infil(self):
-        """
-        Returns fully qualified attached sig base64 bytes computed from
+        """Returns fully qualified attached sig base64 bytes computed from
         self.code and self.count.
         """
         code = self.code  # codex value chars hard code
@@ -788,8 +782,7 @@ class Counter:
 
 
     def _binfil(self):
-        """
-        Returns bytes of fully qualified base2 bytes, that is .qb2
+        """Returns bytes of fully qualified base2 bytes, that is .qb2
         self.code converted to Base2 left shifted with pad bits
         equivalent of Base64 decode of .qb64 into .qb2
         """
@@ -814,8 +807,7 @@ class Counter:
 
 
     def _exfil(self, qb64b):
-        """
-        Extracts self.code and self.count from qualified base64 bytes qb64b
+        """Extracts self.code and self.count from qualified base64 bytes qb64b
         """
         if not qb64b:  # empty need more bytes
             raise kering.ShortageError("Empty material, Need more characters.")
@@ -859,8 +851,7 @@ class Counter:
 
 
     def _bexfil(self, qb2):
-        """
-        Extracts self.code and self.count from qualified base2 bytes qb2
+        """Extracts self.code and self.count from qualified base2 bytes qb2
         """
         if not qb2:  # empty need more bytes
             raise kering.ShortageError("Empty material, Need more bytes.")
