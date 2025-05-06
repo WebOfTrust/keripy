@@ -1700,7 +1700,7 @@ class Kever:
         of self. Unaccepted dip events do not have self.delpre set yet.
 
         Returns:
-            (bool): True if pre is local hab but not group hab
+            (bool): True if pre is local hab or group hab that has a local member
                         When pre="" empty or None then returns False
 
         Parameters:
