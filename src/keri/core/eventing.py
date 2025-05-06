@@ -1662,10 +1662,11 @@ class Kever:
 
     def locallyOwned(self, pre: str | None = None):
         """Returns True if pre is in .prefixes and not in .groups
-        False otherwise.
+        False otherwise. Exclusively locally controlled.
         Indicates that provided identifier prefix is controlled by a local
         controller from .prefixes but is not a group with local member.
-        i.e pre is a locally owned (controlled) AID (identifier prefix)
+        i.e pre is an exclusively locally owned (controlled) AID
+        (identifier prefix)
 
         Returns:
             (bool): True if pre is local hab but not group hab
@@ -1682,10 +1683,14 @@ class Kever:
 
 
     def locallyDelegated(self, pre: str):
-        """Returns True if pre is in .prefixes and not in .groups
-        False otherwise. Use when pre is a delegator for some event and
-        want to confirm that pre is also locallyOwned thereby making the
-        associated event locallyDelegated.
+        """Returns True if pre w is in .prefixes or is in self.groups.
+        Which means it is either locally controlled single sig or a multi-sig
+        group with a locally controller member.
+        False otherwise.
+
+        Use when pre is a delegator, i.e. the delpre from some delegated event and
+        want to confirm that pre is also locally controller as either the single
+        sig AID or the group multisig AID of a locally controlled member of the group.
 
         Indicates that provided identifier prefix is controlled by a local
         controller from .prefixes but is not a group with local member.
@@ -1695,14 +1700,16 @@ class Kever:
         of self. Unaccepted dip events do not have self.delpre set yet.
 
         Returns:
-            (bool): True if pre is local hab but not group hab
+            (bool): True if pre is local hab or group hab that has a local member
                         When pre="" empty or None then returns False
 
         Parameters:
             pre (str): qb64 identifier prefix if any.
         """
+
         pre = pre if pre is not None else ""
-        return self.locallyOwned(pre=pre)
+        return pre in self.prefixes or pre in self.groups
+
 
 
     def locallyWitnessed(self, *, wits: list[str]=None, serder: (str)=None):
@@ -1744,6 +1751,7 @@ class Kever:
         pre = pre if pre is not None else self.prefixer.qb64
         return pre in self.groups  # groups
 
+
     def locallyContributedIndices(self, verfers: list[Verfer]):
         """Returns list of indices of public keys contributed by local members
         to the KEL with current signing keys represented by verfers
@@ -1762,6 +1770,7 @@ class Kever:
 
         idx = [verfer.qb64 for verfer in verfers].index(kever.verfers[0].qb64)
         return [idx]
+
 
     def reload(self, state):
         """
@@ -2389,6 +2398,7 @@ class Kever:
         # Doesn't get to here until fully signed and witnessed.
 
         if self.locallyDelegated(delpre) and not self.locallyOwned():  # local delegator
+            #if (delpre in self.prefixes) and not self.locallyOwned(): # local delegator
             # must be local if locallyDelegated or caught above as misfit
             if delseqner is None or delsaider is None: # missing delegation seal
                 # so escrow delegable. So local delegator can approve OOB.
