@@ -1693,8 +1693,9 @@ class Kever:
         sig AID or the group multisig AID of a locally controlled member of the group.
 
         Indicates that provided identifier prefix is controlled by a local
-        controller from .prefixes but is not a group with local member.
-        i.e pre is a locally owned (controlled) AID (identifier prefix)
+        controller from .prefixes is a group prefix that is controlled by a local
+        member of that group.
+
         Because delpre may be None, changes the default to "" instead of
         self.prefixer.pre because self.prefixer.pre is delegate not delegator
         of self. Unaccepted dip events do not have self.delpre set yet.
