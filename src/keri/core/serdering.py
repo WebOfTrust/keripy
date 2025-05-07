@@ -587,8 +587,16 @@ class Serder:
 
 
         """
+        # initialize to something to be overriden later
+        self._raw = raw
+        self._sad = sad
+        self._proto = proto
+        self._vrsn = vrsn
+        self._kind = kind
         self._gvrsn = gvrsn
         self._genus = genus
+        self._size = None
+
 
         if raw:  # deserialize raw using property setter
             self._inhale(raw=raw, smellage=smellage)
