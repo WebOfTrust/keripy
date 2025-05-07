@@ -53,11 +53,6 @@ background_start kli multisig incept --name "$delegator_1" --alias member --grou
 background_start kli multisig incept --name "$delegator_2" --alias member --group delegator --file "$delegator_json"
 background_wait
 
-# timestamp=$(kli time)
-# background_start kli ends add --name "$delegator_1" --alias delegator --eid "$delegator_witness_aid" --role mailbox --time "$timestamp"
-# background_start kli ends add --name "$delegator_2" --alias delegator --eid "$delegator_witness_aid" --role mailbox --time "$timestamp"
-# background_wait
-
 # Create proxy and resolve OOBIs
 kli incept --name "$delegate" --alias proxy --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
 kli ends add --name "$delegate" --alias proxy --eid "$delegate_witness_aid" --role mailbox
@@ -88,7 +83,6 @@ EOF
 
 # Create delegated identifier
 background_start kli incept --name "$delegate" --alias delegate --proxy proxy --file "$delegate_json"
-sleep 2
 background_start kli delegate confirm --name "$delegator_1" --alias delegator --interact -Y
 background_start kli delegate confirm --name "$delegator_2" --alias delegator --interact -Y
 background_wait
