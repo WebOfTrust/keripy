@@ -54,7 +54,7 @@ def test_weighted():
 
         msg = bytearray(wesSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               gvrsn=kering.Vrsn_1_0)
+                               version=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -90,7 +90,7 @@ def test_weighted():
 
         msg = bytearray(wesSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               gvrsn=kering.Vrsn_1_0)
+                               version=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -127,7 +127,7 @@ def test_weighted():
 
         msg = bytearray(wesSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               gvrsn=kering.Vrsn_1_0)
+                               version=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -173,7 +173,7 @@ def test_weighted():
 
         msg = bytearray(wesSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               gvrsn=kering.Vrsn_1_0)
+                               version=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -219,7 +219,7 @@ def test_weighted():
 
         msg = bytearray(wesSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               gvrsn=kering.Vrsn_1_0)
+                               version=kering.Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)

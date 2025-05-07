@@ -104,7 +104,7 @@ class Receiptor(doing.DoDoer):
                 del rct[:rserder.size]
 
                 # pull off the count code
-                core.Counter(qb64b=rct, strip=True, gvrsn=kering.Vrsn_1_0)
+                core.Counter(qb64b=rct, strip=True, version=kering.Vrsn_1_0)
                 rcts[wit] = rct
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
@@ -125,7 +125,7 @@ class Receiptor(doing.DoDoer):
                                        said=ser.said)
             msg.extend(rserder.raw)
             msg.extend(core.Counter(core.Codens.NonTransReceiptCouples,
-                                    count=len(wigs), gvrsn=kering.Vrsn_1_0).qb64b)
+                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
             for wig in wigs:
                 msg.extend(wig)
 

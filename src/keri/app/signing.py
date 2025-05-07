@@ -14,7 +14,7 @@ from ..core import coring, eventing, counting
 def serialize(creder, prefixer, seqner, saider):
     craw = bytearray(creder.raw)
     craw.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
-                             gvrsn=Vrsn_1_0).qb64b)
+                             version=Vrsn_1_0).qb64b)
     craw.extend(prefixer.qb64b)
     craw.extend(seqner.qb64b)
     craw.extend(saider.qb64b)

@@ -71,7 +71,7 @@ def test_essrs():
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(core.Counter(core.Codens.ESSRPayloadGroup, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         ims.extend(texter.qb64b)
 
         exc = exchanging.Exchanger(hby=recHby, handlers=[])
@@ -95,7 +95,7 @@ def test_essrs():
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(core.Counter(core.Codens.ESSRPayloadGroup, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         ims.extend(texter[0].qb64b)
 
         parsing.Parser().parse(ims=ims, kvy=recHby.kvy, exc=exc)

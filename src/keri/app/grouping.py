@@ -526,13 +526,13 @@ def getEscrowedEvent(db, pre, sn):
     msg = bytearray()
     msg.extend(serder.raw)
     msg.extend(core.Counter(core.Codens.ControllerIdxSigs,
-                            count=len(sigs), gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
+                            count=len(sigs), version=kering.Vrsn_1_0).qb64b)  # attach cnt
     for sig in sigs:
         msg.extend(sig.qb64b)  # attach sig
 
     if couple is not None:
         msg.extend(core.Counter(core.Codens.SealSourceCouples,
-                                count=1, gvrsn=kering.Vrsn_1_0).qb64b)
+                                count=1, version=kering.Vrsn_1_0).qb64b)
         msg.extend(couple)
 
     return msg

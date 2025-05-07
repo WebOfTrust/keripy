@@ -1292,24 +1292,24 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
     if sigers:
         if isinstance(seal, SealEvent):
             atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                    gvrsn=kering.Vrsn_1_0).qb64b)
+                                    version=kering.Vrsn_1_0).qb64b)
             atc.extend(seal.i.encode("utf-8"))
             atc.extend(Seqner(snh=seal.s).qb64b)
             atc.extend(seal.d.encode("utf-8"))
 
         elif isinstance(seal, SealLast):
             atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
-                               gvrsn=kering.Vrsn_1_0).qb64b)
+                               version=kering.Vrsn_1_0).qb64b)
             atc.extend(seal.i.encode("utf-8"))
 
         atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                           gvrsn=kering.Vrsn_1_0).qb64b)
+                           version=kering.Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
     if wigers:
         atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                           gvrsn=kering.Vrsn_1_0).qb64b)
+                           version=kering.Vrsn_1_0).qb64b)
         for wiger in wigers:
             if wiger.verfer and wiger.verfer.code not in NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1318,7 +1318,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     if cigars:
         atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
-                           gvrsn=kering.Vrsn_1_0).qb64b)
+                           version=kering.Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1331,7 +1331,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         msg.extend(Counter(Codens.AttachmentGroup,
-                           count=(len(atc) // 4), gvrsn=kering.Vrsn_1_0).qb64b)
+                           count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b)
 
     msg.extend(atc)
     return msg
@@ -1363,39 +1363,39 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
     for (pather, sigers) in sadsigers:
         count += 1
         atc.extend(Counter(Codens.SadPathSigGroups, count=1,
-                                  gvrsn=kering.Vrsn_1_0).qb64b)
+                                  version=kering.Vrsn_1_0).qb64b)
         atc.extend(pather.qb64b)
 
         atc.extend(Counter(Codens.ControllerIdxSigs,
-                                  count=len(sigers), gvrsn=kering.Vrsn_1_0).qb64b)
+                                  count=len(sigers), version=kering.Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
     for (pather, prefixer, seqner, saider, sigers) in sadtsgs:
         count += 1
         atc.extend(Counter(Codens.SadPathSigGroups, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         atc.extend(pather.qb64b)
 
         atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         atc.extend(prefixer.qb64b)
         atc.extend(seqner.qb64b)
         atc.extend(saider.qb64b)
 
         atc.extend(Counter(Codens.ControllerIdxSigs,
-                                count=len(sigers), gvrsn=kering.Vrsn_1_0).qb64b)
+                                count=len(sigers), version=kering.Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
     for (pather, cigars) in sadcigars:
         count += 1
         atc.extend(Counter(Codens.SadPathSigGroups, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         atc.extend(pather.qb64b)
 
         atc.extend(Counter(Codens.NonTransReceiptCouples,
-                                count=len(sadcigars), gvrsn=kering.Vrsn_1_0).qb64b)
+                                count=len(sadcigars), version=kering.Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in coring.NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1410,12 +1410,12 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         msg.extend(Counter(Codens.AttachmentGroup, count=(len(atc) // 4),
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
 
     if count > 1:
         root = coring.Pather(bext="-")
         msg.extend(Counter(Codens.RootSadPathSigGroups, count=count,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         msg.extend(root.qb64b)
 
     msg.extend(atc)
@@ -3977,11 +3977,11 @@ class Kevery:
                                None means use default .local .
 
         Receipt dict labels
-            vs  # version string
-            pre  # qb64 prefix
-            sn  # hex string sequence number
-            ilk  # rct
-            dig  # qb64 digest of receipted event
+            vs  version string
+            pre qb64 prefix of KEL for event being receipted
+            sn  hex string sequence number
+            ilk rct = receipt message
+            dig qb64 digest of receipted event
         """
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
@@ -4043,6 +4043,7 @@ class Kevery:
             logger.info(msg)
             logger.debug("Event=\n%s\n", serder.pretty())
             raise UnverifiedWitnessReceiptError(msg)
+
 
     def processReceipt(self, serder, cigars, local=None):
         """
@@ -4209,6 +4210,7 @@ class Kevery:
                     couple = cigar.verfer.qb64b + cigar.qb64b
                     self.db.addRct(key=dgKey(pre, ldig), val=couple)
 
+
     def processReceiptTrans(self, serder, tsgs, local=None):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
@@ -4304,6 +4306,7 @@ class Kevery:
                     quadruple = sprefixer.qb64b + sseqner.qb64b + saider.qb64b + siger.qb64b
                     self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
                                    val=quadruple)  # dups kept
+
 
     def processAttachedReceiptQuadruples(self, serder, trqs, firner=None, local=None):
         """
@@ -4418,6 +4421,7 @@ class Kevery:
                 logger.debug("Event=\n%s\n", serder.pretty())
                 raise UnverifiedTransferableReceiptError(msg)
 
+
     def removeStaleReplyEndRole(self, saider):
         """
         Process reply escrow at saider for route "/end/role"
@@ -4431,6 +4435,7 @@ class Kevery:
         """
         pass
 
+
     def registerReplyRoutes(self, router):
         """ Register the routes for processing messages embedded in `rpy` event messages
 
@@ -4442,6 +4447,7 @@ class Kevery:
         router.addRoute("/loc/scheme", self, suffix="LocScheme")
         router.addRoute("/ksn/{aid}", self, suffix="KeyStateNotice")
         router.addRoute("/watcher/{aid}/{action}", self, suffix="AddWatched")
+
 
     def processReplyEndRole(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
         """
@@ -4537,6 +4543,7 @@ class Kevery:
             raise UnverifiedReplyError(msg)
 
         self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
+
 
     def processReplyLocScheme(self, *, serder, saider, route,
                               cigars=None, tsgs=None):
@@ -4637,6 +4644,7 @@ class Kevery:
             raise UnverifiedReplyError(msg)
 
         self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
+
 
     def processReplyKeyStateNotice(self, *, serder, saider, route,
                                    cigars=None, tsgs=None, **kwargs):
@@ -4768,6 +4776,7 @@ class Kevery:
         self.updateKeyState(aid=aid, ksr=ksr, saider=ksaider, dater=dater)
         self.cues.push(dict(kin="keyStateSaved", ksn=asdict(ksr)))
 
+
     def updateEnd(self, keys, saider, allowed=None):
         """
         Update end auth database .eans and end database .ends.
@@ -4786,6 +4795,7 @@ class Kevery:
             ender = basing.EndpointRecord(allowed=allowed)  # create new record
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
 
+
     def updateLoc(self, keys, saider, url):
         """
         Update loc auth database .lans and loc database .locs.
@@ -4802,6 +4812,7 @@ class Kevery:
             locer = basing.LocationRecord(url=url)  # create new record
 
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
+
 
     def updateKeyState(self, aid, ksr, saider, dater):
         """
@@ -4823,12 +4834,14 @@ class Kevery:
         # Add source of ksr to the key...  (ksr AID, source aid)
         self.db.knas.pin(keys=(ksr.i, aid), val=saider)  # overwrite
 
+
     def removeKeyState(self, saider):
         if saider:
             keys = (saider.qb64,)
 
             self.db.ksns.rem(keys=keys)
             self.db.kdts.rem(keys=keys)
+
 
     def processReplyAddWatched(self, *, serder, saider, route,
                                cigars=None, tsgs=None, **kwargs):
@@ -4923,6 +4936,7 @@ class Kevery:
             observed = basing.ObservedRecord(enabled=enabled, datetime=helping.nowIso8601())  # create new record
 
         self.db.obvs.pin(keys=keys, val=observed)  # overwrite
+
 
     def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """
@@ -5044,6 +5058,7 @@ class Kevery:
             logger.info(msg)
             logger.debug("Query Body=\n%s\n", serder.pretty())
             raise ValidationError(msg)
+
 
     def fetchEstEvent(self, pre, sn):
         """

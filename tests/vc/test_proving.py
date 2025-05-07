@@ -75,14 +75,14 @@ def test_proving(mockHelpingNowIso8601):
         creder = serdering.SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
-        ctr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == counting.CtrDex_1_0.AttachmentGroup
         assert ctr.count == 52
 
         pags = ctr.count * 4
         assert len(proof) == pags
 
-        ctr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == counting.CtrDex_1_0.TransIdxSigGroups
         assert ctr.count == 1
 
@@ -95,7 +95,7 @@ def test_proving(mockHelpingNowIso8601):
         diger = Diger(qb64b=proof, strip=True)
         assert diger.qb64 == sidHab.kever.serder.said
 
-        ictr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        ictr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ictr.code == counting.CtrDex_1_0.ControllerIdxSigs
 
         isigers = []
@@ -293,7 +293,7 @@ def test_credential_parsator():
                             status=issuer.regk)
 
         msg = bytearray(creder.raw)
-        msg.extend(Counter(Codens.SealSourceTriples, count=1, gvrsn=Vrsn_1_0).qb64b)
+        msg.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)
         msg.extend(hab.kever.prefixer.qb64b)
         msg.extend(coring.Seqner(sn=hab.kever.sn).qb64b)
         msg.extend(hab.kever.serder.said.encode("utf-8"))

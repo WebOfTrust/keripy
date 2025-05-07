@@ -2388,7 +2388,7 @@ class Traitor(Tagger):
 # Versage namedtuple
 # proto (str): protocol element of Protocols
 # vrsn (Versionage): instance protocol version namedtuple (major, minor) ints
-# vrsn (Versionage | None): instance genus version namedtuple (major, minor) ints
+# gvrsn (Versionage | None): instance genus version namedtuple (major, minor) ints
 Versage = namedtuple("Versage", "proto vrsn gvrsn", defaults=(None, ))
 
 

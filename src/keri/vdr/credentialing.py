@@ -939,7 +939,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
 
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
     atc = bytearray(core.Counter(core.Codens.SealSourceTriples,
-                                 count=1, gvrsn=kering.Vrsn_1_0).qb64b)
+                                 count=1, version=kering.Vrsn_1_0).qb64b)
     atc.extend(prefixer.qb64b)
     atc.extend(seqner.qb64b)
     atc.extend(saider.qb64b)

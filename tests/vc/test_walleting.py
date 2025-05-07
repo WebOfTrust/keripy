@@ -57,7 +57,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         msg = bytearray(creder.raw)
         msg.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         msg.extend(coring.Prefixer(qb64=iss.pre).qb64b)
         msg.extend(coring.Seqner(sn=0).qb64b)
         msg.extend(iss.saidb)

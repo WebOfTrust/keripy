@@ -216,28 +216,28 @@ class Counter:
 
 
     Properties:
-        .version (Versionage): current CESR code table protocol genus version
-        .codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
-        .sizes (dict): version specific sizes table
-        .code (str): hard part of derivation code to indicate cypher suite
-        .raw (bytes): crypto material only without code
-        .pad  (int): number of pad chars given raw
-        .count (int): count of quadlets/triplets of following framed material
+        version (Versionage): current CESR code table protocol genus version
+        codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
+        sizes (dict): version specific sizes table
+        code (str): hard part of derivation code to indicate cypher suite
+        raw (bytes): crypto material only without code
+        pad  (int): number of pad chars given raw
+        count (int): count of quadlets/triplets of following framed material
                       (not including code)
-        .qb64 (str | bytes | bytearray): in Base64 fully qualified with
+        qb64 (str | bytes | bytearray): in Base64 fully qualified with
                                           derivation code + crypto mat
-        .qb64b (bytes | bytearray): in Base64 fully qualified with
+        qb64b (bytes | bytearray): in Base64 fully qualified with
                                     derivation code + crypto mat
-        .qb2  (bytes | bytearray): in binary with derivation code +
+        qb2  (bytes | bytearray): in binary with derivation code +
                                   crypto material
 
     Hidden:
-        ._version (Versionage): value for .version property
-        ._codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
-        ._sizes (dict): version specific sizes table
-        ._code (str): value for .code property
-        ._raw (bytes): value for .raw property
-        ._count (int): value for .count property
+        _version (Versionage): value for .version property
+        _codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
+        _sizes (dict): version specific sizes table
+        _code (str): value for .code property
+        _raw (bytes): value for .raw property
+        _count (int): value for .count property
 
 
     Versioning:
@@ -434,7 +434,7 @@ class Counter:
 
     def __init__(self, code=None, *, count=None, countB64=None,
                  qb64b=None, qb64=None, qb2=None, strip=False,
-                 gvrsn=Vrsn_2_0, **kwa):
+                 version=Vrsn_2_0, **kwa):
         """Validate as fully qualified
         Parameters:
             code (str | None):  either stable (hard) part of derivation code or
@@ -457,7 +457,7 @@ class Counter:
             strip (bool):  True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip.
                 default False
-            gvrsn (Versionage): instance of genera version of CESR code tables
+            version (Versionage): instance of genera version of CESR code tables
 
 
         Needs either code or qb64b or qb64 or qb2
@@ -467,19 +467,19 @@ class Counter:
         .code and .count
 
         """
-        if gvrsn.major not in self.Sizes:
+        if version.major not in self.Sizes:
             raise kering.InvalidVersionError(f"Unsupported major version="
-                                             f"{gvrsn.major}.")
+                                             f"{version.major}.")
 
-        latest = list(self.Sizes[gvrsn.major])[0]  # get latest minor version
-        if gvrsn.minor > latest:
-            raise kering.InvalidVersionError(f"Minor version={gvrsn.minor} "
+        latest = list(self.Sizes[version.major])[0]  # get latest minor version
+        if version.minor > latest:
+            raise kering.InvalidVersionError(f"Minor version={version.minor} "
                                              f" exceeds latest supported minor"
                                              f" version={latest}.")
 
-        self._codes = self.Codes[gvrsn.major][latest]  # use latest supported version codes
-        self._sizes = self.Sizes[gvrsn.major][latest]  # use latest supported version sizes
-        self._version = gvrsn  # provided version may be earlier than supported version
+        self._codes = self.Codes[version.major][latest]  # use latest supported version codes
+        self._sizes = self.Sizes[version.major][latest]  # use latest supported version sizes
+        self._version = version  # provided version may be earlier than supported version
 
 
         if code:  # code (hard) provided
@@ -537,22 +537,14 @@ class Counter:
                                      "(code and count) or qb64b or "
                                      "qb64 or qb2.")
 
-        self._name = self.Names[gvrsn.major][latest][self.code]
+        self._name = self.Names[version.major][latest][self.code]
 
     @property
     def version(self):
         """Makes .version read only
-        Returns ._version
+        Returns ._version  genusversion
         """
         return self._version
-
-
-    @property
-    def gvrsn(self):
-        """Returns .version alias for .version
-
-        """
-        return self.version
 
 
     @property

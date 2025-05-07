@@ -2852,7 +2852,7 @@ def test_multisig_digprefix():
 
         # create sig counter
         count = len(keys)
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
         # create key event verifier state
@@ -2888,7 +2888,7 @@ def test_multisig_digprefix():
                         sn=1)
         # create sig counter
         count = len(keys)
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - count) for i in range(count, count + count)]
         # update key event verifier state
@@ -2904,7 +2904,7 @@ def test_multisig_digprefix():
                           dig=kever.serder.said,
                           sn=2)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - count) for i in range(count, count + count)]
         # update key event verifier state
@@ -2920,7 +2920,7 @@ def test_multisig_digprefix():
                           dig=kever.serder.said,
                           sn=3)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - count) for i in range(count, count + count)]
         # update key event verifier state
@@ -2940,7 +2940,7 @@ def test_multisig_digprefix():
                         dig=kever.serder.said,
                         sn=4)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - 5) for i in range(5, 8)]
         # update key event verifier state
@@ -2992,7 +2992,7 @@ def test_recovery():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
@@ -3014,7 +3014,7 @@ def test_recovery():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
@@ -3033,7 +3033,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3055,7 +3055,7 @@ def test_recovery():
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3074,7 +3074,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3093,7 +3093,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3112,7 +3112,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3135,7 +3135,7 @@ def test_recovery():
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3154,7 +3154,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3245,7 +3245,7 @@ def test_receipt():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)  # return Siger if index
 
@@ -3274,7 +3274,7 @@ def test_receipt():
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         assert valCigar.qb64 == ('0BADE2aOlwLi6OCF-jzRWSPuaOo916ADjwhA92hBQ1km'
                                  'LSSYdzDiZIpJNFf0uislNR8uhCbB6x2Y1I6rqbNeBXwF')
-        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, gvrsn=Vrsn_1_0)
+        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
         assert recnt.qb64 == '-CAB'
 
         res.extend(reserder.raw)
@@ -3303,7 +3303,7 @@ def test_receipt():
                            said=fake)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, gvrsn=Vrsn_1_0)
+        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
@@ -3325,7 +3325,7 @@ def test_receipt():
                            said=fake)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, gvrsn=Vrsn_1_0)
+        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
@@ -3355,7 +3355,7 @@ def test_receipt():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)  # returns siger
         # extend key event stream
@@ -3376,7 +3376,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3401,7 +3401,7 @@ def test_receipt():
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3423,7 +3423,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3445,7 +3445,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3467,7 +3467,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3537,7 +3537,7 @@ def test_direct_mode():
 
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # return Siger if index
 
@@ -3570,7 +3570,7 @@ def test_direct_mode():
 
         val_event_digs.append(valSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = valSigners[vesn].sign(valSerder.raw, index=0)  # return Siger if index
 
@@ -3751,7 +3751,7 @@ def test_direct_mode():
                            sn=csn)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
 
@@ -3845,7 +3845,7 @@ def test_direct_mode():
                              sn=csn)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
 
@@ -4003,7 +4003,7 @@ def test_direct_mode_cbor_mgpk():
 
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # return Siger if index
 
@@ -4035,7 +4035,7 @@ def test_direct_mode_cbor_mgpk():
 
         val_event_digs.append(valSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = valSigners[vesn].sign(valSerder.raw, index=0)  # return Siger if index
 
@@ -4214,7 +4214,7 @@ def test_direct_mode_cbor_mgpk():
                            kind=Kinds.cbor)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
 
@@ -4308,7 +4308,7 @@ def test_direct_mode_cbor_mgpk():
                              kind=Kinds.cbor)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
 
@@ -4471,7 +4471,7 @@ def test_process_nontransferable():
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
     # create attached sig counter
-    cnt0 = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)
+    cnt0 = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)
 
     # create packet
     msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
@@ -4482,7 +4482,7 @@ def test_process_nontransferable():
     del msgb0[:rser0.size]  # strip off event from front
 
     # extract sig counter
-    rcnt0 = Counter(qb64=msgb0, gvrsn=Vrsn_1_0)
+    rcnt0 = Counter(qb64=msgb0, version=Vrsn_1_0)
     nrsigs = rcnt0.count
     assert nrsigs == 1
     del msgb0[:len(rcnt0.qb64)]
@@ -4562,7 +4562,7 @@ def test_process_transferable():
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
     # create attached sig counter
-    cnt0 = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)
+    cnt0 = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)
 
     # create packet
     msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
@@ -4573,7 +4573,7 @@ def test_process_transferable():
     del msgb0[:rser0.size]  # strip off event from front
 
     # extract sig counter
-    rcnt0 = Counter(qb64=msgb0, gvrsn=Vrsn_1_0)
+    rcnt0 = Counter(qb64=msgb0, version=Vrsn_1_0)
     nrsigs = rcnt0.count
     assert nrsigs == 1
     del msgb0[:len(rcnt0.qb64)]
@@ -4885,7 +4885,7 @@ def test_load_event(mockHelpingNowUTC):
 
         # Add seal source couple to Tee's inception before sending to Wan
         counter = Counter(Codens.SealSourceCouples,
-                                 count=1, gvrsn=Vrsn_1_0)
+                                 count=1, version=Vrsn_1_0)
         teeIcp.extend(counter.qb64b)
         seqner = coring.Seqner(sn=torHab.kever.sn)
         teeIcp.extend(seqner.qb64b)

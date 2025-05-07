@@ -1571,7 +1571,7 @@ class BaseHab:
         key = dbing.dgKey(pre, dig)  # digest key
         msg.extend(self.db.getEvt(key))
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
-                           gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
+                           version=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in self.db.getSigsIter(key):
             msg.extend(sig)  # attach sig
         return msg
@@ -2039,13 +2039,13 @@ class BaseHab:
                                                 allowPartiallySigned=allowPartiallySigned)
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigs),
-                           gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
+                           version=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in sigs:
             msg.extend(sig.qb64b)  # attach sig
 
         if couple is not None:
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
-                               gvrsn=kering.Vrsn_1_0).qb64b)
+                               version=kering.Vrsn_1_0).qb64b)
             msg.extend(couple)
 
         return msg

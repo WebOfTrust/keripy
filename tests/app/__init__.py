@@ -56,7 +56,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
         evt = bytearray(eraw)
         evt.extend(core.Counter(code=core.Codens.ControllerIdxSigs,
-                                count=3, gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
+                                count=3, version=kering.Vrsn_1_0).qb64b)  # attach cnt
         evt.extend(sigs)
 
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev3, local=True)

@@ -9,12 +9,13 @@ import pytest
 from hio.help import decking
 
 
-from keri.kering import ValidationError, Vrsn_1_0
+from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0
 
 from keri import help
 
 from keri import core
-from keri.core import parsing, coring, Counter, Codens
+from keri.core import coring, Counter, Codens
+from keri.core.parsing2 import Parser
 
 from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
 
@@ -28,6 +29,9 @@ logger = help.ogler.getLogger()
 def test_parser():
     """
     Test the support functionality for Parser stream processor
+
+    Use openHby instead more updated approach to generating events
+
     """
     logger.setLevel("ERROR")
 
@@ -227,7 +231,7 @@ def test_parser():
 
         kevery = Kevery(db=valDB)
 
-        parser = parsing.Parser(kvy=kevery)
+        parser = Parser(kvy=kevery)
         assert parser.kvy == kevery
         assert parser.local == False
         assert parser.framed == True
@@ -245,7 +249,7 @@ def test_parser():
         db_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelIter(pre)]
         assert db_digs == event_digs
 
-        parser = parsing.Parser()  # no kevery so drops all messages
+        parser = Parser()  # no kevery so drops all messages
         parser.parse(ims=msgs)
         assert parser.ims == bytearray(b'')
 
