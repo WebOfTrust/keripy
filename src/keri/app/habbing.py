@@ -770,15 +770,21 @@ class Habery:
         if "dt" in conf:  # datetime of config file
             dt = help.fromIso8601(conf["dt"])  # raises error if not convert
             if "iurls" in conf:  # process OOBI URLs
-                for oobi in conf["iurls"]:
+                iurls = conf["iurls"]
+                print(f"Loading {len(iurls)} OOBIs")
+                for oobi in iurls:
                     obr = basing.OobiRecord(date=help.toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
             if "durls" in conf:  # process OOBI URLs
-                for oobi in conf["durls"]:
+                durls = conf["durls"]
+                print(f"Loading {len(durls)} Data OOBIs")
+                for oobi in durls:
                     obr = basing.OobiRecord(date=help.toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
             if "wurls" in conf:  # well known OOBI URLs for MFA
-                for oobi in conf["wurls"]:
+                wurls = conf["wurls"]
+                print(f"Loading {len(wurls)} Well Known OOBIs")
+                for oobi in wurls:
                     obr = basing.OobiRecord(date=help.toIso8601(dt))
                     self.db.woobi.put(keys=(oobi,), val=obr)
 

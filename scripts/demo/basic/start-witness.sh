@@ -1,5 +1,21 @@
 #!/bin/bash
 
-kli init --name witness --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file witness
-kli incept --name witness --alias witness --config ${KERI_SCRIPT_DIR} --file ${KERI_DEMO_SCRIPT_DIR}/data/wil-witness-sample.json
-kli witness start --name witness --alias witness
+PID_LIST=""
+kli init --name witness --nopasscode &
+pid=$!
+PID_LIST+=" $pid"
+
+kli init --name witness2 --nopasscode &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST
+
+PID_LIST=""
+kli witness start --name witness --alias witness -T 5632 -H 5642 --config-dir "${KERI_SCRIPT_DIR}" --config-file witness &
+pid=$!
+PID_LIST+=" $pid"
+kli witness start --name witness2 --alias witness2 -T 5652 -H 5662 --config-dir "${KERI_SCRIPT_DIR}" --config-file witness2 &
+pid=$!
+PID_LIST+=" $pid"
+wait $PID_LIST
