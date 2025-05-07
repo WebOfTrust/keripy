@@ -61,8 +61,6 @@ delegator_oobi=$(kli oobi generate --name "$delegator_1" --alias delegator --rol
 delegator_aid=$(kli aid --name "$delegator_1" --alias delegator)
 
 background_start kli oobi resolve --name "$delegate" --oobi-alias delegator --oobi "${delegator_oobi}"
-background_start kli oobi resolve --name "$delegate" --oobi-alias delegator_1 --oobi "${delegator_1_oobi}"
-background_start kli oobi resolve --name "$delegate" --oobi-alias delegator_2 --oobi "${delegator_2_oobi}"
 background_start kli oobi resolve --name "$delegator_1" --oobi-alias proxy --oobi "${proxy_oobi}"
 background_start kli oobi resolve --name "$delegator_2" --oobi-alias proxy --oobi "${proxy_oobi}"
 background_wait
