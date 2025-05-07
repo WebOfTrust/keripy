@@ -1683,9 +1683,11 @@ class Kever:
 
 
     def locallyDelegated(self, pre: str):
-        """Returns True if pre w is in .prefixes or is in self.groups.
+        """Returns True if pre w is in .prefixes which includes group AIDs in
+        self.groups which have a local member AID.
+
         Which means it is either locally controlled single sig or a multi-sig
-        group with a locally controller member.
+        group with a locally controlled member.
         False otherwise.
 
         Use when pre is a delegator, i.e. the delpre from some delegated event and
@@ -1709,7 +1711,7 @@ class Kever:
         """
 
         pre = pre if pre is not None else ""
-        return pre in self.prefixes or pre in self.groups
+        return pre in self.prefixes
 
 
 
