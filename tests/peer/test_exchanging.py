@@ -78,7 +78,7 @@ def test_essrs():
         parsing.Parser().parse(ims=ims,
                                kvy=recHby.kvy,
                                exc=exc,
-                               gvrsn=kering.Vrsn_1_0)  # parser does not support version2 count codes
+                               version=kering.Vrsn_1_0)  # parser does not support version2 count codes
 
         # Pull the logged exn and verify the attributes digest matches the attachment
         serder = recHby.db.exns.get(keys=(essr.said,))

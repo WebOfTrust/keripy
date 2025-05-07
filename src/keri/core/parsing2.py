@@ -50,13 +50,13 @@ class Parser:
     Properties:
         genus (str): default CESR code table protocol genus code
         version (Versionage): default CESR code table protocol genus version
-        gvrsn (Versionage): current CESR protocol genus version in context
+        curver (Versionage): current CESR protocol genus version in context
 
 
     Hidden:
         _version (Versionage): value for .version property
         _genus (str): value for .genus property
-        _gvrsn (Versionage): value for .gvrsn property
+        _curver (Versionage): value for .curver property
 
     """
 
@@ -214,7 +214,7 @@ class Parser:
                                     rvy=rvy,
                                     vry=vry,
                                     local=local,
-                                    gvrsn=version)
+                                    version=version)
 
         while True:
             try:
@@ -274,7 +274,7 @@ class Parser:
 
     def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                    gvrsn=Vrsn_1_0):
+                    version=Vrsn_1_0):
         """Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
         Generator completes as soon as ims is empty.
@@ -299,7 +299,7 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            gvrsn (Versionage): instance of genera version of CESR code tables
+            version (Versionage): instance of genera version of CESR code tables
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -332,7 +332,7 @@ class Parser:
                                                    rvy=rvy,
                                                    vry=vry,
                                                    local=local,
-                                                   gvrsn=gvrsn)
+                                                   version=version)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -535,7 +535,7 @@ class Parser:
 
     def msgParsator(self, ims=None, framed=True, pipeline=False,
                     kvy=None, tvy=None, exc=None, rvy=None, vry=None,
-                    local=None, gvrsn=Vrsn_1_0):
+                    local=None, version=Vrsn_1_0):
         """Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
         stream, ims, and dispatches processing of message with attachments.
@@ -564,7 +564,7 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            gvrsn (Versionage): instance of genera version of CESR code tables
+            version (Versionage): instance of genera version of CESR code tables
 
         Logic:
             Currently only support couters on attachments not on combined or
