@@ -290,11 +290,14 @@ class StreamPoster:
                 for role in (Roles.controller, Roles.agent, Roles.mailbox):
                     if role in ends:
                         if role == Roles.mailbox:
+                            logger.info(f"Forwarding for {role} to {self.recp} with {ends[role]}")
                             return self.forward(self.hab, ends[role], msg=msg, topic=self.topic)
                         else:
+                            logger.info(f"Sending direct for {role} to {self.recp} with {ends[role]}")
                             return self.sendDirect(self.hab, ends[role], msg=msg)
             # otherwise send to one witness
             elif Roles.witness in ends:
+                logger.info(f"Forwarding for {Roles.witness} to {self.recp} with {ends[Roles.witness]}")
                 return self.forward(self.hab, ends[Roles.witness], msg=msg, topic=self.topic)
 
             else:
@@ -372,10 +375,12 @@ class StreamPoster:
         owits = oset(ends.keys())
         if self.mbx and owits.intersection(hab.prefixes):
             self.mbx.storeMsg(topic=f"{self.recp}/{topic}".encode("utf-8"), msg=msg)
+            logger.info(f"Storing for own mailbox {self.mbx} for {self.recp} with {msg}")
             return []
 
         # Its not us, randomly select a mailbox and forward it on
         mbx, mailbox = random.choice(list(ends.items()))
+        logger.info(f"Selecting mailbox {mbx} {mailbox} for {self.recp} with {msg}")
         ims = bytearray()
         ims.extend(introduce(hab, mbx))
         ims.extend(msg)
