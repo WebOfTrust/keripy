@@ -143,7 +143,7 @@ def test_credentialer():
                           b'":"abc","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
 
     raw1 = creder.raw
-    ver1 = creder.vrsn
+    ver1 = creder.pvrsn
     knd1 = creder.kind
     sad1 = creder.sad
 

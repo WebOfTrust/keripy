@@ -703,7 +703,7 @@ class Tever:
             self.reload(rsr)
             return
 
-        self.version = serder.version
+        self.version = serder.pvrsn
         self.regk = regk
 
         ilk = serder.ked["t"]

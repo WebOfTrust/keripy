@@ -534,7 +534,7 @@ class Serder:
 
     def __init__(self, *, raw=b'', sad=None, strip=False, smellage=None,
                  genus=GenDex.KERI, gvrsn=Vrsn_2_0, verify=True, makify=False,
-                 proto=None, vrsn=None, kind=None, ilk=None, saids=None):
+                 proto=None, pvrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -570,7 +570,7 @@ class Serder:
                 saids.
             proto (str | None): desired protocol type str value of Protocols
                 If None then its extracted from sad or uses default .Proto
-            vrsn (Versionage | None): instance desired protocol version
+            pvrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
@@ -591,7 +591,7 @@ class Serder:
         self._raw = raw
         self._sad = sad
         self._proto = proto
-        self._vrsn = vrsn
+        self._pvrsn = pvrsn
         self._kind = kind
         self._gvrsn = gvrsn
         self._genus = genus
@@ -604,7 +604,7 @@ class Serder:
 
             # primary said field label
             try:
-                label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
+                label = list(self.Fields[self.proto][self.pvrsn][self.ilk].saids)[0]
                 if label not in self._sad:
                     raise FieldError(f"Missing primary said field in {self._sad}.")
                 self._said = self._sad[label]  # not verified
@@ -629,7 +629,7 @@ class Serder:
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, vrsn, kind, ilk, and size
-                self.makify(sad=sad, proto=proto, vrsn=vrsn, kind=kind,
+                self.makify(sad=sad, proto=proto, pvrsn=pvrsn, kind=kind,
                             ilk=ilk, saids=saids)
                 # .makify updates ._raw, ._sad, ._proto, ._vrsn, ._kind, ._size
 
@@ -639,7 +639,7 @@ class Serder:
 
             # primary said field label
             try:
-                label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids)[0]
+                label = list(self.Fields[self.proto][self.pvrsn][self.ilk].saids)[0]
                 if label not in self._sad:
                     raise DeserializeError(f"Missing primary said field in {self._sad}.")
                 self._said = self._sad[label]  # not verified
@@ -704,21 +704,21 @@ class Serder:
             raise SerializeError(f"Incompatible protocol={self.proto} with "
                                  f"genus={self.genus}.")
 
-        if self.vrsn.major > self.gvrsn.major:
-            raise SerializeError(f"Incompatible major protocol version={self.vrsn}"
+        if self.pvrsn.major > self.gvrsn.major:
+            raise SerializeError(f"Incompatible major protocol version={self.pvrsn}"
                                  f" with major genus version={self.gvrsn}.")
 
-        if self.vrsn not in self.Fields[self.proto]:
-            raise SerializeError(f"Invalid version={self.vrsn} for "
+        if self.pvrsn not in self.Fields[self.proto]:
+            raise SerializeError(f"Invalid version={self.pvrsn} for "
                                  f"protocol={self.proto}.")
 
-        if self.ilk not in self.Fields[self.proto][self.vrsn]:
+        if self.ilk not in self.Fields[self.proto][self.pvrsn]:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
 
 
 
-        fields = self.Fields[self.proto][self.vrsn][self.ilk]  # get labelage
+        fields = self.Fields[self.proto][self.pvrsn][self.ilk]  # get labelage
 
         alls = fields.alls  # faster local reference
         oalls = oset(alls)  # ordereset of field labels
@@ -792,8 +792,8 @@ class Serder:
         if self.proto != proto:
             raise ValidationError(f"Inconsistent protocol={self.proto} in {sad}.")
 
-        if self.vrsn != vrsn:
-            raise ValidationError(f"Inconsistent version={self.vrsn} in {sad}.")
+        if self.pvrsn != vrsn:
+            raise ValidationError(f"Inconsistent version={self.pvrsn} in {sad}.")
 
         if self.kind != kind:
             raise ValidationError(f"Inconsistent kind={self.kind} in {sad}.")
@@ -808,7 +808,7 @@ class Serder:
         # verified successfully since no exception
 
 
-    def makify(self, sad, *, proto=None, vrsn=None, kind=None,
+    def makify(self, sad, *, proto=None, pvrsn=None, kind=None,
                ilk=None, saids=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
@@ -829,7 +829,7 @@ class Serder:
                 Ignored if raw provided
             proto (str | None): desired protocol type str value of Protocols
                 If None then its extracted from sad or uses default .Proto
-            vrsn (Versionage | None): instance desired protocol version
+            pvrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
@@ -870,14 +870,14 @@ class Serder:
             raise SerializeError(f"Incompatible protocol={proto} with "
                                  f"genus={self.genus}.")
 
-        if vrsn is None:
-            vrsn = svrsn if svrsn is not None else self.Vrsn
+        if pvrsn is None:
+            pvrsn = svrsn if svrsn is not None else self.Vrsn
 
-        if vrsn not in self.Fields[proto]:
-            raise SerializeError(f"Invalid version={vrsn} for protocol={proto}.")
+        if pvrsn not in self.Fields[proto]:
+            raise SerializeError(f"Invalid version={pvrsn} for protocol={proto}.")
 
-        if vrsn.major > self.gvrsn.major:
-            raise SerializeError(f"Incompatible major protocol version={vrsn} "
+        if pvrsn.major > self.gvrsn.major:
+            raise SerializeError(f"Incompatible major protocol version={pvrsn} "
                                  f"with major genus version={self.gvrsn}.")
 
         if kind is None:
@@ -885,16 +885,16 @@ class Serder:
 
         if ilk is None:  # default is first ilk in Fields for given proto vrsn
             ilk = (silk if silk is not None else
-                   list(self.Fields[proto][vrsn])[0])  # list(dict) gives list of keys
+                   list(self.Fields[proto][pvrsn])[0])  # list(dict) gives list of keys
 
         if kind not in Kinds:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
-        if ilk not in self.Fields[proto][vrsn]:
+        if ilk not in self.Fields[proto][pvrsn]:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
-        fields = self.Fields[proto][vrsn][ilk]  # get FieldDom of fields
+        fields = self.Fields[proto][pvrsn][ilk]  # get FieldDom of fields
 
         alls = fields.alls  # faster local reference
         oalls = oset(alls)  # ordereset of field labels
@@ -978,31 +978,31 @@ class Serder:
         if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
             # this size of sad needs to be computed based on actual version string span
             # since not same for all versions
-            sad['v'] = self.Dummy * self.Spans[vrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
+            sad['v'] = self.Dummy * self.Spans[pvrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
 
             raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
             size = len(raw)
 
             # generate new version string with correct size
-            vs = versify(protocol=proto, version=vrsn, kind=kind, size=size)
+            vs = versify(protocol=proto, version=pvrsn, kind=kind, size=size)
             sad["v"] = vs  # update version string in sad
             # now have correctly sized version string in sad
 
 
         # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=vrsn)  # serialize sized dummied sad
+        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=pvrsn)  # serialize sized dummied sad
         for label, code in _saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
-        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=vrsn)  # compute final raw
+        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=pvrsn)  # compute final raw
         if kind == Kinds.cesr:# cesr kind version string does not set size
             size = len(raw) # size of whole message
 
         self._raw = raw
         self._sad = sad
         self._proto = proto
-        self._vrsn = vrsn
+        self._pvrsn = pvrsn
         self._kind = kind
         self._size = size
 
@@ -1049,7 +1049,7 @@ class Serder:
         self._raw = bytes(raw[:size])  # make copy so strip not affect
         self._sad = sad
         self._proto = proto
-        self._vrsn = vrsn
+        self._pvrsn = vrsn
         self._kind = kind
         self._size = size
 
@@ -1140,7 +1140,7 @@ class Serder:
         self._raw = raw  # crypto opts want bytes not bytearray
         self._sad = sad
         self._proto = proto
-        self._vrsn = vrsn
+        self._pvrsn = vrsn
         self._kind = kind
         self._size = size
 
@@ -1214,7 +1214,7 @@ class Serder:
         """
         sad = sad if sad is not None else self.sad
         proto = proto if proto is not None else self.proto
-        vrsn = vrsn if vrsn is not None else self.vrsn
+        vrsn = vrsn if vrsn is not None else self.pvrsn
 
         if (self.gvrsn.major < Vrsn_2_0.major or vrsn.major < Vrsn_2_0.major):
             raise SerializeError(f"Invalid major genus version={self.gvrsn}"
@@ -1481,22 +1481,22 @@ class Serder:
 
 
     @property
-    def vrsn(self):
+    def pvrsn(self):
         """vrsn (version) property getter
 
         Returns:
             vrsn (Versionage): instance of protocol version for this Serder
         """
-        return self._vrsn
+        return self._pvrsn
 
-    @property
-    def version(self):
-        """version property getter, alias of .vrsn
+    #@property
+    #def pvrsn(self):
+        #"""version property getter, alias of .vrsn
 
-        Returns:
-            version (Versionage): instance of protocol version for this Serder
-        """
-        return self.vrsn
+        #Returns:
+            #version (Versionage): instance of protocol version for this Serder
+        #"""
+        #return self.pvrsn
 
 
     @property
@@ -1514,7 +1514,7 @@ class Serder:
         Returns:
            said (str): qb64
         """
-        if not self.Fields[self.proto][self.vrsn][self.ilk].saids and 'd' in self._sad:
+        if not self.Fields[self.proto][self.pvrsn][self.ilk].saids and 'd' in self._sad:
             return self._sad['d']  # special case for non-saidive messages like rct
         return self._said
 
@@ -1560,13 +1560,13 @@ class SerderKERI(Serder):
         """
         super(SerderKERI, self)._verify(**kwa)
 
-        allkeys = list(self.Fields[self.proto][self.vrsn][self.ilk].alls)
+        allkeys = list(self.Fields[self.proto][self.pvrsn][self.ilk].alls)
         keys = list(self.sad)
         if allkeys != keys:
             raise ValidationError(f"Invalid top level field list. Expected "
                                   f"{allkeys} got {keys}.")
 
-        if (self.vrsn.major < 2 and self.vrsn.minor < 1 and
+        if (self.pvrsn.major < 2 and self.pvrsn.minor < 1 and
             self.ilk in (Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar, Ilks.exn)):
                 pass  # non prefixive ilks do not have 'i' field
         else:  # verify pre 'i' field
@@ -1758,7 +1758,7 @@ class SerderKERI(Serder):
         Returns:
             (list): digs
         """
-        if self.vrsn.major < 2 and self.vrsn.minor < 1 and self.ilk == Ilks.vcp:
+        if self.pvrsn.major < 2 and self.pvrsn.minor < 1 and self.ilk == Ilks.vcp:
             return None
 
         return self._sad.get("n")
@@ -1771,7 +1771,7 @@ class SerderKERI(Serder):
             ndigers (list[Diger]): instance as converted from ._sad['n'].
             One for each next key digests.
         """
-        if self.vrsn.major < 2 and self.vrsn.minor < 1 and self.ilk == Ilks.vcp:
+        if self.pvrsn.major < 2 and self.pvrsn.minor < 1 and self.ilk == Ilks.vcp:
             return None
 
         digs = self._sad.get("n")
@@ -1919,7 +1919,7 @@ class SerderKERI(Serder):
         Returns:
            nonce (str): alias for .uuid property
         """
-        if self.vrsn.major < 2 and self.vrsn.minor < 1 and self.ilk == Ilks.vcp:
+        if self.pvrsn.major < 2 and self.pvrsn.minor < 1 and self.ilk == Ilks.vcp:
             return self._sad.get("n")
         else:
             return self.uuid

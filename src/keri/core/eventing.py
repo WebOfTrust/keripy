@@ -1551,7 +1551,7 @@ class Kever:
             return
 
         # may update state as we go because if invalid we fail to finish init
-        self.version = serder.version  # version dispatch ?
+        self.version = serder.pvrsn  # version dispatch ?
 
         ilk = serder.ilk # serder.ked["t"]
         if ilk not in (Ilks.icp, Ilks.dip):

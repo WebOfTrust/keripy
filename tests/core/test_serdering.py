@@ -157,7 +157,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -178,7 +178,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -192,7 +192,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -206,7 +206,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -218,7 +218,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -245,7 +245,7 @@ def test_serder():
     assert stream == extra
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -279,7 +279,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.cbor
     assert serder.said == said
@@ -300,7 +300,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.cbor
     assert serder.said == said
@@ -314,7 +314,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.cbor
     assert serder.said == said
@@ -342,7 +342,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.mgpk
     assert serder.said == said
@@ -363,7 +363,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.mgpk
     assert serder.said == said
@@ -377,7 +377,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.mgpk
     assert serder.said == said
@@ -415,7 +415,7 @@ def test_serder():
     serder = Serder(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -424,7 +424,7 @@ def test_serder():
     serder = Serder(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -466,7 +466,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -476,7 +476,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -550,7 +550,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -560,7 +560,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -602,7 +602,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -612,7 +612,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -755,7 +755,7 @@ def test_serderkeri():
     serder = SerderKERI(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -787,7 +787,7 @@ def test_serderkeri():
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -855,7 +855,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -890,7 +890,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -997,7 +997,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1032,7 +1032,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1117,7 +1117,7 @@ def test_serderkeri_rot():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1147,7 +1147,7 @@ def test_serderkeri_rot():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1223,7 +1223,7 @@ def test_serderkeri_ixn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1256,7 +1256,7 @@ def test_serderkeri_ixn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1355,7 +1355,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1388,7 +1388,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1520,7 +1520,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1553,7 +1553,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1644,7 +1644,7 @@ def test_serderkeri_drt():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1677,7 +1677,7 @@ def test_serderkeri_drt():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1746,7 +1746,7 @@ def test_serderkeri_rct():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1774,7 +1774,7 @@ def test_serderkeri_rct():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1830,7 +1830,7 @@ def test_serderkeri_qry():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1861,7 +1861,7 @@ def test_serderkeri_qry():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1920,7 +1920,7 @@ def test_serderkeri_rpy():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1948,7 +1948,7 @@ def test_serderkeri_rpy():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2006,7 +2006,7 @@ def test_serderkeri_pro():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2037,7 +2037,7 @@ def test_serderkeri_pro():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2095,7 +2095,7 @@ def test_serderkeri_bar():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2126,7 +2126,7 @@ def test_serderkeri_bar():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2191,7 +2191,7 @@ def test_serderkeri_exn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2222,7 +2222,7 @@ def test_serderkeri_exn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2287,7 +2287,7 @@ def test_serderkeri_vcp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2317,7 +2317,7 @@ def test_serderkeri_vcp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2362,7 +2362,7 @@ def test_serderacdc():
                           b'-BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}')
 
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Kinds.json
     assert serder.said == 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT'
@@ -2394,7 +2394,7 @@ def test_serderacdc():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2406,7 +2406,7 @@ def test_serderacdc():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2440,7 +2440,7 @@ def test_serder_v2():
     #Test Serder bare makify bootstrap for ACDC JSON
     serder = Serder(makify=True,
                     proto=Protocols.acdc,
-                    vrsn=kering.Vrsn_2_0)  # make defaults for ACDC
+                    pvrsn=kering.Vrsn_2_0)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDCCAAJSONAABZ.',
                             'd': 'EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy',
                             'i': '',
@@ -2448,7 +2448,7 @@ def test_serder_v2():
     assert serder.raw == (b'{"v":"ACDCCAAJSONAABZ.","d":"EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy","'
                           b'i":"","s":""}')
     assert serder.verify()
-    assert serder.vrsn == serder.version == kering.Vrsn_2_0
+    assert serder.pvrsn == serder.pvrsn == kering.Vrsn_2_0
     sad = serder.sad
     raw = serder.raw
     said = serder.said
@@ -2459,7 +2459,7 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_2_0 == serder.version
+    assert serder.pvrsn == kering.Vrsn_2_0 == serder.pvrsn
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2480,7 +2480,7 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_2_0 == serder.version
+    assert serder.pvrsn == kering.Vrsn_2_0 == serder.pvrsn
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2494,7 +2494,7 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == kering.Vrsn_2_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2504,7 +2504,7 @@ def test_serder_v2():
 
     # test default
     serder = Serder(makify=True,
-                    vrsn=kering.Vrsn_2_0)  # make defaults for default proto
+                    pvrsn=kering.Vrsn_2_0)  # make defaults for default proto
 
 
     assert serder.sad == {'v': 'KERICAAJSONAADO.',
@@ -2525,7 +2525,7 @@ def test_serder_v2():
                         b',"k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
     assert serder.verify()
     assert serder.proto == Protocols.keri == Serder.Proto  # default
-    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == kering.Vrsn_2_0
     assert serder.kind == kering.Kinds.json == Serder.Kind  # default
     assert serder.ilk == kering.Ilks.icp  # default first one
 
