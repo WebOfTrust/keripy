@@ -23,10 +23,12 @@ class Parsery:
         """
         parser = ArgumentParser(add_help=False)
 
+        env_name=getenv("KLI_KEYSTORE_NAME", None)
         parser.add_argument('--name', '-n',
                             help='keystore name and file location of KERI keystore',
-                            required=required,
-                            default=getenv("KLI_KEYSTORE_NAME", None))
+                            required=required if env_name is None else False,
+                            default=env_name)
+
         parser.add_argument('--base', '-b',
                             help='additional optional prefix to file location of KERI keystore',
                             required=False,
