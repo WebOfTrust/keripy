@@ -9,17 +9,13 @@ import argparse
 from hio.base import doing
 from keri import help
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Clear escrows')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
+parser = argparse.ArgumentParser(description='Clear escrows', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--force', action="store_true", required=False,
                     help='True means perform clear without prompting the user')
 

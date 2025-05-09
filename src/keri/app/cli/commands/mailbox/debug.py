@@ -11,19 +11,15 @@ from hio.base import doing
 from keri import help, kering
 from keri.app import agenting, habbing, httping
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Display mailbox status for an identifier and witness')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Display mailbox status for an identifier and witness', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--witness', '-w', help='The qualified b64 AID of the witness to poll', required=True)
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 

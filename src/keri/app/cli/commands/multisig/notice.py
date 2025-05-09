@@ -11,23 +11,17 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, forwarding, grouping
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core.coring import Ilks
 from keri.core import serdering
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Notify other participants of the last event in a group multisig AID')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Notify other participants of the last event in a group multisig AID', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
-
-# Authentication for keystore
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
 

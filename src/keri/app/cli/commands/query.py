@@ -14,24 +14,16 @@ from keri import help
 from keri.app import indirecting, habbing, querying
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.help import helping
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Request KEL from Witness')
-parser.set_defaults(handler=lambda args: query(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Request KEL from Witness', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: query(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--prefix', help='QB64 identifier to query', default="", required=True)
-
-# Authentication for keystore
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
-                                   'and encryption of secrets in keystore', default=None)
 parser.add_argument('--anchor', help='JSON file containing the anchor to search for', default=None, required=False)
 
 
