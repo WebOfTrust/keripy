@@ -8,6 +8,7 @@ import time
 
 from keri import help
 from hio.base import doing
+from hio.help import decking
 
 from keri import kering
 from keri.app import agenting, indirecting, habbing
@@ -60,7 +61,7 @@ class UpdateDoer(doing.DoDoer):
         self.wit = wit
         self.sn = sn
         self.said = said
-        self.cues = help.decking.Deck()
+        self.cues = decking.Deck()
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
