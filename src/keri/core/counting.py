@@ -652,7 +652,7 @@ class Counter:
     def qb64(self):
         """Property qb64:
         Returns:
-            Fully Qualified Base64 Version
+            Fully Qualified Base64 Version, same as .both
         Assumes self.raw and self.code are correctly populated
         """
         return self.qb64b.decode("utf-8")

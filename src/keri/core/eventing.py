@@ -388,16 +388,20 @@ def verifySigs(raw, sigers, verfers):
     usigers = [Siger(qb64=sig) for sig in usigs]
 
     # verify indexes of attached signatures against verifiers and assign
-    # verfer to each siger
+    # verfer to each usiger
+    uvsigers = []
     for siger in usigers:
         if siger.index >= len(verfers):
-            logger.info("Skipped sig: Index=%s to large.", siger.index)
+            logger.info(f"Skipped sig: index={siger.index} too large")
+            continue
+
         siger.verfer = verfers[siger.index]  # assign verfer
+        uvsigers.append(siger)
 
     # create lists of unique verified signatures and indices
     vindices = []
     vsigers = []
-    for siger in usigers:
+    for siger in uvsigers:
         if siger.verfer.verify(siger.raw, raw):
             vindices.append(siger.index)
             vsigers.append(siger)

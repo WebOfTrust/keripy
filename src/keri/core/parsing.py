@@ -7,22 +7,23 @@ message stream parsing support
 
 import logging
 
-from ..kering import Vrsn_1_0, Vrsn_2_0
+from .. import kering
+from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
+                      ShortageError, ColdStartError)
 from .coring import (Ilks, Seqner, Cigar,
                      Dater, Verfer, Prefixer, Saider, Pather, Texter)
-from .counting import Counter, Codens, CtrDex_1_0
+from .counting import Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex
 from .indexing import (Siger, )
 from . import serdering
 from .. import help
-from .. import kering
-from ..kering import Colds, sniff, Vrsn_1_0, Vrsn_2_0
+
+
 
 logger = help.ogler.getLogger()
 
 
 class Parser:
-    """
-    Parser is stream parser that processes an incoming message stream.
+    """Parser is stream parser that processes an incoming message stream.
     Each message in the stream is composed of a message body with a message foot
     The message body includes a version string. The message foot is composed of
     composable concatenated attachments encoded in CESR (Composable Event
@@ -48,10 +49,22 @@ class Parser:
         local (bool): True means event source is local (protected) for validation
                          False means event source is remote (unprotected) for validation
 
+    Properties:
+        genus (str): default CESR code table protocol genus code
+        version (Versionage): default CESR code table protocol genus version
+        curver (Versionage): current CESR protocol genus version in context
+
+
+    Hidden:
+        _version (Versionage): value for .version property
+        _genus (str): value for .genus property
+        _curver (Versionage): value for .curver property
+
     """
 
     def __init__(self, ims=None, framed=True, pipeline=False, kvy=None,
-                 tvy=None, exc=None, rvy=None, vry=None, local=False):
+                 tvy=None, exc=None, rvy=None, vry=None, local=False,
+                 version=Vrsn_2_0):
         """
         Initialize instance:
 
@@ -68,6 +81,7 @@ class Parser:
             vry (Verfifier): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
                          False means event source is remote (unprotected) for validation
+            version (Versionage): instance of genera version for default code table
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
@@ -78,12 +92,14 @@ class Parser:
         self.rvy = rvy
         self.vry = vry
         self.local = True if local else False
+        self._version = version  # provided version may be earlier than supported version
+        self._genus = GenDex.KERI_ACDC_SPAC  # only supports KERI_ACDC_SPAC
+        self._curver = self.version
 
 
     @staticmethod
     def extract(ims, klas, cold=Colds.txt):
-        """
-        Extract and return instance of klas from input message stream, ims, given
+        """Extract and return instance of klas from input message stream, ims, given
         stream state, cold, is txt or bny. Inits klas from ims using qb64b or
         qb2 parameter based on cold.
         """
@@ -92,13 +108,12 @@ class Parser:
         elif cold == Colds.bny:
             return klas(qb2=ims, strip=True)
         else:
-            raise kering.ColdStartError("Invalid stream state cold={}.".format(cold))
+            raise ColdStartError(f"Invalid stream state {cold=}")
 
 
     @staticmethod
     def _extractor(ims, klas, cold=Colds.txt, abort=False, version=Vrsn_1_0):
-        """
-        Returns generator to extract and return instance of klas from input
+        """Returns generator to extract and return instance of klas from input
         message stream, ims, given stream state, cold, is txt or bny.
         If wait is True then yield when not enough bytes in stream otherwise
         raise ShortageError
@@ -111,7 +126,7 @@ class Parser:
             cold (Coldage): instance str value
             abort (bool): True means abort if bad pipelined frame Shortage
                           False means do not abort if Shortage just wait for more
-            version (Versionage): instance current genera version of CESR to use
+            version (Versionage): current genera version of CESR code tables to use
 
         Usage:
 
@@ -124,161 +139,42 @@ class Parser:
                 elif cold == Colds.bny:
                     return klas(qb2=ims, strip=True, version=version)
                 else:
-                    raise kering.ColdStartError("Invalid stream state cold={}.".format(cold))
-            except kering.ShortageError as ex:
+                    raise ColdStartError(f"Invalid stream state {cold=}")
+            except ShortageError as ex:
                 if abort:  # pipelined pre-collects full frame before extracting
                     raise  # bad pipelined frame so abort by raising error
                 yield
 
-
-    def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt, pipelined=False):
+    @property
+    def genus(self):
+        """Makes .genus read only
+        Returns ._genus
         """
+        return self._genus
 
-        Args:
-            ctr (Counter): group type counter
-            ims (bytearray) of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-            root (Pather) optional root path of this group
-            cold (str): next charater Coldage type indicayor
-            pipelined (bool) True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
 
-        Returns:
-
+    @property
+    def version(self):
+        """Makes .version read only
+        Returns ._version
         """
-        if ctr.code != CtrDex_1_0.SadPathSigGroups:
-            raise kering.UnexpectedCountCodeError("Wrong "
-                                                  "count code={}.Expected code={}."
-                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
-
-        subpath = yield from self._extractor(ims,
-                                             klas=Pather,
-                                             cold=cold,
-                                             abort=pipelined)
-        if root is not None:
-            subpath = subpath.root(root=root)
-
-        sctr = yield from self._extractor(ims=ims,
-                                          klas=Counter,
-                                          cold=cold,
-                                          abort=pipelined)
-        if sctr.code == CtrDex_1_0.TransIdxSigGroups:
-            for prefixer, seqner, saider, isigers in self._transIdxSigGroups(sctr, ims, cold=cold, pipelined=pipelined):
-                yield sctr.code, (subpath, prefixer, seqner, saider, isigers)
-        elif sctr.code == CtrDex_1_0.ControllerIdxSigs:
-            isigers = []
-            for i in range(sctr.count):  # extract each attached signature
-                isiger = yield from self._extractor(ims=ims,
-                                                    klas=Siger,
-                                                    cold=cold,
-                                                    abort=pipelined)
-                isigers.append(isiger)
-            yield sctr.code, (subpath, isigers)
-        elif sctr.code == CtrDex_1_0.NonTransReceiptCouples:
-            for cigar in self._nonTransReceiptCouples(ctr=sctr, ims=ims, cold=cold, pipelined=pipelined):
-                yield sctr.code, (subpath, cigar)
-        else:
-            raise kering.UnexpectedCountCodeError("Wrong "
-                                                  "count code={}.Expected code={}."
-                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
+        return self._version
 
 
-    def _transIdxSigGroups(self, ctr, ims, cold=Colds.txt, pipelined=False):
-        """
-        Extract attaced trans indexed sig groups each made of
-        triple pre+snu+dig plus indexed sig group
-        pre is pre of signer (endorser) of msg
-        snu is sn of signer's est evt when signed
-        dig is dig of signer's est event when signed
-        followed by counter for ControllerIdxSigs with attached
-        indexed sigs from trans signer (endorser).
-
-        Parameters:
-            ctr (Counter): group type counter
-            ims (bytearray) of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-
-            cold (str): next charater Coldage type indicayor
-            pipelined (bool) True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-        Yields:
+    @property
+    def curver(self):
+        """Returns ._curver current version in stream context
 
         """
-        for i in range(ctr.count):  # extract each attached groups
-            prefixer = yield from self._extractor(ims,
-                                                  klas=Prefixer,
-                                                  cold=cold,
-                                                  abort=pipelined)
-            seqner = yield from self._extractor(ims,
-                                                klas=Seqner,
-                                                cold=cold,
-                                                abort=pipelined)
-            saider = yield from self._extractor(ims,
-                                                klas=Saider,
-                                                cold=cold,
-                                                abort=pipelined)
-            ictr = yield from self._extractor(ims=ims,
-                                              klas=Counter,
-                                              cold=cold,
-                                              abort=pipelined)
-            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
-                raise kering.UnexpectedCountCodeError("Wrong "
-                                                      "count code={}.Expected code={}."
-                                                      "".format(ictr.code, CtrDex_1_0.ControllerIdxSigs))
-            isigers = []
-            for i in range(ictr.count):  # extract each attached signature
-                isiger = yield from self._extractor(ims=ims,
-                                                    klas=Siger,
-                                                    cold=cold,
-                                                    abort=pipelined)
-                isigers.append(isiger)
-
-            yield prefixer, seqner, saider, isigers
-
-
-    def _nonTransReceiptCouples(self, ctr, ims, cold=Colds.txt, pipelined=False):
-        """
-        Extract attached rct couplets into list of sigvers
-        verfer property of cigar is the identifier prefix
-        cigar itself has the attached signature
-
-        Parameters:
-            ctr (Counter): group type counter
-            ims (bytearray) of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-
-            cold (str): next charater Coldage type indicayor
-            pipelined (bool) True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-        Yields:
-
-        """
-        for i in range(ctr.count):  # extract each attached couple
-            verfer = yield from self._extractor(ims=ims,
-                                                klas=Verfer,
-                                                cold=cold,
-                                                abort=pipelined)
-            cigar = yield from self._extractor(ims=ims,
-                                               klas=Cigar,
-                                               cold=cold,
-                                               abort=pipelined)
-            cigar.verfer = verfer
-
-            yield cigar
+        return self._curver
 
 
     def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
               exc=None, rvy=None, vry=None, local=None, version=Vrsn_1_0):
-        """
-        Processes all messages from incoming message stream, ims,
+        """Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
         Returns when ims is empty.
-        Convenience executor for .processAllGen when ims is not live, i.e. fixed
+        Convenience executor for .allParsatator when ims is not live, i.e. fixed
 
         Parameters:
             ims is bytearray of incoming message stream. May contain one or more
@@ -299,7 +195,7 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): instance of genera version of CESR code tables
+            version (Versionage): current genera version of CESR to use
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -328,9 +224,8 @@ class Parser:
 
 
     def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None,
-                 exc=None, rvy=None, vry=None, local=None):
-        """
-        Processes one messages from incoming message stream, ims,
+                 exc=None, rvy=None, vry=None, local=None, version=Vrsn_1_0):
+        """Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
         Returns once one message is processed.
         Convenience executor for .processOneGen when ims is not live, i.e. fixed
@@ -353,6 +248,7 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
+            version (Versionage): current genera version of CESR to use
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -369,7 +265,8 @@ class Parser:
                                      exc=exc,
                                      rvy=rvy,
                                      vry=vry,
-                                     local=local)
+                                     local=local,
+                                     version=version)
         while True:
             try:
                 next(parsator)
@@ -380,8 +277,7 @@ class Parser:
     def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
                     version=Vrsn_1_0):
-        """
-        Returns generator to parse all messages from incoming message stream,
+        """Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
         Generator completes as soon as ims is empty.
         If ims not provided then parse messages from .ims
@@ -467,9 +363,9 @@ class Parser:
 
 
     def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
-                     tvy=None, exc=None, rvy=None, vry=None, local=None):
-        """
-        Returns generator to parse one message from incoming message stream, ims.
+                     tvy=None, exc=None, rvy=None, vry=None, local=None,
+                     version=Vrsn_1_0):
+        """Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
 
         Parameters:
@@ -491,6 +387,7 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
+            version (Versionage): instance of genera version of CESR code tables
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -523,7 +420,8 @@ class Parser:
                                                    exc=exc,
                                                    rvy=rvy,
                                                    vry=vry,
-                                                   local=local)
+                                                   local=local,
+                                                   version=version)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -553,9 +451,8 @@ class Parser:
 
 
     def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
-                 exc=None, rvy=None, vry=None, local=None):
-        """
-        Returns generator to continually parse messages from incoming message
+                 exc=None, rvy=None, vry=None, local=None, version=Vrsn_1_0):
+        """Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply. Does not return.
         Useful for always running servers.
         One yield from per each message if any.
@@ -581,6 +478,7 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
+            version (Versionage): instance of genera version of CESR code tables
 
 
         New Logic:
@@ -613,7 +511,8 @@ class Parser:
                                                    exc=exc,
                                                    rvy=rvy,
                                                    vry=vry,
-                                                   local=local)
+                                                   local=local,
+                                                   version=version)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -644,8 +543,7 @@ class Parser:
     def msgParsator(self, ims=None, framed=True, pipeline=False,
                     kvy=None, tvy=None, exc=None, rvy=None, vry=None,
                     local=None, version=Vrsn_1_0):
-        """
-        Returns generator that upon each iteration extracts and parses msg
+        """Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
         stream, ims, and dispatches processing of message with attachments.
 
@@ -655,21 +553,21 @@ class Parser:
         attachments. Returns (which raises StopIteration) when finished.
 
         Parameters:
-            ims (bytearray) of serialized incoming message stream.
+            ims (bytearray): of serialized incoming message stream.
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.
 
-            framed (bool) True means ims contains only one frame of msg plus
+            framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipeline (bool) True means use pipeline processor to process
+            pipeline (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
 
-            kvy (Kevery) route KERI KEL message types to this instance
-            tvy (Tevery) route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
+            kvy (Kevery): route KERI KEL message types to this instance
+            tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger): route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
-            vry (Verifier) ACDC credential processor
+            vry (Verifier): ACDC credential processor
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
@@ -704,7 +602,7 @@ class Parser:
             yield
 
         cold = sniff(ims)  # check for spurious counters at front of stream
-        if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
+        if cold in (Colds.txt, Colds.bny):  # not message, so error out to flush stream
             # replace with pipelining here once CESR message format supported.
             raise kering.ColdStartError("Expecting message counter tritet={}"
                                         "".format(cold))
@@ -752,7 +650,7 @@ class Parser:
                     pipelined = True
                     # compute pipelined attached group size based on txt or bny
                     pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                    while len(ims) < pags:  # wait until rx full pipelned group
+                    while len(ims) < pags:  # wait until rx full pipelined group
                         yield
 
                     pims = ims[:pags]  # copy out substream pipeline group
@@ -763,38 +661,28 @@ class Parser:
                         pass  # pass extracted ims to pipeline processor
                         return
 
+                    # get first counter inside attachment group
                     ctr = yield from self._extractor(ims=ims,
                                                      klas=Counter,
                                                      cold=cold,
                                                      abort=pipelined)
 
-                # iteratively process attachment counters (all non pipelined)
-                while True:  # do while already extracted first counter is ctr
-                    if ctr.code == CtrDex_1_0.ControllerIdxSigs:
-                        for i in range(ctr.count):  # extract each attached signature
-                            siger = yield from self._extractor(ims=ims,
-                                                               klas=Siger,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            sigers.append(siger)
+                # iteratively process attachment counters in stride
+                while True:  # do while already extracted first counter is ctr above
+                    if ctr.code == CtrDex_1_0.ControllerIdxSigs:  # extract each attached signature
+                        sigers = yield from self._ControllerIdxSigs1(ims=ims,
+                                        ctr=ctr, cold=cold, abort=pipelined)
 
-                    elif ctr.code == CtrDex_1_0.WitnessIdxSigs:
-                        for i in range(ctr.count):  # extract each attached signature
-                            wiger = yield from self._extractor(ims=ims,
-                                                               klas=Siger,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            wigers.append(wiger)
+                    elif ctr.code == CtrDex_1_0.WitnessIdxSigs:  # extract each attached signature
+                        wigers = yield from self._WitnessIdxSigs1(ims=ims,
+                                            ctr=ctr, cold=cold, abort=pipelined)
 
                     elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
-                        # extract attached rct couplets into list of sigvers
+                        # extract attached rct couplets into list of cigars
                         # verfer property of cigar is the identifier prefix
-                        # cigar itself has the attached signature
-                        for cigar in self._nonTransReceiptCouples(ctr=ctr,
-                                                                  ims=ims,
-                                                                  cold=cold,
-                                                        pipelined=pipelined):
-                            cigars.append(cigar)
+                        # cigar itself is the attached signature
+                        cigars = yield from self._NonTransReceiptCouples1(ims=ims,
+                                        ctr=ctr, cold=cold, abort=pipelined)
 
                     elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
                         # extract attaced trans receipt vrc quadruple
@@ -803,25 +691,8 @@ class Parser:
                         # ssnu is sn of signer's est evt when signed
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
-
-                        for i in range(ctr.count):  # extract each attached quadruple
-                            prefixer = yield from self._extractor(ims,
-                                                                  klas=Prefixer,
-                                                                  cold=cold,
-                                                                  abort=pipelined)
-                            seqner = yield from self._extractor(ims,
-                                                                klas=Seqner,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            saider = yield from self._extractor(ims,
-                                                                klas=Saider,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            siger = yield from self._extractor(ims=ims,
-                                                               klas=Siger,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            trqs.append((prefixer, seqner, saider, siger))
+                        trqs = yield from self._TransReceiptQuadruples1(ims=ims,
+                                        ctr=ctr, cold=cold, abort=pipelined)
 
                     elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
@@ -831,10 +702,14 @@ class Parser:
                         # dig is dig of signer's est event when signed
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        for (prefixer, seqner, saider, isigers) in \
-                                self._transIdxSigGroups(ctr, ims, cold=cold,
-                                                        pipelined=pipelined):
-                            tsgs.append((prefixer, seqner, saider, isigers))
+                        tsgs = yield from self._TransIdxSigGroups1(ims=ims,
+                                        ctr=ctr, cold=cold, abort=pipelined)
+
+                        #for (prefixer, seqner, saider, isigers) in \
+                                #self._transIdxSigGroups(ctr, ims, cold=cold,
+                                                        #pipelined=pipelined):
+                            #tsgs.append((prefixer, seqner, saider, isigers))
+
 
                     elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
@@ -1171,3 +1046,578 @@ class Parser:
                                          " {}.".format(serder.proto, serder.pretty()))
 
         return True  # done state
+
+    # Group parse/extract methods for dispatch based on CESR version
+    def _ControllerIdxSigs1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 ControllerIdxSigs group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+
+        Returns:
+            sigers (list[Siger]): of indexed signature instances
+
+        """
+        sigers = []
+        for i in range(ctr.count):  # extract each attached signature
+            siger = yield from self._extractor(ims=ims,
+                                               klas=Siger,
+                                               cold=cold,
+                                               abort=abort)
+            sigers.append(siger)
+
+        return sigers
+
+
+
+    def _ControllerIdxSigs2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 ControllerIdxSigs group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            sigers (list[Siger]): of indexed signature instances
+
+        """
+        #if cold not in (Colds.txt, Colds.bny):  # not a counter
+            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
+
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        sigers = []
+        while gims:   # extract each attached signature and strip from gims
+            sigers.append(self.extract(ims=gims, klas=Siger, cold=cold))
+
+        return sigers
+
+
+    def _WitnessIdxSigs1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 WitnessIdxSigs group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+
+        Returns:
+            wigers (list[Siger]): of indexed signature instances
+
+        """
+        wigers = []
+        for i in range(ctr.count):  # extract each attached signature
+            wiger = yield from self._extractor(ims=ims,
+                                               klas=Siger,
+                                               cold=cold,
+                                               abort=abort)
+            wigers.append(wiger)
+
+        return wigers
+
+
+    def _WitnessIdxSigs2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 WitnessIdxSigs group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            wigers (list[Siger]): of indexed signature instances
+
+        """
+        #if cold not in (Colds.txt, Colds.bny):  # not a counter
+            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
+
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        wigers = []
+        while gims:   # extract each attached signature and strip from gims
+            wigers.append(self.extract(ims=gims, klas=Siger, cold=cold))
+
+        return wigers
+
+
+    def _NonTransReceiptCouples1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 NonTransReceiptCouples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        """
+        cigars = []
+        for i in range(ctr.count):  # extract each attached couple
+            verfer = yield from self._extractor(ims=ims,
+                                               klas=Verfer,
+                                               cold=cold,
+                                               abort=abort)
+            cigar = yield from self._extractor(ims=ims,
+                                               klas=Cigar,
+                                               cold=cold,
+                                               abort=abort)
+
+            cigar.verfer = verfer
+
+            cigars.append(cigar)
+
+        return cigars
+
+
+    def _NonTransReceiptCouples2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 NonTransReceiptCouples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        """
+        #if cold not in (Colds.txt, Colds.bny):  # not a counter
+            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
+
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        cigars = []
+        while gims:   # extract each attached couple and strip from gims
+            verfer = self.extract(ims=gims, klas=Verfer, cold=cold)
+            cigar = self.extract(ims=gims, klas=Cigar, cold=cold)
+            cigar.verfer = verfer
+            cigars.append(cigar)
+
+        return cigars
+
+
+    def _TransReceiptQuadruples1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 TransReceiptQuadruples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        extract attaced trans receipt vrc quadruple
+        spre+ssnu+sdig+sig
+        spre is pre of signer of vrc
+        ssnu is sn of signer's est evt when signed
+        sdig is dig of signer's est event when signed
+        sig is indexed signature of signer on this event msg
+
+        """
+        trqs = []
+        for i in range(ctr.count):  # extract each attached quadruple
+            prefixer = yield from self._extractor(ims=ims,
+                                                  klas=Prefixer,
+                                                  cold=cold,
+                                                  abort=abort)
+            seqner = yield from self._extractor(ims=ims,
+                                                klas=Seqner,
+                                                cold=cold,
+                                                abort=abort)
+            saider = yield from self._extractor(ims=ims,
+                                                klas=Saider,
+                                                cold=cold,
+                                                abort=abort)
+            siger = yield from self._extractor(ims=ims,
+                                               klas=Siger,
+                                               cold=cold,
+                                               abort=abort)
+            trqs.append((prefixer, seqner, saider, siger))
+
+        return trqs
+
+
+    def _TransReceiptQuadruples2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 TransReceiptQuadruples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        extract attaced trans receipt vrc quadruple
+        spre+ssnu+sdig+sig
+        spre is pre of signer of vrc
+        ssnu is sn of signer's est evt when signed
+        sdig is dig of signer's est event when signed
+        sig is indexed signature of signer on this event msg
+
+        """
+        #if cold not in (Colds.txt, Colds.bny):  # not a counter
+            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
+
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        trqs = []
+        while gims:   # extract each attached quadruple and strip from gims
+            prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
+            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
+            saider = self.extract(ims=gims, klas=Saider, cold=cold)
+            siger = self.extract(ims=gims, klas=Siger, cold=cold)
+            trqs.append((prefixer, seqner, saider, siger))
+
+        return trqs
+
+
+    def _TransIdxSigGroups1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 TransIdxSigGroups group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        extract attaced trans receipt vrc quadruple
+        spre+ssnu+sdig+sig
+        spre is pre of signer of vrc
+        ssnu is sn of signer's est evt when signed
+        sdig is dig of signer's est event when signed
+        sig is indexed signature of signer on this event msg
+
+        """
+        tsgs = []
+        for i in range(ctr.count):  # extract each attached quadruple
+            prefixer = yield from self._extractor(ims=ims,
+                                                  klas=Prefixer,
+                                                  cold=cold,
+                                                  abort=abort)
+            seqner = yield from self._extractor(ims=ims,
+                                                klas=Seqner,
+                                                cold=cold,
+                                                abort=abort)
+            saider = yield from self._extractor(ims=ims,
+                                                klas=Saider,
+                                                cold=cold,
+                                                abort=abort)
+            ictr = yield from self._extractor(ims=ims,
+                                              klas=Counter,
+                                              cold=cold,
+                                              abort=abort)
+            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
+                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                            f"{CtrDex_1_0.ControllerIdxSigs}, got code={ictr.code}")
+            isigers = []
+            for i in range(ictr.count):  # extract each signature in idx cnt
+                isiger = yield from self._extractor(ims=ims,
+                                               klas=Siger,
+                                               cold=cold,
+                                               abort=abort)
+                isigers.append(isiger)
+            tsgs.append((prefixer, seqner, saider, isigers))
+
+        return tsgs
+
+
+    def _TransIdxSigGroups2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 TransIdxSigGroups group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        extract attaced trans receipt vrc quadruple
+        spre+ssnu+sdig+sig
+        spre is pre of signer of vrc
+        ssnu is sn of signer's est evt when signed
+        sdig is dig of signer's est event when signed
+        sig is indexed signature of signer on this event msg
+
+        """
+        #if cold not in (Colds.txt, Colds.bny):  # not a counter
+            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
+
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        tsgs = []
+        isigers = []
+        while gims:   # extract each attached quadruple and strip from gims
+            prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
+            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
+            saider = self.extract(ims=gims, klas=Saider, cold=cold)
+            ictr = self.extract(ims=gims, klas=Counter, cold=cold)
+            if ictr.code != CtrDex_2_0.ControllerIdxSigs:
+                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                            f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
+            igs = ictr.count * 4 if cold == Colds.txt else ctr.count * 3
+            # already extracted enclosing group bytes so igs must be < len(gims)
+            if len(gims) < igs:  # should not happen unless malformed counter
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            igims = gims[:igs]
+            isigers = []
+            while igims:
+                isiger = self.extract(ims=gims, klas=Siger, cold=cold)
+                isigers.append(isiger)
+            tsgs.append((prefixer, seqner, saider, isigers))  # tuple
+
+        return tsgs
+
+
+    def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt,
+                         pipelined=False, version=Vrsn_1_0):
+        """Extracts SadPathSigGroup
+
+        Parameters:
+            ctr (Counter): group type counter
+            ims (bytearray) of serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
+            root (Pather) optional root path of this group
+            cold (str): next charater Coldage type indicayor
+            pipelined (bool) True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
+            version (Versionage): instance of genera version of CESR code tables
+
+        Returns:
+
+        """
+        if ctr.code != CtrDex_1_0.SadPathSigGroups:
+            raise kering.UnexpectedCountCodeError("Wrong "
+                                                  "count code={}.Expected code={}."
+                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
+
+        subpath = yield from self._extractor(ims,
+                                             klas=Pather,
+                                             cold=cold,
+                                             abort=pipelined)
+        if root is not None:
+            subpath = subpath.root(root=root)
+
+        sctr = yield from self._extractor(ims=ims,
+                                          klas=Counter,
+                                          cold=cold,
+                                          abort=pipelined)
+        if sctr.code == CtrDex_1_0.TransIdxSigGroups:
+            for prefixer, seqner, saider, isigers in self._transIdxSigGroups(sctr, ims, cold=cold, pipelined=pipelined):
+                yield sctr.code, (subpath, prefixer, seqner, saider, isigers)
+        elif sctr.code == CtrDex_1_0.ControllerIdxSigs:
+            isigers = []
+            for i in range(sctr.count):  # extract each attached signature
+                isiger = yield from self._extractor(ims=ims,
+                                                    klas=Siger,
+                                                    cold=cold,
+                                                    abort=pipelined)
+                isigers.append(isiger)
+            yield sctr.code, (subpath, isigers)
+        elif sctr.code == CtrDex_1_0.NonTransReceiptCouples:
+            for cigar in self._nonTransReceiptCouples(ctr=sctr, ims=ims, cold=cold, pipelined=pipelined):
+                yield sctr.code, (subpath, cigar)
+        else:
+            raise kering.UnexpectedCountCodeError("Wrong "
+                                                  "count code={}.Expected code={}."
+                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
+
+
+    def _nonTransReceiptCouples(self, ctr, ims, cold=Colds.txt, pipelined=False,
+                                version=Vrsn_1_0):
+        """Extract attached rct couplets into list of sigvers
+        verfer property of cigar is the identifier prefix
+        cigar itself has the attached signature
+
+        Parameters:
+            ctr (Counter): group type counter
+            ims (bytearray) of serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
+            cold (str): next charater Coldage type indicayor
+            pipelined (bool) True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
+            version (Versionage): instance of genera version of CESR code tables
+
+        Yields:
+
+        """
+        for i in range(ctr.count):  # extract each attached couple
+            verfer = yield from self._extractor(ims=ims,
+                                                klas=Verfer,
+                                                cold=cold,
+                                                abort=pipelined)
+            cigar = yield from self._extractor(ims=ims,
+                                               klas=Cigar,
+                                               cold=cold,
+                                               abort=pipelined)
+            cigar.verfer = verfer
+
+            yield cigar
+
+
+
+
+    def _transIdxSigGroups(self, ctr, ims, cold=Colds.txt, pipelined=False,
+                           version=Vrsn_1_0):
+        """Extract attaced trans indexed sig groups each made of
+        triple pre+snu+dig plus indexed sig group
+        pre is pre of signer (endorser) of msg
+        snu is sn of signer's est evt when signed
+        dig is dig of signer's est event when signed
+        followed by counter for ControllerIdxSigs with attached
+        indexed sigs from trans signer (endorser).
+
+        Parameters:
+            ctr (Counter): group type counter
+            ims (bytearray) of serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
+
+            cold (str): next charater Coldage type indicayor
+            pipelined (bool) True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
+            version (Versionage): instance of genera version of CESR code tables
+
+        Yields:
+
+        """
+        for i in range(ctr.count):  # extract each attached groups
+            prefixer = yield from self._extractor(ims,
+                                                  klas=Prefixer,
+                                                  cold=cold,
+                                                  abort=pipelined)
+            seqner = yield from self._extractor(ims,
+                                                klas=Seqner,
+                                                cold=cold,
+                                                abort=pipelined)
+            saider = yield from self._extractor(ims,
+                                                klas=Saider,
+                                                cold=cold,
+                                                abort=pipelined)
+            ictr = yield from self._extractor(ims=ims,
+                                              klas=Counter,
+                                              cold=cold,
+                                              abort=pipelined)
+            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
+                raise kering.UnexpectedCountCodeError("Wrong "
+                                                      "count code={}.Expected code={}."
+                                                      "".format(ictr.code, CtrDex_1_0.ControllerIdxSigs))
+            isigers = []
+            for i in range(ictr.count):  # extract each attached signature
+                isiger = yield from self._extractor(ims=ims,
+                                                    klas=Siger,
+                                                    cold=cold,
+                                                    abort=pipelined)
+                isigers.append(isiger)
+
+            yield prefixer, seqner, saider, isigers
+
+

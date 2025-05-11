@@ -1489,15 +1489,6 @@ class Serder:
         """
         return self._pvrsn
 
-    #@property
-    #def pvrsn(self):
-        #"""version property getter, alias of .vrsn
-
-        #Returns:
-            #version (Versionage): instance of protocol version for this Serder
-        #"""
-        #return self.pvrsn
-
 
     @property
     def size(self):

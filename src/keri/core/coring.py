@@ -3100,8 +3100,7 @@ class Labeler(Matter):
 
 
 class Verfer(Matter):
-    """
-    Verfer is Matter subclass with method to verify signature of serialization
+    """Verfer is Matter subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
     See Matter for inherited attributes and properties:
@@ -3131,6 +3130,7 @@ class Verfer(Matter):
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
+
     def verify(self, sig, ser):
         """
         Returns True if bytes signature sig verifies on bytes serialization ser
@@ -3142,6 +3142,7 @@ class Verfer(Matter):
             ser is bytes serialization
         """
         return (self._verify(sig=sig, ser=ser, key=self.raw))
+
 
     @staticmethod
     def _ed25519(sig, ser, key):
@@ -3160,6 +3161,7 @@ class Verfer(Matter):
             return False
 
         return True
+
 
     @staticmethod
     def _secp256r1(sig, ser, key):
@@ -3181,6 +3183,7 @@ class Verfer(Matter):
             return True
         except exceptions.InvalidSignature:
             return False
+
 
     @staticmethod
     def _secp256k1(sig, ser, key):
