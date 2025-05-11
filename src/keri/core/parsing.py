@@ -705,39 +705,14 @@ class Parser:
                         tsgs = yield from self._TransIdxSigGroups1(ims=ims,
                                         ctr=ctr, cold=cold, abort=pipelined)
 
-                        #for (prefixer, seqner, saider, isigers) in \
-                                #self._transIdxSigGroups(ctr, ims, cold=cold,
-                                                        #pipelined=pipelined):
-                            #tsgs.append((prefixer, seqner, saider, isigers))
-
-
                     elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
                         # identifier pre plus indexed sig group
                         # pre is pre of signer (endorser) of msg
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        for i in range(ctr.count):  # extract each attached groups
-                            prefixer = yield from self._extractor(ims,
-                                                                  klas=Prefixer,
-                                                                  cold=cold,
-                                                                  abort=pipelined)
-                            ictr = yield from self._extractor(ims=ims,
-                                                                    klas=Counter,
-                                                                    cold=cold,
-                                                                    abort=pipelined)
-                            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
-                                raise kering.UnexpectedCountCodeError("Wrong "
-                                                                      "count code={}.Expected code={}."
-                                                                      "".format(ictr.code, CtrDex_1_0.ControllerIdxSigs))
-                            isigers = []
-                            for i in range(ictr.count):  # extract each attached signature
-                                isiger = yield from self._extractor(ims=ims,
-                                                                    klas=Siger,
-                                                                    cold=cold,
-                                                                    abort=pipelined)
-                                isigers.append(isiger)
-                            ssgs.append((prefixer, isigers))
+                        ssgs = yield from self._TransLastIdxSigGroups1(ims=ims,
+                                        ctr=ctr, cold=cold, abort=pipelined)
 
                     elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
                         # extract attached first seen replay couples
@@ -1474,6 +1449,116 @@ class Parser:
 
         return tsgs
 
+
+
+    def _TransLastIdxSigGroups1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 TransLastIdxSigGroups group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        extract attaced trans receipt vrc quadruple
+        spre+ssnu+sdig+sig
+        spre is pre of signer of vrc
+        ssnu is sn of signer's est evt when signed
+        sdig is dig of signer's est event when signed
+        sig is indexed signature of signer on this event msg
+
+        """
+        ssgs = []
+        for i in range(ctr.count):  # extract each attached quadruple
+            prefixer = yield from self._extractor(ims=ims,
+                                                  klas=Prefixer,
+                                                  cold=cold,
+                                                  abort=abort)
+            ictr = yield from self._extractor(ims=ims,
+                                              klas=Counter,
+                                              cold=cold,
+                                              abort=abort)
+            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
+                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                            f"{CtrDex_1_0.ControllerIdxSigs}, got code={ictr.code}")
+            isigers = []
+            for i in range(ictr.count):  # extract each signature in idx cnt
+                isiger = yield from self._extractor(ims=ims,
+                                               klas=Siger,
+                                               cold=cold,
+                                               abort=abort)
+                isigers.append(isiger)
+            ssgs.append((prefixer, isigers))
+
+        return ssgs
+
+
+    def _TransLastIdxSigGroups2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 TransLastIdxSigGroups group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            cigars (list[Cigar]): of signature instances with assigned verfer
+
+        extract attaced trans receipt vrc quadruple
+        spre+ssnu+sdig+sig
+        spre is pre of signer of vrc
+        ssnu is sn of signer's est evt when signed
+        sdig is dig of signer's est event when signed
+        sig is indexed signature of signer on this event msg
+
+        """
+        #if cold not in (Colds.txt, Colds.bny):  # not a counter
+            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
+
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        ssgs = []
+        isigers = []
+        while gims:   # extract each attached quadruple and strip from gims
+            prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
+            ictr = self.extract(ims=gims, klas=Counter, cold=cold)
+            if ictr.code != CtrDex_2_0.ControllerIdxSigs:
+                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                            f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
+            igs = ictr.count * 4 if cold == Colds.txt else ctr.count * 3
+            # already extracted enclosing group bytes so igs must be < len(gims)
+            if len(gims) < igs:  # should not happen unless malformed counter
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            igims = gims[:igs]
+            isigers = []
+            while igims:
+                isiger = self.extract(ims=gims, klas=Siger, cold=cold)
+                isigers.append(isiger)
+            ssgs.append((prefixer, isigers))  # tuple
+
+        return tsgs
 
     def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt,
                          pipelined=False, version=Vrsn_1_0):

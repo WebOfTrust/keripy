@@ -112,6 +112,15 @@ def test_parser():
         siger = signers[0].sign(serder.raw, index=0)  # return siger
         msgs.extend(siger.qb64b)
 
+        # add Trans Last Indexed Sig Groups
+        counter = Counter(Codens.TransLastIdxSigGroups, count=1, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        msgs.extend(serder.pre.encode())
+        counter = Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        siger = signers[0].sign(serder.raw, index=0)  # return siger
+        msgs.extend(siger.qb64b)
+
 
         # create key event verifier state
         kever = Kever(serder=serder, sigers=[siger0], db=conDB)
