@@ -2158,12 +2158,7 @@ class Hab(BaseHab):
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        mhab (Hab | None): group member (local) hab when this Hab is multisig group
-                           else None
-        smids (list | None): group signing member ids qb64 when this Hab is group
-                            else None
-        rmids (list | None): group rotating member ids qb64 when this Hab is group
-                            else None
+
         temp (bool): True means testing:
                      use weak level when salty algo for stretching in key creation
                      for incept and rotate of keys for this hab.pre

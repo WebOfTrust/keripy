@@ -1712,8 +1712,31 @@ class Kever:
 
         Parameters:
             pre (str): qb64 identifier prefix if any.
-        """
 
+
+        ToDo: this code does not account for stale group members as delegators.
+        i.e. a stale group membed is a member AID for a group AID in .groups
+        for which the member AID was a signing (smids) or rotating (rmids) member
+        in the past but is no longer. For delegation approval there must be
+        a local member for the delegator group AID that is a current signing member
+        i,e. in .smids for the group hab.
+
+        The current logic allows an event to be escrowed for later approval
+        but whose delpre (delegator) is a group with a stale local member
+        That later approval must detect and properly handle the staleness.
+
+        Alternatively the logic could be changed to short circut that later
+        work by checking here for staleness. For example:
+            delpre.mhab.pre in delpre's hab.smids  (not stale )
+
+
+        if pre in self.groups:  # local group delegator
+            habord = self.db.habs.get(keys=(pre,))
+            return habord.mid in habord.smids  # True not stale, False stale
+
+        return pre in self.prefixes  # otherwise local non-group delegator
+
+        """
         pre = pre if pre is not None else ""
         return pre in self.prefixes
 
@@ -6339,6 +6362,7 @@ class Kevery:
                 break
             key = ekey  # setup next while iteration, with key after ekey
 
+
     def processEscrowDelegables(self):
         """
         Process events escrowed by Kever that require delegation.
@@ -6447,6 +6471,7 @@ class Kevery:
                 logger.info("Kevery DEL unescrow succeeded in valid event: "
                             "event=%s", eserder.said)
                 logger.debug(f"Event=\n%s\n", eserder.pretty())
+
 
     def processQueryNotFound(self):
         """
