@@ -69,8 +69,8 @@ class CounterCodex_1_0(MapDom):
     BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
     GenericGroup: str = '-W'  # Generic Material Quadlets
     BigGenericGroup: str = '-0W'  # Big Generic Material Quadlets
-    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets
-    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group Quadlets
+    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
+    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
     KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
 
 

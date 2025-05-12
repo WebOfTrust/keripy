@@ -14,7 +14,7 @@ from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0
 from keri import help
 
 from keri import core
-from keri.core import coring, Counter, Codens, Seqner, Dater
+from keri.core import coring, Counter, Codens, Seqner, Dater, Texter
 from keri.core.parsing import Parser
 
 from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
@@ -139,6 +139,35 @@ def test_parser():
         msgs.extend(serder.pre.encode())
         msgs.extend(Seqner(snh=serder.snh).qb64b)
         msgs.extend(serder.said.encode())
+
+        # add small PathedMaterialGroup
+        texter = Texter(text=b'Should we stop and rest here?')
+        count = len(texter.qb64) // 4  # quadlets
+        assert count == texter.size + 1
+        counter = Counter(Codens.PathedMaterialGroup, count=count, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        msgs.extend(texter.qb64b)
+
+        # add big PathedMaterialGroup
+        texter = Texter(text=b"Isn't that spot over there an even better place?")
+        count = len(texter.qb64) // 4  # quadlets
+        assert count == texter.size + 1
+        counter = Counter(Codens.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        msgs.extend(texter.qb64b)
+
+        # add ESSRPayloadGroup
+        counter = Counter(Codens.ESSRPayloadGroup, count=1, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        texter = Texter(text=b"MeBeEssr")
+        msgs.extend(texter.qb64b)
+
+        # add BigESSRPayloadGroup
+        counter = Counter(Codens.BigESSRPayloadGroup, count=1, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        texter = Texter(text=b"MeBeBigEssr")
+        msgs.extend(texter.qb64b)
+
 
 
         # create key event verifier state

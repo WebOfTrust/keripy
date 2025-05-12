@@ -635,7 +635,7 @@ class Parser:
         sadtsgs = []  # each converted group is tuple of (path, i, s, d) quad plus list of sigs
         # List of tuples from extracted SAD path sig groups from non-trans identifiers
         sadcigs = []  # each converted group is path plus list of non-trans sigs
-        pathed = []  # grouped attachments targetting a subpath
+        pathed = []  # grouped attachments targeting a subpath
         essrs = []  # group texter
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
@@ -670,19 +670,23 @@ class Parser:
                 # iteratively process attachment counters in stride
                 while True:  # do while already extracted first counter is ctr above
                     if ctr.code == CtrDex_1_0.ControllerIdxSigs:  # extract each attached signature
-                        sigers = yield from self._ControllerIdxSigs1(ims=ims,
+                        result = yield from self._ControllerIdxSigs1(ims=ims,
                                         ctr=ctr, cold=cold, abort=pipelined)
+                        sigers.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.WitnessIdxSigs:  # extract each attached signature
-                        wigers = yield from self._WitnessIdxSigs1(ims=ims,
+                        result = yield from self._WitnessIdxSigs1(ims=ims,
                                             ctr=ctr, cold=cold, abort=pipelined)
+                        wigers.extend(result)  # accumulate multiple appearances of group
+
 
                     elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
                         # extract attached rct couplets into list of cigars
                         # verfer property of cigar is the identifier prefix
                         # cigar itself is the attached signature
-                        cigars = yield from self._NonTransReceiptCouples1(ims=ims,
+                        result = yield from self._NonTransReceiptCouples1(ims=ims,
                                         ctr=ctr, cold=cold, abort=pipelined)
+                        cigars.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
                         # extract attaced trans receipt vrc quadruple
@@ -691,8 +695,9 @@ class Parser:
                         # ssnu is sn of signer's est evt when signed
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
-                        trqs = yield from self._TransReceiptQuadruples1(ims=ims,
+                        result = yield from self._TransReceiptQuadruples1(ims=ims,
                                         ctr=ctr, cold=cold, abort=pipelined)
+                        trqs.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
@@ -702,8 +707,9 @@ class Parser:
                         # dig is dig of signer's est event when signed
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        tsgs = yield from self._TransIdxSigGroups1(ims=ims,
+                        result = yield from self._TransIdxSigGroups1(ims=ims,
                                         ctr=ctr, cold=cold, abort=pipelined)
+                        tsgs.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
@@ -711,24 +717,27 @@ class Parser:
                         # pre is pre of signer (endorser) of msg
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        ssgs = yield from self._TransLastIdxSigGroups1(ims=ims,
+                        result = yield from self._TransLastIdxSigGroups1(ims=ims,
                                         ctr=ctr, cold=cold, abort=pipelined)
+                        ssgs.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
                         # extract attached first seen replay couples
                         # snu+dtm
                         # snu is fn (first seen ordinal) of event
                         # dtm is dt of event
-                        frcs = yield from self._FirstSeenReplayCouples1(ims=ims,
+                        result = yield from self._FirstSeenReplayCouples1(ims=ims,
                                             ctr=ctr, cold=cold, abort=pipelined)
+                        frcs.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.SealSourceCouples:
                         # extract attached first seen replay couples
                         # snu+dig
                         # snu is sequence number  of event
                         # dig is digest of event
-                        sscs = yield from self._SealSourceCouples1(ims=ims,
+                        result = yield from self._SealSourceCouples1(ims=ims,
                                             ctr=ctr, cold=cold, abort=pipelined)
+                        sscs.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.SealSourceTriples:
                         # extract attached anchoring source event information
@@ -736,8 +745,9 @@ class Parser:
                         # pre is prefix of event
                         # snu is sequence number  of event
                         # dig is digest of event
-                        ssts = yield from self._SealSourceTriples1(ims=ims,
+                        result = yield from self._SealSourceTriples1(ims=ims,
                                             ctr=ctr, cold=cold, abort=pipelined)
+                        ssts.extend(result)  # accumulate multiple appearances of group
 
                     elif ctr.code == CtrDex_1_0.SadPathSigGroups:
                         path = yield from self._extractor(ims,
@@ -759,34 +769,18 @@ class Parser:
                                 else:
                                     sadcigs.append(sigs)
 
-                    elif ctr.code == CtrDex_1_0.PathedMaterialGroup:  # pathed ctr?
-                        # compute pipelined attached group size based on txt or bny
-                        pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                        while len(ims) < pags:  # wait until rx full pipelned group
-                            yield
 
-                        pims = ims[:pags]  # copy out substream pipeline group
-                        del ims[:pags]  # strip off from ims
+                    elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
+                                      CtrDex_1_0.BigPathedMaterialGroup):  # pathed ctr?
+                        pims = yield from self._PathedMaterialGroup(ims=ims,
+                                            ctr=ctr, cold=cold, abort=pipelined)
                         pathed.append(pims)
 
-                    elif ctr.code == CtrDex_1_0.BigPathedMaterialGroup:  # pathed ctr?
-                        # compute pipelined attached group size based on txt or bny
-                        pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                        while len(ims) < pags:  # wait until rx full pipelned group
-                            yield
-
-                        pims = ims[:pags]  # copy out substream pipeline group
-                        del ims[:pags]  # strip off from ims
-                        pathed.append(pims)
-
-                    elif ctr.code == CtrDex_1_0.ESSRPayloadGroup:
-                        for i in range(ctr.count):
-                            texter = yield from self._extractor(ims,
-                                                                klas=Texter,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            essrs.append(texter)
-
+                    elif ctr.code in (CtrDex_1_0.ESSRPayloadGroup,
+                                      CtrDex_1_0.BigESSRPayloadGroup):
+                        result = yield from self._ESSRPayloadGroup1(ims=ims,
+                                            ctr=ctr, cold=cold, abort=pipelined)
+                        essrs.extend(result)  # accumulate multiple appearances of group
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
@@ -1691,6 +1685,100 @@ class Parser:
             saider = self.extract(ims=gims, klas=Saider, cold=cold,abort=abort)
             ssts.append((prefixer, seqner, saider))
         return ssts
+
+
+    def _PathedMaterialGroup(self, ims, ctr, cold, abort):
+        """Generator to extract CESR v1 and v2 PathedMaterialGroup group both
+        big and small sized groups. Since v1 counts quadlets/triples the logic is
+        the same for both v1 and v2
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            ssts (list[tuple]): [(prefixer, seqner, saider)]
+
+        """
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        return gims
+
+
+    def _ESSRPayloadGroup1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 ESSRPayloadGroup group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            essrs (list[Texter]): [texter]
+        """
+        essrs = []
+        for i in range(ctr.count):  # extract each attached group
+            texter = yield from self._extractor(ims=ims,
+                                                klas=Texter,
+                                                cold=cold,
+                                                abort=abort)
+            essrs.append(texter)
+
+        return essrs
+
+
+    def _ESSRPayloadGroup2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 ESSRPayloadGroup group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            essrs (list[Texter]): [texter]
+
+        """
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        essrs = []
+        while gims:   # extract each attached group and strip from gims
+            texter = self.extract(ims=gims, klas=Texter, cold=cold, abort=abort)
+            essrs.append(texter)
+        return essrs
 
 
     def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt,
