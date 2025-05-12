@@ -719,32 +719,16 @@ class Parser:
                         # snu+dtm
                         # snu is fn (first seen ordinal) of event
                         # dtm is dt of event
-                        for i in range(ctr.count):  # extract each attached quadruple
-                            firner = yield from self._extractor(ims,
-                                                                klas=Seqner,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            dater = yield from self._extractor(ims,
-                                                               klas=Dater,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            frcs.append((firner, dater))
+                        frcs = yield from self._FirstSeenReplayCouples1(ims=ims,
+                                            ctr=ctr, cold=cold, abort=pipelined)
 
                     elif ctr.code == CtrDex_1_0.SealSourceCouples:
                         # extract attached first seen replay couples
                         # snu+dig
                         # snu is sequence number  of event
                         # dig is digest of event
-                        for i in range(ctr.count):  # extract each attached quadruple
-                            seqner = yield from self._extractor(ims,
-                                                                klas=Seqner,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            saider = yield from self._extractor(ims,
-                                                                klas=Saider,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            sscs.append((seqner, saider))
+                        sscs = yield from self._SealSourceCouples1(ims=ims,
+                                            ctr=ctr, cold=cold, abort=pipelined)
 
                     elif ctr.code == CtrDex_1_0.SealSourceTriples:
                         # extract attached anchoring source event information
@@ -752,20 +736,8 @@ class Parser:
                         # pre is prefix of event
                         # snu is sequence number  of event
                         # dig is digest of event
-                        for i in range(ctr.count):  # extract each attached quadruple
-                            prefixer = yield from self._extractor(ims,
-                                                                  klas=Prefixer,
-                                                                  cold=cold,
-                                                                  abort=pipelined)
-                            seqner = yield from self._extractor(ims,
-                                                                klas=Seqner,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            saider = yield from self._extractor(ims,
-                                                                klas=Saider,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            ssts.append((prefixer, seqner, saider))
+                        ssts = yield from self._SealSourceTriples1(ims=ims,
+                                            ctr=ctr, cold=cold, abort=pipelined)
 
                     elif ctr.code == CtrDex_1_0.SadPathSigGroups:
                         path = yield from self._extractor(ims,
@@ -1072,9 +1044,6 @@ class Parser:
             sigers (list[Siger]): of indexed signature instances
 
         """
-        #if cold not in (Colds.txt, Colds.bny):  # not a counter
-            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
-
         gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1139,9 +1108,6 @@ class Parser:
             wigers (list[Siger]): of indexed signature instances
 
         """
-        #if cold not in (Colds.txt, Colds.bny):  # not a counter
-            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
-
         gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1212,9 +1178,6 @@ class Parser:
             cigars (list[Cigar]): of signature instances with assigned verfer
 
         """
-        #if cold not in (Colds.txt, Colds.bny):  # not a counter
-            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
-
         gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1249,7 +1212,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
+            trqs (list[tuple]): [(prefixer,seqner,saider,siger)]
 
         extract attaced trans receipt vrc quadruple
         spre+ssnu+sdig+sig
@@ -1297,7 +1260,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
+            trqs (list[tuple]): [(prefixer,seqner,saider,siger)]
 
         extract attaced trans receipt vrc quadruple
         spre+ssnu+sdig+sig
@@ -1307,9 +1270,6 @@ class Parser:
         sig is indexed signature of signer on this event msg
 
         """
-        #if cold not in (Colds.txt, Colds.bny):  # not a counter
-            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
-
         gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1345,18 +1305,11 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
-
-        extract attaced trans receipt vrc quadruple
-        spre+ssnu+sdig+sig
-        spre is pre of signer of vrc
-        ssnu is sn of signer's est evt when signed
-        sdig is dig of signer's est event when signed
-        sig is indexed signature of signer on this event msg
+             tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
 
         """
         tsgs = []
-        for i in range(ctr.count):  # extract each attached quadruple
+        for i in range(ctr.count):  # extract each attached group
             prefixer = yield from self._extractor(ims=ims,
                                                   klas=Prefixer,
                                                   cold=cold,
@@ -1403,19 +1356,9 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
-
-        extract attaced trans receipt vrc quadruple
-        spre+ssnu+sdig+sig
-        spre is pre of signer of vrc
-        ssnu is sn of signer's est evt when signed
-        sdig is dig of signer's est event when signed
-        sig is indexed signature of signer on this event msg
+            tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
 
         """
-        #if cold not in (Colds.txt, Colds.bny):  # not a counter
-            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
-
         gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1427,7 +1370,7 @@ class Parser:
         del ims[:gs]  # strip off from ims
         tsgs = []
         isigers = []
-        while gims:   # extract each attached quadruple and strip from gims
+        while gims:   # extract each attached group and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
             seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
             saider = self.extract(ims=gims, klas=Saider, cold=cold)
@@ -1443,7 +1386,7 @@ class Parser:
             igims = gims[:igs]
             isigers = []
             while igims:
-                isiger = self.extract(ims=gims, klas=Siger, cold=cold)
+                isiger = self.extract(ims=igims, klas=Siger, cold=cold)
                 isigers.append(isiger)
             tsgs.append((prefixer, seqner, saider, isigers))  # tuple
 
@@ -1466,18 +1409,11 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
-
-        extract attaced trans receipt vrc quadruple
-        spre+ssnu+sdig+sig
-        spre is pre of signer of vrc
-        ssnu is sn of signer's est evt when signed
-        sdig is dig of signer's est event when signed
-        sig is indexed signature of signer on this event msg
+            ssgs (list[tuple]): [(prefixer, [isigers])]
 
         """
         ssgs = []
-        for i in range(ctr.count):  # extract each attached quadruple
+        for i in range(ctr.count):  # extract each attached group
             prefixer = yield from self._extractor(ims=ims,
                                                   klas=Prefixer,
                                                   cold=cold,
@@ -1516,19 +1452,9 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
-
-        extract attaced trans receipt vrc quadruple
-        spre+ssnu+sdig+sig
-        spre is pre of signer of vrc
-        ssnu is sn of signer's est evt when signed
-        sdig is dig of signer's est event when signed
-        sig is indexed signature of signer on this event msg
+            ssgs (list[tuple]): [(prefixer, [isigers])]
 
         """
-        #if cold not in (Colds.txt, Colds.bny):  # not a counter
-            #raise kering.ColdStartError(f"Invalid stream state {cold=}")
-
         gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1540,7 +1466,7 @@ class Parser:
         del ims[:gs]  # strip off from ims
         ssgs = []
         isigers = []
-        while gims:   # extract each attached quadruple and strip from gims
+        while gims:   # extract each attached group strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
             ictr = self.extract(ims=gims, klas=Counter, cold=cold)
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
@@ -1554,11 +1480,218 @@ class Parser:
             igims = gims[:igs]
             isigers = []
             while igims:
-                isiger = self.extract(ims=gims, klas=Siger, cold=cold)
+                isiger = self.extract(ims=igims, klas=Siger, cold=cold)
                 isigers.append(isiger)
             ssgs.append((prefixer, isigers))  # tuple
 
-        return tsgs
+        return ssgs
+
+
+    def _FirstSeenReplayCouples1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 FirstSeenReplayCouples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            frcs (list[tuple]): [(firner, dater)]
+        """
+        frcs = []
+        for i in range(ctr.count):  # extract each attached group
+            firner = yield from self._extractor(ims=ims,
+                                                klas=Seqner,
+                                                cold=cold,
+                                                abort=abort)
+            dater = yield from self._extractor(ims=ims,
+                                                klas=Dater,
+                                                cold=cold,
+                                                abort=abort)
+            frcs.append((firner, dater))
+
+        return frcs
+
+
+    def _FirstSeenReplayCouples2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 FirstSeenReplayCouples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            frcs (list[tuple]): [(firner, dater)]
+
+        """
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        frcs = []
+        while gims:   # extract each attached group and strip from gims
+            firner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
+            dater = self.extract(ims=gims, klas=Dater, cold=cold,abort=abort)
+            frcs.append((firner, dater))
+        return frcs
+
+
+    def _SealSourceCouples1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 SealSourceCouples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            sscs (list[tuple]): [(seqner, saider)]
+        """
+        sscs = []
+        for i in range(ctr.count):  # extract each attached group
+            seqner = yield from self._extractor(ims=ims,
+                                                klas=Seqner,
+                                                cold=cold,
+                                                abort=abort)
+            saider = yield from self._extractor(ims=ims,
+                                                klas=Saider,
+                                                cold=cold,
+                                                abort=abort)
+            sscs.append((seqner, saider))
+
+        return sscs
+
+
+    def _SealSourceCouples2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 SealSourceCouples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            sscs (list[tuple]): [(seqner, saider)]
+
+        """
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        sscs = []
+        while gims:   # extract each attached group and strip from gims
+            seqner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
+            saider = self.extract(ims=gims, klas=Saider, cold=cold,abort=abort)
+            sscs.append((seqner, saider))
+        return sscs
+
+
+    def _SealSourceTriples1(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 SealSourceTriples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            ssts (list[tuple]): [(prefixer, seqner, saider)]
+        """
+        ssts = []
+        for i in range(ctr.count):  # extract each attached group
+            prefixer = yield from self._extractor(ims=ims,
+                                                  klas=Prefixer,
+                                                  cold=cold,
+                                                  abort=abort)
+            seqner = yield from self._extractor(ims=ims,
+                                                klas=Seqner,
+                                                cold=cold,
+                                                abort=abort)
+            saider = yield from self._extractor(ims=ims,
+                                                klas=Saider,
+                                                cold=cold,
+                                                abort=abort)
+            ssts.append((prefixer, seqner, saider))
+
+        return ssts
+
+
+    def _SealSourceTriples2(self, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 SealSourceTriples group
+
+        Parameters:
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            ssts (list[tuple]): [(prefixer, seqner, saider)]
+
+        """
+        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        ssts = []
+        while gims:   # extract each attached group and strip from gims
+            prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
+            seqner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
+            saider = self.extract(ims=gims, klas=Saider, cold=cold,abort=abort)
+            ssts.append((prefixer, seqner, saider))
+        return ssts
+
 
     def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt,
                          pipelined=False, version=Vrsn_1_0):

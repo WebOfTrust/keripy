@@ -14,7 +14,7 @@ from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0
 from keri import help
 
 from keri import core
-from keri.core import coring, Counter, Codens, Seqner
+from keri.core import coring, Counter, Codens, Seqner, Dater
 from keri.core.parsing import Parser
 
 from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
@@ -120,6 +120,25 @@ def test_parser():
         msgs.extend(counter.qb64b)
         siger = signers[0].sign(serder.raw, index=0)  # return siger
         msgs.extend(siger.qb64b)
+
+        # add first seen replay couple
+        counter = Counter(Codens.FirstSeenReplayCouples, count=1, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        msgs.extend(Seqner(snh=serder.snh).qb64b)
+        msgs.extend(Dater(dts='2020-08-22T17:50:09.988921+00:00').qb64b)
+
+        # add seal source couple
+        counter = Counter(Codens.SealSourceCouples, count=1, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        msgs.extend(Seqner(snh=serder.snh).qb64b)
+        msgs.extend(serder.said.encode())
+
+        # add seal source triple
+        counter = Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0)
+        msgs.extend(counter.qb64b)
+        msgs.extend(serder.pre.encode())
+        msgs.extend(Seqner(snh=serder.snh).qb64b)
+        msgs.extend(serder.said.encode())
 
 
         # create key event verifier state

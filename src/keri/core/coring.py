@@ -1998,7 +1998,7 @@ class Dater(Matter):
     FromB64 = str.maketrans("cdp", ":.+")  #  translate characters
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.Salt_128, dts=None, **kwa):
+                 code=MtrDex.DateTime, dts=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
