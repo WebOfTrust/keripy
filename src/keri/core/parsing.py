@@ -749,29 +749,9 @@ class Parser:
                                             ctr=ctr, cold=cold, abort=pipelined)
                         ssts.extend(result)  # accumulate multiple appearances of group
 
-                    elif ctr.code == CtrDex_1_0.SadPathSigGroups:
-                        path = yield from self._extractor(ims,
-                                                          klas=Pather,
-                                                          cold=cold,
-                                                          abort=pipelined)
-                        for i in range(ctr.count):
-                            ictr = yield from self._extractor(ims=ims,
-                                                              klas=Counter,
-                                                              cold=cold,
-                                                              abort=pipelined)
-                            for code, sigs in self._sadPathSigGroup(ctr=ictr,
-                                                                    ims=ims,
-                                                                    root=path,
-                                                                    cold=cold,
-                                                                    pipelined=pipelined):
-                                if code == CtrDex_1_0.TransIdxSigGroups:
-                                    sadtsgs.append(sigs)
-                                else:
-                                    sadcigs.append(sigs)
-
-
                     elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
-                                      CtrDex_1_0.BigPathedMaterialGroup):  # pathed ctr?
+                                      CtrDex_1_0.BigPathedMaterialGroup):
+                        # content is  CESR sub-stream of attachement groups
                         result = yield from self._PathedMaterialGroup(ims=ims,
                                             ctr=ctr, cold=cold, abort=pipelined)
                         pathed.extend(result)
@@ -1690,7 +1670,10 @@ class Parser:
     def _PathedMaterialGroup(self, ims, ctr, cold, abort):
         """Generator to extract CESR v1 and v2 PathedMaterialGroup group both
         big and small sized groups. Since v1 counts quadlets/triples the logic is
-        the same for both v1 and v2
+        the same for both v1 and v2. The contexts of a pathed material group
+        MUST be a CESR attachment sub-stream i.e. primitives or groups of primitives.
+        It may not include any top-level messages expecially not any messages
+        as JSON, CBOR, MGPK
 
         Parameters:
             ims (bytearray): of serialized incoming message stream.
@@ -1779,151 +1762,4 @@ class Parser:
             texter = self.extract(ims=gims, klas=Texter, cold=cold, abort=abort)
             essrs.append(texter)
         return essrs
-
-
-    def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt,
-                         pipelined=False, version=Vrsn_1_0):
-        """Extracts SadPathSigGroup
-
-        Parameters:
-            ctr (Counter): group type counter
-            ims (bytearray) of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-            root (Pather) optional root path of this group
-            cold (str): next charater Coldage type indicayor
-            pipelined (bool) True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-            version (Versionage): instance of genera version of CESR code tables
-
-        Returns:
-
-        """
-        if ctr.code != CtrDex_1_0.SadPathSigGroups:
-            raise kering.UnexpectedCountCodeError("Wrong "
-                                                  "count code={}.Expected code={}."
-                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
-
-        subpath = yield from self._extractor(ims,
-                                             klas=Pather,
-                                             cold=cold,
-                                             abort=pipelined)
-        if root is not None:
-            subpath = subpath.root(root=root)
-
-        sctr = yield from self._extractor(ims=ims,
-                                          klas=Counter,
-                                          cold=cold,
-                                          abort=pipelined)
-        if sctr.code == CtrDex_1_0.TransIdxSigGroups:
-            for prefixer, seqner, saider, isigers in self._transIdxSigGroups(sctr, ims, cold=cold, pipelined=pipelined):
-                yield sctr.code, (subpath, prefixer, seqner, saider, isigers)
-        elif sctr.code == CtrDex_1_0.ControllerIdxSigs:
-            isigers = []
-            for i in range(sctr.count):  # extract each attached signature
-                isiger = yield from self._extractor(ims=ims,
-                                                    klas=Siger,
-                                                    cold=cold,
-                                                    abort=pipelined)
-                isigers.append(isiger)
-            yield sctr.code, (subpath, isigers)
-        elif sctr.code == CtrDex_1_0.NonTransReceiptCouples:
-            for cigar in self._nonTransReceiptCouples(ctr=sctr, ims=ims, cold=cold, pipelined=pipelined):
-                yield sctr.code, (subpath, cigar)
-        else:
-            raise kering.UnexpectedCountCodeError("Wrong "
-                                                  "count code={}.Expected code={}."
-                                                  "".format(ctr.code, CtrDex_1_0.ControllerIdxSigs))
-
-
-    def _nonTransReceiptCouples(self, ctr, ims, cold=Colds.txt, pipelined=False,
-                                version=Vrsn_1_0):
-        """Extract attached rct couplets into list of sigvers
-        verfer property of cigar is the identifier prefix
-        cigar itself has the attached signature
-
-        Parameters:
-            ctr (Counter): group type counter
-            ims (bytearray) of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-            cold (str): next charater Coldage type indicayor
-            pipelined (bool) True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-            version (Versionage): instance of genera version of CESR code tables
-
-        Yields:
-
-        """
-        for i in range(ctr.count):  # extract each attached couple
-            verfer = yield from self._extractor(ims=ims,
-                                                klas=Verfer,
-                                                cold=cold,
-                                                abort=pipelined)
-            cigar = yield from self._extractor(ims=ims,
-                                               klas=Cigar,
-                                               cold=cold,
-                                               abort=pipelined)
-            cigar.verfer = verfer
-
-            yield cigar
-
-
-
-
-    def _transIdxSigGroups(self, ctr, ims, cold=Colds.txt, pipelined=False,
-                           version=Vrsn_1_0):
-        """Extract attaced trans indexed sig groups each made of
-        triple pre+snu+dig plus indexed sig group
-        pre is pre of signer (endorser) of msg
-        snu is sn of signer's est evt when signed
-        dig is dig of signer's est event when signed
-        followed by counter for ControllerIdxSigs with attached
-        indexed sigs from trans signer (endorser).
-
-        Parameters:
-            ctr (Counter): group type counter
-            ims (bytearray) of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-
-            cold (str): next charater Coldage type indicayor
-            pipelined (bool) True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-            version (Versionage): instance of genera version of CESR code tables
-
-        Yields:
-
-        """
-        for i in range(ctr.count):  # extract each attached groups
-            prefixer = yield from self._extractor(ims,
-                                                  klas=Prefixer,
-                                                  cold=cold,
-                                                  abort=pipelined)
-            seqner = yield from self._extractor(ims,
-                                                klas=Seqner,
-                                                cold=cold,
-                                                abort=pipelined)
-            saider = yield from self._extractor(ims,
-                                                klas=Saider,
-                                                cold=cold,
-                                                abort=pipelined)
-            ictr = yield from self._extractor(ims=ims,
-                                              klas=Counter,
-                                              cold=cold,
-                                              abort=pipelined)
-            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
-                raise kering.UnexpectedCountCodeError("Wrong "
-                                                      "count code={}.Expected code={}."
-                                                      "".format(ictr.code, CtrDex_1_0.ControllerIdxSigs))
-            isigers = []
-            for i in range(ictr.count):  # extract each attached signature
-                isiger = yield from self._extractor(ims=ims,
-                                                    klas=Siger,
-                                                    cold=cold,
-                                                    abort=pipelined)
-                isigers.append(isiger)
-
-            yield prefixer, seqner, saider, isigers
-
 
