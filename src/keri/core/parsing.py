@@ -772,9 +772,9 @@ class Parser:
 
                     elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
                                       CtrDex_1_0.BigPathedMaterialGroup):  # pathed ctr?
-                        pims = yield from self._PathedMaterialGroup(ims=ims,
+                        result = yield from self._PathedMaterialGroup(ims=ims,
                                             ctr=ctr, cold=cold, abort=pipelined)
-                        pathed.append(pims)
+                        pathed.extend(result)
 
                     elif ctr.code in (CtrDex_1_0.ESSRPayloadGroup,
                                       CtrDex_1_0.BigESSRPayloadGroup):
@@ -1704,7 +1704,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            ssts (list[tuple]): [(prefixer, seqner, saider)]
+            pims (list[bytes]): [gims]
 
         """
         gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
@@ -1716,7 +1716,7 @@ class Parser:
 
         gims = ims[:gs]  # copy out group sized substream
         del ims[:gs]  # strip off from ims
-        return gims
+        return [gims]
 
 
     def _ESSRPayloadGroup1(self, ims, ctr, cold, abort):
