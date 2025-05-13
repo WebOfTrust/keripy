@@ -388,16 +388,20 @@ def verifySigs(raw, sigers, verfers):
     usigers = [Siger(qb64=sig) for sig in usigs]
 
     # verify indexes of attached signatures against verifiers and assign
-    # verfer to each siger
+    # verfer to each usiger
+    uvsigers = []
     for siger in usigers:
         if siger.index >= len(verfers):
-            logger.info("Skipped sig: Index=%s to large.", siger.index)
+            logger.info(f"Skipped sig: index={siger.index} too large")
+            continue
+
         siger.verfer = verfers[siger.index]  # assign verfer
+        uvsigers.append(siger)
 
     # create lists of unique verified signatures and indices
     vindices = []
     vsigers = []
-    for siger in usigers:
+    for siger in uvsigers:
         if siger.verfer.verify(siger.raw, raw):
             vindices.append(siger.index)
             vsigers.append(siger)
@@ -1693,8 +1697,9 @@ class Kever:
         sig AID or the group multisig AID of a locally controlled member of the group.
 
         Indicates that provided identifier prefix is controlled by a local
-        controller from .prefixes but is not a group with local member.
-        i.e pre is a locally owned (controlled) AID (identifier prefix)
+        controller from .prefixes is a group prefix that is controlled by a local
+        member of that group.
+
         Because delpre may be None, changes the default to "" instead of
         self.prefixer.pre because self.prefixer.pre is delegate not delegator
         of self. Unaccepted dip events do not have self.delpre set yet.
