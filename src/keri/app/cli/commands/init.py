@@ -11,6 +11,7 @@ from hio.base import doing
 from keri import help
 import keri.app.oobiing
 from keri.app import habbing, configing, oobiing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.keeping import Algos
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing
@@ -29,14 +30,11 @@ def handler(args):
     return [init]
 
 
-parser = argparse.ArgumentParser(description='Create a database and keystore')
-parser.set_defaults(handler=handler,
-                    transferable=True)
+parser = argparse.ArgumentParser(description='Create a database and keystore', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=handler)
 
 # Parameters for basic structure of database
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--temp', '-t', help='create a temporary keystore, used for testing', default=False)
 parser.add_argument('--salt', '-s', help='qualified base64 salt for creating key pairs', required=False)
 parser.add_argument("--config-dir", "-c", dest="configDir", help="directory override for configuration data")
@@ -46,10 +44,6 @@ parser.add_argument('--config-file',
                     default=None,
                     help="configuration filename override")
 
-# Parameters for Manager creation
-# passcode => bran
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)
 parser.add_argument('--nopasscode', help='create an unencrypted keystore', action='store_true')
 parser.add_argument('--aeid', '-a', help='qualified base64 of non-transferable identifier prefix for authentication '
                                          'and encryption of secrets in keystore', default=None)
