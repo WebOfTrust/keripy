@@ -62,7 +62,7 @@ def test_codexes_tags():
     """
 
 
-    assert asdict(counting.CtrDex_1_0) == \
+    assert  asdict(counting.CtrDex_1_0) == \
     {
         'ControllerIdxSigs': '-A',
         'WitnessIdxSigs': '-B',
@@ -73,8 +73,6 @@ def test_codexes_tags():
         'SealSourceCouples': '-G',
         'TransLastIdxSigGroups': '-H',
         'SealSourceTriples': '-I',
-        'SadPathSigGroups': '-J',
-        'RootSadPathSigGroups': '-K',
         'PathedMaterialGroup': '-L',
         'BigPathedMaterialGroup': '-0L',
         'AttachmentGroup': '-V',
@@ -127,10 +125,6 @@ def test_codexes_tags():
         'BigSealSourceTriples': '-0R',
         'PathedMaterialGroup': '-S',
         'BigPathedMaterialGroup': '-0S',
-        'SadPathSigGroups': '-T',
-        'BigSadPathSigGroups': '-0T',
-        'RootSadPathSigGroups': '-U',
-        'BigRootSadPathSigGroups': '-0U',
         'DigestSealSingles': '-V',
         'BigDigestSealSingles': '-0V',
         'MerkleRootSealSingles': '-W',
@@ -144,7 +138,8 @@ def test_codexes_tags():
         'KERIACDCGenusVersion': '--AAA'
     }
 
-    assert counting.CodeNames == (
+    assert counting.CodeNames == \
+    (
         'GenericGroup',
         'BigGenericGroup',
         'MessageGroup',
@@ -183,10 +178,6 @@ def test_codexes_tags():
         'BigSealSourceTriples',
         'PathedMaterialGroup',
         'BigPathedMaterialGroup',
-        'SadPathSigGroups',
-        'BigSadPathSigGroups',
-        'RootSadPathSigGroups',
-        'BigRootSadPathSigGroups',
         'DigestSealSingles',
         'BigDigestSealSingles',
         'MerkleRootSealSingles',
@@ -199,6 +190,7 @@ def test_codexes_tags():
         'BigESSRPayloadGroup',
         'KERIACDCGenusVersion'
     )
+
     assert 'ControllerIdxSigs' in counting.CodeNames
 
     assert counting.Codens == counting.Codenage(
@@ -240,10 +232,6 @@ def test_codexes_tags():
         BigSealSourceTriples='BigSealSourceTriples',
         PathedMaterialGroup='PathedMaterialGroup',
         BigPathedMaterialGroup='BigPathedMaterialGroup',
-        SadPathSigGroups='SadPathSigGroups',
-        BigSadPathSigGroups='BigSadPathSigGroups',
-        RootSadPathSigGroups='RootSadPathSigGroups',
-        BigRootSadPathSigGroups='BigRootSadPathSigGroups',
         DigestSealSingles='DigestSealSingles',
         BigDigestSealSingles='BigDigestSealSingles',
         MerkleRootSealSingles='MerkleRootSealSingles',
@@ -256,6 +244,7 @@ def test_codexes_tags():
         BigESSRPayloadGroup='BigESSRPayloadGroup',
         KERIACDCGenusVersion='KERIACDCGenusVersion'
     )
+
 
     assert counting.Codens.ControllerIdxSigs == 'ControllerIdxSigs'
 
@@ -313,8 +302,6 @@ def test_counter_class():
                     '-G': 'SealSourceCouples',
                     '-H': 'TransLastIdxSigGroups',
                     '-I': 'SealSourceTriples',
-                    '-J': 'SadPathSigGroups',
-                    '-K': 'RootSadPathSigGroups',
                     '-L': 'PathedMaterialGroup',
                     '-0L': 'BigPathedMaterialGroup',
                     '-V': 'AttachmentGroup',
@@ -367,10 +354,6 @@ def test_counter_class():
                     '-0R': 'BigSealSourceTriples',
                     '-S': 'PathedMaterialGroup',
                     '-0S': 'BigPathedMaterialGroup',
-                    '-T': 'SadPathSigGroups',
-                    '-0T': 'BigSadPathSigGroups',
-                    '-U': 'RootSadPathSigGroups',
-                    '-0U': 'BigRootSadPathSigGroups',
                     '-V': 'DigestSealSingles',
                     '-0V': 'BigDigestSealSingles',
                     '-W': 'MerkleRootSealSingles',
@@ -403,8 +386,6 @@ def test_counter_class():
                     '-G': Cizage(hs=2, ss=2, fs=4),
                     '-H': Cizage(hs=2, ss=2, fs=4),
                     '-I': Cizage(hs=2, ss=2, fs=4),
-                    '-J': Cizage(hs=2, ss=2, fs=4),
-                    '-K': Cizage(hs=2, ss=2, fs=4),
                     '-L': Cizage(hs=2, ss=2, fs=4),
                     '-0L': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
@@ -458,10 +439,6 @@ def test_counter_class():
                     '-0R': Cizage(hs=3, ss=5, fs=8),
                     '-S': Cizage(hs=2, ss=2, fs=4),
                     '-0S': Cizage(hs=3, ss=5, fs=8),
-                    '-T': Cizage(hs=2, ss=2, fs=4),
-                    '-0T': Cizage(hs=3, ss=5, fs=8),
-                    '-U': Cizage(hs=2, ss=2, fs=4),
-                    '-0U': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
                     '-0V': Cizage(hs=3, ss=5, fs=8),
                     '-W': Cizage(hs=2, ss=2, fs=4),

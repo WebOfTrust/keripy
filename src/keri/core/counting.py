@@ -61,8 +61,6 @@ class CounterCodex_1_0(MapDom):
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    SadPathSigGroups: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
-    RootSadPathSigGroups: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
     PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     BigPathedMaterialGroup: str = '-0L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
@@ -127,10 +125,6 @@ class CounterCodex_2_0(MapDom):
     BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
     PathedMaterialGroup: str = '-S'  # Pathed Material Group.
     BigPathedMaterialGroup: str = '-0S'  # Big Pathed Material Group.
-    SadPathSigGroups: str = '-T'  # SAD Path Group(s) sadpath+CtrTransIdxSigGroup(s) of SAID qb64 of content.
-    BigSadPathSigGroups: str = '-0T'  # Big SAD Path Group(s) sadpath+CtrTransIdxSigGroup(s) of SAID qb64 of content.
-    RootSadPathSigGroups: str = '-U'  # Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
-    BigRootSadPathSigGroups: str = '-0U'  # Big Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
     DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
     BigDigestSealSingles: str = '-0V'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
@@ -357,8 +351,6 @@ class Counter:
                 '-G': Cizage(hs=2, ss=2, fs=4),
                 '-H': Cizage(hs=2, ss=2, fs=4),
                 '-I': Cizage(hs=2, ss=2, fs=4),
-                '-J': Cizage(hs=2, ss=2, fs=4),
-                '-K': Cizage(hs=2, ss=2, fs=4),
                 '-L': Cizage(hs=2, ss=2, fs=4),
                 '-0L': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
@@ -412,10 +404,6 @@ class Counter:
                 '-0R': Cizage(hs=3, ss=5, fs=8),
                 '-S': Cizage(hs=2, ss=2, fs=4),
                 '-0S': Cizage(hs=3, ss=5, fs=8),
-                '-T': Cizage(hs=2, ss=2, fs=4),
-                '-0T': Cizage(hs=3, ss=5, fs=8),
-                '-U': Cizage(hs=2, ss=2, fs=4),
-                '-0U': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
                 '-0V': Cizage(hs=3, ss=5, fs=8),
                 '-W': Cizage(hs=2, ss=2, fs=4),
