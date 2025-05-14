@@ -985,14 +985,6 @@ class Parser:
                         cold = sniff(ims)
                         if cold == Colds.msg:  # new message so attachments done
                             break  # finished attachments since new message
-                    #else:  # process until next message
-                        ## because not all in one pipeline group, each attachment
-                        ## group may switch stream state txt or bny
-                        #while not ims:
-                            #yield  # no frame so must wait for next message
-                        #cold = sniff(ims)  # ctr or msg
-                        #if cold == Colds.msg:  # new message
-                            #break  # finished attachments since new message
 
                     ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
