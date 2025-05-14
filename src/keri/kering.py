@@ -63,7 +63,7 @@ Smellage  (results of smelling a version string such as in a Serder)
     proto (str): protocol type value of Protocols examples 'KERI', 'ACDC'
     vrsn (Versionage): protocol version namedtuple (major, minor) of ints
     kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
-    size (int): int size of raw serialization or
+    size (int): int size of raw serialization in bytes
     gvrsn (None | Versionage): optional default is None
                 For CESR native genus version namedtuple (major, minor) of ints
 

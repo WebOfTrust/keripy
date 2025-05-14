@@ -1039,6 +1039,9 @@ class Serder:
         else:  # not passed in so smell raw
             proto, vrsn, kind, size, gvrsn = smell(raw)
 
+        if len(raw) < size:
+            raise ShortageError(f"Need more bytes to de-serialize Serder")
+
         sad = self.loads(raw=raw, size=size, kind=kind)
         # ._gvrsn may be set in loads when CESR native deserialization provides _gvrsn
 

@@ -323,7 +323,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        while ims:  # only process until ims empty
+        while ims:  # only process until ims empty (differs here from parsator)
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
@@ -501,7 +501,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        while True:  # continuous stream processing never stop
+        while True:  # continuous stream processing (differs here from allParsator)
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
@@ -612,6 +612,8 @@ class Parser:
             try:
                 serder = serdery.reap(ims=ims)  # can set version here
             except kering.ShortageError as ex:  # need more bytes
+                if framed:  # full frame before extracting
+                    raise  # incomplete frame so abort by raising error
                 yield
             else: # extracted and stripped successfully
                 break  # break out of while loop
@@ -640,6 +642,7 @@ class Parser:
             # if no attachments MUST have at least empty AttachmentGroup
             while not ims and not framed:  # framed has everything already
                 yield  # when not framed at least empty AttachmentGroup follows
+
             cold = sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
@@ -763,15 +766,16 @@ class Parser:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
                                                               " code={}.".format(ctr.code))
 
-                    if pipelined:  # attachment group so process to end of group
+                    if pipelined:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
                         # or .bny so no need to sniff for new cold here.
                         if not ims:  # end of pipelined group frame
                             break
 
-                    else:  # elif framed or otherwise
-                        # because not all in one pipeline group, each attachment
-                        # group may switch stream state txt or bny
+                    else:  # framed: ims, message plus attachments all provided at once
+                        # ims framed in some way, but not by enclosing AttachmentGroup
+                        # because not all in one pipeline group, each individual
+                        # attachment group may switch stream state txt or bny
                         if not ims:  # end of frame
                             break
                         cold = sniff(ims)
