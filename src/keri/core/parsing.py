@@ -427,7 +427,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        while ims:  # only process until ims empty (differs here from parsatator)
+        while ims:  # only process until ims empty (differs here from parsator)
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
@@ -603,7 +603,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        while True:  # continuous stream processing (differs here from allParsatator)
+        while True:  # continuous stream processing (differs here from allParsator)
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
@@ -966,7 +966,6 @@ class Parser:
                                                                 cold=cold,
                                                                 abort=pipelined)
                             essrs.append(texter)
-
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
