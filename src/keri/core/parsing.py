@@ -631,18 +631,15 @@ class Parser:
         sscs = []  # each converted couple is (seqner, diger) for delegating or issuing event
         # List of tuples from extracted source seal triples (issuer or issuance tel event)
         ssts = []  # each converted couple is (seqner, diger) for delegating or issuing event
-        # List of tuples from extracted SAD path sig groups from transferable identifiers
-        sadtsgs = []  # each converted group is tuple of (path, i, s, d) quad plus list of sigs
-        # List of tuples from extracted SAD path sig groups from non-trans identifiers
-        sadcigs = []  # each converted group is path plus list of non-trans sigs
-        pathed = []  # grouped attachments targeting a subpath
+        pathed = []  # grouped attachments as stream staring with subpath
         essrs = []  # group texter
-        pipelined = False  # all attachments in one big pipeline counted group
+        pipelined = False  # True means attachment group follows msg at top-level
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
             # extract attachments must start with counter so know if txt or bny.
-            while not ims:
-                yield
+            # if no attachments MUST have at least empty AttachmentGroup
+            while not ims and not framed:  # framed has everything already
+                yield  # when not framed at least empty AttachmentGroup follows
             cold = sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
@@ -766,25 +763,19 @@ class Parser:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
                                                               " code={}.".format(ctr.code))
 
-                    if pipelined:  # process to end of stream (group)
+                    if pipelined:  # attachment group so process to end of group
+                        # inside of group all contents must be same cold  .txt
+                        # or .bny so no need to sniff for new cold here.
                         if not ims:  # end of pipelined group frame
                             break
 
-                    elif framed:
+                    else:  # elif framed or otherwise
                         # because not all in one pipeline group, each attachment
                         # group may switch stream state txt or bny
                         if not ims:  # end of frame
                             break
                         cold = sniff(ims)
                         if cold == Colds.msg:  # new message so attachments done
-                            break  # finished attachments since new message
-                    else:  # process until next message
-                        # because not all in one pipeline group, each attachment
-                        # group may switch stream state txt or bny
-                        while not ims:
-                            yield  # no frame so must wait for next message
-                        cold = sniff(ims)  # ctr or msg
-                        if cold == Colds.msg:  # new message
                             break  # finished attachments since new message
 
                     ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
