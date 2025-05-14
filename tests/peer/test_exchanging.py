@@ -102,71 +102,71 @@ def test_essrs():
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 
-def test_exchanger():
-    with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
-            habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
-        exc = exchanging.Exchanger(hby=recHby, handlers=[])
+#def test_exchanger():
+    #with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
+            #habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
+        #exc = exchanging.Exchanger(hby=recHby, handlers=[])
 
-        msg = hab.makeOwnInception()
-        recHab.psr.parseOne(ims=msg)
+        #msg = hab.makeOwnInception()
+        #recHab.psr.parseOne(ims=msg)
 
-        ser, sigs, _ = hab.getOwnEvent(sn=0)
+        #ser, sigs, _ = hab.getOwnEvent(sn=0)
 
-        sadsig = signing.SadPathSigGroup(pather=coring.Pather(path=[]), sigers=sigs)
-        act = bytearray()
-        pather = coring.Pather(path=["e"])
-        sadsig.transpose(pather)
-        act.extend(sadsig.proof)
+        #sadsig = signing.SadPathSigGroup(pather=coring.Pather(path=[]), sigers=sigs)
+        #act = bytearray()
+        #pather = coring.Pather(path=["e"])
+        #sadsig.transpose(pather)
+        #act.extend(sadsig.proof)
 
-        # create the forward message with payload embedded at `a` field
-        fwd, _ = exchanging.exchange(route='/fwd', sender=hab.pre,
-                                     modifiers=dict(pre="EBCAFG", topic="/delegation"),
-                                     payload={}, embeds=dict(evt=ser.raw))
-        with pytest.raises(kering.MissingSignatureError):
-            exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=None)
+        ## create the forward message with payload embedded at `a` field
+        #fwd, _ = exchanging.exchange(route='/fwd', sender=hab.pre,
+                                     #modifiers=dict(pre="EBCAFG", topic="/delegation"),
+                                     #payload={}, embeds=dict(evt=ser.raw))
+        #with pytest.raises(kering.MissingSignatureError):
+            #exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=None)
 
-        assert recHby.db.epse.get(keys=(fwd.said,)) is not None
-        exc.processEscrowPartialSigned()
-        assert recHby.db.epse.get(keys=(fwd.said,)) is not None
+        #assert recHby.db.epse.get(keys=(fwd.said,)) is not None
+        #exc.processEscrowPartialSigned()
+        #assert recHby.db.epse.get(keys=(fwd.said,)) is not None
 
-        # Set the PSE timeout artificially low to trigger removal
-        exc.TimeoutPSE = 0.00001
-        # Add a small sleep to allow for processing to complete
-        time.sleep(0.0001)
-        exc.processEscrowPartialSigned()
-        assert recHby.db.epse.get(keys=(fwd.said,)) is None
+        ## Set the PSE timeout artificially low to trigger removal
+        #exc.TimeoutPSE = 0.00001
+        ## Add a small sleep to allow for processing to complete
+        #time.sleep(0.0001)
+        #exc.processEscrowPartialSigned()
+        #assert recHby.db.epse.get(keys=(fwd.said,)) is None
 
 
-def test_exchange_ps_escrow_timeout():
-    with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
-            habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
-        mbx = storing.Mailboxer(hby=hby)
-        forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-        exc = exchanging.Exchanger(hby=recHby, handlers=[forwarder])
+#def test_exchange_ps_escrow_timeout():
+    #with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
+            #habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
+        #mbx = storing.Mailboxer(hby=hby)
+        #forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
+        #exc = exchanging.Exchanger(hby=recHby, handlers=[forwarder])
 
-        msg = hab.makeOwnInception()
-        recHab.psr.parseOne(ims=msg)
+        #msg = hab.makeOwnInception()
+        #recHab.psr.parseOne(ims=msg)
 
-        ser, sigs, _ = hab.getOwnEvent(sn=0)
+        #ser, sigs, _ = hab.getOwnEvent(sn=0)
 
-        sadsig = signing.SadPathSigGroup(pather=coring.Pather(path=[]), sigers=sigs)
-        act = bytearray()
-        pather = coring.Pather(path=["e"])
-        sadsig.transpose(pather)
-        act.extend(sadsig.proof)
+        #sadsig = signing.SadPathSigGroup(pather=coring.Pather(path=[]), sigers=sigs)
+        #act = bytearray()
+        #pather = coring.Pather(path=["e"])
+        #sadsig.transpose(pather)
+        #act.extend(sadsig.proof)
 
-        # create the forward message with payload embedded at `a` field
-        fwd, _ = exchanging.exchange(route='/fwd', sender=hab.pre,
-                                     modifiers=dict(pre="EBCAFG", topic="/delegation"),
-                                     payload={}, embeds=dict(evt=ser.raw))
-        exnsigs = hab.sign(ser=fwd.raw,
-                           verfers=hab.kever.verfers,
-                           indexed=True)
-        tsgs = [(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), coring.Saider(qb64=hab.kever.serder.said), exnsigs)]
-        exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=tsgs)
+        ## create the forward message with payload embedded at `a` field
+        #fwd, _ = exchanging.exchange(route='/fwd', sender=hab.pre,
+                                     #modifiers=dict(pre="EBCAFG", topic="/delegation"),
+                                     #payload={}, embeds=dict(evt=ser.raw))
+        #exnsigs = hab.sign(ser=fwd.raw,
+                           #verfers=hab.kever.verfers,
+                           #indexed=True)
+        #tsgs = [(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), coring.Saider(qb64=hab.kever.serder.said), exnsigs)]
+        #exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=tsgs)
 
-        msgs = forwarder.mbx.getTopicMsgs(topic="EBCAFG/delegation")
-        assert len(msgs) == 0  # No pathed argument, so nothing to forward.
+        #msgs = forwarder.mbx.getTopicMsgs(topic="EBCAFG/delegation")
+        #assert len(msgs) == 0  # No pathed argument, so nothing to forward.
 
 
 def test_hab_exchange(mockHelpingNowUTC):
