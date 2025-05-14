@@ -427,7 +427,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        while ims:  # only process until ims empty
+        while ims:  # only process until ims empty (differs here from parsatator)
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
@@ -603,7 +603,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        while True:  # continuous stream processing never stop
+        while True:  # continuous stream processing (differs here from allParsatator)
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
@@ -714,6 +714,8 @@ class Parser:
             try:
                 serder = serdery.reap(ims=ims)  # can set version here
             except kering.ShortageError as ex:  # need more bytes
+                if framed:  # full frame before extracting
+                    raise  # incomplete frame so abort by raising error
                 yield
             else: # extracted and stripped successfully
                 break  # break out of while loop
