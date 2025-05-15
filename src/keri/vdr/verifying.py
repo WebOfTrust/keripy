@@ -88,6 +88,7 @@ class Verifier:
         while creds:
             self.processCredential(**creds.pull())
 
+
     def processCredential(self, creder, prefixer, seqner, saider):
         """ Credential data and signature(s) verification
 
@@ -181,6 +182,22 @@ class Verifier:
 
         self.saveCredential(creder, prefixer, seqner, saider)
         self.cues.append(dict(kin="saved", creder=creder))
+
+    def processACDC(self, **kwa):
+        """Alias of .processCredential with Parser compatible call signature
+
+        Parameters:
+            serder (SerderACDC): ACDC to process
+            prefixer (Prefixer): prefix of source anchoring KEL or TEL event
+            seqner (Seqner): sequence number of source anchoring KEL or TEL event
+            saider (Saider): SAID of source anchoring KEL or TEL event
+
+        """
+        creder = kwa['serder']
+        kwa['creder'] = creder
+        del kwa['serder']
+        self.processCredential(**kwa)
+
 
     def escrowMRE(self, creder, prefixer, seqner, saider):
         """ Missing Registry Escrow

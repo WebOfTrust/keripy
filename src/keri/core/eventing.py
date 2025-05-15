@@ -3774,7 +3774,7 @@ class Kevery:
 
     def processEvent(self, serder, sigers, *, wigers=None,
                      delseqner=None, delsaider=None,
-                     firner=None, dater=None, eager=False, local=None):
+                     firner=None, dater=None, eager=False, local=None, **kwa):
         """
         Process one event serder with attached indexd signatures sigers
 
@@ -3920,7 +3920,7 @@ class Kevery:
                 elif ((sn == sno) or  # inorder event (ixn, rot, drt) or
                       (ilk == Ilks.rot and  # superseding recovery rot or
                         kever.lastEst.s < sn <= sno) or
-                      (ilk == Ilks.drt and # delegated superseding recovery drt
+                      (ilk == Ilks.drt and #exts['sigers'].extend(result) delegated superseding recovery drt
                         kever.lastEst.s <= sn <= sno)):
 
                     # verify signatures etc and update state if valid
@@ -3990,7 +3990,7 @@ class Kevery:
                         raise LikelyDuplicitousError(msg)
 
 
-    def processReceiptWitness(self, serder, wigers, local=None):
+    def processReceiptWitness(self, serder, wigers, *, local=None, **kwa):
         """
         Process one witness receipt serder with attached witness wigers
         (indexed signatures)
@@ -4074,7 +4074,7 @@ class Kevery:
             raise UnverifiedWitnessReceiptError(msg)
 
 
-    def processReceipt(self, serder, cigars, local=None):
+    def processReceipt(self, serder, cigars, *, local=None, **kwa):
         """
         Process one receipt serder with attached cigars
         may or may not be a witness receipt. If prefix matches witness then
@@ -4159,7 +4159,8 @@ class Kevery:
             raise UnverifiedReceiptError(msg)
 
 
-    def processAttachedReceiptCouples(self, serder, cigars, firner=None, local=None):
+    def processAttachedReceiptCouples(self, serder, cigars, *, firner=None,
+                                      local=None, **kwa):
         """
         Process one attachment couple that represents an endorsement from
         a nontransferable AID  that may or may not be a witness, maybe a watcher.
@@ -4240,7 +4241,7 @@ class Kevery:
                     self.db.addRct(key=dgKey(pre, ldig), val=couple)
 
 
-    def processReceiptTrans(self, serder, tsgs, local=None):
+    def processReceiptTrans(self, serder, tsgs, *, local=None, **kwa):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
         (indexed signatures) who are not controllers. Controllers may only attach signatures to
@@ -4337,7 +4338,8 @@ class Kevery:
                                    val=quadruple)  # dups kept
 
 
-    def processAttachedReceiptQuadruples(self, serder, trqs, firner=None, local=None):
+    def processAttachedReceiptQuadruples(self, serder, trqs, *, firner=None,
+                                         local=None, **kwa):
         """
         Process one attachment quadruple that represents an endorsement from
         a transferable AID that is not the controller. Maybe a watcher.
@@ -4676,7 +4678,7 @@ class Kevery:
 
 
     def processReplyKeyStateNotice(self, *, serder, saider, route,
-                                   cigars=None, tsgs=None, **kwargs):
+                                   cigars=None, tsgs=None, **kwa):
         """ Process one reply message for key state = /ksn
 
         Process one reply message for key state = /ksn
@@ -4745,7 +4747,7 @@ class Kevery:
         if not route.startswith("/ksn"):
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
                                   f"msg={serder.ked}.")
-        aid = kwargs["aid"]
+        aid = kwa["aid"]
         data = serder.ked["a"]
         try:
             ksr = KeyStateRecord._fromdict(d=data)
@@ -4873,7 +4875,7 @@ class Kevery:
 
 
     def processReplyAddWatched(self, *, serder, saider, route,
-                               cigars=None, tsgs=None, **kwargs):
+                               cigars=None, tsgs=None, **kwa):
         """ Process one reply message for adding an AID for a watcher to watch
 
         Process one reply message for adding an AID for a watcher to watch = /watcher/{aid}/add
@@ -4910,8 +4912,8 @@ class Kevery:
         }
 
         """
-        aid = kwargs["aid"]
-        action = kwargs["action"]
+        aid = kwa["aid"]
+        action = kwa["action"]
         # reply specific logic
         if not route.startswith("/watcher"):
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
@@ -4967,7 +4969,7 @@ class Kevery:
         self.db.obvs.pin(keys=keys, val=observed)  # overwrite
 
 
-    def processQuery(self, serder, source=None, sigers=None, cigars=None):
+    def processQuery(self, serder, *, source=None, sigers=None, cigars=None, **kwa):
         """
         Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.

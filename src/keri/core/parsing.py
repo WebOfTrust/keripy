@@ -55,6 +55,7 @@ class Parser:
         version (Versionage): default CESR code table protocol genus version
         curver (Versionage): current CESR protocol genus version in context
         methods (dict): method names for counter extraction, keyed by count code name
+        codes (CtrDex): selected by .curver  (CtrDex_1_0, CtrDex_2_0)
 
 
     Hidden:
@@ -62,9 +63,11 @@ class Parser:
         _genus (str): value for .genus property
         _curver (Versionage): value for .curver property
         _methods (dict): value for .methods property
+        _codes (CtdDex): value for .codes property
 
     """
-    Methods = copy.deepcopy(Counter.Codes)  # make copy
+    Codes = Counter.Codes  # code tables from Counter
+    Methods = copy.deepcopy(Counter.Codes)  # make deep copy so not mutate Counter
     for minor in Methods.values():  # assign None as default val for all possible code names
         for key in minor:
             minor[key] = {key: None for key in asdict(minor[key])}
@@ -152,7 +155,7 @@ class Parser:
 
         self._genus = GenDex.KERI_ACDC_SPAC  # only supports KERI_ACDC_SPAC
         self.version = version  # provided version may be earlier than supported version
-        # setting version sets .curver which sets .methods
+        # setting version sets .curver which sets .methods and .codes
 
 
     @property
@@ -194,7 +197,7 @@ class Parser:
 
     @curver.setter
     def curver(self, curver):
-        """Property setter for curver, also sets .methods
+        """Property setter for curver, also sets .methods and .codes
 
         Parameters:
             curver (Versionage): current version portion of genus-versioncode
@@ -211,6 +214,7 @@ class Parser:
                                              f" version={latest}.")
         self._curver = curver
         self._methods = self.Methods[curver.major][latest]
+        self._codes = self.Codes[curver.major][latest]
 
 
     @property
@@ -220,6 +224,14 @@ class Parser:
             methods (dict): method names for counter extraction, keyed by count code name
         """
         return self._methods
+
+    @property
+    def codes(self):
+        """Makes .codes read only
+        Returns:
+            _codes (CtdDex): selected by .curver  (CtrDex_1_0, CtrDex_2_0)
+        """
+        return self._codes
 
 
     def extract(self, ims, klas, cold=Colds.txt):
@@ -705,6 +717,23 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
+        # create exts (extracts) keyword args dict with fields:
+        # serder (Serder): message instance
+        # sigers (list[Siger]): attached indexed controller signatures
+        # wigers (list[Siger]): attached indexed witness signatures
+        # cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
+        # trqs (list[tuple]): (prefixer, seqner, saider, siger)
+        # tsgs (list[tuple]): (prefixer, seqner, saider, [Sigers]) triple plus list of sigs
+        # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
+        # frcs (list[tuple]): (seqner, dater)
+        # sscs (list[tuple]): (seqner, saider) issuing or delegating
+        # ssts (list[tuple]): (prefixer, seqner, saider) issued or delegated
+        # ptds (list[bytes]): pathed streams
+        # essrs (list[Texter]): essr encapsulations as Texters
+        exts = dict(serder=None, sigers=[], wigers=[], cigars=[], trqs=[],
+                    tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], ptds=[],
+                    essrs=[])
+
         serdery = serdering.Serdery(version=kering.Version)
 
         if ims is None:
@@ -728,7 +757,9 @@ class Parser:
                     raise  # incomplete frame so abort by raising error
                 yield
             else: # extracted and stripped successfully
+                exts['serder'] = serder
                 break  # break out of while loop
+
 
         sigers = []  # list of Siger instances of attached indexed controller signatures
         wigers = []  # list of Siger instance of attached indexed witness signatures
@@ -745,9 +776,9 @@ class Parser:
         sscs = []  # each converted couple is (seqner, diger) for delegating or issuing event
         # List of tuples from extracted source seal triples (issuer or issuance tel event)
         ssts = []  # each converted couple is (seqner, diger) for delegating or issuing event
-        pathed = []  # grouped attachments as stream staring with subpath
+        ptds = []  # grouped attachments as stream staring with subpath
         essrs = []  # group texter
-        pipelined = False  # True means attachment group follows msg at top-level
+        grouped = False  # True means all attachments enclosed in AttachmentGroup
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
             # extract attachments must start with counter so know if txt or bny.
@@ -758,8 +789,8 @@ class Parser:
             cold = sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-                if ctr.code == CtrDex_1_0.AttachmentGroup:  # pipeline ctr?
-                    pipelined = True
+                if ctr.code in (self.codes.AttachmentGroup, self.codes.BigAttachmentGroup):  # if ctr.code == CtrDex_1_0.AttachmentGroup:
+                    grouped = True
                     # compute pipelined attached group size based on txt or bny
                     pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
                     while len(ims) < pags:  # wait until rx full pipelined group
@@ -777,19 +808,21 @@ class Parser:
                     ctr = yield from self._extractor(ims=ims,
                                                      klas=Counter,
                                                      cold=cold,
-                                                     abort=pipelined)
+                                                     abort=grouped)
 
                 # iteratively process attachment counters in stride
                 while True:  # do while already extracted first counter is ctr above
                     if ctr.code == CtrDex_1_0.ControllerIdxSigs:  # extract each attached signature
                         result = yield from self._ControllerIdxSigs1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=pipelined)
+                                        ctr=ctr, cold=cold, abort=grouped)
                         sigers.extend(result)  # accumulate multiple appearances of group
+                        exts['sigers'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.WitnessIdxSigs:  # extract each attached signature
                         result = yield from self._WitnessIdxSigs1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=pipelined)
+                                            ctr=ctr, cold=cold, abort=grouped)
                         wigers.extend(result)  # accumulate multiple appearances of group
+                        exts['wigers'].extend(result)
 
 
                     elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
@@ -797,8 +830,9 @@ class Parser:
                         # verfer property of cigar is the identifier prefix
                         # cigar itself is the attached signature
                         result = yield from self._NonTransReceiptCouples1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=pipelined)
+                                        ctr=ctr, cold=cold, abort=grouped)
                         cigars.extend(result)  # accumulate multiple appearances of group
+                        exts['cigars'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
                         # extract attaced trans receipt vrc quadruple
@@ -808,8 +842,9 @@ class Parser:
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
                         result = yield from self._TransReceiptQuadruples1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=pipelined)
+                                        ctr=ctr, cold=cold, abort=grouped)
                         trqs.extend(result)  # accumulate multiple appearances of group
+                        exts['trqs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
@@ -820,8 +855,9 @@ class Parser:
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
                         result = yield from self._TransIdxSigGroups1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=pipelined)
+                                        ctr=ctr, cold=cold, abort=grouped)
                         tsgs.extend(result)  # accumulate multiple appearances of group
+                        exts['tsgs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
@@ -830,8 +866,9 @@ class Parser:
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
                         result = yield from self._TransLastIdxSigGroups1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=pipelined)
+                                        ctr=ctr, cold=cold, abort=grouped)
                         ssgs.extend(result)  # accumulate multiple appearances of group
+                        exts['ssgs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
                         # extract attached first seen replay couples
@@ -839,8 +876,9 @@ class Parser:
                         # snu is fn (first seen ordinal) of event
                         # dtm is dt of event
                         result = yield from self._FirstSeenReplayCouples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=pipelined)
+                                            ctr=ctr, cold=cold, abort=grouped)
                         frcs.extend(result)  # accumulate multiple appearances of group
+                        exts['frcs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.SealSourceCouples:
                         # extract attached first seen replay couples
@@ -848,8 +886,9 @@ class Parser:
                         # snu is sequence number  of event
                         # dig is digest of event
                         result = yield from self._SealSourceCouples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=pipelined)
+                                            ctr=ctr, cold=cold, abort=grouped)
                         sscs.extend(result)  # accumulate multiple appearances of group
+                        exts['sscs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.SealSourceTriples:
                         # extract attached anchoring source event information
@@ -858,27 +897,30 @@ class Parser:
                         # snu is sequence number  of event
                         # dig is digest of event
                         result = yield from self._SealSourceTriples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=pipelined)
+                                            ctr=ctr, cold=cold, abort=grouped)
                         ssts.extend(result)  # accumulate multiple appearances of group
+                        exts['ssts'].extend(result)
 
                     elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
                                       CtrDex_1_0.BigPathedMaterialGroup):
                         # content is  CESR sub-stream of attachement groups
                         result = yield from self._PathedMaterialGroup(ims=ims,
-                                            ctr=ctr, cold=cold, abort=pipelined)
-                        pathed.extend(result)
+                                            ctr=ctr, cold=cold, abort=grouped)
+                        ptds.extend(result)
+                        exts['ptds'].extend(result)
 
                     elif ctr.code in (CtrDex_1_0.ESSRPayloadGroup,
                                       CtrDex_1_0.BigESSRPayloadGroup):
                         result = yield from self._ESSRPayloadGroup1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=pipelined)
+                                            ctr=ctr, cold=cold, abort=grouped)
                         essrs.extend(result)  # accumulate multiple appearances of group
+                        exts['essrs'].extend(result)
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
                                                               " code={}.".format(ctr.code))
 
-                    if pipelined:  # attachments framed by enclosing AttachmentGroup
+                    if grouped:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
                         # or .bny so no need to sniff for new cold here.
                         if not ims:  # end of pipelined group frame
@@ -897,7 +939,7 @@ class Parser:
                     ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
         except kering.ExtractionError as ex:
-            if pipelined:  # extracted pipelined group is preflushed
+            if grouped:  # extracted pipelined group is preflushed
                 raise kering.SizedGroupError("Error processing pipelined size"
                                              "attachment group of size={}.".format(pags))
             raise  # no pipeline group so can't preflush, must flush stream
@@ -1024,8 +1066,8 @@ class Parser:
 
             elif ilk in (Ilks.exn,):
                 args = dict(serder=serder)
-                if pathed:
-                    args["pathed"] = pathed
+                if ptds:
+                    args["pathed"] = ptds
 
                 if essrs:
                     args["essrs"] = essrs
@@ -1061,7 +1103,8 @@ class Parser:
             if ilk is None:  # default for ACDC
                 try:
                     prefixer, seqner, saider = ssts[-1] if ssts else (None, None, None)  # use last one if more than one
-                    vry.processCredential(creder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
+                    #vry.processCredential(creder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
+                    vry.processACDC(serder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
                 except AttributeError as e:
                     raise kering.ValidationError("No verifier to process so dropped credential"
                                                  "= {}.".format(serder.pretty()))

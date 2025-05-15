@@ -38,6 +38,8 @@ def test_parser():
     assert parser.version == Vrsn_2_0
     assert parser.curver == Vrsn_2_0
     assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
+
     assert not parser.local
     assert parser.ims == bytearray()
     assert parser.framed
@@ -364,6 +366,8 @@ def test_parser():
         assert parser.version == Vrsn_1_0
         assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
+        assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
+
         assert parser.local == False
         assert parser.framed == True
         assert parser.pipeline == False
