@@ -9,7 +9,9 @@ from typing import Optional
 
 from hio.base import doing
 from hio.help import decking
+
 from keri.vdr import viring
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import help
 from .. import kering, core
 from ..app import agenting
@@ -39,7 +41,7 @@ class Regery:
         self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
                                                            reopen=True)
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
-        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
+        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy, version=Vrsn_1_0)
 
         self.regs = {}  # List of local registries
         self.inited = False

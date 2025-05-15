@@ -10,6 +10,7 @@ import pysodium
 import pytest
 
 from keri import kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import core
 from keri.core import coring, serdering, MtrDex, parsing
 
@@ -58,7 +59,7 @@ def test_essrs():
             habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
 
         ims = hab.makeOwnInception()
-        parsing.Parser().parse(ims=ims, kvy=recHby.kvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy)
         # create the test message with essr attachment
         msg = dict(msg="This is a test message that must be secured", i=hab.pre)
         rkever = recHab.kever
@@ -75,7 +76,7 @@ def test_essrs():
         ims.extend(texter.qb64b)
 
         exc = exchanging.Exchanger(hby=recHby, handlers=[])
-        parsing.Parser().parse(ims=ims,
+        parsing.Parser(version=Vrsn_1_0).parse(ims=ims,
                                kvy=recHby.kvy,
                                exc=exc,
                                version=kering.Vrsn_1_0)  # parser does not support version2 count codes
@@ -98,7 +99,7 @@ def test_essrs():
                                 version=kering.Vrsn_1_0).qb64b)
         ims.extend(texter[0].qb64b)
 
-        parsing.Parser().parse(ims=ims, kvy=recHby.kvy, exc=exc)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy, exc=exc)
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 

@@ -17,10 +17,11 @@ from socket import gaierror
 from . import httping, forwarding
 from .. import help
 from .. import kering
+from ..kering import Roles, Vrsn_1_0, Vrsn_2_0
 from .. import core
 from ..core import eventing, parsing, coring, serdering, indexing
 from ..db import dbing
-from ..kering import Roles
+
 
 logger = help.ogler.getLogger()
 
@@ -698,7 +699,8 @@ class TCPMessenger(doing.DoDoer):
         client = clienting.Client(host=up.hostname, port=up.port)
         self.parser = parsing.Parser(ims=client.rxbs,
                                      framed=True,
-                                     kvy=self.kevery)
+                                     kvy=self.kevery,
+                                     version=Vrsn_1_0)
 
         clientDoer = clienting.ClientDoer(client=client)
         self.extend([clientDoer, doing.doify(self.msgDo)])
@@ -792,7 +794,8 @@ class TCPStreamMessenger(doing.DoDoer):
         client = clienting.Client(host=up.hostname, port=up.port)
         self.parser = parsing.Parser(ims=client.rxbs,
                                      framed=True,
-                                     kvy=self.kevery)
+                                     kvy=self.kevery,
+                                     version=Vrsn_1_0)
 
         clientDoer = clienting.ClientDoer(client=client)
         self.extend([clientDoer, doing.doify(self.msgDo)])

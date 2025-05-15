@@ -18,6 +18,7 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
 from .habbing import GroupHab
@@ -84,7 +85,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                             kvy=kvy,
                             tvy=tvy,
                             exc=exchanger,
-                            rvy=rvy)
+                            rvy=rvy,
+                            version=Vrsn_1_0)
 
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
     app.add_route("/", httpEnd)
@@ -346,7 +348,8 @@ class Indirector(doing.DoDoer):
                                       direct=self.direct)
         self.parser = parsing.Parser(ims=self.client.rxbs,
                                      framed=True,
-                                     kvy=self.kevery)
+                                     kvy=self.kevery,
+                                     version=Vrsn_1_0)
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo),
                       doing.doify(self.escrowDo)])
@@ -569,7 +572,8 @@ class MailboxDirector(doing.DoDoer):
                                      tvy=self.tvy,
                                      exc=self.exchanger,
                                      rvy=self.rvy,
-                                     vry=self.verifier)
+                                     vry=self.verifier,
+                                     version=Vrsn_1_0)
 
         super(MailboxDirector, self).__init__(doers=doers, **kwa)
 
@@ -1045,7 +1049,8 @@ class ReceiptEnd(doing.DoDoer):
         self.aids = aids
         self.receipts = set()
         self.psr = parsing.Parser(framed=True,
-                                  kvy=self.hab.kvy)
+                                  kvy=self.hab.kvy,
+                                  version=Vrsn_1_0)
 
         super(ReceiptEnd, self).__init__(doers=[doing.doify(self.interceptDo)])
 

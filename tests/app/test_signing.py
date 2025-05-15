@@ -238,7 +238,7 @@ from keri.vdr import verifying, credentialing
                          #saider=coring.Saider(qb64=hab.kever.serder.said))
         #regery.processEscrows()
 
-        #parsing.Parser().parse(ims=sig0, vry=verifier)
+        #parsing.Parser(version=Vrsn_1_0).parse(ims=sig0, vry=verifier)
 
         #saider = verifier.reger.saved.get(keys=cred.said)
         #assert saider is not None

@@ -7,6 +7,7 @@ import os
 import time
 import datetime
 
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import help
 from keri.help import helping
 
@@ -26,7 +27,7 @@ def test_partial_signed_escrow():
 
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
-    psr = parsing.Parser()
+    psr = parsing.Parser(version=Vrsn_1_0)
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -367,7 +368,7 @@ def test_missing_delegator_escrow():
     delSalt = core.Salter(raw=b'abcdef0123456789').qb64
     watSalt = core.Salter(raw=b'wxyzabcdefghijkl').qb64
 
-    psr = parsing.Parser()
+    psr = parsing.Parser(version=Vrsn_1_0)
 
     with (basing.openDB(name="bob") as bobDB,
           keeping.openKS(name="bob") as bobKS,
@@ -672,7 +673,7 @@ def test_out_of_order_escrow():
 
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
-    psr = parsing.Parser()
+    psr = parsing.Parser(version=Vrsn_1_0)
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -868,7 +869,7 @@ def test_unverified_receipt_escrow():
 
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
-    psr = parsing.Parser()
+    psr = parsing.Parser(version=Vrsn_1_0)
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -1156,7 +1157,7 @@ def test_unverified_trans_receipt_escrow():
 
     """
     salt = core.Salter(raw=b'0123456789abcdef').qb64  # init Salter
-    psr = parsing.Parser()
+    psr = parsing.Parser(version=Vrsn_1_0)
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:

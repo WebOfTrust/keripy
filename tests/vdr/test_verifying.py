@@ -7,6 +7,7 @@ tests.vdr.verifying module
 import pytest
 
 from keri import kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, signing
 from keri.core import eventing as ceventing, scheming
 from keri.core import parsing, coring, indexing
@@ -139,7 +140,7 @@ def test_verifier(seeder):
 #         vkev = ceventing.Kevery(db=verfer.db, lax=False, local=False)
 #
 #         micp = hab1.makeOtherEvent(gid, sn=0)
-#         parsing.Parser().parse(ims=bytearray(micp), kvy=vkev)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(micp), kvy=vkev)
 #
 #         g1 = grouping.Groupy(hby=hby1)
 #         g2 = grouping.Groupy(hby=hby2)
@@ -187,10 +188,10 @@ def test_verifier(seeder):
 #         for sig in sigs:
 #             evt.extend(sig)
 #
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=vkev)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev3)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev2)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=vkev)
 #
 #         g1.processEscrows()
 #         g2.processEscrows()
@@ -264,10 +265,10 @@ def test_verifier(seeder):
 #         for sig in sigs:
 #             evt.extend(sig)
 #
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
-#         parsing.Parser().parse(ims=bytearray(evt), kvy=vkev)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev3)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev2)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1)
+#         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=vkev)
 #
 #         g1.processEscrows()
 #         g2.processEscrows()
@@ -476,11 +477,11 @@ def test_verifier_chained_credential(seeder):
 
         # Now process all the events that Ron's issuer has generated so far
         for msg in ron.db.clonePreIter(pre=ron.pre):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
         ianverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
                                     saider=coring.Saider(qb64=ron.kever.serder.said))
@@ -605,11 +606,11 @@ def test_verifier_chained_credential(seeder):
         vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg.reger)
 
         for msg in ron.db.clonePreIter(pre=ron.pre):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         vicverfer.processCredential(creder, prefixer=ian.kever.prefixer, seqner=seqner,
                                     saider=coring.Saider(qb64=ian.kever.serder.said))
@@ -621,11 +622,11 @@ def test_verifier_chained_credential(seeder):
         # Vic should be able to verify Han's credential
         # Get Ian's icp into Vic's db
         for msg in ian.db.clonePreIter(pre=ian.pre):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ianverfer.reger.clonePreIter(pre=ianiss.regk):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ianverfer.reger.clonePreIter(pre=vLeiCreder.said):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         # And now verify the credential:
         vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
@@ -650,16 +651,16 @@ def test_verifier_chained_credential(seeder):
         ronreg.processEscrows()
 
         for msg in ron.db.clonePreIter(pre=ron.pre):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         with pytest.raises(kering.RevokedChainError):
             vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
                                         saider=coring.Saider(qb64=ian.kever.serder.said))
-        
+
         creds = ronreg.reger.cloneCreds(saids=[coring.Saider(qb64=creder.said)], db=ronHby.db)
         for cred in creds:
             assert cred['status']['et'] == 'rev'

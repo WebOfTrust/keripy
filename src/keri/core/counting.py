@@ -458,7 +458,7 @@ class Counter:
             raise kering.InvalidVersionError(f"Unsupported major version="
                                              f"{version.major}.")
 
-        latest = list(self.Sizes[version.major])[0]  # get latest minor version
+        latest = list(self.Sizes[version.major])[-1]  # get latest supported minor version
         if version.minor > latest:
             raise kering.InvalidVersionError(f"Minor version={version.minor} "
                                              f" exceeds latest supported minor"

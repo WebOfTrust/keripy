@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from hio.base import doing
 
 from keri import help, kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, grouping, indirecting, forwarding
 from keri.app.agenting import WitnessPublisher
 from keri.app.cli.common import existing
@@ -95,7 +96,7 @@ class LocationDoer(doing.DoDoer):
         eid = self.eid if self.eid is not None else self.hab.pre
 
         msg = self.hab.makeLocScheme(url=self.url, eid=eid, scheme=up.scheme)
-        parsing.Parser().parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
         if isinstance(self.hab, habbing.GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)

@@ -38,8 +38,10 @@ from hio.base import doing
 import keri
 from . import dbing, koming, subing
 from .. import kering
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import core
 from ..core import coring, eventing, parsing, serdering, indexing
+
 
 from .. import help
 from ..help import helping
@@ -1488,7 +1490,7 @@ class Baser(dbing.LMDBer):
                 # need new method cloneObjAllPreIter()
                 # process event doesn't capture exceptions so we can more easily
                 # detect in the cloning that some events did not make it through
-                psr = parsing.Parser(kvy=kvy)
+                psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
                 for msg in self.cloneAllPreIter():  # clone into copy
                     psr.parseOne(ims=msg)
 

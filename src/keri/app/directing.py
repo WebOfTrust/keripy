@@ -8,6 +8,7 @@ simple direct mode demo support classes
 import itertools
 from hio.base import doing
 
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import help
 from ..core import eventing, routing
 from ..core import parsing
@@ -191,7 +192,8 @@ class Reactor(doing.DoDoer):
                                      framed=True,
                                      kvy=self.kevery,
                                      tvy=self.tvy,
-                                     exc=self.exc)
+                                     exc=self.exc,
+                                     version=Vrsn_1_0)
 
 
         super(Reactor, self).__init__(doers=doers, **kwa)
@@ -546,7 +548,8 @@ class Reactant(doing.DoDoer):
                                      kvy=self.kevery,
                                      tvy=self.tevery,
                                      exc=self.exchanger,
-                                     rvy=rvy)
+                                     rvy=rvy,
+                                     version=Vrsn_1_0)
 
         super(Reactant, self).__init__(doers=doers, **kwa)
         if self.tymth:

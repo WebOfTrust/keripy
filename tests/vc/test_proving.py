@@ -6,7 +6,7 @@ tests.vc.proving module
 import pytest
 
 from keri import kering
-from keri.kering import Versionage, Vrsn_1_0
+from keri.kering import Versionage, Vrsn_1_0, Vrsn_2_0
 
 from keri import core
 from keri.core import coring, scheming, parsing, serdering
@@ -299,7 +299,7 @@ def test_credential_parsator():
         msg.extend(hab.kever.serder.said.encode("utf-8"))
 
         verifier = verifying.Verifier(hby=hby)
-        parsing.Parser().parse(ims=msg, vry=verifier)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
 
         assert len(verifier.cues) == 1
         cue = verifier.cues.popleft()

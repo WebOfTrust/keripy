@@ -8,7 +8,7 @@ from keri import help
 
 from keri import core
 from keri.core import parsing, eventing, coring, serdering, Counter, Codens
-
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (incept, rotate, interact)
@@ -229,7 +229,7 @@ def test_kevery():
         # kevery.process(ims=kes[:20])
         # assert pre not in kevery.kevers  # shortage so gives up
 
-        parsing.Parser().parse(ims=msgs, kvy=kevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=kevery)
         # kevery.process(ims=msgs)
 
         assert pre in kevery.kevers
@@ -370,30 +370,30 @@ def test_stale_event_receipts():
 
         # Pass incept to witnesses, receipted event to bam
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=bamKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=bamKvy, local=True)
         assert bobHab.pre not in bamKvy.kevers
 
         for witHab in awits:
             kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
-            parsing.Parser().parse(ims=bytearray(bobIcp), kvy=kvy, local=True)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=kvy, local=True)
             assert bobHab.pre in witHab.kevers
             iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
             msg = witHab.receipt(serder=iserder)
-            parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bobHab.pre in bamKvy.kevers
 
         # Rotate, pass to witnesses, send receipts from Wes and Wan to Bam
         rot0 = bobHab.rotate(toad=2)
-        parsing.Parser().parse(ims=bytearray(rot0), kvy=bamKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
-            parsing.Parser().parse(ims=bytearray(rot0), kvy=kvy, local=True)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
             iserder = serdering.SerderKERI(raw=bytearray(rot0))
             msg = witHab.receipt(serder=iserder)
-            parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bamKvy.kevers[bobHab.pre].sn == 1
@@ -406,14 +406,14 @@ def test_stale_event_receipts():
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
         rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2)
-        parsing.Parser().parse(ims=bytearray(rot1), kvy=bamKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = eventing.Kevery(db=witHab.db)
-            parsing.Parser().parse(ims=bytearray(rot1), kvy=kvy, local=True)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=kvy, local=True)
             iserder = serdering.SerderKERI(raw=bytearray(rot1))
             msg = witHab.receipt(serder=iserder)
-            parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bamKvy.kevers[bobHab.pre].sn == 2
@@ -421,10 +421,10 @@ def test_stale_event_receipts():
 
         # Pass receipts from Wil for event 1 to Bam
         kvy = eventing.Kevery(db=wilHab.db)
-        parsing.Parser().parse(ims=bytearray(rot0), kvy=kvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
         iserder = serdering.SerderKERI(raw=bytearray(rot0))
         msg = wilHab.receipt(serder=iserder)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         # Validate that bam has 3 receipts in DB for event 1
         wigs = bamHby.db.getWigs(dgkey)

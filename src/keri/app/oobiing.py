@@ -18,6 +18,7 @@ from keri.core import coring
 from . import httping
 from .. import help
 from .. import kering
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from ..app import connecting
 from ..core import routing, eventing, parsing, scheming, serdering
 from ..db import basing
@@ -297,7 +298,7 @@ class Oobiery:
         rvy = routing.Revery(db=self.hby.db, rtr=rtr)
         kvy = eventing.Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        self.parser = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
+        self.parser = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
 
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()

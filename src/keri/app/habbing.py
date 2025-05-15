@@ -15,6 +15,7 @@ from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import core
 from ..core import (coring, eventing, parsing, routing, serdering, indexing,
                     Counter, Codens)
@@ -227,7 +228,7 @@ class Habery:
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
-                                  exc=self.exc, local=True)
+                                  exc=self.exc, local=True, version=Vrsn_1_0)
         self.habs = {}  # empty .habs
         self._signator = None
         self.inited = False

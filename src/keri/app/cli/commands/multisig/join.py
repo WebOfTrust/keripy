@@ -12,6 +12,7 @@ from hio.base import doing
 from prettytable import PrettyTable
 
 from keri import help, kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
 from keri.app.cli.common import existing, displaying
 from keri.core import coring, eventing, scheming, parsing, routing, serdering
@@ -77,7 +78,9 @@ class JoinDoer(doing.DoDoer):
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
         self.rvy = routing.Revery(db=self.hby.db,  lax=True)
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
-        self.psr = parsing.Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy, rvy=self.rvy, vry=self.verifier, exc=self.exc)
+        self.psr = parsing.Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
+                                  rvy=self.rvy, vry=self.verifier, exc=self.exc,
+                                  version=Vrsn_1_0)
 
         mux = grouping.Multiplexor(hby=self.hby, notifier=self.notifier)
         grouping.loadHandlers(exc=self.exc, mux=mux)

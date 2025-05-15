@@ -10,6 +10,7 @@ import pytest
 from keri import help
 
 from keri import core, kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.core import coring, eventing, parsing
 
 from keri.db import basing
@@ -74,7 +75,7 @@ def test_weighted():
                     b'DP4xXVfChR-lFd2npUG')
 
         # apply msg to Wes's Kevery
-        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
@@ -105,7 +106,7 @@ def test_weighted():
                     b'0kViHlHI7WkFVS5q8k1SfgI')
 
         # apply msg to wes's Kevery
-        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
@@ -149,7 +150,7 @@ def test_weighted():
 
 
         # apply msg to Wes's Kevery
-        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
@@ -195,7 +196,7 @@ def test_weighted():
                     b'1-U9J1xb55jG4z-1Ddyx8mLW6_O53boaFobaitvO13z3u5OswF')
 
         # apply msg to Wes's Kevery
-        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
@@ -246,7 +247,7 @@ def test_weighted():
                     b'l-pVBvUHEIIN')
 
         # apply msg to Wes's Kevery
-        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 

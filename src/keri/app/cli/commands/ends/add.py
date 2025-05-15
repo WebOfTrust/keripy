@@ -9,6 +9,7 @@ import argparse
 from hio.base import doing
 
 from keri import help, kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, grouping, indirecting, forwarding
 from keri.app.agenting import WitnessPublisher
 from keri.app.cli.common import existing
@@ -95,7 +96,7 @@ class RoleDoer(doing.DoDoer):
         route = "/end/role/add"
         msg = self.hab.reply(route=route, data=data, stamp=self.timestamp)
 
-        parsing.Parser().parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
         if isinstance(self.hab, habbing.GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)

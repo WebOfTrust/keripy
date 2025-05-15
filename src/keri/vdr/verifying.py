@@ -12,6 +12,7 @@ from typing import Type
 from hio.help import decking
 
 from .. import help, kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from ..core import parsing, coring, scheming
 from ..help import helping
 from ..vdr import eventing
@@ -62,7 +63,8 @@ class Verifier:
 
         """
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=False)
-        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
+        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
+                                  version=Vrsn_1_0)
         self.resolver = scheming.CacheResolver(db=self.hby.db)
 
         self.inited = True

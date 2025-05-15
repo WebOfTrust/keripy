@@ -7,6 +7,7 @@ import argparse
 
 from hio.base import doing
 
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
@@ -120,7 +121,7 @@ class GrantDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
         if isinstance(self.hab, habbing.GroupHab):

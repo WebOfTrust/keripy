@@ -9,6 +9,7 @@ module for enveloping and forwarding KERI message
 from hio.base import doing
 
 from .. import kering, core
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import help
 from ..app import delegating, agenting
 from ..core import coring, routing, eventing, parsing, serdering, indexing
@@ -576,7 +577,8 @@ class Multiplexor:
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         self.kvy = eventing.Kevery(db=self.hby.db, lax=False, local=False, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                                  exc=self.exc, version=Vrsn_1_0)
 
         self.notifier = notifier
 

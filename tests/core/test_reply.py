@@ -13,7 +13,7 @@ import pytest
 from hio.help.hicting import Mict
 
 from keri import kering
-
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import help
 
 from keri import core
@@ -83,7 +83,7 @@ def test_reply(mockHelpingNowUTC):
         wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
         assert not wesHab.kever.prefixer.transferable
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
-        wesPrs = parsing.Parser(kvy=wesKvy)
+        wesPrs = parsing.Parser(kvy=wesKvy, version=Vrsn_1_0)
 
         # setup Wok's habitat nontrans
         wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
@@ -91,7 +91,7 @@ def test_reply(mockHelpingNowUTC):
         #assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
-        wokPrs = parsing.Parser(kvy=wokKvy)
+        wokPrs = parsing.Parser(kvy=wokKvy, version=Vrsn_1_0)
 
         # setup Wam's habitat nontrans
         wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
@@ -99,7 +99,7 @@ def test_reply(mockHelpingNowUTC):
         #assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
-        wamPrs = parsing.Parser(kvy=wamKvy)
+        wamPrs = parsing.Parser(kvy=wamKvy, version=Vrsn_1_0)
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
@@ -126,7 +126,7 @@ def test_reply(mockHelpingNowUTC):
         rvy = routing.Revery(db=tamHby.db, rtr=rtr)
         kvy = eventing.Kevery(db=tamHby.db, lax=False, local=True, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        tamPrs = parsing.Parser(kvy=tamKvy, rvy=rvy)
+        tamPrs = parsing.Parser(kvy=tamKvy, rvy=rvy, version=Vrsn_1_0)
 
         # setup Wat's habitat nontrans
         #watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB,
@@ -161,7 +161,7 @@ def test_reply(mockHelpingNowUTC):
         nelKvy = eventing.Kevery(db=nelHab.db, lax=False, local=False, rvy=nelRvy)
         nelKvy.registerReplyRoutes(router=nelRtr)
         # create non-local parer for Nel to process non-local msgs
-        nelPrs = parsing.Parser(kvy=nelKvy, rvy=nelRvy)
+        nelPrs = parsing.Parser(kvy=nelKvy, rvy=nelRvy, version=Vrsn_1_0)
 
         assert nelHab.pre == 'BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y'
         assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
@@ -1311,7 +1311,7 @@ def test_watcher_add_cut():
         assert not wat2hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wat2kvy = eventing.Kevery(db=wat2hab.db, lax=False, local=False)
-        
+
         obv0hab = obv0hby.makeHab(name='obv0', isith="1", icount=1, transferable=True)
         assert obv0hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
@@ -1329,11 +1329,11 @@ def test_watcher_add_cut():
 
         for hab in [wat0hab, wat1hab, wat2hab, obv0hab, obv1hab, obv2hab]:
             msg = hab.makeOwnInception()
-            parsing.Parser().parseOne(ims=msg, kvy=conKvy)
+            parsing.Parser(version=Vrsn_1_0).parseOne(ims=msg, kvy=conKvy)
 
         conIcp = conHab.makeOwnInception()
         for kvy in [wat0kvy, wat1kvy, wat2kvy, obv0kvy, obv1kvy, obv2kvy]:
-            parsing.Parser().parseOne(ims=bytes(conIcp), kvy=kvy)  # make copy so we don't clobber it
+            parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(conIcp), kvy=kvy)  # make copy so we don't clobber it
 
         assert wat0hab.pre in conHab.kevers
         assert wat1hab.pre in conHab.kevers

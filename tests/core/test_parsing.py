@@ -14,7 +14,7 @@ from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0
 from keri import help
 
 from keri import core
-from keri.core import coring, Counter, Codens, Seqner, Dater, Texter, Pather
+from keri.core import coring, Counter, GenDex, Codens, Seqner, Dater, Texter, Pather
 from keri.core.parsing import Parser
 
 from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
@@ -33,6 +33,22 @@ def test_parser():
     Use openHby instead more updated approach to generating events
 
     """
+    parser = Parser()  # test defaults
+    assert parser.genus == GenDex.KERI_ACDC_SPAC
+    assert parser.version == Vrsn_2_0
+    assert parser.curver == Vrsn_2_0
+    assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert not parser.local
+    assert parser.ims == bytearray()
+    assert parser.framed
+    assert not parser.pipeline
+    assert parser.kvy is None
+    assert parser.tvy is None
+    assert parser.exc is None
+    assert parser.rvy is None
+    assert parser.vry is None
+
+
     logger.setLevel("ERROR")
 
     #  create transferable signers
@@ -175,19 +191,9 @@ def test_parser():
         msgs.extend(texter.qb64b)
 
 
-
         # create key event verifier state
         kever = Kever(serder=serder, sigers=[siger0], db=conDB)
 
-
-        #assert msgs == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
-                        #b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
-                        #b'DiXp4Hx","s":"0","kt":"1","k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpC'
-                        #b'AeJIWDiXp4Hx"],"nt":"1","n":["EFXIx7URwmw7AVQTBcMxPXfOOJ2YYA1SJA'
-                        #b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}-AACAAApXLez5eVIs6YyR'
-                        #b'XOMDMBy4cTm2GvsilrZlcMmtBbO5twLst_jjFoEyfKTWKntEtv9JPBv1DLkqg-Im'
-                        #b'DmGPM8EABCPC62EHHb9FSyz39Oow0wZi5-riGPzdkzyAMxjdmYYBNyAymnTTK6pH'
-                        #b'K2eI2H9LtGRHPI6Yn6UWVcdZt3frToL')
 
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
@@ -353,12 +359,20 @@ def test_parser():
 
         kevery = Kevery(db=valDB)
 
-        parser = Parser(kvy=kevery)
-        assert parser.kvy == kevery
+        parser = Parser(kvy=kevery, version=Vrsn_1_0)
+        assert parser.genus == GenDex.KERI_ACDC_SPAC
+        assert parser.version == Vrsn_1_0
+        assert parser.curver == Vrsn_1_0
+        assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.local == False
         assert parser.framed == True
         assert parser.pipeline == False
         assert parser.ims == bytearray()
+        assert parser.kvy == kevery
+        assert parser.tvy is None
+        assert parser.exc is None
+        assert parser.rvy is None
+        assert parser.vry is None
 
         parser.parse(ims=bytearray(msgs))  # make copy
         assert parser.ims == bytearray(b'')  # emptied

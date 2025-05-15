@@ -51,15 +51,17 @@ class Parser:
                          False means event source is remote (unprotected) for validation
 
     Properties:
-        genus (str): default CESR code table protocol genus code
+        genus (str): genus portion of default CESR code table protocol genus code
         version (Versionage): default CESR code table protocol genus version
         curver (Versionage): current CESR protocol genus version in context
+        methods (dict): method names for counter extraction, keyed by count code name
 
 
     Hidden:
         _version (Versionage): value for .version property
         _genus (str): value for .genus property
         _curver (Versionage): value for .curver property
+        _methods (dict): value for .methods property
 
     """
     Methods = copy.deepcopy(Counter.Codes)  # make copy
@@ -88,6 +90,32 @@ class Parser:
     Methods[2][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups2"
     Methods[2][0][Codens.BigTransIdxSigGroups] = "_TransIdxSigGroups2"
 
+    Methods[1][0][Codens.TransLastIdxSigGroups] = "_TransLastIdxSigGroups1"
+    Methods[2][0][Codens.TransLastIdxSigGroups] = "_TransLastIdxSigGroups2"
+    Methods[2][0][Codens.BigTransLastIdxSigGroups] = "_TransLastIdxSigGroups2"
+
+    Methods[1][0][Codens.FirstSeenReplayCouples] = "_FirstSeenReplayCouples1"
+    Methods[2][0][Codens.FirstSeenReplayCouples] = "_FirstSeenReplayCouples2"
+    Methods[2][0][Codens.BigFirstSeenReplayCouples] = "_FirstSeenReplayCouples2"
+
+    Methods[1][0][Codens.PathedMaterialGroup] = "_PathedMaterialGroup"
+    Methods[1][0][Codens.BigPathedMaterialGroup] = "_PathedMaterialGroup"
+    Methods[2][0][Codens.PathedMaterialGroup] = "_PathedMaterialGroup"
+    Methods[2][0][Codens.BigPathedMaterialGroup] = "_PathedMaterialGroup"
+
+    Methods[1][0][Codens.SealSourceTriples] = "_SealSourceTriples1"
+    Methods[2][0][Codens.SealSourceTriples] = "_SealSourceTriples2"
+    Methods[2][0][Codens.BigSealSourceTriples] = "_SealSourceTriples2"
+
+    Methods[1][0][Codens.SealSourceCouples] = "_SealSourceCouples1"
+    Methods[2][0][Codens.SealSourceCouples] = "_SealSourceCouples2"
+    Methods[2][0][Codens.BigSealSourceCouples] = "_SealSourceCouples2"
+
+    Methods[1][0][Codens.ESSRPayloadGroup] = "_ESSRPayloadGroup1"
+    Methods[1][0][Codens.BigESSRPayloadGroup] = "_ESSRPayloadGroup1"
+    Methods[2][0][Codens.ESSRPayloadGroup] = "_ESSRPayloadGroup2"
+    Methods[2][0][Codens.BigESSRPayloadGroup] = "_ESSRPayloadGroup2"
+
 
 
     def __init__(self, ims=None, framed=True, pipeline=False, kvy=None,
@@ -109,7 +137,8 @@ class Parser:
             vry (Verfifier): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
                          False means event source is remote (unprotected) for validation
-            version (Versionage): instance of genera version for default code table
+            version (Versionage): instance of version portion of genus version code
+                                  for default code table
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
@@ -120,27 +149,99 @@ class Parser:
         self.rvy = rvy
         self.vry = vry
         self.local = True if local else False
-        self._version = version  # provided version may be earlier than supported version
+
         self._genus = GenDex.KERI_ACDC_SPAC  # only supports KERI_ACDC_SPAC
-        self._curver = self.version
+        self.version = version  # provided version may be earlier than supported version
+        # setting version sets .curver which sets .methods
 
 
-    @staticmethod
-    def extract(ims, klas, cold=Colds.txt):
+    @property
+    def genus(self):
+        """Makes .genus read only
+        Returns ._genus
+        """
+        return self._genus
+
+
+    @property
+    def version(self):
+        """Makes .version read only default version from genus-version code
+        Returns ._version
+        """
+        return self._version
+
+    @version.setter
+    def version(self, version):
+        """Property setter for version also sets .curver
+
+        Parameters:
+            version (Versionage|None): default version portion of genus-versioncode
+                If None do nothing
+
+        """
+        if version is not None:
+            self._version = version
+            self.curver = version
+
+
+    @property
+    def curver(self):
+        """Returns ._curver current version in stream context
+
+        """
+        return self._curver
+
+
+    @curver.setter
+    def curver(self, curver):
+        """Property setter for curver, also sets .methods
+
+        Parameters:
+            curver (Versionage): current version portion of genus-versioncode
+
+        """
+        if curver.major not in self.Methods:
+            raise kering.InvalidVersionError(f"Unsupported major version="
+                                             f"{curver.major}.")
+
+        latest = list(self.Methods[curver.major])[-1]  # get latest supported minor version
+        if curver.minor > latest:
+            raise kering.InvalidVersionError(f"Minor version={curver.minor} "
+                                             f" exceeds latest supported minor"
+                                             f" version={latest}.")
+        self._curver = curver
+        self._methods = self.Methods[curver.major][latest]
+
+
+    @property
+    def methods(self):
+        """Gets methods from .Methods for .curver current version in stream context
+        Returns:
+            methods (dict): method names for counter extraction, keyed by count code name
+        """
+        return self._methods
+
+
+    def extract(self, ims, klas, cold=Colds.txt):
         """Extract and return instance of klas from input message stream, ims, given
         stream state, cold, is txt or bny. Inits klas from ims using qb64b or
         qb2 parameter based on cold.
+
+        Parameters:
+            ims (bytearray): input message stream (must be strippable)
+            klas (Serder | Counter | Matter | Indexer): subclass that is parsable
+            cold (Coldage): instance str value
+
         """
         if cold == Colds.txt:
-            return klas(qb64b=ims, strip=True)
+            return klas(qb64b=ims, strip=True, version=self.curver)
         elif cold == Colds.bny:
-            return klas(qb2=ims, strip=True)
+            return klas(qb2=ims, strip=True, version=self.curver)
         else:
             raise ColdStartError(f"Invalid stream state {cold=}")
 
 
-    @staticmethod
-    def _extractor(ims, klas, cold=Colds.txt, abort=False, version=Vrsn_1_0):
+    def _extractor(self, ims, klas, cold=Colds.txt, abort=False):
         """Returns generator to extract and return instance of klas from input
         message stream, ims, given stream state, cold, is txt or bny.
         If wait is True then yield when not enough bytes in stream otherwise
@@ -154,18 +255,16 @@ class Parser:
             cold (Coldage): instance str value
             abort (bool): True means abort if bad pipelined frame Shortage
                           False means do not abort if Shortage just wait for more
-            version (Versionage): current genera version of CESR code tables to use
 
         Usage:
-
-        instance = self._extractor
+            yield from self._extractor(ims=ims, klas=Counter)
         """
         while True:
             try:
                 if cold == Colds.txt:
-                    return klas(qb64b=ims, strip=True, version=version)
+                    return klas(qb64b=ims, strip=True, version=self.curver)
                 elif cold == Colds.bny:
-                    return klas(qb2=ims, strip=True, version=version)
+                    return klas(qb2=ims, strip=True, version=self.curver)
                 else:
                     raise ColdStartError(f"Invalid stream state {cold=}")
             except ShortageError as ex:
@@ -173,32 +272,9 @@ class Parser:
                     raise  # bad pipelined frame so abort by raising error
                 yield
 
-    @property
-    def genus(self):
-        """Makes .genus read only
-        Returns ._genus
-        """
-        return self._genus
-
-
-    @property
-    def version(self):
-        """Makes .version read only
-        Returns ._version
-        """
-        return self._version
-
-
-    @property
-    def curver(self):
-        """Returns ._curver current version in stream context
-
-        """
-        return self._curver
-
 
     def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
-              exc=None, rvy=None, vry=None, local=None, version=Vrsn_1_0):
+              exc=None, rvy=None, vry=None, local=None, version=None):
         """Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
         Returns when ims is empty.
@@ -223,7 +299,8 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): current genera version of CESR to use
+            version (Versionage): default version of CESR to use
+                                  None means do not change default
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -252,7 +329,7 @@ class Parser:
 
 
     def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None,
-                 exc=None, rvy=None, vry=None, local=None, version=Vrsn_1_0):
+                 exc=None, rvy=None, vry=None, local=None, version=None):
         """Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
         Returns once one message is processed.
@@ -276,7 +353,8 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): current genera version of CESR to use
+            version (Versionage): default genera version of CESR to use
+                                  None means do not change default
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -304,7 +382,7 @@ class Parser:
 
     def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                    version=Vrsn_1_0):
+                    version=None):
         """Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
         Generator completes as soon as ims is empty.
@@ -329,7 +407,8 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): instance of genera version of CESR code tables
+            version (Versionage): default version of CESR to use
+                                None means do not change default
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -392,7 +471,7 @@ class Parser:
 
     def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
                      tvy=None, exc=None, rvy=None, vry=None, local=None,
-                     version=Vrsn_1_0):
+                     version=None):
         """Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
 
@@ -415,7 +494,8 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): instance of genera version of CESR code tables
+            version (Versionage): default version of CESR to use
+                                  None means do not change default
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -479,7 +559,7 @@ class Parser:
 
 
     def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
-                 exc=None, rvy=None, vry=None, local=None, version=Vrsn_1_0):
+                 exc=None, rvy=None, vry=None, local=None, version=None):
         """Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply. Does not return.
         Useful for always running servers.
@@ -506,7 +586,8 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): instance of genera version of CESR code tables
+            version (Versionage): default version of CESR to use
+                                  None means do not change default
 
 
         New Logic:
@@ -570,7 +651,7 @@ class Parser:
 
     def msgParsator(self, ims=None, framed=True, pipeline=False,
                     kvy=None, tvy=None, exc=None, rvy=None, vry=None,
-                    local=None, version=Vrsn_1_0):
+                    local=None, version=None):
         """Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
         stream, ims, and dispatches processing of message with attachments.
@@ -599,7 +680,8 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): instance of genera version of CESR code tables
+            version (Versionage): default version of CESR to use.
+                                  None means do not change default
 
         Logic:
             Currently only support couters on attachments not on combined or
@@ -618,6 +700,8 @@ class Parser:
 
 
         """
+        self.version = version  # when not None also sets .curver which sets .methods
+
         local = local if local is not None else self.local
         local = True if local else False
 
@@ -638,7 +722,7 @@ class Parser:
 
         while True:  # extract, deserialize, and strip message from ims
             try:
-                serder = serdery.reap(ims=ims)  # can set version here
+                serder = serdery.reap(ims=ims, genus=self.genus, gvrsn=self.curver)
             except kering.ShortageError as ex:  # need more bytes
                 if framed:  # full frame before extracting
                     raise  # incomplete frame so abort by raising error
