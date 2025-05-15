@@ -4,8 +4,9 @@ keri.core.parsing module
 
 message stream parsing support
 """
-
+import copy
 import logging
+from dataclasses import asdict
 
 from .. import kering
 from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
@@ -61,6 +62,33 @@ class Parser:
         _curver (Versionage): value for .curver property
 
     """
+    Methods = copy.deepcopy(Counter.Codes)  # make copy
+    for minor in Methods.values():  # assign None as default val for all possible code names
+        for key in minor:
+            minor[key] = {key: None for key in asdict(minor[key])}
+
+    # reassign method name val for those code names that have a supporting method
+    Methods[1][0][Codens.ControllerIdxSigs] = "_ControllerIdxSigs1"
+    Methods[2][0][Codens.ControllerIdxSigs] = "_ControllerIdxSigs2"
+    Methods[2][0][Codens.BigControllerIdxSigs] = "_ControllerIdxSigs2"
+
+    Methods[1][0][Codens.WitnessIdxSigs] = "_WitnessIdxSigs1"
+    Methods[2][0][Codens.WitnessIdxSigs] = "_WitnessIdxSigs2"
+    Methods[2][0][Codens.BigWitnessIdxSigs] = "_WitnessIdxSigs2"
+
+    Methods[1][0][Codens.NonTransReceiptCouples] = "_NonTransReceiptCouples1"
+    Methods[2][0][Codens.NonTransReceiptCouples] = "_NonTransReceiptCouples2"
+    Methods[2][0][Codens.BigNonTransReceiptCouples] = "_NonTransReceiptCouples2"
+
+    Methods[1][0][Codens.TransReceiptQuadruples] = "_TransReceiptQuadruples1"
+    Methods[2][0][Codens.TransReceiptQuadruples] = "_TransReceiptQuadruples2"
+    Methods[2][0][Codens.BigTransReceiptQuadruples] = "_TransReceiptQuadruples2"
+
+    Methods[1][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups1"
+    Methods[2][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups2"
+    Methods[2][0][Codens.BigTransIdxSigGroups] = "_TransIdxSigGroups2"
+
+
 
     def __init__(self, ims=None, framed=True, pipeline=False, kvy=None,
                  tvy=None, exc=None, rvy=None, vry=None, local=False,

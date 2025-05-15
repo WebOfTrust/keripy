@@ -317,8 +317,6 @@ class Counter:
             minor[key] = {val: key for key, val in asdict(minor[key]).items()}
 
 
-
-
     # Hards table maps from bytes Base64 first two code chars to int of
     # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
     # is always > 0 and hs + ss = fs always
