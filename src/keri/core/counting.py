@@ -119,20 +119,20 @@ class CounterCodex_2_0(MapDom):
     BigTransIdxSigGroups: str = '--O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
     TransLastIdxSigGroups: str = '-P'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
     BigTransLastIdxSigGroups: str = '--P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    BigSealSourceCouples: str = '--Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    BigSealSourceTriples: str = '--R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    PathedMaterialGroup: str = '-S'  # Pathed Material Group.
-    BigPathedMaterialGroup: str = '--S'  # Big Pathed Material Group.
+    PathedMaterialGroup: str = '-Q'  # Pathed Material Group.
+    BigPathedMaterialGroup: str = '--Q'  # Big Pathed Material Group.
+    MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '--R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    SealSourceTriples: str = '-S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '--S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    SealSourceCouples: str = '-T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '--T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    SealSourceLastSingles: str = '-U'  # Seal Source Couple(s), pre of last source sealing or sealed event.
+    BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
     DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
     BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
-    MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BigMerkleRootSealSingles: str = '--W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '--X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing or sealed event.
-    BigSealSourceLastSingles: str = '--Y'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
+    BackerRegistrarSealCouples: str = '-W'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--W'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
@@ -163,18 +163,19 @@ class SealCodex_2_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    BigSealSourceCouples: str = '--Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    BigSealSourceTriples: str = '--R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '--R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    SealSourceTriples: str = '-S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '--S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    SealSourceCouples: str = '-T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '--T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    SealSourceLastSingles: str = '-U'  # Seal Source Couple(s), pre of last source sealing event.
+    BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing event.
     DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
     BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
-    MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BigMerkleRootSealSingles: str = '--W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '--X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing event.
-    BigSealSourceLastSingles: str = '--Y'  # Big Seal Source Couple(s), pre of last source sealing event.
+    BackerRegistrarSealCouples: str = '-W'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--W'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -322,7 +323,6 @@ class Counter:
     # is always > 0 and hs + ss = fs always
     Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
-    Hards.update([('-0', 3)])
     Hards.update([('--', 3)])
     Hards.update([('-_', 5)])
 
@@ -403,14 +403,14 @@ class Counter:
                 '--R': Cizage(hs=3, ss=5, fs=8),
                 '-S': Cizage(hs=2, ss=2, fs=4),
                 '--S': Cizage(hs=3, ss=5, fs=8),
+                '-T': Cizage(hs=2, ss=2, fs=4),
+                '--T': Cizage(hs=3, ss=5, fs=8),
+                '-U': Cizage(hs=2, ss=2, fs=4),
+                '--U': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
                 '--V': Cizage(hs=3, ss=5, fs=8),
                 '-W': Cizage(hs=2, ss=2, fs=4),
                 '--W': Cizage(hs=3, ss=5, fs=8),
-                '-X': Cizage(hs=2, ss=2, fs=4),
-                '--X': Cizage(hs=3, ss=5, fs=8),
-                '-Y': Cizage(hs=2, ss=2, fs=4),
-                '--Y': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
                 '--Z': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),

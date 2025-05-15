@@ -44,18 +44,18 @@ def test_annot():
     assert dms == ims
 
     # complex inception
-    ims = (b'-FDCYKERICAAXicpEKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiEKIu'
-          b'A20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiMAAAMAAC-IAhDG9XhvcVryHj'
+    ims = (b'-FDCYKERICAAXicpECOqZSB_PPnDZxlVaT3y-vZ_4nXbnp7Xf2Wlt4GKZvg0ECOq'
+          b'ZSB_PPnDZxlVaT3y-vZ_4nXbnp7Xf2Wlt4GKZvg0MAAAMAAC-IAhDG9XhvcVryHj'
           b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
           b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-IAh'
           b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
           b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
           b'ZEyPMAAD-IAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
           b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
-          b'gXZ2WYbr3AiPY1M0-IABXDND-IA8-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+          b'gXZ2WYbr3AiPY1M0-IABXDND-IA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
           b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
           b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
           b'ZJGJqQZpZEyP')
 
 
@@ -69,13 +69,13 @@ def test_annot():
 
 
     # interaction
-    ims = (b'-FB6YKERICAAXixnEHXLwMJsZLyG643VW8Do1cqqiMxD_E65Mc3Z1we6vTaREKIu'
-          b'A20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiMAABEKIuA20I5q6IrgAHrX-g'
-          b'kAt4Og17Ebu5CDBrRvh8RToi-IBU-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+    ims = (b'-FB6YKERICAAXixnEKQNdkIdstatJzzDzQy1DasaJ41fF1gHZlK-KZmsZnQGECOq'
+          b'ZSB_PPnDZxlVaT3y-vZ_4nXbnp7Xf2Wlt4GKZvg0MAABECOqZSB_PPnDZxlVaT3y'
+          b'-vZ_4nXbnp7Xf2Wlt4GKZvg0-IBU-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
           b'4fBJre3NGwTQMAACEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
           b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAAiEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMABDEEbufBpvagqe9kijKISOoQPYFEOpy22C'
-          b'ZJGJqQZpZEyP-RAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACA'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMABDEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'ZJGJqQZpZEyP-SAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACA'
           b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_')
 
 
@@ -89,9 +89,9 @@ def test_annot():
 
 
     # Rotation
-    ims = (b'-FCGYKERICAAXrotEDHlTlOcSXZInbTE4iXzb1iFjZcxJZn3C3UXhckb3uQmEKIu'
-          b'A20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiMAACEHXLwMJsZLyG643VW8Do'
-          b'1cqqiMxD_E65Mc3Z1we6vTaRMAAC-IAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1'
+    ims = (b'-FCGYKERICAAXrotEN10D53PN-WM9kfUssQ6mtBT-GsIeC9YNzNvTEqOt4CsECOq'
+          b'ZSB_PPnDZxlVaT3y-vZ_4nXbnp7Xf2Wlt4GKZvg0MAACEKQNdkIdstatJzzDzQy1'
+          b'DasaJ41fF1gHZlK-KZmsZnQGMAAC-IAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1'
           b'k4t2nm1C1A68DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQDKhYdMBe'
           b'P6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-IAhEBvDSpcj3y0y9W2-1GzY'
           b'J85KEkDIPxu4y_TxAK49k7ciEEb97lh2oOd_yM3meBaRX5xSs8mIeBoPdhOTgVkd'
@@ -110,20 +110,20 @@ def test_annot():
 
 
     # Delegated Inception
-    ims = (b'-FDeYKERICAAXdipEKCFMk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjCEKCF'
-          b'Mk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjCMAAA4AADA1s2c1s2c1s2-IAh'
+    ims = (b'-FDeYKERICAAXdipEFbwMJRrD4d6UZPjI8OIxj6jz5kRoBUpHesD4ixqc7wSEFbw'
+          b'MJRrD4d6UZPjI8OIxj6jz5kRoBUpHesD4ixqc7wSMAAA4AADA1s2c1s2c1s2-IAh'
           b'DIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uVDN7WiKyjLLBTK92xayCu'
           b'ddZsBuwPmD2BKrl83h1xEUtiDOE5jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl'
           b'5nfY4AADA1s2c1s2c1s2-IAhEKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ'
           b'44DSEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZEHgewy_ymPxtSFwu'
           b'X2KaI_mPmoIUkxClviX3f-M38kCDMAAD-IAhBIR8GACw4z2GC5_XoReU4DMKbqi6'
           b'-EdbgDZUAobRb8uVBN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiBOE5'
-          b'jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY-IAA-IBI-RAuDIR8GACw4z2G'
+          b'jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY-IAA-IBI-SAuDIR8GACw4z2G'
           b'C5_XoReU4DMKbqi6-EdbgDZUAobRb8uVMAADEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
           b'iD1D9Qx0MagJ44DSDN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiMAAE'
-          b'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-QAYMAAVEHgewy_ymPxt'
+          b'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-TAYMAAVEHgewy_ymPxt'
           b'SFwuX2KaI_mPmoIUkxClviX3f-M38kCDMD4SEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
-          b'iD1D9Qx0MagJ44DSEKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi')
+          b'iD1D9Qx0MagJ44DSECOqZSB_PPnDZxlVaT3y-vZ_4nXbnp7Xf2Wlt4GKZvg0')
 
     bms = bytearray(ims)  # make copy
     print(f"incoming = \n{ims}\n")
@@ -135,9 +135,9 @@ def test_annot():
 
 
     # Delegated Rotatation
-    ims = (b'-FBaYKERICAAXdrtEKfRY6YrpqUU0HyKWMGvNtzuZCaeMcIBrdKzHAqpmtTAEKCF'
-          b'Mk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjCMAABEKCFMk4nmn3t8jdC1pB_'
-          b'-Qmp7w8EROvdYaxgru7vHOjCMAAB-IALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWl'
+    ims = (b'-FBaYKERICAAXdrtEDaMBtDlkO6JeWE6im3Wqj-jF6Jg3yQIs7zyurck-YQLEFbw'
+          b'MJRrD4d6UZPjI8OIxj6jz5kRoBUpHesD4ixqc7wSMAABEFbwMJRrD4d6UZPjI8OI'
+          b'xj6jz5kRoBUpHesD4ixqc7wSMAAB-IALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWl'
           b'K9NciJop9N4fMAAB-IALENX_LTL97uOSOkA1PEzam9vtmCLPprnbcpi71wXpmhFF'
           b'MAAD-IALBIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV-IALBJ0pLe3f'
           b'2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f-IAA-IAA')
