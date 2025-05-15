@@ -28,10 +28,10 @@ class GenusCodex(MapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    KERI_ACDC_SPAC: str = '--AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
-    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    SPAC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    KERI_ACDC_SPAC: str = '-_AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
+    KERI: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    ACDC: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    SPAC: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
 
 
     def __iter__(self):
@@ -62,14 +62,14 @@ class CounterCodex_1_0(MapDom):
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
     PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    BigPathedMaterialGroup: str = '-0L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
     GenericGroup: str = '-W'  # Generic Material Quadlets
-    BigGenericGroup: str = '-0W'  # Big Generic Material Quadlets
+    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
-    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
-    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+    BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
 
 
     def __iter__(self):
@@ -88,54 +88,54 @@ class CounterCodex_2_0(MapDom):
     Example: codex[tag]
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
-    BigGenericGroup: str = '-0A'  # Big Generic Group (Universal with Override).
+    BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
     MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageGroup: str = '-0B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BigMessageGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
-    BigAttachmentGroup: str = '-0C'  # Big Attachments Only Group (Universal with Override).
+    BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
-    BigDatagramSegmentGroup: str = '-0D'  # Big Datagram Segment Group (Universal).
+    BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
-    BigESSRWrapperGroup: str = '-0E'  # Big ESSR Wrapper Group (Universal).
+    BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
     FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '-0F'  # Big Fixed Field Message Body Group (Universal).
+    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '-0G'  # Big Field Map Message Body Group (Universal).
+    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
     GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
-    BigGenericMapGroup: str = '-0H'  # Big Generic Field Map Group (Universal).
+    BigGenericMapGroup: str = '--H'  # Big Generic Field Map Group (Universal).
     GenericListGroup: str = '-I'  # Generic List Group (Universal).
-    BigGenericListGroup: str = '-0I'  # Big Generic List Group (Universal).
+    BigGenericListGroup: str = '--I'  # Big Generic List Group (Universal).
     ControllerIdxSigs: str = '-J'  # Controller Indexed Signature(s) of qb64.
-    BigControllerIdxSigs: str = '-0J'  # Big Controller Indexed Signature(s) of qb64.
+    BigControllerIdxSigs: str = '--J'  # Big Controller Indexed Signature(s) of qb64.
     WitnessIdxSigs: str = '-K'  # Witness Indexed Signature(s) of qb64.
-    BigWitnessIdxSigs: str = '-0K'  # Big Witness Indexed Signature(s) of qb64.
+    BigWitnessIdxSigs: str = '--K'  # Big Witness Indexed Signature(s) of qb64.
     NonTransReceiptCouples: str = '-L'  # NonTrans Receipt Couple(s), pre+cig.
-    BigNonTransReceiptCouples: str = '-0L'  # Big NonTrans Receipt Couple(s), pre+cig.
+    BigNonTransReceiptCouples: str = '--L'  # Big NonTrans Receipt Couple(s), pre+cig.
     TransReceiptQuadruples: str = '-M'  # Trans Receipt Quadruple(s), pre+snu+dig+sig.
-    BigTransReceiptQuadruples: str = '-0M'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
+    BigTransReceiptQuadruples: str = '--M'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
     FirstSeenReplayCouples: str = '-N'  # First Seen Replay Couple(s), fnu+dts.
-    BigFirstSeenReplayCouples: str = '-0N'  # First Seen Replay Couple(s), fnu+dts.
+    BigFirstSeenReplayCouples: str = '--N'  # First Seen Replay Couple(s), fnu+dts.
     TransIdxSigGroups: str = '-O'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    BigTransIdxSigGroups: str = '-0O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    BigTransIdxSigGroups: str = '--O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
     TransLastIdxSigGroups: str = '-P'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    BigTransLastIdxSigGroups: str = '-0P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
+    BigTransLastIdxSigGroups: str = '--P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
     SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    BigSealSourceCouples: str = '-0Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '--Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
     SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '--R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
     PathedMaterialGroup: str = '-S'  # Pathed Material Group.
-    BigPathedMaterialGroup: str = '-0S'  # Big Pathed Material Group.
+    BigPathedMaterialGroup: str = '--S'  # Big Pathed Material Group.
     DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
-    BigDigestSealSingles: str = '-0V'  # Big Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BigMerkleRootSealSingles: str = '-0W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '--W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
     BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '-0X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
     SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing or sealed event.
-    BigSealSourceLastSingles: str = '-0Y'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
+    BigSealSourceLastSingles: str = '--Y'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
-    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group.
-    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
+    BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -164,17 +164,17 @@ class SealCodex_2_0(MapDom):
     Example: codex[tag]
     """
     SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    BigSealSourceCouples: str = '-0Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '--Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
     SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '--R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
     DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
-    BigDigestSealSingles: str = '-0V'  # Big Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BigMerkleRootSealSingles: str = '-0W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '--W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
     BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '-0X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
     SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing event.
-    BigSealSourceLastSingles: str = '-0Y'  # Big Seal Source Couple(s), pre of last source sealing event.
+    BigSealSourceLastSingles: str = '--Y'  # Big Seal Source Couple(s), pre of last source sealing event.
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -323,7 +323,8 @@ class Counter:
     Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
     Hards.update([('-0', 3)])
-    Hards.update([('--', 5)])
+    Hards.update([('--', 3)])
+    Hards.update([('-_', 5)])
 
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
@@ -350,14 +351,14 @@ class Counter:
                 '-H': Cizage(hs=2, ss=2, fs=4),
                 '-I': Cizage(hs=2, ss=2, fs=4),
                 '-L': Cizage(hs=2, ss=2, fs=4),
-                '-0L': Cizage(hs=3, ss=5, fs=8),
+                '--L': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
-                '-0V': Cizage(hs=3, ss=5, fs=8),
+                '--V': Cizage(hs=3, ss=5, fs=8),
                 '-W': Cizage(hs=2, ss=2, fs=4),
-                '-0W': Cizage(hs=3, ss=5, fs=8),
+                '--W': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
-                '-0Z': Cizage(hs=3, ss=5, fs=8),
-                '--AAA': Cizage(hs=5, ss=3, fs=8),
+                '--Z': Cizage(hs=3, ss=5, fs=8),
+                '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
         Vrsn_2_0.major: \
@@ -365,54 +366,54 @@ class Counter:
             Vrsn_2_0.minor: \
             {
                 '-A': Cizage(hs=2, ss=2, fs=4),
-                '-0A': Cizage(hs=3, ss=5, fs=8),
+                '--A': Cizage(hs=3, ss=5, fs=8),
                 '-B': Cizage(hs=2, ss=2, fs=4),
-                '-0B': Cizage(hs=3, ss=5, fs=8),
+                '--B': Cizage(hs=3, ss=5, fs=8),
                 '-C': Cizage(hs=2, ss=2, fs=4),
-                '-0C': Cizage(hs=3, ss=5, fs=8),
+                '--C': Cizage(hs=3, ss=5, fs=8),
                 '-D': Cizage(hs=2, ss=2, fs=4),
-                '-0D': Cizage(hs=3, ss=5, fs=8),
+                '--D': Cizage(hs=3, ss=5, fs=8),
                 '-E': Cizage(hs=2, ss=2, fs=4),
-                '-0E': Cizage(hs=3, ss=5, fs=8),
+                '--E': Cizage(hs=3, ss=5, fs=8),
                 '-F': Cizage(hs=2, ss=2, fs=4),
-                '-0F': Cizage(hs=3, ss=5, fs=8),
+                '--F': Cizage(hs=3, ss=5, fs=8),
                 '-G': Cizage(hs=2, ss=2, fs=4),
-                '-0G': Cizage(hs=3, ss=5, fs=8,),
+                '--G': Cizage(hs=3, ss=5, fs=8,),
                 '-H': Cizage(hs=2, ss=2, fs=4),
-                '-0H': Cizage(hs=3, ss=5, fs=8),
+                '--H': Cizage(hs=3, ss=5, fs=8),
                 '-I': Cizage(hs=2, ss=2, fs=4),
-                '-0I': Cizage(hs=3, ss=5, fs=8),
+                '--I': Cizage(hs=3, ss=5, fs=8),
                 '-J': Cizage(hs=2, ss=2, fs=4,),
-                '-0J': Cizage(hs=3, ss=5, fs=8),
+                '--J': Cizage(hs=3, ss=5, fs=8),
                 '-K': Cizage(hs=2, ss=2, fs=4),
-                '-0K': Cizage(hs=3, ss=5, fs=8),
+                '--K': Cizage(hs=3, ss=5, fs=8),
                 '-L': Cizage(hs=2, ss=2, fs=4),
-                '-0L': Cizage(hs=3, ss=5, fs=8),
+                '--L': Cizage(hs=3, ss=5, fs=8),
                 '-M': Cizage(hs=2, ss=2, fs=4),
-                '-0M': Cizage(hs=3, ss=5, fs=8),
+                '--M': Cizage(hs=3, ss=5, fs=8),
                 '-N': Cizage(hs=2, ss=2, fs=4),
-                '-0N': Cizage(hs=3, ss=5, fs=8),
+                '--N': Cizage(hs=3, ss=5, fs=8),
                 '-O': Cizage(hs=2, ss=2, fs=4),
-                '-0O': Cizage(hs=3, ss=5, fs=8),
+                '--O': Cizage(hs=3, ss=5, fs=8),
                 '-P': Cizage(hs=2, ss=2, fs=4),
-                '-0P': Cizage(hs=3, ss=5, fs=8),
+                '--P': Cizage(hs=3, ss=5, fs=8),
                 '-Q': Cizage(hs=2, ss=2, fs=4),
-                '-0Q': Cizage(hs=3, ss=5, fs=8),
+                '--Q': Cizage(hs=3, ss=5, fs=8),
                 '-R': Cizage(hs=2, ss=2, fs=4),
-                '-0R': Cizage(hs=3, ss=5, fs=8),
+                '--R': Cizage(hs=3, ss=5, fs=8),
                 '-S': Cizage(hs=2, ss=2, fs=4),
-                '-0S': Cizage(hs=3, ss=5, fs=8),
+                '--S': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
-                '-0V': Cizage(hs=3, ss=5, fs=8),
+                '--V': Cizage(hs=3, ss=5, fs=8),
                 '-W': Cizage(hs=2, ss=2, fs=4),
-                '-0W': Cizage(hs=3, ss=5, fs=8),
+                '--W': Cizage(hs=3, ss=5, fs=8),
                 '-X': Cizage(hs=2, ss=2, fs=4),
-                '-0X': Cizage(hs=3, ss=5, fs=8),
+                '--X': Cizage(hs=3, ss=5, fs=8),
                 '-Y': Cizage(hs=2, ss=2, fs=4),
-                '-0Y': Cizage(hs=3, ss=5, fs=8),
+                '--Y': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
-                '-0Z': Cizage(hs=3, ss=5, fs=8),
-                '--AAA': Cizage(hs=5, ss=3, fs=8),
+                '--Z': Cizage(hs=3, ss=5, fs=8),
+                '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
     }
@@ -488,14 +489,14 @@ class Counter:
             if count is None:
                 count = 1 if countB64 is None else b64ToInt(countB64)
 
-            if code[1] not in ("123456789-_"):  # small [A-Z,a-z] or large [0]
+            if code[1] not in ("0123456789_"):  # small or opcode [A-Z,a-z] or large [-]
                 if ss not in (2, 5):  # not valid dynamic soft sizes
                     raise kering.InvalidVarIndexError(f"Invalid {ss=} "
                                                       f"for {code=}.")
                 # dynamically promote code based on count
-                if code[1] != '0' and count > (64 ** 2 - 1):  # small code but large count
+                if code[1] != '-' and count > (64 ** 2 - 1):  # small code but large count
                     # elevate code due to large count
-                    code = f"-0{code[1]}"  # promote hard
+                    code = f"--{code[1]}"  # promote hard
                     ss = 5
 
             if count < 0 or count > (64 ** ss - 1):

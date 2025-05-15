@@ -34,17 +34,17 @@ def test_genus_codex():
 
     assert asdict(GenDex) == \
     {
-        'KERI_ACDC_SPAC': '--AAA',
-        'KERI': '--AAA',
-        'ACDC': '--AAA',
-        'SPAC': '--AAA'
+        'KERI_ACDC_SPAC': '-_AAA',
+        'KERI': '-_AAA',
+        'ACDC': '-_AAA',
+        'SPAC': '-_AAA'
     }
 
-    assert '--AAA' in GenDex
-    assert GenDex.KERI == "--AAA"
-    assert GenDex.ACDC == "--AAA"
-    assert GenDex.SPAC == "--AAA"
-    assert GenDex.KERI_ACDC_SPAC == "--AAA"
+    assert '-_AAA' in GenDex
+    assert GenDex.KERI == "-_AAA"
+    assert GenDex.ACDC == "-_AAA"
+    assert GenDex.SPAC == "-_AAA"
+    assert GenDex.KERI_ACDC_SPAC == "-_AAA"
     assert GenDex.KERI == GenDex.ACDC
 
     assert hasattr(GenDex, "KERI")
@@ -74,68 +74,68 @@ def test_codexes_tags():
         'TransLastIdxSigGroups': '-H',
         'SealSourceTriples': '-I',
         'PathedMaterialGroup': '-L',
-        'BigPathedMaterialGroup': '-0L',
+        'BigPathedMaterialGroup': '--L',
         'AttachmentGroup': '-V',
-        'BigAttachmentGroup': '-0V',
+        'BigAttachmentGroup': '--V',
         'GenericGroup': '-W',
-        'BigGenericGroup': '-0W',
+        'BigGenericGroup': '--W',
         'ESSRPayloadGroup': '-Z',
-        'BigESSRPayloadGroup': '-0Z',
-        'KERIACDCGenusVersion': '--AAA'
+        'BigESSRPayloadGroup': '--Z',
+        'KERIACDCGenusVersion': '-_AAA'
     }
 
 
     assert asdict(counting.CtrDex_2_0) == \
     {
         'GenericGroup': '-A',
-        'BigGenericGroup': '-0A',
+        'BigGenericGroup': '--A',
         'MessageGroup': '-B',
-        'BigMessageGroup': '-0B',
+        'BigMessageGroup': '--B',
         'AttachmentGroup': '-C',
-        'BigAttachmentGroup': '-0C',
+        'BigAttachmentGroup': '--C',
         'DatagramSegmentGroup': '-D',
-        'BigDatagramSegmentGroup': '-0D',
+        'BigDatagramSegmentGroup': '--D',
         'ESSRWrapperGroup': '-E',
-        'BigESSRWrapperGroup': '-0E',
+        'BigESSRWrapperGroup': '--E',
         'FixedMessageBodyGroup': '-F',
-        'BigFixedMessageBodyGroup': '-0F',
+        'BigFixedMessageBodyGroup': '--F',
         'MapMessageBodyGroup': '-G',
-        'BigMapMessageBodyGroup': '-0G',
+        'BigMapMessageBodyGroup': '--G',
         'GenericMapGroup': '-H',
-        'BigGenericMapGroup': '-0H',
+        'BigGenericMapGroup': '--H',
         'GenericListGroup': '-I',
-        'BigGenericListGroup': '-0I',
+        'BigGenericListGroup': '--I',
         'ControllerIdxSigs': '-J',
-        'BigControllerIdxSigs': '-0J',
+        'BigControllerIdxSigs': '--J',
         'WitnessIdxSigs': '-K',
-        'BigWitnessIdxSigs': '-0K',
+        'BigWitnessIdxSigs': '--K',
         'NonTransReceiptCouples': '-L',
-        'BigNonTransReceiptCouples': '-0L',
+        'BigNonTransReceiptCouples': '--L',
         'TransReceiptQuadruples': '-M',
-        'BigTransReceiptQuadruples': '-0M',
+        'BigTransReceiptQuadruples': '--M',
         'FirstSeenReplayCouples': '-N',
-        'BigFirstSeenReplayCouples': '-0N',
+        'BigFirstSeenReplayCouples': '--N',
         'TransIdxSigGroups': '-O',
-        'BigTransIdxSigGroups': '-0O',
+        'BigTransIdxSigGroups': '--O',
         'TransLastIdxSigGroups': '-P',
-        'BigTransLastIdxSigGroups': '-0P',
+        'BigTransLastIdxSigGroups': '--P',
         'SealSourceCouples': '-Q',
-        'BigSealSourceCouples': '-0Q',
+        'BigSealSourceCouples': '--Q',
         'SealSourceTriples': '-R',
-        'BigSealSourceTriples': '-0R',
+        'BigSealSourceTriples': '--R',
         'PathedMaterialGroup': '-S',
-        'BigPathedMaterialGroup': '-0S',
+        'BigPathedMaterialGroup': '--S',
         'DigestSealSingles': '-V',
-        'BigDigestSealSingles': '-0V',
+        'BigDigestSealSingles': '--V',
         'MerkleRootSealSingles': '-W',
-        'BigMerkleRootSealSingles': '-0W',
+        'BigMerkleRootSealSingles': '--W',
         'BackerRegistrarSealCouples': '-X',
-        'BigBackerRegistrarSealCouples': '-0X',
+        'BigBackerRegistrarSealCouples': '--X',
         'SealSourceLastSingles': '-Y',
-        'BigSealSourceLastSingles': '-0Y',
+        'BigSealSourceLastSingles': '--Y',
         'ESSRPayloadGroup': '-Z',
-        'BigESSRPayloadGroup': '-0Z',
-        'KERIACDCGenusVersion': '--AAA'
+        'BigESSRPayloadGroup': '--Z',
+        'KERIACDCGenusVersion': '-_AAA'
     }
 
     assert counting.CodeNames == \
@@ -253,17 +253,17 @@ def test_codexes_tags():
     assert asdict(counting.SealDex_2_0) == \
     {
         'SealSourceCouples': '-Q',
-        'BigSealSourceCouples': '-0Q',
+        'BigSealSourceCouples': '--Q',
         'SealSourceTriples': '-R',
-        'BigSealSourceTriples': '-0R',
+        'BigSealSourceTriples': '--R',
         'DigestSealSingles': '-V',
-        'BigDigestSealSingles': '-0V',
+        'BigDigestSealSingles': '--V',
         'MerkleRootSealSingles': '-W',
-        'BigMerkleRootSealSingles': '-0W',
+        'BigMerkleRootSealSingles': '--W',
         'BackerRegistrarSealCouples': '-X',
-        'BigBackerRegistrarSealCouples': '-0X',
+        'BigBackerRegistrarSealCouples': '--X',
         'SealSourceLastSingles': '-Y',
-        'BigSealSourceLastSingles': '-0Y',
+        'BigSealSourceLastSingles': '--Y',
     }
 
 
@@ -303,68 +303,68 @@ def test_counter_class():
                     '-H': 'TransLastIdxSigGroups',
                     '-I': 'SealSourceTriples',
                     '-L': 'PathedMaterialGroup',
-                    '-0L': 'BigPathedMaterialGroup',
+                    '--L': 'BigPathedMaterialGroup',
                     '-V': 'AttachmentGroup',
-                    '-0V': 'BigAttachmentGroup',
+                    '--V': 'BigAttachmentGroup',
                     '-W': 'GenericGroup',
-                    '-0W': 'BigGenericGroup',
+                    '--W': 'BigGenericGroup',
                     '-Z': 'ESSRPayloadGroup',
-                    '-0Z': 'BigESSRPayloadGroup',
-                    '--AAA': 'KERIACDCGenusVersion',
+                    '--Z': 'BigESSRPayloadGroup',
+                    '-_AAA': 'KERIACDCGenusVersion',
                 }
             },
         2:
             {0:
                 {
                     '-A': 'GenericGroup',
-                    '-0A': 'BigGenericGroup',
+                    '--A': 'BigGenericGroup',
                     '-B': 'MessageGroup',
-                    '-0B': 'BigMessageGroup',
+                    '--B': 'BigMessageGroup',
                     '-C': 'AttachmentGroup',
-                    '-0C': 'BigAttachmentGroup',
+                    '--C': 'BigAttachmentGroup',
                     '-D': 'DatagramSegmentGroup',
-                    '-0D': 'BigDatagramSegmentGroup',
+                    '--D': 'BigDatagramSegmentGroup',
                     '-E': 'ESSRWrapperGroup',
-                    '-0E': 'BigESSRWrapperGroup',
+                    '--E': 'BigESSRWrapperGroup',
                     '-F': 'FixedMessageBodyGroup',
-                    '-0F': 'BigFixedMessageBodyGroup',
+                    '--F': 'BigFixedMessageBodyGroup',
                     '-G': 'MapMessageBodyGroup',
-                    '-0G': 'BigMapMessageBodyGroup',
+                    '--G': 'BigMapMessageBodyGroup',
                     '-H': 'GenericMapGroup',
-                    '-0H': 'BigGenericMapGroup',
+                    '--H': 'BigGenericMapGroup',
                     '-I': 'GenericListGroup',
-                    '-0I': 'BigGenericListGroup',
+                    '--I': 'BigGenericListGroup',
                     '-J': 'ControllerIdxSigs',
-                    '-0J': 'BigControllerIdxSigs',
+                    '--J': 'BigControllerIdxSigs',
                     '-K': 'WitnessIdxSigs',
-                    '-0K': 'BigWitnessIdxSigs',
+                    '--K': 'BigWitnessIdxSigs',
                     '-L': 'NonTransReceiptCouples',
-                    '-0L': 'BigNonTransReceiptCouples',
+                    '--L': 'BigNonTransReceiptCouples',
                     '-M': 'TransReceiptQuadruples',
-                    '-0M': 'BigTransReceiptQuadruples',
+                    '--M': 'BigTransReceiptQuadruples',
                     '-N': 'FirstSeenReplayCouples',
-                    '-0N': 'BigFirstSeenReplayCouples',
+                    '--N': 'BigFirstSeenReplayCouples',
                     '-O': 'TransIdxSigGroups',
-                    '-0O': 'BigTransIdxSigGroups',
+                    '--O': 'BigTransIdxSigGroups',
                     '-P': 'TransLastIdxSigGroups',
-                    '-0P': 'BigTransLastIdxSigGroups',
+                    '--P': 'BigTransLastIdxSigGroups',
                     '-Q': 'SealSourceCouples',
-                    '-0Q': 'BigSealSourceCouples',
+                    '--Q': 'BigSealSourceCouples',
                     '-R': 'SealSourceTriples',
-                    '-0R': 'BigSealSourceTriples',
+                    '--R': 'BigSealSourceTriples',
                     '-S': 'PathedMaterialGroup',
-                    '-0S': 'BigPathedMaterialGroup',
+                    '--S': 'BigPathedMaterialGroup',
                     '-V': 'DigestSealSingles',
-                    '-0V': 'BigDigestSealSingles',
+                    '--V': 'BigDigestSealSingles',
                     '-W': 'MerkleRootSealSingles',
-                    '-0W': 'BigMerkleRootSealSingles',
+                    '--W': 'BigMerkleRootSealSingles',
                     '-X': 'BackerRegistrarSealCouples',
-                    '-0X': 'BigBackerRegistrarSealCouples',
+                    '--X': 'BigBackerRegistrarSealCouples',
                     '-Y': 'SealSourceLastSingles',
-                    '-0Y': 'BigSealSourceLastSingles',
+                    '--Y': 'BigSealSourceLastSingles',
                     '-Z': 'ESSRPayloadGroup',
-                    '-0Z': 'BigESSRPayloadGroup',
-                    '--AAA': 'KERIACDCGenusVersion'
+                    '--Z': 'BigESSRPayloadGroup',
+                    '-_AAA': 'KERIACDCGenusVersion'
                 }
             }
         }
@@ -387,14 +387,14 @@ def test_counter_class():
                     '-H': Cizage(hs=2, ss=2, fs=4),
                     '-I': Cizage(hs=2, ss=2, fs=4),
                     '-L': Cizage(hs=2, ss=2, fs=4),
-                    '-0L': Cizage(hs=3, ss=5, fs=8),
+                    '--L': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
-                    '-0V': Cizage(hs=3, ss=5, fs=8),
+                    '--V': Cizage(hs=3, ss=5, fs=8),
                     '-W': Cizage(hs=2, ss=2, fs=4),
-                    '-0W': Cizage(hs=3, ss=5, fs=8),
+                    '--W': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
-                    '-0Z': Cizage(hs=3, ss=5, fs=8),
-                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                    '--Z': Cizage(hs=3, ss=5, fs=8),
+                    '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             },
             2:
@@ -402,54 +402,54 @@ def test_counter_class():
                 0:
                 {
                     '-A': Cizage(hs=2, ss=2, fs=4),
-                    '-0A': Cizage(hs=3, ss=5, fs=8),
+                    '--A': Cizage(hs=3, ss=5, fs=8),
                     '-B': Cizage(hs=2, ss=2, fs=4),
-                    '-0B': Cizage(hs=3, ss=5, fs=8),
+                    '--B': Cizage(hs=3, ss=5, fs=8),
                     '-C': Cizage(hs=2, ss=2, fs=4),
-                    '-0C': Cizage(hs=3, ss=5, fs=8),
+                    '--C': Cizage(hs=3, ss=5, fs=8),
                     '-D': Cizage(hs=2, ss=2, fs=4),
-                    '-0D': Cizage(hs=3, ss=5, fs=8),
+                    '--D': Cizage(hs=3, ss=5, fs=8),
                     '-E': Cizage(hs=2, ss=2, fs=4),
-                    '-0E': Cizage(hs=3, ss=5, fs=8),
+                    '--E': Cizage(hs=3, ss=5, fs=8),
                     '-F': Cizage(hs=2, ss=2, fs=4),
-                    '-0F': Cizage(hs=3, ss=5, fs=8),
+                    '--F': Cizage(hs=3, ss=5, fs=8),
                     '-G': Cizage(hs=2, ss=2, fs=4),
-                    '-0G': Cizage(hs=3, ss=5, fs=8),
+                    '--G': Cizage(hs=3, ss=5, fs=8),
                     '-H': Cizage(hs=2, ss=2, fs=4),
-                    '-0H': Cizage(hs=3, ss=5, fs=8),
+                    '--H': Cizage(hs=3, ss=5, fs=8),
                     '-I': Cizage(hs=2, ss=2, fs=4),
-                    '-0I': Cizage(hs=3, ss=5, fs=8),
+                    '--I': Cizage(hs=3, ss=5, fs=8),
                     '-J': Cizage(hs=2, ss=2, fs=4),
-                    '-0J': Cizage(hs=3, ss=5, fs=8),
+                    '--J': Cizage(hs=3, ss=5, fs=8),
                     '-K': Cizage(hs=2, ss=2, fs=4),
-                    '-0K': Cizage(hs=3, ss=5, fs=8),
+                    '--K': Cizage(hs=3, ss=5, fs=8),
                     '-L': Cizage(hs=2, ss=2, fs=4),
-                    '-0L': Cizage(hs=3, ss=5, fs=8),
+                    '--L': Cizage(hs=3, ss=5, fs=8),
                     '-M': Cizage(hs=2, ss=2, fs=4),
-                    '-0M': Cizage(hs=3, ss=5, fs=8),
+                    '--M': Cizage(hs=3, ss=5, fs=8),
                     '-N': Cizage(hs=2, ss=2, fs=4),
-                    '-0N': Cizage(hs=3, ss=5, fs=8),
+                    '--N': Cizage(hs=3, ss=5, fs=8),
                     '-O': Cizage(hs=2, ss=2, fs=4),
-                    '-0O': Cizage(hs=3, ss=5, fs=8),
+                    '--O': Cizage(hs=3, ss=5, fs=8),
                     '-P': Cizage(hs=2, ss=2, fs=4),
-                    '-0P': Cizage(hs=3, ss=5, fs=8),
+                    '--P': Cizage(hs=3, ss=5, fs=8),
                     '-Q': Cizage(hs=2, ss=2, fs=4),
-                    '-0Q': Cizage(hs=3, ss=5, fs=8),
+                    '--Q': Cizage(hs=3, ss=5, fs=8),
                     '-R': Cizage(hs=2, ss=2, fs=4),
-                    '-0R': Cizage(hs=3, ss=5, fs=8),
+                    '--R': Cizage(hs=3, ss=5, fs=8),
                     '-S': Cizage(hs=2, ss=2, fs=4),
-                    '-0S': Cizage(hs=3, ss=5, fs=8),
+                    '--S': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
-                    '-0V': Cizage(hs=3, ss=5, fs=8),
+                    '--V': Cizage(hs=3, ss=5, fs=8),
                     '-W': Cizage(hs=2, ss=2, fs=4),
-                    '-0W': Cizage(hs=3, ss=5, fs=8),
+                    '--W': Cizage(hs=3, ss=5, fs=8),
                     '-X': Cizage(hs=2, ss=2, fs=4),
-                    '-0X': Cizage(hs=3, ss=5, fs=8),
+                    '--X': Cizage(hs=3, ss=5, fs=8),
                     '-Y': Cizage(hs=2, ss=2, fs=4),
-                    '-0Y': Cizage(hs=3, ss=5, fs=8),
+                    '--Y': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
-                    '-0Z': Cizage(hs=3, ss=5, fs=8),
-                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                    '--Z': Cizage(hs=3, ss=5, fs=8),
+                    '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             }
         }
@@ -468,9 +468,9 @@ def test_counter_class():
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ss == 2 # soft size
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].fs == 4  # full size
 
-    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].hs == 3  # hard size
-    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].ss == 5  # soft size
-    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].fs == 8  # full size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['--A'].hs == 3  # hard size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['--A'].ss == 5  # soft size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['--A'].fs == 8  # full size
 
     # first character of code with hard size of code
     assert Counter.Hards == \
@@ -481,7 +481,7 @@ def test_counter_class():
         '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
         '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
         '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
-        '-0': 3, '--': 5,
+        '-0': 3, '--': 3, '-_': 5,
     }
 
 
@@ -722,7 +722,7 @@ def test_counter_v1():
     # test with big codes index=100024000
     count = 100024000
     qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
-    assert qsc == '-0VF9j7A'
+    assert qsc == '--VF9j7A'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -782,7 +782,7 @@ def test_counter_v1():
     # test BigPathedMaterialGroup with big codes index=100024000
     count = 100024000
     qsc = CtrDex.BigPathedMaterialGroup + intToB64(count, l=5)
-    assert qsc == '-0LF9j7A'
+    assert qsc == '--LF9j7A'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -908,7 +908,7 @@ def test_counter_v1():
     # test with big codes index=1024
     count = 1024
     qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
-    assert qsc == '-0VAAAQA'
+    assert qsc == '--VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -943,7 +943,7 @@ def test_counter_v1():
     assert genver == 'AAA'
     assert genverint == b64ToInt(genver)
     qsc = CtrDex.KERIACDCGenusVersion + genver
-    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    assert qsc == '-_AAAAAA'  # keri Cesr version 0.0.0
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1234,7 +1234,7 @@ def test_counter_v2():
     # test with big codes count=1024
     count = 1024
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAAAQA'
+    assert qsc == '--AAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1277,7 +1277,7 @@ def test_counter_v2():
     # test ims with big codes count=1024
     count = 1024
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAAAQA'
+    assert qsc == '--AAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1306,7 +1306,7 @@ def test_counter_v2():
     # test with big codes count=8193
     count = 8193
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAACAB'
+    assert qsc == '--AAACAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1352,7 +1352,7 @@ def test_counter_v2():
     # test ims with big codes count=8193
     count = 8193
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAACAB'
+    assert qsc == '--AAACAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1382,7 +1382,7 @@ def test_counter_v2():
     # test with promotion from small to big codes with count=8193
     count = 8193
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAACAB'
+    assert qsc == '--AAACAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1412,7 +1412,7 @@ def test_counter_v2():
     assert genver == 'AAA'
     assert genverint == b64ToInt(genver)
     qsc = CtrDex.KERIACDCGenusVersion + genver
-    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    assert qsc == '-_AAAAAA'  # keri Cesr version 0.0.0
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
