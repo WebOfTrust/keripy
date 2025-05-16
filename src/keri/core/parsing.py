@@ -779,22 +779,19 @@ class Parser:
                 # iteratively process attachment counters in stride
                 while True:  # do while already extracted first counter is ctr above
                     if ctr.code == CtrDex_1_0.ControllerIdxSigs:  # extract each attached signature
-                        result = yield from self._ControllerIdxSigs1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=enclosed)
-                        exts['sigers'].extend(result)
+                        yield from self._ControllerIdxSigs1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.WitnessIdxSigs:  # extract each attached signature
-                        result = yield from self._WitnessIdxSigs1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=enclosed)
-                        exts['wigers'].extend(result)
+                        yield from self._WitnessIdxSigs1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
                         # extract attached rct couplets into list of cigars
                         # verfer property of cigar is the identifier prefix
                         # cigar itself is the attached signature
-                        result = yield from self._NonTransReceiptCouples1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=enclosed)
-                        exts['cigars'].extend(result)
+                        yield from self._NonTransReceiptCouples1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
                         # extract attaced trans receipt vrc quadruple
@@ -803,9 +800,8 @@ class Parser:
                         # ssnu is sn of signer's est evt when signed
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
-                        result = yield from self._TransReceiptQuadruples1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=enclosed)
-                        exts['trqs'].extend(result)
+                        yield from self._TransReceiptQuadruples1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
@@ -815,9 +811,8 @@ class Parser:
                         # dig is dig of signer's est event when signed
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        result = yield from self._TransIdxSigGroups1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=enclosed)
-                        exts['tsgs'].extend(result)
+                        yield from self._TransIdxSigGroups1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
@@ -825,27 +820,24 @@ class Parser:
                         # pre is pre of signer (endorser) of msg
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        result = yield from self._TransLastIdxSigGroups1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=enclosed)
-                        exts['ssgs'].extend(result)
+                        yield from self._TransLastIdxSigGroups1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
                         # extract attached first seen replay couples
                         # snu+dtm
                         # snu is fn (first seen ordinal) of event
                         # dtm is dt of event
-                        result = yield from self._FirstSeenReplayCouples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=enclosed)
-                        exts['frcs'].extend(result)
+                        yield from self._FirstSeenReplayCouples1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.SealSourceCouples:
                         # extract attached first seen replay couples
                         # snu+dig
                         # snu is sequence number  of event
                         # dig is digest of event
-                        result = yield from self._SealSourceCouples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=enclosed)
-                        exts['sscs'].extend(result)
+                        yield from self._SealSourceCouples1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code == CtrDex_1_0.SealSourceTriples:
                         # extract attached anchoring source event information
@@ -853,22 +845,19 @@ class Parser:
                         # pre is prefix of event
                         # snu is sequence number  of event
                         # dig is digest of event
-                        result = yield from self._SealSourceTriples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=enclosed)
-                        exts['ssts'].extend(result)
+                        yield from self._SealSourceTriples1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
                                       CtrDex_1_0.BigPathedMaterialGroup):
                         # content is  CESR sub-stream of attachement groups
-                        result = yield from self._PathedMaterialGroup(ims=ims,
-                                            ctr=ctr, cold=cold, abort=enclosed)
-                        exts['ptds'].extend(result)
+                        yield from self._PathedMaterialGroup(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     elif ctr.code in (CtrDex_1_0.ESSRPayloadGroup,
                                       CtrDex_1_0.BigESSRPayloadGroup):
-                        result = yield from self._ESSRPayloadGroup1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=enclosed)
-                        exts['essrs'].extend(result)
+                        yield from self._ESSRPayloadGroup1(exts=exts,
+                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
 
                     else:
                         raise kering.UnexpectedCountCodeError(f"Unsupported count"
@@ -1059,10 +1048,11 @@ class Parser:
         return True  # done state
 
     # Group parse/extract methods for dispatch based on CESR version
-    def _ControllerIdxSigs1(self, ims, ctr, cold, abort):
+    def _ControllerIdxSigs1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 ControllerIdxSigs group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1085,15 +1075,18 @@ class Parser:
                                                cold=cold,
                                                abort=abort)
             sigers.append(siger)
+        try:
+            exts['sigers'].extend(sigers)
+        except KeyError:
+            exts['sigers'] = sigers
 
-        return sigers
 
 
-
-    def _ControllerIdxSigs2(self, ims, ctr, cold, abort):
+    def _ControllerIdxSigs2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 ControllerIdxSigs group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1120,14 +1113,17 @@ class Parser:
         sigers = []
         while gims:   # extract each attached signature and strip from gims
             sigers.append(self.extract(ims=gims, klas=Siger, cold=cold))
+        try:
+            exts['sigers'].extend(sigers)
+        except KeyError:
+            exts['sigers'] = sigers
 
-        return sigers
 
-
-    def _WitnessIdxSigs1(self, ims, ctr, cold, abort):
+    def _WitnessIdxSigs1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 WitnessIdxSigs group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1150,14 +1146,17 @@ class Parser:
                                                cold=cold,
                                                abort=abort)
             wigers.append(wiger)
+        try:
+            exts['wigers'].extend(wigers)
+        except KeyError:
+            exts['wigers'] = wigers
 
-        return wigers
 
-
-    def _WitnessIdxSigs2(self, ims, ctr, cold, abort):
+    def _WitnessIdxSigs2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 WitnessIdxSigs group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1184,14 +1183,17 @@ class Parser:
         wigers = []
         while gims:   # extract each attached signature and strip from gims
             wigers.append(self.extract(ims=gims, klas=Siger, cold=cold))
+        try:
+            exts['wigers'].extend(wigers)
+        except KeyError:
+            exts['wigers'] = wigers
 
-        return wigers
 
-
-    def _NonTransReceiptCouples1(self, ims, ctr, cold, abort):
+    def _NonTransReceiptCouples1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 NonTransReceiptCouples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1220,14 +1222,17 @@ class Parser:
             cigar.verfer = verfer
 
             cigars.append(cigar)
+        try:
+            exts['cigars'].extend(cigars)
+        except KeyError:
+            exts['cigars'] = cigars
 
-        return cigars
 
-
-    def _NonTransReceiptCouples2(self, ims, ctr, cold, abort):
+    def _NonTransReceiptCouples2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 NonTransReceiptCouples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1257,14 +1262,17 @@ class Parser:
             cigar = self.extract(ims=gims, klas=Cigar, cold=cold)
             cigar.verfer = verfer
             cigars.append(cigar)
+        try:
+            exts['cigars'].extend(cigars)
+        except KeyError:
+            exts['cigars'] = cigars
 
-        return cigars
 
-
-    def _TransReceiptQuadruples1(self, ims, ctr, cold, abort):
+    def _TransReceiptQuadruples1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 TransReceiptQuadruples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1305,14 +1313,17 @@ class Parser:
                                                cold=cold,
                                                abort=abort)
             trqs.append((prefixer, seqner, saider, siger))
+        try:
+            exts['trqs'].extend(trqs)
+        except KeyError:
+            exts['trqs'] = trqs
 
-        return trqs
 
-
-    def _TransReceiptQuadruples2(self, ims, ctr, cold, abort):
+    def _TransReceiptQuadruples2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 TransReceiptQuadruples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1350,14 +1361,17 @@ class Parser:
             saider = self.extract(ims=gims, klas=Saider, cold=cold)
             siger = self.extract(ims=gims, klas=Siger, cold=cold)
             trqs.append((prefixer, seqner, saider, siger))
+        try:
+            exts['trqs'].extend(trqs)
+        except KeyError:
+            exts['trqs'] = trqs
 
-        return trqs
 
-
-    def _TransIdxSigGroups1(self, ims, ctr, cold, abort):
+    def _TransIdxSigGroups1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 TransIdxSigGroups group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1401,14 +1415,17 @@ class Parser:
                                                abort=abort)
                 isigers.append(isiger)
             tsgs.append((prefixer, seqner, saider, isigers))
+        try:
+            exts['tsgs'].extend(tsgs)
+        except KeyError:
+            exts['tsgs'] = tsgs
 
-        return tsgs
 
-
-    def _TransIdxSigGroups2(self, ims, ctr, cold, abort):
+    def _TransIdxSigGroups2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 TransIdxSigGroups group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1453,15 +1470,17 @@ class Parser:
                 isiger = self.extract(ims=igims, klas=Siger, cold=cold)
                 isigers.append(isiger)
             tsgs.append((prefixer, seqner, saider, isigers))  # tuple
+        try:
+            exts['tsgs'].extend(tsgs)
+        except KeyError:
+            exts['tsgs'] = tsgs
 
-        return tsgs
 
-
-
-    def _TransLastIdxSigGroups1(self, ims, ctr, cold, abort):
+    def _TransLastIdxSigGroups1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 TransLastIdxSigGroups group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1497,14 +1516,17 @@ class Parser:
                                                abort=abort)
                 isigers.append(isiger)
             ssgs.append((prefixer, isigers))
+        try:
+            exts['ssgs'].extend(ssgs)
+        except KeyError:
+            exts['ssgs'] = ssgs
 
-        return ssgs
 
-
-    def _TransLastIdxSigGroups2(self, ims, ctr, cold, abort):
+    def _TransLastIdxSigGroups2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 TransLastIdxSigGroups group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1547,14 +1569,17 @@ class Parser:
                 isiger = self.extract(ims=igims, klas=Siger, cold=cold)
                 isigers.append(isiger)
             ssgs.append((prefixer, isigers))  # tuple
+        try:
+            exts['ssgs'].extend(ssgs)
+        except KeyError:
+            exts['ssgs'] = ssgs
 
-        return ssgs
 
-
-    def _FirstSeenReplayCouples1(self, ims, ctr, cold, abort):
+    def _FirstSeenReplayCouples1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 FirstSeenReplayCouples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1579,14 +1604,17 @@ class Parser:
                                                 cold=cold,
                                                 abort=abort)
             frcs.append((firner, dater))
+        try:
+            exts['frcs'].extend(frcs)
+        except KeyError:
+            exts['frcs'] = frcs
 
-        return frcs
 
-
-    def _FirstSeenReplayCouples2(self, ims, ctr, cold, abort):
+    def _FirstSeenReplayCouples2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 FirstSeenReplayCouples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1615,13 +1643,17 @@ class Parser:
             firner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
             dater = self.extract(ims=gims, klas=Dater, cold=cold,abort=abort)
             frcs.append((firner, dater))
-        return frcs
+        try:
+            exts['frcs'].extend(frcs)
+        except KeyError:
+            exts['frcs'] = frcs
 
 
-    def _SealSourceCouples1(self, ims, ctr, cold, abort):
+    def _SealSourceCouples1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 SealSourceCouples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1646,14 +1678,17 @@ class Parser:
                                                 cold=cold,
                                                 abort=abort)
             sscs.append((seqner, saider))
+        try:
+            exts['sscs'].extend(sscs)
+        except KeyError:
+            exts['sscs'] = sscs
 
-        return sscs
 
-
-    def _SealSourceCouples2(self, ims, ctr, cold, abort):
+    def _SealSourceCouples2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 SealSourceCouples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1682,13 +1717,17 @@ class Parser:
             seqner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
             saider = self.extract(ims=gims, klas=Saider, cold=cold,abort=abort)
             sscs.append((seqner, saider))
-        return sscs
+        try:
+            exts['sscs'].extend(sscs)
+        except KeyError:
+            exts['sscs'] = sscs
 
 
-    def _SealSourceTriples1(self, ims, ctr, cold, abort):
+    def _SealSourceTriples1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 SealSourceTriples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1717,14 +1756,17 @@ class Parser:
                                                 cold=cold,
                                                 abort=abort)
             ssts.append((prefixer, seqner, saider))
+        try:
+            exts['ssts'].extend(ssts)
+        except KeyError:
+            exts['ssts'] = ssts
 
-        return ssts
 
-
-    def _SealSourceTriples2(self, ims, ctr, cold, abort):
+    def _SealSourceTriples2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 SealSourceTriples group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1754,10 +1796,13 @@ class Parser:
             seqner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
             saider = self.extract(ims=gims, klas=Saider, cold=cold,abort=abort)
             ssts.append((prefixer, seqner, saider))
-        return ssts
+        try:
+            exts['ssts'].extend(ssts)
+        except KeyError:
+            exts['ssts'] = ssts
 
 
-    def _PathedMaterialGroup(self, ims, ctr, cold, abort):
+    def _PathedMaterialGroup(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESR v1 and v2 PathedMaterialGroup group both
         big and small sized groups. Since v1 counts quadlets/triples the logic is
         the same for both v1 and v2. The contexts of a pathed material group
@@ -1766,6 +1811,7 @@ class Parser:
         as JSON, CBOR, MGPK
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1789,13 +1835,17 @@ class Parser:
 
         gims = ims[:gs]  # copy out group sized substream
         del ims[:gs]  # strip off from ims
-        return [gims]
+        try:
+            exts['ptds'].extend([gims])
+        except KeyError:
+            exts['ptds'] = [gims]
 
 
-    def _ESSRPayloadGroup1(self, ims, ctr, cold, abort):
+    def _ESSRPayloadGroup1(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv1 ESSRPayloadGroup group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1816,14 +1866,17 @@ class Parser:
                                                 cold=cold,
                                                 abort=abort)
             essrs.append(texter)
+        try:
+            exts['essrs'].extend(essrs)
+        except KeyError:
+            exts['essrs'] = essrs
 
-        return essrs
 
-
-    def _ESSRPayloadGroup2(self, ims, ctr, cold, abort):
+    def _ESSRPayloadGroup2(self, exts, ims, ctr, cold, abort):
         """Generator to extract CESRv2 ESSRPayloadGroup group
 
         Parameters:
+            exts (dict): of extracted group elements for keyword args.
             ims (bytearray): of serialized incoming message stream.
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
@@ -1851,5 +1904,8 @@ class Parser:
         while gims:   # extract each attached group and strip from gims
             texter = self.extract(ims=gims, klas=Texter, cold=cold, abort=abort)
             essrs.append(texter)
-        return essrs
+        try:
+            exts['essrs'].extend(essrs)
+        except KeyError:
+            exts['essrs'] = essrs
 
