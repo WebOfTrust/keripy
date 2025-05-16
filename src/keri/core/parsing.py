@@ -12,8 +12,9 @@ from .. import kering
 from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
                       ShortageError, ColdStartError)
 from .coring import (Ilks, Seqner, Cigar,
-                     Dater, Verfer, Prefixer, Saider, Pather, Texter)
-from .counting import Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex
+                     Dater, Verfer, Prefixer, Saider, Texter)
+from .counting import (Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex,
+                       UniDex_1_0, UniDex_2_0)
 from .indexing import (Siger, )
 from . import serdering
 from .. import help
@@ -55,7 +56,8 @@ class Parser:
         version (Versionage): default CESR code table protocol genus version
         curver (Versionage): current CESR protocol genus version in context
         methods (dict): method names for counter extraction, keyed by count code name
-        codes (CtrDex): selected by .curver  (CtrDex_1_0, CtrDex_2_0)
+        codes (CtrDex): selected by .curver from (CtrDex_1_0, CtrDex_2_0)
+        sucodes (SUDex): selected by .curver from  (SUDex_1_0, SUDex_2_0)
 
 
     Hidden:
@@ -63,10 +65,12 @@ class Parser:
         _genus (str): value for .genus property
         _curver (Versionage): value for .curver property
         _methods (dict): value for .methods property
-        _codes (CtdDex): value for .codes property
+        _codes (CtrDex): value for .codes property
+        _sucodes (SUCtrDex): value for .sucodes property
 
     """
     Codes = Counter.Codes  # code tables from Counter
+    SUCodes = Counter.SUCodes # special univerval code tables from Counter
     Methods = copy.deepcopy(Counter.Codes)  # make deep copy so not mutate Counter
     for minor in Methods.values():  # assign None as default val for all possible code names
         for key in minor:
@@ -155,7 +159,7 @@ class Parser:
 
         self._genus = GenDex.KERI_ACDC_SPAC  # only supports KERI_ACDC_SPAC
         self.version = version  # provided version may be earlier than supported version
-        # setting version sets .curver which sets .methods and .codes
+        # setting version sets .curver which sets .methods, .codes, and .sucodes
 
 
     @property
@@ -215,6 +219,7 @@ class Parser:
         self._curver = curver
         self._methods = self.Methods[curver.major][latest]
         self._codes = self.Codes[curver.major][latest]
+        self._sucodes = self.SUCodes[curver.major][latest]
 
 
     @property
@@ -229,9 +234,17 @@ class Parser:
     def codes(self):
         """Makes .codes read only
         Returns:
-            _codes (CtdDex): selected by .curver  (CtrDex_1_0, CtrDex_2_0)
+            _codes (CtrDex): selected by .curver from (CtrDex_1_0, CtrDex_2_0)
         """
         return self._codes
+
+    @property
+    def sucodes(self):
+        """Makes .sucodes read only
+        Returns:
+            _sucodes (SUDex): selected by .curver from (SUDex_1_0, SUDex_2_0)
+        """
+        return self._sucodes
 
 
     def extract(self, ims, klas, cold=Colds.txt):
@@ -726,8 +739,14 @@ class Parser:
 
         cold = sniff(ims)  # check for spurious counters at front of stream
         if cold in (Colds.txt, Colds.bny):  # not message, so error out to flush stream
-            # replace with pipelining here once CESR message format supported.
-            raise kering.ColdStartError("Expecting message counter tritet={}"
+            ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+            if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
+                            UniDex_2_0.KERIACDCGenusVersion):  # change version
+                self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+            elif ctr.code in self.sucodes:
+                pass  # ignore for now
+            else:
+                raise kering.ColdStartError("Expecting message counter tritet={}"
                                         "".format(cold))
         # Otherwise its a message cold start
 
@@ -1093,7 +1112,7 @@ class Parser:
             wigers (list[Siger]): of indexed signature instances
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1169,7 +1188,7 @@ class Parser:
             cigars (list[Cigar]): of signature instances with assigned verfer
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1267,7 +1286,7 @@ class Parser:
         sig is indexed signature of signer on this event msg
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1362,7 +1381,7 @@ class Parser:
             tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1381,7 +1400,7 @@ class Parser:
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
                 raise kering.UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
-            igs = ictr.byteCount(cold=cold) # ictr.count * 4 if cold == Colds.txt else ctr.count * 3
+            igs = ictr.byteCount(cold=cold)
             # already extracted enclosing group bytes so igs must be < len(gims)
             if len(gims) < igs:  # should not happen unless malformed counter
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1463,7 +1482,7 @@ class Parser:
             ssgs (list[tuple]): [(prefixer, [isigers])]
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1480,7 +1499,7 @@ class Parser:
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
                 raise kering.UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
-            igs = ictr.byteCount(cold=cold) # ictr.count * 4 if cold == Colds.txt else ctr.count * 3
+            igs = ictr.byteCount(cold=cold)
             # already extracted enclosing group bytes so igs must be < len(gims)
             if len(gims) < igs:  # should not happen unless malformed counter
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1551,7 +1570,7 @@ class Parser:
             frcs (list[tuple]): [(firner, dater)]
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1625,7 +1644,7 @@ class Parser:
             sscs (list[tuple]): [(seqner, saider)]
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1703,7 +1722,7 @@ class Parser:
             ssts (list[tuple]): [(prefixer, seqner, saider)]
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1748,7 +1767,7 @@ class Parser:
             pims (list[bytes]): [gims]
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1813,7 +1832,7 @@ class Parser:
             essrs (list[Texter]): [texter]
 
         """
-        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "

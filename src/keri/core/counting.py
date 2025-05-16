@@ -44,8 +44,7 @@ GenDex = GenusCodex()  # Make instance
 
 @dataclass(frozen=True)
 class CounterCodex_1_0(MapDom):
-    """
-    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    """CounterCodex_1_0 is codex hard (stable) part of all V1 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
@@ -78,9 +77,76 @@ class CounterCodex_1_0(MapDom):
 CtrDex_1_0 = CounterCodex_1_0()
 
 @dataclass(frozen=True)
-class CounterCodex_2_0(MapDom):
+class QuadTripCodex_1_0(MapDom):
+    """QuadTripCodex_1_0 is codex hard (stable) part of all V1 counter codes that
+    count quadlets/triplets.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
     """
-    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    GenericGroup: str = '-W'  # Generic Material Quadlets
+    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
+    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
+    BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+QTDex_1_0 = QuadTripCodex_1_0()
+
+@dataclass(frozen=True)
+class UniversalCodex_1_0(MapDom):
+    """CounterCodex_1_0 is codex hard (stable) part of all V1 universal counter codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    GenericGroup: str = '-W'  # Generic Material Quadlets
+    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+UniDex_1_0 = UniversalCodex_1_0()
+
+@dataclass(frozen=True)
+class SpecialUniversalCodex_1_0(MapDom):
+    """SpecialUniversalCodex_1_0 is codex hard (stable) part of all V1 special
+    universal counter codes that may have optional genus-version override as
+    first code in enclosed group.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    GenericGroup: str = '-W'  # Generic Material Quadlets
+    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+SUDex_1_0 = SpecialUniversalCodex_1_0()
+
+
+@dataclass(frozen=True)
+class CounterCodex_2_0(MapDom):
+    """CounterCodex_2_0 is codex hard (stable) part of all V2 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
@@ -141,6 +207,64 @@ class CounterCodex_2_0(MapDom):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
 CtrDex_2_0 = CounterCodex_2_0()
+
+@dataclass(frozen=True)
+class UniversalCodex_2_0(MapDom):
+    """CounterCodex_2_0 is codex hard (stable) part of all V2 universal counter codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    GenericGroup: str = '-A'  # Generic Group (Universal with Override).
+    BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
+    MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
+    BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
+    DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
+    BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
+    ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
+    BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
+    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
+    BigGenericMapGroup: str = '--H'  # Big Generic Field Map Group (Universal).
+    GenericListGroup: str = '-I'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '--I'  # Big Generic List Group (Universal).
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+UniDex_2_0 = UniversalCodex_2_0()
+
+@dataclass(frozen=True)
+class SpecialUniversalCodex_2_0(MapDom):
+    """SpecialUniversalCodex_2_0 is codex hard (stable) part of all V2 special
+    universal counter codes that may have optional genus-version override as
+    first code in enclosed group.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    GenericGroup: str = '-A'  # Generic Group (Universal with Override).
+    BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
+    MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
+    BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
+
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+SUDex_2_0 = SpecialUniversalCodex_2_0()
 
 # CodeNames  is tuple of codes names given by attributes of union of codices
 CodeNames = tuple(asdict(CtrDex_2_0) | asdict(CtrDex_1_0))
@@ -310,6 +434,19 @@ class Counter:
         },
     }
 
+    # special universal codes
+    SUCodes = \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: SUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: SUDex_2_0,
+        },
+    }
+
 
     # invert dataclass codenames: codes to dict codes: codenames
     Names = copy.deepcopy(Codes)  # make deep nested copy so can invert nested values
@@ -435,6 +572,7 @@ class Counter:
                                defaults to 1
             countB64 (str | None): count of framed material in quadlets/triplets
                                 for composition as Base64 representation of int.
+                                useful for genus-version version as count
             qb64b (bytes | bytearray | None): fully qualified crypto material text domain
                 if code nor tag is provided
             qb64 (str | None) fully qualified crypto material text domain
@@ -528,9 +666,11 @@ class Counter:
 
 
     @classmethod
-    def enclose(cls, *, qb64=None, qb2=None, code=Codens.AttachmentGroup):
+    def enclose(cls, *, qb64=None, qb2=None, code=Codens.AttachmentGroup,
+                version=Vrsn_2_0):
         """Encloses (frames) CESR stream in qb64 or qb2 with prepended counter
-        of type code. Only encloses with CESR v2 counters
+        of type code. Only with counters that count quadlets/triplets in V1 CESR.
+        Works with all counters in V2 CESR (which must count quadlets/triplets)
 
         Returns:
             enclosure (bytearray): stream in qb64 or qb2 with prepended counter
@@ -560,7 +700,9 @@ class Counter:
                 raise ValueError(f"Bad enclosed qb64 {length=}")
             count = length // 4
             # processes code as codens code name
-            counter = cls(code=code, count=count, version=Vrsn_2_0)
+            counter = cls(code=code, count=count, version=version)
+            if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
+                raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
             enclosure = bytearray(counter.qb64b)
             enclosure.extend(qb64)
             return enclosure
@@ -573,7 +715,9 @@ class Counter:
             raise ValueError(f"Bad enclosed qb2 {length=}")
         count = length // 3
         # processes code as codens code name
-        counter = cls(code=code, count=count, version=Vrsn_2_0)
+        counter = cls(code=code, count=count, version=version)
+        if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
+            raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
         enclosure = bytearray(counter.qb2)
         enclosure.extend(qb2)
         return enclosure
@@ -747,10 +891,8 @@ class Counter:
         suitable for CESR protocol genus and version
 
         Returns:
-            countB64 (str): suitable for input to Counter
-
-        Example:
-            Counter(countB64=Counter.verToB64(verstr = "1.0"))
+            countB64 (str): suitable for input to Counter param countB64 for
+                            creating genus-version code version count portion
 
         Parameters:
             version (Versionage): instange of namedtuple
@@ -760,6 +902,10 @@ class Counter:
                         range [0, 63] for one Base64 character
             minor (int): When version is None and verstr is  empty then use major minor
                         range [0, 4095] for two Base64 characters
+
+        Example:
+            Counter(countB64=Counter.verToB64(text = "1.0"))
+            Counter(countB64=Counter.verToB64(major=1, minor=0))
 
         """
         if version:

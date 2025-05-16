@@ -22,8 +22,9 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
 
 
 from keri.core import counting, Texter
-from keri.core.counting import GenDex, Cizage, Counter, Codens, CtrDex_2_0
-from keri.core.counting import Versionage, Vrsn_1_0, Vrsn_2_0
+from keri.core.counting import (GenDex, Cizage, Counter, Codens,
+                                 CtrDex_1_0, CtrDex_2_0,
+                                Versionage, Vrsn_1_0, Vrsn_2_0)
 
 
 
@@ -85,6 +86,26 @@ def test_codexes_tags():
         'KERIACDCGenusVersion': '-_AAA'
     }
 
+    assert  asdict(counting.QTDex_1_0) == \
+    {
+        'PathedMaterialGroup': '-L',
+        'BigPathedMaterialGroup': '--L',
+        'AttachmentGroup': '-V',
+        'BigAttachmentGroup': '--V',
+        'GenericGroup': '-W',
+        'BigGenericGroup': '--W',
+        'ESSRPayloadGroup': '-Z',
+        'BigESSRPayloadGroup': '--Z',
+    }
+
+    assert  asdict(counting.SUDex_1_0) == \
+    {
+        'AttachmentGroup': '-V',
+        'BigAttachmentGroup': '--V',
+        'GenericGroup': '-W',
+        'BigGenericGroup': '--W',
+    }
+
 
     assert asdict(counting.CtrDex_2_0) == \
     {
@@ -137,6 +158,39 @@ def test_codexes_tags():
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
         'KERIACDCGenusVersion': '-_AAA'
+    }
+
+    assert asdict(counting.UniDex_2_0) == \
+    {
+        'GenericGroup': '-A',
+        'BigGenericGroup': '--A',
+        'MessageGroup': '-B',
+        'BigMessageGroup': '--B',
+        'AttachmentGroup': '-C',
+        'BigAttachmentGroup': '--C',
+        'DatagramSegmentGroup': '-D',
+        'BigDatagramSegmentGroup': '--D',
+        'ESSRWrapperGroup': '-E',
+        'BigESSRWrapperGroup': '--E',
+        'FixedMessageBodyGroup': '-F',
+        'BigFixedMessageBodyGroup': '--F',
+        'MapMessageBodyGroup': '-G',
+        'BigMapMessageBodyGroup': '--G',
+        'GenericMapGroup': '-H',
+        'BigGenericMapGroup': '--H',
+        'GenericListGroup': '-I',
+        'BigGenericListGroup': '--I',
+        'KERIACDCGenusVersion': '-_AAA'
+    }
+
+    assert asdict(counting.SUDex_2_0) == \
+    {
+        'GenericGroup': '-A',
+        'BigGenericGroup': '--A',
+        'MessageGroup': '-B',
+        'BigMessageGroup': '--B',
+        'AttachmentGroup': '-C',
+        'BigAttachmentGroup': '--C',
     }
 
     assert counting.CodeNames == \
@@ -285,6 +339,18 @@ def test_counter_class():
         Vrsn_2_0.major: \
         {
             Vrsn_2_0.minor: counting.CtrDex_2_0,
+        },
+    }
+
+    assert Counter.SUCodes == \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: counting.SUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: counting.SUDex_2_0,
         },
     }
 
@@ -560,7 +626,8 @@ def test_counter_class():
     with pytest.raises(ValueError):
         Counter.verToB64(minor=-1)
 
-    # test class methods
+    # Test class methods
+    # Test .enclose default V2
     enclosure = Counter.enclose()  # test defaults
     assert enclosure == bytearray(b'-CAA')
 
@@ -624,6 +691,70 @@ def test_counter_class():
     with pytest.raises(ValueError):  # not aligned 24 bit
         enclosure = Counter.enclose(qb2=texter.qb2[:-1])
 
+    # Test .enclose V1
+    enclosure = Counter.enclose(version=Vrsn_1_0)  # test defaults
+    assert enclosure == bytearray(b'-VAA')
+
+    enclosure = Counter.enclose(qb64=b'', version=Vrsn_1_0) # test empty
+    assert enclosure == bytearray(b'-VAA')
+    assert len(enclosure) == 4
+    # round trip
+    counter = Counter(qb64b=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 0
+
+    enclosure = Counter.enclose(qb2=b'', version=Vrsn_1_0) # test empty
+    assert enclosure == bytearray(b'\xf9P\x00')
+    assert len(enclosure) == 3
+    # round trip
+    counter = Counter(qb2=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 0
+
+    # test with something to enclose
+    texter = Texter(text="How ya doing babe?")
+    assert texter.qb64 == '4BAGSG93IHlhIGRvaW5nIGJhYmU_'
+    assert texter.qb2 == b'\xe0\x10\x06How ya doing babe?'
+
+    enclosure = Counter.enclose(qb64=texter.qb64, version=Vrsn_1_0)
+    assert enclosure == bytearray(b'-VAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+    # round trip
+    counter = Counter(qb64b=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb64) // 4
+
+    enclosure = Counter.enclose(qb2=texter.qb2, version=Vrsn_1_0)
+    assert enclosure == bytearray(b'\xf9P\x07\xe0\x10\x06How ya doing babe?')
+    # round trip
+    counter = Counter(qb2=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb2) // 3
+
+    # test with other than default code
+    enclosure = Counter.enclose(qb64=texter.qb64,
+                                code=Codens.GenericGroup,
+                                version=Vrsn_1_0)
+    assert enclosure == bytearray(b'-WAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+
+    enclosure = Counter.enclose(qb2=texter.qb2,
+                                code=Codens.GenericGroup,
+                                version=Vrsn_1_0)
+    assert enclosure ==bytearray(b'\xf9`\x07\xe0\x10\x06How ya doing babe?')
+
+    # error cases
+    with pytest.raises(ValueError):  # not a QTDex code
+        enclosure = Counter.enclose(qb64=texter.qb64,
+                                    code=Codens.ControllerIdxSigs,
+                                    version=Vrsn_1_0)
+
+    with pytest.raises(ValueError):  # not a QTDex code
+        enclosure = Counter.enclose(qb2=texter.qb2,
+                                    code=Codens.ControllerIdxSigs,
+                                    version=Vrsn_1_0)
 
     """ Done Test """
 
