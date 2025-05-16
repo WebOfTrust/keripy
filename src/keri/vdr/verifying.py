@@ -89,7 +89,7 @@ class Verifier:
             self.processCredential(**creds.pull())
 
 
-    def processCredential(self, creder, prefixer, seqner, saider):
+    def processCredential(self, creder, prefixer, seqner, saider, **kwa):
         """ Credential data and signature(s) verification
 
         Verify the data of the credential against the schema, the SAID of the credential and

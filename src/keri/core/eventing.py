@@ -4970,8 +4970,7 @@ class Kevery:
 
 
     def processQuery(self, serder, *, source=None, sigers=None, cigars=None, **kwa):
-        """
-        Process query mode replay message for collective or single element query.
+        """Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.
 
         Parameters:
@@ -5206,7 +5205,7 @@ class Kevery:
 
     def escrowQueryNotFoundEvent(self, prefixer, serder, sigers, cigars=None):
         """
-        Update associated logs for escrow of Out-of-Order event
+        Update associated logs for escrow of Query Not Found event
 
         Parameters:
             prefixer (Prefixer): source of query message

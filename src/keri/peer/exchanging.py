@@ -57,7 +57,7 @@ class Exchanger:
 
         self.routes[handler.resource] = handler
 
-    def processEvent(self, serder, tsgs=None, cigars=None, **kwargs):
+    def processEvent(self, serder, tsgs=None, cigars=None, ptds=None, essrs=None, **kwa):
         """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
 
         Parameters:
@@ -69,12 +69,15 @@ class Exchanger:
                            diger is digest of trans endorser's est evt for keys for sigs
                            [sigers] is list of indexed sigs from trans endorser's keys from est evt
             cigars (list): of Cigar instances of attached non-trans sigs
+            ptds (list[bytes]): pathed Cesr Streams
+            essrs (list[Texter]): ESSR streams as Texters
 
         """
+        ptds = ptds if ptds is not None else []
+        essrs = essrs if essrs is not None else []
         route = serder.ked["r"]
         sender = serder.ked["i"]
-        pathed = kwargs["pathed"] if "pathed" in kwargs else []
-        essrs = kwargs["essrs"] if "essrs" in kwargs else []
+
 
         behavior = self.routes[route] if route in self.routes else None
         if tsgs:
@@ -87,7 +90,7 @@ class Exchanger:
                     raise MissingSignatureError(msg)
 
                 if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < seqner.sn:
-                    if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=pathed):
+                    if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
                     msg = f"Unable to find sender {prefixer.qb64} in kevers for evt = {serder.said}"
                     logger.info(msg)
@@ -99,7 +102,7 @@ class Exchanger:
                 _, indices = eventing.verifySigs(serder.raw, sigers, verfers)
 
                 if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
-                    if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=pathed):
+                    if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
                     msg = (f"Not enough signatures in idx={indices} route={route} "
                            f"for evt = {serder.said} recipient={serder.ked.get('rp', '')}")
@@ -123,7 +126,7 @@ class Exchanger:
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
         else:
-            self.escrowPSEvent(serder=serder, tsgs=[], pathed=pathed)
+            self.escrowPSEvent(serder=serder, tsgs=[], pathed=ptds)
             msg = (
                 f"Failure satisfying exn, no cigs or sigs for evt = {serder.said} "
                 f"on route {route} recipient = {serder.ked.get('rp', '')}")
@@ -133,24 +136,24 @@ class Exchanger:
 
         e = coring.Pather(path=["e"])
 
-        kwargs = dict()
+        kwa = dict()
         attachments = []
-        for p in pathed:
+        for p in ptds:
             pattach = bytearray(p)
             pather = coring.Pather(qb64b=pattach, strip=True)
             if pather.startswith(e):
                 np = pather.strip(e)
                 attachments.append((np, pattach))
 
-        kwargs["attachments"] = attachments
+        kwa["attachments"] = attachments
         if essrs:
-            kwargs["essr"] = b''.join([texter.raw for texter in essrs])
+            kwa["essr"] = b''.join([texter.raw for texter in essrs])
 
         if isinstance(serder.seals, str):
-            if 'essr' not in kwargs:
+            if 'essr' not in kwa:
                 raise ValidationError("at least one essr attachment is required")
 
-            essr = kwargs['essr']
+            essr = kwa['essr']
             dig = serder.seals
             diger = coring.Diger(qb64=dig)
             if not diger.verify(ser=essr):
@@ -158,7 +161,7 @@ class Exchanger:
 
         # Perform behavior specific verification, think IPEX chaining requirements
         try:
-            if not behavior.verify(serder=serder, **kwargs):
+            if not behavior.verify(serder=serder, **kwa):
                 logger.error("exn event for route %s failed behavior verification. said=%s", route, serder.said)
                 logger.debug(f"Event=\n%s\n", serder.pretty())
                 return
@@ -168,12 +171,12 @@ class Exchanger:
             logger.debug("Exn Event Body=\n%s\n", serder.pretty())
 
         # Always persist events
-        self.logEvent(serder, pathed, tsgs, cigars, essrs)
+        self.logEvent(serder, ptds, tsgs, cigars, essrs)
         self.cues.append(dict(kin="saved", said=serder.said))
 
         # Execute any behavior specific handling, not sure if this should be different than verify
         try:
-            behavior.handle(serder=serder, **kwargs)
+            behavior.handle(serder=serder, **kwa)
         except AttributeError:
             logger.debug("Behavior for %s missing or does not have handle for SAID=%s", route, serder.said)
             logger.debug("Event=\n%s\n", serder.pretty())
@@ -242,10 +245,7 @@ class Exchanger:
                 pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
                 essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
 
-                kwargs = dict()
-                if essrs:
-                    kwargs["essrs"] = essrs
-                self.processEvent(serder=serder, tsgs=tsgs, pathed=pathed, **kwargs)
+                self.processEvent(serder=serder, tsgs=tsgs, ptds=pathed, essrs=essrs)
 
             except MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.TRACE):

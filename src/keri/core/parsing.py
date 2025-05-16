@@ -730,9 +730,10 @@ class Parser:
         # ssts (list[tuple]): (prefixer, seqner, saider) issued or delegated
         # ptds (list[bytes]): pathed streams
         # essrs (list[Texter]): essr encapsulations as Texters
+        # local (bool): True if local source controller context for processing
         exts = dict(serder=None, sigers=[], wigers=[], cigars=[], trqs=[],
                     tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], ptds=[],
-                    essrs=[])
+                    essrs=[], local=local)
 
         serdery = serdering.Serdery(version=kering.Version)
 
@@ -787,6 +788,7 @@ class Parser:
                 yield  # when not framed at least empty AttachmentGroup follows
 
             cold = sniff(ims)  # expect counter at front of attachments
+
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
                 if ctr.code in (self.codes.AttachmentGroup, self.codes.BigAttachmentGroup):  # if ctr.code == CtrDex_1_0.AttachmentGroup:
@@ -948,30 +950,27 @@ class Parser:
             ilk = serder.ilk  # dispatch abased on ilk
 
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-                firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
+                firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
                 # when present assumes this is source seal of delegating event in delegator's KEL
-                delseqner, delsaider = sscs[-1] if sscs else (None, None)  # use last one if more than one
-                if not sigers:
+                delseqner, delsaider = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
+                if not exts['sigers']: # sigers:
                     msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
                     logger.info(msg)
                     logger.debug("Event Body = \n%s\n", serder.pretty())
                     raise kering.ValidationError(msg)
                 try:
-                    kvy.processEvent(serder=serder,
-                                     sigers=sigers,
-                                     wigers=wigers,
-                                     delseqner=delseqner,
-                                     delsaider=delsaider,
-                                     firner=firner,
-                                     dater=dater,
-                                     local=local)
+                    exts['firner'] = firner
+                    exts['dater'] = dater
+                    exts['delseqner'] = delseqner
+                    exts['delsaider'] = delsaider
 
-                    if cigars:
-                        kvy.processAttachedReceiptCouples(serder, cigars,
-                                                          firner=firner, local=local)
-                    if trqs:
-                        kvy.processAttachedReceiptQuadruples(serder, trqs,
-                                                             firner=firner, local=local)
+                    kvy.processEvent(**exts)
+
+                    if exts['cigars']:  # cigars
+                        kvy.processAttachedReceiptCouples(**exts)
+
+                    if exts['trqs']:  # trqs
+                        kvy.processAttachedReceiptQuadruples(**exts)
 
                 except AttributeError as ex:
                     msg = f"No kevery to process so dropped msg={serder.said}"
@@ -980,141 +979,130 @@ class Parser:
                     raise kering.ValidationError(msg) from ex
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-                if not (cigars or wigers or tsgs):
+                if not (exts['cigars'] or exts['wigers'] or exts['tsgs']):  # (cigars or wigers or tsgs)
                     msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
                     logger.info(msg)
                     logger.debug("Receipt body=\n%s\n", serder.pretty())
                     raise kering.ValidationError(msg)
 
                 try:
-                    if cigars:
-                        kvy.processReceipt(serder=serder, cigars=cigars,
-                                           local=local)
+                    if exts['cigars']: # cigars:
+                        kvy.processReceipt(**exts)
 
-                    if wigers:
-                        kvy.processReceiptWitness(serder=serder, wigers=wigers,
-                                                  local=local)
+                    if exts['wigers']: # wigers:
+                        kvy.processReceiptWitness(**exts)
 
-                    if tsgs:
-                        kvy.processReceiptTrans(serder=serder, tsgs=tsgs,
-                                                local=local)
+                    if exts['tsgs']: # tsgs:
+                        kvy.processReceiptTrans(**exts)
 
-                except AttributeError:
-                    raise kering.ValidationError("No kevery to process so dropped msg"
-                                                 "= {}.".format(serder.pretty()))
-                except kering.UnverifiedReplyError as e:
-                    if logger.isEnabledFor(logging.TRACE):
-                        logger.exception("Error processing reply = %s", e)
-                        logger.debug("Reply Body=\n%s\n", serder.pretty())
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.error("Error processing reply = %s", e)
+                except AttributeError as ex:
+                    raise kering.ValidationError(f"No kevery to process so dropped msg"
+                                                 f"= {serder.pretty()}.") from ex
+
 
             elif ilk in (Ilks.rpy,):  # reply message
-                if not (cigars or tsgs):
-                    raise kering.ValidationError("Missing attached endorser signature(s) "
-                                                 "to reply msg = {}.".format(serder.pretty()))
+                if not (exts['cigars'] or exts['tsgs']):  # (cigars or tsgs)
+                    raise kering.ValidationError(f"Missing attached endorser signature(s) "
+                                                 f"to reply msg = {serder.pretty()}.")
 
                 try:
-                    if cigars:  # process separately so do not clash on errors
-                        rvy.processReply(serder, cigars=cigars)  # nontrans
+                    rvy.processReply(**exts)
 
-                    if tsgs:  # process separately so do not clash on errors
-                        rvy.processReply(serder, tsgs=tsgs)  # trans
-
-                except AttributeError as e:
-                    raise kering.ValidationError("No revery to process so dropped msg"
-                                                 "= {}.".format(serder.pretty())) from e
+                except AttributeError as ex:
+                    raise kering.ValidationError(f"No revery to process so dropped msg"
+                                                 f"= {serder.pretty()}.") from ex
 
             elif ilk in (Ilks.qry,):  # query message
-                args = dict(serder=serder)
-                if ssgs:
-                    pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                    args["source"] = pre
-                    args["sigers"] = sigers
-
-                elif cigars:
-                    args["cigars"] = cigars
-
+                # ToDo neigher kvy.processQuery nor tvy.processQuery actually verify
+                if exts['ssgs']:
+                    # use last one if more than one
+                    pre, sigers = exts['ssgs'][-1] if exts['ssgs'] else (None, None)
+                    exts["source"] = pre
+                    exts["sigers"] = sigers
                 else:
-                    raise kering.ValidationError("Missing attached requester signature(s) "
-                                                 "to key log query msg = {}.".format(serder.pretty()))
+                    exts['sigers'] = []  # just in case sigers provided not by ssgs
+
+                if not (exts['source'] or exts['cigars']):  # need one or the other
+                    raise kering.ValidationError(f"Missing attached requester "
+                                                 f"source for query"
+                                                 f" msg = {serder.pretty()}.")
 
                 route = serder.ked["r"]
                 if route in ["logs", "ksn", "mbx"]:
                     try:
-                        kvy.processQuery(**args)
-                    except AttributeError as e:
-                        raise kering.ValidationError("No kevery to process so dropped msg"
-                                                     "= {} from e = {}".format(serder.pretty(), e))
-                    except kering.QueryNotFoundError as e:  # catch escrow error and log it
+                        kvy.processQuery(**exts)
+                    except AttributeError as ex:
+                        raise kering.ValidationError(f"No kevery to process so "
+                                    f" dropped msg={serder.pretty()}") from ex
+                    except kering.QueryNotFoundError as ex:  # catch escrow error and log it
                         if logger.isEnabledFor(logging.TRACE):
-                            logger.exception("Error processing query = %s", e)
+                            logger.exception("Error processing query = %s", ex)
                             logger.trace("Query Body=\n%s\n", serder.pretty())
                         else:
-                            logger.error("Error processing query = %s", e)
+                            logger.error("Error processing query = %s", ex)
 
                 elif route in ["tels", "tsn"]:
                     try:
-                        tvy.processQuery(**args)
-                    except AttributeError as e:
-                        raise kering.ValidationError("No tevery to process so dropped msg"
-                                                     "= {} from {}.".format(serder.pretty(), e))
+                        tvy.processQuery(**exts)
+                    except AttributeError as ex:
+                        raise kering.ValidationError(f"No tevery to process so dropped msg"
+                                                     f"={serder.pretty()}") from ex
 
                 else:
-                    raise kering.ValidationError("Invalid resource type {} so dropped msg"
-                                                 "= {}.".format(route, serder.pretty()))
+                    raise kering.ValidationError(f"Invalid resource type {route}"
+                                                 f"so dropped msg={serder.pretty()}.")
 
             elif ilk in (Ilks.exn,):
-                args = dict(serder=serder)
-                if ptds:
-                    args["pathed"] = ptds
-
-                if essrs:
-                    args["essrs"] = essrs
+                if not (exts['cigars'] or exts['tsgs']):
+                    raise kering.ValidationError(f"Missing attached exchanger "
+                                        f"signatures for msg={serder.pretty()}")
 
                 try:
-                    if cigars:
-                        exc.processEvent(cigars=cigars, **args)
+                    exc.processEvent(**exts)
 
-                    if tsgs:
-                        exc.processEvent(tsgs=tsgs, **args)
-
-                except AttributeError:
-                    raise kering.ValidationError("No Exchange to process so dropped msg"
-                                                 "= {}.".format(serder.pretty()))
+                except AttributeError as ex:
+                    raise kering.ValidationError(f"No Exchange to process so "
+                                    f"dropped msg={serder.pretty()}.") from ex
 
             elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
                 # TEL msg
-                # this transaction event seal in Issuer's KEL (controller of Issuer AID)
-                seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
+                # get transaction event seal ref to Issuer's KEL
+                # use last one if more than one
+                seqner, saider = exts['sscs'][-1] if exts['sscs'] else (None, None)
+                exts['seqner'] = seqner
+                exts['saider'] = saider
                 try:
-                    tvy.processEvent(serder=serder, seqner=seqner, saider=saider, wigers=wigers)
+                    tvy.processEvent(**exts)
 
-                except AttributeError as e:
-                    raise kering.ValidationError("No tevery to process so dropped msg"
-                                                 "= {}.".format(serder.pretty()))
+                except AttributeError as ex:
+                    raise kering.ValidationError(f"No tevery to process so dropped msg"
+                                                 f"={serder.pretty()}.") from ex
             else:
-                raise kering.ValidationError("Unexpected message ilk = {} for evt ="
-                                             " {}.".format(ilk, serder.pretty()))
+                raise kering.ValidationError(f"Unexpected message {ilk=} for evt="
+                                             f"{serder.pretty()}")
 
         elif isinstance(serder, serdering.SerderACDC):
             ilk = serder.ilk  # dispatch based on ilk
 
             if ilk is None:  # default for ACDC
                 try:
-                    prefixer, seqner, saider = ssts[-1] if ssts else (None, None, None)  # use last one if more than one
-                    #vry.processCredential(creder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
-                    vry.processACDC(serder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
-                except AttributeError as e:
-                    raise kering.ValidationError("No verifier to process so dropped credential"
-                                                 "= {}.".format(serder.pretty()))
+                    # use last one if more than one
+                    prefixer, seqner, saider = exts['ssts'][-1] if exts['ssts'] else (None, None, None)
+                    exts['prefixer'] = prefixer
+                    exts['seqner'] = seqner
+                    exts['saider'] = saider
+                    vry.processACDC(**exts)
+                    #vry.processACDC(serder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
+                except AttributeError as ex:
+                    raise kering.ValidationError(f"No verifier to process so "
+                                        f"dropped ACDC={serder.pretty()}") from ex
             else:
-                raise kering.ValidationError("Unexpected message ilk = {} for evt ="
-                                             " {}.".format(ilk, serder.pretty()))
+                raise kering.ValidationError(f"Unexpected message ilk = {ilk} "
+                                             f"for evt={serder.pretty()}")
 
         else:
-            raise kering.ValidationError("Unexpected protocol type = {} for event message ="
-                                         " {}.".format(serder.proto, serder.pretty()))
+            raise kering.ValidationError(f"Unexpected protocol type={serder.proto}"
+                                         f" for event message={serder.pretty()}.")
 
         return True  # done state
 
