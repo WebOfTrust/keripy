@@ -778,90 +778,12 @@ class Parser:
 
                 # iteratively process attachment counters in stride
                 while True:  # do while already extracted first counter is ctr above
-                    if ctr.code == CtrDex_1_0.ControllerIdxSigs:  # extract each attached signature
-                        yield from self._ControllerIdxSigs1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.WitnessIdxSigs:  # extract each attached signature
-                        yield from self._WitnessIdxSigs1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
-                        # extract attached rct couplets into list of cigars
-                        # verfer property of cigar is the identifier prefix
-                        # cigar itself is the attached signature
-                        yield from self._NonTransReceiptCouples1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
-                        # extract attaced trans receipt vrc quadruple
-                        # spre+ssnu+sdig+sig
-                        # spre is pre of signer of vrc
-                        # ssnu is sn of signer's est evt when signed
-                        # sdig is dig of signer's est event when signed
-                        # sig is indexed signature of signer on this event msg
-                        yield from self._TransReceiptQuadruples1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
-                        # extract attaced trans indexed sig groups each made of
-                        # triple pre+snu+dig plus indexed sig group
-                        # pre is pre of signer (endorser) of msg
-                        # snu is sn of signer's est evt when signed
-                        # dig is dig of signer's est event when signed
-                        # followed by counter for ControllerIdxSigs with attached
-                        # indexed sigs from trans signer (endorser).
-                        yield from self._TransIdxSigGroups1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
-                        # extract attaced signer seal indexed sig groups each made of
-                        # identifier pre plus indexed sig group
-                        # pre is pre of signer (endorser) of msg
-                        # followed by counter for ControllerIdxSigs with attached
-                        # indexed sigs from trans signer (endorser).
-                        yield from self._TransLastIdxSigGroups1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
-                        # extract attached first seen replay couples
-                        # snu+dtm
-                        # snu is fn (first seen ordinal) of event
-                        # dtm is dt of event
-                        yield from self._FirstSeenReplayCouples1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.SealSourceCouples:
-                        # extract attached first seen replay couples
-                        # snu+dig
-                        # snu is sequence number  of event
-                        # dig is digest of event
-                        yield from self._SealSourceCouples1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code == CtrDex_1_0.SealSourceTriples:
-                        # extract attached anchoring source event information
-                        # pre+snu+dig
-                        # pre is prefix of event
-                        # snu is sequence number  of event
-                        # dig is digest of event
-                        yield from self._SealSourceTriples1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
-                                      CtrDex_1_0.BigPathedMaterialGroup):
-                        # content is  CESR sub-stream of attachement groups
-                        yield from self._PathedMaterialGroup(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    elif ctr.code in (CtrDex_1_0.ESSRPayloadGroup,
-                                      CtrDex_1_0.BigESSRPayloadGroup):
-                        yield from self._ESSRPayloadGroup1(exts=exts,
-                                    ims=ims, ctr=ctr, cold=cold, abort=enclosed)
-
-                    else:
+                    try:
+                        yield from getattr(self, self.methods[ctr.name])(exts=exts,
+                                        ims=ims, ctr=ctr, cold=cold, abort=enclosed)
+                    except AttributeError as ex:
                         raise kering.UnexpectedCountCodeError(f"Unsupported count"
-                                                            f" code={ctr.code}")
+                                                f" code={ctr.code}") from ex
 
                     if enclosed:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
