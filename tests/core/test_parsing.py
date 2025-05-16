@@ -40,6 +40,7 @@ def test_parser_v1_basic():
     assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.mucodes == Parser.MUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
 
     assert not parser.local
     assert parser.ims == bytearray()
@@ -368,6 +369,8 @@ def test_parser_v1_basic():
         assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
+        assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
+        assert parser.mucodes == Parser.MUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
 
         assert parser.local == False
         assert parser.framed == True
@@ -576,6 +579,8 @@ def test_parser_v1_version():
         assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
+        assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
+        assert parser.mucodes == Parser.MUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
 
         assert parser.local == False
         assert parser.framed == True
@@ -609,6 +614,8 @@ def test_parser_v1():
     assert parser.curver == Vrsn_2_0
     assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.mucodes == Parser.MUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
 
     assert not parser.local
     assert parser.ims == bytearray()
@@ -937,6 +944,8 @@ def test_parser_v1():
         assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
+        assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
+        assert parser.mucodes == Parser.MUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
 
         assert parser.local == False
         assert parser.framed == True

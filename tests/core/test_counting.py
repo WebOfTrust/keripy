@@ -112,6 +112,8 @@ def test_codexes_tags():
         'BigAttachmentGroup': '--V',
     }
 
+    assert  asdict(counting.MUDex_1_0) == {}
+
 
     assert asdict(counting.CtrDex_2_0) == \
     {
@@ -198,6 +200,19 @@ def test_codexes_tags():
         'AttachmentGroup': '-C',
         'BigAttachmentGroup': '--C',
     }
+
+    assert asdict(counting.MUDex_2_0) == \
+    {
+        'DatagramSegmentGroup': '-D',
+        'BigDatagramSegmentGroup': '--D',
+        'ESSRWrapperGroup': '-E',
+        'BigESSRWrapperGroup': '--E',
+        'FixedMessageBodyGroup': '-F',
+        'BigFixedMessageBodyGroup': '--F',
+        'MapMessageBodyGroup': '-G',
+        'BigMapMessageBodyGroup': '--G',
+    }
+
 
     assert counting.CodeNames == \
     (
@@ -357,6 +372,18 @@ def test_counter_class():
         Vrsn_2_0.major: \
         {
             Vrsn_2_0.minor: counting.SUDex_2_0,
+        },
+    }
+
+    assert Counter.MUCodes == \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: counting.MUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: counting.MUDex_2_0,
         },
     }
 

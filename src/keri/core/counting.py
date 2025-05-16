@@ -151,6 +151,23 @@ class SpecialUniversalCodex_1_0(MapDom):
 
 SUDex_1_0 = SpecialUniversalCodex_1_0()
 
+@dataclass(frozen=True)
+class MessageUniversalCodex_1_0(MapDom):
+    """MessageUniversalCodex_1_0 is codex hard (stable) part of all V1 message
+    universal counter codes that support CESR native messages. (currently none)
+    But needed for symmetry when changing versions in how lookup happens in parser.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+MUDex_1_0 = MessageUniversalCodex_1_0()
+
 
 @dataclass(frozen=True)
 class CounterCodex_2_0(MapDom):
@@ -273,6 +290,31 @@ class SpecialUniversalCodex_2_0(MapDom):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
 SUDex_2_0 = SpecialUniversalCodex_2_0()
+
+@dataclass(frozen=True)
+class MessageUniversalCodex_2_0(MapDom):
+    """MessageUniversalCodex_2_0 is codex hard (stable) part of all V2 message
+    universal counter codes that support CESR native messages.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
+    BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
+    ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
+    BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
+    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+MUDex_2_0 = MessageUniversalCodex_2_0()
+
 
 # CodeNames  is tuple of codes names given by attributes of union of codices
 CodeNames = tuple(asdict(CtrDex_2_0) | asdict(CtrDex_1_0))
@@ -452,6 +494,19 @@ class Counter:
         Vrsn_2_0.major: \
         {
             Vrsn_2_0.minor: SUDex_2_0,
+        },
+    }
+
+    # special universal codes
+    MUCodes = \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: MUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: MUDex_2_0,
         },
     }
 

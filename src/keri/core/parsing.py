@@ -58,6 +58,7 @@ class Parser:
         methods (dict): method names for counter extraction, keyed by count code name
         codes (CtrDex): selected by .curver from (CtrDex_1_0, CtrDex_2_0)
         sucodes (SUDex): selected by .curver from  (SUDex_1_0, SUDex_2_0)
+        mucodes (MUDex): selected by .curver from  (MUDex_1_0, MUDex_2_0)
 
 
     Hidden:
@@ -66,11 +67,13 @@ class Parser:
         _curver (Versionage): value for .curver property
         _methods (dict): value for .methods property
         _codes (CtrDex): value for .codes property
-        _sucodes (SUCtrDex): value for .sucodes property
+        _sucodes (SUDex): value for .sucodes property
+        _mucodes (MUDex): value for .mucodes property
 
     """
     Codes = Counter.Codes  # code tables from Counter
-    SUCodes = Counter.SUCodes # special univerval code tables from Counter
+    SUCodes = Counter.SUCodes # special universal code tables from Counter
+    MUCodes = Counter.MUCodes # message universal code tables from Counter
     Methods = copy.deepcopy(Counter.Codes)  # make deep copy so not mutate Counter
     for minor in Methods.values():  # assign None as default val for all possible code names
         for key in minor:
@@ -159,7 +162,7 @@ class Parser:
 
         self._genus = GenDex.KERI_ACDC_SPAC  # only supports KERI_ACDC_SPAC
         self.version = version  # provided version may be earlier than supported version
-        # setting version sets .curver which sets .methods, .codes, and .sucodes
+        # version sets .curver which sets .methods, .codes, .sucodes, and .mucodes
 
 
     @property
@@ -220,6 +223,7 @@ class Parser:
         self._methods = self.Methods[curver.major][latest]
         self._codes = self.Codes[curver.major][latest]
         self._sucodes = self.SUCodes[curver.major][latest]
+        self._mucodes = self.MUCodes[curver.major][latest]
 
 
     @property
@@ -245,6 +249,14 @@ class Parser:
             _sucodes (SUDex): selected by .curver from (SUDex_1_0, SUDex_2_0)
         """
         return self._sucodes
+
+    @property
+    def mucodes(self):
+        """Makes .mucodes read only
+        Returns:
+            _mucodes (MUDex): selected by .curver from (MUDex_1_0, MUDex_2_0)
+        """
+        return self._mucodes
 
 
     def extract(self, ims, klas, cold=Colds.txt):
@@ -743,12 +755,20 @@ class Parser:
             if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
                             UniDex_2_0.KERIACDCGenusVersion):  # change version
                 self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
-            elif ctr.code in self.sucodes:
+            elif ctr.code in (self.sucodes.AttachmentGroup,
+                              self.sucodes.BigAttachmentGroup):
+                raise kering.ColdStartError(f"Attachment group before message")
+
+            elif ctr.code in self.sucodes:  # non-attachment special universal group
                 pass  # ignore for now
+
+            elif ctr.code in self.mucodes:  # CESR native message group
+                pass  # ignore for now
+
             else:
-                raise kering.ColdStartError("Expecting message counter tritet={}"
-                                        "".format(cold))
-        # Otherwise its a message cold start
+                raise kering.ColdStartError(f"Expecting message got {cold=}")
+
+        # Otherwise its JSON, CBOR, or MGPK message cold start
 
         while True:  # extract, deserialize, and strip message from ims
             try:
@@ -794,6 +814,15 @@ class Parser:
                                                      klas=Counter,
                                                      cold=cold,
                                                      abort=enclosed)
+                    # is first counter a genus-version code
+                    if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
+                                    UniDex_2_0.KERIACDCGenusVersion):  # change version
+                        self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+                        # now get non genus-version code to start
+                        ctr = yield from self._extractor(ims=ims,
+                                                         klas=Counter,
+                                                         cold=cold,
+                                                         abort=enclosed)
 
                 # iteratively process attachment counters in stride
                 while True:  # do while already extracted first counter is ctr above
