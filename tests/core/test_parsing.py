@@ -43,7 +43,7 @@ def test_parser():
     assert not parser.local
     assert parser.ims == bytearray()
     assert parser.framed
-    assert not parser.pipeline
+    assert not parser.piped
     assert parser.kvy is None
     assert parser.tvy is None
     assert parser.exc is None
@@ -370,7 +370,7 @@ def test_parser():
 
         assert parser.local == False
         assert parser.framed == True
-        assert parser.pipeline == False
+        assert parser.piped == False
         assert parser.ims == bytearray()
         assert parser.kvy == kevery
         assert parser.tvy is None

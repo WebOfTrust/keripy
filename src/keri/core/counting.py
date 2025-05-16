@@ -15,7 +15,7 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
                             nabSextets)
 
 from .. import kering
-from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
+from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0)
 
 from ..core.coring import MapDom
 
@@ -526,6 +526,60 @@ class Counter:
 
         self._name = self.Names[version.major][latest][self.code]
 
+
+    @classmethod
+    def enclose(cls, *, qb64=None, qb2=None, code=Codens.AttachmentGroup):
+        """Encloses (frames) CESR stream in qb64 or qb2 with prepended counter
+        of type code. Only encloses with CESR v2 counters
+
+        Returns:
+            enclosure (bytearray): stream in qb64 or qb2 with prepended counter
+                of type code. If both qb64 and qb2 are None then empty counter.
+                If qb64 then returns enclosure as bytearray in qb64 text domain
+                If qb2 then returns enclosure as bytearray in qb2 binary domain
+
+        Parameters:
+            qb64 (str|bytes|bytearray|memoryview|None): qualified Base64 sub-stream
+                to be enclosed. May be empty. None means use qb2 if provided.
+            qb2 (bytes|bytearray|memoryview|None): qualified Base2 sub-stream
+                to be enclosed. May be empty. None means ignore
+            code (str):  either stable (hard) part of derivation code or code name.
+                When code name then look up code from ._codes. This allows
+                versioning to change code but keep stable code name.
+        """
+        if qb64 is None and qb2 is None:
+            qb64 = b''
+
+        if qb64 is not None:  # process qb64 in text domain
+            if hasattr(qb64, "encode"):
+                qb64 = qb64.encode()  # convert to bytes
+            if isinstance(qb64, memoryview):
+                qb64 = bytearray(qb64)  # converts memoryview to bytearray
+            length = len(qb64)
+            if length % 4:  # invalid sized qb64 not aligned on 24 bit boundaries
+                raise ValueError(f"Bad enclosed qb64 {length=}")
+            count = length // 4
+            # processes code as codens code name
+            counter = cls(code=code, count=count, version=Vrsn_2_0)
+            enclosure = bytearray(counter.qb64b)
+            enclosure.extend(qb64)
+            return enclosure
+
+        # process qb2 in binary domain
+        if isinstance(qb2, memoryview):
+            qb2 = bytearray(qb2)  # converts memoryview to bytearray
+        length = len(qb2)
+        if length % 3:  # invalid sized qb64 not aligned on 24 bit boundaries
+            raise ValueError(f"Bad enclosed qb2 {length=}")
+        count = length // 3
+        # processes code as codens code name
+        counter = cls(code=code, count=count, version=Vrsn_2_0)
+        enclosure = bytearray(counter.qb2)
+        enclosure.extend(qb2)
+        return enclosure
+
+
+
     @property
     def version(self):
         """Makes .version read only
@@ -664,6 +718,27 @@ class Counter:
             _, ss, _ = self._sizes[self.code]
             l = ss
         return (intToB64(self.count, l=l))
+
+
+    def byteCount(self, cold=Colds.txt):
+        """Computes number of bytes from .count quadlets/triplets given cold
+
+        Returns:
+            byteCount (int): number of bytes in .count quadlets/triplets given cold
+
+        Parameters:
+            cold (str): value of Coldage to indicate if text (qb64) or binary (qb2)
+                        in order to convert .count quadlets/triplets to byte count
+                        if not Colds.txt or Colds.bny raises ValueError
+        """
+        if cold == Colds.txt:  # quadlets
+            return self.count * 4
+
+        if cold == Colds.bny:  # triplets
+            return self.count * 3
+
+        raise ValueError(f"Invalid {cold=} for byte count conversion")
+
 
 
     @staticmethod

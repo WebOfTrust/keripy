@@ -3654,11 +3654,7 @@ class Kevery:
     Attributes:
         cues (Deck):  of Cues i.e. notices of events needing receipt or
                       requests needing response
-
-        .db is instance of LMDB Baser object
-        .framed is Boolean stream is packet framed If True Else not framed
-        .pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+        db (Baser): instance of LMDB Baser object
         lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes

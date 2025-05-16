@@ -40,7 +40,7 @@ class Parser:
     Attributes:
         ims (bytearray): incoming message stream
         framed (bool): True means stream is packet framed
-        pipeline (bool): True means use pipeline processor to process
+        piped (bool): True means use pipeline processor to process
                 whenever stream includes pipelined count codes.
         kvy (Kevery): route KEL message types to this instance
         tvy (Tevery): route TEL message types to this instance
@@ -121,7 +121,7 @@ class Parser:
 
 
 
-    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None,
+    def __init__(self, ims=None, framed=True, piped=False, kvy=None,
                  tvy=None, exc=None, rvy=None, vry=None, local=False,
                  version=Vrsn_2_0):
         """
@@ -131,7 +131,7 @@ class Parser:
             ims (bytearray): incoming message stream
             framed (bool): True means ims contains only one msg body plus
                 its foot of attachments, not multiple sets of msg body plus foot
-            pipeline (bool): True means use pipeline processor to process
+            piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
             kvy (Kevery): route KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
@@ -145,7 +145,7 @@ class Parser:
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
-        self.pipeline = True if pipeline else False  # process as pipelined
+        self.piped = True if piped else False  # use pipeline processor
         self.kvy = kvy
         self.tvy = tvy
         self.exc = exc
@@ -285,7 +285,7 @@ class Parser:
                 yield
 
 
-    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
+    def parse(self, ims=None, framed=None, piped=None, kvy=None, tvy=None,
               exc=None, rvy=None, vry=None, local=None, version=None):
         """Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -293,16 +293,13 @@ class Parser:
         Convenience executor for .allParsatator when ims is not live, i.e. fixed
 
         Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
+            ims (bytearray): incoming message stream. May contain one or more
                 sets each of a serialized message with attached cryptographic
                 material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
+            framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
+            piped (bool):  True means use pipeline processor to process
                 ims msgs when stream incpyludes pipelined count codes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -324,7 +321,7 @@ class Parser:
 
         parsator = self.allParsator(ims=ims,
                                     framed=framed,
-                                    pipeline=pipeline,
+                                    piped=piped,
                                     kvy=kvy,
                                     tvy=tvy,
                                     exc=exc,
@@ -340,7 +337,7 @@ class Parser:
                 break
 
 
-    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None,
+    def parseOne(self, ims=None, framed=True, piped=False, kvy=None, tvy=None,
                  exc=None, rvy=None, vry=None, local=None, version=None):
         """Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -348,16 +345,13 @@ class Parser:
         Convenience executor for .processOneGen when ims is not live, i.e. fixed
 
         Parameters:
-            ims is bytearray of serialized incoming message stream.
+            ims (bytearray): serialized incoming message stream.
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
+            framed (bool) True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
+            piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -377,7 +371,7 @@ class Parser:
 
         parsator = self.onceParsator(ims=ims,
                                      framed=framed,
-                                     pipeline=pipeline,
+                                     piped=piped,
                                      kvy=kvy,
                                      tvy=tvy,
                                      exc=exc,
@@ -392,7 +386,7 @@ class Parser:
                 break
 
 
-    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
+    def allParsator(self, ims=None, framed=None, piped=None, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
                     version=None):
         """Returns generator to parse all messages from incoming message stream,
@@ -401,16 +395,13 @@ class Parser:
         If ims not provided then parse messages from .ims
 
         Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
+            ims (bytearray): of incoming message stream. May contain one or more
                 sets each of a serialized message with attached cryptographic
                 material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
+            framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
+            piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -433,7 +424,7 @@ class Parser:
             ims = self.ims  # use instance attribute by default
 
         framed = framed if framed is not None else self.framed
-        pipeline = pipeline if pipeline is not None else self.pipeline
+        piped = piped if piped is not None else self.piped
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
@@ -446,7 +437,7 @@ class Parser:
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
-                                                   pipeline=pipeline,
+                                                   piped=piped,
                                                    kvy=kvy,
                                                    tvy=tvy,
                                                    exc=exc,
@@ -481,23 +472,20 @@ class Parser:
         return True
 
 
-    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
+    def onceParsator(self, ims=None, framed=None, piped=None, kvy=None,
                      tvy=None, exc=None, rvy=None, vry=None, local=None,
                      version=None):
         """Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
 
         Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
+            ims (bytearray): incoming message stream. May contain one or more
                 sets each of a serialized message with attached cryptographic
                 material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
+            framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
+            piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -520,7 +508,7 @@ class Parser:
             ims = self.ims  # use instance attribute by default
 
         framed = framed if framed is not None else self.framed
-        pipeline = pipeline if pipeline is not None else self.pipeline
+        piped = piped if piped is not None else self.piped
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
@@ -534,7 +522,7 @@ class Parser:
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
-                                                   pipeline=pipeline,
+                                                   piped=piped,
                                                    kvy=kvy,
                                                    tvy=tvy,
                                                    exc=exc,
@@ -570,7 +558,7 @@ class Parser:
         return done
 
 
-    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
+    def parsator(self, ims=None, framed=None, piped=None, kvy=None, tvy=None,
                  exc=None, rvy=None, vry=None, local=None, version=None):
         """Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply. Does not return.
@@ -580,16 +568,13 @@ class Parser:
         If ims not provided then parse messages from .ims
 
         Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
+            ims (bytearray): incoming message stream. May contain one or more
                 sets each of a serialized message with attached cryptographic
                 material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
+            framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
+            piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -600,7 +585,6 @@ class Parser:
                           None means use default .local
             version (Versionage): default version of CESR to use
                                   None means do not change default
-
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -613,7 +597,7 @@ class Parser:
             ims = self.ims  # use instance attribute by default
 
         framed = framed if framed is not None else self.framed
-        pipeline = pipeline if pipeline is not None else self.pipeline
+        piped = piped if piped is not None else self.piped
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
@@ -626,7 +610,7 @@ class Parser:
             try:
                 done = yield from self.msgParsator(ims=ims,
                                                    framed=framed,
-                                                   pipeline=pipeline,
+                                                   piped=piped,
                                                    kvy=kvy,
                                                    tvy=tvy,
                                                    exc=exc,
@@ -661,7 +645,7 @@ class Parser:
         return True  # should never return
 
 
-    def msgParsator(self, ims=None, framed=True, pipeline=False,
+    def msgParsator(self, ims=None, framed=True, piped=False,
                     kvy=None, tvy=None, exc=None, rvy=None, vry=None,
                     local=None, version=None):
         """Returns generator that upon each iteration extracts and parses msg
@@ -674,16 +658,13 @@ class Parser:
         attachments. Returns (which raises StopIteration) when finished.
 
         Parameters:
-            ims (bytearray): of serialized incoming message stream.
+            ims (bytearray): serialized incoming message stream.
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.
-
             framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
-
-            pipeline (bool): True means use pipeline processor to process
+            piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger): route EXN message types to this instance
@@ -762,7 +743,7 @@ class Parser:
                 break  # break out of while loop
 
         # Extract and deserialize attachments
-        grouped = False  # True means all attachments enclosed in AttachmentGroup
+        enclosed = False  # True means all attachments enclosed in AttachmentGroup
 
         try:  # catch errors here to flush only counted part of stream
             # attachments must start with counter so know if txt or bny.
@@ -774,18 +755,18 @@ class Parser:
 
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-                if ctr.code in (self.codes.AttachmentGroup, self.codes.BigAttachmentGroup):  # if ctr.code == CtrDex_1_0.AttachmentGroup:
-                    grouped = True
-                    # compute pipelined attached group size based on txt or bny
-                    pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                    while len(ims) < pags:  # wait until rx full pipelined group
+                if ctr.code in (self.codes.AttachmentGroup, self.codes.BigAttachmentGroup):
+                    enclosed = True
+                    # compute enclosing attachment group size based on txt or bny
+                    eags = ctr.byteCount(cold=cold)
+                    while len(ims) < eags:  # wait until rx full pipelined group
                         yield
 
-                    pims = ims[:pags]  # copy out substream pipeline group
-                    del ims[:pags]  # strip off from ims
-                    ims = pims  # now just process substream as one counted frame
+                    eims = ims[:eags]  # copy out substream enclosed attachments
+                    del ims[:eags]  # strip off from ims
+                    ims = eims  # now just process substream as one counted frame
 
-                    if pipeline:
+                    if piped:
                         pass  # pass extracted ims to pipeline processor
                         return
 
@@ -793,18 +774,18 @@ class Parser:
                     ctr = yield from self._extractor(ims=ims,
                                                      klas=Counter,
                                                      cold=cold,
-                                                     abort=grouped)
+                                                     abort=enclosed)
 
                 # iteratively process attachment counters in stride
                 while True:  # do while already extracted first counter is ctr above
                     if ctr.code == CtrDex_1_0.ControllerIdxSigs:  # extract each attached signature
                         result = yield from self._ControllerIdxSigs1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=grouped)
+                                        ctr=ctr, cold=cold, abort=enclosed)
                         exts['sigers'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.WitnessIdxSigs:  # extract each attached signature
                         result = yield from self._WitnessIdxSigs1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=grouped)
+                                            ctr=ctr, cold=cold, abort=enclosed)
                         exts['wigers'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
@@ -812,7 +793,7 @@ class Parser:
                         # verfer property of cigar is the identifier prefix
                         # cigar itself is the attached signature
                         result = yield from self._NonTransReceiptCouples1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=grouped)
+                                        ctr=ctr, cold=cold, abort=enclosed)
                         exts['cigars'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
@@ -823,7 +804,7 @@ class Parser:
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
                         result = yield from self._TransReceiptQuadruples1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=grouped)
+                                        ctr=ctr, cold=cold, abort=enclosed)
                         exts['trqs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
@@ -835,7 +816,7 @@ class Parser:
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
                         result = yield from self._TransIdxSigGroups1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=grouped)
+                                        ctr=ctr, cold=cold, abort=enclosed)
                         exts['tsgs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
@@ -845,7 +826,7 @@ class Parser:
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
                         result = yield from self._TransLastIdxSigGroups1(ims=ims,
-                                        ctr=ctr, cold=cold, abort=grouped)
+                                        ctr=ctr, cold=cold, abort=enclosed)
                         exts['ssgs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
@@ -854,7 +835,7 @@ class Parser:
                         # snu is fn (first seen ordinal) of event
                         # dtm is dt of event
                         result = yield from self._FirstSeenReplayCouples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=grouped)
+                                            ctr=ctr, cold=cold, abort=enclosed)
                         exts['frcs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.SealSourceCouples:
@@ -863,7 +844,7 @@ class Parser:
                         # snu is sequence number  of event
                         # dig is digest of event
                         result = yield from self._SealSourceCouples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=grouped)
+                                            ctr=ctr, cold=cold, abort=enclosed)
                         exts['sscs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.SealSourceTriples:
@@ -873,27 +854,27 @@ class Parser:
                         # snu is sequence number  of event
                         # dig is digest of event
                         result = yield from self._SealSourceTriples1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=grouped)
+                                            ctr=ctr, cold=cold, abort=enclosed)
                         exts['ssts'].extend(result)
 
                     elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
                                       CtrDex_1_0.BigPathedMaterialGroup):
                         # content is  CESR sub-stream of attachement groups
                         result = yield from self._PathedMaterialGroup(ims=ims,
-                                            ctr=ctr, cold=cold, abort=grouped)
+                                            ctr=ctr, cold=cold, abort=enclosed)
                         exts['ptds'].extend(result)
 
                     elif ctr.code in (CtrDex_1_0.ESSRPayloadGroup,
                                       CtrDex_1_0.BigESSRPayloadGroup):
                         result = yield from self._ESSRPayloadGroup1(ims=ims,
-                                            ctr=ctr, cold=cold, abort=grouped)
+                                            ctr=ctr, cold=cold, abort=enclosed)
                         exts['essrs'].extend(result)
 
                     else:
                         raise kering.UnexpectedCountCodeError(f"Unsupported count"
                                                             f" code={ctr.code}")
 
-                    if grouped:  # attachments framed by enclosing AttachmentGroup
+                    if enclosed:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
                         # or .bny so no need to sniff for new cold here.
                         if not ims:  # end of pipelined group frame
@@ -901,7 +882,7 @@ class Parser:
 
                     else:  # framed: ims, message plus attachments all provided at once
                         # ims framed in some way, but not by enclosing AttachmentGroup
-                        # because not all in one pipeline group, each individual
+                        # not all attachments in one enclosing group, each individual
                         # attachment group may switch stream state txt or bny
                         if not ims:  # end of frame
                             break
@@ -912,10 +893,10 @@ class Parser:
                     ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
         except kering.ExtractionError as ex:
-            if grouped:  # extracted pipelined group is preflushed
+            if enclosed:  # extracted enclosed attachment group is preflushed
                 raise kering.SizedGroupError("Error processing pipelined size"
-                                             "attachment group of size={}.".format(pags))
-            raise  # no pipeline group so can't preflush, must flush stream
+                                             "attachment group of size={}.".format(eags))
+            raise  # no enclosing attachment group so can't preflush, must flush stream
 
         if isinstance(serder, serdering.SerderKERI):
             ilk = serder.ilk  # dispatch abased on ilk
@@ -1127,7 +1108,7 @@ class Parser:
             sigers (list[Siger]): of indexed signature instances
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1191,7 +1172,7 @@ class Parser:
             wigers (list[Siger]): of indexed signature instances
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1261,7 +1242,7 @@ class Parser:
             cigars (list[Cigar]): of signature instances with assigned verfer
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1353,7 +1334,7 @@ class Parser:
         sig is indexed signature of signer on this event msg
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1442,7 +1423,7 @@ class Parser:
             tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1461,7 +1442,7 @@ class Parser:
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
                 raise kering.UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
-            igs = ictr.count * 4 if cold == Colds.txt else ctr.count * 3
+            igs = ictr.byteCount(cold=cold) # ictr.count * 4 if cold == Colds.txt else ctr.count * 3
             # already extracted enclosing group bytes so igs must be < len(gims)
             if len(gims) < igs:  # should not happen unless malformed counter
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1538,7 +1519,7 @@ class Parser:
             ssgs (list[tuple]): [(prefixer, [isigers])]
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1555,7 +1536,7 @@ class Parser:
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
                 raise kering.UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
-            igs = ictr.count * 4 if cold == Colds.txt else ctr.count * 3
+            igs = ictr.byteCount(cold=cold) # ictr.count * 4 if cold == Colds.txt else ctr.count * 3
             # already extracted enclosing group bytes so igs must be < len(gims)
             if len(gims) < igs:  # should not happen unless malformed counter
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1620,7 +1601,7 @@ class Parser:
             frcs (list[tuple]): [(firner, dater)]
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1687,7 +1668,7 @@ class Parser:
             sscs (list[tuple]): [(seqner, saider)]
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1758,7 +1739,7 @@ class Parser:
             ssts (list[tuple]): [(prefixer, seqner, saider)]
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1799,7 +1780,7 @@ class Parser:
             pims (list[bytes]): [gims]
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
@@ -1857,7 +1838,7 @@ class Parser:
             essrs (list[Texter]): [texter]
 
         """
-        gs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+        gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
                 raise ShortageError(f"Unexpected stream shortage on enclosed "

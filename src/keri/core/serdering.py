@@ -153,39 +153,6 @@ So change Smellage to return extra field that has gvrsn when used by snuff
 so can use Smellage for both smell and snuff in both reap and inhale
 where smellage is used. Change egacy uses of smell to ignore extra value.
 
-
-
-Lets try that as it works the best.
-
-while True:  # extract, deserialize, and strip message from ims
-    try:
-        serder = serdery.reap(ims=ims)  # can set version here
-    except kering.ShortageError as ex:  # need more bytes
-        yield
-    else: # extracted and stripped successfully
-        break  # break out of while loop
-
-ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-if ctr.code == CtrDex.AttachmentGroup:  # pipeline ctr?
-    pipelined = True
-
-@staticmethod
-def _extractor(ims, klas, cold=Colds.txt, abort=False):
-    while True:
-        try:
-            if cold == Colds.txt:
-                return klas(qb64b=ims, strip=True)
-            elif cold == Colds.bny:
-                return klas(qb2=ims, strip=True)
-            else:
-                raise kering.ColdStartError("Invalid stream state cold={}.".format(cold))
-        except kering.ShortageError as ex:
-            if abort:  # pipelined pre-collects full frame before extracting
-                raise  # bad pipelined frame so abort by raising error
-            yield
-
-
-
 """
 
 

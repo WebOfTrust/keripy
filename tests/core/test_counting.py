@@ -12,6 +12,7 @@ import pytest
 
 
 from keri import kering
+from keri.kering import Colds
 
 from keri.help import helping
 from keri.help.helping import sceil
@@ -20,8 +21,8 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
 
 
 
-from keri.core import counting
-from keri.core.counting import GenDex, Cizage, Counter, Codens
+from keri.core import counting, Texter
+from keri.core.counting import GenDex, Cizage, Counter, Codens, CtrDex_2_0
 from keri.core.counting import Versionage, Vrsn_1_0, Vrsn_2_0
 
 
@@ -559,6 +560,70 @@ def test_counter_class():
     with pytest.raises(ValueError):
         Counter.verToB64(minor=-1)
 
+    # test class methods
+    enclosure = Counter.enclose()  # test defaults
+    assert enclosure == bytearray(b'-CAA')
+
+    enclosure = Counter.enclose(qb64=b'') # test empty
+    assert enclosure == bytearray(b'-CAA')
+    assert len(enclosure) == 4
+    # round trip
+    counter = Counter(qb64b=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 0
+
+    enclosure = Counter.enclose(qb2=b'') # test empty
+    assert enclosure == bytearray(b'\xf8 \x00')
+    assert len(enclosure) == 3
+    # round trip
+    counter = Counter(qb2=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 0
+
+    enclosure = Counter.enclose(qb64=b'', qb2=b'') # test empty qb64 priority
+    assert enclosure == bytearray(b'-CAA')
+    assert len(enclosure) == 4
+
+    # test with something to enclose
+    texter = Texter(text="How ya doing babe?")
+    assert texter.qb64 == '4BAGSG93IHlhIGRvaW5nIGJhYmU_'
+    assert texter.qb2 == b'\xe0\x10\x06How ya doing babe?'
+
+    enclosure = Counter.enclose(qb64=texter.qb64)
+    assert enclosure == bytearray(b'-CAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+    # round trip
+    counter = Counter(qb64b=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb64) // 4
+
+    enclosure = Counter.enclose(qb2=texter.qb2)
+    assert enclosure == bytearray(b'\xf8 \x07\xe0\x10\x06How ya doing babe?')
+    # round trip
+    counter = Counter(qb2=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb2) // 3
+
+    # test with other than default code
+    enclosure = Counter.enclose(qb64=texter.qb64, code=Codens.GenericGroup)
+    assert enclosure == bytearray(b'-AAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+
+    enclosure = Counter.enclose(qb2=texter.qb2, code=Codens.GenericGroup)
+    assert enclosure ==bytearray(b'\xf8\x00\x07\xe0\x10\x06How ya doing babe?')
+
+    # error cases
+    with pytest.raises(kering.InvalidCodeError):
+        enclosure = Counter.enclose(qb64=texter.qb64, code="MadeUpCode")
+
+    with pytest.raises(ValueError):  # not aligned 24 bit
+        enclosure = Counter.enclose(qb64=texter.qb64[:-1])
+
+    with pytest.raises(ValueError):  # not aligned 24 bit
+        enclosure = Counter.enclose(qb2=texter.qb2[:-1])
+
 
     """ Done Test """
 
@@ -958,7 +1023,6 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
     assert counter.codes == counting.CtrDex_1_0
-    #assert counter.tags == counting.Tags_1_0
     assert counter.sizes == Counter.Sizes[1][0]
 
 
@@ -974,6 +1038,19 @@ def test_counter_v1():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
+
+    # test byteCount
+    count = 10  # quadlets
+    counter = Counter(count=count, code=Codens.AttachmentGroup, version=Vrsn_1_0)
+    assert counter.code == CtrDex.AttachmentGroup
+    assert counter.name == "AttachmentGroup"
+    assert counter.version == Vrsn_1_0
+    assert counter.count == count
+    assert counter.byteCount() == count * 4
+    assert counter.byteCount(cold=Colds.txt) == count * 4
+    assert counter.byteCount(cold=Colds.bny) == count * 3
+    with pytest.raises(ValueError):
+        counter.byteCount(cold=Colds.msg)
 
     """End Test"""
 
@@ -1428,7 +1505,6 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
     assert counter.fullSize == 8
     assert counter.codes == counting.CtrDex_2_0
-    #assert counter.tags == counting.Tags_2_0
     assert counter.sizes == Counter.Sizes[2][0]
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
@@ -1443,6 +1519,19 @@ def test_counter_v2():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+
+    # test byteCount
+    count = 10  # quadlets
+    counter = Counter(count=count, code=Codens.AttachmentGroup, version=Vrsn_2_0)
+    assert counter.code == CtrDex.AttachmentGroup
+    assert counter.name == "AttachmentGroup"
+    assert counter.version == Vrsn_2_0
+    assert counter.count == count
+    assert counter.byteCount() == count * 4
+    assert counter.byteCount(cold=Colds.txt) == count * 4
+    assert counter.byteCount(cold=Colds.bny) == count * 3
+    with pytest.raises(ValueError):
+        counter.byteCount(cold=Colds.msg)
 
     """End Test"""
 
