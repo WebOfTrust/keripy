@@ -761,28 +761,11 @@ class Parser:
                 exts['serder'] = serder
                 break  # break out of while loop
 
-
-        sigers = []  # list of Siger instances of attached indexed controller signatures
-        wigers = []  # list of Siger instance of attached indexed witness signatures
-        cigars = []  # List of cigars to hold nontrans rct couplets
-        # List of tuples from extracted transferable receipt (vrc) quadruples
-        trqs = []  # each converted quadruple is (prefixer, seqner, diger, siger)
-        # List of tuples from extracted transferable indexed sig groups
-        tsgs = []  # each converted group is tuple of (i,s,d) triple plus list of sigs
-        # List of tuples from extracted signer seals sig groups
-        ssgs = []  # each converted group is the identifier prefix plus list of sigs
-        # List of tuples from extracted first seen replay couples
-        frcs = []  # each converted couple is (seqner, dater)
-        # List of tuples from extracted source seal couples (delegator or issuer)
-        sscs = []  # each converted couple is (seqner, diger) for delegating or issuing event
-        # List of tuples from extracted source seal triples (issuer or issuance tel event)
-        ssts = []  # each converted couple is (seqner, diger) for delegating or issuing event
-        ptds = []  # grouped attachments as stream staring with subpath
-        essrs = []  # group texter
+        # Extract and deserialize attachments
         grouped = False  # True means all attachments enclosed in AttachmentGroup
-        # extract and deserialize attachments
+
         try:  # catch errors here to flush only counted part of stream
-            # extract attachments must start with counter so know if txt or bny.
+            # attachments must start with counter so know if txt or bny.
             # if no attachments MUST have at least empty AttachmentGroup
             while not ims and not framed:  # framed has everything already
                 yield  # when not framed at least empty AttachmentGroup follows
@@ -817,13 +800,11 @@ class Parser:
                     if ctr.code == CtrDex_1_0.ControllerIdxSigs:  # extract each attached signature
                         result = yield from self._ControllerIdxSigs1(ims=ims,
                                         ctr=ctr, cold=cold, abort=grouped)
-                        sigers.extend(result)  # accumulate multiple appearances of group
                         exts['sigers'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.WitnessIdxSigs:  # extract each attached signature
                         result = yield from self._WitnessIdxSigs1(ims=ims,
                                             ctr=ctr, cold=cold, abort=grouped)
-                        wigers.extend(result)  # accumulate multiple appearances of group
                         exts['wigers'].extend(result)
 
 
@@ -833,7 +814,6 @@ class Parser:
                         # cigar itself is the attached signature
                         result = yield from self._NonTransReceiptCouples1(ims=ims,
                                         ctr=ctr, cold=cold, abort=grouped)
-                        cigars.extend(result)  # accumulate multiple appearances of group
                         exts['cigars'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransReceiptQuadruples:
@@ -845,7 +825,6 @@ class Parser:
                         # sig is indexed signature of signer on this event msg
                         result = yield from self._TransReceiptQuadruples1(ims=ims,
                                         ctr=ctr, cold=cold, abort=grouped)
-                        trqs.extend(result)  # accumulate multiple appearances of group
                         exts['trqs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransIdxSigGroups:
@@ -858,7 +837,6 @@ class Parser:
                         # indexed sigs from trans signer (endorser).
                         result = yield from self._TransIdxSigGroups1(ims=ims,
                                         ctr=ctr, cold=cold, abort=grouped)
-                        tsgs.extend(result)  # accumulate multiple appearances of group
                         exts['tsgs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.TransLastIdxSigGroups:
@@ -869,7 +847,6 @@ class Parser:
                         # indexed sigs from trans signer (endorser).
                         result = yield from self._TransLastIdxSigGroups1(ims=ims,
                                         ctr=ctr, cold=cold, abort=grouped)
-                        ssgs.extend(result)  # accumulate multiple appearances of group
                         exts['ssgs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.FirstSeenReplayCouples:
@@ -879,7 +856,6 @@ class Parser:
                         # dtm is dt of event
                         result = yield from self._FirstSeenReplayCouples1(ims=ims,
                                             ctr=ctr, cold=cold, abort=grouped)
-                        frcs.extend(result)  # accumulate multiple appearances of group
                         exts['frcs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.SealSourceCouples:
@@ -889,7 +865,6 @@ class Parser:
                         # dig is digest of event
                         result = yield from self._SealSourceCouples1(ims=ims,
                                             ctr=ctr, cold=cold, abort=grouped)
-                        sscs.extend(result)  # accumulate multiple appearances of group
                         exts['sscs'].extend(result)
 
                     elif ctr.code == CtrDex_1_0.SealSourceTriples:
@@ -900,7 +875,6 @@ class Parser:
                         # dig is digest of event
                         result = yield from self._SealSourceTriples1(ims=ims,
                                             ctr=ctr, cold=cold, abort=grouped)
-                        ssts.extend(result)  # accumulate multiple appearances of group
                         exts['ssts'].extend(result)
 
                     elif ctr.code in (CtrDex_1_0.PathedMaterialGroup,
@@ -908,19 +882,17 @@ class Parser:
                         # content is  CESR sub-stream of attachement groups
                         result = yield from self._PathedMaterialGroup(ims=ims,
                                             ctr=ctr, cold=cold, abort=grouped)
-                        ptds.extend(result)
                         exts['ptds'].extend(result)
 
                     elif ctr.code in (CtrDex_1_0.ESSRPayloadGroup,
                                       CtrDex_1_0.BigESSRPayloadGroup):
                         result = yield from self._ESSRPayloadGroup1(ims=ims,
                                             ctr=ctr, cold=cold, abort=grouped)
-                        essrs.extend(result)  # accumulate multiple appearances of group
                         exts['essrs'].extend(result)
 
                     else:
-                        raise kering.UnexpectedCountCodeError("Unsupported count"
-                                                              " code={}.".format(ctr.code))
+                        raise kering.UnexpectedCountCodeError(f"Unsupported count"
+                                                            f" code={ctr.code}")
 
                     if grouped:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
