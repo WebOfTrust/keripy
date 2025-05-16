@@ -807,7 +807,6 @@ class Parser:
                                             ctr=ctr, cold=cold, abort=grouped)
                         exts['wigers'].extend(result)
 
-
                     elif ctr.code == CtrDex_1_0.NonTransReceiptCouples:
                         # extract attached rct couplets into list of cigars
                         # verfer property of cigar is the identifier prefix
