@@ -77,10 +77,12 @@ def test_codexes_tags():
         'SealSourceTriples': '-I',
         'PathedMaterialGroup': '-L',
         'BigPathedMaterialGroup': '--L',
+        'GenericGroup': '-T',
+        'BigGenericGroup': '--T',
+        'MessageGroup': '-U',
+        'BigMessageGroup': '--U',
         'AttachmentGroup': '-V',
         'BigAttachmentGroup': '--V',
-        'GenericGroup': '-W',
-        'BigGenericGroup': '--W',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
         'KERIACDCGenusVersion': '-_AAA'
@@ -90,20 +92,24 @@ def test_codexes_tags():
     {
         'PathedMaterialGroup': '-L',
         'BigPathedMaterialGroup': '--L',
+        'GenericGroup': '-T',
+        'BigGenericGroup': '--T',
+        'MessageGroup': '-U',
+        'BigMessageGroup': '--U',
         'AttachmentGroup': '-V',
         'BigAttachmentGroup': '--V',
-        'GenericGroup': '-W',
-        'BigGenericGroup': '--W',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
     }
 
     assert  asdict(counting.SUDex_1_0) == \
     {
+        'GenericGroup': '-T',
+        'BigGenericGroup': '--T',
+        'MessageGroup': '-U',
+        'BigMessageGroup': '--U',
         'AttachmentGroup': '-V',
         'BigAttachmentGroup': '--V',
-        'GenericGroup': '-W',
-        'BigGenericGroup': '--W',
     }
 
 
@@ -369,10 +375,12 @@ def test_counter_class():
                     '-I': 'SealSourceTriples',
                     '-L': 'PathedMaterialGroup',
                     '--L': 'BigPathedMaterialGroup',
+                    '-T': 'GenericGroup',
+                    '--T': 'BigGenericGroup',
+                    '-U': 'MessageGroup',
+                    '--U': 'BigMessageGroup',
                     '-V': 'AttachmentGroup',
                     '--V': 'BigAttachmentGroup',
-                    '-W': 'GenericGroup',
-                    '--W': 'BigGenericGroup',
                     '-Z': 'ESSRPayloadGroup',
                     '--Z': 'BigESSRPayloadGroup',
                     '-_AAA': 'KERIACDCGenusVersion',
@@ -453,10 +461,12 @@ def test_counter_class():
                     '-I': Cizage(hs=2, ss=2, fs=4),
                     '-L': Cizage(hs=2, ss=2, fs=4),
                     '--L': Cizage(hs=3, ss=5, fs=8),
+                    '-T': Cizage(hs=2, ss=2, fs=4),
+                    '--T': Cizage(hs=3, ss=5, fs=8),
+                    '-U': Cizage(hs=2, ss=2, fs=4),
+                    '--U': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
                     '--V': Cizage(hs=3, ss=5, fs=8),
-                    '-W': Cizage(hs=2, ss=2, fs=4),
-                    '--W': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '--Z': Cizage(hs=3, ss=5, fs=8),
                     '-_AAA': Cizage(hs=5, ss=3, fs=8)
@@ -738,12 +748,12 @@ def test_counter_class():
     enclosure = Counter.enclose(qb64=texter.qb64,
                                 code=Codens.GenericGroup,
                                 version=Vrsn_1_0)
-    assert enclosure == bytearray(b'-WAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+    assert enclosure == bytearray(b'-TAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
 
     enclosure = Counter.enclose(qb2=texter.qb2,
                                 code=Codens.GenericGroup,
                                 version=Vrsn_1_0)
-    assert enclosure ==bytearray(b'\xf9`\x07\xe0\x10\x06How ya doing babe?')
+    assert enclosure == bytearray(b'\xf90\x07\xe0\x10\x06How ya doing babe?')
 
     # error cases
     with pytest.raises(ValueError):  # not a QTDex code

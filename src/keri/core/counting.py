@@ -62,10 +62,12 @@ class CounterCodex_1_0(MapDom):
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
     PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    GenericGroup: str = '-W'  # Generic Material Quadlets
-    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
@@ -89,10 +91,12 @@ class QuadTripCodex_1_0(MapDom):
     """
     PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    GenericGroup: str = '-W'  # Generic Material Quadlets
-    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
 
@@ -110,10 +114,12 @@ class UniversalCodex_1_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    GenericGroup: str = '-W'  # Generic Material Quadlets
-    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -133,10 +139,12 @@ class SpecialUniversalCodex_1_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachmentGroup: str = '--V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    GenericGroup: str = '-W'  # Generic Material Quadlets
-    BigGenericGroup: str = '--W'  # Big Generic Material Quadlets
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -489,10 +497,12 @@ class Counter:
                 '-I': Cizage(hs=2, ss=2, fs=4),
                 '-L': Cizage(hs=2, ss=2, fs=4),
                 '--L': Cizage(hs=3, ss=5, fs=8),
+                '-T': Cizage(hs=2, ss=2, fs=4),
+                '--T': Cizage(hs=3, ss=5, fs=8),
+                '-U': Cizage(hs=2, ss=2, fs=4),
+                '--U': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
                 '--V': Cizage(hs=3, ss=5, fs=8),
-                '-W': Cizage(hs=2, ss=2, fs=4),
-                '--W': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
                 '--Z': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),
