@@ -746,40 +746,79 @@ class Parser:
         if ims is None:
             ims = self.ims
 
-        while not ims:
-            yield
-
-        cold = sniff(ims)  # check for spurious counters at front of stream
-        if cold in (Colds.txt, Colds.bny):  # not message, so error out to flush stream
-            ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-            if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
-                            UniDex_2_0.KERIACDCGenusVersion):  # change version
-                self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
-            elif ctr.code in (self.sucodes.AttachmentGroup,
-                              self.sucodes.BigAttachmentGroup):
-                raise kering.ColdStartError(f"Attachment group before message")
-
-            elif ctr.code in self.sucodes:  # non-attachment special universal group
-                pass  # ignore for now
-
-            elif ctr.code in self.mucodes:  # CESR native message group
-                pass  # ignore for now
-
-            else:
-                raise kering.ColdStartError(f"Expecting message got {cold=}")
-
-        # Otherwise its JSON, CBOR, or MGPK message cold start
-
-        while True:  # extract, deserialize, and strip message from ims
-            try:
-                serder = serdery.reap(ims=ims, genus=self.genus, gvrsn=self.curver)
-            except kering.ShortageError as ex:  # need more bytes
-                if framed:  # full frame before extracting
-                    raise  # incomplete frame so abort by raising error
+        try:
+            while not ims:
                 yield
-            else: # extracted and stripped successfully
-                exts['serder'] = serder
-                break  # break out of while loop
+
+            native = False  # native message vs json, cbor, or mgpk
+            eags = None  # non None is size of message group
+
+            cold = sniff(ims)  # check front of stream
+            if cold != Colds.msg:  # counter found
+                ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+                if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
+                                UniDex_2_0.KERIACDCGenusVersion):  # change version
+                    self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+
+                elif (not (ctr.code in self.mucodes or ctr.code in
+                        (self.sucodes.MessageGroup, self.sucodes.BigMessageGroup))):
+                    raise kering.ColdStartError(f"Unexpected counter code={ctr.code}")
+
+                elif ctr.code in (self.sucodes.MessageGroup,
+                                  self.sucodes.BigMessageGroup):
+
+                    framed = True  # since includes attachments so pre-extracted
+                    # compute enclosing group size based on txt or bny
+                    eags = ctr.byteCount(cold=cold)
+                    while len(ims) < eags:
+                        yield
+
+                    eims = ims[:eags]  # copy out substream enclosed attachments
+                    del ims[:eags]  # strip off from ims
+                    ims = eims  # replace
+
+                    if piped:
+                        pass  # pass extracted ims to pipeline processor
+                        return
+
+                    cold = sniff(ims)  # check new front of streams
+                    if cold != Colds.msg:  # counter
+                        ctr = yield from self._extractor(ims=eims, klas=Counter, cold=cold)
+                        if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
+                                                UniDex_2_0.KERIACDCGenusVersion):  # change version
+                            self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+
+                        elif ctr.code not in self.mucodes:
+                            raise kering.ColdStartError(f"Unexpected counter code="
+                                                f"{ctr.code} inside MessageGroup")
+
+                    else:  # non-native message
+                        ctr = None  # consumed all leading counters
+
+                # outdented so captures both enclosed and not enclosed native messages
+                if ctr and ctr.code in self.mucodes:  # CESR native message group
+                    native = True
+                    pass  # ignore for now
+
+
+            # Otherwise its JSON, CBOR, or MGPK message cold start
+            while not native:  # extract, deserialize, and strip message from ims
+                try:
+                    serder = serdery.reap(ims=ims, genus=self.genus, gvrsn=self.curver)
+                except kering.ShortageError as ex:  # need more bytes
+                    if framed:  # pre-extracted
+                        raise  # incomplete frame or group so abort by raising error
+                    yield
+                else: # extracted and stripped successfully
+                    exts['serder'] = serder
+                    break  # break out of while loop
+
+        except kering.ExtractionError as ex:
+            if eags is not None:  # extracted enclosed message group is preflushed
+                raise kering.SizedGroupError(f"Error processing message group"
+                                             f" of size={eags}")
+            raise  # no enclosing message group so can't preflush, must flush stream
+
 
         # Extract and deserialize attachments
         enclosed = False  # True means all attachments enclosed in AttachmentGroup
@@ -798,7 +837,7 @@ class Parser:
                     enclosed = True
                     # compute enclosing attachment group size based on txt or bny
                     eags = ctr.byteCount(cold=cold)
-                    while len(ims) < eags:  # wait until rx full pipelined group
+                    while len(ims) < eags:
                         yield
 
                     eims = ims[:eags]  # copy out substream enclosed attachments
@@ -836,10 +875,12 @@ class Parser:
                     if enclosed:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
                         # or .bny so no need to sniff for new cold here.
-                        if not ims:  # end of pipelined group frame
+                        if not ims:  # end of attachment group
                             break
 
-                    else:  # framed: ims, message plus attachments all provided at once
+                    else:  # assumes that if attachments are not enclosed that
+                        # framed must be true, which means ims, message plus
+                        # attachments all provided at once
                         # ims framed in some way, but not by enclosing AttachmentGroup
                         # not all attachments in one enclosing group, each individual
                         # attachment group may switch stream state txt or bny
@@ -853,8 +894,8 @@ class Parser:
 
         except kering.ExtractionError as ex:
             if enclosed:  # extracted enclosed attachment group is preflushed
-                raise kering.SizedGroupError("Error processing pipelined size"
-                                             "attachment group of size={}.".format(eags))
+                raise kering.SizedGroupError(f"Error processing attachment group"
+                                             " of size={eags}")
             raise  # no enclosing attachment group so can't preflush, must flush stream
 
         if isinstance(serder, serdering.SerderKERI):
