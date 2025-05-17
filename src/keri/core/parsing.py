@@ -719,7 +719,7 @@ class Parser:
         self.version = version  # when not None which sets .curver ...
 
         try:
-            while not ims:
+            while not ims and not framed:
                 yield
 
             while True:  # keep processing nested Generic Groups
@@ -876,77 +876,91 @@ class Parser:
 
 
         try:
-            while not ims:
+            while not ims and not framed:
                 yield
 
-            native = False  # native message vs json, cbor, or mgpk
-            eags = None  # non None is size of message group
+            emgs = None  # size of enclosing message group if any when is not None
 
-            cold = sniff(ims)  # check front of stream
-            if cold != Colds.msg:  # counter found
-                ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+            cold = sniff(ims)  # front of top level of this substream
+            if cold != Colds.msg:  # counter found so peek at it
+                ctr = yield from self._extractor(ims=ims,
+                                                 klas=Counter,
+                                                 cold=cold,
+                                                 abort=framed,
+                                                 strip=False)
                 if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
-                                UniDex_2_0.KERIACDCGenusVersion):  # change version
+                                UniDex_2_0.KERIACDCGenusVersion):
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                    # change version
                     self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
-
-                elif (not (ctr.code in self.mucodes or ctr.code in
-                        (self.sucodes.MessageGroup, self.sucodes.BigMessageGroup))):
-                    raise kering.ColdStartError(f"Unexpected counter code={ctr.code}")
 
                 elif ctr.code in (self.sucodes.MessageGroup,
                                   self.sucodes.BigMessageGroup):
-
-                    framed = True  # since includes attachments so pre-extracted
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # compute enclosing group size based on txt or bny
-                    eags = ctr.byteCount(cold=cold)
-                    while len(ims) < eags:
+                    emgs = ctr.byteCount(cold=cold)
+                    while len(ims) < emgs and not framed:  # framed already in ims
                         yield
 
-                    eims = ims[:eags]  # copy out substream enclosed attachments
-                    del ims[:eags]  # strip off from ims
-                    ims = eims  # replace
+                    eims = ims[:emgs]  # copy out substream enclosed attachments
+                    del ims[:emgs]  # strip off from ims
+                    ims = eims  # replace since message group includes attachments
+                    framed = True  # since includes attachments so pre-extracted
 
                     if piped:
                         pass  # pass extracted ims to pipeline processor
                         return
 
-                    cold = sniff(ims)  # check new front of streams
-                    if cold != Colds.msg:  # counter
-                        ctr = yield from self._extractor(ims=eims, klas=Counter, cold=cold)
+                    cold = sniff(ims)  # check front of group for genus version
+                    if cold != Colds.msg:  # peek for version change
+                        ctr = yield from self._extractor(ims=eims,
+                                                         klas=Counter,
+                                                         cold=cold,
+                                                         abort=framed,
+                                                         strip=False)
                         if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
-                                                UniDex_2_0.KERIACDCGenusVersion):  # change version
+                                                UniDex_2_0.KERIACDCGenusVersion):
+                            del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                            # change version
                             self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
 
-                        elif ctr.code not in self.mucodes:
-                            raise kering.ColdStartError(f"Unexpected counter code="
-                                                f"{ctr.code} inside MessageGroup")
+            cold = sniff(ims)  # check front of substream for message of some kind
+            if cold != Colds.msg:  # counter found should be native message
+                ctr = yield from self._extractor(ims=ims,
+                                                 klas=Counter,
+                                                 abort=framed,
+                                                 cold=cold)
+                if ctr.code in self.mucodes:  # process native message group
+                    nmgs = ctr.byteCount(cold=cold)  # native message group size
+                    while len(ims) < nmgs and not framed:  # framed already in ims
+                        yield
 
-                    else:  # non-native message
-                        ctr = None  # consumed all leading counters
+                    nims = ims[:nmgs]  # copy out substream enclosed attachments
+                    del ims[:nmgs]  # strip off from ims
+                    # now nims includes just the native message not attachments
+                    # and native message has been stripped from ims
 
-                # outdented so captures both enclosed and not enclosed native messages
-                if ctr and ctr.code in self.mucodes:  # CESR native message group
-                    native = True
-                    pass  # ignore for now
+                else:  # shouldn't be a counter of any other type here
+                    raise kering.ColdStartError(f"Expected message counter code,"
+                                                f" got code={ctr.code}")
 
-
-            # Otherwise its JSON, CBOR, or MGPK message cold start
-            while not native:  # extract, deserialize, and strip message from ims
-                try:
-                    serder = serdery.reap(ims=ims, genus=self.genus, gvrsn=self.curver)
-                except kering.ShortageError as ex:  # need more bytes
-                    if framed:  # pre-extracted
-                        raise  # incomplete frame or group so abort by raising error
-                    yield
-                else: # extracted and stripped successfully
-                    exts['serder'] = serder
-                    break  # break out of while loop
+            else:   # Otherwise its JSON, CBOR, or MGPK message cold start
+                while True:  # extract, deserialize, and strip message from ims
+                    try:
+                        serder = serdery.reap(ims=ims, genus=self.genus, gvrsn=self.curver)
+                    except kering.ShortageError as ex:  # need more bytes
+                        if framed:  # pre-extracted
+                            raise  # incomplete frame or group so abort by raising error
+                        yield
+                    else: # extracted and stripped successfully
+                        exts['serder'] = serder
+                        break  # break out of while loop
 
         except kering.ExtractionError as ex:
-            if eags is not None:  # extracted enclosed message group is preflushed
-                raise kering.SizedGroupError(f"Error processing message group"
-                                             f" of size={eags}")
-            raise  # no enclosing message group so can't preflush, must flush stream
+            if emgs is not None:  # extracted enclosed message group is preflushed
+                raise kering.SizedGroupError(f"Error processing enclosing "
+                                             f"message group of size={emgs}")
+            raise  # no enclosing group so can't preflush, must flush stream
 
 
         # Extract and deserialize attachments
@@ -963,32 +977,33 @@ class Parser:
                 ctr = yield from self._extractor(ims=ims,
                                                  klas=Counter,
                                                  cold=cold,
+                                                 abort=framed,
                                                  strip=False)
                 if ctr.code in (self.codes.AttachmentGroup, self.codes.BigAttachmentGroup):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                    enclosed = True
                     # compute enclosing attachment group size based on txt or bny
                     eags = ctr.byteCount(cold=cold)
-                    while len(ims) < eags:
+                    while len(ims) < eags and not framed:
                         yield
                     eims = ims[:eags]  # copy out substream enclosed attachments
                     del ims[:eags]  # strip off from ims consume contents from ims
                     ims = eims  # now just process substream as one counted frame
+                    enclosed = True
 
                     if piped:
                         pass  # pass extracted ims to pipeline processor
                         return
 
-                    # peek at first counter inside attachment group
+                    # peek for version change
                     ctr = yield from self._extractor(ims=ims,
                                                      klas=Counter,
                                                      cold=cold,
                                                      abort=enclosed,
                                                      strip=False)
-                    # is first counter a genus-version code
                     if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
-                                    UniDex_2_0.KERIACDCGenusVersion):  # change version
+                                    UniDex_2_0.KERIACDCGenusVersion):
                         del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                        # change version
                         self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
 
 
@@ -997,7 +1012,7 @@ class Parser:
 
                     try:
                         yield from getattr(self, self.methods[ctr.name])(exts=exts,
-                                        ims=ims, ctr=ctr, cold=cold, abort=enclosed)
+                            ims=ims, ctr=ctr, cold=cold, abort=(framed or enclosed))
                     except AttributeError as ex:
                         raise kering.UnexpectedCountCodeError(f"Unsupported count"
                                                 f" code={ctr.code}") from ex
