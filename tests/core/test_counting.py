@@ -823,10 +823,11 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
     assert counter.fullSize == 4
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 3
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
     assert counter.codes == counting.CtrDex_1_0
-    #assert counter.tags == counting.Tags_1_0
     assert counter.sizes == Counter.Sizes[1][0]
 
     counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)
@@ -965,6 +966,9 @@ def test_counter_v1():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
+    assert counter.fullSize == 8
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 6
 
     counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
@@ -1250,6 +1254,8 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
     assert counter.fullSize == 4
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 3
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
     assert counter.codes == counting.CtrDex_2_0
@@ -1489,6 +1495,9 @@ def test_counter_v2():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+    assert counter.fullSize == 8
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 6
 
     counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup

@@ -730,11 +730,11 @@ class Parser:
                     if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
                                         UniDex_2_0.KERIACDCGenusVersion):  # change version
                         self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
-                        del ims[:ctr.byteCount(cold=cold)]  # consume counter
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
 
                     elif (ctr.code in (self.sucodes.GenericGroup,
                                            self.sucodes.GenericGroup)):
-                        del ims[:ctr.byteCount(cold=cold)]  # consume counter
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
 
 
                     elif ctr.code in (self.sucodes.MessageGroup,
@@ -958,42 +958,43 @@ class Parser:
             while not ims and not framed:  # framed has everything already
                 yield  # when not framed at least empty AttachmentGroup follows
 
-            cold = sniff(ims)  # expect counter at front of attachments
-
-            if cold != Colds.msg:  # not new message so process attachments
-                ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+            cold = sniff(ims)
+            if cold != Colds.msg:  # counter so peek at what it is
+                ctr = yield from self._extractor(ims=ims,
+                                                 klas=Counter,
+                                                 cold=cold,
+                                                 strip=False)
                 if ctr.code in (self.codes.AttachmentGroup, self.codes.BigAttachmentGroup):
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     enclosed = True
                     # compute enclosing attachment group size based on txt or bny
                     eags = ctr.byteCount(cold=cold)
                     while len(ims) < eags:
                         yield
-
                     eims = ims[:eags]  # copy out substream enclosed attachments
-                    del ims[:eags]  # strip off from ims
+                    del ims[:eags]  # strip off from ims consume contents from ims
                     ims = eims  # now just process substream as one counted frame
 
                     if piped:
                         pass  # pass extracted ims to pipeline processor
                         return
 
-                    # get first counter inside attachment group
+                    # peek at first counter inside attachment group
                     ctr = yield from self._extractor(ims=ims,
                                                      klas=Counter,
                                                      cold=cold,
-                                                     abort=enclosed)
+                                                     abort=enclosed,
+                                                     strip=False)
                     # is first counter a genus-version code
                     if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
                                     UniDex_2_0.KERIACDCGenusVersion):  # change version
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                         self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
-                        # now get non genus-version code to start
-                        ctr = yield from self._extractor(ims=ims,
-                                                         klas=Counter,
-                                                         cold=cold,
-                                                         abort=enclosed)
 
-                # iteratively process attachment counters in stride
-                while True:  # do while already extracted first counter is ctr above
+
+                while True:  # iteratively process attachment counters in stride
+                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+
                     try:
                         yield from getattr(self, self.methods[ctr.name])(exts=exts,
                                         ims=ims, ctr=ctr, cold=cold, abort=enclosed)
@@ -1019,7 +1020,7 @@ class Parser:
                         if cold == Colds.msg:  # new message so attachments done
                             break  # finished attachments since new message
 
-                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+
 
         except kering.ExtractionError as ex:
             if enclosed:  # extracted enclosed attachment group is preflushed

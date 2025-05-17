@@ -878,9 +878,9 @@ class Counter:
 
     @property
     def fullSize(self):
-        """Getter for full size of counter in bytes
+        """Getter for full size of counter in bytes in text domain
         Returns"
-           fs (int): full size of counter in bytes
+           fs (int): full size of counter in bytes in text domain
 
         """
         _, _, fs = self.sizes[self.code]  # get from sizes table
@@ -947,6 +947,28 @@ class Counter:
             return self.count * 3
 
         raise ValueError(f"Invalid {cold=} for byte count conversion")
+
+
+    def byteSize(self, cold=Colds.txt):
+        """Computes number of bytes from .fullSize given cold (text or binary domain)
+        so can strip appropriate number of bytes from stream when peeking at
+        counter in stream without stripping it.
+
+        Returns:
+            byteSize (int): number of bytes given cold (text or binary domain)
+
+        Parameters:
+            cold (str): value of Coldage to indicate if text (qb64) or binary (qb2)
+                        in order to convert .count quadlets/triplets to byte count
+                        if not Colds.txt or Colds.bny raises ValueError
+        """
+        if cold == Colds.txt:
+            return self.fullSize
+
+        if cold == Colds.bny:
+            return (self.fullSize // 4) * 3
+
+        raise ValueError(f"Invalid {cold=} for byte size conversion")
 
 
 
