@@ -278,7 +278,7 @@ class Parser:
             raise ColdStartError(f"Invalid stream state {cold=}")
 
 
-    def _extractor(self, ims, klas, cold=Colds.txt, abort=False):
+    def _extractor(self, ims, klas, cold=Colds.txt, abort=False, strip=True):
         """Returns generator to extract and return instance of klas from input
         message stream, ims, given stream state, cold, is txt or bny.
         If wait is True then yield when not enough bytes in stream otherwise
@@ -292,6 +292,8 @@ class Parser:
             cold (Coldage): instance str value
             abort (bool): True means abort if bad pipelined frame Shortage
                           False means do not abort if Shortage just wait for more
+            strip (bool): True means strip extracted instance from ims
+                          False means do not strip, so can peek at stream
 
         Usage:
             yield from self._extractor(ims=ims, klas=Counter)
@@ -299,9 +301,9 @@ class Parser:
         while True:
             try:
                 if cold == Colds.txt:
-                    return klas(qb64b=ims, strip=True, version=self.curver)
+                    return klas(qb64b=ims, strip=strip, version=self.curver)
                 elif cold == Colds.bny:
-                    return klas(qb2=ims, strip=True, version=self.curver)
+                    return klas(qb2=ims, strip=strip, version=self.curver)
                 else:
                     raise ColdStartError(f"Invalid stream state {cold=}")
             except ShortageError as ex:
@@ -670,6 +672,132 @@ class Parser:
         return True  # should never return
 
 
+    def groupParsator(self, ims=None, framed=None, piped=None, kvy=None,
+                    tvy=None, exc=None, rvy=None, vry=None, local=None,
+                    version=None):
+        """Returns generator to parse nested GenericGroups whose outermost nesting
+        appears at the top-lever of an incoming message stream.
+
+        If ims not provided then parse messages from .ims
+
+        Parameters:
+            ims (bytearray): of incoming message stream. May contain one or more
+                sets each of a serialized message with attached cryptographic
+                material such as signatures or receipts.
+            framed (bool): True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+            piped (bool): True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
+            kvy (Kevery): route KERI KEL message types to this instance
+            tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
+            vry (Verfifier): credential verifier with wallet storage
+            local (bool): True means event source is local (protected) for validation
+                          False means event source is remote (unprotected) for validation
+                          None means use default .local
+            version (Versionage): default version of CESR to use
+                                None means do not change default
+
+        """
+        if ims is not None:  # needs bytearray not bytes since deletes as processes
+            if not isinstance(ims, bytearray):
+                ims = bytearray(ims)  # so make bytearray copy
+        else:
+            ims = self.ims  # use instance attribute by default
+
+        framed = framed if framed is not None else self.framed
+        piped = piped if piped is not None else self.piped
+        kvy = kvy if kvy is not None else self.kvy
+        tvy = tvy if tvy is not None else self.tvy
+        exc = exc if exc is not None else self.exc
+        rvy = rvy if rvy is not None else self.rvy
+        vry = vry if vry is not None else self.vry
+        local = local if local is not None else self.local
+        local = True if local else False
+
+        self.version = version  # when not None which sets .curver ...
+
+        try:
+            while not ims:
+                yield
+
+            while True:  # keep processing nested Generic Groups
+                cold = sniff(ims)  # check front of stream
+                if cold != Colds.msg:  # counter found
+                    ctr = yield from self._extractor(ims=ims, klas=Counter,
+                                                     cold=cold, strip=False)
+                    if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
+                                        UniDex_2_0.KERIACDCGenusVersion):  # change version
+                        self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+                        del ims[:ctr.byteCount(cold=cold)]  # consume counter
+
+                    elif (ctr.code in (self.sucodes.GenericGroup,
+                                           self.sucodes.GenericGroup)):
+                        del ims[:ctr.byteCount(cold=cold)]  # consume counter
+
+
+                    elif ctr.code in (self.sucodes.MessageGroup,
+                                          self.sucodes.BigMessageGroup):
+
+                        framed = True  # since includes attachments so pre-extracted
+                        # compute enclosing group size based on txt or bny
+                        eags = ctr.byteCount(cold=cold)
+                        while len(ims) < eags:
+                            yield
+
+                        eims = ims[:eags]  # copy out substream enclosed attachments
+                        del ims[:eags]  # strip off from ims
+                        ims = eims  # replace
+
+                        if piped:
+                            pass  # pass extracted ims to pipeline processor
+                            return
+
+                        cold = sniff(ims)  # check new front of streams
+                        if cold != Colds.msg:  # counter
+                            ctr = yield from self._extractor(ims=eims, klas=Counter, cold=cold)
+                            if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
+                                                UniDex_2_0.KERIACDCGenusVersion):  # change version
+                                self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+
+                            elif ctr.code not in self.mucodes:
+                                raise kering.ColdStartError(f"Unexpected counter code="
+                                                                f"{ctr.code} inside MessageGroup")
+
+                        else:  # non-native message
+                            ctr = None  # consumed all leading counters
+
+                    # outdented so captures both enclosed and not enclosed native messages
+                    if ctr and ctr.code in self.mucodes:  # CESR native message group
+                        native = True
+                        pass  # ignore for now
+
+
+        except kering.ExtractionError as ex:
+            if eags is not None:  # extracted enclosed message group is preflushed
+                raise kering.SizedGroupError(f"Error processing message group"
+                                                 f" of size={eags}")
+            raise  # no enclosing message group so can't preflush, must flush stream
+
+        done = False
+
+        done = yield from self.msgParsator(ims=ims,
+                                           framed=framed,
+                                           piped=piped,
+                                           kvy=kvy,
+                                           tvy=tvy,
+                                           exc=exc,
+                                           rvy=rvy,
+                                           vry=vry,
+                                           local=local,
+                                           version=version)
+
+
+
+        return done
+
+
     def msgParsator(self, ims=None, framed=True, piped=False,
                     kvy=None, tvy=None, exc=None, rvy=None, vry=None,
                     local=None, version=None):
@@ -718,10 +846,13 @@ class Parser:
 
 
         """
-        self.version = version  # when not None also sets .curver which sets .methods
+        if ims is None:
+            ims = self.ims
 
         local = local if local is not None else self.local
         local = True if local else False
+
+        self.version = version  # when not None which sets .curver ...
 
         # create exts (extracts) keyword args dict with fields:
         # serder (Serder): message instance
@@ -743,8 +874,6 @@ class Parser:
 
         serdery = serdering.Serdery(version=kering.Version)
 
-        if ims is None:
-            ims = self.ims
 
         try:
             while not ims:
