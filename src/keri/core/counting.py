@@ -64,12 +64,12 @@ class CounterCodex_1_0(MapDom):
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    NonNativeMessageGroup: str = '-X'  # Non-Native Message body when enclosed
-    BigNonNativeMessageGroup: str = '--X'  # Non-Native Message body when enclosed
+    MessageGroup: str = '-X'  # Non-Native Message body when enclosed
+    BigMessageGroup: str = '--X'  # Non-Native Message body when enclosed
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
@@ -95,12 +95,12 @@ class QuadTripCodex_1_0(MapDom):
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    NonNativeMessageGroup: str = '-X'  # Non-Native Message body when enclosed
-    BigNonNativeMessageGroup: str = '--X'  # Non-Native Message body when enclosed
+    MessageGroup: str = '-X'  # Non-Native Message body when enclosed
+    BigMessageGroup: str = '--X'  # Non-Native Message body when enclosed
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
 
@@ -120,8 +120,8 @@ class UniversalCodex_1_0(MapDom):
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
@@ -145,8 +145,8 @@ class SpecialUniversalCodex_1_0(MapDom):
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
 
@@ -184,8 +184,8 @@ class CounterCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
@@ -228,8 +228,8 @@ class CounterCodex_2_0(MapDom):
     BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
     BackerRegistrarSealCouples: str = '-W'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
     BigBackerRegistrarSealCouples: str = '--W'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    NonNativeMessageGroup: str = '-X'  # Non-Native Message body when enclosed
-    BigNonNativeMessageGroup: str = '--X'  # Non-Native Message body when enclosed
+    MessageGroup: str = '-X'  # Non-Native Message body when enclosed
+    BigMessageGroup: str = '--X'  # Non-Native Message body when enclosed
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
@@ -250,8 +250,8 @@ class UniversalCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
@@ -286,8 +286,8 @@ class SpecialUniversalCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
 

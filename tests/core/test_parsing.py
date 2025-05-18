@@ -962,11 +962,11 @@ def test_parser_v1_enclosed_message():
         # create event stream
         msgs = bytearray()
 
-        # eventually enclose message plus attachments in MessageGroup
-        # put genus-version at front of MessageGroup substream
+        # eventually enclose message plus attachments in MessageAttachmentGroup
+        # put genus-version at front of MessageAttachmentGroup substream
         eims = bytearray()  # enclosed message+attachment stream
 
-        # put as genus-version counter first in MessageGroup
+        # put as genus-version counter first in MessageAttachmentGroup
         gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                  minor=Vrsn_1_0.minor),
                        code=Codens.KERIACDCGenusVersion,
@@ -987,11 +987,11 @@ def test_parser_v1_enclosed_message():
                         b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in NonNativeMessageGroup
+        # 24 bit boundaries and then include in MessageGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.NonNativeMessageGroup,
+                                    code=Codens.MessageGroup,
                                     version=Vrsn_1_0))
 
         # do not enclose attachments in own attachment group
@@ -1105,10 +1105,10 @@ def test_parser_v1_enclosed_message():
         eims.extend(texter.qb64b)
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
 
         # next event
-        # eventually enclose message plus attachment in AttachmentGroup in MessageGroup
+        # eventually enclose message plus attachment in AttachmentGroup in MessageAttachmentGroup
         eims = bytearray()  # enclosed message+attachment stream
         # Event 1 Rotation Transferable
         serder = rotate(pre=pre,
@@ -1118,11 +1118,11 @@ def test_parser_v1_enclosed_message():
                         sn=1)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in NonNativeMessageGroup
+        # 24 bit boundaries and then include in MessageGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                        code=Codens.NonNativeMessageGroup,
+                                        code=Codens.MessageGroup,
                                         version=Vrsn_1_0))
 
         aims = bytearray()  # attachment group stream
@@ -1137,11 +1137,11 @@ def test_parser_v1_enclosed_message():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup, version=Vrsn_1_0))
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
 
 
         # Next event
-        # eventually enclose message plus attachment in AttachmentGroup in MessageGroup
+        # eventually enclose message plus attachment in AttachmentGroup in MessageAttachmentGroup
         eims = bytearray()  # enclosed message+attachment stream
         # Event 2 Rotation Transferable
         serder = rotate(pre=pre,
@@ -1151,11 +1151,11 @@ def test_parser_v1_enclosed_message():
                         sn=2)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in NonNativeMessageGroup
+        # 24 bit boundaries and then include in MessageGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                        code=Codens.NonNativeMessageGroup,
+                                        code=Codens.MessageGroup,
                                             version=Vrsn_1_0))
 
         aims = bytearray()  # attachment group stream
@@ -1177,14 +1177,14 @@ def test_parser_v1_enclosed_message():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup, version=Vrsn_1_0))
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
 
         # next event
-        # eventually enclose message plus attachments in MessageGroup
-        # put genus-version at front of MessageGroup substream
+        # eventually enclose message plus attachments in MessageAttachmentGroup
+        # put genus-version at front of MessageAttachmentGroup substream
         eims = bytearray()  # enclosed message+attachment stream
 
-        # put as genus-version counter first in MessageGroup
+        # put as genus-version counter first in MessageAttachmentGroup
         gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                      minor=Vrsn_1_0.minor),
                            code=Codens.KERIACDCGenusVersion,
@@ -1197,11 +1197,11 @@ def test_parser_v1_enclosed_message():
                           sn=3)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in NonNativeMessageGroup
+        # 24 bit boundaries and then include in MessageGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                        code=Codens.NonNativeMessageGroup,
+                                        code=Codens.MessageGroup,
                                             version=Vrsn_1_0))
 
         aims = bytearray()  # attachment group stream
@@ -1224,7 +1224,7 @@ def test_parser_v1_enclosed_message():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup, version=Vrsn_1_0))
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
 
 
         # Event 4 Interaction
@@ -1397,11 +1397,11 @@ def test_parser_v1_non_native_message():
                         b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in NonNativeMessageGroup
+        # 24 bit boundaries and then include in MessageGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         msgs.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.NonNativeMessageGroup,
+                                    code=Codens.MessageGroup,
                                     version=Vrsn_1_0))
 
         # do not enclose attachments in own attachment group
@@ -1523,11 +1523,11 @@ def test_parser_v1_non_native_message():
                         sn=1)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in NonNativeMessageGroup
+        # 24 bit boundaries and then include in MessageGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         msgs.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.NonNativeMessageGroup,
+                                    code=Codens.MessageGroup,
                                     version=Vrsn_1_0))
 
         # create attachment group

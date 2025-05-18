@@ -935,7 +935,7 @@ class Parser:
                     # change version
                     self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
 
-            # check for MessageGroup or non-native message or native message groups
+            # check for MessageAttachmentGroup or non-native message or native message groups
             cold = sniff(ims)  # front of top level of this substream
             if cold != Colds.msg:  # counter found so peek at it
                 ctr = yield from self._extractor(ims=ims,
@@ -944,8 +944,8 @@ class Parser:
                                          abort=framed,
                                          strip=False)
 
-                if ctr and ctr.code in (self.sucodes.MessageGroup,
-                                       self.sucodes.BigMessageGroup):
+                if ctr and ctr.code in (self.sucodes.MessageAttachmentGroup,
+                                       self.sucodes.BigMessageAttachmentGroup):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # compute enclosing group size based on txt or bny
                     emgs = ctr.byteCount(cold=cold)
@@ -980,8 +980,8 @@ class Parser:
                                                         strip=False)
 
                 # Check for non-native msg group or native message group
-                if (ctr.code in (self.codes.NonNativeMessageGroup,
-                                 self.codes.BigNonNativeMessageGroup)):
+                if (ctr.code in (self.codes.MessageGroup,
+                                 self.codes.BigMessageGroup)):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # process non-native message group with texter
                     texter = yield from self._extractor(ims=ims,
@@ -1084,8 +1084,8 @@ class Parser:
                     if (ctr.code in self.mucodes or (ctr.code in self.sucodes and
                         ctr.code not in (self.sucodes.AttachmentGroup,
                                          self.sucodes.BigAttachmentGroup)) or
-                        ctr.code in (self.codes.NonNativeMessageGroup,
-                                     self.codes.BigNonNativeMessageGroup)):
+                        ctr.code in (self.codes.MessageGroup,
+                                     self.codes.BigMessageGroup)):
                         # do not consume leave in stream
                         break  # finished attachments since new message
 
