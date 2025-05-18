@@ -1942,8 +1942,6 @@ def test_parser_v2_basic():
         aims.extend(siger.qb64b)
         msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
-        # Switch back to version 1,  gvrsn of 1 will fail when serder pvrsn is 2
-        msgs.extend(gvc1.qb64b)
 
         # Event 2 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
@@ -1951,52 +1949,50 @@ def test_parser_v2_basic():
                         dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
-                        version=Vrsn_1_0)
+                        version=Vrsn_2_0)
         event_digs.append(serder.said)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
-        siger = signers2[2].sign(serder.raw, index=0)
+        siger = signers2[2].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
                           sn=3,
-                          version=Vrsn_1_0)
+                          version=Vrsn_2_0)
         event_digs.append(serder.said)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
-        siger = signers2[2].sign(serder.raw, index=0)
+        siger = signers2[2].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
-        # Event 4 Interaction
+
+        # Event 4 Interaction  with version 1 psvrsn for serder
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
                           sn=4,
                           version=Vrsn_1_0)
         event_digs.append(serder.said)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
-        siger = signers2[2].sign(serder.raw, index=0)
+        siger = signers2[2].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
         # Event 5 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
@@ -2004,35 +2000,34 @@ def test_parser_v2_basic():
                         dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
                         sn=5,
-                        version=Vrsn_1_0)
+                        version=Vrsn_2_0)
         event_digs.append(serder.said)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
-        siger = signers2[3].sign(serder.raw, index=0)
+        siger = signers2[3].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+
 
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
                           sn=6,
-                          version=Vrsn_1_0)
+                          version=Vrsn_2_0)
         event_digs.append(serder.said)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
-        siger = signers2[3].sign(serder.raw, index=0)
+        siger = signers2[3].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
         # Event 7 Rotation to null NonTransferable Abandon
         # nxt digest is empty
@@ -2040,35 +2035,36 @@ def test_parser_v2_basic():
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
                         sn=7,
-                        version=Vrsn_1_0)
+                        version=Vrsn_2_0)
         event_digs.append(serder.said)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
-        siger = signers2[4].sign(serder.raw, index=0)
+        siger = signers2[4].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
         # Event 8 Interaction but already abandoned
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
                           sn=8,
-                          version=Vrsn_1_0)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                          version=Vrsn_2_0)
+        #event_digs.append(serder.said)  # bad event so don't append
         # sign serialization
-        siger = signers2[4].sign(serder.raw, index=0)
+        siger = signers2[4].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         with pytest.raises(ValidationError):  # nulled so reject any more events
             kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+
 
         # Event 8 Rotation override interaction but already abandoned
         serder = rotate(pre=kever.prefixer.qb64,
@@ -2076,23 +2072,24 @@ def test_parser_v2_basic():
                         dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8,
-                        version=Vrsn_1_0)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                        version=Vrsn_2_0)
+        #event_digs.append(serder.said)  # bad event so don't append
         # sign serialization
-        siger = signers2[4].sign(serder.raw, index=0)
+        siger = signers2[4].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         with pytest.raises(ValidationError):  # nontransferable so reject update
             kever.update(serder=serder, sigers=[siger])
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
 
-        #assert len(msgs) == 3745
-        #assert len(msgs) == 3833
+        msgs.extend(serder.raw)  # extend key event stream
+        # Attachments
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
-        pre = kever.prefixer.qb64
+        # Switch back to version 1,  gvrsn of 1 will fail when serder pvrsn is 2
+        #msgs.extend(gvc1.qb64b)
+
+        assert pre == kever.prefixer.qb64
 
         db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs
@@ -2520,7 +2517,7 @@ def test_parser_v2_mix():
         #assert len(msgs) == 3745
         #assert len(msgs) == 3833
 
-        pre = kever.prefixer.qb64
+        assert pre == kever.prefixer.qb64
 
         db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs
