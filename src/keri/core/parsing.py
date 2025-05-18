@@ -890,6 +890,7 @@ class Parser:
         local = True if local else False
 
         self.version = version  # when not None which sets .curver ...
+        verstack = deque()  # version stack append and pop
 
         # create exts (extracts) keyword args dict with fields:
         # serder (Serder): message instance
@@ -929,7 +930,7 @@ class Parser:
                                                  strip=False)
                 if ctr.code == self.codes.KERIACDCGenusVersion:
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                    # change version
+                    # change version at top level this persists is not stacked
                     self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
 
             # check for MessageAttachmentGroup or non-native message or native message groups
@@ -967,6 +968,7 @@ class Parser:
                     if ctr.code == self.codes.KERIACDCGenusVersion:
                         del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                         # change version
+                        verstack.append(self.curver)  # push current onto stack
                         self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
                         # peek at next counter either native or non-native msg group
                         ctr = yield from self._extractor(ims=ims,
@@ -1066,6 +1068,7 @@ class Parser:
                     if ctr.code == self.codes.KERIACDCGenusVersion:
                         del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                         # change version
+                        verstack.append(self.curver)  # push current onto stack
                         self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
 
 
@@ -1119,6 +1122,10 @@ class Parser:
                 raise kering.SizedGroupError(f"Error processing attachment group"
                                              " of size={eags}")
             raise  # no enclosing attachment group so can't preflush, must flush stream
+
+        finally:
+            while verstack:  # restore version to what it was
+                self.curver = verstack.pop()
 
         if isinstance(serder, serdering.SerderKERI):
             ilk = serder.ilk  # dispatch abased on ilk
