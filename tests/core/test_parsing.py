@@ -25,7 +25,6 @@ from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
-# ToDo  Use openHby instead more updated approach to generating events
 
 def test_parser_v1_basic():
     """Test the support functionality for Parser stream processor CESR v1 basic
@@ -411,11 +410,11 @@ def test_parser_v1_version():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers1 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners = core.Salter(raw=raw).signers(count=8,
+    nsigners1 = core.Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -429,28 +428,28 @@ def test_parser_v1_version():
 
         # both V1 and V2 counters when doing genus-version return same value
         # for same genus-version
-        gvcounter1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
-                                                      minor=Vrsn_1_0.minor),
-                            code=Codens.KERIACDCGenusVersion,
-                            version=Vrsn_1_0)
-        assert gvcounter1.qb64 == '-_AAABAA'
-        assert Counter.b64ToVer(gvcounter1.countToB64(l=3)) == Vrsn_1_0
+        gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
+                                                     minor=Vrsn_1_0.minor),
+                           code=Codens.KERIACDCGenusVersion,
+                                version=Vrsn_1_0)
+        assert gvc1.qb64 == '-_AAABAA'
+        assert Counter.b64ToVer(gvc1.countToB64(l=3)) == Vrsn_1_0
 
-        gvcounter2 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
+        gvc2 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                       minor=Vrsn_1_0.minor),
                             code=Codens.KERIACDCGenusVersion,
                             version=Vrsn_2_0)
-        assert gvcounter2.qb64 == '-_AAABAA'
-        assert Counter.b64ToVer(gvcounter2.countToB64(l=3)) == Vrsn_1_0
+        assert gvc2.qb64 == '-_AAABAA'
+        assert Counter.b64ToVer(gvc2.countToB64(l=3)) == Vrsn_1_0
 
-        assert gvcounter1.qb64 == gvcounter2.qb64
+        assert gvc2.qb64 == gvc1.qb64
 
-        msgs.extend(gvcounter1.qb64b)  # insert genus-version code at top-level
+        msgs.extend(gvc1.qb64b)  # insert genus-version code at top-level
 
 
         # Event 0  Inception Transferable (nxt digest not empty)
-        serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+        serder = incept(keys=[signers1[0].verfer.qb64],
+                        ndigs=[coring.Diger(ser=signers1[1].verfer.qb64b).qb64])
         pre = serder.pre
         event_digs.append(serder.said)
         # extend key event stream with msg
@@ -465,26 +464,26 @@ def test_parser_v1_version():
         # sign serialization indexed controller sigs,  # default is count = 1
         counter = Counter(Codens.ControllerIdxSigs, count=2, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
-        siger0 = signers[0].sign(serder.raw, index=0)  # return siger
+        siger0 = signers1[0].sign(serder.raw, index=0)  # return siger
         msgs.extend(siger0.qb64b)
-        siger1 = signers[1].sign(serder.raw, index=1)  # return siger
+        siger1 = signers1[1].sign(serder.raw, index=1)  # return siger
         msgs.extend(siger1.qb64b)
 
         # add witness indexed sigs
         counter = Counter(Codens.WitnessIdxSigs, count=2, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
-        wiger0 = signers[0].sign(serder.raw, index=0)  # return wiger
+        wiger0 = signers1[0].sign(serder.raw, index=0)  # return wiger
         msgs.extend(wiger0.qb64b)
-        wiger1 = signers[1].sign(serder.raw, index=1)  # return wiger
+        wiger1 = signers1[1].sign(serder.raw, index=1)  # return wiger
         msgs.extend(wiger1.qb64b)
 
         # add non trans receipt couples
         counter = Counter(Codens.NonTransReceiptCouples, count=2, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
-        cigar0 = nsigners[0].sign(serder.raw)  # return cigar since no index
+        cigar0 = nsigners1[0].sign(serder.raw)  # return cigar since no index
         msgs.extend(cigar0.verfer.qb64b)
         msgs.extend(cigar0.qb64b)
-        cigar1 = nsigners[1].sign(serder.raw)  # return cigar since no index
+        cigar1 = nsigners1[1].sign(serder.raw)  # return cigar since no index
         msgs.extend(cigar1.verfer.qb64b)
         msgs.extend(cigar1.qb64b)
 
@@ -494,7 +493,7 @@ def test_parser_v1_version():
         msgs.extend(serder.pre.encode())
         msgs.extend(Seqner(snh=serder.snh).qb64b)
         msgs.extend(serder.said.encode())
-        tiger = signers[0].sign(serder.raw, index=0)  # return siger
+        tiger = signers1[0].sign(serder.raw, index=0)  # return siger
         msgs.extend(tiger.qb64b)
 
         # add Trans Indexed Sig Groups
@@ -505,7 +504,7 @@ def test_parser_v1_version():
         msgs.extend(serder.said.encode())
         counter = Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
-        siger = signers[0].sign(serder.raw, index=0)  # return siger
+        siger = signers1[0].sign(serder.raw, index=0)  # return siger
         msgs.extend(siger.qb64b)
 
         # add Trans Last Indexed Sig Groups
@@ -514,7 +513,7 @@ def test_parser_v1_version():
         msgs.extend(serder.pre.encode())
         counter = Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
-        siger = signers[0].sign(serder.raw, index=0)  # return siger
+        siger = signers1[0].sign(serder.raw, index=0)  # return siger
         msgs.extend(siger.qb64b)
 
         # add first seen replay couple
@@ -570,7 +569,7 @@ def test_parser_v1_version():
         texter = Texter(text=b"MeBeBigEssr")
         msgs.extend(texter.qb64b)
 
-        assert msgs.startswith(gvcounter1.qb64b)
+        assert msgs.startswith(gvc2.qb64b)
 
         kevery = Kevery(db=valDB)
         parser = Parser(kvy=kevery, version=Vrsn_1_0)
@@ -1705,6 +1704,432 @@ def test_parser_v1_non_native_message():
     """ Done Test """
 
 
+def test_parser_v2_basic():
+    """Test the support functionality for Parser stream processor CESR v2 basic
+    non-version non-enclosed attachments
+
+    """
+    parser = Parser()  # test defaults
+    assert parser.genus == GenDex.KERI_ACDC_SPAC
+    assert parser.version == Vrsn_2_0
+    assert parser.curver == Vrsn_2_0
+    assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.mucodes == Parser.MUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+
+    assert not parser.local
+    assert parser.ims == bytearray()
+    assert parser.framed
+    assert not parser.piped
+    assert parser.kvy is None
+    assert parser.tvy is None
+    assert parser.exc is None
+    assert parser.rvy is None
+    assert parser.vry is None
+
+
+    logger.setLevel("ERROR")
+
+    #  create transferable signers
+    raw = b"ABCDEFGH01234567"
+    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+
+    # create non-transferable signers
+    raw = b"abcdefghijklmnop"
+    nsigners2 = core.Salter(raw=raw).signers(count=8,
+                                            path='psr',
+                                            temp=True,
+                                            transferable=False)
+
+
+    with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
+        event_digs = []  # list of event digs in sequence
+
+
+        gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
+                                                     minor=Vrsn_1_0.minor),
+                           code=Codens.KERIACDCGenusVersion,
+                               version=Vrsn_1_0)
+        assert gvc1.qb64 == '-_AAABAA'
+        assert Counter.b64ToVer(gvc1.countToB64(l=3)) == Vrsn_1_0
+
+        gvc2 = Counter(countB64=Counter.verToB64(major=Vrsn_2_0.major,
+                                                     minor=Vrsn_2_0.minor),
+                           code=Codens.KERIACDCGenusVersion,
+                                version=Vrsn_2_0)
+        assert gvc2.qb64 == '-_AAACAA'
+        assert Counter.b64ToVer(gvc2.countToB64(l=3)) == Vrsn_2_0
+
+
+        # create event stream
+        msgs = bytearray()
+
+        # Start stream
+        # Event 0  Inception Transferable (nxt digest not empty)
+        serder = incept(keys=[signers2[0].verfer.qb64],
+                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64],
+                        version=Vrsn_2_0)
+
+        pre = serder.pre
+
+        assert serder.raw == (b'{"v":"KERICAAJSONAAEq.","t":"icp","d":"EBJh76Q9fk3cUcXIjOz2VffYwX3CBlNUblpOq'
+                            b'KjtuRgQ","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":"1"'
+                            b',"k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXIx7U'
+                            b'Rwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
+
+        assert serder.sad == \
+        {
+            'v': 'KERICAAJSONAAEq.',
+            't': 'icp',
+            'd': 'EBJh76Q9fk3cUcXIjOz2VffYwX3CBlNUblpOqKjtuRgQ',
+            'i': 'DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx',
+            's': '0',
+            'kt': '1',
+            'k': ['DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx'],
+            'nt': '1',
+            'n': ['EFXIx7URwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2'],
+            'bt': '0',
+            'b': [],
+            'c': [],
+            'a': []
+        }
+
+        assert serder.pvrsn == serder.gvrsn == Vrsn_2_0
+
+
+        event_digs.append(serder.said)
+        # extend key event stream with msg
+        msgs.extend(serder.raw)
+
+
+
+
+        # create sig counter for two sigs one is spurious since single sig AID
+        # sign serialization indexed controller sigs group count quadlets
+        aims = bytearray()  # attachment substream
+        siger0 = signers2[0].sign(serder.raw, index=0)  # return siger
+        aims.extend(siger0.qb64b)
+        siger1 = signers2[1].sign(serder.raw, index=1)  # return siger
+        aims.extend(siger1.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+
+        # add witness indexed sigs
+        aims = bytearray()  # attachment substream
+        wiger0 = signers2[0].sign(serder.raw, index=0)  # return wiger
+        aims.extend(wiger0.qb64b)
+        wiger1 = signers2[1].sign(serder.raw, index=1)  # return wiger
+        aims.extend(wiger1.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.WitnessIdxSigs))
+
+        # add non trans receipt couples
+        aims = bytearray()  # attachment substream
+        cigar0 = nsigners2[0].sign(serder.raw)  # return cigar since no index
+        aims.extend(cigar0.verfer.qb64b)
+        aims.extend(cigar0.qb64b)
+        cigar1 = nsigners2[1].sign(serder.raw)  # return cigar since no index
+        aims.extend(cigar1.verfer.qb64b)
+        aims.extend(cigar1.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.NonTransReceiptCouples))
+
+        # add trans receipt quadruples  spre+ssnu+sdig+sig
+        aims = bytearray()  # attachment substream
+        aims.extend(serder.pre.encode())
+        aims.extend(Seqner(snh=serder.snh).qb64b)
+        aims.extend(serder.said.encode())
+        tiger = signers2[0].sign(serder.raw, index=0)  # return siger
+        aims.extend(tiger.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+
+        # add Trans Indexed Sig Groups
+        aims = bytearray()  # attachment substream
+        aims.extend(serder.pre.encode())
+        aims.extend(Seqner(snh=serder.snh).qb64b)
+        aims.extend(serder.said.encode())
+        sims = bytearray() # attachment sub-sub-stream
+        siger = signers2[0].sign(serder.raw, index=0)  # return siger
+        sims.extend(siger.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        aims.extend(Counter.enclose(qb64=sims, code=Codens.ControllerIdxSigs))
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.TransIdxSigGroups))
+
+        # add Trans Last Indexed Sig Groups
+        aims = bytearray()  # attachment substream
+        aims.extend(serder.pre.encode())
+        sims = bytearray() # attachment sub-sub-stream
+        siger = signers2[0].sign(serder.raw, index=0)  # return siger
+        sims.extend(siger.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        aims.extend(Counter.enclose(qb64=sims, code=Codens.ControllerIdxSigs))
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.TransLastIdxSigGroups))
+
+        # add first seen replay couple
+        aims = bytearray()  # attachment substream
+        aims.extend(Seqner(snh=serder.snh).qb64b)
+        aims.extend(Dater(dts='2020-08-22T17:50:09.988921+00:00').qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.FirstSeenReplayCouples))
+
+        # add seal source couple
+        aims = bytearray()  # attachment substream
+        aims.extend(Seqner(snh=serder.snh).qb64b)
+        aims.extend(serder.said.encode())
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceCouples))
+
+        # add seal source triple
+        aims = bytearray()  # attachment substream
+        aims.extend(serder.pre.encode())
+        aims.extend(Seqner(snh=serder.snh).qb64b)
+        aims.extend(serder.said.encode())
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
+
+        # add small PathedMaterialGroup
+        pms = bytearray()
+        pather = Pather(path=('Z', 'W'))
+        pms.extend(pather.qb64b)
+        texter = Texter(text=b'Should we stop and rest here?')
+        pms.extend(texter.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+
+        # add big PathedMaterialGroup
+        pms = bytearray()
+        pather = Pather(path=('K', 'P'))
+        pms.extend(pather.qb64b)
+        texter = Texter(text=b'Is not that a better spot over there?')
+        pms.extend(texter.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+
+        # add ESSRPayloadGroup
+        aims = bytearray()  # attachment substream
+        texter = Texter(text=b"MeBeEssr")
+        aims.extend(texter.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.ESSRPayloadGroup))
+
+        # add BigESSRPayloadGroup
+        aims = bytearray()  # attachment substream
+        texter = Texter(text=b"MeBeBigEssr")
+        aims.extend(texter.qb64b)
+        # enclose and extend with quadlet counter, enclose defaults to V2
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.BigESSRPayloadGroup))
+
+        # create key event verifier state
+        kever = Kever(serder=serder, sigers=[siger0], db=conDB)
+
+        # Switch back to version 1
+        msgs.extend(gvc1.qb64b)
+
+        # Event 1 Rotation Transferable
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers2[1].verfer.qb64],
+                        dig=kever.serder.said,
+                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        sn=1)
+        event_digs.append(serder.said)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[1].sign(serder.raw, index=0)  # returns siger
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 2 Rotation Transferable
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers2[2].verfer.qb64],
+                        dig=kever.serder.said,
+                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        sn=2)
+        event_digs.append(serder.said)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[2].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 3 Interaction
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.serder.said,
+                          sn=3)
+        event_digs.append(serder.said)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[2].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 4 Interaction
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.serder.said,
+                          sn=4)
+        event_digs.append(serder.said)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[2].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 5 Rotation Transferable
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers2[3].verfer.qb64],
+                        dig=kever.serder.said,
+                        ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                        sn=5)
+        event_digs.append(serder.said)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[3].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 6 Interaction
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.serder.said,
+                          sn=6)
+        event_digs.append(serder.said)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[3].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 7 Rotation to null NonTransferable Abandon
+        # nxt digest is empty
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers2[4].verfer.qb64],
+                        dig=kever.serder.said,
+                        sn=7)
+        event_digs.append(serder.said)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[4].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 8 Interaction but already abandoned
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.serder.said,
+                          sn=8)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[4].sign(serder.raw, index=0)
+        # update key event verifier state
+        with pytest.raises(ValidationError):  # nulled so reject any more events
+            kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        # Event 8 Rotation override interaction but already abandoned
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers2[4].verfer.qb64],
+                        dig=kever.serder.said,
+                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        sn=8)
+        # create sig counter
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        # sign serialization
+        siger = signers2[4].sign(serder.raw, index=0)
+        # update key event verifier state
+        with pytest.raises(ValidationError):  # nontransferable so reject update
+            kever.update(serder=serder, sigers=[siger])
+        # extend key event stream
+        msgs.extend(serder.raw)
+        msgs.extend(counter.qb64b)
+        msgs.extend(siger.qb64b)
+
+        #assert len(msgs) == 3745
+        #assert len(msgs) == 3833
+
+        pre = kever.prefixer.qb64
+
+        db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
+        assert db_digs == event_digs
+
+        kevery = Kevery(db=valDB)
+
+        parser = Parser(kvy=kevery, version=Vrsn_2_0)
+        assert parser.genus == GenDex.KERI_ACDC_SPAC
+        assert parser.version == Vrsn_2_0
+        assert parser.curver == Vrsn_2_0
+        assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
+        assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
+        assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+        assert parser.mucodes == Parser.MUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+
+        assert parser.local == False
+        assert parser.framed == True
+        assert parser.piped == False
+        assert parser.ims == bytearray()
+        assert parser.kvy == kevery
+        assert parser.tvy is None
+        assert parser.exc is None
+        assert parser.rvy is None
+        assert parser.vry is None
+
+        parser.parse(ims=bytearray(msgs))  # make copy
+        assert parser.ims == bytearray(b'')  # emptied
+        assert pre in kevery.kevers
+        vkever = kevery.kevers[pre]
+        assert vkever.sn == kever.sn
+        assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
+        assert vkever.verfers[0].qb64 == signers2[4].verfer.qb64
+
+        db_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelIter(pre)]
+        assert db_digs == event_digs
+
+
+    assert not os.path.exists(kevery.db.path)
+    assert not os.path.exists(kever.db.path)
+
+    """ Done Test """
+
+
 
 if __name__ == "__main__":
     test_parser_v1_basic()
@@ -1712,3 +2137,4 @@ if __name__ == "__main__":
     test_parser_v1_enclosed_attachments()
     test_parser_v1_enclosed_message()
     test_parser_v1_non_native_message()
+    test_parser_v2_basic()

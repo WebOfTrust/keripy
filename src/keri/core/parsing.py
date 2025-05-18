@@ -1089,6 +1089,8 @@ class Parser:
                     except AttributeError as ex:
                         raise kering.UnexpectedCountCodeError(f"Unsupported count"
                                                 f" code={ctr.code}") from ex
+                    except Exception as ex:
+                        raise  # easier debug with breakpoint here
 
                     if enclosed:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
@@ -1696,6 +1698,7 @@ class Parser:
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
                                     f"group code={ctr.qb64}")
             igims = gims[:igs]
+            del gims[:igs]  # strip igims from gims
             isigers = []
             while igims:
                 isiger = self.extract(ims=igims, klas=Siger, cold=cold)
@@ -1795,6 +1798,7 @@ class Parser:
                 raise ShortageError(f"Unexpected stream shortage on enclosed "
                                     f"group code={ctr.qb64}")
             igims = gims[:igs]
+            del gims[:igs]  # strip igims from gims
             isigers = []
             while igims:
                 isiger = self.extract(ims=igims, klas=Siger, cold=cold)
@@ -1871,8 +1875,8 @@ class Parser:
         del ims[:gs]  # strip off from ims
         frcs = []
         while gims:   # extract each attached group and strip from gims
-            firner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
-            dater = self.extract(ims=gims, klas=Dater, cold=cold,abort=abort)
+            firner = self.extract(ims=gims, klas=Seqner, cold=cold)
+            dater = self.extract(ims=gims, klas=Dater, cold=cold)
             frcs.append((firner, dater))
         try:
             exts['frcs'].extend(frcs)
@@ -1945,8 +1949,8 @@ class Parser:
         del ims[:gs]  # strip off from ims
         sscs = []
         while gims:   # extract each attached group and strip from gims
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold,abort=abort)
+            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
+            saider = self.extract(ims=gims, klas=Saider, cold=cold)
             sscs.append((seqner, saider))
         try:
             exts['sscs'].extend(sscs)
@@ -2024,8 +2028,8 @@ class Parser:
         ssts = []
         while gims:   # extract each attached group and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold, abort=abort)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold,abort=abort)
+            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
+            saider = self.extract(ims=gims, klas=Saider, cold=cold)
             ssts.append((prefixer, seqner, saider))
         try:
             exts['ssts'].extend(ssts)
@@ -2133,7 +2137,7 @@ class Parser:
         del ims[:gs]  # strip off from ims
         essrs = []
         while gims:   # extract each attached group and strip from gims
-            texter = self.extract(ims=gims, klas=Texter, cold=cold, abort=abort)
+            texter = self.extract(ims=gims, klas=Texter, cold=cold)
             essrs.append(texter)
         try:
             exts['essrs'].extend(essrs)
