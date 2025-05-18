@@ -2641,7 +2641,7 @@ def test_parser_v2_enclosed_attachments():
         # eventually enclose all attachments in AttachmentGroup
         emas = bytearray()  # enclosed message attachment stream
         # put first code in attachments as genus-version counters
-        emas.extend(gvc2.qb64b)  # insert genus-version V2 code at top-level
+        emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
 
         # create sig counter for two sigs one is spurious since single sig AID
         # sign serialization indexed controller sigs group count quadlets
@@ -2764,150 +2764,174 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-        msgs.extend(gvc1.qb64b)  # Switch to version 1
 
         # Event 1 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1)
-
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                        sn=1,
+                        version=Vrsn_2_0)
+        msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
         siger = signers2[1].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
 
         # Event 2 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
-                        sn=2)
-
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                        sn=2,
+                        version=Vrsn_2_0)
+        msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
-        siger = signers2[2].sign(serder.raw, index=0)
+        siger = signers2[2].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
 
         # Event 3 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3)
-
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                          sn=3,
+                          version=Vrsn_2_0)
+        msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
-        siger = signers2[2].sign(serder.raw, index=0)
+        siger = signers2[2].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
 
-        # Event 4 Interaction
+
+        # Event 4 Interaction  with version 1 psvrsn for serder
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4)
-
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                          sn=4,
+                          version=Vrsn_1_0)
+        msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
-        siger = signers2[2].sign(serder.raw, index=0)
+        siger = signers2[2].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
 
         # Event 5 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
-                        sn=5)
-
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                        sn=5,
+                        version=Vrsn_2_0)
+        msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
-        siger = signers2[3].sign(serder.raw, index=0)
+        siger = signers2[3].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+
 
         # Event 6 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6)
-
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+                          sn=6,
+                          version=Vrsn_2_0)
+        msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
-        siger = signers2[3].sign(serder.raw, index=0)
+        siger = signers2[3].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
 
         # Event 7 Rotation to null NonTransferable Abandon
         # nxt digest is empty
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7)
+                        sn=7,
+                        version=Vrsn_2_0)
 
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
+        msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
-        siger = signers2[4].sign(serder.raw, index=0)
-
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        siger = signers2[4].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
         # Event 8 Interaction but already abandoned
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
-        # sign serialization
-        siger = signers2[4].sign(serder.raw, index=0)
+                          sn=8,
+                          version=Vrsn_2_0)
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # sign serialization
+        siger = signers2[4].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
+
 
         # Event 8 Rotation override interaction but already abandoned
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8)
-        # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
-        # sign serialization
-        siger = signers2[4].sign(serder.raw, index=0)
+                        sn=8,
+                        version=Vrsn_2_0)
 
-        # extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        msgs.extend(serder.raw)  # extend key event stream
+        # sign serialization
+        siger = signers2[4].sign(serder.raw, index=0)  # returns siger
+        # Attachments
+        emas = bytearray()  # enclosed message attachment stream
+        aims = bytearray()
+        aims.extend(siger.qb64b)
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
+        # enclose  message attachements and add to msgs
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
+
 
         kevery = Kevery(db=valDB)
         parser = Parser(kvy=kevery)  # default is Vrsn_2_0_
@@ -2929,7 +2953,10 @@ def test_parser_v2_enclosed_attachments():
         assert parser.rvy is None
         assert parser.vry is None
 
+        oldcurver = parser.curver
+
         parser.parse(ims=bytearray(msgs))  # make copy
+        assert parser.curver == oldcurver
         assert parser.ims == bytearray(b'')  # emptied
         assert pre in kevery.kevers
         vkever = kevery.kevers[pre]
