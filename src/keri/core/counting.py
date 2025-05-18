@@ -68,8 +68,8 @@ class CounterCodex_1_0(MapDom):
     BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-X'  # Non-Native Message body when enclosed
-    BigMessageGroup: str = '--X'  # Non-Native Message body when enclosed
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
@@ -99,8 +99,8 @@ class QuadTripCodex_1_0(MapDom):
     BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-X'  # Non-Native Message body when enclosed
-    BigMessageGroup: str = '--X'  # Non-Native Message body when enclosed
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
 
@@ -124,6 +124,8 @@ class UniversalCodex_1_0(MapDom):
     BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -166,6 +168,8 @@ class MessageUniversalCodex_1_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -196,26 +200,26 @@ class CounterCodex_2_0(MapDom):
     BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
     BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
-    BigGenericMapGroup: str = '--H'  # Big Generic Field Map Group (Universal).
-    GenericListGroup: str = '-I'  # Generic List Group (Universal).
-    BigGenericListGroup: str = '--I'  # Big Generic List Group (Universal).
-    ControllerIdxSigs: str = '-J'  # Controller Indexed Signature(s) of qb64.
-    BigControllerIdxSigs: str = '--J'  # Big Controller Indexed Signature(s) of qb64.
-    WitnessIdxSigs: str = '-K'  # Witness Indexed Signature(s) of qb64.
-    BigWitnessIdxSigs: str = '--K'  # Big Witness Indexed Signature(s) of qb64.
-    NonTransReceiptCouples: str = '-L'  # NonTrans Receipt Couple(s), pre+cig.
-    BigNonTransReceiptCouples: str = '--L'  # Big NonTrans Receipt Couple(s), pre+cig.
-    TransReceiptQuadruples: str = '-M'  # Trans Receipt Quadruple(s), pre+snu+dig+sig.
-    BigTransReceiptQuadruples: str = '--M'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
-    FirstSeenReplayCouples: str = '-N'  # First Seen Replay Couple(s), fnu+dts.
-    BigFirstSeenReplayCouples: str = '--N'  # First Seen Replay Couple(s), fnu+dts.
-    TransIdxSigGroups: str = '-O'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    BigTransIdxSigGroups: str = '--O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    TransLastIdxSigGroups: str = '-P'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    BigTransLastIdxSigGroups: str = '--P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    PathedMaterialGroup: str = '-Q'  # Pathed Material Group.
-    BigPathedMaterialGroup: str = '--Q'  # Big Pathed Material Group.
+    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
+    BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
+    GenericListGroup: str = '-J'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '--J'  # Big Generic List Group (Universal).
+    ControllerIdxSigs: str = '-K'  # Controller Indexed Signature(s) of qb64.
+    BigControllerIdxSigs: str = '--K'  # Big Controller Indexed Signature(s) of qb64.
+    WitnessIdxSigs: str = '-L'  # Witness Indexed Signature(s) of qb64.
+    BigWitnessIdxSigs: str = '--L'  # Big Witness Indexed Signature(s) of qb64.
+    NonTransReceiptCouples: str = '-M'  # NonTrans Receipt Couple(s), pre+cig.
+    BigNonTransReceiptCouples: str = '--M'  # Big NonTrans Receipt Couple(s), pre+cig.
+    TransReceiptQuadruples: str = '-N'  # Trans Receipt Quadruple(s), pre+snu+dig+sig.
+    BigTransReceiptQuadruples: str = '--N'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
+    FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
+    BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
+    PathedMaterialGroup: str = '-P'  # Pathed Material Group.
+    BigPathedMaterialGroup: str = '--P'  # Big Pathed Material Group.
+    DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '--Q'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
     BigMerkleRootSealSingles: str = '--R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
     SealSourceTriples: str = '-S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
@@ -224,12 +228,12 @@ class CounterCodex_2_0(MapDom):
     BigSealSourceCouples: str = '--T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
     SealSourceLastSingles: str = '-U'  # Seal Source Couple(s), pre of last source sealing or sealed event.
     BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
-    DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
-    BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
-    BackerRegistrarSealCouples: str = '-W'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '--W'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    MessageGroup: str = '-X'  # Non-Native Message body when enclosed
-    BigMessageGroup: str = '--X'  # Non-Native Message body when enclosed
+    BackerRegistrarSealCouples: str = '-V'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    TransIdxSigGroups: str = '-W'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    BigTransIdxSigGroups: str = '--W'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    TransLastIdxSigGroups: str = '-X'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
+    BigTransLastIdxSigGroups: str = '--X'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
@@ -262,10 +266,12 @@ class UniversalCodex_2_0(MapDom):
     BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
     BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
-    BigGenericMapGroup: str = '--H'  # Big Generic Field Map Group (Universal).
-    GenericListGroup: str = '-I'  # Generic List Group (Universal).
-    BigGenericListGroup: str = '--I'  # Big Generic List Group (Universal).
+    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
+    BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
+    GenericListGroup: str = '-J'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '--J'  # Big Generic List Group (Universal).
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -315,6 +321,8 @@ class MessageUniversalCodex_2_0(MapDom):
     BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
     BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -343,6 +351,8 @@ class SealCodex_2_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
+    DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '--Q'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
     BigMerkleRootSealSingles: str = '--R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
     SealSourceTriples: str = '-S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
@@ -351,10 +361,8 @@ class SealCodex_2_0(MapDom):
     BigSealSourceCouples: str = '--T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
     SealSourceLastSingles: str = '-U'  # Seal Source Couple(s), pre of last source sealing event.
     BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing event.
-    DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
-    BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
-    BackerRegistrarSealCouples: str = '-W'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '--W'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BackerRegistrarSealCouples: str = '-V'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
 
 
     def __iter__(self):
@@ -564,8 +572,8 @@ class Counter:
                 '--U': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
                 '--V': Cizage(hs=3, ss=5, fs=8),
-                '-X': Cizage(hs=2, ss=2, fs=4),
-                '--X': Cizage(hs=3, ss=5, fs=8),
+                '-W': Cizage(hs=2, ss=2, fs=4),
+                '--W': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
                 '--Z': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),

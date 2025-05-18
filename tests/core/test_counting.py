@@ -83,8 +83,8 @@ def test_codexes_tags():
         'BigMessageAttachmentGroup': '--U',
         'AttachmentGroup': '-V',
         'BigAttachmentGroup': '--V',
-        'MessageGroup': '-X',
-        'BigMessageGroup': '--X',
+        'MessageGroup': '-W',
+        'BigMessageGroup': '--W',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
         'KERIACDCGenusVersion': '-_AAA'
@@ -100,8 +100,8 @@ def test_codexes_tags():
         'BigMessageAttachmentGroup': '--U',
         'AttachmentGroup': '-V',
         'BigAttachmentGroup': '--V',
-        'MessageGroup': '-X',
-        'BigMessageGroup': '--X',
+        'MessageGroup': '-W',
+        'BigMessageGroup': '--W',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
     }
@@ -116,7 +116,11 @@ def test_codexes_tags():
         'BigAttachmentGroup': '--V',
     }
 
-    assert  asdict(counting.MUDex_1_0) == {}
+    assert  asdict(counting.MUDex_1_0) == \
+    {
+        'MessageGroup': '-W',
+        'BigMessageGroup': '--W',
+    }
 
 
     assert asdict(counting.CtrDex_2_0) == \
@@ -135,26 +139,26 @@ def test_codexes_tags():
         'BigFixedMessageBodyGroup': '--F',
         'MapMessageBodyGroup': '-G',
         'BigMapMessageBodyGroup': '--G',
-        'GenericMapGroup': '-H',
-        'BigGenericMapGroup': '--H',
-        'GenericListGroup': '-I',
-        'BigGenericListGroup': '--I',
-        'ControllerIdxSigs': '-J',
-        'BigControllerIdxSigs': '--J',
-        'WitnessIdxSigs': '-K',
-        'BigWitnessIdxSigs': '--K',
-        'NonTransReceiptCouples': '-L',
-        'BigNonTransReceiptCouples': '--L',
-        'TransReceiptQuadruples': '-M',
-        'BigTransReceiptQuadruples': '--M',
-        'FirstSeenReplayCouples': '-N',
-        'BigFirstSeenReplayCouples': '--N',
-        'TransIdxSigGroups': '-O',
-        'BigTransIdxSigGroups': '--O',
-        'TransLastIdxSigGroups': '-P',
-        'BigTransLastIdxSigGroups': '--P',
-        'PathedMaterialGroup': '-Q',
-        'BigPathedMaterialGroup': '--Q',
+        'MessageGroup': '-H',
+        'BigMessageGroup': '--H',
+        'GenericMapGroup': '-I',
+        'BigGenericMapGroup': '--I',
+        'GenericListGroup': '-J',
+        'BigGenericListGroup': '--J',
+        'ControllerIdxSigs': '-K',
+        'BigControllerIdxSigs': '--K',
+        'WitnessIdxSigs': '-L',
+        'BigWitnessIdxSigs': '--L',
+        'NonTransReceiptCouples': '-M',
+        'BigNonTransReceiptCouples': '--M',
+        'TransReceiptQuadruples': '-N',
+        'BigTransReceiptQuadruples': '--N',
+        'FirstSeenReplayCouples': '-O',
+        'BigFirstSeenReplayCouples': '--O',
+        'PathedMaterialGroup': '-P',
+        'BigPathedMaterialGroup': '--P',
+        'DigestSealSingles': '-Q',
+        'BigDigestSealSingles': '--Q',
         'MerkleRootSealSingles': '-R',
         'BigMerkleRootSealSingles': '--R',
         'SealSourceTriples': '-S',
@@ -163,12 +167,12 @@ def test_codexes_tags():
         'BigSealSourceCouples': '--T',
         'SealSourceLastSingles': '-U',
         'BigSealSourceLastSingles': '--U',
-        'DigestSealSingles': '-V',
-        'BigDigestSealSingles': '--V',
-        'BackerRegistrarSealCouples': '-W',
-        'BigBackerRegistrarSealCouples': '--W',
-        'MessageGroup': '-X',
-        'BigMessageGroup': '--X',
+        'BackerRegistrarSealCouples': '-V',
+        'BigBackerRegistrarSealCouples': '--V',
+        'TransIdxSigGroups': '-W',
+        'BigTransIdxSigGroups': '--W',
+        'TransLastIdxSigGroups': '-X',
+        'BigTransLastIdxSigGroups': '--X',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
         'KERIACDCGenusVersion': '-_AAA'
@@ -190,10 +194,12 @@ def test_codexes_tags():
         'BigFixedMessageBodyGroup': '--F',
         'MapMessageBodyGroup': '-G',
         'BigMapMessageBodyGroup': '--G',
-        'GenericMapGroup': '-H',
-        'BigGenericMapGroup': '--H',
-        'GenericListGroup': '-I',
-        'BigGenericListGroup': '--I',
+        'MessageGroup': '-H',
+        'BigMessageGroup': '--H',
+        'GenericMapGroup': '-I',
+        'BigGenericMapGroup': '--I',
+        'GenericListGroup': '-J',
+        'BigGenericListGroup': '--J',
         'KERIACDCGenusVersion': '-_AAA'
     }
 
@@ -217,6 +223,8 @@ def test_codexes_tags():
         'BigFixedMessageBodyGroup': '--F',
         'MapMessageBodyGroup': '-G',
         'BigMapMessageBodyGroup': '--G',
+        'MessageGroup': '-H',
+        'BigMessageGroup': '--H',
     }
 
 
@@ -236,6 +244,8 @@ def test_codexes_tags():
         'BigFixedMessageBodyGroup',
         'MapMessageBodyGroup',
         'BigMapMessageBodyGroup',
+        'MessageGroup',
+        'BigMessageGroup',
         'GenericMapGroup',
         'BigGenericMapGroup',
         'GenericListGroup',
@@ -250,12 +260,10 @@ def test_codexes_tags():
         'BigTransReceiptQuadruples',
         'FirstSeenReplayCouples',
         'BigFirstSeenReplayCouples',
-        'TransIdxSigGroups',
-        'BigTransIdxSigGroups',
-        'TransLastIdxSigGroups',
-        'BigTransLastIdxSigGroups',
         'PathedMaterialGroup',
         'BigPathedMaterialGroup',
+        'DigestSealSingles',
+        'BigDigestSealSingles',
         'MerkleRootSealSingles',
         'BigMerkleRootSealSingles',
         'SealSourceTriples',
@@ -264,12 +272,12 @@ def test_codexes_tags():
         'BigSealSourceCouples',
         'SealSourceLastSingles',
         'BigSealSourceLastSingles',
-        'DigestSealSingles',
-        'BigDigestSealSingles',
         'BackerRegistrarSealCouples',
         'BigBackerRegistrarSealCouples',
-        'MessageGroup',
-        'BigMessageGroup',
+        'TransIdxSigGroups',
+        'BigTransIdxSigGroups',
+        'TransLastIdxSigGroups',
+        'BigTransLastIdxSigGroups',
         'ESSRPayloadGroup',
         'BigESSRPayloadGroup',
         'KERIACDCGenusVersion'
@@ -292,6 +300,8 @@ def test_codexes_tags():
         BigFixedMessageBodyGroup='BigFixedMessageBodyGroup',
         MapMessageBodyGroup='MapMessageBodyGroup',
         BigMapMessageBodyGroup='BigMapMessageBodyGroup',
+        MessageGroup='MessageGroup',
+        BigMessageGroup='BigMessageGroup',
         GenericMapGroup='GenericMapGroup',
         BigGenericMapGroup='BigGenericMapGroup',
         GenericListGroup='GenericListGroup',
@@ -306,10 +316,8 @@ def test_codexes_tags():
         BigTransReceiptQuadruples='BigTransReceiptQuadruples',
         FirstSeenReplayCouples='FirstSeenReplayCouples',
         BigFirstSeenReplayCouples='BigFirstSeenReplayCouples',
-        TransIdxSigGroups='TransIdxSigGroups',
-        BigTransIdxSigGroups='BigTransIdxSigGroups',
-        TransLastIdxSigGroups='TransLastIdxSigGroups',
-        BigTransLastIdxSigGroups='BigTransLastIdxSigGroups',
+        DigestSealSingles='DigestSealSingles',
+        BigDigestSealSingles='BigDigestSealSingles',
         PathedMaterialGroup='PathedMaterialGroup',
         BigPathedMaterialGroup='BigPathedMaterialGroup',
         MerkleRootSealSingles='MerkleRootSealSingles',
@@ -320,12 +328,12 @@ def test_codexes_tags():
         BigSealSourceCouples='BigSealSourceCouples',
         SealSourceLastSingles='SealSourceLastSingles',
         BigSealSourceLastSingles='BigSealSourceLastSingles',
-        DigestSealSingles='DigestSealSingles',
-        BigDigestSealSingles='BigDigestSealSingles',
         BackerRegistrarSealCouples='BackerRegistrarSealCouples',
         BigBackerRegistrarSealCouples='BigBackerRegistrarSealCouples',
-        MessageGroup='MessageGroup',
-        BigMessageGroup='BigMessageGroup',
+        TransIdxSigGroups='TransIdxSigGroups',
+        BigTransIdxSigGroups='BigTransIdxSigGroups',
+        TransLastIdxSigGroups='TransLastIdxSigGroups',
+        BigTransLastIdxSigGroups='BigTransLastIdxSigGroups',
         ESSRPayloadGroup='ESSRPayloadGroup',
         BigESSRPayloadGroup='BigESSRPayloadGroup',
         KERIACDCGenusVersion='KERIACDCGenusVersion'
@@ -338,6 +346,8 @@ def test_codexes_tags():
 
     assert asdict(counting.SealDex_2_0) == \
     {
+        'DigestSealSingles': '-Q',
+        'BigDigestSealSingles': '--Q',
         'MerkleRootSealSingles': '-R',
         'BigMerkleRootSealSingles': '--R',
         'SealSourceTriples': '-S',
@@ -346,10 +356,8 @@ def test_codexes_tags():
         'BigSealSourceCouples': '--T',
         'SealSourceLastSingles': '-U',
         'BigSealSourceLastSingles': '--U',
-        'DigestSealSingles': '-V',
-        'BigDigestSealSingles': '--V',
-        'BackerRegistrarSealCouples': '-W',
-        'BigBackerRegistrarSealCouples': '--W',
+        'BackerRegistrarSealCouples': '-V',
+        'BigBackerRegistrarSealCouples': '--V',
     }
 
     """End Test"""
@@ -418,8 +426,8 @@ def test_counter_class():
                     '--U': 'BigMessageAttachmentGroup',
                     '-V': 'AttachmentGroup',
                     '--V': 'BigAttachmentGroup',
-                    '-X': 'MessageGroup',
-                    '--X': 'BigMessageGroup',
+                    '-W': 'MessageGroup',
+                    '--W': 'BigMessageGroup',
                     '-Z': 'ESSRPayloadGroup',
                     '--Z': 'BigESSRPayloadGroup',
                     '-_AAA': 'KERIACDCGenusVersion',
@@ -442,26 +450,26 @@ def test_counter_class():
                     '--F': 'BigFixedMessageBodyGroup',
                     '-G': 'MapMessageBodyGroup',
                     '--G': 'BigMapMessageBodyGroup',
-                    '-H': 'GenericMapGroup',
-                    '--H': 'BigGenericMapGroup',
-                    '-I': 'GenericListGroup',
-                    '--I': 'BigGenericListGroup',
-                    '-J': 'ControllerIdxSigs',
-                    '--J': 'BigControllerIdxSigs',
-                    '-K': 'WitnessIdxSigs',
-                    '--K': 'BigWitnessIdxSigs',
-                    '-L': 'NonTransReceiptCouples',
-                    '--L': 'BigNonTransReceiptCouples',
-                    '-M': 'TransReceiptQuadruples',
-                    '--M': 'BigTransReceiptQuadruples',
-                    '-N': 'FirstSeenReplayCouples',
-                    '--N': 'BigFirstSeenReplayCouples',
-                    '-O': 'TransIdxSigGroups',
-                    '--O': 'BigTransIdxSigGroups',
-                    '-P': 'TransLastIdxSigGroups',
-                    '--P': 'BigTransLastIdxSigGroups',
-                    '-Q': 'PathedMaterialGroup',
-                    '--Q': 'BigPathedMaterialGroup',
+                    '-H': 'MessageGroup',
+                    '--H': 'BigMessageGroup',
+                    '-I': 'GenericMapGroup',
+                    '--I': 'BigGenericMapGroup',
+                    '-J': 'GenericListGroup',
+                    '--J': 'BigGenericListGroup',
+                    '-K': 'ControllerIdxSigs',
+                    '--K': 'BigControllerIdxSigs',
+                    '-L': 'WitnessIdxSigs',
+                    '--L': 'BigWitnessIdxSigs',
+                    '-M': 'NonTransReceiptCouples',
+                    '--M': 'BigNonTransReceiptCouples',
+                    '-N': 'TransReceiptQuadruples',
+                    '--N': 'BigTransReceiptQuadruples',
+                    '-O': 'FirstSeenReplayCouples',
+                    '--O': 'BigFirstSeenReplayCouples',
+                    '-P': 'PathedMaterialGroup',
+                    '--P': 'BigPathedMaterialGroup',
+                    '-Q': 'DigestSealSingles',
+                    '--Q': 'BigDigestSealSingles',
                     '-R': 'MerkleRootSealSingles',
                     '--R': 'BigMerkleRootSealSingles',
                     '-S': 'SealSourceTriples',
@@ -470,12 +478,12 @@ def test_counter_class():
                     '--T': 'BigSealSourceCouples',
                     '-U': 'SealSourceLastSingles',
                     '--U': 'BigSealSourceLastSingles',
-                    '-V': 'DigestSealSingles',
-                    '--V': 'BigDigestSealSingles',
-                    '-W': 'BackerRegistrarSealCouples',
-                    '--W': 'BigBackerRegistrarSealCouples',
-                    '-X': 'MessageGroup',
-                    '--X': 'BigMessageGroup',
+                    '-V': 'BackerRegistrarSealCouples',
+                    '--V': 'BigBackerRegistrarSealCouples',
+                    '-W': 'TransIdxSigGroups',
+                    '--W': 'BigTransIdxSigGroups',
+                    '-X': 'TransLastIdxSigGroups',
+                    '--X': 'BigTransLastIdxSigGroups',
                     '-Z': 'ESSRPayloadGroup',
                     '--Z': 'BigESSRPayloadGroup',
                     '-_AAA': 'KERIACDCGenusVersion'
@@ -508,8 +516,8 @@ def test_counter_class():
                     '--U': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
                     '--V': Cizage(hs=3, ss=5, fs=8),
-                    '-X': Cizage(hs=2, ss=2, fs=4),
-                    '--X': Cizage(hs=3, ss=5, fs=8),
+                    '-W': Cizage(hs=2, ss=2, fs=4),
+                    '--W': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '--Z': Cizage(hs=3, ss=5, fs=8),
                     '-_AAA': Cizage(hs=5, ss=3, fs=8)
@@ -1258,7 +1266,7 @@ def test_counter_v2():
     # create code manually
     count = 1
     qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
-    assert qsc == '-JAB'
+    assert qsc == '-KAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1343,7 +1351,7 @@ def test_counter_v2():
     # test with non-zero count=5
     count = 5
     qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
-    assert qsc == '-JAF'
+    assert qsc == '-KAF'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1436,7 +1444,7 @@ def test_counter_v2():
     # create code manually
     count = 1
     qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
-    assert qsc == '-JAB'
+    assert qsc == '-KAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
