@@ -937,7 +937,7 @@ class Parser:
 
             # check for MessageGroup or non-native message or native message groups
             cold = sniff(ims)  # front of top level of this substream
-            if cold != Colds.msg:  # counter found so extract it
+            if cold != Colds.msg:  # counter found so peek at it
                 ctr = yield from self._extractor(ims=ims,
                                          klas=Counter,
                                          cold=cold,
@@ -962,7 +962,7 @@ class Parser:
                         return
 
                     # peek for version
-                    ctr = yield from self._extractor(ims=eims,
+                    ctr = yield from self._extractor(ims=ims,
                                                      klas=Counter,
                                                      cold=cold,
                                                      abort=framed,
@@ -972,17 +972,19 @@ class Parser:
                         del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                         # change version
                         self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
-                        # get next counter either native or non-native msg group
-                        ctr = yield from self._extractor(ims=eims,
+                        # peek at next counter either native or non-native msg group
+                        ctr = yield from self._extractor(ims=ims,
                                                         klas=Counter,
                                                         cold=cold,
-                                                        abort=framed)
+                                                        abort=framed,
+                                                        strip=False)
 
                 # Check for non-native msg group or native message group
                 if (ctr.code in (self.codes.NonNativeMessageGroup,
                                  self.codes.BigNonNativeMessageGroup)):
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # process non-native message group with texter
-                    texter = yield from self._extractor(ims=eims,
+                    texter = yield from self._extractor(ims=ims,
                                                         klas=Texter,
                                                         cold=cold,
                                                         abort=framed)
@@ -992,6 +994,7 @@ class Parser:
                     exts['serder'] = serder
 
                 elif ctr.code in self.mucodes:  # process native message group
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     nmgs = ctr.byteCount(cold=cold)  # native message group size
                     while len(ims) < nmgs and not framed:  # framed already in ims
                         yield
@@ -1072,7 +1075,21 @@ class Parser:
 
 
                 while True:  # iteratively process attachment counters in stride
-                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+                    ctr = yield from self._extractor(ims=ims,
+                                                     klas=Counter,
+                                                     cold=cold,
+                                                     strip=False)
+
+                    # check if group belongs to top level group message in stream
+                    if (ctr.code in self.mucodes or (ctr.code in self.sucodes and
+                        ctr.code not in (self.sucodes.AttachmentGroup,
+                                         self.sucodes.BigAttachmentGroup)) or
+                        ctr.code in (self.codes.NonNativeMessageGroup,
+                                     self.codes.BigNonNativeMessageGroup)):
+                        # do not consume leave in stream
+                        break  # finished attachments since new message
+
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
 
                     try:
                         yield from getattr(self, self.methods[ctr.name])(exts=exts,
@@ -1096,7 +1113,7 @@ class Parser:
                         if not ims:  # end of frame
                             break
                         cold = sniff(ims)
-                        if cold == Colds.msg:  # new message so attachments done
+                        if cold == Colds.msg:  # new non-group message so attachments done
                             break  # finished attachments since new message
 
             #else:  # see next msg but with no attachments on current messge
