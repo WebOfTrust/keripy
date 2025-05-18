@@ -83,6 +83,8 @@ def test_codexes_tags():
         'BigMessageGroup': '--U',
         'AttachmentGroup': '-V',
         'BigAttachmentGroup': '--V',
+        'NonNativeMessageGroup': '-X',
+        'BigNonNativeMessageGroup': '--X',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
         'KERIACDCGenusVersion': '-_AAA'
@@ -98,6 +100,8 @@ def test_codexes_tags():
         'BigMessageGroup': '--U',
         'AttachmentGroup': '-V',
         'BigAttachmentGroup': '--V',
+        'NonNativeMessageGroup': '-X',
+        'BigNonNativeMessageGroup': '--X',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
     }
@@ -163,6 +167,8 @@ def test_codexes_tags():
         'BigDigestSealSingles': '--V',
         'BackerRegistrarSealCouples': '-W',
         'BigBackerRegistrarSealCouples': '--W',
+        'NonNativeMessageGroup': '-X',
+        'BigNonNativeMessageGroup': '--X',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
         'KERIACDCGenusVersion': '-_AAA'
@@ -262,6 +268,8 @@ def test_codexes_tags():
         'BigDigestSealSingles',
         'BackerRegistrarSealCouples',
         'BigBackerRegistrarSealCouples',
+        'NonNativeMessageGroup',
+        'BigNonNativeMessageGroup',
         'ESSRPayloadGroup',
         'BigESSRPayloadGroup',
         'KERIACDCGenusVersion'
@@ -316,6 +324,8 @@ def test_codexes_tags():
         BigDigestSealSingles='BigDigestSealSingles',
         BackerRegistrarSealCouples='BackerRegistrarSealCouples',
         BigBackerRegistrarSealCouples='BigBackerRegistrarSealCouples',
+        NonNativeMessageGroup='NonNativeMessageGroup',
+        BigNonNativeMessageGroup='BigNonNativeMessageGroup',
         ESSRPayloadGroup='ESSRPayloadGroup',
         BigESSRPayloadGroup='BigESSRPayloadGroup',
         KERIACDCGenusVersion='KERIACDCGenusVersion'
@@ -408,6 +418,8 @@ def test_counter_class():
                     '--U': 'BigMessageGroup',
                     '-V': 'AttachmentGroup',
                     '--V': 'BigAttachmentGroup',
+                    '-X': 'NonNativeMessageGroup',
+                    '--X': 'BigNonNativeMessageGroup',
                     '-Z': 'ESSRPayloadGroup',
                     '--Z': 'BigESSRPayloadGroup',
                     '-_AAA': 'KERIACDCGenusVersion',
@@ -462,6 +474,8 @@ def test_counter_class():
                     '--V': 'BigDigestSealSingles',
                     '-W': 'BackerRegistrarSealCouples',
                     '--W': 'BigBackerRegistrarSealCouples',
+                    '-X': 'NonNativeMessageGroup',
+                    '--X': 'BigNonNativeMessageGroup',
                     '-Z': 'ESSRPayloadGroup',
                     '--Z': 'BigESSRPayloadGroup',
                     '-_AAA': 'KERIACDCGenusVersion'
@@ -494,6 +508,8 @@ def test_counter_class():
                     '--U': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
                     '--V': Cizage(hs=3, ss=5, fs=8),
+                    '-X': Cizage(hs=2, ss=2, fs=4),
+                    '--X': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '--Z': Cizage(hs=3, ss=5, fs=8),
                     '-_AAA': Cizage(hs=5, ss=3, fs=8)
@@ -549,6 +565,8 @@ def test_counter_class():
                     '--V': Cizage(hs=3, ss=5, fs=8),
                     '-W': Cizage(hs=2, ss=2, fs=4),
                     '--W': Cizage(hs=3, ss=5, fs=8),
+                    '-X': Cizage(hs=2, ss=2, fs=4),
+                    '--X': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '--Z': Cizage(hs=3, ss=5, fs=8),
                     '-_AAA': Cizage(hs=5, ss=3, fs=8)

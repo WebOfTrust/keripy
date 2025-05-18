@@ -68,6 +68,8 @@ class CounterCodex_1_0(MapDom):
     BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
+    NonNativeMessageGroup: str = '-X'  # Non-Native Message body when enclosed
+    BigNonNativeMessageGroup: str = '--X'  # Non-Native Message body when enclosed
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
@@ -97,6 +99,8 @@ class QuadTripCodex_1_0(MapDom):
     BigMessageGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
+    NonNativeMessageGroup: str = '-X'  # Non-Native Message body when enclosed
+    BigNonNativeMessageGroup: str = '--X'  # Non-Native Message body when enclosed
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
 
@@ -224,6 +228,8 @@ class CounterCodex_2_0(MapDom):
     BigDigestSealSingles: str = '--V'  # Big Digest Seal Single(s), dig of sealed data.
     BackerRegistrarSealCouples: str = '-W'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
     BigBackerRegistrarSealCouples: str = '--W'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    NonNativeMessageGroup: str = '-X'  # Non-Native Message body when enclosed
+    BigNonNativeMessageGroup: str = '--X'  # Non-Native Message body when enclosed
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
@@ -558,6 +564,8 @@ class Counter:
                 '--U': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
                 '--V': Cizage(hs=3, ss=5, fs=8),
+                '-X': Cizage(hs=2, ss=2, fs=4),
+                '--X': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
                 '--Z': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),
@@ -613,6 +621,8 @@ class Counter:
                 '--V': Cizage(hs=3, ss=5, fs=8),
                 '-W': Cizage(hs=2, ss=2, fs=4),
                 '--W': Cizage(hs=3, ss=5, fs=8),
+                '-X': Cizage(hs=2, ss=2, fs=4),
+                '--X': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
                 '--Z': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),

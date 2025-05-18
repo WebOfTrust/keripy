@@ -2583,10 +2583,15 @@ class Texter(Matter):
     Attributes:
 
     Inherited Properties:  (See Matter)
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
 
     Properties:
-        .text is bytes value with CESR code and leader removed.
-        .uext is str value with CESR code and leader removed unicode of .text
+        text (str): unqaulified text str  without CESR code and leader.
+
 
     Inherited Hidden Properties:  (See Matter)
 
@@ -2606,22 +2611,24 @@ class Texter(Matter):
                  code=MtrDex.Bytes_L0, text=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
+            raw (bytes|None): of unqualified variable sized text string
+            qb64b (bytes|None): fully qualified text domain of raw/text
+            qb64 (str|bytes|None):  fully qualified text domain of raw/text
+            qb2 (bytes|None): fully qualified binary domain of raw/text
+            code (str): hard part of derivation code in text domain
 
         Parameters:
-            text is the variable sized text string as either bytes or str
+            text (str|bytes|None): unqualified variable sized text string as either
+                same as raw but may be as str, so handles encoding/decoding
+                to/from bytes/str
+
 
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if text is None:
                 raise EmptyMaterialError("Missing text string.")
             if hasattr(text, "encode"):
-                text = text.encode("utf-8")
+                text = text.encode()
             raw = text
 
         super(Texter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
@@ -2636,7 +2643,7 @@ class Texter(Matter):
         """
         Property text: raw as str
         """
-        return self.raw.decode('utf-8')
+        return self.raw.decode()
 
 
 class Bexter(Matter):

@@ -919,7 +919,9 @@ class Parser:
                 yield
 
             emgs = None  # size of enclosing message group if any when is not None
+            ctr = None  # no counter to process when not None then extracted need to process
 
+            # Check for genus-version change
             cold = sniff(ims)  # front of top level of this substream
             if cold != Colds.msg:  # counter found so peek at it
                 ctr = yield from self._extractor(ims=ims,
@@ -933,8 +935,17 @@ class Parser:
                     # change version
                     self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
 
-                elif ctr.code in (self.sucodes.MessageGroup,
-                                  self.sucodes.BigMessageGroup):
+            # check for MessageGroup or non-native message or native message groups
+            cold = sniff(ims)  # front of top level of this substream
+            if cold != Colds.msg:  # counter found so extract it
+                ctr = yield from self._extractor(ims=ims,
+                                         klas=Counter,
+                                         cold=cold,
+                                         abort=framed,
+                                         strip=False)
+
+                if ctr and ctr.code in (self.sucodes.MessageGroup,
+                                       self.sucodes.BigMessageGroup):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # compute enclosing group size based on txt or bny
                     emgs = ctr.byteCount(cold=cold)
@@ -950,26 +961,37 @@ class Parser:
                         pass  # pass extracted ims to pipeline processor
                         return
 
-                    cold = sniff(ims)  # check front of group for genus version
-                    if cold != Colds.msg:  # peek for version change
+                    # peek for version
+                    ctr = yield from self._extractor(ims=eims,
+                                                     klas=Counter,
+                                                     cold=cold,
+                                                     abort=framed,
+                                                     strip=False)
+                    if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
+                                            UniDex_2_0.KERIACDCGenusVersion):
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                        # change version
+                        self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+                        # get next counter either native or non-native msg group
                         ctr = yield from self._extractor(ims=eims,
-                                                         klas=Counter,
-                                                         cold=cold,
-                                                         abort=framed,
-                                                         strip=False)
-                        if ctr.code in (UniDex_1_0.KERIACDCGenusVersion,
-                                                UniDex_2_0.KERIACDCGenusVersion):
-                            del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                            # change version
-                            self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+                                                        klas=Counter,
+                                                        cold=cold,
+                                                        abort=framed)
 
-            cold = sniff(ims)  # check front of substream for message of some kind
-            if cold != Colds.msg:  # counter found should be native message
-                ctr = yield from self._extractor(ims=ims,
-                                                 klas=Counter,
-                                                 abort=framed,
-                                                 cold=cold)
-                if ctr.code in self.mucodes:  # process native message group
+                # Check for non-native msg group or native message group
+                if (ctr.code in (self.codes.NonNativeMessageGroup,
+                                 self.codes.BigNonNativeMessageGroup)):
+                    # process non-native message group with texter
+                    texter = yield from self._extractor(ims=eims,
+                                                        klas=Texter,
+                                                        cold=cold,
+                                                        abort=framed)
+                    serder = serdery.reap(ims=texter.raw,
+                                          genus=self.genus,
+                                          gvrsn=self.curver)
+                    exts['serder'] = serder
+
+                elif ctr.code in self.mucodes:  # process native message group
                     nmgs = ctr.byteCount(cold=cold)  # native message group size
                     while len(ims) < nmgs and not framed:  # framed already in ims
                         yield
@@ -979,14 +1001,17 @@ class Parser:
                     # now nims includes just the native message not attachments
                     # and native message has been stripped from ims
 
+
                 else:  # shouldn't be a counter of any other type here
                     raise kering.ColdStartError(f"Expected message counter code,"
                                                 f" got code={ctr.code}")
 
-            else:   # Otherwise its JSON, CBOR, or MGPK message cold start
+            else:   # Otherwise its JSON, CBOR, or MGPK message at top level
                 while True:  # extract, deserialize, and strip message from ims
                     try:
-                        serder = serdery.reap(ims=ims, genus=self.genus, gvrsn=self.curver)
+                        serder = serdery.reap(ims=ims,
+                                              genus=self.genus,
+                                              gvrsn=self.curver)
                     except kering.ShortageError as ex:  # need more bytes
                         if framed:  # pre-extracted
                             raise  # incomplete frame or group so abort by raising error
