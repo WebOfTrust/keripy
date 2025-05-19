@@ -697,119 +697,98 @@ class Parser:
 
         self.version = version  # when not None which sets .methods .codes .mucodes .sucodes
 
-        nest = deque()  # (svrsn, ims) stack of nested substreams framed by generic groups
-        eggs = None  # size of enclosing generic group if any when is not None
+        stack = deque()  # (svrsn, ims) stack of nested substreams framed by generic groegups
+        svrsn = None
+        eggs = None  # used in preflused error
 
-        # ToDo: logic is wrong need to be abled to nest and unnest as walking
-        # thorugh nested group tree so not right yet.
+        try:
+            while True:  # process stream until done
+                while not ims and stack:  # happens when ascending (un-nesting)
+                    svrsn, ims = stack.pop()  # un-nest
+                    self.version = svrsn  # only changes if svrsn is not None
 
-        try:  # maybe this should be more granular so it can flush just a bad group
-            while not ims and not framed:
-                yield
+                if not ims:  # no stream and no stack
+                    break
 
-            svrsn = None
-            while nest or ims:  # keep processing ims or nested Generic Groups
-                if ims:
-                    svrsn = svrsn if svrsn is not None else version  # top level of substream version
-                    cold = sniff(ims)  # check front of stream
-                    if cold != Colds.msg:  # peek for generic group
-                        ctr = yield from self._extractor(ims=ims,
-                                                         klas=Counter,
-                                                         cold=cold,
-                                                         abort=framed,
-                                                         strip=False)
+                # check front of stream for GenericGroup to nest down
+                cold = sniff(ims)  # check front of stream
+                if cold != Colds.msg:  # peek for generic group at front of ims
+                    ctr = yield from self._extractor(ims=ims,
+                                                     klas=Counter,
+                                                     cold=cold,
+                                                     abort=framed,
+                                                     strip=False)
 
-                        if ctr.code == self.codes.KERIACDCGenusVersion:
-                            del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                            # change and save svrsn and .version
-                            self.version = svrsn = Counter.b64ToVer(gvc.countToB64(l=3))
+                    if (ctr.code in (self.sucodes.GenericGroup,
+                                     self.sucodes.BigGenericGroup)):
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                        # compute enclosing generic group size based on txt or bny
+                        eggs = ctr.byteCount(cold=cold)
+                        while len(ims) < eggs and not framed:  # framed already in ims
+                            yield
 
-                        elif (ctr.code in (self.sucodes.GenericGroup,
-                                           self.sucodes.GenericGroup)):
+                        eims = ims[:eggs]  # copy out substream enclosed attachments
+                        del ims[:eggs]  # strip off from ims
 
-                            del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                            # compute enclosing generic group size based on txt or bny
-                            eggs = ctr.byteCount(cold=cold)
-                            while len(ims) < eggs and not framed:  # framed already in ims
-                                yield
-
-                            eims = ims[:eggs]  # copy out substream enclosed attachments
-                            del ims[:eggs]  # strip off from ims
-                            nest.append((svrsn, ims))  # push onto stack (srvsn, ims)
-                            ims = eims  # replace so nesting down one level
-                            # at top level generic groups must enclose messages plus attachments
-                            framed = True
-
-                            if piped:
-                                pass  # pass extracted ims to pipeline processor
-                                return  # pop stack here instead
-
-                    else:  # must be a message or message group so process
-                        done = yield from self.msgParsator(ims=ims,
-                                                           framed=framed,
-                                                           piped=piped,
-                                                           kvy=kvy,
-                                                           tvy=tvy,
-                                                           exc=exc,
-                                                           rvy=rvy,
-                                                           vry=vry,
-                                                           local=local,
-                                                           version=svrsn)
-                elif nest:
-                    svrsn, ims = nest.pop()
-                    cold = sniff(ims)  # check front of stream
-                    if cold != Colds.msg:  # peek for generic group
-                        ctr = yield from self._extractor(ims=ims,
+                        # peek for version code at front of eims
+                        ctr = yield from self._extractor(ims=eims,
                                                         klas=Counter,
                                                         cold=cold,
                                                         abort=framed,
                                                         strip=False)
 
                         if ctr.code == self.codes.KERIACDCGenusVersion:
-                            del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                            # change and save svrsn and .version
-                            self.version = svrsn = Counter.b64ToVer(gvc.countToB64(l=3))
+                            del eims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                            # get new substream version
+                            svrsn = Counter.b64ToVer(ctr.countToB64(l=3))
+                        else:
+                            svrsn == None  # no change to substream version
 
+                        stack.append((self.version, ims))  # push current version ims
+                        self.version = svrsn  # replace with new version if not None
+                        ims = eims  # replace ims to nest down one level
+                        # top-level nested generics enclose messages plus attachments
+                        framed = True
 
-                        if (ctr.code in (self.sucodes.GenericGroup,
-                                         self.sucodes.GenericGroup)):
+                        if piped:
+                            pass  # pass extracted ims to pipeline processor
+                            return  # pop stack here instead
 
-                            del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                            # compute enclosing generic group size based on txt or bny
-                            eggs = ctr.byteCount(cold=cold)
-                            while len(ims) < eggs and not framed:  # framed already in ims
-                                yield
+                        continue  # captures immediate further nested groups
 
-                            eims = ims[:eggs]  # copy out substream enclosed attachments
-                            del ims[:eggs]  # strip off from ims
-                            nest.append((svrsn, ims))  # push onto stack (srvsn, ims)
-                            ims = eims  # replace so nesting down one level
-                            # at top level generic groups must enclose messages plus attachments
-                            framed = True
+                # process substream at current nesting level
+                try:
+                    done = yield from self.msgParsator(ims=ims,
+                                                       framed=framed,
+                                                       piped=piped,
+                                                       kvy=kvy,
+                                                       tvy=tvy,
+                                                       exc=exc,
+                                                       rvy=rvy,
+                                                       vry=vry,
+                                                       local=local,
+                                                       version=self.version)
+                except kering.TopLevelStreamError as ex:  # encountered GenericGroup
+                    continue  # so returns control here to parse that group
 
-                            if piped:
-                                pass  # pass extracted ims to pipeline processor
-                                return  # pop stack here instead
+                except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+                    # Non extraction errors happen after a message has been
+                    # successfully extracted from stream
+                    # so we don't flush rest of stream just resume
+                    continue
 
-                    else:  # must be a message or message group so process
-                        done = yield from self.msgParsator(ims=ims,
-                                                           framed=framed,
-                                                           piped=piped,
-                                                           kvy=kvy,
-                                                           tvy=tvy,
-                                                           exc=exc,
-                                                           rvy=rvy,
-                                                           vry=vry,
-                                                           local=local,
-                                                           version=svrsn)
 
         except kering.ExtractionError as ex:  # maybe this needs to be more granular
-            #if eggs is not None:  # extracted enclosed message group is preflushed
-                #raise kering.SizedGroupError(f"Error processing generic group"
-                                                 #f" of size={eggs}")
+            if eggs is not None:  # extracted enclosed message group is preflushed
+                raise kering.SizedGroupError(f"Error processing generic group"
+                                                 f" of size={eggs}")
             raise  # no enclosing message group so can't preflush, must flush stream
 
-
+        finally:  # restore version at top level
+            while stack:  # when tail end of group has validation error
+                svrsn, _ = stack.pop()
+                if svrsn:
+                    self.version = svrsn
         return done
 
 
@@ -980,6 +959,10 @@ class Parser:
                     # now nims includes just the native message not attachments
                     # and native message has been stripped from ims
 
+                elif (ctr.code in (self.sucodes.GenericGroup,
+                                   self.sucodes.BigGenericGroup)):
+                    # return control to groupParsator
+                    raise kering.TopLevelStreamError(f"Got GenericGroup so revisit.")
 
                 else:  # shouldn't be a counter of any other type here
                     raise kering.ColdStartError(f"Expected message counter code,"
