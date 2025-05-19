@@ -441,7 +441,7 @@ class Parser:
 
         while ims:  # only process until ims empty (differs here from parsator)
             try:
-                done = yield from self.msgParsator(ims=ims,
+                done = yield from self.groupParsator(ims=ims,
                                                    framed=framed,
                                                    piped=piped,
                                                    kvy=kvy,
@@ -451,6 +451,7 @@ class Parser:
                                                    vry=vry,
                                                    local=local,
                                                    version=version)
+
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -614,7 +615,7 @@ class Parser:
 
         while True:  # continuous stream processing (differs here from allParsator)
             try:
-                done = yield from self.msgParsator(ims=ims,
+                done = yield from self.groupParsator(ims=ims,
                                                    framed=framed,
                                                    piped=piped,
                                                    kvy=kvy,
@@ -624,6 +625,18 @@ class Parser:
                                                    vry=vry,
                                                    local=local,
                                                    version=version)
+
+
+                #done = yield from self.msgParsator(ims=ims,
+                                                   #framed=framed,
+                                                   #piped=piped,
+                                                   #kvy=kvy,
+                                                   #tvy=tvy,
+                                                   #exc=exc,
+                                                   #rvy=rvy,
+                                                   #vry=vry,
+                                                   #local=local,
+                                                   #version=version)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -651,7 +664,7 @@ class Parser:
         return True  # should never return
 
 
-    def groupParsator(self, ims=None, framed=None, piped=None, kvy=None,
+    def groupParsator(self, ims=None, framed=True, piped=False, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
                     version=None):
         """Returns generator to parse nested GenericGroups whose outermost nesting
@@ -679,19 +692,9 @@ class Parser:
                                 None means do not change default
 
         """
-        if ims is not None:  # needs bytearray not bytes since deletes as processes
-            if not isinstance(ims, bytearray):
-                ims = bytearray(ims)  # so make bytearray copy
-        else:
-            ims = self.ims  # use instance attribute by default
+        if ims is None:
+            ims = self.ims
 
-        framed = framed if framed is not None else self.framed
-        piped = piped if piped is not None else self.piped
-        kvy = kvy if kvy is not None else self.kvy
-        tvy = tvy if tvy is not None else self.tvy
-        exc = exc if exc is not None else self.exc
-        rvy = rvy if rvy is not None else self.rvy
-        vry = vry if vry is not None else self.vry
         local = local if local is not None else self.local
         local = True if local else False
 
@@ -1037,6 +1040,7 @@ class Parser:
                     ctr = yield from self._extractor(ims=ims,
                                                      klas=Counter,
                                                      cold=cold,
+                                                     abort=framed or enclosed,
                                                      strip=False)
 
                     # check if group belongs to top level group message in stream
