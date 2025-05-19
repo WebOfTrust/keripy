@@ -7,11 +7,13 @@ import os
 from collections.abc import Iterable
 from typing import Union, Type
 
-from keri import kering
+from keri import kering, help
 from keri.help import helping
 from keri.app import signaling
 from keri.core import coring
 from keri.db import dbing, subing
+
+logger = help.ogler.getLogger()
 
 
 def notice(attrs, dt=None, read=False):
@@ -208,15 +210,19 @@ class Noter(dbing.LMDBer):
     TailDirPath = os.path.join("keri", "not")
     AltTailDirPath = os.path.join(".keri", "not")
     TempPrefix = "keri_not_"
+    ConfigKey = "noter"
 
     def __init__(self, name="not", headDirPath=None, reopen=True, **kwa):
         """
+        Sets up a named notification database where all notifications for a controller are stored.
 
         Parameters:
-            headDirPath:
-            perm:
-            reopen:
-            kwa:
+            headDirPath(str): optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
+            perm(int): is numeric os permissions for directory and/or file(s)
+            reopen(bool): True means database will be reopened by this init
+            cf (Configer): optional Configer to configure the opened LMDB database via kwa
+            kwa: pass through init args to reopen and LMDBer
         """
         self.notes = None
         self.nidx = None
@@ -226,11 +232,13 @@ class Noter(dbing.LMDBer):
 
     def reopen(self, **kwa):
         """
+        Sets up specific named LMDB sub databases to be opened.
 
-        :param kwa:
+        :param kwa: pass through init args to reopen and LMDBer
         :return:
         """
         super(Noter, self).reopen(**kwa)
+        logger.info("[%s] Noter map size set to %s", self.name, self.mapSize)
 
         self.notes = DicterSuber(db=self, subkey='nots.', sep='/', klas=Notice)
         self.nidx = subing.Suber(db=self, subkey='nidx.')

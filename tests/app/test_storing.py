@@ -7,7 +7,7 @@ import os
 
 import lmdb
 
-from keri.app import keeping
+from keri.app import keeping, configing
 from keri.core import coring, serdering
 from keri.db import dbing, basing, subing
 from keri.peer import exchanging
@@ -109,6 +109,18 @@ def test_mailboxing():
         #assert(len(msgs)) == 6
         #assert msgs[0][0] == 4
 
+
+def test_mailboxer_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        mailboxer=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    mailboxer = Mailboxer(reopen=True,cf=cf)  # default is to not reopen
+    assert mailboxer.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB
 
 
 if __name__ == '__main__':

@@ -203,23 +203,25 @@ class Habery:
         self.base = base
         self.temp = temp
 
-        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
-                                                           base=self.base,
-                                                           temp=self.temp,
-                                                           reopen=True,
-                                                           clear=clear,
-                                                           headDirPath=headDirPath)
-        self.db = db if db is not None else basing.Baser(name=self.name,
-                                                         base=self.base,
-                                                         temp=self.temp,
-                                                         reopen=True,
-                                                         clear=clear,
-                                                         headDirPath=headDirPath)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
                                                                reopen=True,
                                                                clear=clear)
+        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
+                                                           base=self.base,
+                                                           temp=self.temp,
+                                                           reopen=True,
+                                                           clear=clear,
+                                                           headDirPath=headDirPath,
+                                                           cf=cf)
+        self.db = db if db is not None else basing.Baser(name=self.name,
+                                                         base=self.base,
+                                                         temp=self.temp,
+                                                         reopen=True,
+                                                         clear=clear,
+                                                         headDirPath=headDirPath,
+                                                         cf=cf)
 
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.rtr = routing.Router()

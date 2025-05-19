@@ -11,6 +11,7 @@ import tempfile
 
 import lmdb
 
+from keri.app import configing
 from keri.core.coring import Diger, versify, Kinds
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger
@@ -343,6 +344,19 @@ def test_clone():
           b'n_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDi'
           b'PjioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA-GAB0AAAAAAAAAAAA'
           b'AAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4')
+
+
+def test_reger_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        reger=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    reger = Reger(reopen=True,cf=cf)  # default is to not reopen
+    assert reger.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB
 
 
 if __name__ == "__main__":

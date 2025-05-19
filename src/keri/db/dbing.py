@@ -315,6 +315,7 @@ class LMDBer(filing.Filer):
     Attributes:
         env (lmdb.env): LMDB main (super) database environment
         readonly (bool): True means open LMDB env as readonly
+        cf (Configer): optional Configer to configure the opened LMDB database
 
     Properties:
 
@@ -342,7 +343,7 @@ class LMDBer(filing.Filer):
     TempSuffix = "_test"
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     MaxNamedDBs = 96
-    MapSize = 104857600
+    ConfigKey = 'lmdber'
 
     def __init__(self, readonly=False, **kwa):
         """
@@ -378,18 +379,20 @@ class LMDBer(filing.Filer):
 
             readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
-
+            cf (Configer): optional Configer to configure the opened LMDB database
         """
 
         self.env = None
         self._version = None
         self.readonly = True if readonly else False
+        self._mapSize = 104_857_600  # 10MB fallback default
+        self.cf = kwa["cf"] if "cf" in kwa else None
         super(LMDBer, self).__init__(**kwa)
 
     def reopen(self, readonly=False, **kwa):
         """
         Open if closed or close and reopen if opened or create and open if not
-        if not preexistent, directory path for lmdb at .path and then
+        preexistent, directory path for lmdb at .path and then
         Open lmdb and assign to .env
 
         Parameters:
@@ -410,15 +413,21 @@ class LMDBer(filing.Filer):
             fext (str): File extension when .filed
             readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
+            cf (Configer): optional Configer to configure the opened LMDB database via kwa
         """
         exists = self.exists(name=self.name, base=self.base)
         opened = super(LMDBer, self).reopen(**kwa)
         if readonly is not None:
             self.readonly = readonly
 
+        config = self.cf.get() if self.cf is not None else None
+        lmdberConf = config.get(self.ConfigKey, None) if config is not None else None
+        if lmdberConf is not None:
+            self.mapSize = lmdberConf.get("mapSize", 104_857_600)  # 10MB default
+
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
-        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=self.MapSize,
+        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=self.mapSize,
                              mode=self.perm, readonly=self.readonly)
 
         self.opened = True if opened and self.env else False
@@ -456,6 +465,34 @@ class LMDBer(filing.Filer):
 
         self._version = val
         self.setVer(self._version)
+
+    @property
+    def mapSize(self):
+        """
+        Get LMDB map size (database file size) limit for this instance.
+        Returns:
+            int: the map size limit for this instance
+        """
+        if self._mapSize is None:
+            self._mapSize = 104_857_600  # 512MB fallback default
+        return self._mapSize
+
+    @mapSize.setter
+    def mapSize(self, val):
+        """
+        Set LMDB map size (database file size) limit for this instance.
+        Parameters:
+            val (int): the new map size limit for this instance
+        """
+        if val is None:
+            raise ValueError(f"Invalid map size {val=}. Must be positive integer.")
+        try:
+            val = int(val)
+        except ValueError:
+            raise ValueError(f"Invalid map size {val=}. Must be positive integer.")
+        if val <= 0:
+            raise ValueError(f"Invalid map size {val=}. Must be positive integer.")
+        self._mapSize = val
 
     def close(self, clear=False):
         """

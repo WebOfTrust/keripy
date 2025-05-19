@@ -11,7 +11,8 @@ import time
 import pytest
 import os
 
-from keri.app import notifying, habbing
+from keri.app import notifying, habbing, configing
+from keri.app.notifying import Noter
 from keri.core import coring
 from keri.db import dbing
 from keri.help import helping
@@ -230,3 +231,16 @@ def test_notifier(mockHelpingNowUTC):
 
     assert notifier.mar(note.rid) is False
     assert notifier.rem(note.rid) is True
+
+
+def test_noter_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        noter=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    noter = Noter(reopen=True,cf=cf)  # default is to not reopen
+    assert noter.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB

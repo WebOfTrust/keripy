@@ -1,9 +1,29 @@
 {
+  "dt": "2022-01-20T12:57:59.823350+00:00",
+  "baser": {
+    // LMDB Map size - 1 GB
+    "mapSize": 1073741824
+  },
+  "keeper": {
+    // LMDB Map Size - 25 MB
+    "mapSize": 26214400
+  },
+  "mailboxer": {
+    // LMDB Map Size - 16.384 GB
+    "mapSize": 17179869184
+  },
+  "reger": {
+    // LMDB Map Size - 512 MB
+    "mapSize": 536870912
+  },
+  "noter": {
+    // LMDB Map Size - 128 MB
+    "mapSize": 134217728
+  },
   "wil": {
     "dt": "2022-01-20T12:57:59.823350+00:00",
     "curls": ["tcp://127.0.0.1:5633/", "http://127.0.0.1:5643/"]
   },
-  "dt": "2022-01-20T12:57:59.823350+00:00",
   "iurls": [
   ]
 }
