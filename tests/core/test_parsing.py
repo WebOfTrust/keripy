@@ -3583,9 +3583,11 @@ def test_group_parsator():
         # enclose and extend with quadlet counter, enclose defaults to V2
         emas.extend(Counter.enclose(qb64=aims, code=Codens.BigESSRPayloadGroup))
 
-        # enclose  message attachements and add to msgs
+        # enclose  message attachements and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
 
+        ngms0 = bytearray()  # nested generic group
+        ngms1 = bytearray()  # coubly nested generic group
         # Event 1 Rotation Transferable
         emas = bytearray()  # message + attachement substream
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in message-attachment group
@@ -3610,9 +3612,9 @@ def test_group_parsator():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
-        # enclose message + attachments and add to msgs
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
-
+        # enclose message + attachments and add to
+        ngms1.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms0.extend(Counter.enclose(qb64=ngms1, code=Codens.GenericGroup))
 
         # Event 2 Rotation Transferable
         emas = bytearray()  # message + attachement substream
@@ -3639,8 +3641,9 @@ def test_group_parsator():
         emas.extend(Counter.enclose(qb64=eims,
                                     code=Codens.AttachmentGroup,
                                     version=Vrsn_1_0))
-        # enclose message + attachments and add to msgs
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        # enclose message + attachments and add to enclosing group
+        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
 
         # Event 3 Interaction  default V2 set at top level
@@ -3662,11 +3665,11 @@ def test_group_parsator():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
-        # enclose message + attachments and add to msgs
+        # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
 
 
-
+        ngms0 = bytearray()
         # Event 4 Interaction  with version 2 serder and V1 attachements
         emas = bytearray()  # message + attachement substream
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
@@ -3689,7 +3692,9 @@ def test_group_parsator():
         # enclose  message attachements with v2 counter
         emas.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup))
         # enclose message plus attachments with v2
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
+
 
 
         # Event 5 Rotation Transferable
@@ -3713,7 +3718,7 @@ def test_group_parsator():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
-        # enclose message + attachments and add to msgs
+        # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
 
         # Event 6 Interaction
@@ -3735,7 +3740,7 @@ def test_group_parsator():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
-        # enclose message + attachments and add to msgs
+        # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
 
 
@@ -3761,7 +3766,7 @@ def test_group_parsator():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
-        # enclose message + attachments and add to msgs
+        # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
 
 
@@ -3785,7 +3790,7 @@ def test_group_parsator():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
-        # enclose message + attachments and add to msgs
+        # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
 
 
