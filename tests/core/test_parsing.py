@@ -34,7 +34,6 @@ def test_parser_v1_basic():
     parser = Parser()  # test defaults
     assert parser.genus == GenDex.KERI_ACDC_SPAC
     assert parser.version == Vrsn_2_0
-    assert parser.curver == Vrsn_2_0
     assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
@@ -364,7 +363,6 @@ def test_parser_v1_basic():
         parser = Parser(kvy=kevery, version=Vrsn_1_0)
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_1_0
-        assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
@@ -575,7 +573,6 @@ def test_parser_v1_version():
         parser = Parser(kvy=kevery, version=Vrsn_1_0)
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_1_0
-        assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
@@ -910,7 +907,6 @@ def test_parser_v1_enclosed_attachments():
         parser = Parser(kvy=kevery, version=Vrsn_1_0)
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_1_0
-        assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
@@ -1324,7 +1320,6 @@ def test_parser_v1_enclosed_message():
         parser = Parser(kvy=kevery, version=Vrsn_1_0)
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_1_0
-        assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
@@ -1677,7 +1672,6 @@ def test_parser_v1_non_native_message():
         parser = Parser(kvy=kevery, version=Vrsn_1_0)
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_1_0
-        assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]
@@ -1712,7 +1706,6 @@ def test_parser_v2_basic():
     parser = Parser()  # test defaults
     assert parser.genus == GenDex.KERI_ACDC_SPAC
     assert parser.version == Vrsn_2_0
-    assert parser.curver == Vrsn_2_0
     assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
@@ -2099,7 +2092,6 @@ def test_parser_v2_basic():
         parser = Parser(kvy=kevery, version=Vrsn_2_0)
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_2_0
-        assert parser.curver == Vrsn_2_0
         assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
@@ -2141,7 +2133,6 @@ def test_parser_v2_mix():
     parser = Parser()  # test defaults
     assert parser.genus == GenDex.KERI_ACDC_SPAC
     assert parser.version == Vrsn_2_0
-    assert parser.curver == Vrsn_2_0
     assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
     assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
@@ -2549,7 +2540,6 @@ def test_parser_v2_mix():
         parser = Parser(kvy=kevery, version=Vrsn_2_0)
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_2_0
-        assert parser.curver == Vrsn_2_0
         assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
@@ -2937,7 +2927,7 @@ def test_parser_v2_enclosed_attachments():
         parser = Parser(kvy=kevery)  # default is Vrsn_2_0_
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_2_0
-        assert parser.curver == Vrsn_2_0
+        assert parser.version == Vrsn_2_0
         assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
@@ -2953,10 +2943,10 @@ def test_parser_v2_enclosed_attachments():
         assert parser.rvy is None
         assert parser.vry is None
 
-        oldcurver = parser.curver
+        oldversion = parser.version
 
         parser.parse(ims=bytearray(msgs))  # make copy
-        assert parser.curver == oldcurver
+        assert parser.version == oldversion
         assert parser.ims == bytearray(b'')  # emptied
         assert pre in kevery.kevers
         vkever = kevery.kevers[pre]
@@ -3386,7 +3376,6 @@ def test_parser_v2_enclosed_message():
         parser = Parser(kvy=kevery, version=Vrsn_1_0)  # default v1 but override at top level above
         assert parser.genus == GenDex.KERI_ACDC_SPAC
         assert parser.version == Vrsn_1_0
-        assert parser.curver == Vrsn_1_0
         assert parser.methods == Parser.Methods[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.codes == Parser.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]
         assert parser.sucodes == Parser.SUCodes[Vrsn_1_0.major][Vrsn_1_0.minor]

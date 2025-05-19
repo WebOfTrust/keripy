@@ -54,18 +54,17 @@ class Parser:
 
     Properties:
         genus (str): genus portion of default CESR code table protocol genus code
-        version (Versionage): default CESR code table protocol genus version
-        curver (Versionage): current CESR protocol genus version in context
+        version (Versionage): current CESR protocol genus version in context
         methods (dict): method names for counter extraction, keyed by count code name
-        codes (CtrDex): selected by .curver from (CtrDex_1_0, CtrDex_2_0)
-        sucodes (SUDex): selected by .curver from  (SUDex_1_0, SUDex_2_0)
-        mucodes (MUDex): selected by .curver from  (MUDex_1_0, MUDex_2_0)
+        codes (CtrDex): selected by .version from (CtrDex_1_0, CtrDex_2_0)
+        sucodes (SUDex): selected by .version from  (SUDex_1_0, SUDex_2_0)
+        mucodes (MUDex): selected by .version from  (MUDex_1_0, MUDex_2_0)
 
 
     Hidden:
         _version (Versionage): value for .version property
         _genus (str): value for .genus property
-        _curver (Versionage): value for .curver property
+
         _methods (dict): value for .methods property
         _codes (CtrDex): value for .codes property
         _sucodes (SUDex): value for .sucodes property
@@ -163,7 +162,7 @@ class Parser:
 
         self._genus = GenDex.KERI_ACDC_SPAC  # only supports KERI_ACDC_SPAC
         self.version = version  # provided version may be earlier than supported version
-        # version sets .curver which sets .methods, .codes, .sucodes, and .mucodes
+        # version sets  .methods, .codes, .sucodes, and .mucodes
 
 
     @property
@@ -183,53 +182,32 @@ class Parser:
 
     @version.setter
     def version(self, version):
-        """Property setter for version also sets .curver
+        """Property setter for .version
 
         Parameters:
-            version (Versionage|None): default version portion of genus-versioncode
+            version (Versionage|None): version portion of genus-versioncode
                 If None do nothing
 
         """
         if version is not None:
+            if version.major not in self.Methods:
+                raise kering.InvalidVersionError(f"Unsupported major version="
+                                                 f"{version.major}.")
+
+            latest = list(self.Methods[version.major])[-1]  # get latest supported minor version
+            if version.minor > latest:
+                raise kering.InvalidVersionError(f"Minor version={version.minor} "
+                                                 f" exceeds latest supported minor"
+                                                 f" version={latest}.")
             self._version = version
-            self.curver = version
-
-
-    @property
-    def curver(self):
-        """Returns ._curver current version in stream context
-
-        """
-        return self._curver
-
-
-    @curver.setter
-    def curver(self, curver):
-        """Property setter for curver, also sets .methods and .codes
-
-        Parameters:
-            curver (Versionage): current version portion of genus-versioncode
-
-        """
-        if curver.major not in self.Methods:
-            raise kering.InvalidVersionError(f"Unsupported major version="
-                                             f"{curver.major}.")
-
-        latest = list(self.Methods[curver.major])[-1]  # get latest supported minor version
-        if curver.minor > latest:
-            raise kering.InvalidVersionError(f"Minor version={curver.minor} "
-                                             f" exceeds latest supported minor"
-                                             f" version={latest}.")
-        self._curver = curver
-        self._methods = self.Methods[curver.major][latest]
-        self._codes = self.Codes[curver.major][latest]
-        self._sucodes = self.SUCodes[curver.major][latest]
-        self._mucodes = self.MUCodes[curver.major][latest]
-
+            self._methods = self.Methods[version.major][latest]
+            self._codes = self.Codes[version.major][latest]
+            self._sucodes = self.SUCodes[version.major][latest]
+            self._mucodes = self.MUCodes[version.major][latest]
 
     @property
     def methods(self):
-        """Gets methods from .Methods for .curver current version in stream context
+        """Gets methods from .Methods for .version current version in stream context
         Returns:
             methods (dict): method names for counter extraction, keyed by count code name
         """
@@ -239,7 +217,7 @@ class Parser:
     def codes(self):
         """Makes .codes read only
         Returns:
-            _codes (CtrDex): selected by .curver from (CtrDex_1_0, CtrDex_2_0)
+            _codes (CtrDex): selected by .version from (CtrDex_1_0, CtrDex_2_0)
         """
         return self._codes
 
@@ -247,7 +225,7 @@ class Parser:
     def sucodes(self):
         """Makes .sucodes read only
         Returns:
-            _sucodes (SUDex): selected by .curver from (SUDex_1_0, SUDex_2_0)
+            _sucodes (SUDex): selected by .version from (SUDex_1_0, SUDex_2_0)
         """
         return self._sucodes
 
@@ -255,7 +233,7 @@ class Parser:
     def mucodes(self):
         """Makes .mucodes read only
         Returns:
-            _mucodes (MUDex): selected by .curver from (MUDex_1_0, MUDex_2_0)
+            _mucodes (MUDex): selected by .version from (MUDex_1_0, MUDex_2_0)
         """
         return self._mucodes
 
@@ -272,9 +250,9 @@ class Parser:
 
         """
         if cold == Colds.txt:
-            return klas(qb64b=ims, strip=True, version=self.curver)
+            return klas(qb64b=ims, strip=True, version=self.version)
         elif cold == Colds.bny:
-            return klas(qb2=ims, strip=True, version=self.curver)
+            return klas(qb2=ims, strip=True, version=self.version)
         else:
             raise ColdStartError(f"Invalid stream state {cold=}")
 
@@ -302,9 +280,9 @@ class Parser:
         while True:
             try:
                 if cold == Colds.txt:
-                    return klas(qb64b=ims, strip=strip, version=self.curver)
+                    return klas(qb64b=ims, strip=strip, version=self.version)
                 elif cold == Colds.bny:
-                    return klas(qb2=ims, strip=strip, version=self.curver)
+                    return klas(qb2=ims, strip=strip, version=self.version)
                 else:
                     raise ColdStartError(f"Invalid stream state {cold=}")
             except ShortageError as ex:
@@ -717,7 +695,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        self.version = version  # when not None which sets .curver ...
+        self.version = version  # when not None which sets .methods .codes .mucodes .sucodes
 
         nest = deque()  # (svrsn, ims) stack of nested substreams framed by generic groups
         eggs = None  # size of enclosing generic group if any when is not None
@@ -744,7 +722,7 @@ class Parser:
                         if ctr.code == self.codes.KERIACDCGenusVersion:
                             del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                             # change and save svrsn and .version
-                            self.curver = svrsn = Counter.b64ToVer(gvc.countToB64(l=3))
+                            self.version = svrsn = Counter.b64ToVer(gvc.countToB64(l=3))
 
                         elif (ctr.code in (self.sucodes.GenericGroup,
                                            self.sucodes.GenericGroup)):
@@ -790,7 +768,7 @@ class Parser:
                         if ctr.code == self.codes.KERIACDCGenusVersion:
                             del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                             # change and save svrsn and .version
-                            self.curver = svrsn = Counter.b64ToVer(gvc.countToB64(l=3))
+                            self.version = svrsn = Counter.b64ToVer(gvc.countToB64(l=3))
 
 
                         if (ctr.code in (self.sucodes.GenericGroup,
@@ -889,7 +867,7 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        self.version = version  # when not None which sets .curver ...
+        self.version = version  # when not None which sets .codes .mucodes. .sucodes
         verstack = deque()  # version stack append and pop
 
         # create exts (extracts) keyword args dict with fields:
@@ -931,7 +909,7 @@ class Parser:
                 if ctr.code == self.codes.KERIACDCGenusVersion:
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # change version at top level this persists is not stacked
-                    self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+                    self.version = Counter.b64ToVer(ctr.countToB64(l=3))
 
             # check for MessageAttachmentGroup or non-native message or native message groups
             cold = sniff(ims)  # front of top level of this substream
@@ -968,8 +946,8 @@ class Parser:
                     if ctr.code == self.codes.KERIACDCGenusVersion:
                         del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                         # change version
-                        verstack.append(self.curver)  # push current onto stack
-                        self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+                        verstack.append(self.version)  # push current onto stack
+                        self.version = Counter.b64ToVer(ctr.countToB64(l=3))
                         # peek at next counter either native or non-native msg group
                         ctr = yield from self._extractor(ims=ims,
                                                         klas=Counter,
@@ -988,7 +966,7 @@ class Parser:
                                                         abort=framed)
                     serder = serdery.reap(ims=texter.raw,
                                           genus=self.genus,
-                                          gvrsn=self.curver)
+                                          gvrsn=self.version)
                     exts['serder'] = serder
 
                 elif ctr.code in self.mucodes:  # process other native message group
@@ -1012,7 +990,7 @@ class Parser:
                     try:
                         serder = serdery.reap(ims=ims,
                                               genus=self.genus,
-                                              gvrsn=self.curver)
+                                              gvrsn=self.version)
                     except kering.ShortageError as ex:  # need more bytes
                         if framed:  # pre-extracted
                             raise  # incomplete frame or group so abort by raising error
@@ -1068,8 +1046,8 @@ class Parser:
                     if ctr.code == self.codes.KERIACDCGenusVersion:
                         del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                         # change version
-                        verstack.append(self.curver)  # push current onto stack
-                        self.curver = Counter.b64ToVer(ctr.countToB64(l=3))
+                        verstack.append(self.version)  # push current onto stack
+                        self.version = Counter.b64ToVer(ctr.countToB64(l=3))
 
 
                 while True:  # iteratively process attachment counters in stride
@@ -1125,7 +1103,7 @@ class Parser:
 
         finally:
             while verstack:  # restore version to what it was
-                self.curver = verstack.pop()
+                self.version = verstack.pop()
 
         if isinstance(serder, serdering.SerderKERI):
             ilk = serder.ilk  # dispatch abased on ilk
