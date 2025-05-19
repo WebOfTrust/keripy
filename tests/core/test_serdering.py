@@ -74,10 +74,10 @@ def test_serder_class():
     {
         'SealDigest': '-Q',
         'SealRoot': '-R',
-        'SealBacker': '-V',
-        'SealLast': '-U',
+        'SealEvent': '-S',
         'SealTrans': '-T',
-        'SealEvent': '-S'
+        'SealLast': '-U',
+        'SealBacker': '-V'
     }
 
     assert Serder.CodeClans
@@ -85,10 +85,10 @@ def test_serder_class():
     {
         '-Q': 'SealDigest',
         '-R': 'SealRoot',
-        '-V': 'SealBacker',
-        '-U': 'SealLast',
+        '-S': 'SealEvent',
         '-T': 'SealTrans',
-        '-S': 'SealEvent'
+        '-U': 'SealLast',
+        '-V': 'SealBacker',
     }
 
 

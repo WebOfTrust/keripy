@@ -323,10 +323,12 @@ class Serder:
     ClanCodes = dict()
     ClanCodes[SClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
     ClanCodes[SClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
-    ClanCodes[SClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
-    ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
-    ClanCodes[SClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
     ClanCodes[SClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
+    ClanCodes[SClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
+    ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
+    ClanCodes[SClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
+
+
 
     # map seal counter code to seal clan name for parsing seal groups in anchor list
     CodeClans = { val: key for key, val in ClanCodes.items()}  # invert dict

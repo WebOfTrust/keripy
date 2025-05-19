@@ -43,24 +43,24 @@ def test_structor_doms():
     {
         'SealDigest': SealDigest,
         'SealRoot': SealRoot,
-        'SealBacker': SealBacker,
-        'SealLast': SealLast,
-        'SealTrans': SealTrans,
         'SealEvent': SealEvent,
+        'SealTrans': SealTrans,
+        'SealLast': SealLast,
+        'SealBacker': SealBacker,
     }
 
     assert asdict(SCastDom) == \
     {
         'SealDigest': SealDigest(d=Castage(kls=Diger, prm=None)),
         'SealRoot': SealRoot(rd=Castage(kls=Diger, prm=None)),
-        'SealBacker': SealBacker(bi=Castage(Prefixer, prm=None),
-                                 d=Castage(kls=Diger, prm=None)),
-        'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
-        'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
-                               d=Castage(kls=Diger, prm=None)),
         'SealEvent': SealEvent(i=Castage(kls=Prefixer, prm=None),
                                s=Castage(kls=Number, prm='numh'),
-                               d=Castage(kls=Diger, prm=None))
+                               d=Castage(kls=Diger, prm=None)),
+        'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
+                               d=Castage(kls=Diger, prm=None)),
+        'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
+        'SealBacker': SealBacker(bi=Castage(Prefixer, prm=None),
+                                 d=Castage(kls=Diger, prm=None)),
     }
 
 
@@ -285,8 +285,6 @@ def test_structor():
 
 
     # Test with multiple field namedtuple for data
-
-
     data = SealEvent(i=prefixer, s=number, d=diger)
     clan = SealEvent
     cast = SealEvent(i=Castage(Prefixer),

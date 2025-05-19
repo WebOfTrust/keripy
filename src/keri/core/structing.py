@@ -154,10 +154,11 @@ class SealClanDom(MapDom):
     """
     SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference
     SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference
-    SealBacker: type[NamedTuple] = SealBacker  # SealBacker class reference
-    SealLast: type[NamedTuple] = SealLast  # SealLast class reference single
-    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple
     SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple
+    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple
+    SealLast: type[NamedTuple] = SealLast  # SealLast class reference single
+    SealBacker: type[NamedTuple] = SealBacker  # SealBacker class reference
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -185,14 +186,14 @@ class SealCastDom(MapDom):
     """
     SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
     SealRoot: NamedTuple = SealRoot(rd=Castage(Diger))  # SealRoot class reference
-    SealBacker: NamedTuple = SealBacker(bi=Castage(Prefixer),
-                                        d=Castage(Diger))  # SealBacker class reference
-    SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
-    SealTrans: NamedTuple = SealTrans(s=Castage(Number, 'numh'),
-                                      d=Castage(Diger))  # SealTrans class reference couple
     SealEvent: NamedTuple = SealEvent(i=Castage(Prefixer),
                                       s=Castage(Number, 'numh'),
                                       d=Castage(Diger))  # SealEvent class reference triple
+    SealTrans: NamedTuple = SealTrans(s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealTrans class reference couple
+    SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
+    SealBacker: NamedTuple = SealBacker(bi=Castage(Prefixer),
+                                        d=Castage(Diger))  # SealBacker class reference
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
