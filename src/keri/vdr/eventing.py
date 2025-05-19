@@ -703,7 +703,7 @@ class Tever:
             self.reload(rsr)
             return
 
-        self.version = serder.version
+        self.version = serder.pvrsn
         self.regk = regk
 
         ilk = serder.ked["t"]
@@ -1505,7 +1505,7 @@ class Tevery:
 
         return self.reger.registries
 
-    def processEvent(self, serder, seqner=None, saider=None, wigers=None):
+    def processEvent(self, serder, seqner=None, saider=None, wigers=None, **kwa):
         """ Process one event serder with attached indexed signatures sigers
 
         Validates event against current state of registry or credential, creating registry
@@ -1529,13 +1529,9 @@ class Tevery:
         regk = self.registryKey(serder)
         pre = serder.pre
         ked = serder.ked
-        #sn = ked["s"]
         ilk = ked["t"]
-
+        # validate SN
         inceptive = ilk in (Ilks.vcp, Ilks.iss, Ilks.bis)
-
-        # validate SN for
-        #sn = validateSN(sn, inceptive=inceptive)
         sn = Number(numh=ked["s"]).validate(inceptive=inceptive).sn
 
         if not self.lax:
@@ -1612,7 +1608,7 @@ class Tevery:
                 logger.debug("TEL Event Body=\n%s\n", serder.pretty())
                 raise LikelyDuplicitousError(msg)
 
-    def processQuery(self, serder, source=None, sigers=None, cigars=None):
+    def processQuery(self, serder, source=None, sigers=None, cigars=None, **kwa):
         """ Process TEL query event message (qry)
 
         Process query mode replay message for collective or single element query.
@@ -1624,6 +1620,8 @@ class Tevery:
             sigers (list): Siger instances of attached controller indexed sigs
             cigars (list): Siger instances of non-transferable signatures
 
+        ToDo: Need to verify sigers or cigars on query
+
         """
         ked = serder.ked
 
@@ -1633,6 +1631,9 @@ class Tevery:
 
         # do signature validation and replay attack prevention logic here
         # src, dt, route
+        if source is None and cigars:
+            source = cigars[0].verfer
+
 
         if route == "tels":
             mgmt = qry["ri"]
@@ -1650,6 +1651,7 @@ class Tevery:
 
             if msgs:
                 self.cues.append(dict(kin="replay", src=src, dest=source.qb64, msgs=msgs))
+
         elif route == "tsn":
             ri = qry["ri"]
             if ri in self.tevers:
@@ -1663,6 +1665,7 @@ class Tevery:
 
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
+
 
     def registerReplyRoutes(self, router):
         """ Register the routes for processing messages embedded in `rpy` event messages

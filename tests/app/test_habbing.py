@@ -12,7 +12,7 @@ import shutil
 from hio.base import doing
 
 from keri import kering
-
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import help
 from keri.help import helping
 
@@ -905,7 +905,7 @@ def test_postman_endsfor():
         kvy = eventing.Kevery(db=hab.db, lax=False, local=False)
         icpMsg = hab.makeOwnInception()
         rctMsgs = []  # list of receipts from each witness
-        parsing.Parser().parse(ims=bytearray(icpMsg), kvy=wesKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg), kvy=wesKvy, local=True)
         assert wesKvy.kevers[hab.pre].sn == 0  # accepted event
         assert len(wesKvy.cues) >= 1  # assunmes includes queued receipt cue
         # better to find cue in cues and confirm exactly
@@ -914,11 +914,11 @@ def test_postman_endsfor():
         rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=kvy, local=True)
+            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kvy, local=True)
         assert wesHab.pre in kvy.kevers
 
         agentIcpMsg = agentHab.makeOwnInception()
-        parsing.Parser().parse(ims=bytearray(agentIcpMsg), kvy=kvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(agentIcpMsg), kvy=kvy, local=True)
         assert agentHab.pre in kvy.kevers
 
         msgs = bytearray()

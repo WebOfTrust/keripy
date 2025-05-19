@@ -112,7 +112,8 @@ class Signer(Matter):
             self._sign = self._secp256r1
             d = int.from_bytes(self.raw, byteorder="big")
             sigkey = ec.derive_private_key(d, ec.SECP256R1())
-            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962,
+                                                      format=PublicFormat.CompressedPoint)
             verfer = Verfer(raw=verkey,
                             code=MtrDex.ECDSA_256r1 if transferable
                             else MtrDex.ECDSA_256r1N)
@@ -120,7 +121,8 @@ class Signer(Matter):
             self._sign = self._secp256k1
             d = int.from_bytes(self.raw, byteorder="big")
             sigkey = ec.derive_private_key(d, ec.SECP256K1())
-            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962,
+                                                      format=PublicFormat.CompressedPoint)
             verfer = Verfer(raw=verkey,
                             code=MtrDex.ECDSA_256k1 if transferable
                             else MtrDex.ECDSA_256k1N)

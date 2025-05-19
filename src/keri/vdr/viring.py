@@ -445,9 +445,9 @@ class Reger(dbing.LMDBer):
                 )
             )
 
-            ctr = core.Counter(qb64b=iss, strip=True, gvrsn=kering.Vrsn_1_0)
+            ctr = core.Counter(qb64b=iss, strip=True, version=kering.Vrsn_1_0)
             if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
-                ctr = core.Counter(qb64b=iss, strip=True, gvrsn=kering.Vrsn_1_0)
+                ctr = core.Counter(qb64b=iss, strip=True, version=kering.Vrsn_1_0)
 
             if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
                 coring.Seqner(qb64b=iss, strip=True)
@@ -458,11 +458,11 @@ class Reger(dbing.LMDBer):
                 ancatc = bytes(anc[aserder.size:])
                 cred['anc'] = aserder.sad
                 cred['ancatc'] = ancatc.decode("utf-8"),
-            
+
             if status.et in [coring.Ilks.rev, coring.Ilks.brv]:
-                ctr = core.Counter(qb64b=rev, strip=True, gvrsn=kering.Vrsn_1_0)
+                ctr = core.Counter(qb64b=rev, strip=True, version=kering.Vrsn_1_0)
                 if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
-                    ctr = core.Counter(qb64b=rev, strip=True, gvrsn=kering.Vrsn_1_0)
+                    ctr = core.Counter(qb64b=rev, strip=True, version=kering.Vrsn_1_0)
 
                 if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
                     coring.Seqner(qb64b=rev, strip=True)
@@ -549,7 +549,7 @@ class Reger(dbing.LMDBer):
         # add indexed backer signatures to attachments
         if tibs := self.getTibs(key=dgkey):
             atc.extend(core.Counter(core.Codens.WitnessIdxSigs, count=len(tibs),
-                                    gvrsn=kering.Vrsn_1_0).qb64b)
+                                    version=kering.Vrsn_1_0).qb64b)
             for tib in tibs:
                 atc.extend(tib)
 
@@ -557,7 +557,7 @@ class Reger(dbing.LMDBer):
         couple = self.getAnc(dgkey)
         if couple is not None:
             atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
-                                    gvrsn=kering.Vrsn_1_0).qb64b)
+                                    version=kering.Vrsn_1_0).qb64b)
             atc.extend(couple)
 
         # prepend pipelining counter to attachments
@@ -565,7 +565,7 @@ class Reger(dbing.LMDBer):
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = core.Counter(core.Codens.AttachmentGroup, count=(len(atc) // 4),
-                            gvrsn=kering.Vrsn_1_0).qb64b
+                            version=kering.Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
@@ -597,7 +597,7 @@ class Reger(dbing.LMDBer):
             screder, prefixer, seqner, saider = self.cloneCred(said=said)
 
             atc = bytearray(core.Counter(core.Codens.SealSourceTriples, count=1,
-                                         gvrsn=kering.Vrsn_1_0).qb64b)
+                                         version=kering.Vrsn_1_0).qb64b)
             atc.extend(prefixer.qb64b)
             atc.extend(seqner.qb64b)
             atc.extend(saider.qb64b)
@@ -1008,13 +1008,13 @@ def buildProof(prefixer, seqner, diger, sigers):
 
     prf = bytearray()
     prf.extend(core.Counter(core.Codens.TransIdxSigGroups, count=1,
-                            gvrsn=kering.Vrsn_1_0).qb64b)
+                            version=kering.Vrsn_1_0).qb64b)
     prf.extend(prefixer.qb64b)
     prf.extend(seqner.qb64b)
     prf.extend(diger.qb64b)
 
     prf.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                            gvrsn=kering.Vrsn_1_0).qb64b)
+                            version=kering.Vrsn_1_0).qb64b)
     for siger in sigers:
         prf.extend(siger.qb64b)
 
@@ -1038,7 +1038,7 @@ def messagize(creder, proof):
         raise ValueError("Invalid attachments size={}, nonintegral"
                          " quadlets.".format(len(proof)))
     craw.extend(core.Counter(core.Codens.AttachmentGroup, count=(len(proof) // 4),
-                             gvrsn=kering.Vrsn_1_0).qb64b)
+                             version=kering.Vrsn_1_0).qb64b)
     craw.extend(proof)
 
     return craw

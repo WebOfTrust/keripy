@@ -6,7 +6,7 @@ tests.vc.proving module
 import pytest
 
 from keri import kering
-from keri.kering import Versionage, Vrsn_1_0
+from keri.kering import Versionage, Vrsn_1_0, Vrsn_2_0
 
 from keri import core
 from keri.core import coring, scheming, parsing, serdering
@@ -75,14 +75,14 @@ def test_proving(mockHelpingNowIso8601):
         creder = serdering.SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
-        ctr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == counting.CtrDex_1_0.AttachmentGroup
         assert ctr.count == 52
 
         pags = ctr.count * 4
         assert len(proof) == pags
 
-        ctr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == counting.CtrDex_1_0.TransIdxSigGroups
         assert ctr.count == 1
 
@@ -95,7 +95,7 @@ def test_proving(mockHelpingNowIso8601):
         diger = Diger(qb64b=proof, strip=True)
         assert diger.qb64 == sidHab.kever.serder.said
 
-        ictr = Counter(qb64b=proof, strip=True, gvrsn=Vrsn_1_0)
+        ictr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ictr.code == counting.CtrDex_1_0.ControllerIdxSigs
 
         isigers = []
@@ -143,7 +143,7 @@ def test_credentialer():
                           b'":"abc","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
 
     raw1 = creder.raw
-    ver1 = creder.vrsn
+    ver1 = creder.pvrsn
     knd1 = creder.kind
     sad1 = creder.sad
 
@@ -293,13 +293,13 @@ def test_credential_parsator():
                             status=issuer.regk)
 
         msg = bytearray(creder.raw)
-        msg.extend(Counter(Codens.SealSourceTriples, count=1, gvrsn=Vrsn_1_0).qb64b)
+        msg.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)
         msg.extend(hab.kever.prefixer.qb64b)
         msg.extend(coring.Seqner(sn=hab.kever.sn).qb64b)
         msg.extend(hab.kever.serder.said.encode("utf-8"))
 
         verifier = verifying.Verifier(hby=hby)
-        parsing.Parser().parse(ims=msg, vry=verifier)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
 
         assert len(verifier.cues) == 1
         cue = verifier.cues.popleft()

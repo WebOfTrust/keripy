@@ -9,6 +9,7 @@ module for enveloping and forwarding KERI message
 from hio.base import doing
 
 from .. import kering, core
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import help
 from ..app import delegating, agenting
 from ..core import coring, routing, eventing, parsing, serdering, indexing
@@ -526,13 +527,13 @@ def getEscrowedEvent(db, pre, sn):
     msg = bytearray()
     msg.extend(serder.raw)
     msg.extend(core.Counter(core.Codens.ControllerIdxSigs,
-                            count=len(sigs), gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
+                            count=len(sigs), version=kering.Vrsn_1_0).qb64b)  # attach cnt
     for sig in sigs:
         msg.extend(sig.qb64b)  # attach sig
 
     if couple is not None:
         msg.extend(core.Counter(core.Codens.SealSourceCouples,
-                                count=1, gvrsn=kering.Vrsn_1_0).qb64b)
+                                count=1, version=kering.Vrsn_1_0).qb64b)
         msg.extend(couple)
 
     return msg
@@ -576,7 +577,8 @@ class Multiplexor:
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         self.kvy = eventing.Kevery(db=self.hby.db, lax=False, local=False, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                                  exc=self.exc, version=Vrsn_1_0)
 
         self.notifier = notifier
 

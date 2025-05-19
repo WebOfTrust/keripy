@@ -7,7 +7,7 @@ tests.core.test_eventing module
 from hio.help import decking
 
 from keri import help
-
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import core
 from keri.core import parsing, coring
 from keri.peer import exchanging
@@ -45,7 +45,7 @@ def test_pathed_material(mockHelpingNowUTC):
         fwd.extend(end)
         handler = MockHandler()
         exc = exchanging.Exchanger(hby=debHby, handlers=[handler])
-        parser = parsing.Parser(exc=exc)
+        parser = parsing.Parser(exc=exc, version=Vrsn_1_0)
 
         parser.parseOne(ims=fwd)
         assert len(handler.msgs) == 1

@@ -8,6 +8,7 @@ import os
 
 from hio.base import doing
 
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import forwarding, connecting, habbing, grouping, indirecting
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
@@ -58,7 +59,7 @@ class SpurnDoer(doing.DoDoer):
         tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
         vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = parsing.Parser(kvy=kvy, tvy=tvy, vry=vry)
+        self.psr = parsing.Parser(kvy=kvy, tvy=tvy, vry=vry, version=Vrsn_1_0)
 
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
@@ -105,7 +106,7 @@ class SpurnDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
         spurn, _ = exchanging.cloneMessage(self.hby, exn.said)
         if spurn is None:

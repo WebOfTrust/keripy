@@ -13,6 +13,7 @@ import pytest
 from hio.base import doing
 
 from keri import kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.core import scheming, coring, routing, eventing, parsing, signing
 from keri.db import basing
 from keri.help import helping
@@ -98,7 +99,7 @@ class DbSeed:
         rvy = routing.Revery(db=db, rtr=rtr)
         kvy = eventing.Kevery(db=db, lax=False, local=True, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
+        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
 
         if protocols is None:
             protocols = [kering.Schemes.tcp, kering.Schemes.http]

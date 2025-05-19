@@ -10,6 +10,7 @@ from hio.base import doing, tyming
 
 from keri import core
 from keri.core import coring, eventing, parsing, serdering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 
 from keri.app import forwarding, habbing, indirecting, storing
 
@@ -32,15 +33,15 @@ def test_postman(seeder):
 
         recpIcp = recpHab.makeOwnEvent(sn=0)
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
-        parsing.Parser().parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = serdering.SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder)
 
         kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser().parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        parsing.Parser().parseOne(bytearray(rct), kvy=kvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 

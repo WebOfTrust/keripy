@@ -17,10 +17,11 @@ from socket import gaierror
 from . import httping, forwarding
 from .. import help
 from .. import kering
+from ..kering import Roles, Vrsn_1_0, Vrsn_2_0
 from .. import core
 from ..core import eventing, parsing, coring, serdering, indexing
 from ..db import dbing
-from ..kering import Roles
+
 
 logger = help.ogler.getLogger()
 
@@ -104,7 +105,7 @@ class Receiptor(doing.DoDoer):
                 del rct[:rserder.size]
 
                 # pull off the count code
-                core.Counter(qb64b=rct, strip=True, gvrsn=kering.Vrsn_1_0)
+                core.Counter(qb64b=rct, strip=True, version=kering.Vrsn_1_0)
                 rcts[wit] = rct
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
@@ -125,7 +126,7 @@ class Receiptor(doing.DoDoer):
                                        said=ser.said)
             msg.extend(rserder.raw)
             msg.extend(core.Counter(core.Codens.NonTransReceiptCouples,
-                                    count=len(wigs), gvrsn=kering.Vrsn_1_0).qb64b)
+                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
             for wig in wigs:
                 msg.extend(wig)
 
@@ -698,7 +699,8 @@ class TCPMessenger(doing.DoDoer):
         client = clienting.Client(host=up.hostname, port=up.port)
         self.parser = parsing.Parser(ims=client.rxbs,
                                      framed=True,
-                                     kvy=self.kevery)
+                                     kvy=self.kevery,
+                                     version=Vrsn_1_0)
 
         clientDoer = clienting.ClientDoer(client=client)
         self.extend([clientDoer, doing.doify(self.msgDo)])
@@ -792,7 +794,8 @@ class TCPStreamMessenger(doing.DoDoer):
         client = clienting.Client(host=up.hostname, port=up.port)
         self.parser = parsing.Parser(ims=client.rxbs,
                                      framed=True,
-                                     kvy=self.kevery)
+                                     kvy=self.kevery,
+                                     version=Vrsn_1_0)
 
         clientDoer = clienting.ClientDoer(client=client)
         self.extend([clientDoer, doing.doify(self.msgDo)])

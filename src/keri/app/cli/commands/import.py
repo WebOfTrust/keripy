@@ -10,6 +10,7 @@ import sys
 from hio import help
 from hio.base import doing
 
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing
 from keri.app.cli.common import existing
 from keri.core import coring, serdering, parsing
@@ -68,7 +69,8 @@ class ImportDoer(doing.DoDoer):
 
         with open(self.file, 'rb') as f:
             ims = f.read()
-            parsing.Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False).parse(ims=ims)
+            parsing.Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False,
+                           version=Vrsn_1_0).parse(ims=ims)
             self.hby.kvy.processEscrows()
 
         self.exit()

@@ -10,6 +10,7 @@ from hio.core import http
 
 import keri
 from keri import help, kering, core
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, oobiing, notifying
 from keri.core import serdering, eventing, parsing, routing
 from keri.db import basing
@@ -142,7 +143,7 @@ def test_introduce(mockHelpingNowUTC):
         assert not watHab.kever.prefixer.transferable
         assert watHab.pre == "BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom"
         watKvy = eventing.Kevery(db=watHab.db, lax=False, local=False)
-        watPsr = parsing.Parser(kvy=watKvy)
+        watPsr = parsing.Parser(kvy=watKvy, version=Vrsn_1_0)
 
         # setup Wok's habitat nontrans
         witHab = witHby.makeHab(name='wok', isith="1", icount=1, transferable=False)
@@ -153,7 +154,7 @@ def test_introduce(mockHelpingNowUTC):
         rtr = routing.Router()
         rvy = routing.Revery(db=witHby.db, rtr=rtr)
         oobiing.Oobiery(hby=witHby, rvy=rvy)
-        witPsr = parsing.Parser(kvy=witKvy, rvy=rvy)
+        witPsr = parsing.Parser(kvy=witKvy, rvy=rvy, version=Vrsn_1_0)
         assert witHby.db.oobis.cntAll() == 0
 
         oobi = f"https://localhost:8989/oobi/{watHab.pre}/controller"

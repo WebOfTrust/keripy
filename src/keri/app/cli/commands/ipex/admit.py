@@ -7,6 +7,7 @@ import argparse
 
 from hio.base import doing
 
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import connecting, habbing, grouping, indirecting, agenting, forwarding
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
@@ -61,7 +62,7 @@ class AdmitDoer(doing.DoDoer):
         self.tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = parsing.Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry)
+        self.psr = parsing.Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry, version=Vrsn_1_0)
 
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
@@ -125,7 +126,7 @@ class AdmitDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
         if isinstance(self.hab, habbing.GroupHab):

@@ -6,7 +6,7 @@ tests.vc.walleting module
 from keri import core, kering
 from keri.core import coring, parsing
 from keri.core.eventing import SealEvent
-
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing
 
 from keri.vc.proving import credential
@@ -57,7 +57,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         msg = bytearray(creder.raw)
         msg.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         msg.extend(coring.Prefixer(qb64=iss.pre).qb64b)
         msg.extend(coring.Seqner(sn=0).qb64b)
         msg.extend(iss.saidb)
@@ -79,7 +79,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                b'Md1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","dt":"2021-06-27T21:26:21.233257+00:00","LE'
                b'I":"254900OPPU84GM83MG36"}}')
 
-        parsing.Parser().parse(ims=msg, vry=verifier)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
 
         # verify we can load serialized VC by SAID
         creder, *_ = verifier.reger.cloneCred(said=creder.said)

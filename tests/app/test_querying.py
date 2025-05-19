@@ -5,6 +5,7 @@ keri.app.querying module
 """
 from hio.base import doing
 
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing
 from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
 from keri.core import parsing, eventing, serdering
@@ -19,7 +20,7 @@ def test_querying():
         qdoer = QueryDoer(hby=hby, hab=inqHab, kvy=hby.kvy, pre=subHab.pre)
 
         icp = subHab.makeOwnInception()
-        parsing.Parser().parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
 
         assert qdoer is not None
 
@@ -83,7 +84,7 @@ def test_querying():
         assert isinstance(logDoer, LogQuerier)
         assert len(hby.kvy.cues) == 0
 
-        parsing.Parser().parseOne(ims=bytearray(rot), kvy=inqHab.kvy)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rot), kvy=inqHab.kvy)
         doist.recur(deeds=deeds)
 
         assert qdoer.done is True

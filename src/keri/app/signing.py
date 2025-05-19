@@ -14,7 +14,7 @@ from ..core import coring, eventing, counting
 def serialize(creder, prefixer, seqner, saider):
     craw = bytearray(creder.raw)
     craw.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
-                             gvrsn=Vrsn_1_0).qb64b)
+                             version=Vrsn_1_0).qb64b)
     craw.extend(prefixer.qb64b)
     craw.extend(seqner.qb64b)
     craw.extend(saider.qb64b)
@@ -44,29 +44,29 @@ def ratify(hab, serder, paths=None, pipelined=False):
     return provision(serder, sadsigers=sadsigers, sadcigars=sadcigars, pipelined=pipelined)
 
 
-def provision(serder, *, sadsigers=None, sadcigars=None, pipelined=False):
-    """
-    Attaches indexed signatures from sigers and/or cigars and/or wigers to
-    KERI message data from serder
-    Parameters:
-        serder (Union[Serder,Creder]): instance containing the event
-        sadsigers (list): of Siger instances (optional) to create indexed signatures
-        sadcigars (list): optional list of Cigars instances of non-transferable non indexed
-            signatures from  which to form receipt couples.
-            Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        pipelined (bool): True means prepend pipelining count code to attachemnts
-            False means to not prepend pipelining count code
+#def provision(serder, *, sadsigers=None, sadcigars=None, pipelined=False):
+    #"""
+    #Attaches indexed signatures from sigers and/or cigars and/or wigers to
+    #KERI message data from serder
+    #Parameters:
+        #serder (Union[Serder,Creder]): instance containing the event
+        #sadsigers (list): of Siger instances (optional) to create indexed signatures
+        #sadcigars (list): optional list of Cigars instances of non-transferable non indexed
+            #signatures from  which to form receipt couples.
+            #Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+        #pipelined (bool): True means prepend pipelining count code to attachemnts
+            #False means to not prepend pipelining count code
 
-    Returns: bytearray SAD with CESR Proof Signature
+    #Returns: bytearray SAD with CESR Proof Signature
 
-    """
-    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    if not (sadsigers or sadcigars):
-        raise ValueError("Missing attached signatures on message = {}."
-                         "".format(serder.ked))
+    #"""
+    #msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+    #if not (sadsigers or sadcigars):
+        #raise ValueError("Missing attached signatures on message = {}."
+                         #"".format(serder.ked))
 
-    msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=pipelined))
-    return msg
+    #msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=pipelined))
+    #return msg
 
 
 def signPaths(hab, serder, paths):
@@ -138,45 +138,45 @@ def transSeal(hab):
     return prefixer, seqner, saider, indices
 
 
-class SadPathSigGroup:
-    """ Transposable group of signatures
+#class SadPathSigGroup:
+    #""" Transposable group of signatures
 
-    Supports transposing groups of signatures from transferable or non-transferable
-    identifiers
+    #Supports transposing groups of signatures from transferable or non-transferable
+    #identifiers
 
-    """
+    #"""
 
-    def __init__(self, pather, cigars=None, sigers=None, tsgs=None):
-        self.pather = pather
-        self.cigars = cigars if cigars is not None else []
-        self.sigers = sigers if sigers is not None else []
-        self.tsgs = tsgs if tsgs is not None else []
+    #def __init__(self, pather, cigars=None, sigers=None, tsgs=None):
+        #self.pather = pather
+        #self.cigars = cigars if cigars is not None else []
+        #self.sigers = sigers if sigers is not None else []
+        #self.tsgs = tsgs if tsgs is not None else []
 
-    def transpose(self, pather):
-        """ Transpose path for all signatures in group
+    #def transpose(self, pather):
+        #""" Transpose path for all signatures in group
 
-        Parameters:
-            pather:
+        #Parameters:
+            #pather:
 
-        """
-        self.pather = self.pather.root(pather)
+        #"""
+        #self.pather = self.pather.root(pather)
 
-    @property
-    def proof(self):
-        # Transpose the signaturees to point to the new location
-        sadsigers = []
-        if len(self.sigers) > 0:  # iterate over each tsg
-            sadsigers.append((self.pather, self.sigers))
+    #@property
+    #def proof(self):
+        ## Transpose the signaturees to point to the new location
+        #sadsigers = []
+        #if len(self.sigers) > 0:  # iterate over each tsg
+            #sadsigers.append((self.pather, self.sigers))
 
-        sadtsgs = []
-        for prefixer, seqner, diger, sigers in self.tsgs:  # iterate over each tsg
-            sadtsgs.append((self.pather, prefixer, seqner, diger, sigers))
+        #sadtsgs = []
+        #for prefixer, seqner, diger, sigers in self.tsgs:  # iterate over each tsg
+            #sadtsgs.append((self.pather, prefixer, seqner, diger, sigers))
 
-        sadcigars = []
-        for cigar in self.cigars:
-            sadcigars.append((self.pather, cigar))
+        #sadcigars = []
+        #for cigar in self.cigars:
+            #sadcigars.append((self.pather, cigar))
 
-        return eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars, sadtsgs=sadtsgs)
+        #return eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars, sadtsgs=sadtsgs)
 
 
 

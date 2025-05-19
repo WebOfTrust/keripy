@@ -156,7 +156,7 @@ class PublishDoer(doing.DoDoer):
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
         msg = bytearray(serder.raw)
         msg.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
-                                gvrsn=kering.Vrsn_1_0).qb64b)
+                                version=kering.Vrsn_1_0).qb64b)
         msg.extend(Seqner(sn=self.palHab.kever.sn).qb64b)
         msg.extend(self.palHab.kever.serder.saidb)
 

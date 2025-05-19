@@ -150,7 +150,7 @@ class Revery:
         """
         return self.db.prefixes
 
-    def processReply(self, serder, cigars=None, tsgs=None):
+    def processReply(self, serder, cigars=None, tsgs=None, **kwa):
         """
          Process one reply message with either attached nontrans signing couples
          in cigars or attached trans indexed sig groups in tsgs. Process logic
