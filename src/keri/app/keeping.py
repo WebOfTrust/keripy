@@ -29,11 +29,12 @@ from dataclasses import dataclass, asdict, field
 import pysodium
 from hio.base import doing
 
-from .. import kering
-from .. import core
+from .. import core, help, kering
 from ..core import coring
 from ..db import dbing, subing, koming
 from ..help import helping
+
+logger = help.ogler.getLogger()
 
 Algoage = namedtuple("Algoage", 'randy salty group extern')
 Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
@@ -214,6 +215,7 @@ class Keeper(dbing.LMDBer):
     AltTailDirPath = ".keri/ks"
     TempPrefix = "keri_ks_"
     MaxNamedDBs = 10
+    ConfigKey = "keeper"
 
     def __init__(self, headDirPath=None, perm=None, reopen=False, **kwa):
         """
@@ -235,6 +237,7 @@ class Keeper(dbing.LMDBer):
                 default perm=None so do not set mode
             reopen is boolean, IF True then database will be reopened by this init
                 default reopen=True
+            cf (Configer): optional Configer to configure the opened LMDB database via kwa
 
         Notes:
 
@@ -259,6 +262,7 @@ class Keeper(dbing.LMDBer):
         Open sub databases
         """
         opened = super(Keeper, self).reopen(**kwa)
+        logger.info("[%s] Keeper map size set to %s", self.name, self.mapSize)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character

@@ -14,9 +14,7 @@ from hio.help import hicting
 
 from keri.peer import exchanging
 from . import keeping, configing
-from .. import help
-from .. import kering
-from .. import core
+from .. import help, kering, core
 from ..core import (coring, eventing, parsing, routing, serdering, indexing,
                     Counter, Codens)
 from ..db import dbing, basing
@@ -203,23 +201,27 @@ class Habery:
         self.base = base
         self.temp = temp
 
-        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
-                                                           base=self.base,
-                                                           temp=self.temp,
-                                                           reopen=True,
-                                                           clear=clear,
-                                                           headDirPath=headDirPath)
-        self.db = db if db is not None else basing.Baser(name=self.name,
-                                                         base=self.base,
-                                                         temp=self.temp,
-                                                         reopen=True,
-                                                         clear=clear,
-                                                         headDirPath=headDirPath)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
                                                                reopen=True,
                                                                clear=clear)
+        logger.info("[%s] Habery config file %s at %s", self.name, self.cf.name, self.cf.path)
+
+        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
+                                                           base=self.base,
+                                                           temp=self.temp,
+                                                           reopen=True,
+                                                           clear=clear,
+                                                           headDirPath=headDirPath,
+                                                           cf=cf)
+        self.db = db if db is not None else basing.Baser(name=self.name,
+                                                         base=self.base,
+                                                         temp=self.temp,
+                                                         reopen=True,
+                                                         clear=clear,
+                                                         headDirPath=headDirPath,
+                                                         cf=cf)
 
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.rtr = routing.Router()
