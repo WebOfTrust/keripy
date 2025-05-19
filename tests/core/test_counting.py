@@ -12,6 +12,7 @@ import pytest
 
 
 from keri import kering
+from keri.kering import Colds
 
 from keri.help import helping
 from keri.help.helping import sceil
@@ -20,9 +21,10 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
 
 
 
-from keri.core import counting
-from keri.core.counting import GenDex, Cizage, Counter, Codens
-from keri.core.counting import Versionage, Vrsn_1_0, Vrsn_2_0
+from keri.core import counting, Texter
+from keri.core.counting import (GenDex, Cizage, Counter, Codens,
+                                 CtrDex_1_0, CtrDex_2_0,
+                                Versionage, Vrsn_1_0, Vrsn_2_0)
 
 
 
@@ -34,17 +36,17 @@ def test_genus_codex():
 
     assert asdict(GenDex) == \
     {
-        'KERI_ACDC_SPAC': '--AAA',
-        'KERI': '--AAA',
-        'ACDC': '--AAA',
-        'SPAC': '--AAA'
+        'KERI_ACDC_SPAC': '-_AAA',
+        'KERI': '-_AAA',
+        'ACDC': '-_AAA',
+        'SPAC': '-_AAA'
     }
 
-    assert '--AAA' in GenDex
-    assert GenDex.KERI == "--AAA"
-    assert GenDex.ACDC == "--AAA"
-    assert GenDex.SPAC == "--AAA"
-    assert GenDex.KERI_ACDC_SPAC == "--AAA"
+    assert '-_AAA' in GenDex
+    assert GenDex.KERI == "-_AAA"
+    assert GenDex.ACDC == "-_AAA"
+    assert GenDex.SPAC == "-_AAA"
+    assert GenDex.KERI_ACDC_SPAC == "-_AAA"
     assert GenDex.KERI == GenDex.ACDC
 
     assert hasattr(GenDex, "KERI")
@@ -62,7 +64,7 @@ def test_codexes_tags():
     """
 
 
-    assert asdict(counting.CtrDex_1_0) == \
+    assert  asdict(counting.CtrDex_1_0) == \
     {
         'ControllerIdxSigs': '-A',
         'WitnessIdxSigs': '-B',
@@ -73,82 +75,165 @@ def test_codexes_tags():
         'SealSourceCouples': '-G',
         'TransLastIdxSigGroups': '-H',
         'SealSourceTriples': '-I',
-        'SadPathSigGroups': '-J',
-        'RootSadPathSigGroups': '-K',
         'PathedMaterialGroup': '-L',
-        'BigPathedMaterialGroup': '-0L',
+        'BigPathedMaterialGroup': '--L',
+        'GenericGroup': '-T',
+        'BigGenericGroup': '--T',
+        'MessageAttachmentGroup': '-U',
+        'BigMessageAttachmentGroup': '--U',
         'AttachmentGroup': '-V',
-        'BigAttachmentGroup': '-0V',
-        'GenericGroup': '-W',
-        'BigGenericGroup': '-0W',
+        'BigAttachmentGroup': '--V',
+        'MessageGroup': '-W',
+        'BigMessageGroup': '--W',
         'ESSRPayloadGroup': '-Z',
-        'BigESSRPayloadGroup': '-0Z',
-        'KERIACDCGenusVersion': '--AAA'
+        'BigESSRPayloadGroup': '--Z',
+        'KERIACDCGenusVersion': '-_AAA'
+    }
+
+    assert  asdict(counting.QTDex_1_0) == \
+    {
+        'PathedMaterialGroup': '-L',
+        'BigPathedMaterialGroup': '--L',
+        'GenericGroup': '-T',
+        'BigGenericGroup': '--T',
+        'MessageAttachmentGroup': '-U',
+        'BigMessageAttachmentGroup': '--U',
+        'AttachmentGroup': '-V',
+        'BigAttachmentGroup': '--V',
+        'MessageGroup': '-W',
+        'BigMessageGroup': '--W',
+        'ESSRPayloadGroup': '-Z',
+        'BigESSRPayloadGroup': '--Z',
+    }
+
+    assert  asdict(counting.SUDex_1_0) == \
+    {
+        'GenericGroup': '-T',
+        'BigGenericGroup': '--T',
+        'MessageAttachmentGroup': '-U',
+        'BigMessageAttachmentGroup': '--U',
+        'AttachmentGroup': '-V',
+        'BigAttachmentGroup': '--V',
+    }
+
+    assert  asdict(counting.MUDex_1_0) == \
+    {
+        'MessageGroup': '-W',
+        'BigMessageGroup': '--W',
     }
 
 
     assert asdict(counting.CtrDex_2_0) == \
     {
         'GenericGroup': '-A',
-        'BigGenericGroup': '-0A',
-        'MessageGroup': '-B',
-        'BigMessageGroup': '-0B',
+        'BigGenericGroup': '--A',
+        'MessageAttachmentGroup': '-B',
+        'BigMessageAttachmentGroup': '--B',
         'AttachmentGroup': '-C',
-        'BigAttachmentGroup': '-0C',
+        'BigAttachmentGroup': '--C',
         'DatagramSegmentGroup': '-D',
-        'BigDatagramSegmentGroup': '-0D',
+        'BigDatagramSegmentGroup': '--D',
         'ESSRWrapperGroup': '-E',
-        'BigESSRWrapperGroup': '-0E',
+        'BigESSRWrapperGroup': '--E',
         'FixedMessageBodyGroup': '-F',
-        'BigFixedMessageBodyGroup': '-0F',
+        'BigFixedMessageBodyGroup': '--F',
         'MapMessageBodyGroup': '-G',
-        'BigMapMessageBodyGroup': '-0G',
-        'GenericMapGroup': '-H',
-        'BigGenericMapGroup': '-0H',
-        'GenericListGroup': '-I',
-        'BigGenericListGroup': '-0I',
-        'ControllerIdxSigs': '-J',
-        'BigControllerIdxSigs': '-0J',
-        'WitnessIdxSigs': '-K',
-        'BigWitnessIdxSigs': '-0K',
-        'NonTransReceiptCouples': '-L',
-        'BigNonTransReceiptCouples': '-0L',
-        'TransReceiptQuadruples': '-M',
-        'BigTransReceiptQuadruples': '-0M',
-        'FirstSeenReplayCouples': '-N',
-        'BigFirstSeenReplayCouples': '-0N',
-        'TransIdxSigGroups': '-O',
-        'BigTransIdxSigGroups': '-0O',
-        'TransLastIdxSigGroups': '-P',
-        'BigTransLastIdxSigGroups': '-0P',
-        'SealSourceCouples': '-Q',
-        'BigSealSourceCouples': '-0Q',
-        'SealSourceTriples': '-R',
-        'BigSealSourceTriples': '-0R',
-        'PathedMaterialGroup': '-S',
-        'BigPathedMaterialGroup': '-0S',
-        'SadPathSigGroups': '-T',
-        'BigSadPathSigGroups': '-0T',
-        'RootSadPathSigGroups': '-U',
-        'BigRootSadPathSigGroups': '-0U',
-        'DigestSealSingles': '-V',
-        'BigDigestSealSingles': '-0V',
-        'MerkleRootSealSingles': '-W',
-        'BigMerkleRootSealSingles': '-0W',
-        'BackerRegistrarSealCouples': '-X',
-        'BigBackerRegistrarSealCouples': '-0X',
-        'SealSourceLastSingles': '-Y',
-        'BigSealSourceLastSingles': '-0Y',
+        'BigMapMessageBodyGroup': '--G',
+        'MessageGroup': '-H',
+        'BigMessageGroup': '--H',
+        'GenericMapGroup': '-I',
+        'BigGenericMapGroup': '--I',
+        'GenericListGroup': '-J',
+        'BigGenericListGroup': '--J',
+        'ControllerIdxSigs': '-K',
+        'BigControllerIdxSigs': '--K',
+        'WitnessIdxSigs': '-L',
+        'BigWitnessIdxSigs': '--L',
+        'NonTransReceiptCouples': '-M',
+        'BigNonTransReceiptCouples': '--M',
+        'TransReceiptQuadruples': '-N',
+        'BigTransReceiptQuadruples': '--N',
+        'FirstSeenReplayCouples': '-O',
+        'BigFirstSeenReplayCouples': '--O',
+        'PathedMaterialGroup': '-P',
+        'BigPathedMaterialGroup': '--P',
+        'DigestSealSingles': '-Q',
+        'BigDigestSealSingles': '--Q',
+        'MerkleRootSealSingles': '-R',
+        'BigMerkleRootSealSingles': '--R',
+        'SealSourceTriples': '-S',
+        'BigSealSourceTriples': '--S',
+        'SealSourceCouples': '-T',
+        'BigSealSourceCouples': '--T',
+        'SealSourceLastSingles': '-U',
+        'BigSealSourceLastSingles': '--U',
+        'BackerRegistrarSealCouples': '-V',
+        'BigBackerRegistrarSealCouples': '--V',
+        'TransIdxSigGroups': '-W',
+        'BigTransIdxSigGroups': '--W',
+        'TransLastIdxSigGroups': '-X',
+        'BigTransLastIdxSigGroups': '--X',
         'ESSRPayloadGroup': '-Z',
-        'BigESSRPayloadGroup': '-0Z',
-        'KERIACDCGenusVersion': '--AAA'
+        'BigESSRPayloadGroup': '--Z',
+        'KERIACDCGenusVersion': '-_AAA'
     }
 
-    assert counting.CodeNames == (
+    assert asdict(counting.UniDex_2_0) == \
+    {
+        'GenericGroup': '-A',
+        'BigGenericGroup': '--A',
+        'MessageAttachmentGroup': '-B',
+        'BigMessageAttachmentGroup': '--B',
+        'AttachmentGroup': '-C',
+        'BigAttachmentGroup': '--C',
+        'DatagramSegmentGroup': '-D',
+        'BigDatagramSegmentGroup': '--D',
+        'ESSRWrapperGroup': '-E',
+        'BigESSRWrapperGroup': '--E',
+        'FixedMessageBodyGroup': '-F',
+        'BigFixedMessageBodyGroup': '--F',
+        'MapMessageBodyGroup': '-G',
+        'BigMapMessageBodyGroup': '--G',
+        'MessageGroup': '-H',
+        'BigMessageGroup': '--H',
+        'GenericMapGroup': '-I',
+        'BigGenericMapGroup': '--I',
+        'GenericListGroup': '-J',
+        'BigGenericListGroup': '--J',
+        'KERIACDCGenusVersion': '-_AAA'
+    }
+
+    assert asdict(counting.SUDex_2_0) == \
+    {
+        'GenericGroup': '-A',
+        'BigGenericGroup': '--A',
+        'MessageAttachmentGroup': '-B',
+        'BigMessageAttachmentGroup': '--B',
+        'AttachmentGroup': '-C',
+        'BigAttachmentGroup': '--C',
+    }
+
+    assert asdict(counting.MUDex_2_0) == \
+    {
+        'DatagramSegmentGroup': '-D',
+        'BigDatagramSegmentGroup': '--D',
+        'ESSRWrapperGroup': '-E',
+        'BigESSRWrapperGroup': '--E',
+        'FixedMessageBodyGroup': '-F',
+        'BigFixedMessageBodyGroup': '--F',
+        'MapMessageBodyGroup': '-G',
+        'BigMapMessageBodyGroup': '--G',
+        'MessageGroup': '-H',
+        'BigMessageGroup': '--H',
+    }
+
+
+    assert counting.CodeNames == \
+    (
         'GenericGroup',
         'BigGenericGroup',
-        'MessageGroup',
-        'BigMessageGroup',
+        'MessageAttachmentGroup',
+        'BigMessageAttachmentGroup',
         'AttachmentGroup',
         'BigAttachmentGroup',
         'DatagramSegmentGroup',
@@ -159,6 +244,8 @@ def test_codexes_tags():
         'BigFixedMessageBodyGroup',
         'MapMessageBodyGroup',
         'BigMapMessageBodyGroup',
+        'MessageGroup',
+        'BigMessageGroup',
         'GenericMapGroup',
         'BigGenericMapGroup',
         'GenericListGroup',
@@ -173,39 +260,36 @@ def test_codexes_tags():
         'BigTransReceiptQuadruples',
         'FirstSeenReplayCouples',
         'BigFirstSeenReplayCouples',
-        'TransIdxSigGroups',
-        'BigTransIdxSigGroups',
-        'TransLastIdxSigGroups',
-        'BigTransLastIdxSigGroups',
-        'SealSourceCouples',
-        'BigSealSourceCouples',
-        'SealSourceTriples',
-        'BigSealSourceTriples',
         'PathedMaterialGroup',
         'BigPathedMaterialGroup',
-        'SadPathSigGroups',
-        'BigSadPathSigGroups',
-        'RootSadPathSigGroups',
-        'BigRootSadPathSigGroups',
         'DigestSealSingles',
         'BigDigestSealSingles',
         'MerkleRootSealSingles',
         'BigMerkleRootSealSingles',
-        'BackerRegistrarSealCouples',
-        'BigBackerRegistrarSealCouples',
+        'SealSourceTriples',
+        'BigSealSourceTriples',
+        'SealSourceCouples',
+        'BigSealSourceCouples',
         'SealSourceLastSingles',
         'BigSealSourceLastSingles',
+        'BackerRegistrarSealCouples',
+        'BigBackerRegistrarSealCouples',
+        'TransIdxSigGroups',
+        'BigTransIdxSigGroups',
+        'TransLastIdxSigGroups',
+        'BigTransLastIdxSigGroups',
         'ESSRPayloadGroup',
         'BigESSRPayloadGroup',
         'KERIACDCGenusVersion'
     )
+
     assert 'ControllerIdxSigs' in counting.CodeNames
 
     assert counting.Codens == counting.Codenage(
         GenericGroup='GenericGroup',
         BigGenericGroup='BigGenericGroup',
-        MessageGroup='MessageGroup',
-        BigMessageGroup='BigMessageGroup',
+        MessageAttachmentGroup='MessageAttachmentGroup',
+        BigMessageAttachmentGroup='BigMessageAttachmentGroup',
         AttachmentGroup='AttachmentGroup',
         BigAttachmentGroup='BigAttachmentGroup',
         DatagramSegmentGroup='DatagramSegmentGroup',
@@ -216,6 +300,8 @@ def test_codexes_tags():
         BigFixedMessageBodyGroup='BigFixedMessageBodyGroup',
         MapMessageBodyGroup='MapMessageBodyGroup',
         BigMapMessageBodyGroup='BigMapMessageBodyGroup',
+        MessageGroup='MessageGroup',
+        BigMessageGroup='BigMessageGroup',
         GenericMapGroup='GenericMapGroup',
         BigGenericMapGroup='BigGenericMapGroup',
         GenericListGroup='GenericListGroup',
@@ -230,32 +316,29 @@ def test_codexes_tags():
         BigTransReceiptQuadruples='BigTransReceiptQuadruples',
         FirstSeenReplayCouples='FirstSeenReplayCouples',
         BigFirstSeenReplayCouples='BigFirstSeenReplayCouples',
+        DigestSealSingles='DigestSealSingles',
+        BigDigestSealSingles='BigDigestSealSingles',
+        PathedMaterialGroup='PathedMaterialGroup',
+        BigPathedMaterialGroup='BigPathedMaterialGroup',
+        MerkleRootSealSingles='MerkleRootSealSingles',
+        BigMerkleRootSealSingles='BigMerkleRootSealSingles',
+        SealSourceTriples='SealSourceTriples',
+        BigSealSourceTriples='BigSealSourceTriples',
+        SealSourceCouples='SealSourceCouples',
+        BigSealSourceCouples='BigSealSourceCouples',
+        SealSourceLastSingles='SealSourceLastSingles',
+        BigSealSourceLastSingles='BigSealSourceLastSingles',
+        BackerRegistrarSealCouples='BackerRegistrarSealCouples',
+        BigBackerRegistrarSealCouples='BigBackerRegistrarSealCouples',
         TransIdxSigGroups='TransIdxSigGroups',
         BigTransIdxSigGroups='BigTransIdxSigGroups',
         TransLastIdxSigGroups='TransLastIdxSigGroups',
         BigTransLastIdxSigGroups='BigTransLastIdxSigGroups',
-        SealSourceCouples='SealSourceCouples',
-        BigSealSourceCouples='BigSealSourceCouples',
-        SealSourceTriples='SealSourceTriples',
-        BigSealSourceTriples='BigSealSourceTriples',
-        PathedMaterialGroup='PathedMaterialGroup',
-        BigPathedMaterialGroup='BigPathedMaterialGroup',
-        SadPathSigGroups='SadPathSigGroups',
-        BigSadPathSigGroups='BigSadPathSigGroups',
-        RootSadPathSigGroups='RootSadPathSigGroups',
-        BigRootSadPathSigGroups='BigRootSadPathSigGroups',
-        DigestSealSingles='DigestSealSingles',
-        BigDigestSealSingles='BigDigestSealSingles',
-        MerkleRootSealSingles='MerkleRootSealSingles',
-        BigMerkleRootSealSingles='BigMerkleRootSealSingles',
-        BackerRegistrarSealCouples='BackerRegistrarSealCouples',
-        BigBackerRegistrarSealCouples='BigBackerRegistrarSealCouples',
-        SealSourceLastSingles='SealSourceLastSingles',
-        BigSealSourceLastSingles='BigSealSourceLastSingles',
         ESSRPayloadGroup='ESSRPayloadGroup',
         BigESSRPayloadGroup='BigESSRPayloadGroup',
         KERIACDCGenusVersion='KERIACDCGenusVersion'
     )
+
 
     assert counting.Codens.ControllerIdxSigs == 'ControllerIdxSigs'
 
@@ -263,21 +346,19 @@ def test_codexes_tags():
 
     assert asdict(counting.SealDex_2_0) == \
     {
-        'SealSourceCouples': '-Q',
-        'BigSealSourceCouples': '-0Q',
-        'SealSourceTriples': '-R',
-        'BigSealSourceTriples': '-0R',
-        'DigestSealSingles': '-V',
-        'BigDigestSealSingles': '-0V',
-        'MerkleRootSealSingles': '-W',
-        'BigMerkleRootSealSingles': '-0W',
-        'BackerRegistrarSealCouples': '-X',
-        'BigBackerRegistrarSealCouples': '-0X',
-        'SealSourceLastSingles': '-Y',
-        'BigSealSourceLastSingles': '-0Y',
+        'DigestSealSingles': '-Q',
+        'BigDigestSealSingles': '--Q',
+        'MerkleRootSealSingles': '-R',
+        'BigMerkleRootSealSingles': '--R',
+        'SealSourceTriples': '-S',
+        'BigSealSourceTriples': '--S',
+        'SealSourceCouples': '-T',
+        'BigSealSourceCouples': '--T',
+        'SealSourceLastSingles': '-U',
+        'BigSealSourceLastSingles': '--U',
+        'BackerRegistrarSealCouples': '-V',
+        'BigBackerRegistrarSealCouples': '--V',
     }
-
-
 
     """End Test"""
 
@@ -300,6 +381,30 @@ def test_counter_class():
         },
     }
 
+    assert Counter.SUCodes == \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: counting.SUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: counting.SUDex_2_0,
+        },
+    }
+
+    assert Counter.MUCodes == \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: counting.MUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: counting.MUDex_2_0,
+        },
+    }
+
     assert Counter.Names == \
         {1:
             {0:
@@ -313,75 +418,75 @@ def test_counter_class():
                     '-G': 'SealSourceCouples',
                     '-H': 'TransLastIdxSigGroups',
                     '-I': 'SealSourceTriples',
-                    '-J': 'SadPathSigGroups',
-                    '-K': 'RootSadPathSigGroups',
                     '-L': 'PathedMaterialGroup',
-                    '-0L': 'BigPathedMaterialGroup',
+                    '--L': 'BigPathedMaterialGroup',
+                    '-T': 'GenericGroup',
+                    '--T': 'BigGenericGroup',
+                    '-U': 'MessageAttachmentGroup',
+                    '--U': 'BigMessageAttachmentGroup',
                     '-V': 'AttachmentGroup',
-                    '-0V': 'BigAttachmentGroup',
-                    '-W': 'GenericGroup',
-                    '-0W': 'BigGenericGroup',
+                    '--V': 'BigAttachmentGroup',
+                    '-W': 'MessageGroup',
+                    '--W': 'BigMessageGroup',
                     '-Z': 'ESSRPayloadGroup',
-                    '-0Z': 'BigESSRPayloadGroup',
-                    '--AAA': 'KERIACDCGenusVersion',
+                    '--Z': 'BigESSRPayloadGroup',
+                    '-_AAA': 'KERIACDCGenusVersion',
                 }
             },
         2:
             {0:
                 {
                     '-A': 'GenericGroup',
-                    '-0A': 'BigGenericGroup',
-                    '-B': 'MessageGroup',
-                    '-0B': 'BigMessageGroup',
+                    '--A': 'BigGenericGroup',
+                    '-B': 'MessageAttachmentGroup',
+                    '--B': 'BigMessageAttachmentGroup',
                     '-C': 'AttachmentGroup',
-                    '-0C': 'BigAttachmentGroup',
+                    '--C': 'BigAttachmentGroup',
                     '-D': 'DatagramSegmentGroup',
-                    '-0D': 'BigDatagramSegmentGroup',
+                    '--D': 'BigDatagramSegmentGroup',
                     '-E': 'ESSRWrapperGroup',
-                    '-0E': 'BigESSRWrapperGroup',
+                    '--E': 'BigESSRWrapperGroup',
                     '-F': 'FixedMessageBodyGroup',
-                    '-0F': 'BigFixedMessageBodyGroup',
+                    '--F': 'BigFixedMessageBodyGroup',
                     '-G': 'MapMessageBodyGroup',
-                    '-0G': 'BigMapMessageBodyGroup',
-                    '-H': 'GenericMapGroup',
-                    '-0H': 'BigGenericMapGroup',
-                    '-I': 'GenericListGroup',
-                    '-0I': 'BigGenericListGroup',
-                    '-J': 'ControllerIdxSigs',
-                    '-0J': 'BigControllerIdxSigs',
-                    '-K': 'WitnessIdxSigs',
-                    '-0K': 'BigWitnessIdxSigs',
-                    '-L': 'NonTransReceiptCouples',
-                    '-0L': 'BigNonTransReceiptCouples',
-                    '-M': 'TransReceiptQuadruples',
-                    '-0M': 'BigTransReceiptQuadruples',
-                    '-N': 'FirstSeenReplayCouples',
-                    '-0N': 'BigFirstSeenReplayCouples',
-                    '-O': 'TransIdxSigGroups',
-                    '-0O': 'BigTransIdxSigGroups',
-                    '-P': 'TransLastIdxSigGroups',
-                    '-0P': 'BigTransLastIdxSigGroups',
-                    '-Q': 'SealSourceCouples',
-                    '-0Q': 'BigSealSourceCouples',
-                    '-R': 'SealSourceTriples',
-                    '-0R': 'BigSealSourceTriples',
-                    '-S': 'PathedMaterialGroup',
-                    '-0S': 'BigPathedMaterialGroup',
-                    '-T': 'SadPathSigGroups',
-                    '-0T': 'BigSadPathSigGroups',
-                    '-U': 'RootSadPathSigGroups',
-                    '-0U': 'BigRootSadPathSigGroups',
-                    '-V': 'DigestSealSingles',
-                    '-0V': 'BigDigestSealSingles',
-                    '-W': 'MerkleRootSealSingles',
-                    '-0W': 'BigMerkleRootSealSingles',
-                    '-X': 'BackerRegistrarSealCouples',
-                    '-0X': 'BigBackerRegistrarSealCouples',
-                    '-Y': 'SealSourceLastSingles',
-                    '-0Y': 'BigSealSourceLastSingles',
+                    '--G': 'BigMapMessageBodyGroup',
+                    '-H': 'MessageGroup',
+                    '--H': 'BigMessageGroup',
+                    '-I': 'GenericMapGroup',
+                    '--I': 'BigGenericMapGroup',
+                    '-J': 'GenericListGroup',
+                    '--J': 'BigGenericListGroup',
+                    '-K': 'ControllerIdxSigs',
+                    '--K': 'BigControllerIdxSigs',
+                    '-L': 'WitnessIdxSigs',
+                    '--L': 'BigWitnessIdxSigs',
+                    '-M': 'NonTransReceiptCouples',
+                    '--M': 'BigNonTransReceiptCouples',
+                    '-N': 'TransReceiptQuadruples',
+                    '--N': 'BigTransReceiptQuadruples',
+                    '-O': 'FirstSeenReplayCouples',
+                    '--O': 'BigFirstSeenReplayCouples',
+                    '-P': 'PathedMaterialGroup',
+                    '--P': 'BigPathedMaterialGroup',
+                    '-Q': 'DigestSealSingles',
+                    '--Q': 'BigDigestSealSingles',
+                    '-R': 'MerkleRootSealSingles',
+                    '--R': 'BigMerkleRootSealSingles',
+                    '-S': 'SealSourceTriples',
+                    '--S': 'BigSealSourceTriples',
+                    '-T': 'SealSourceCouples',
+                    '--T': 'BigSealSourceCouples',
+                    '-U': 'SealSourceLastSingles',
+                    '--U': 'BigSealSourceLastSingles',
+                    '-V': 'BackerRegistrarSealCouples',
+                    '--V': 'BigBackerRegistrarSealCouples',
+                    '-W': 'TransIdxSigGroups',
+                    '--W': 'BigTransIdxSigGroups',
+                    '-X': 'TransLastIdxSigGroups',
+                    '--X': 'BigTransLastIdxSigGroups',
                     '-Z': 'ESSRPayloadGroup',
-                    '-0Z': 'BigESSRPayloadGroup',
-                    '--AAA': 'KERIACDCGenusVersion'
+                    '--Z': 'BigESSRPayloadGroup',
+                    '-_AAA': 'KERIACDCGenusVersion'
                 }
             }
         }
@@ -403,17 +508,19 @@ def test_counter_class():
                     '-G': Cizage(hs=2, ss=2, fs=4),
                     '-H': Cizage(hs=2, ss=2, fs=4),
                     '-I': Cizage(hs=2, ss=2, fs=4),
-                    '-J': Cizage(hs=2, ss=2, fs=4),
-                    '-K': Cizage(hs=2, ss=2, fs=4),
                     '-L': Cizage(hs=2, ss=2, fs=4),
-                    '-0L': Cizage(hs=3, ss=5, fs=8),
+                    '--L': Cizage(hs=3, ss=5, fs=8),
+                    '-T': Cizage(hs=2, ss=2, fs=4),
+                    '--T': Cizage(hs=3, ss=5, fs=8),
+                    '-U': Cizage(hs=2, ss=2, fs=4),
+                    '--U': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
-                    '-0V': Cizage(hs=3, ss=5, fs=8),
+                    '--V': Cizage(hs=3, ss=5, fs=8),
                     '-W': Cizage(hs=2, ss=2, fs=4),
-                    '-0W': Cizage(hs=3, ss=5, fs=8),
+                    '--W': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
-                    '-0Z': Cizage(hs=3, ss=5, fs=8),
-                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                    '--Z': Cizage(hs=3, ss=5, fs=8),
+                    '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             },
             2:
@@ -421,58 +528,56 @@ def test_counter_class():
                 0:
                 {
                     '-A': Cizage(hs=2, ss=2, fs=4),
-                    '-0A': Cizage(hs=3, ss=5, fs=8),
+                    '--A': Cizage(hs=3, ss=5, fs=8),
                     '-B': Cizage(hs=2, ss=2, fs=4),
-                    '-0B': Cizage(hs=3, ss=5, fs=8),
+                    '--B': Cizage(hs=3, ss=5, fs=8),
                     '-C': Cizage(hs=2, ss=2, fs=4),
-                    '-0C': Cizage(hs=3, ss=5, fs=8),
+                    '--C': Cizage(hs=3, ss=5, fs=8),
                     '-D': Cizage(hs=2, ss=2, fs=4),
-                    '-0D': Cizage(hs=3, ss=5, fs=8),
+                    '--D': Cizage(hs=3, ss=5, fs=8),
                     '-E': Cizage(hs=2, ss=2, fs=4),
-                    '-0E': Cizage(hs=3, ss=5, fs=8),
+                    '--E': Cizage(hs=3, ss=5, fs=8),
                     '-F': Cizage(hs=2, ss=2, fs=4),
-                    '-0F': Cizage(hs=3, ss=5, fs=8),
+                    '--F': Cizage(hs=3, ss=5, fs=8),
                     '-G': Cizage(hs=2, ss=2, fs=4),
-                    '-0G': Cizage(hs=3, ss=5, fs=8),
+                    '--G': Cizage(hs=3, ss=5, fs=8),
                     '-H': Cizage(hs=2, ss=2, fs=4),
-                    '-0H': Cizage(hs=3, ss=5, fs=8),
+                    '--H': Cizage(hs=3, ss=5, fs=8),
                     '-I': Cizage(hs=2, ss=2, fs=4),
-                    '-0I': Cizage(hs=3, ss=5, fs=8),
+                    '--I': Cizage(hs=3, ss=5, fs=8),
                     '-J': Cizage(hs=2, ss=2, fs=4),
-                    '-0J': Cizage(hs=3, ss=5, fs=8),
+                    '--J': Cizage(hs=3, ss=5, fs=8),
                     '-K': Cizage(hs=2, ss=2, fs=4),
-                    '-0K': Cizage(hs=3, ss=5, fs=8),
+                    '--K': Cizage(hs=3, ss=5, fs=8),
                     '-L': Cizage(hs=2, ss=2, fs=4),
-                    '-0L': Cizage(hs=3, ss=5, fs=8),
+                    '--L': Cizage(hs=3, ss=5, fs=8),
                     '-M': Cizage(hs=2, ss=2, fs=4),
-                    '-0M': Cizage(hs=3, ss=5, fs=8),
+                    '--M': Cizage(hs=3, ss=5, fs=8),
                     '-N': Cizage(hs=2, ss=2, fs=4),
-                    '-0N': Cizage(hs=3, ss=5, fs=8),
+                    '--N': Cizage(hs=3, ss=5, fs=8),
                     '-O': Cizage(hs=2, ss=2, fs=4),
-                    '-0O': Cizage(hs=3, ss=5, fs=8),
+                    '--O': Cizage(hs=3, ss=5, fs=8),
                     '-P': Cizage(hs=2, ss=2, fs=4),
-                    '-0P': Cizage(hs=3, ss=5, fs=8),
+                    '--P': Cizage(hs=3, ss=5, fs=8),
                     '-Q': Cizage(hs=2, ss=2, fs=4),
-                    '-0Q': Cizage(hs=3, ss=5, fs=8),
+                    '--Q': Cizage(hs=3, ss=5, fs=8),
                     '-R': Cizage(hs=2, ss=2, fs=4),
-                    '-0R': Cizage(hs=3, ss=5, fs=8),
+                    '--R': Cizage(hs=3, ss=5, fs=8),
                     '-S': Cizage(hs=2, ss=2, fs=4),
-                    '-0S': Cizage(hs=3, ss=5, fs=8),
+                    '--S': Cizage(hs=3, ss=5, fs=8),
                     '-T': Cizage(hs=2, ss=2, fs=4),
-                    '-0T': Cizage(hs=3, ss=5, fs=8),
+                    '--T': Cizage(hs=3, ss=5, fs=8),
                     '-U': Cizage(hs=2, ss=2, fs=4),
-                    '-0U': Cizage(hs=3, ss=5, fs=8),
+                    '--U': Cizage(hs=3, ss=5, fs=8),
                     '-V': Cizage(hs=2, ss=2, fs=4),
-                    '-0V': Cizage(hs=3, ss=5, fs=8),
+                    '--V': Cizage(hs=3, ss=5, fs=8),
                     '-W': Cizage(hs=2, ss=2, fs=4),
-                    '-0W': Cizage(hs=3, ss=5, fs=8),
+                    '--W': Cizage(hs=3, ss=5, fs=8),
                     '-X': Cizage(hs=2, ss=2, fs=4),
-                    '-0X': Cizage(hs=3, ss=5, fs=8),
-                    '-Y': Cizage(hs=2, ss=2, fs=4),
-                    '-0Y': Cizage(hs=3, ss=5, fs=8),
+                    '--X': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
-                    '-0Z': Cizage(hs=3, ss=5, fs=8),
-                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                    '--Z': Cizage(hs=3, ss=5, fs=8),
+                    '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             }
         }
@@ -491,9 +596,9 @@ def test_counter_class():
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].ss == 2 # soft size
     assert Counter.Sizes[Vrsn_1_0.major][Vrsn_1_0.minor]['-A'].fs == 4  # full size
 
-    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].hs == 3  # hard size
-    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].ss == 5  # soft size
-    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['-0A'].fs == 8  # full size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['--A'].hs == 3  # hard size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['--A'].ss == 5  # soft size
+    assert Counter.Sizes[Vrsn_2_0.major][Vrsn_2_0.minor]['--A'].fs == 8  # full size
 
     # first character of code with hard size of code
     assert Counter.Hards == \
@@ -504,7 +609,7 @@ def test_counter_class():
         '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
         '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
         '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
-        '-0': 3, '--': 5,
+        '--': 3, '-_': 5,
     }
 
 
@@ -584,6 +689,135 @@ def test_counter_class():
     with pytest.raises(ValueError):
         Counter.verToB64(minor=-1)
 
+    # Test class methods
+    # Test .enclose default V2
+    enclosure = Counter.enclose()  # test defaults
+    assert enclosure == bytearray(b'-CAA')
+
+    enclosure = Counter.enclose(qb64=b'') # test empty
+    assert enclosure == bytearray(b'-CAA')
+    assert len(enclosure) == 4
+    # round trip
+    counter = Counter(qb64b=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 0
+
+    enclosure = Counter.enclose(qb2=b'') # test empty
+    assert enclosure == bytearray(b'\xf8 \x00')
+    assert len(enclosure) == 3
+    # round trip
+    counter = Counter(qb2=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 0
+
+    enclosure = Counter.enclose(qb64=b'', qb2=b'') # test empty qb64 priority
+    assert enclosure == bytearray(b'-CAA')
+    assert len(enclosure) == 4
+
+    # test with something to enclose
+    texter = Texter(text="How ya doing babe?")
+    assert texter.qb64 == '4BAGSG93IHlhIGRvaW5nIGJhYmU_'
+    assert texter.qb2 == b'\xe0\x10\x06How ya doing babe?'
+
+    enclosure = Counter.enclose(qb64=texter.qb64)
+    assert enclosure == bytearray(b'-CAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+    # round trip
+    counter = Counter(qb64b=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb64) // 4
+
+    enclosure = Counter.enclose(qb2=texter.qb2)
+    assert enclosure == bytearray(b'\xf8 \x07\xe0\x10\x06How ya doing babe?')
+    # round trip
+    counter = Counter(qb2=enclosure)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_2_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb2) // 3
+
+    # test with other than default code
+    enclosure = Counter.enclose(qb64=texter.qb64, code=Codens.GenericGroup)
+    assert enclosure == bytearray(b'-AAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+
+    enclosure = Counter.enclose(qb2=texter.qb2, code=Codens.GenericGroup)
+    assert enclosure ==bytearray(b'\xf8\x00\x07\xe0\x10\x06How ya doing babe?')
+
+    # error cases
+    with pytest.raises(kering.InvalidCodeError):
+        enclosure = Counter.enclose(qb64=texter.qb64, code="MadeUpCode")
+
+    with pytest.raises(ValueError):  # not aligned 24 bit
+        enclosure = Counter.enclose(qb64=texter.qb64[:-1])
+
+    with pytest.raises(ValueError):  # not aligned 24 bit
+        enclosure = Counter.enclose(qb2=texter.qb2[:-1])
+
+    # Test .enclose V1
+    enclosure = Counter.enclose(version=Vrsn_1_0)  # test defaults
+    assert enclosure == bytearray(b'-VAA')
+
+    enclosure = Counter.enclose(qb64=b'', version=Vrsn_1_0) # test empty
+    assert enclosure == bytearray(b'-VAA')
+    assert len(enclosure) == 4
+    # round trip
+    counter = Counter(qb64b=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 0
+
+    enclosure = Counter.enclose(qb2=b'', version=Vrsn_1_0) # test empty
+    assert enclosure == bytearray(b'\xf9P\x00')
+    assert len(enclosure) == 3
+    # round trip
+    counter = Counter(qb2=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 0
+
+    # test with something to enclose
+    texter = Texter(text="How ya doing babe?")
+    assert texter.qb64 == '4BAGSG93IHlhIGRvaW5nIGJhYmU_'
+    assert texter.qb2 == b'\xe0\x10\x06How ya doing babe?'
+
+    enclosure = Counter.enclose(qb64=texter.qb64, version=Vrsn_1_0)
+    assert enclosure == bytearray(b'-VAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+    # round trip
+    counter = Counter(qb64b=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb64) // 4
+
+    enclosure = Counter.enclose(qb2=texter.qb2, version=Vrsn_1_0)
+    assert enclosure == bytearray(b'\xf9P\x07\xe0\x10\x06How ya doing babe?')
+    # round trip
+    counter = Counter(qb2=enclosure, version=Vrsn_1_0)
+    assert counter.name == Codens.AttachmentGroup
+    assert counter.code == CtrDex_1_0.AttachmentGroup
+    assert counter.count == 7 == len(texter.qb2) // 3
+
+    # test with other than default code
+    enclosure = Counter.enclose(qb64=texter.qb64,
+                                code=Codens.GenericGroup,
+                                version=Vrsn_1_0)
+    assert enclosure == bytearray(b'-TAH4BAGSG93IHlhIGRvaW5nIGJhYmU_')
+
+    enclosure = Counter.enclose(qb2=texter.qb2,
+                                code=Codens.GenericGroup,
+                                version=Vrsn_1_0)
+    assert enclosure == bytearray(b'\xf90\x07\xe0\x10\x06How ya doing babe?')
+
+    # error cases
+    with pytest.raises(ValueError):  # not a QTDex code
+        enclosure = Counter.enclose(qb64=texter.qb64,
+                                    code=Codens.ControllerIdxSigs,
+                                    version=Vrsn_1_0)
+
+    with pytest.raises(ValueError):  # not a QTDex code
+        enclosure = Counter.enclose(qb2=texter.qb2,
+                                    code=Codens.ControllerIdxSigs,
+                                    version=Vrsn_1_0)
 
     """ Done Test """
 
@@ -596,7 +830,7 @@ def test_counter_v1():
 
     # test Counter instances
     with pytest.raises(kering.EmptyMaterialError):
-        counter = Counter(gvrsn=Vrsn_1_0)
+        counter = Counter(version=Vrsn_1_0)
 
     # create code manually
     count = 1
@@ -605,7 +839,7 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)
+    counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs == counter.hard
     assert counter.name == "ControllerIdxSigs"
 
@@ -615,13 +849,14 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
     assert counter.fullSize == 4
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 3
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
     assert counter.codes == counting.CtrDex_1_0
-    #assert counter.tags == counting.Tags_1_0
     assert counter.sizes == Counter.Sizes[1][0]
 
-    counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)
+    counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -633,7 +868,7 @@ def test_counter_v1():
     # test keyword buth with code name
     counter = Counter(code=Codens.ControllerIdxSigs,
                       count=count,
-                      gvrsn=Vrsn_1_0)
+                      version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -642,7 +877,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default count = 1
+    counter = Counter(code=CtrDex.ControllerIdxSigs, version=Vrsn_1_0)  # default count = 1
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -651,7 +886,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -660,7 +895,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -669,7 +904,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -680,24 +915,24 @@ def test_counter_v1():
 
     # test truncates extra bytes from qb64 parameter
     longqsc64 = qsc + "ABCD"
-    counter = Counter(qb64=longqsc64, gvrsn=Vrsn_1_0)
+    counter = Counter(qb64=longqsc64, version=Vrsn_1_0)
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb64=shortqsc64, gvrsn=Vrsn_1_0)
+        counter = Counter(qb64=shortqsc64, version=Vrsn_1_0)
 
     # test truncates extra bytes from qb2 parameter
     longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
-    counter = Counter(qb2=longqscb2, gvrsn=Vrsn_1_0)
+    counter = Counter(qb2=longqscb2, version=Vrsn_1_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb2=shortqscb2, gvrsn=Vrsn_1_0)
+        counter = Counter(qb2=shortqscb2, version=Vrsn_1_0)
 
     # test with non-zero count=5
     count = 5
@@ -706,7 +941,7 @@ def test_counter_v1():
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)
+    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -715,7 +950,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -724,7 +959,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -733,7 +968,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -745,11 +980,23 @@ def test_counter_v1():
     # test with big codes index=100024000
     count = 100024000
     qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
-    assert qsc == '-0VF9j7A'
+    assert qsc == '--VF9j7A'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigAttachmentGroup, count=count, gvrsn=Vrsn_1_0)
+    counter = Counter(code=CtrDex.BigAttachmentGroup, count=count, version=Vrsn_1_0)
+    assert counter.code == CtrDex.BigAttachmentGroup
+    assert counter.name == "BigAttachmentGroup"
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_1_0
+    assert counter.fullSize == 8
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 6
+
+    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.name == "BigAttachmentGroup"
     assert counter.count == count
@@ -758,7 +1005,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.name == "BigAttachmentGroup"
     assert counter.count == count
@@ -767,16 +1014,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
-    assert counter.code == CtrDex.BigAttachmentGroup
-    assert counter.name == "BigAttachmentGroup"
-    assert counter.count == count
-    assert counter.qb64b == qscb
-    assert counter.qb64 == qsc
-    assert counter.qb2 == qscb2
-    assert counter.version == Vrsn_1_0
-
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.name == "BigAttachmentGroup"
     assert counter.count == count
@@ -786,7 +1024,7 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     # Test ._bexfil
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  #
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  #
     code = counter.code
     count = counter.count
     qb2 = counter.qb2
@@ -805,11 +1043,11 @@ def test_counter_v1():
     # test BigPathedMaterialGroup with big codes index=100024000
     count = 100024000
     qsc = CtrDex.BigPathedMaterialGroup + intToB64(count, l=5)
-    assert qsc == '-0LF9j7A'
+    assert qsc == '--LF9j7A'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigPathedMaterialGroup, count=count, gvrsn=Vrsn_1_0)
+    counter = Counter(code=CtrDex.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
     assert counter.code == CtrDex.BigPathedMaterialGroup
     assert counter.name == "BigPathedMaterialGroup"
     assert counter.count == count
@@ -818,7 +1056,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigPathedMaterialGroup
     assert counter.name == "BigPathedMaterialGroup"
     assert counter.count == count
@@ -827,7 +1065,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.BigPathedMaterialGroup
     assert counter.name == "BigPathedMaterialGroup"
     assert counter.count == count
@@ -836,7 +1074,7 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
 
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigPathedMaterialGroup
     assert counter.name == "BigPathedMaterialGroup"
     assert counter.count == count
@@ -846,7 +1084,7 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     # Test ._bexfil
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_1_0)  #
+    counter = Counter(qb64=qsc, version=Vrsn_1_0)  #
     code = counter.code
     count = counter.count
     qb2 = counter.qb2
@@ -871,7 +1109,7 @@ def test_counter_v1():
     qscb2 = decodeB64(qscb)
 
     # strip ignored if qb64
-    counter = Counter(qb64=qsc, strip=True, gvrsn=Vrsn_1_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, strip=True, version=Vrsn_1_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -881,7 +1119,7 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     ims = bytearray(qscb)  # test with qb64b
-    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # strip
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # strip
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
@@ -892,7 +1130,7 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     ims = bytearray(qscb2)  # test with qb2
-    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
@@ -905,7 +1143,7 @@ def test_counter_v1():
     # test with longer ims for qb64b
     extra = b"ABCD"
     ims = bytearray(qscb + b"ABCD")
-    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)
     assert counter.qb64b == qscb
     assert len(counter.qb64b) == counter.sizes[counter.code].fs
     assert ims == extra
@@ -913,7 +1151,7 @@ def test_counter_v1():
     # test with longer ims for qb2
     extra = bytearray([1, 2, 3, 4, 5])
     ims = bytearray(qscb2) + extra
-    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb2) == counter.sizes[counter.code].fs * 3 // 4
     assert ims == extra
@@ -922,21 +1160,21 @@ def test_counter_v1():
 
     ims = bytes(qscb)  # test with qb64b
     with pytest.raises(TypeError):
-        counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # strip
+        counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # strip
 
     ims = bytes(qscb2)  # test with qb2
     with pytest.raises(TypeError):
-        counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)
+        counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)
 
     # test with big codes index=1024
     count = 1024
     qsc = CtrDex.BigAttachmentGroup + intToB64(count, l=5)
-    assert qsc == '-0VAAAQA'
+    assert qsc == '--VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
-    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_1_0)  # test with bytes not str
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_1_0)  # test with bytes not str
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.name == "BigAttachmentGroup"
     assert counter.count == count
@@ -948,7 +1186,7 @@ def test_counter_v1():
     assert not ims
 
     ims = bytearray(qscb2)
-    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_1_0)  # test with qb2
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_1_0)  # test with qb2
     assert counter.code == CtrDex.BigAttachmentGroup
     assert counter.name == "BigAttachmentGroup"
     assert counter.count == count
@@ -966,13 +1204,13 @@ def test_counter_v1():
     assert genver == 'AAA'
     assert genverint == b64ToInt(genver)
     qsc = CtrDex.KERIACDCGenusVersion + genver
-    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    assert qsc == '-_AAAAAA'  # keri Cesr version 0.0.0
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       count=genverint,
-                      gvrsn=Vrsn_1_0)
+                      version=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.name == "KERIACDCGenusVersion"
     assert counter.count == genverint
@@ -983,13 +1221,12 @@ def test_counter_v1():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
     assert counter.codes == counting.CtrDex_1_0
-    #assert counter.tags == counting.Tags_1_0
     assert counter.sizes == Counter.Sizes[1][0]
 
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       countB64=genver,
-                      gvrsn=Vrsn_1_0)
+                      version=Vrsn_1_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.name == "KERIACDCGenusVersion"
     assert counter.count == genverint
@@ -999,6 +1236,19 @@ def test_counter_v1():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
+
+    # test byteCount
+    count = 10  # quadlets
+    counter = Counter(count=count, code=Codens.AttachmentGroup, version=Vrsn_1_0)
+    assert counter.code == CtrDex.AttachmentGroup
+    assert counter.name == "AttachmentGroup"
+    assert counter.version == Vrsn_1_0
+    assert counter.count == count
+    assert counter.byteCount() == count * 4
+    assert counter.byteCount(cold=Colds.txt) == count * 4
+    assert counter.byteCount(cold=Colds.bny) == count * 3
+    with pytest.raises(ValueError):
+        counter.byteCount(cold=Colds.msg)
 
     """End Test"""
 
@@ -1016,7 +1266,7 @@ def test_counter_v2():
     # create code manually
     count = 1
     qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
-    assert qsc == '-JAB'
+    assert qsc == '-KAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1030,6 +1280,8 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
     assert counter.fullSize == 4
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 3
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
     assert counter.codes == counting.CtrDex_2_0
@@ -1039,7 +1291,7 @@ def test_counter_v2():
 
 
     # default count = 1
-    counter = Counter(code=CtrDex.ControllerIdxSigs, gvrsn=Vrsn_2_0)
+    counter = Counter(code=CtrDex.ControllerIdxSigs, version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1048,7 +1300,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1057,7 +1309,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1066,7 +1318,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1077,33 +1329,33 @@ def test_counter_v2():
 
     # test truncates extra bytes from qb64 parameter
     longqsc64 = qsc + "ABCD"
-    counter = Counter(qb64=longqsc64, gvrsn=Vrsn_2_0)
+    counter = Counter(qb64=longqsc64, version=Vrsn_2_0)
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb64=shortqsc64, gvrsn=Vrsn_2_0)
+        counter = Counter(qb64=shortqsc64, version=Vrsn_2_0)
 
     # test truncates extra bytes from qb2 parameter
     longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
-    counter = Counter(qb2=longqscb2, gvrsn=Vrsn_2_0)
+    counter = Counter(qb2=longqscb2, version=Vrsn_2_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb64) == counter.sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
     with pytest.raises(kering.ShortageError):
-        counter = Counter(qb2=shortqscb2, gvrsn=Vrsn_2_0)
+        counter = Counter(qb2=shortqscb2, version=Vrsn_2_0)
 
     # test with non-zero count=5
     count = 5
     qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
-    assert qsc == '-JAF'
+    assert qsc == '-KAF'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_2_0)
+    counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1114,7 +1366,7 @@ def test_counter_v2():
 
     counter = Counter(Codens.ControllerIdxSigs,
                       count=count,
-                      gvrsn=Vrsn_2_0)
+                      version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1126,7 +1378,7 @@ def test_counter_v2():
     # test keyword with code name
     counter = Counter(code=Codens.ControllerIdxSigs,
                       count=count,
-                      gvrsn=Vrsn_2_0)
+                      version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1135,7 +1387,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, gvrsn=Vrsn_2_0)
+    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1144,7 +1396,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1153,7 +1405,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1162,7 +1414,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1172,7 +1424,7 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
 
     # Test ._bexfil
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)
+    counter = Counter(qb64=qsc, version=Vrsn_2_0)
     code = counter.code
     count = counter.count
     qb2 = counter.qb2
@@ -1192,12 +1444,12 @@ def test_counter_v2():
     # create code manually
     count = 1
     qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
-    assert qsc == '-JAB'
+    assert qsc == '-KAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     # strip ignored if qb64
-    counter = Counter(qb64=qsc, strip=True, gvrsn=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, strip=True, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
     assert counter.count == count
@@ -1207,7 +1459,7 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
 
     ims = bytearray(qscb)  # test with qb64b
-    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # strip
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # strip
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
@@ -1218,7 +1470,7 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
 
     ims = bytearray(qscb2)  # test with qb2
-    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
     assert not ims  # deleted
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.name == "ControllerIdxSigs"
@@ -1231,7 +1483,7 @@ def test_counter_v2():
     # test with longer ims for qb64b
     extra = b"ABCD"
     ims = bytearray(qscb + b"ABCD")
-    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)
     assert counter.qb64b == qscb
     assert len(counter.qb64b) == counter.sizes[counter.code].fs
     assert ims == extra
@@ -1239,7 +1491,7 @@ def test_counter_v2():
     # test with longer ims for qb2
     extra = bytearray([1, 2, 3, 4, 5])
     ims = bytearray(qscb2) + extra
-    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
     assert counter.qb2 == qscb2
     assert len(counter.qb2) == counter.sizes[counter.code].fs * 3 // 4
     assert ims == extra
@@ -1248,20 +1500,32 @@ def test_counter_v2():
 
     ims = bytes(qscb)  # test with qb64b
     with pytest.raises(TypeError):
-        counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # strip
+        counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # strip
 
     ims = bytes(qscb2)  # test with qb2
     with pytest.raises(TypeError):
-        counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)
+        counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)
 
     # test with big codes count=1024
     count = 1024
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAAAQA'
+    assert qsc == '--AAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigGenericGroup, count=count, gvrsn=Vrsn_2_0)
+    counter = Counter(code=CtrDex.BigGenericGroup, count=count, version=Vrsn_2_0)
+    assert counter.code == CtrDex.BigGenericGroup
+    assert counter.name == "BigGenericGroup"
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert counter.version == Vrsn_2_0
+    assert counter.fullSize == 8
+    assert counter.byteSize(cold=Colds.txt) == counter.fullSize
+    assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 6
+
+    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1270,7 +1534,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1279,16 +1543,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
-    assert counter.code == CtrDex.BigGenericGroup
-    assert counter.name == "BigGenericGroup"
-    assert counter.count == count
-    assert counter.qb64b == qscb
-    assert counter.qb64 == qsc
-    assert counter.qb2 == qscb2
-    assert counter.version == Vrsn_2_0
-
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1300,12 +1555,12 @@ def test_counter_v2():
     # test ims with big codes count=1024
     count = 1024
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAAAQA'
+    assert qsc == '--AAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
-    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1316,7 +1571,7 @@ def test_counter_v2():
     assert not ims
 
     ims = bytearray(qscb2)
-    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1329,11 +1584,11 @@ def test_counter_v2():
     # test with big codes count=8193
     count = 8193
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAACAB'
+    assert qsc == '--AAACAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigGenericGroup, count=count, gvrsn=Vrsn_2_0)
+    counter = Counter(code=CtrDex.BigGenericGroup, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup == counter.hard
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1345,7 +1600,7 @@ def test_counter_v2():
     assert counter.soft == 'AACAB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
-    counter = Counter(qb64b=qscb, gvrsn=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=qscb, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1354,7 +1609,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb64=qsc, gvrsn=Vrsn_2_0)  # test with str not bytes
+    counter = Counter(qb64=qsc, version=Vrsn_2_0)  # test with str not bytes
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1363,7 +1618,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
 
-    counter = Counter(qb2=qscb2, gvrsn=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=qscb2, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1375,12 +1630,12 @@ def test_counter_v2():
     # test ims with big codes count=8193
     count = 8193
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAACAB'
+    assert qsc == '--AAACAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
-    counter = Counter(qb64b=ims, strip=True, gvrsn=Vrsn_2_0)  # test with bytes not str
+    counter = Counter(qb64b=ims, strip=True, version=Vrsn_2_0)  # test with bytes not str
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1392,7 +1647,7 @@ def test_counter_v2():
     assert not ims
 
     ims = bytearray(qscb2)
-    counter = Counter(qb2=ims, strip=True, gvrsn=Vrsn_2_0)  # test with qb2
+    counter = Counter(qb2=ims, strip=True, version=Vrsn_2_0)  # test with qb2
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1405,11 +1660,11 @@ def test_counter_v2():
     # test with promotion from small to big codes with count=8193
     count = 8193
     qsc = CtrDex.BigGenericGroup + intToB64(count, l=5)
-    assert qsc == '-0AAACAB'
+    assert qsc == '--AAACAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.GenericGroup, count=count, gvrsn=Vrsn_2_0)
+    counter = Counter(code=CtrDex.GenericGroup, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup == counter.hard
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1420,7 +1675,7 @@ def test_counter_v2():
     assert counter.soft =='AACAB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
 
-    counter = Counter(Codens.GenericGroup, count=count, gvrsn=Vrsn_2_0)
+    counter = Counter(Codens.GenericGroup, count=count, version=Vrsn_2_0)
     assert counter.code == CtrDex.BigGenericGroup
     assert counter.name == "BigGenericGroup"
     assert counter.count == count
@@ -1435,13 +1690,13 @@ def test_counter_v2():
     assert genver == 'AAA'
     assert genverint == b64ToInt(genver)
     qsc = CtrDex.KERIACDCGenusVersion + genver
-    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    assert qsc == '-_AAAAAA'  # keri Cesr version 0.0.0
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       count=genverint,
-                      gvrsn=Vrsn_2_0)
+                      version=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.name == "KERIACDCGenusVersion"
     assert counter.count == genverint
@@ -1453,12 +1708,11 @@ def test_counter_v2():
     assert counter.version == Vrsn_2_0
     assert counter.fullSize == 8
     assert counter.codes == counting.CtrDex_2_0
-    #assert counter.tags == counting.Tags_2_0
     assert counter.sizes == Counter.Sizes[2][0]
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,
                       countB64=genver,
-                      gvrsn=Vrsn_2_0)
+                      version=Vrsn_2_0)
     assert counter.code == CtrDex.KERIACDCGenusVersion
     assert counter.name == "KERIACDCGenusVersion"
     assert counter.count == genverint
@@ -1468,6 +1722,19 @@ def test_counter_v2():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
+
+    # test byteCount
+    count = 10  # quadlets
+    counter = Counter(count=count, code=Codens.AttachmentGroup, version=Vrsn_2_0)
+    assert counter.code == CtrDex.AttachmentGroup
+    assert counter.name == "AttachmentGroup"
+    assert counter.version == Vrsn_2_0
+    assert counter.count == count
+    assert counter.byteCount() == count * 4
+    assert counter.byteCount(cold=Colds.txt) == count * 4
+    assert counter.byteCount(cold=Colds.bny) == count * 3
+    with pytest.raises(ValueError):
+        counter.byteCount(cold=Colds.msg)
 
     """End Test"""
 

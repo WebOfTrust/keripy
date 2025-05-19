@@ -72,23 +72,23 @@ def test_serder_class():
     assert Serder.ClanCodes
     assert Serder.ClanCodes == \
     {
-        'SealDigest': '-V',
-        'SealRoot': '-W',
-        'SealBacker': '-X',
-        'SealLast': '-Y',
-        'SealTrans': '-Q',
-        'SealEvent': '-R'
+        'SealDigest': '-Q',
+        'SealRoot': '-R',
+        'SealBacker': '-V',
+        'SealLast': '-U',
+        'SealTrans': '-T',
+        'SealEvent': '-S'
     }
 
     assert Serder.CodeClans
     assert Serder.CodeClans == \
     {
-        '-V': 'SealDigest',
-        '-W': 'SealRoot',
-        '-X': 'SealBacker',
-        '-Y': 'SealLast',
-        '-Q': 'SealTrans',
-        '-R': 'SealEvent'
+        '-Q': 'SealDigest',
+        '-R': 'SealRoot',
+        '-V': 'SealBacker',
+        '-U': 'SealLast',
+        '-T': 'SealTrans',
+        '-S': 'SealEvent'
     }
 
 
@@ -157,7 +157,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -178,7 +178,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -192,7 +192,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -206,7 +206,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -218,7 +218,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -245,7 +245,7 @@ def test_serder():
     assert stream == extra
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -279,7 +279,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.cbor
     assert serder.said == said
@@ -300,7 +300,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.cbor
     assert serder.said == said
@@ -314,7 +314,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.cbor
     assert serder.said == said
@@ -342,7 +342,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.mgpk
     assert serder.said == said
@@ -363,7 +363,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.mgpk
     assert serder.said == said
@@ -377,7 +377,7 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.mgpk
     assert serder.said == said
@@ -415,7 +415,7 @@ def test_serder():
     serder = Serder(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -424,7 +424,7 @@ def test_serder():
     serder = Serder(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -466,7 +466,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -476,7 +476,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -550,7 +550,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -560,7 +560,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -602,7 +602,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -612,7 +612,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -755,7 +755,7 @@ def test_serderkeri():
     serder = SerderKERI(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -787,7 +787,7 @@ def test_serderkeri():
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -855,7 +855,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -890,7 +890,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -997,7 +997,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1032,7 +1032,7 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1117,7 +1117,7 @@ def test_serderkeri_rot():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1147,7 +1147,7 @@ def test_serderkeri_rot():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1223,7 +1223,7 @@ def test_serderkeri_ixn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1256,7 +1256,7 @@ def test_serderkeri_ixn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1355,7 +1355,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1388,7 +1388,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1520,7 +1520,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1553,7 +1553,7 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1644,7 +1644,7 @@ def test_serderkeri_drt():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1677,7 +1677,7 @@ def test_serderkeri_drt():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1746,7 +1746,7 @@ def test_serderkeri_rct():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1774,7 +1774,7 @@ def test_serderkeri_rct():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1830,7 +1830,7 @@ def test_serderkeri_qry():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1861,7 +1861,7 @@ def test_serderkeri_qry():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1920,7 +1920,7 @@ def test_serderkeri_rpy():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -1948,7 +1948,7 @@ def test_serderkeri_rpy():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2006,7 +2006,7 @@ def test_serderkeri_pro():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2037,7 +2037,7 @@ def test_serderkeri_pro():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2095,7 +2095,7 @@ def test_serderkeri_bar():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2126,7 +2126,7 @@ def test_serderkeri_bar():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2191,7 +2191,7 @@ def test_serderkeri_exn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2222,7 +2222,7 @@ def test_serderkeri_exn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2287,7 +2287,7 @@ def test_serderkeri_vcp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2317,7 +2317,7 @@ def test_serderkeri_vcp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2362,7 +2362,7 @@ def test_serderacdc():
                           b'-BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}')
 
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Kinds.json
     assert serder.said == 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT'
@@ -2394,7 +2394,7 @@ def test_serderacdc():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2406,7 +2406,7 @@ def test_serderacdc():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2440,7 +2440,7 @@ def test_serder_v2():
     #Test Serder bare makify bootstrap for ACDC JSON
     serder = Serder(makify=True,
                     proto=Protocols.acdc,
-                    vrsn=kering.Vrsn_2_0)  # make defaults for ACDC
+                    pvrsn=kering.Vrsn_2_0)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDCCAAJSONAABZ.',
                             'd': 'EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy',
                             'i': '',
@@ -2448,7 +2448,7 @@ def test_serder_v2():
     assert serder.raw == (b'{"v":"ACDCCAAJSONAABZ.","d":"EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy","'
                           b'i":"","s":""}')
     assert serder.verify()
-    assert serder.vrsn == serder.version == kering.Vrsn_2_0
+    assert serder.pvrsn == serder.pvrsn == kering.Vrsn_2_0
     sad = serder.sad
     raw = serder.raw
     said = serder.said
@@ -2459,7 +2459,7 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_2_0 == serder.version
+    assert serder.pvrsn == kering.Vrsn_2_0 == serder.pvrsn
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2480,7 +2480,7 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_2_0 == serder.version
+    assert serder.pvrsn == kering.Vrsn_2_0 == serder.pvrsn
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2494,7 +2494,7 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == kering.Vrsn_2_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2504,7 +2504,7 @@ def test_serder_v2():
 
     # test default
     serder = Serder(makify=True,
-                    vrsn=kering.Vrsn_2_0)  # make defaults for default proto
+                    pvrsn=kering.Vrsn_2_0)  # make defaults for default proto
 
 
     assert serder.sad == {'v': 'KERICAAJSONAADO.',
@@ -2525,7 +2525,7 @@ def test_serder_v2():
                         b',"k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
     assert serder.verify()
     assert serder.proto == Protocols.keri == Serder.Proto  # default
-    assert serder.vrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == kering.Vrsn_2_0
     assert serder.kind == kering.Kinds.json == Serder.Kind  # default
     assert serder.ilk == kering.Ilks.icp  # default first one
 
@@ -2610,7 +2610,7 @@ def test_cesr_native_dumps():
     {
         'v': 'KERICAACESRAAAA.',
         't': 'icp',
-        'd': 'EEx4oxGYbNrd6nZsdGu2KdN4MSDGD5IWS7hXjST7r8ew',
+        'd': 'EAXi2ueSrATBdAYAey6hA9LOS6WuITh90eq4L_SM0C4o',
         'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
         's': '0',
         'kt': '1',
@@ -2624,9 +2624,9 @@ def test_cesr_native_dumps():
     }
 
 
-    assert serder.raw == (b'-FAtYKERICAAXicpEEx4oxGYbNrd6nZsdGu2KdN4MSDGD5IWS7hXjST7r8ewDG9X'
-                          b'hvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-IALDG9XhvcVryHj'
-                          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAA-IAAMAAA-IAA-IAA-IAA')
+    assert serder.raw == (b'-FAtYKERICAAXicpEAXi2ueSrATBdAYAey6hA9LOS6WuITh90eq4L_SM0C4oDG9X'
+                          b'hvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-JALDG9XhvcVryHj'
+                          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAA-JAAMAAA-JAA-JAA-JAA')
     assert len(serder.raw) == serder.size == 184
     sizeh = serder.raw[2:4]
     assert sizeh == b"At"
@@ -2692,7 +2692,7 @@ def test_cesr_native_dumps():
                     kind=kering.Kinds.cesr)
 
     pre = serder.pre
-    assert pre == 'EKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi'
+    assert pre == 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g'
     said = serder.said
     assert said == pre
 
@@ -2700,63 +2700,61 @@ def test_cesr_native_dumps():
     {
         'v': 'KERICAACESRAAAA.',
         't': 'icp',
-        'd': 'EKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi',
-        'i': 'EKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi',
+        'd': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
+        'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
         's': '0',
         'kt': '2',
-        'k':
-        [
-            'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-            'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-            'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-        ],
+        'k': [
+                'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+             ],
         'nt': '2',
-        'n':
-        [
-            'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_',
-            'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG',
-            'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
-        ],
+        'n': [
+                'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_',
+                'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG',
+                'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+             ],
         'bt': '3',
-        'b':
-        [
-            'BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-            'BK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-            'BMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-        ],
+        'b': [
+                'BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                'BK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                'BMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+             ],
         'c': ['DND'],
-        'a':
-        [
-            {
-                'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-                's': '0',
-                'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
-            },
-            {
-                'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-                's': '1',
-                'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
-            },
-            {
-                's': 'f',
-                'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
-            }
-        ]
+        'a': [
+                {
+                    'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                    's': '0',
+                    'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+                },
+                {
+                    'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                    's': '1',
+                    'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
+                },
+                {
+                    's': 'f',
+                    'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+                }
+             ]
     }
 
-    assert serder.raw == (b'-FDCYKERICAAXicpEKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiEKIu'
-          b'A20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiMAAAMAAC-IAhDG9XhvcVryHj'
+
+    assert serder.raw == (b'-FDCYKERICAAXicpEOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gEOPd'
+          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAAAMAAC-JAhDG9XhvcVryHj'
           b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
-          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-IAh'
+          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAh'
           b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
           b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
-          b'ZEyPMAAD-IAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
+          b'ZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
           b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
-          b'gXZ2WYbr3AiPY1M0-IABXDND-IA8-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+          b'gXZ2WYbr3AiPY1M0-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
           b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
           b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
           b'ZJGJqQZpZEyP')
+
 
     assert len(serder.raw) == serder.size == 780
     sizeh = serder.raw[2:4]
@@ -2765,18 +2763,18 @@ def test_cesr_native_dumps():
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert rawqb64 == (b'-FDCYKERICAAXicpEKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiEKIu'
-          b'A20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiMAAAMAAC-IAhDG9XhvcVryHj'
+    assert rawqb64 == (b'-FDCYKERICAAXicpEOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gEOPd'
+          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAAAMAAC-JAhDG9XhvcVryHj'
           b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
-          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-IAh'
+          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAh'
           b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
           b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
-          b'ZEyPMAAD-IAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
+          b'ZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
           b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
-          b'gXZ2WYbr3AiPY1M0-IABXDND-IA8-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+          b'gXZ2WYbr3AiPY1M0-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
           b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
           b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
           b'ZJGJqQZpZEyP')
 
 
@@ -2845,16 +2843,16 @@ def test_cesr_native_dumps():
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EHXLwMJsZLyG643VW8Do1cqqiMxD_E65Mc3Z1we6vTaR'
+    assert said == 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN'
 
     assert serder.sad == \
     {
         'v': 'KERICAACESRAAAA.',
         't': 'ixn',
-        'd': 'EHXLwMJsZLyG643VW8Do1cqqiMxD_E65Mc3Z1we6vTaR',
-        'i': 'EKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi',
+        'd': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
+        'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
         's': '1',
-        'p': 'EKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi',
+        'p': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
         'a':
         [
             {
@@ -2879,13 +2877,13 @@ def test_cesr_native_dumps():
         ]
     }
 
-    assert serder.raw == (b'-FB6YKERICAAXixnEHXLwMJsZLyG643VW8Do1cqqiMxD_E65Mc3Z1we6vTaREKIu'
-          b'A20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiMAABEKIuA20I5q6IrgAHrX-g'
-          b'kAt4Og17Ebu5CDBrRvh8RToi-IBU-RAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+    assert serder.raw == (b'-FB6YKERICAAXixnEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aNEOPd'
+          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAABEOPdbYtTSlD5eY4lR45O'
+          b'LM1ZOuDZQAhUKUra4k0N9U8g-JBU-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
           b'4fBJre3NGwTQMAACEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
           b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAAiEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-QAMMABDEEbufBpvagqe9kijKISOoQPYFEOpy22C'
-          b'ZJGJqQZpZEyP-RAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACA'
+          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMABDEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+          b'ZJGJqQZpZEyP-SAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACA'
           b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_')
 
     assert len(serder.raw) == serder.size == 492
@@ -2939,16 +2937,16 @@ def test_cesr_native_dumps():
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EDHlTlOcSXZInbTE4iXzb1iFjZcxJZn3C3UXhckb3uQm'
+    assert said == 'EHFimzZzXYC2GXauZOZpj5qGhMHoKalUVF9sLmLNb99o'
 
     assert serder.sad == \
     {
         'v': 'KERICAACESRAAAA.',
         't': 'rot',
-        'd': 'EDHlTlOcSXZInbTE4iXzb1iFjZcxJZn3C3UXhckb3uQm',
-        'i': 'EKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi',
+        'd': 'EHFimzZzXYC2GXauZOZpj5qGhMHoKalUVF9sLmLNb99o',
+        'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
         's': '2',
-        'p': 'EHXLwMJsZLyG643VW8Do1cqqiMxD_E65Mc3Z1we6vTaR',
+        'p': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
         'kt': '2',
         'k':
         [
@@ -2971,15 +2969,15 @@ def test_cesr_native_dumps():
     }
 
 
-    assert serder.raw == (b'-FCGYKERICAAXrotEDHlTlOcSXZInbTE4iXzb1iFjZcxJZn3C3UXhckb3uQmEKIu'
-          b'A20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToiMAACEHXLwMJsZLyG643VW8Do'
-          b'1cqqiMxD_E65Mc3Z1we6vTaRMAAC-IAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1'
+    assert serder.raw == (b'-FCGYKERICAAXrotEHFimzZzXYC2GXauZOZpj5qGhMHoKalUVF9sLmLNb99oEOPd'
+          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAACEMFNZfsBmXvA-pkmetvM'
+          b'jTux9bIHnvaaXCsH6uqN1_aNMAAC-JAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1'
           b'k4t2nm1C1A68DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQDKhYdMBe'
-          b'P6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-IAhEBvDSpcj3y0y9W2-1GzY'
+          b'P6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-JAhEBvDSpcj3y0y9W2-1GzY'
           b'J85KEkDIPxu4y_TxAK49k7ciEEb97lh2oOd_yM3meBaRX5xSs8mIeBoPdhOTgVkd'
-          b'31jbECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStgaMAAD-IALBG9XhvcV'
-          b'ryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ-IALBH7p14xo09rob5cEupmo8jSD'
-          b'i35ZOGt1k4t2nm1C1A68-IAA-IAA')
+          b'31jbECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStgaMAAD-JALBG9XhvcV'
+          b'ryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ-JALBH7p14xo09rob5cEupmo8jSD'
+          b'i35ZOGt1k4t2nm1C1A68-JAA-JAA')
 
     assert len(serder.raw) == serder.size == 540
     sizeh = serder.raw[2:4]
@@ -3055,7 +3053,7 @@ def test_cesr_native_dumps():
                     kind=kering.Kinds.cesr)
 
     pre = serder.pre
-    assert pre == 'EKCFMk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjC'
+    assert pre == 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H'
     said = serder.said
     assert said == pre
 
@@ -3063,8 +3061,8 @@ def test_cesr_native_dumps():
     {
         'v': 'KERICAACESRAAAA.',
         't': 'dip',
-        'd': 'EKCFMk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjC',
-        'i': 'EKCFMk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjC',
+        'd': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
+        'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
         's': '0',
         'kt': ['1/2', '1/2', '1/2'],
         'k':
@@ -3109,24 +3107,24 @@ def test_cesr_native_dumps():
                 'd': 'EKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ44DS'
             }
         ],
-        'di': 'EKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi'
+        'di': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g'
     }
 
 
-    assert serder.raw == (b'-FDeYKERICAAXdipEKCFMk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjCEKCF'
-          b'Mk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjCMAAA4AADA1s2c1s2c1s2-IAh'
+    assert serder.raw == (b'-FDeYKERICAAXdipEAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2HEAyd'
+          b'kSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2HMAAA4AADA1s2c1s2c1s2-JAh'
           b'DIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uVDN7WiKyjLLBTK92xayCu'
           b'ddZsBuwPmD2BKrl83h1xEUtiDOE5jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl'
-          b'5nfY4AADA1s2c1s2c1s2-IAhEKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ'
+          b'5nfY4AADA1s2c1s2c1s2-JAhEKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ'
           b'44DSEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZEHgewy_ymPxtSFwu'
-          b'X2KaI_mPmoIUkxClviX3f-M38kCDMAAD-IAhBIR8GACw4z2GC5_XoReU4DMKbqi6'
+          b'X2KaI_mPmoIUkxClviX3f-M38kCDMAAD-JAhBIR8GACw4z2GC5_XoReU4DMKbqi6'
           b'-EdbgDZUAobRb8uVBN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiBOE5'
-          b'jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY-IAA-IBI-RAuDIR8GACw4z2G'
+          b'jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY-JAA-JBI-SAuDIR8GACw4z2G'
           b'C5_XoReU4DMKbqi6-EdbgDZUAobRb8uVMAADEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
           b'iD1D9Qx0MagJ44DSDN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiMAAE'
-          b'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-QAYMAAVEHgewy_ymPxt'
+          b'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-TAYMAAVEHgewy_ymPxt'
           b'SFwuX2KaI_mPmoIUkxClviX3f-M38kCDMD4SEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
-          b'iD1D9Qx0MagJ44DSEKIuA20I5q6IrgAHrX-gkAt4Og17Ebu5CDBrRvh8RToi')
+          b'iD1D9Qx0MagJ44DSEOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g')
 
     assert len(serder.raw) == serder.size == 892
     sizeh = serder.raw[2:4]
@@ -3181,16 +3179,16 @@ def test_cesr_native_dumps():
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EKfRY6YrpqUU0HyKWMGvNtzuZCaeMcIBrdKzHAqpmtTA'
+    assert said == 'ELPki1ox4BKNSKw-dcvh5G0SuTaNpb97aBBZR3ZpX0bX'
 
     assert serder.sad == \
     {
         'v': 'KERICAACESRAAAA.',
         't': 'drt',
-        'd': 'EKfRY6YrpqUU0HyKWMGvNtzuZCaeMcIBrdKzHAqpmtTA',
-        'i': 'EKCFMk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjC',
+        'd': 'ELPki1ox4BKNSKw-dcvh5G0SuTaNpb97aBBZR3ZpX0bX',
+        'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
         's': '1',
-        'p': 'EKCFMk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjC',
+        'p': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
         'kt': '1',
         'k': ['DJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f'],
         'nt': '1',
@@ -3202,12 +3200,12 @@ def test_cesr_native_dumps():
         'a': {}
     }
 
-    assert serder.raw == (b'-FBaYKERICAAXdrtEKfRY6YrpqUU0HyKWMGvNtzuZCaeMcIBrdKzHAqpmtTAEKCF'
-          b'Mk4nmn3t8jdC1pB_-Qmp7w8EROvdYaxgru7vHOjCMAABEKCFMk4nmn3t8jdC1pB_'
-          b'-Qmp7w8EROvdYaxgru7vHOjCMAAB-IALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWl'
-          b'K9NciJop9N4fMAAB-IALENX_LTL97uOSOkA1PEzam9vtmCLPprnbcpi71wXpmhFF'
-          b'MAAD-IALBIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV-IALBJ0pLe3f'
-          b'2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f-IAA-IAA')
+    assert serder.raw == (b'-FBaYKERICAAXdrtELPki1ox4BKNSKw-dcvh5G0SuTaNpb97aBBZR3ZpX0bXEAyd'
+          b'kSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2HMAABEAydkSsFW7KqT1msBF5b'
+          b'H7tn3dzZ-etVVvi2UjIFSF2HMAAB-JALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWl'
+          b'K9NciJop9N4fMAAB-JALENX_LTL97uOSOkA1PEzam9vtmCLPprnbcpi71wXpmhFF'
+          b'MAAD-JALBIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV-JALBJ0pLe3f'
+          b'2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f-JAA-JAA')
 
 
     assert len(serder.raw) == serder.size == 364

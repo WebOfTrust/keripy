@@ -15,7 +15,7 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
                             nabSextets)
 
 from .. import kering
-from ..kering import (Versionage, Vrsn_1_0, Vrsn_2_0)
+from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0)
 
 from ..core.coring import MapDom
 
@@ -28,10 +28,10 @@ class GenusCodex(MapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    KERI_ACDC_SPAC: str = '--AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
-    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    SPAC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    KERI_ACDC_SPAC: str = '-_AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
+    KERI: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    ACDC: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    SPAC: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
 
 
     def __iter__(self):
@@ -44,8 +44,7 @@ GenDex = GenusCodex()  # Make instance
 
 @dataclass(frozen=True)
 class CounterCodex_1_0(MapDom):
-    """
-    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    """CounterCodex_1_0 is codex hard (stable) part of all V1 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
@@ -61,17 +60,19 @@ class CounterCodex_1_0(MapDom):
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    SadPathSigGroups: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
-    RootSadPathSigGroups: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
     PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    BigPathedMaterialGroup: str = '-0L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    GenericGroup: str = '-W'  # Generic Material Quadlets
-    BigGenericGroup: str = '-0W'  # Big Generic Material Quadlets
-    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets
-    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group Quadlets
-    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
+    BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
 
 
     def __iter__(self):
@@ -80,9 +81,105 @@ class CounterCodex_1_0(MapDom):
 CtrDex_1_0 = CounterCodex_1_0()
 
 @dataclass(frozen=True)
-class CounterCodex_2_0(MapDom):
+class QuadTripCodex_1_0(MapDom):
+    """QuadTripCodex_1_0 is codex hard (stable) part of all V1 counter codes that
+    count quadlets/triplets.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
     """
-    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
+    BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+QTDex_1_0 = QuadTripCodex_1_0()
+
+@dataclass(frozen=True)
+class UniversalCodex_1_0(MapDom):
+    """CounterCodex_1_0 is codex hard (stable) part of all V1 universal counter codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+UniDex_1_0 = UniversalCodex_1_0()
+
+@dataclass(frozen=True)
+class SpecialUniversalCodex_1_0(MapDom):
+    """SpecialUniversalCodex_1_0 is codex hard (stable) part of all V1 special
+    universal counter codes that may have optional genus-version override as
+    first code in enclosed group.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
+    BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
+    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
+    BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+SUDex_1_0 = SpecialUniversalCodex_1_0()
+
+@dataclass(frozen=True)
+class MessageUniversalCodex_1_0(MapDom):
+    """MessageUniversalCodex_1_0 is codex hard (stable) part of all V1 message
+    universal counter codes that support CESR native messages. (currently none)
+    But needed for symmetry when changing versions in how lookup happens in parser.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+MUDex_1_0 = MessageUniversalCodex_1_0()
+
+
+@dataclass(frozen=True)
+class CounterCodex_2_0(MapDom):
+    """CounterCodex_2_0 is codex hard (stable) part of all V2 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
@@ -90,63 +187,148 @@ class CounterCodex_2_0(MapDom):
     Example: codex[tag]
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
-    BigGenericGroup: str = '-0A'  # Big Generic Group (Universal with Override).
-    MessageGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageGroup: str = '-0B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
+    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
-    BigAttachmentGroup: str = '-0C'  # Big Attachments Only Group (Universal with Override).
+    BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
-    BigDatagramSegmentGroup: str = '-0D'  # Big Datagram Segment Group (Universal).
+    BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
-    BigESSRWrapperGroup: str = '-0E'  # Big ESSR Wrapper Group (Universal).
+    BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
     FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '-0F'  # Big Fixed Field Message Body Group (Universal).
+    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '-0G'  # Big Field Map Message Body Group (Universal).
-    GenericMapGroup: str = '-H'  # Generic Field Map Group (Universal).
-    BigGenericMapGroup: str = '-0H'  # Big Generic Field Map Group (Universal).
-    GenericListGroup: str = '-I'  # Generic List Group (Universal).
-    BigGenericListGroup: str = '-0I'  # Big Generic List Group (Universal).
-    ControllerIdxSigs: str = '-J'  # Controller Indexed Signature(s) of qb64.
-    BigControllerIdxSigs: str = '-0J'  # Big Controller Indexed Signature(s) of qb64.
-    WitnessIdxSigs: str = '-K'  # Witness Indexed Signature(s) of qb64.
-    BigWitnessIdxSigs: str = '-0K'  # Big Witness Indexed Signature(s) of qb64.
-    NonTransReceiptCouples: str = '-L'  # NonTrans Receipt Couple(s), pre+cig.
-    BigNonTransReceiptCouples: str = '-0L'  # Big NonTrans Receipt Couple(s), pre+cig.
-    TransReceiptQuadruples: str = '-M'  # Trans Receipt Quadruple(s), pre+snu+dig+sig.
-    BigTransReceiptQuadruples: str = '-0M'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
-    FirstSeenReplayCouples: str = '-N'  # First Seen Replay Couple(s), fnu+dts.
-    BigFirstSeenReplayCouples: str = '-0N'  # First Seen Replay Couple(s), fnu+dts.
-    TransIdxSigGroups: str = '-O'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    BigTransIdxSigGroups: str = '-0O'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    TransLastIdxSigGroups: str = '-P'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    BigTransLastIdxSigGroups: str = '-0P'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    BigSealSourceCouples: str = '-0Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    PathedMaterialGroup: str = '-S'  # Pathed Material Group.
-    BigPathedMaterialGroup: str = '-0S'  # Big Pathed Material Group.
-    SadPathSigGroups: str = '-T'  # SAD Path Group(s) sadpath+CtrTransIdxSigGroup(s) of SAID qb64 of content.
-    BigSadPathSigGroups: str = '-0T'  # Big SAD Path Group(s) sadpath+CtrTransIdxSigGroup(s) of SAID qb64 of content.
-    RootSadPathSigGroups: str = '-U'  # Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
-    BigRootSadPathSigGroups: str = '-0U'  # Big Root Path SAD Path Group(s), rootpath+SadPathGroup(s).
-    DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
-    BigDigestSealSingles: str = '-0V'  # Big Digest Seal Single(s), dig of sealed data.
-    MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BigMerkleRootSealSingles: str = '-0W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '-0X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing or sealed event.
-    BigSealSourceLastSingles: str = '-0Y'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
+    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
+    BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
+    GenericListGroup: str = '-J'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '--J'  # Big Generic List Group (Universal).
+    ControllerIdxSigs: str = '-K'  # Controller Indexed Signature(s) of qb64.
+    BigControllerIdxSigs: str = '--K'  # Big Controller Indexed Signature(s) of qb64.
+    WitnessIdxSigs: str = '-L'  # Witness Indexed Signature(s) of qb64.
+    BigWitnessIdxSigs: str = '--L'  # Big Witness Indexed Signature(s) of qb64.
+    NonTransReceiptCouples: str = '-M'  # NonTrans Receipt Couple(s), pre+cig.
+    BigNonTransReceiptCouples: str = '--M'  # Big NonTrans Receipt Couple(s), pre+cig.
+    TransReceiptQuadruples: str = '-N'  # Trans Receipt Quadruple(s), pre+snu+dig+sig.
+    BigTransReceiptQuadruples: str = '--N'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
+    FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
+    BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
+    PathedMaterialGroup: str = '-P'  # Pathed Material Group.
+    BigPathedMaterialGroup: str = '--P'  # Big Pathed Material Group.
+    DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '--Q'  # Big Digest Seal Single(s), dig of sealed data.
+    MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '--R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    SealSourceTriples: str = '-S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '--S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    SealSourceCouples: str = '-T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '--T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    SealSourceLastSingles: str = '-U'  # Seal Source Couple(s), pre of last source sealing or sealed event.
+    BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
+    BackerRegistrarSealCouples: str = '-V'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    TransIdxSigGroups: str = '-W'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    BigTransIdxSigGroups: str = '--W'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    TransLastIdxSigGroups: str = '-X'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
+    BigTransLastIdxSigGroups: str = '--X'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
-    BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group.
-    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
+    BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
 CtrDex_2_0 = CounterCodex_2_0()
+
+@dataclass(frozen=True)
+class UniversalCodex_2_0(MapDom):
+    """CounterCodex_2_0 is codex hard (stable) part of all V2 universal counter codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    GenericGroup: str = '-A'  # Generic Group (Universal with Override).
+    BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
+    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
+    BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
+    DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
+    BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
+    ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
+    BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
+    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
+    BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
+    GenericListGroup: str = '-J'  # Generic List Group (Universal).
+    BigGenericListGroup: str = '--J'  # Big Generic List Group (Universal).
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+UniDex_2_0 = UniversalCodex_2_0()
+
+@dataclass(frozen=True)
+class SpecialUniversalCodex_2_0(MapDom):
+    """SpecialUniversalCodex_2_0 is codex hard (stable) part of all V2 special
+    universal counter codes that may have optional genus-version override as
+    first code in enclosed group.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    GenericGroup: str = '-A'  # Generic Group (Universal with Override).
+    BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
+    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
+    BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
+
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+SUDex_2_0 = SpecialUniversalCodex_2_0()
+
+@dataclass(frozen=True)
+class MessageUniversalCodex_2_0(MapDom):
+    """MessageUniversalCodex_2_0 is codex hard (stable) part of all V2 message
+    universal counter codes that support CESR native messages.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
+    BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
+    ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
+    BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
+    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+MUDex_2_0 = MessageUniversalCodex_2_0()
+
 
 # CodeNames  is tuple of codes names given by attributes of union of codices
 CodeNames = tuple(asdict(CtrDex_2_0) | asdict(CtrDex_1_0))
@@ -169,18 +351,19 @@ class SealCodex_2_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    SealSourceCouples: str = '-Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    BigSealSourceCouples: str = '-0Q'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
-    SealSourceTriples: str = '-R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    BigSealSourceTriples: str = '-0R'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
-    DigestSealSingles: str = '-V'  # Digest Seal Single(s), dig of sealed data.
-    BigDigestSealSingles: str = '-0V'  # Big Digest Seal Single(s), dig of sealed data.
-    MerkleRootSealSingles: str = '-W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BigMerkleRootSealSingles: str = '-0W'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
-    BackerRegistrarSealCouples: str = '-X'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    BigBackerRegistrarSealCouples: str = '-0X'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    SealSourceLastSingles: str = '-Y'  # Seal Source Couple(s), pre of last source sealing event.
-    BigSealSourceLastSingles: str = '-0Y'  # Big Seal Source Couple(s), pre of last source sealing event.
+    DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
+    BigDigestSealSingles: str = '--Q'  # Big Digest Seal Single(s), dig of sealed data.
+    MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    BigMerkleRootSealSingles: str = '--R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
+    SealSourceTriples: str = '-S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    BigSealSourceTriples: str = '--S'  # Seal Source Triple(s), pre+snu+dig of source sealing or sealed event.
+    SealSourceCouples: str = '-T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    BigSealSourceCouples: str = '--T'  # Seal Source Couple(s), snu+dig of source sealing or sealed event.
+    SealSourceLastSingles: str = '-U'  # Seal Source Couple(s), pre of last source sealing event.
+    BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing event.
+    BackerRegistrarSealCouples: str = '-V'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -216,28 +399,28 @@ class Counter:
 
 
     Properties:
-        .version (Versionage): current CESR code table protocol genus version
-        .codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
-        .sizes (dict): version specific sizes table
-        .code (str): hard part of derivation code to indicate cypher suite
-        .raw (bytes): crypto material only without code
-        .pad  (int): number of pad chars given raw
-        .count (int): count of quadlets/triplets of following framed material
+        version (Versionage): current CESR code table protocol genus version
+        codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
+        sizes (dict): version specific sizes table
+        code (str): hard part of derivation code to indicate cypher suite
+        raw (bytes): crypto material only without code
+        pad  (int): number of pad chars given raw
+        count (int): count of quadlets/triplets of following framed material
                       (not including code)
-        .qb64 (str | bytes | bytearray): in Base64 fully qualified with
+        qb64 (str | bytes | bytearray): in Base64 fully qualified with
                                           derivation code + crypto mat
-        .qb64b (bytes | bytearray): in Base64 fully qualified with
+        qb64b (bytes | bytearray): in Base64 fully qualified with
                                     derivation code + crypto mat
-        .qb2  (bytes | bytearray): in binary with derivation code +
+        qb2  (bytes | bytearray): in binary with derivation code +
                                   crypto material
 
     Hidden:
-        ._version (Versionage): value for .version property
-        ._codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
-        ._sizes (dict): version specific sizes table
-        ._code (str): value for .code property
-        ._raw (bytes): value for .raw property
-        ._count (int): value for .count property
+        _version (Versionage): value for .version property
+        _codes (CounterCodex_1_0 | CounterCodex_1_0): version specific codex
+        _sizes (dict): version specific sizes table
+        _code (str): value for .code property
+        _raw (bytes): value for .raw property
+        _count (int): value for .count property
 
 
     Versioning:
@@ -315,6 +498,32 @@ class Counter:
         },
     }
 
+    # special universal codes
+    SUCodes = \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: SUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: SUDex_2_0,
+        },
+    }
+
+    # special universal codes
+    MUCodes = \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: MUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: MUDex_2_0,
+        },
+    }
+
 
     # invert dataclass codenames: codes to dict codes: codenames
     Names = copy.deepcopy(Codes)  # make deep nested copy so can invert nested values
@@ -323,15 +532,13 @@ class Counter:
             minor[key] = {val: key for key, val in asdict(minor[key]).items()}
 
 
-
-
     # Hards table maps from bytes Base64 first two code chars to int of
     # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
     # is always > 0 and hs + ss = fs always
     Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
-    Hards.update([('-0', 3)])
-    Hards.update([('--', 5)])
+    Hards.update([('--', 3)])
+    Hards.update([('-_', 5)])
 
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
@@ -357,17 +564,19 @@ class Counter:
                 '-G': Cizage(hs=2, ss=2, fs=4),
                 '-H': Cizage(hs=2, ss=2, fs=4),
                 '-I': Cizage(hs=2, ss=2, fs=4),
-                '-J': Cizage(hs=2, ss=2, fs=4),
-                '-K': Cizage(hs=2, ss=2, fs=4),
                 '-L': Cizage(hs=2, ss=2, fs=4),
-                '-0L': Cizage(hs=3, ss=5, fs=8),
+                '--L': Cizage(hs=3, ss=5, fs=8),
+                '-T': Cizage(hs=2, ss=2, fs=4),
+                '--T': Cizage(hs=3, ss=5, fs=8),
+                '-U': Cizage(hs=2, ss=2, fs=4),
+                '--U': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
-                '-0V': Cizage(hs=3, ss=5, fs=8),
+                '--V': Cizage(hs=3, ss=5, fs=8),
                 '-W': Cizage(hs=2, ss=2, fs=4),
-                '-0W': Cizage(hs=3, ss=5, fs=8),
+                '--W': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
-                '-0Z': Cizage(hs=3, ss=5, fs=8),
-                '--AAA': Cizage(hs=5, ss=3, fs=8),
+                '--Z': Cizage(hs=3, ss=5, fs=8),
+                '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
         Vrsn_2_0.major: \
@@ -375,58 +584,56 @@ class Counter:
             Vrsn_2_0.minor: \
             {
                 '-A': Cizage(hs=2, ss=2, fs=4),
-                '-0A': Cizage(hs=3, ss=5, fs=8),
+                '--A': Cizage(hs=3, ss=5, fs=8),
                 '-B': Cizage(hs=2, ss=2, fs=4),
-                '-0B': Cizage(hs=3, ss=5, fs=8),
+                '--B': Cizage(hs=3, ss=5, fs=8),
                 '-C': Cizage(hs=2, ss=2, fs=4),
-                '-0C': Cizage(hs=3, ss=5, fs=8),
+                '--C': Cizage(hs=3, ss=5, fs=8),
                 '-D': Cizage(hs=2, ss=2, fs=4),
-                '-0D': Cizage(hs=3, ss=5, fs=8),
+                '--D': Cizage(hs=3, ss=5, fs=8),
                 '-E': Cizage(hs=2, ss=2, fs=4),
-                '-0E': Cizage(hs=3, ss=5, fs=8),
+                '--E': Cizage(hs=3, ss=5, fs=8),
                 '-F': Cizage(hs=2, ss=2, fs=4),
-                '-0F': Cizage(hs=3, ss=5, fs=8),
+                '--F': Cizage(hs=3, ss=5, fs=8),
                 '-G': Cizage(hs=2, ss=2, fs=4),
-                '-0G': Cizage(hs=3, ss=5, fs=8,),
+                '--G': Cizage(hs=3, ss=5, fs=8,),
                 '-H': Cizage(hs=2, ss=2, fs=4),
-                '-0H': Cizage(hs=3, ss=5, fs=8),
+                '--H': Cizage(hs=3, ss=5, fs=8),
                 '-I': Cizage(hs=2, ss=2, fs=4),
-                '-0I': Cizage(hs=3, ss=5, fs=8),
+                '--I': Cizage(hs=3, ss=5, fs=8),
                 '-J': Cizage(hs=2, ss=2, fs=4,),
-                '-0J': Cizage(hs=3, ss=5, fs=8),
+                '--J': Cizage(hs=3, ss=5, fs=8),
                 '-K': Cizage(hs=2, ss=2, fs=4),
-                '-0K': Cizage(hs=3, ss=5, fs=8),
+                '--K': Cizage(hs=3, ss=5, fs=8),
                 '-L': Cizage(hs=2, ss=2, fs=4),
-                '-0L': Cizage(hs=3, ss=5, fs=8),
+                '--L': Cizage(hs=3, ss=5, fs=8),
                 '-M': Cizage(hs=2, ss=2, fs=4),
-                '-0M': Cizage(hs=3, ss=5, fs=8),
+                '--M': Cizage(hs=3, ss=5, fs=8),
                 '-N': Cizage(hs=2, ss=2, fs=4),
-                '-0N': Cizage(hs=3, ss=5, fs=8),
+                '--N': Cizage(hs=3, ss=5, fs=8),
                 '-O': Cizage(hs=2, ss=2, fs=4),
-                '-0O': Cizage(hs=3, ss=5, fs=8),
+                '--O': Cizage(hs=3, ss=5, fs=8),
                 '-P': Cizage(hs=2, ss=2, fs=4),
-                '-0P': Cizage(hs=3, ss=5, fs=8),
+                '--P': Cizage(hs=3, ss=5, fs=8),
                 '-Q': Cizage(hs=2, ss=2, fs=4),
-                '-0Q': Cizage(hs=3, ss=5, fs=8),
+                '--Q': Cizage(hs=3, ss=5, fs=8),
                 '-R': Cizage(hs=2, ss=2, fs=4),
-                '-0R': Cizage(hs=3, ss=5, fs=8),
+                '--R': Cizage(hs=3, ss=5, fs=8),
                 '-S': Cizage(hs=2, ss=2, fs=4),
-                '-0S': Cizage(hs=3, ss=5, fs=8),
+                '--S': Cizage(hs=3, ss=5, fs=8),
                 '-T': Cizage(hs=2, ss=2, fs=4),
-                '-0T': Cizage(hs=3, ss=5, fs=8),
+                '--T': Cizage(hs=3, ss=5, fs=8),
                 '-U': Cizage(hs=2, ss=2, fs=4),
-                '-0U': Cizage(hs=3, ss=5, fs=8),
+                '--U': Cizage(hs=3, ss=5, fs=8),
                 '-V': Cizage(hs=2, ss=2, fs=4),
-                '-0V': Cizage(hs=3, ss=5, fs=8),
+                '--V': Cizage(hs=3, ss=5, fs=8),
                 '-W': Cizage(hs=2, ss=2, fs=4),
-                '-0W': Cizage(hs=3, ss=5, fs=8),
+                '--W': Cizage(hs=3, ss=5, fs=8),
                 '-X': Cizage(hs=2, ss=2, fs=4),
-                '-0X': Cizage(hs=3, ss=5, fs=8),
-                '-Y': Cizage(hs=2, ss=2, fs=4),
-                '-0Y': Cizage(hs=3, ss=5, fs=8),
+                '--X': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
-                '-0Z': Cizage(hs=3, ss=5, fs=8),
-                '--AAA': Cizage(hs=5, ss=3, fs=8),
+                '--Z': Cizage(hs=3, ss=5, fs=8),
+                '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
     }
@@ -434,7 +641,7 @@ class Counter:
 
     def __init__(self, code=None, *, count=None, countB64=None,
                  qb64b=None, qb64=None, qb2=None, strip=False,
-                 gvrsn=Vrsn_2_0, **kwa):
+                 version=Vrsn_2_0, **kwa):
         """Validate as fully qualified
         Parameters:
             code (str | None):  either stable (hard) part of derivation code or
@@ -448,6 +655,7 @@ class Counter:
                                defaults to 1
             countB64 (str | None): count of framed material in quadlets/triplets
                                 for composition as Base64 representation of int.
+                                useful for genus-version version as count
             qb64b (bytes | bytearray | None): fully qualified crypto material text domain
                 if code nor tag is provided
             qb64 (str | None) fully qualified crypto material text domain
@@ -457,7 +665,7 @@ class Counter:
             strip (bool):  True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip.
                 default False
-            gvrsn (Versionage): instance of genera version of CESR code tables
+            version (Versionage): instance of genera version of CESR code tables
 
 
         Needs either code or qb64b or qb64 or qb2
@@ -467,19 +675,19 @@ class Counter:
         .code and .count
 
         """
-        if gvrsn.major not in self.Sizes:
+        if version.major not in self.Sizes:
             raise kering.InvalidVersionError(f"Unsupported major version="
-                                             f"{gvrsn.major}.")
+                                             f"{version.major}.")
 
-        latest = list(self.Sizes[gvrsn.major])[0]  # get latest minor version
-        if gvrsn.minor > latest:
-            raise kering.InvalidVersionError(f"Minor version={gvrsn.minor} "
+        latest = list(self.Sizes[version.major])[-1]  # get latest supported minor version
+        if version.minor > latest:
+            raise kering.InvalidVersionError(f"Minor version={version.minor} "
                                              f" exceeds latest supported minor"
                                              f" version={latest}.")
 
-        self._codes = self.Codes[gvrsn.major][latest]  # use latest supported version codes
-        self._sizes = self.Sizes[gvrsn.major][latest]  # use latest supported version sizes
-        self._version = gvrsn  # provided version may be earlier than supported version
+        self._codes = self.Codes[version.major][latest]  # use latest supported version codes
+        self._sizes = self.Sizes[version.major][latest]  # use latest supported version sizes
+        self._version = version  # provided version may be earlier than supported version
 
 
         if code:  # code (hard) provided
@@ -502,14 +710,14 @@ class Counter:
             if count is None:
                 count = 1 if countB64 is None else b64ToInt(countB64)
 
-            if code[1] not in ("123456789-_"):  # small [A-Z,a-z] or large [0]
+            if code[1] not in ("0123456789_"):  # small or opcode [A-Z,a-z] or large [-]
                 if ss not in (2, 5):  # not valid dynamic soft sizes
                     raise kering.InvalidVarIndexError(f"Invalid {ss=} "
                                                       f"for {code=}.")
                 # dynamically promote code based on count
-                if code[1] != '0' and count > (64 ** 2 - 1):  # small code but large count
+                if code[1] != '-' and count > (64 ** 2 - 1):  # small code but large count
                     # elevate code due to large count
-                    code = f"-0{code[1]}"  # promote hard
+                    code = f"--{code[1]}"  # promote hard
                     ss = 5
 
             if count < 0 or count > (64 ** ss - 1):
@@ -537,22 +745,74 @@ class Counter:
                                      "(code and count) or qb64b or "
                                      "qb64 or qb2.")
 
-        self._name = self.Names[gvrsn.major][latest][self.code]
+        self._name = self.Names[version.major][latest][self.code]
+
+
+    @classmethod
+    def enclose(cls, *, qb64=None, qb2=None, code=Codens.AttachmentGroup,
+                version=Vrsn_2_0):
+        """Encloses (frames) CESR stream in qb64 or qb2 with prepended counter
+        of type code. Only with counters that count quadlets/triplets in V1 CESR.
+        Works with all counters in V2 CESR (which must count quadlets/triplets)
+
+        Returns:
+            enclosure (bytearray): stream in qb64 or qb2 with prepended counter
+                of type code. If both qb64 and qb2 are None then empty counter.
+                If qb64 then returns enclosure as bytearray in qb64 text domain
+                If qb2 then returns enclosure as bytearray in qb2 binary domain
+
+        Parameters:
+            qb64 (str|bytes|bytearray|memoryview|None): qualified Base64 sub-stream
+                to be enclosed. May be empty. None means use qb2 if provided.
+            qb2 (bytes|bytearray|memoryview|None): qualified Base2 sub-stream
+                to be enclosed. May be empty. None means ignore
+            code (str):  either stable (hard) part of derivation code or code name.
+                When code name then look up code from ._codes. This allows
+                versioning to change code but keep stable code name.
+        """
+        if qb64 is None and qb2 is None:
+            qb64 = b''
+
+        if qb64 is not None:  # process qb64 in text domain
+            if hasattr(qb64, "encode"):
+                qb64 = qb64.encode()  # convert to bytes
+            if isinstance(qb64, memoryview):
+                qb64 = bytearray(qb64)  # converts memoryview to bytearray
+            length = len(qb64)
+            if length % 4:  # invalid sized qb64 not aligned on 24 bit boundaries
+                raise ValueError(f"Bad enclosed qb64 {length=}")
+            count = length // 4
+            # processes code as codens code name
+            counter = cls(code=code, count=count, version=version)
+            if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
+                raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
+            enclosure = bytearray(counter.qb64b)
+            enclosure.extend(qb64)
+            return enclosure
+
+        # process qb2 in binary domain
+        if isinstance(qb2, memoryview):
+            qb2 = bytearray(qb2)  # converts memoryview to bytearray
+        length = len(qb2)
+        if length % 3:  # invalid sized qb64 not aligned on 24 bit boundaries
+            raise ValueError(f"Bad enclosed qb2 {length=}")
+        count = length // 3
+        # processes code as codens code name
+        counter = cls(code=code, count=count, version=version)
+        if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
+            raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
+        enclosure = bytearray(counter.qb2)
+        enclosure.extend(qb2)
+        return enclosure
+
+
 
     @property
     def version(self):
         """Makes .version read only
-        Returns ._version
+        Returns ._version  genusversion
         """
         return self._version
-
-
-    @property
-    def gvrsn(self):
-        """Returns .version alias for .version
-
-        """
-        return self.version
 
 
     @property
@@ -636,9 +896,9 @@ class Counter:
 
     @property
     def fullSize(self):
-        """Getter for full size of counter in bytes
+        """Getter for full size of counter in bytes in text domain
         Returns"
-           fs (int): full size of counter in bytes
+           fs (int): full size of counter in bytes in text domain
 
         """
         _, _, fs = self.sizes[self.code]  # get from sizes table
@@ -660,7 +920,7 @@ class Counter:
     def qb64(self):
         """Property qb64:
         Returns:
-            Fully Qualified Base64 Version
+            Fully Qualified Base64 Version, same as .both
         Assumes self.raw and self.code are correctly populated
         """
         return self.qb64b.decode("utf-8")
@@ -687,16 +947,57 @@ class Counter:
         return (intToB64(self.count, l=l))
 
 
+    def byteCount(self, cold=Colds.txt):
+        """Computes number of bytes from .count quadlets/triplets given cold
+
+        Returns:
+            byteCount (int): number of bytes in .count quadlets/triplets given cold
+
+        Parameters:
+            cold (str): value of Coldage to indicate if text (qb64) or binary (qb2)
+                        in order to convert .count quadlets/triplets to byte count
+                        if not Colds.txt or Colds.bny raises ValueError
+        """
+        if cold == Colds.txt:  # quadlets
+            return self.count * 4
+
+        if cold == Colds.bny:  # triplets
+            return self.count * 3
+
+        raise ValueError(f"Invalid {cold=} for byte count conversion")
+
+
+    def byteSize(self, cold=Colds.txt):
+        """Computes number of bytes from .fullSize given cold (text or binary domain)
+        so can strip appropriate number of bytes from stream when peeking at
+        counter in stream without stripping it.
+
+        Returns:
+            byteSize (int): number of bytes given cold (text or binary domain)
+
+        Parameters:
+            cold (str): value of Coldage to indicate if text (qb64) or binary (qb2)
+                        in order to convert .count quadlets/triplets to byte count
+                        if not Colds.txt or Colds.bny raises ValueError
+        """
+        if cold == Colds.txt:
+            return self.fullSize
+
+        if cold == Colds.bny:
+            return (self.fullSize // 4) * 3
+
+        raise ValueError(f"Invalid {cold=} for byte size conversion")
+
+
+
     @staticmethod
     def verToB64(version=None, *, text="", major=0, minor=0):
         """ Converts version to Base64 representation of countB64
         suitable for CESR protocol genus and version
 
         Returns:
-            countB64 (str): suitable for input to Counter
-
-        Example:
-            Counter(countB64=Counter.verToB64(verstr = "1.0"))
+            countB64 (str): suitable for input to Counter param countB64 for
+                            creating genus-version code version count portion
 
         Parameters:
             version (Versionage): instange of namedtuple
@@ -706,6 +1007,10 @@ class Counter:
                         range [0, 63] for one Base64 character
             minor (int): When version is None and verstr is  empty then use major minor
                         range [0, 4095] for two Base64 characters
+
+        Example:
+            Counter(countB64=Counter.verToB64(text = "1.0"))
+            Counter(countB64=Counter.verToB64(major=1, minor=0))
 
         """
         if version:

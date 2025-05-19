@@ -15,6 +15,7 @@ from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import core
 from ..core import (coring, eventing, parsing, routing, serdering, indexing,
                     Counter, Codens)
@@ -227,7 +228,7 @@ class Habery:
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
-                                  exc=self.exc, local=True)
+                                  exc=self.exc, local=True, version=Vrsn_1_0)
         self.habs = {}  # empty .habs
         self._signator = None
         self.inited = False
@@ -1571,7 +1572,7 @@ class BaseHab:
         key = dbing.dgKey(pre, dig)  # digest key
         msg.extend(self.db.getEvt(key))
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
-                           gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
+                           version=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in self.db.getSigsIter(key):
             msg.extend(sig)  # attach sig
         return msg
@@ -2039,13 +2040,13 @@ class BaseHab:
                                                 allowPartiallySigned=allowPartiallySigned)
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigs),
-                           gvrsn=kering.Vrsn_1_0).qb64b)  # attach cnt
+                           version=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in sigs:
             msg.extend(sig.qb64b)  # attach sig
 
         if couple is not None:
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
-                               gvrsn=kering.Vrsn_1_0).qb64b)
+                               version=kering.Vrsn_1_0).qb64b)
             msg.extend(couple)
 
         return msg
@@ -2158,12 +2159,7 @@ class Hab(BaseHab):
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        mhab (Hab | None): group member (local) hab when this Hab is multisig group
-                           else None
-        smids (list | None): group signing member ids qb64 when this Hab is group
-                            else None
-        rmids (list | None): group rotating member ids qb64 when this Hab is group
-                            else None
+
         temp (bool): True means testing:
                      use weak level when salty algo for stretching in key creation
                      for incept and rotate of keys for this hab.pre

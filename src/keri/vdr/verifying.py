@@ -12,6 +12,7 @@ from typing import Type
 from hio.help import decking
 
 from .. import help, kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from ..core import parsing, coring, scheming
 from ..help import helping
 from ..vdr import eventing
@@ -62,7 +63,8 @@ class Verifier:
 
         """
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=False)
-        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
+        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
+                                  version=Vrsn_1_0)
         self.resolver = scheming.CacheResolver(db=self.hby.db)
 
         self.inited = True
@@ -86,7 +88,8 @@ class Verifier:
         while creds:
             self.processCredential(**creds.pull())
 
-    def processCredential(self, creder, prefixer, seqner, saider):
+
+    def processCredential(self, creder, prefixer, seqner, saider, **kwa):
         """ Credential data and signature(s) verification
 
         Verify the data of the credential against the schema, the SAID of the credential and
@@ -179,6 +182,22 @@ class Verifier:
 
         self.saveCredential(creder, prefixer, seqner, saider)
         self.cues.append(dict(kin="saved", creder=creder))
+
+    def processACDC(self, **kwa):
+        """Alias of .processCredential with Parser compatible call signature
+
+        Parameters:
+            serder (SerderACDC): ACDC to process
+            prefixer (Prefixer): prefix of source anchoring KEL or TEL event
+            seqner (Seqner): sequence number of source anchoring KEL or TEL event
+            saider (Saider): SAID of source anchoring KEL or TEL event
+
+        """
+        creder = kwa['serder']
+        kwa['creder'] = creder
+        del kwa['serder']
+        self.processCredential(**kwa)
+
 
     def escrowMRE(self, creder, prefixer, seqner, saider):
         """ Missing Registry Escrow

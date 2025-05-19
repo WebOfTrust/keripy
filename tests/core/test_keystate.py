@@ -9,7 +9,7 @@ routes: /ksn
 
 from keri import core
 from keri.core import eventing, parsing, routing, serdering
-
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing
 
 
@@ -83,7 +83,7 @@ def test_keystate(mockHelpingNowUTC):
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db)
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
         wesHab.receipt(serder=iserder)
@@ -108,7 +108,7 @@ def test_keystate(mockHelpingNowUTC):
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
         bamKvy = eventing.Kevery(db=bamHby.db, rvy=bamRvy)
         bamKvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy, local=True)
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
@@ -119,7 +119,7 @@ def test_keystate(mockHelpingNowUTC):
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, local=True)
         bamKvy.processEscrows()
 
         keys = (bobHab.pre, wesHab.pre)
@@ -146,7 +146,7 @@ def test_keystate(mockHelpingNowUTC):
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db)
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
         # Get ksr key state record from Bob and verify
@@ -175,7 +175,7 @@ def test_keystate(mockHelpingNowUTC):
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
         bamKvy = eventing.Kevery(db=bamHby.db, rvy=bamRvy)
         bamKvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy, local=True)
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
@@ -186,7 +186,7 @@ def test_keystate(mockHelpingNowUTC):
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, local=True)
         bamKvy.processEscrows()
 
         keys = (bobHab.pre, wesHab.pre)
@@ -212,7 +212,7 @@ def test_keystate(mockHelpingNowUTC):
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db)
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
         # Get ksr key state record from Bob and verify
@@ -231,7 +231,7 @@ def test_keystate(mockHelpingNowUTC):
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict())
 
         bamKvy = eventing.Kevery(db=bamHby.db)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         assert len(bamKvy.cues) == 0
         saider = bamHby.db.knas.get(keys=keys)
@@ -267,7 +267,7 @@ def test_keystate(mockHelpingNowUTC):
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
         bamKvy = eventing.Kevery(db=bamHby.db, rvy=bamRvy)
         bamKvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         for _ in range(5):
             bobHab.rotate()
@@ -279,13 +279,13 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.d == bobHab.kever.serder.said
 
         liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict())
-        parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         msgs = bytearray()  # outgoing messages
         for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy, local=True)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, rvy=bamRvy, local=True)
 
         assert bobHab.pre in bamKvy.kevers
 

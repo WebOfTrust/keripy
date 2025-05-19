@@ -1998,7 +1998,7 @@ class Dater(Matter):
     FromB64 = str.maketrans("cdp", ":.+")  #  translate characters
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.Salt_128, dts=None, **kwa):
+                 code=MtrDex.DateTime, dts=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -2388,7 +2388,7 @@ class Traitor(Tagger):
 # Versage namedtuple
 # proto (str): protocol element of Protocols
 # vrsn (Versionage): instance protocol version namedtuple (major, minor) ints
-# vrsn (Versionage | None): instance genus version namedtuple (major, minor) ints
+# gvrsn (Versionage | None): instance genus version namedtuple (major, minor) ints
 Versage = namedtuple("Versage", "proto vrsn gvrsn", defaults=(None, ))
 
 
@@ -2583,10 +2583,15 @@ class Texter(Matter):
     Attributes:
 
     Inherited Properties:  (See Matter)
+        size (int | None): Number of quadlets/triplets of chars/bytes including
+                            lead bytes of variable sized material (fs = None).
+                            Converted value of the soft part (of len ss) of full
+                            derivation code.
+                          Otherwise None when not variably sized (fs != None)
 
     Properties:
-        .text is bytes value with CESR code and leader removed.
-        .uext is str value with CESR code and leader removed unicode of .text
+        text (str): unqaulified text str  without CESR code and leader.
+
 
     Inherited Hidden Properties:  (See Matter)
 
@@ -2606,22 +2611,24 @@ class Texter(Matter):
                  code=MtrDex.Bytes_L0, text=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
+            raw (bytes|None): of unqualified variable sized text string
+            qb64b (bytes|None): fully qualified text domain of raw/text
+            qb64 (str|bytes|None):  fully qualified text domain of raw/text
+            qb2 (bytes|None): fully qualified binary domain of raw/text
+            code (str): hard part of derivation code in text domain
 
         Parameters:
-            text is the variable sized text string as either bytes or str
+            text (str|bytes|None): unqualified variable sized text string as either
+                same as raw but may be as str, so handles encoding/decoding
+                to/from bytes/str
+
 
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if text is None:
                 raise EmptyMaterialError("Missing text string.")
             if hasattr(text, "encode"):
-                text = text.encode("utf-8")
+                text = text.encode()
             raw = text
 
         super(Texter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
@@ -2636,7 +2643,7 @@ class Texter(Matter):
         """
         Property text: raw as str
         """
-        return self.raw.decode('utf-8')
+        return self.raw.decode()
 
 
 class Bexter(Matter):
@@ -3100,8 +3107,7 @@ class Labeler(Matter):
 
 
 class Verfer(Matter):
-    """
-    Verfer is Matter subclass with method to verify signature of serialization
+    """Verfer is Matter subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
     See Matter for inherited attributes and properties:
@@ -3131,6 +3137,7 @@ class Verfer(Matter):
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
+
     def verify(self, sig, ser):
         """
         Returns True if bytes signature sig verifies on bytes serialization ser
@@ -3142,6 +3149,7 @@ class Verfer(Matter):
             ser is bytes serialization
         """
         return (self._verify(sig=sig, ser=ser, key=self.raw))
+
 
     @staticmethod
     def _ed25519(sig, ser, key):
@@ -3160,6 +3168,7 @@ class Verfer(Matter):
             return False
 
         return True
+
 
     @staticmethod
     def _secp256r1(sig, ser, key):
@@ -3181,6 +3190,7 @@ class Verfer(Matter):
             return True
         except exceptions.InvalidSignature:
             return False
+
 
     @staticmethod
     def _secp256k1(sig, ser, key):

@@ -810,6 +810,14 @@ class SizedGroupError(ExtractionError):
         raise SizedGroupError("error message")
     """
 
+class TopLevelStreamError(ExtractionError):
+    """
+    Error while extracting top level of stream
+
+    Usage:
+        raise TopLevelStreamError("error message")
+    """
+
 
 class VersionError(ExtractionError):
     """

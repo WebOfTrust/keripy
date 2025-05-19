@@ -38,8 +38,10 @@ from hio.base import doing
 import keri
 from . import dbing, koming, subing
 from .. import kering
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import core
 from ..core import coring, eventing, parsing, serdering, indexing
+
 
 from .. import help
 from ..help import helping
@@ -1488,7 +1490,7 @@ class Baser(dbing.LMDBer):
                 # need new method cloneObjAllPreIter()
                 # process event doesn't capture exceptions so we can more easily
                 # detect in the cloning that some events did not make it through
-                psr = parsing.Parser(kvy=kvy)
+                psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
                 for msg in self.cloneAllPreIter():  # clone into copy
                     psr.parseOne(ims=msg)
 
@@ -1646,14 +1648,14 @@ class Baser(dbing.LMDBer):
         if not (sigs := self.getSigs(key=dgkey)):
             raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
         atc.extend(core.Counter(code=core.Codens.ControllerIdxSigs,
-                                count=len(sigs), gvrsn=kering.Vrsn_1_0).qb64b)
+                                count=len(sigs), version=kering.Vrsn_1_0).qb64b)
         for sig in sigs:
             atc.extend(sig)
 
         # add indexed witness signatures to attachments
         if wigs := self.getWigs(key=dgkey):
             atc.extend(core.Counter(code=core.Codens.WitnessIdxSigs,
-                                    count=len(wigs), gvrsn=kering.Vrsn_1_0).qb64b)
+                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
             for wig in wigs:
                 atc.extend(wig)
 
@@ -1661,14 +1663,14 @@ class Baser(dbing.LMDBer):
         couple = self.getAes(dgkey)
         if couple is not None:
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
-                                    count=1, gvrsn=kering.Vrsn_1_0).qb64b)
+                                    count=1, version=kering.Vrsn_1_0).qb64b)
             atc.extend(couple)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
         if quads := self.getVrcs(key=dgkey):
             atc.extend(core.Counter(code=core.Codens.TransReceiptQuadruples,
-                                    count=len(quads), gvrsn=kering.Vrsn_1_0).qb64b)
+                                    count=len(quads), version=kering.Vrsn_1_0).qb64b)
             for quad in quads:
                 atc.extend(quad)
 
@@ -1676,7 +1678,7 @@ class Baser(dbing.LMDBer):
         # may have been originally key event attachments or receipted endorsements
         if coups := self.getRcts(key=dgkey):
             atc.extend(core.Counter(code=core.Codens.NonTransReceiptCouples,
-                                    count=len(coups), gvrsn=kering.Vrsn_1_0).qb64b)
+                                    count=len(coups), version=kering.Vrsn_1_0).qb64b)
             for coup in coups:
                 atc.extend(coup)
 
@@ -1684,7 +1686,7 @@ class Baser(dbing.LMDBer):
         if not (dts := self.getDts(key=dgkey)):
             raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
         atc.extend(core.Counter(code=core.Codens.FirstSeenReplayCouples,
-                                count=1, gvrsn=kering.Vrsn_1_0).qb64b)
+                                count=1, version=kering.Vrsn_1_0).qb64b)
         atc.extend(core.Number(num=fn, code=core.NumDex.Huge).qb64b)  # may not need to be Huge
         atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
 
@@ -1693,7 +1695,7 @@ class Baser(dbing.LMDBer):
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = core.Counter(code=core.Codens.AttachmentGroup,
-                            count=(len(atc) // 4), gvrsn=kering.Vrsn_1_0).qb64b
+                            count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg

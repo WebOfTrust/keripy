@@ -7,7 +7,7 @@ import time
 from hio.base import doing, tyming
 
 from keri import kering
-
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import core
 from keri.core import eventing, parsing, coring
 
@@ -84,7 +84,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
     kvy = eventing.Kevery(db=delHby.db, local=True)
-    parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     while palHab.pre not in delHby.kevers:
         yield tock
@@ -112,7 +112,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre, fn=1))
     kvy = eventing.Kevery(db=delHby.db, local=True)
-    parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
     while delHby.db.getAes(dgkey) != couple:

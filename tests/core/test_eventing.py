@@ -10,7 +10,7 @@ import pysodium
 import pytest
 
 from keri import kering
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
 from keri import core
@@ -2852,7 +2852,7 @@ def test_multisig_digprefix():
 
         # create sig counter
         count = len(keys)
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
         # create key event verifier state
@@ -2888,7 +2888,7 @@ def test_multisig_digprefix():
                         sn=1)
         # create sig counter
         count = len(keys)
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - count) for i in range(count, count + count)]
         # update key event verifier state
@@ -2904,7 +2904,7 @@ def test_multisig_digprefix():
                           dig=kever.serder.said,
                           sn=2)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - count) for i in range(count, count + count)]
         # update key event verifier state
@@ -2920,7 +2920,7 @@ def test_multisig_digprefix():
                           dig=kever.serder.said,
                           sn=3)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - count) for i in range(count, count + count)]
         # update key event verifier state
@@ -2940,7 +2940,7 @@ def test_multisig_digprefix():
                         dig=kever.serder.said,
                         sn=4)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, count=count, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i - 5) for i in range(5, 8)]
         # update key event verifier state
@@ -2954,7 +2954,7 @@ def test_multisig_digprefix():
         assert len(msgs) == 3173
 
         kevery = Kevery(db=vallgr)
-        parsing.Parser().parse(ims=msgs, kvy=kevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=kevery)
         # kevery.process(ims=msgs)
 
         pre = kever.prefixer.qb64
@@ -2992,7 +2992,7 @@ def test_recovery():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
@@ -3014,7 +3014,7 @@ def test_recovery():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
@@ -3033,7 +3033,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3055,7 +3055,7 @@ def test_recovery():
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3074,7 +3074,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3093,7 +3093,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3112,7 +3112,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3135,7 +3135,7 @@ def test_recovery():
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3154,7 +3154,7 @@ def test_recovery():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)
         # update key event verifier state
@@ -3181,7 +3181,7 @@ def test_recovery():
         assert db_est_digs[5:7] == event_digs[7:9]
 
         kevery = Kevery(db=vallgr)
-        parsing.Parser().parse(ims=kes, kvy=kevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=kevery)
         # kevery.process(ims=kes)
 
         assert pre in kevery.kevers
@@ -3245,7 +3245,7 @@ def test_receipt():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)  # return Siger if index
 
@@ -3254,13 +3254,13 @@ def test_receipt():
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
         # make copy of kes so can use again for valKevery
-        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # create Kever using Kevery
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
         assert coeKever.serder.raw == serder.raw
 
-        parsing.Parser().parse(ims=kes, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)  # process by Val
         assert coepre in valKevery.kevers
         valKever = valKevery.kevers[coepre]
@@ -3274,7 +3274,7 @@ def test_receipt():
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         assert valCigar.qb64 == ('0BADE2aOlwLi6OCF-jzRWSPuaOo916ADjwhA92hBQ1km'
                                  'LSSYdzDiZIpJNFf0uislNR8uhCbB6x2Y1I6rqbNeBXwF')
-        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, gvrsn=Vrsn_1_0)
+        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
         assert recnt.qb64 == '-CAB'
 
         res.extend(reserder.raw)
@@ -3288,7 +3288,7 @@ def test_receipt():
                     b'lNR8uhCbB6x2Y1I6rqbNeBXwF')
 
 
-        parsing.Parser().parse(ims=res, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=res, kvy=coeKevery)
         # coeKevery.process(ims=res)  #  coe process the receipt from val
         #  check if in receipt database
         result = coeKevery.db.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
@@ -3303,7 +3303,7 @@ def test_receipt():
                            said=fake)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, gvrsn=Vrsn_1_0)
+        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
@@ -3311,7 +3311,7 @@ def test_receipt():
         res.extend(valCigar.qb64b)
 
         #  coe process the escrow receipt from val
-        parsing.Parser().parse(ims=res, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=res, kvy=coeKevery)
         #  check if in escrow database
         result = coeKevery.db.getUres(key=snKey(pre=coeKever.prefixer.qb64,
                                                 sn=2))
@@ -3325,14 +3325,14 @@ def test_receipt():
                            said=fake)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, gvrsn=Vrsn_1_0)
+        recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
         res.extend(valCigar.qb64b)
 
-        parsing.Parser().parseOne(ims=res, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=res, kvy=coeKevery)
         # coeKevery.processOne(ims=res)  #  coe process the escrow receipt from val
         # no new receipt at valid dig
         result = coeKevery.db.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
@@ -3355,16 +3355,16 @@ def test_receipt():
 
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)  # returns siger
         # extend key event stream
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().parse(ims=kes, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -3376,7 +3376,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3384,9 +3384,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().parse(ims=kes, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Rotation Transferable
@@ -3401,7 +3401,7 @@ def test_receipt():
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3409,9 +3409,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().parse(ims=kes, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -3423,7 +3423,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3431,9 +3431,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().parse(ims=kes, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -3445,7 +3445,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3453,9 +3453,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().parse(ims=kes, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -3467,7 +3467,7 @@ def test_receipt():
                           sn=sn)
         event_digs.append(serder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[esn].sign(serder.raw, index=0)
 
@@ -3475,9 +3475,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().parse(ims=kes, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         assert coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
@@ -3537,7 +3537,7 @@ def test_direct_mode():
 
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # return Siger if index
 
@@ -3554,7 +3554,7 @@ def test_direct_mode():
                     b'fT38R8L')
 
         # create own Coe Kever in  Coe's Kevery
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
@@ -3570,7 +3570,7 @@ def test_direct_mode():
 
         val_event_digs.append(valSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = valSigners[vesn].sign(valSerder.raw, index=0)  # return Siger if index
 
@@ -3587,13 +3587,13 @@ def test_direct_mode():
                     b'Taal2cA')
 
         # create own Val Kever in  Val's Kevery
-        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
         valKever = valKevery.kevers[valpre]
         assert valKever.prefixer.qb64 == valpre
 
         # simulate sending of coe's inception message to val
-        parsing.Parser().parse(ims=bytearray(cmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(cmsg), kvy=valKevery)
         # valKevery.process(ims=bytearray(cmsg))  # make copy of msg
         assert coepre in valKevery.kevers  # creates Kever for coe in val's .kevers
 
@@ -3628,13 +3628,13 @@ def test_direct_mode():
                     b'uWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
 
         # process own Val receipt in Val's Kevery so have copy in own log
-        parsing.Parser().parseOne(ims=bytearray(rmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
         # Simulate send to coe of val's incept and val's receipt of coe's inception message
-        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         # check if val Kever in coe's .kevers
@@ -3674,7 +3674,7 @@ def test_direct_mode():
                                  #b'fTRjq8st22hL25Ho9vnNodz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIO'
                                  #b'Vt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3'
                                  #b'-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
-        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadruple in escrow database
         result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
@@ -3720,11 +3720,11 @@ def test_direct_mode():
                     b'N-GJ0c5UrNbNuSyT-wkeit0AeYsPWLEYG')
 
         # coe process own receipt in own Kevery so have copy in own log
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
         # Simulate send to val of coe's receipt of val's inception message
-        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from coe in val's receipt database
@@ -3751,7 +3751,7 @@ def test_direct_mode():
                            sn=csn)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
 
@@ -3768,14 +3768,14 @@ def test_direct_mode():
                     b'oZbZoZGlgzbAYh01fjdhacBg2S5Bya48tyo9uvTVz-OQNHP52_ZgEYjbQn4C')
 
         # update coe's key event verifier state
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.said == coeSerder.said
 
         # simulate send message from coe to val
-        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -3814,11 +3814,11 @@ def test_direct_mode():
                     b'6z6sjJK7_oTLY36k2VigSExx0UgGQV7YL')
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from val in receipt database
@@ -3845,7 +3845,7 @@ def test_direct_mode():
                              sn=csn)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
 
@@ -3859,14 +3859,14 @@ def test_direct_mode():
                     b'Ar","a":[]}-AABAABmeJqf2j87kAvvqqIxmLI9IU3CGuigruWent6i4iml9n61d'
                     b'U4ah0NHsJgl-7KtapI72aMxDY6BZ9EvU2c8YHQP')
         # update coe's key event verifier state
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.said == coeSerder.said
 
         # simulate send message from coe to val
-        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -3902,11 +3902,11 @@ def test_direct_mode():
                     b'9_wVAxv2idySMjiGuLOZk8qI2thqMZ3ED')
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from val in receipt database
@@ -4003,7 +4003,7 @@ def test_direct_mode_cbor_mgpk():
 
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # return Siger if index
 
@@ -4019,7 +4019,7 @@ def test_direct_mode_cbor_mgpk():
                     b'Jv-6YGLedGHvi0FcT6twCzM8g2-TA4JRqcbwL')
 
         # create own Coe Kever in  Coe's Kevery
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
@@ -4035,7 +4035,7 @@ def test_direct_mode_cbor_mgpk():
 
         val_event_digs.append(valSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = valSigners[vesn].sign(valSerder.raw, index=0)  # return Siger if index
 
@@ -4052,13 +4052,13 @@ def test_direct_mode_cbor_mgpk():
                     b'E3RRzeWWLPNxwxodjK0dJk4u1zb2ZiIU_ci37BYUN')
 
         # create own Val Kever in  Val's Kevery
-        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
         valKever = valKevery.kevers[valpre]
         assert valKever.prefixer.qb64 == valpre
 
         # simulate sending of coe's inception message to val
-        parsing.Parser().parse(ims=bytearray(cmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(cmsg), kvy=valKevery)
         # valKevery.process(ims=bytearray(cmsg))  # make copy of msg
         assert coepre in valKevery.kevers  # creates Kever for coe in val's .kevers
 
@@ -4093,14 +4093,14 @@ def test_direct_mode_cbor_mgpk():
                     b'dgA_r9i1nVdqMZX-AABAADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3'
                     b'cJ7LrFYTE-Xjt72WVu2cbKjVLf9GAIGixpzh11tlCUD')
 
-        parsing.Parser().parseOne(ims=bytearray(rmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
 
         # Simulate send to coe of val's receipt of coe's inception message
-        parsing.Parser().parse(ims=bytearray(vmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         # check if val Kever in coe's .kevers
@@ -4136,7 +4136,7 @@ def test_direct_mode_cbor_mgpk():
                     b'dgA_r9i1nVdqMZX-AABAADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3'
                     b'cJ7LrFYTE-Xjt72WVu2cbKjVLf9GAIGixpzh11tlCUD')
 
-        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
         result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
@@ -4182,11 +4182,11 @@ def test_direct_mode_cbor_mgpk():
 
 
         # coe process own receipt in own Kevery so have copy in own log
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
         # Simulate send to val of coe's receipt of val's inception message
-        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from coe in val's receipt database
@@ -4214,7 +4214,7 @@ def test_direct_mode_cbor_mgpk():
                            kind=Kinds.cbor)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
 
@@ -4231,14 +4231,14 @@ def test_direct_mode_cbor_mgpk():
                         b'WkkWaz67kBxBaIN')
 
         # update coe's key event verifier state
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.said == coeSerder.said
 
         # simulate send message from coe to val
-        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -4276,11 +4276,11 @@ def test_direct_mode_cbor_mgpk():
                     b'TIq0aVELDNwXt1mnqWJw73-UVekqTtrU1jWgekCx0cF')
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
@@ -4308,7 +4308,7 @@ def test_direct_mode_cbor_mgpk():
                              kind=Kinds.cbor)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
-        counter = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)  # default is count = 1
+        counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
 
@@ -4323,14 +4323,14 @@ def test_direct_mode_cbor_mgpk():
                         b'tWd4gRXNT5i54O')
 
         # update coe's key event verifier state
-        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.said == coeSerder.said
 
         # simulate send message from coe to val
-        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -4368,11 +4368,11 @@ def test_direct_mode_cbor_mgpk():
                     b'Fp2IT_ZSwWmk26Bxj5PPB4qiJmJ7LwbfQvJZLxgMUQC')
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
@@ -4471,7 +4471,7 @@ def test_process_nontransferable():
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
     # create attached sig counter
-    cnt0 = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)
+    cnt0 = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)
 
     # create packet
     msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
@@ -4482,7 +4482,7 @@ def test_process_nontransferable():
     del msgb0[:rser0.size]  # strip off event from front
 
     # extract sig counter
-    rcnt0 = Counter(qb64=msgb0, gvrsn=Vrsn_1_0)
+    rcnt0 = Counter(qb64=msgb0, version=Vrsn_1_0)
     nrsigs = rcnt0.count
     assert nrsigs == 1
     del msgb0[:len(rcnt0.qb64)]
@@ -4562,7 +4562,7 @@ def test_process_transferable():
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
     # create attached sig counter
-    cnt0 = Counter(Codens.ControllerIdxSigs, gvrsn=Vrsn_1_0)
+    cnt0 = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)
 
     # create packet
     msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
@@ -4573,7 +4573,7 @@ def test_process_transferable():
     del msgb0[:rser0.size]  # strip off event from front
 
     # extract sig counter
-    rcnt0 = Counter(qb64=msgb0, gvrsn=Vrsn_1_0)
+    rcnt0 = Counter(qb64=msgb0, version=Vrsn_1_0)
     nrsigs = rcnt0.count
     assert nrsigs == 1
     del msgb0[:len(rcnt0.qb64)]
@@ -4806,7 +4806,7 @@ def test_load_event(mockHelpingNowUTC):
         wanHab = wanHby.makeHab(name="wan", transferable=False)
         assert wanHab.pre == "BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP"
         msg = wanHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=msg, kvy=torKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=msg, kvy=torKvy)
         assert wanHab.pre in torKvy.kevers
 
         # Create Wil the witness, we'll use him later
@@ -4823,7 +4823,7 @@ def test_load_event(mockHelpingNowUTC):
             _ = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
 
         # tor events are locallyWitnessed by wan so must process as local
-        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True) # process as local
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True) # process as local
 
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
@@ -4859,7 +4859,7 @@ def test_load_event(mockHelpingNowUTC):
 
         # Anchor Tee's inception event in Tor's KEL
         ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)])
-        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)  # give to wan must be local
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)  # give to wan must be local
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
 
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.kever.serder.said)
@@ -4885,7 +4885,7 @@ def test_load_event(mockHelpingNowUTC):
 
         # Add seal source couple to Tee's inception before sending to Wan
         counter = Counter(Codens.SealSourceCouples,
-                                 count=1, gvrsn=Vrsn_1_0)
+                                 count=1, version=Vrsn_1_0)
         teeIcp.extend(counter.qb64b)
         seqner = coring.Seqner(sn=torHab.kever.sn)
         teeIcp.extend(seqner.qb64b)
@@ -4896,9 +4896,9 @@ def test_load_event(mockHelpingNowUTC):
         nrct = wilHab.receipt(serder=teeHab.kever.serder)
 
         # Now Wan should be ready for Tee's inception
-        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)  # local
-        parsing.Parser().parse(ims=bytearray(rct), kvy=wanHab.kvy, local=True) # local
-        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanHab.kvy, local=True)  # local
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)  # local
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rct), kvy=wanHab.kvy, local=True) # local
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(nrct), kvy=wanHab.kvy, local=True)  # local
         # ToDo XXXX fix it so cues are durable in db so can process cues from
         # both and remote sources
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
@@ -4983,3 +4983,4 @@ if __name__ == "__main__":
     #test_process_transferable()
     #test_messagize()
     test_direct_mode()
+    test_recovery()
