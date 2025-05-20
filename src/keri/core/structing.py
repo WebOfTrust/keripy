@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-keri.core.indexing module
+keri.core.structing module
 
-Provides versioning support for Indexer classes and codes
+Creates fixed field data structures
 """
 
 
