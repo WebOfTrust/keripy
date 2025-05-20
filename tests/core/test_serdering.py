@@ -77,7 +77,7 @@ def test_serder_class():
         'SealEvent': '-S',
         'SealTrans': '-T',
         'SealLast': '-U',
-        'SealBacker': '-V'
+        'SealBack': '-V'
     }
 
     assert Serder.CodeClans
@@ -88,7 +88,7 @@ def test_serder_class():
         '-S': 'SealEvent',
         '-T': 'SealTrans',
         '-U': 'SealLast',
-        '-V': 'SealBacker',
+        '-V': 'SealBack',
     }
 
 

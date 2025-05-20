@@ -21,7 +21,7 @@ from keri.core.coring import (Diger, MtrDex, Matter,
                               Seqner, Verfer, Prefixer, DigDex)
 from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
 from keri.core.eventing import Kever, Kevery
-from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
+from keri.core.eventing import (SealDigest, SealRoot, SealBack,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
 from keri.core.eventing import (TraitDex, LastEstLoc, Kinds, versify,
                                 simple, ample)
@@ -625,8 +625,8 @@ def test_seals_states():
     assert seal._asdict() == dict(rd='EABCDE')
     assert seal._fields == ('rd',)
 
-    seal = SealBacker(bi='B4321', d='EABCDE')
-    assert isinstance(seal, SealBacker)
+    seal = SealBack(bi='B4321', d='EABCDE')
+    assert isinstance(seal, SealBack)
     assert 'B4321' in seal
     assert seal.bi == 'B4321'
     assert 'EABCDE' in seal

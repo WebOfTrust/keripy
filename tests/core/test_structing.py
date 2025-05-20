@@ -20,7 +20,7 @@ from keri.core import (Matter, Diger, Prefixer, Number, Verser)
 
 
 from keri.core import structing
-from keri.core.structing import (SealDigest, SealRoot, SealBacker, SealEvent,
+from keri.core.structing import (SealDigest, SealRoot, SealBack, SealEvent,
                                  SealLast, SealTrans, SealKind)
 from keri.core.structing import (Castage,
                                  Structor, EClanDom, ECastDom,
@@ -46,7 +46,7 @@ def test_structor_doms():
         'SealEvent': SealEvent,
         'SealTrans': SealTrans,
         'SealLast': SealLast,
-        'SealBacker': SealBacker,
+        'SealBack': SealBack,
         'SealKind': SealKind,
     }
 
@@ -60,7 +60,7 @@ def test_structor_doms():
         'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
                                d=Castage(kls=Diger, prm=None)),
         'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
-        'SealBacker': SealBacker(bi=Castage(kls=Prefixer, prm=None),
+        'SealBack': SealBack(bi=Castage(kls=Prefixer, prm=None),
                                  d=Castage(kls=Diger, prm=None)),
         'SealKind': SealKind(t=Castage(kls=Verser, prm=None),
                                  d=Castage(kls=Diger, prm=None)),
@@ -513,7 +513,7 @@ def test_sealer_class():
         ('i', 's', 'd'): 'SealEvent',
         ('s', 'd'): 'SealTrans',
         ('i',): 'SealLast',
-        ('bi', 'd'): 'SealBacker',
+        ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
     }
 

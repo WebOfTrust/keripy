@@ -75,7 +75,7 @@ SealRoot = namedtuple("SealRoot", 'rd')
 # Backer Seal: couple (bi, d)
 # bi = pre qb64 backer nontrans identifier prefix
 # d = digest qb64 of backer metadata anchored to event usually SAID of data
-SealBacker = namedtuple("SealBacker", 'bi d')
+SealBack = namedtuple("SealBack", 'bi d')
 
 # Last Estalishment Event Seal: uniple (i,)
 # i = pre is qb64 of identifier prefix of KEL from which to get last est, event

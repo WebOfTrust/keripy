@@ -47,7 +47,7 @@ SealRoot = namedtuple("SealRoot", 'rd')
 # Backer Seal: couple (bi, d)
 # bi = pre qb64 backer nontrans identifier prefix
 # d = digest qb64 of backer metadata anchored to event usually SAID of data
-SealBacker = namedtuple("SealBacker", 'bi d')
+SealBack = namedtuple("SealBack", 'bi d')
 
 # Last Establishment Event Seal: uniple (i,)
 # i = pre is qb64 of identifier prefix of KEL from which to get last est, event
@@ -163,7 +163,7 @@ class SealClanDom(MapDom):
     SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple
     SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple
     SealLast: type[NamedTuple] = SealLast  # SealLast class reference single
-    SealBacker: type[NamedTuple] = SealBacker  # SealBacker class reference
+    SealBack: type[NamedTuple] = SealBack  # SealBack class reference
     SealKind: type[NamedTuple] = SealKind  # SealKind class reference
 
 
@@ -199,8 +199,8 @@ class SealCastDom(MapDom):
     SealTrans: NamedTuple = SealTrans(s=Castage(Number, 'numh'),
                                       d=Castage(Diger))  # SealTrans class reference couple
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
-    SealBacker: NamedTuple = SealBacker(bi=Castage(Prefixer),
-                                        d=Castage(Diger))  # SealBacker class reference
+    SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
+                                        d=Castage(Diger))  # SealBack class reference
     SealKind: NamedTuple = SealKind(t=Castage(Verser),
                                         d=Castage(Diger))  # SealKind class reference
 

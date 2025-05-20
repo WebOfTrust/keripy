@@ -326,7 +326,7 @@ class Serder:
     ClanCodes[SClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
     ClanCodes[SClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
     ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
-    ClanCodes[SClanDom.SealBacker.__name__] = SealDex_2_0.BackerRegistrarSealCouples
+    ClanCodes[SClanDom.SealBack.__name__] = SealDex_2_0.BackerRegistrarSealCouples
 
 
 
