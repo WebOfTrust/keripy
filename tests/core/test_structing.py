@@ -16,12 +16,12 @@ from keri import kering
 
 from keri.help import helping
 
-from keri.core import (Matter, Diger, Prefixer, Number)
+from keri.core import (Matter, Diger, Prefixer, Number, Verser)
 
 
 from keri.core import structing
-from keri.core.structing import (SealDigest, SealRoot, SealBacker, SealEvent,
-                                 SealLast, SealTrans)
+from keri.core.structing import (SealDigest, SealRoot, SealBack, SealEvent,
+                                 SealLast, SealTrans, SealKind)
 from keri.core.structing import (Castage,
                                  Structor, EClanDom, ECastDom,
                                  Sealer, SClanDom, SCastDom, )
@@ -43,24 +43,27 @@ def test_structor_doms():
     {
         'SealDigest': SealDigest,
         'SealRoot': SealRoot,
-        'SealBacker': SealBacker,
-        'SealLast': SealLast,
-        'SealTrans': SealTrans,
         'SealEvent': SealEvent,
+        'SealTrans': SealTrans,
+        'SealLast': SealLast,
+        'SealBack': SealBack,
+        'SealKind': SealKind,
     }
 
     assert asdict(SCastDom) == \
     {
         'SealDigest': SealDigest(d=Castage(kls=Diger, prm=None)),
         'SealRoot': SealRoot(rd=Castage(kls=Diger, prm=None)),
-        'SealBacker': SealBacker(bi=Castage(Prefixer, prm=None),
-                                 d=Castage(kls=Diger, prm=None)),
-        'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
-        'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
-                               d=Castage(kls=Diger, prm=None)),
         'SealEvent': SealEvent(i=Castage(kls=Prefixer, prm=None),
                                s=Castage(kls=Number, prm='numh'),
-                               d=Castage(kls=Diger, prm=None))
+                               d=Castage(kls=Diger, prm=None)),
+        'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
+                               d=Castage(kls=Diger, prm=None)),
+        'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
+        'SealBack': SealBack(bi=Castage(kls=Prefixer, prm=None),
+                                 d=Castage(kls=Diger, prm=None)),
+        'SealKind': SealKind(t=Castage(kls=Verser, prm=None),
+                                 d=Castage(kls=Diger, prm=None)),
     }
 
 
@@ -285,8 +288,6 @@ def test_structor():
 
 
     # Test with multiple field namedtuple for data
-
-
     data = SealEvent(i=prefixer, s=number, d=diger)
     clan = SealEvent
     cast = SealEvent(i=Castage(Prefixer),
@@ -509,10 +510,11 @@ def test_sealer_class():
     {
         ('d',): 'SealDigest',
         ('rd',): 'SealRoot',
-        ('bi', 'd'): 'SealBacker',
-        ('i',): 'SealLast',
-        ('s', 'd'): 'SealTrans',
         ('i', 's', 'd'): 'SealEvent',
+        ('s', 'd'): 'SealTrans',
+        ('i',): 'SealLast',
+        ('bi', 'd'): 'SealBack',
+        ('t', 'd'): 'SealKind',
     }
 
     """End Test"""

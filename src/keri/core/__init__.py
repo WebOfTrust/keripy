@@ -10,7 +10,7 @@ from .coring import (Tiers, )
 # Matter class and its subclasses
 from .coring import (Matter, MtrDex, Number, NumDex, Dater, Texter,
                     Bexter, Pather, Verfer, Cigar, Diger, DigDex,
-                    Prefixer, PreDex, Seqner)
+                    Prefixer, PreDex, Seqner, Verser)
 
 from .coring import Tholder
 from .indexing import Indexer, Siger, IdrDex, IdxSigDex

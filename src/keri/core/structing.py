@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-keri.core.indexing module
+keri.core.structing module
 
-Provides versioning support for Indexer classes and codes
+Creates fixed field data structures
 """
 
 
@@ -17,7 +17,7 @@ from .. import help
 from ..help import nonStringSequence
 
 from . import coring
-from .coring import (MapDom, Matter, Diger, Prefixer, Number)
+from .coring import (MapDom, Matter, Diger, Prefixer, Number, Verser)
 
 
 
@@ -47,7 +47,7 @@ SealRoot = namedtuple("SealRoot", 'rd')
 # Backer Seal: couple (bi, d)
 # bi = pre qb64 backer nontrans identifier prefix
 # d = digest qb64 of backer metadata anchored to event usually SAID of data
-SealBacker = namedtuple("SealBacker", 'bi d')
+SealBack = namedtuple("SealBack", 'bi d')
 
 # Last Establishment Event Seal: uniple (i,)
 # i = pre is qb64 of identifier prefix of KEL from which to get last est, event
@@ -67,6 +67,12 @@ SealTrans = namedtuple("SealTrans", 's d')
 # s = sn of event as lowercase hex string  no leading zeros,
 # d = SAID digest qb64 of event
 SealEvent = namedtuple("SealEvent", 'i s d')
+
+# Kind Digest Seal for typed versioned digests : duple (t, d)
+# t = type of digest as Verser qb64,
+# d = SAID digest qb64 of transaction event
+# use TypedDigestSealCouples count code for attachment
+SealKind = namedtuple("SealKind", 't d')
 
 
 # Following are not seals only used in database
@@ -154,10 +160,12 @@ class SealClanDom(MapDom):
     """
     SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference
     SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference
-    SealBacker: type[NamedTuple] = SealBacker  # SealBacker class reference
-    SealLast: type[NamedTuple] = SealLast  # SealLast class reference single
-    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple
     SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple
+    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple
+    SealLast: type[NamedTuple] = SealLast  # SealLast class reference single
+    SealBack: type[NamedTuple] = SealBack  # SealBack class reference
+    SealKind: type[NamedTuple] = SealKind  # SealKind class reference
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -185,14 +193,16 @@ class SealCastDom(MapDom):
     """
     SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
     SealRoot: NamedTuple = SealRoot(rd=Castage(Diger))  # SealRoot class reference
-    SealBacker: NamedTuple = SealBacker(bi=Castage(Prefixer),
-                                        d=Castage(Diger))  # SealBacker class reference
-    SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
-    SealTrans: NamedTuple = SealTrans(s=Castage(Number, 'numh'),
-                                      d=Castage(Diger))  # SealTrans class reference couple
     SealEvent: NamedTuple = SealEvent(i=Castage(Prefixer),
                                       s=Castage(Number, 'numh'),
                                       d=Castage(Diger))  # SealEvent class reference triple
+    SealTrans: NamedTuple = SealTrans(s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealTrans class reference couple
+    SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
+    SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
+                                        d=Castage(Diger))  # SealBack class reference
+    SealKind: NamedTuple = SealKind(t=Castage(Verser),
+                                        d=Castage(Diger))  # SealKind class reference
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
