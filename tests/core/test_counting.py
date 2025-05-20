@@ -169,14 +169,17 @@ def test_codexes_tags():
         'BigSealSourceLastSingles': '--U',
         'BackerRegistrarSealCouples': '-V',
         'BigBackerRegistrarSealCouples': '--V',
-        'TransIdxSigGroups': '-W',
-        'BigTransIdxSigGroups': '--W',
-        'TransLastIdxSigGroups': '-X',
-        'BigTransLastIdxSigGroups': '--X',
+        'TypedDigestSealCouples': '-W',
+        'BigTypedDigestSealCouples': '--W',
+        'TransIdxSigGroups': '-X',
+        'BigTransIdxSigGroups': '--X',
+        'TransLastIdxSigGroups': '-Y',
+        'BigTransLastIdxSigGroups': '--Y',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
         'KERIACDCGenusVersion': '-_AAA'
     }
+
 
     assert asdict(counting.UniDex_2_0) == \
     {
@@ -274,6 +277,8 @@ def test_codexes_tags():
         'BigSealSourceLastSingles',
         'BackerRegistrarSealCouples',
         'BigBackerRegistrarSealCouples',
+        'TypedDigestSealCouples',
+        'BigTypedDigestSealCouples',
         'TransIdxSigGroups',
         'BigTransIdxSigGroups',
         'TransLastIdxSigGroups',
@@ -330,6 +335,8 @@ def test_codexes_tags():
         BigSealSourceLastSingles='BigSealSourceLastSingles',
         BackerRegistrarSealCouples='BackerRegistrarSealCouples',
         BigBackerRegistrarSealCouples='BigBackerRegistrarSealCouples',
+        TypedDigestSealCouples='TypedDigestSealCouples',
+        BigTypedDigestSealCouples='BigTypedDigestSealCouples',
         TransIdxSigGroups='TransIdxSigGroups',
         BigTransIdxSigGroups='BigTransIdxSigGroups',
         TransLastIdxSigGroups='TransLastIdxSigGroups',
@@ -358,6 +365,8 @@ def test_codexes_tags():
         'BigSealSourceLastSingles': '--U',
         'BackerRegistrarSealCouples': '-V',
         'BigBackerRegistrarSealCouples': '--V',
+        'TypedDigestSealCouples': '-W',
+        'BigTypedDigestSealCouples': '--W',
     }
 
     """End Test"""
@@ -480,10 +489,12 @@ def test_counter_class():
                     '--U': 'BigSealSourceLastSingles',
                     '-V': 'BackerRegistrarSealCouples',
                     '--V': 'BigBackerRegistrarSealCouples',
-                    '-W': 'TransIdxSigGroups',
-                    '--W': 'BigTransIdxSigGroups',
-                    '-X': 'TransLastIdxSigGroups',
-                    '--X': 'BigTransLastIdxSigGroups',
+                     '-W': 'TypedDigestSealCouples',
+                    '--W': 'BigTypedDigestSealCouples' ,
+                    '-X': 'TransIdxSigGroups',
+                    '--X': 'BigTransIdxSigGroups',
+                    '-Y': 'TransLastIdxSigGroups',
+                    '--Y': 'BigTransLastIdxSigGroups',
                     '-Z': 'ESSRPayloadGroup',
                     '--Z': 'BigESSRPayloadGroup',
                     '-_AAA': 'KERIACDCGenusVersion'
@@ -575,6 +586,8 @@ def test_counter_class():
                     '--W': Cizage(hs=3, ss=5, fs=8),
                     '-X': Cizage(hs=2, ss=2, fs=4),
                     '--X': Cizage(hs=3, ss=5, fs=8),
+                    '-Y': Cizage(hs=2, ss=2, fs=4),
+                    '--Y': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '--Z': Cizage(hs=3, ss=5, fs=8),
                     '-_AAA': Cizage(hs=5, ss=3, fs=8)

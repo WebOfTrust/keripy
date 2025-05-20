@@ -230,10 +230,12 @@ class CounterCodex_2_0(MapDom):
     BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
     BackerRegistrarSealCouples: str = '-V'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
     BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    TransIdxSigGroups: str = '-W'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    BigTransIdxSigGroups: str = '--W'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    TransLastIdxSigGroups: str = '-X'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    BigTransLastIdxSigGroups: str = '--X'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
+    TypedDigestSealCouples: str = '-W'  # Typed Digest Seal Couple(s), type seal +dig of sealed data.
+    BigTypedDigestSealCouples: str = '--W'  # Big Typed Digest Seal Couple(s), type seal +dig of sealed data.
+    TransIdxSigGroups: str = '-X'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    BigTransIdxSigGroups: str = '--X'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
+    TransLastIdxSigGroups: str = '-Y'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
+    BigTransLastIdxSigGroups: str = '--Y'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
@@ -363,6 +365,8 @@ class SealCodex_2_0(MapDom):
     BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing event.
     BackerRegistrarSealCouples: str = '-V'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
     BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
+    TypedDigestSealCouples: str = '-W'  # Typed Digest Seal Couple(s), type seal +dig of sealed data.
+    BigTypedDigestSealCouples: str = '--W'  # Big Typed Digest Seal Couple(s), type seal +dig of sealed data.
 
 
     def __iter__(self):
@@ -631,6 +635,8 @@ class Counter:
                 '--W': Cizage(hs=3, ss=5, fs=8),
                 '-X': Cizage(hs=2, ss=2, fs=4),
                 '--X': Cizage(hs=3, ss=5, fs=8),
+                '-Y': Cizage(hs=2, ss=2, fs=4),
+                '--Y': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
                 '--Z': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),

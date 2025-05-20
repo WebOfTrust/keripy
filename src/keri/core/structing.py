@@ -17,7 +17,7 @@ from .. import help
 from ..help import nonStringSequence
 
 from . import coring
-from .coring import (MapDom, Matter, Diger, Prefixer, Number)
+from .coring import (MapDom, Matter, Diger, Prefixer, Number, Verser)
 
 
 
@@ -67,6 +67,12 @@ SealTrans = namedtuple("SealTrans", 's d')
 # s = sn of event as lowercase hex string  no leading zeros,
 # d = SAID digest qb64 of event
 SealEvent = namedtuple("SealEvent", 'i s d')
+
+# Kind Digest Seal for typed versioned digests : duple (t, d)
+# t = type of digest as Verser qb64,
+# d = SAID digest qb64 of transaction event
+# use TypedDigestSealCouples count code for attachment
+SealKind = namedtuple("SealKind", 't d')
 
 
 # Following are not seals only used in database
@@ -158,6 +164,7 @@ class SealClanDom(MapDom):
     SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple
     SealLast: type[NamedTuple] = SealLast  # SealLast class reference single
     SealBacker: type[NamedTuple] = SealBacker  # SealBacker class reference
+    SealKind: type[NamedTuple] = SealKind  # SealKind class reference
 
 
     def __iter__(self):
@@ -194,6 +201,8 @@ class SealCastDom(MapDom):
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
     SealBacker: NamedTuple = SealBacker(bi=Castage(Prefixer),
                                         d=Castage(Diger))  # SealBacker class reference
+    SealKind: NamedTuple = SealKind(t=Castage(Verser),
+                                        d=Castage(Diger))  # SealKind class reference
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"

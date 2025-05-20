@@ -16,12 +16,12 @@ from keri import kering
 
 from keri.help import helping
 
-from keri.core import (Matter, Diger, Prefixer, Number)
+from keri.core import (Matter, Diger, Prefixer, Number, Verser)
 
 
 from keri.core import structing
 from keri.core.structing import (SealDigest, SealRoot, SealBacker, SealEvent,
-                                 SealLast, SealTrans)
+                                 SealLast, SealTrans, SealKind)
 from keri.core.structing import (Castage,
                                  Structor, EClanDom, ECastDom,
                                  Sealer, SClanDom, SCastDom, )
@@ -47,6 +47,7 @@ def test_structor_doms():
         'SealTrans': SealTrans,
         'SealLast': SealLast,
         'SealBacker': SealBacker,
+        'SealKind': SealKind,
     }
 
     assert asdict(SCastDom) == \
@@ -59,7 +60,9 @@ def test_structor_doms():
         'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
                                d=Castage(kls=Diger, prm=None)),
         'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
-        'SealBacker': SealBacker(bi=Castage(Prefixer, prm=None),
+        'SealBacker': SealBacker(bi=Castage(kls=Prefixer, prm=None),
+                                 d=Castage(kls=Diger, prm=None)),
+        'SealKind': SealKind(t=Castage(kls=Verser, prm=None),
                                  d=Castage(kls=Diger, prm=None)),
     }
 
@@ -507,10 +510,11 @@ def test_sealer_class():
     {
         ('d',): 'SealDigest',
         ('rd',): 'SealRoot',
-        ('bi', 'd'): 'SealBacker',
-        ('i',): 'SealLast',
-        ('s', 'd'): 'SealTrans',
         ('i', 's', 'd'): 'SealEvent',
+        ('s', 'd'): 'SealTrans',
+        ('i',): 'SealLast',
+        ('bi', 'd'): 'SealBacker',
+        ('t', 'd'): 'SealKind',
     }
 
     """End Test"""
