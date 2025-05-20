@@ -35,6 +35,8 @@ from .coring import (versify, Kinds, Ilks, PreDex, DigDex,
                      Verfer, Diger, Prefixer, Tholder, Saider)
 
 from .counting import Counter, Codens
+from .structing import (SealDigest, SealRoot, SealEvent, SealTrans, SealLast,
+                        SealBack, SealKind, StateEstEvent, StateEvent)
 
 from . import indexing
 from .indexing import Siger
@@ -54,64 +56,6 @@ MaxIntThold = 2 ** 32 - 1
 
 # Location of last establishment key event: sn is int, dig is qb64 digest
 LastEstLoc = namedtuple("LastEstLoc", 's d')
-
-#  for the following Seal namedtuples use the ._asdict() method to convert to dict
-#  when using in events
-# to convert seal namedtuple to dict use namedtuple._asdict()
-# seal == SealEvent(i="abc",s="1",d="efg")
-# sealdict =seal._asdict()
-# to convet dict to namedtuple use ** unpacking as in seal = SealDigest(**sealdict)
-# to check if dict of seal matches fields of associted namedtuple
-# if tuple(sealdict) == SealEvent._fields:
-
-# Digest Seal: uniple (d,)
-# d = digest qb64 of data  (usually SAID)
-SealDigest = namedtuple("SealDigest", 'd')
-
-# Root Seal: uniple (rd,)
-# rd = Merkle tree root digest qb64 digest of anchored (sealed) data in Merkle tree
-SealRoot = namedtuple("SealRoot", 'rd')
-
-# Backer Seal: couple (bi, d)
-# bi = pre qb64 backer nontrans identifier prefix
-# d = digest qb64 of backer metadata anchored to event usually SAID of data
-SealBack = namedtuple("SealBack", 'bi d')
-
-# Last Estalishment Event Seal: uniple (i,)
-# i = pre is qb64 of identifier prefix of KEL from which to get last est, event
-# used to indicate to get the latest keys available from KEL for 'i'
-SealLast = namedtuple("SealLast", 'i')
-
-# Transaction Event Seal for Transaction Event: duple (s, d)
-# s = sn of transaction event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64 of transaction event
-# the pre is provided in the 'i' field  qb64 of identifier prefix of KEL
-# key event that this seal appears.
-# use SealSourceCouples count code for attachment
-SealTrans = namedtuple("SealTrans", 's d')
-
-# Event Seal: triple (i, s, d)
-# i = pre is qb64 of identifier prefix of KEL for event,
-# s = sn of event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64 of event
-SealEvent = namedtuple("SealEvent", 'i s d')
-
-# Following are not seals only used in database
-
-# State Establishment Event (latest current) : quadruple (s, d, br, ba)
-# s = sn of latest est event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64  of latest establishment event
-# br = backer (witness) remove list (cuts) from latest est event
-# ba = backer (witness) add list (adds) from latest est event
-StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
-
-# not used should this be depricated?
-# State Event (latest current) : triple (s, t, d)
-# s = sn of latest event as lowercase hex string  no leading zeros,
-# t = message type of latest event (ilk)
-# d = SAID digest qb64 of latest event
-StateEvent = namedtuple("StateEvent", 's t d')
-
 
 
 # Future make Cues dataclasses  instead of dicts. Dataclasses so may be converted

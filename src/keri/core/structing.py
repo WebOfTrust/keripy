@@ -21,7 +21,7 @@ from .coring import (MapDom, Matter, Diger, Prefixer, Number, Verser)
 
 
 
-# ToDo Change seal namedtuple definitions to NamedTuple subclasses so can
+# ToDo: ? Consider if should change seal namedtuple definitions to NamedTuple subclasses so can
 # use typehints on field values which type hints are the primitive types. Use
 # union | on type hints to allow qb64, qb2, primitive instance, primitive class
 # as acceptable values  This provides more clarity in documentation. Actually
