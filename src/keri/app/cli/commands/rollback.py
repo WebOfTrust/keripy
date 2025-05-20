@@ -9,7 +9,8 @@ import argparse
 from hio.base import doing
 
 from keri import kering, help
-from keri.app.cli.common import displaying, existing
+from keri.app.cli.common import displaying, existing 
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring, serdering
 from keri.db import dbing, basing
 from keri.help import helping
@@ -17,15 +18,10 @@ from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Revert an unpublished interaction event at the end of a local KEL')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Revert an unpublished interaction event at the end of a local KEL', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 
 
 def handler(args):

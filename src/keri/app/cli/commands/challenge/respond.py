@@ -8,19 +8,16 @@ import argparse
 from hio.base import doing
 
 from keri.app import habbing, forwarding, connecting
-from keri.app.cli.common import existing
+from keri.app.cli.common import existing 
+from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
 from keri.peer import exchanging
 
 parser = argparse.ArgumentParser(description='Respond to a list of challenge words by signing and sending an EXN '
-                                             'response')
+                                             'response',
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: respond(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to use for responding', default=None)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--words', '-d', help='JSON formatted array of words to sign, \'@\' allowed to load from a file',
                     action="store", required=True)
 parser.add_argument('--recipient', '-r', help='Contact alias of the AID to send the signed words to',
