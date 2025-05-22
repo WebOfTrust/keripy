@@ -16,7 +16,7 @@ import pytest
 from  ordered_set import OrderedSet as oset
 
 from keri import kering
-from keri.kering import (Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
+from keri.kering import (Colds, Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN,)
 

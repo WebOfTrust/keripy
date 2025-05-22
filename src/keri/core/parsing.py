@@ -8,6 +8,8 @@ import copy
 import logging
 from dataclasses import asdict
 from collections import deque
+from base64 import urlsafe_b64decode as decodeB64
+from base64 import urlsafe_b64encode as encodeB64
 
 from .. import kering
 from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
@@ -951,13 +953,36 @@ class Parser:
                                           svrsn=self.version)
                     exts['serder'] = serder
 
+                elif (ctr.code in (self.mucodes.FixedMessageBodyGroup,
+                                   self.mucodes.BigFixedMessageBodyGroup)):
+                    #del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                    cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
+                    fmgs = ctr.byteCount(cold=cold)  # fixed body group size
+                    size = cbs + fmgs
+                    while len(ims) < size and not framed:  # framed already in ims
+                        yield  # until full group in ims
+
+                    fims = ims[:size]  # copy out
+                    del ims[:fmgs]  # strip off from ims
+
+                    if cold == Colds.bny:  # tranform to text domain
+                        fims = encodeB64(fims)  # always process event in qb64 text domain
+                        size = (size * 4) // 3
+
+                    # fims includes full body with counter but no attachments
+                    serder = serdery.reap(ims=fims,
+                                         genus=self.genus,
+                                         svrsn=self.version,
+                                         ctr=ctr,
+                                         size=size)
+
                 elif ctr.code in self.mucodes:  # process other native message group
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     nmgs = ctr.byteCount(cold=cold)  # native message group size
                     while len(ims) < nmgs and not framed:  # framed already in ims
                         yield
 
-                    nims = ims[:nmgs]  # copy out substream enclosed attachments
+                    nims = ims[:nmgs]  # copy out substream
                     del ims[:nmgs]  # strip off from ims
                     # now nims includes just the native message not attachments
                     # and native message has been stripped from ims

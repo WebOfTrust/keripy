@@ -9,6 +9,7 @@ from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, asdict, field
 
+
 import cbor2 as cbor
 import msgpack
 import pysodium
@@ -39,7 +40,7 @@ from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
 from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
                      Ilker, Traitor, Verser, )
 
-from .counting import GenDex, Counter, Codens, SealDex_2_0
+from .counting import GenDex, Counter, Codens, SealDex_2_0, MUDex_2_0
 
 from .structing import Sealer, SClanDom
 
@@ -174,7 +175,7 @@ class Serdery:
         self.version = version
 
 
-    def reap(self, ims, genus, svrsn, native=False, skip=0):
+    def reap(self, ims, genus, svrsn, cold=None, ctr=None, size=None):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -190,28 +191,45 @@ class Serdery:
             svrsn (Versionage): stream genus version instance CESR genus code
                     table version (Major, Minor)
                     Provides CESR version of enclosing stream top-level or nested group
-            native (bool): True means sniff determined may be CESR native message
-                           so snuff instead of smell.
-                           False means sniff determined not CESR native i.e
-                           JSON, CBOR, MGPK field map. so use smell. Default False
-            skip (int): bytes to skip at front of ims. Useful when CESR native
-                serialization where skip is size of the message counter so smell
-                does need to see counter
-
+            cold (None|Colds): Not None means sniff determined CESR native message
+                                Using ctr. Must then be colds.txt or colds.bny.
+                                Otherwise JSON, CBOR, MGPK field map.
+                                so use smell. Default None
+            ctr (None|Counter): Not None means sniff determined CESR native message
+                                Using ctr. Otherwise JSON, CBOR, MGPK field map.
+                                so use smell. Default None
+            size (None|int): Not None means CESR native messag using ctr and
+                             size already calculated. All bytes in stream.
         """
-        if native:
-            pass
-            #smellage = smell(memoryview(ims)[skip:])  # does not copy to skip
+        if ctr:  # sniffed already to be couter fixed body or map body group code
+            # peeked to see .FixedBodyGroup or .MapBodyGroup so know it's native
+            # get counter
+            # Now peek into to see Verser (just index past leading group small or big size
+            # with verser can get proto and pvrsn (and also gvrsn if long version)
+            # set kind to Kinds.CESR,
+            # then can populate smellage  "proto pvrsn kind size gvrsn"
+            # smellage "proto pvrsn kind size gvrsn"
+            # Serder._inhale then does the .loads given the smellage is CESR
+            if (ctr.code in (MUDex_2_0.FixedMessageBodyGroup,
+                             MUDex_2_0.BigFixedMessageBodyGroup)):
+                proto = Protocols.keri
+            else:
+                proto = Protocols.acdc
 
+            verser = Verser(qb64b=ims[ctr.fullSize:])  # in text domain
+            proto, pvrsn, gvrsn = verser.versage
+            smellage = Smellage(proto=proto, pvrsn=pvrsn, kind=Kinds.cesr,
+                                size=size, gvrsn=gvrsn)
         else:
-            smellage = smell(ims)  # "proto pvrsn kind size gvrsn"
-            if smellage.pvrsn.major > svrsn.major:
-                raise SerializeError(f"Incompatible major protocol version="
-                                     f"{smellage.pvrsn} with stream major genus "
-                                     f"version={svrsn}.")
-            if getattr(GenDex, smellage.proto, None) != genus:
-                raise SerializeError(f"Incompatible protocol={smellage.proto} with "
-                                     f"genus={genus}.")
+            smellage = smell(ims)  #
+
+        if smellage.pvrsn.major > svrsn.major:
+            raise SerializeError(f"Incompatible major protocol version="
+                                 f"{smellage.pvrsn} with stream major genus "
+                                 f"version={svrsn}.")
+        if getattr(GenDex, smellage.proto, None) != genus:
+            raise SerializeError(f"Incompatible protocol={smellage.proto} with "
+                                 f"genus={genus}.")
 
         if smellage.proto == Protocols.keri:
             return SerderKERI(raw=ims, strip=True, smellage=smellage)
@@ -584,7 +602,8 @@ class Serder:
 
         if raw:  # deserialize raw using property setter
             self._inhale(raw=raw, smellage=smellage)
-            # ._inhale updates ._raw, ._sad, ._proto, ._vrsn, ._kind, ._size
+            # ._inhale updates ._raw, ._sad, ._proto, ._pvrsn, .genus, .gvrsn,
+            # ._kind, ._size
 
             # primary said field label
             try:
@@ -1063,8 +1082,8 @@ class Serder:
         serialization size and kind
 
         Returns:
-           sad (dict | list): deserialized dict or list. Assumes attribute
-                dict of saidified data.
+           sad (dict|list): de-serialized dict or list.
+                            Supposed to be dict of saidified data.
 
         Parameters:
            raw (bytes | bytearray): raw serialization to deserialze as dict
@@ -1076,26 +1095,34 @@ class Serder:
         Notes:
             loads of json uses str whereas loads of cbor and msgpack use bytes
         """
+        if kind == Kinds.cesr:
+            #raise DeserializeError(f"Invalid deserialization kind: {kind}")
+            try:
+                sad = self._loads(raw=raw, size=size)
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing CESR: "
+                                      f"{raw[:size].decode()}") from ex
+
         if kind == Kinds.json:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing JSON: "
-                    f"{raw[:size].decode('utf-8')}") from ex
+                    f"{raw[:size].decode()}") from ex
 
         elif kind == Kinds.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing MGPK: "
-                    f"{raw[:size].decode('utf-8')}") from ex
+                    f"{raw[:size].decode()}") from ex
 
         elif kind == Kinds.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing CBOR: "
-                    f"{raw[:size].decode('utf-8')}") from ex
+                    f"{raw[:size].decode()}") from ex
 
         else:
             raise DeserializeError(f"Invalid deserialization kind: {kind}")
@@ -1104,19 +1131,20 @@ class Serder:
 
 
     def _loads(self, raw, size=None):
-        """CESR native desserialization of raw
+        """CESR native de-serialization from raw in qb64b text domain bytes
 
         Returns:
            sad (dict): deserialized dict of CESR native serialization.
 
         Parameters:
-           clas (Serder): class reference
-           raw (bytes |bytearray): raw serialization to deserialze as dict
+           raw (bytes |bytearray): qb64b raw serialization in text domain byte
+                                   to deserialze as dict
            size (int): number of bytes to consume for the deserialization.
                        If None then consume all bytes in raw
         """
         # ._gvrsn may be set in loads when CESR native deserialization provides _gvrsn
-        pass
+        sad = {}
+        return sad
 
 
     def _exhale(self, sad):
@@ -1194,10 +1222,10 @@ class Serder:
 
 
     def _dumps(self, sad=None, proto=None, pvrsn=None):
-        """CESR native serialization of sad
+        """CESR native serialization of sad in qb64b text domain bytes
 
         Returns:
-            raw (bytes): CESR native serialization of sad dict
+            raw (bytes): CESR native serialization of sad dict in qb64b text domain
 
         Parameters:
             sad (dict | None)): serializable dict to serialize
