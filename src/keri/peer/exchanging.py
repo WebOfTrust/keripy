@@ -363,7 +363,7 @@ def exchange(route,
         kind (Serials): is serialization kind
 
     """
-    vs = coring.versify(version=version, kind=kind, size=0)
+    vs = coring.versify(pvrsn=version, kind=kind, size=0)
     ilk = eventing.Ilks.exn
     dt = date if date is not None else helping.nowIso8601()
     p = dig if dig is not None else ""

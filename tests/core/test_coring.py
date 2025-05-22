@@ -5166,7 +5166,7 @@ def test_saider():
 
     # Load from vaccuous dict
     label = Saids.d
-    vs = versify(version=Version, kind=kind, size=0)  # vaccuous size == 0
+    vs = versify(pvrsn=Version, kind=kind, size=0)  # vaccuous size == 0
     assert vs == 'KERI10JSON000000_'
     sad4 = dict(
         v=vs,
@@ -5246,7 +5246,7 @@ def test_saider():
     assert saider.verify(sad8, prefixed=True)
 
     # verify gets kind from version string if provided when loading from dict
-    vs = versify(version=Version, kind=Kinds.mgpk, size=0)  # vaccuous size == 0
+    vs = versify(pvrsn=Version, kind=Kinds.mgpk, size=0)  # vaccuous size == 0
     assert vs == 'KERI10MGPK000000_'
     sad9 = dict(sad4)
     sad9['v'] = vs

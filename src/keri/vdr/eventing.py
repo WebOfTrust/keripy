@@ -63,7 +63,7 @@ def incept(
 
     """
 
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 0
     ilk = Ilks.vcp
 
@@ -143,7 +143,7 @@ def rotate(
     if sn < 1:
         raise ValueError("Invalid sn = {} for vrt.".format(sn))
 
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     ilk = Ilks.vrt
 
     baks = baks if baks is not None else []
@@ -232,7 +232,7 @@ def issue(
 
     """
 
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     ked = dict(v=vs,  # version string
                t=Ilks.iss,
                d="",
@@ -274,7 +274,7 @@ def revoke(
 
     """
 
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 1
     ilk = Ilks.rev
 
@@ -325,7 +325,7 @@ def backerIssue(
 
     """
 
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 0
     ilk = Ilks.bis
 
@@ -379,7 +379,7 @@ def backerRevoke(
 
     """
 
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 1
     ilk = Ilks.brv
 

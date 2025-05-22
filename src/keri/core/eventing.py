@@ -632,7 +632,7 @@ def incept(keys,
         delpre (str | None): delegator identifier prefix qb64. When not None
             makes this a msg type "dip", delegated inception event.
     """
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
     sner = Number(num=0)  # sn for incept must be 0
 
@@ -779,7 +779,7 @@ def rotate(pre,
         intive (bool): True means sith, nsith, and toad are serialized as ints
                        instead of hex str when numeric threshold
     """
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
 
     ilk = ilk
     if ilk not in (Ilks.rot, Ilks.drt):
@@ -931,7 +931,7 @@ def interact(pre,
         version is Version instance
         kind is serialization kind
     """
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     ilk = Ilks.ixn
     sner = Number(num=sn)
     if sner.num < 1:  # sn for interact must be >= 1
@@ -973,7 +973,7 @@ def receipt(pre,
         version is Version instance of receipt
         kind  is serialization kind of receipt
     """
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     ilk = Ilks.rct
 
     sner = Number(num=sn)
@@ -1029,7 +1029,7 @@ def query(route="",
       }
     }
     """
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     ilk = Ilks.qry
 
     sad = dict(v=vs,  # version string
@@ -1085,7 +1085,7 @@ def reply(route="",
     }
     """
     label = coring.Saids.d
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     if data is None:
         data = {}
 
@@ -1126,7 +1126,7 @@ def prod(route="",
     }
 
     """
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
     ilk = Ilks.pro
 
     sad = dict(v=vs,  # version string
@@ -1187,7 +1187,7 @@ def bare(route="",
         }
     }
     """
-    vs = versify(version=version, kind=kind, size=0)
+    vs = versify(pvrsn=version, kind=kind, size=0)
 
     sad = dict(v=vs,  # version string
                t=Ilks.bar,

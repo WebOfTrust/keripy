@@ -109,7 +109,7 @@ def sizeify(ked, kind=None, version=Version):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = versify(protocol=proto, version=vrsn, kind=kind, size=size)
+    vs = versify(proto=proto, pvrsn=vrsn, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up

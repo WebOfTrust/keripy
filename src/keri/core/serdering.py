@@ -1005,7 +1005,7 @@ class Serder:
             size = len(raw)
 
             # generate new version string with correct size
-            vs = versify(protocol=proto, version=pvrsn, kind=kind, size=size)
+            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size)
             sad["v"] = vs  # update version string in sad
             # now have correctly sized version string in sad
 
