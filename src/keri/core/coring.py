@@ -2503,7 +2503,6 @@ class Verser(Tagger):
             versage (Versage):  named tuple of (proto, pvrsn, gvrsn)
 
         """
-        gvrsn = None
         proto = self.tag[:4]
         pvrsn = self.b64ToVer(self.tag[4:7])
         gvrsn = self.b64ToVer(self.tag[7:10]) if len(self.tag) == 10 else None

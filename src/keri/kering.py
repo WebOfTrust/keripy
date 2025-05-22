@@ -74,7 +74,7 @@ def rematch(match):
     """
     Returns:
         smellage (Smellage): named tuple extracted from version string regex match
-                            (protocol, version, kind, size)
+                            (proto, pvrsn, kind, size, gvrsn)
 
     Parameters:
         match (re.Match):  instance of Match class
@@ -123,7 +123,7 @@ def rematch(match):
     else:
         raise VersionError(f"Bad rematch.")
 
-    return Smellage(proto=proto, pvrsn=pvrsn, kind=kind, size=size)
+    return Smellage(proto=proto, pvrsn=pvrsn, kind=kind, size=size)  # gvrsn default
 
 
 def versify(protocol=Protocols.keri, version=Version, kind=Kinds.json, size=0):
@@ -151,14 +151,16 @@ def versify(protocol=Protocols.keri, version=Version, kind=Kinds.json, size=0):
 
 def deversify(vs):
     """
-    Returns:  tuple(proto, kind, version, size) Where:
-        proto (str): value is protocol type identifier one of Protocols (Protocolage)
+    Returns:
+        smellage (Smellage): tuple of form (proto, pvrsn, kind, size, gvrsn)) Where:
+            proto (str): value is protocol type identifier one of Protocols (Protocolage)
                    acdc='ACDC', keri='KERI'
 
-        vrsn (tuple):  version tuple of type Versionage
-        kind (str): value is serialization kind, one of Serials
+            pvrsn (Versionage): proto version ( major, minor)
+            kind (str): value is serialization kind, one of Serials
                    json='JSON', mgpk='MGPK', cbor='CBOR'
-        size  (int): raw size in bytes
+            size  (int): raw size in bytes
+            gvrsn (Versionage): genus version (major, minor)
 
     Parameters:
       vs (str | bytes): version string to extract from
@@ -176,7 +178,7 @@ def deversify(vs):
     if not match:
         raise VersionError(f"Invalid version string = '{vs}'.")
 
-    return rematch(match)
+    return rematch(match)  # smellage (proto, pvrsn, kind, size, gvrsn)
 
 
 def smell(raw):

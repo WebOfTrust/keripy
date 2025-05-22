@@ -1788,7 +1788,7 @@ def test_parser_v2_basic():
             'a': []
         }
 
-        assert serder.pvrsn == serder.gvrsn == Vrsn_2_0
+        assert serder.pvrsn == Vrsn_2_0
 
 
         event_digs.append(serder.said)
@@ -2215,7 +2215,7 @@ def test_parser_v2_mix():
             'a': []
         }
 
-        assert serder.pvrsn == serder.gvrsn == Vrsn_2_0
+        assert serder.pvrsn == Vrsn_2_0
 
         event_digs.append(serder.said)
         # extend key event stream with msg

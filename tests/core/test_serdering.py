@@ -2529,7 +2529,7 @@ def test_serder_v2():
     assert serder.pvrsn == kering.Vrsn_2_0
     assert serder.kind == kering.Kinds.json == Serder.Kind  # default
     assert serder.ilk == kering.Ilks.icp  # default first one
-
+    assert serder.genus == GenDex.KERI == Serder.Genus
 
     """End Test"""
 
@@ -3242,7 +3242,9 @@ def test_cesr_native_dumps():
 
 
 def test_cesr_native_dumps_hby():
-    """Test Serder._dumps with habery"""
+    """Test Serder._dumps with habery for version 2  Need to fix habery so can
+    give it different protocol version and kind = CESR
+    """
 
     rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = core.Salter(raw=rawsalt)
