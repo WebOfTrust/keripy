@@ -119,6 +119,9 @@ def rematch(match):
         kind = kind.decode()
         if kind not in Kinds:
             raise KindError(f"Invalid serialization kind = {kind}.")
+        if kind == Kinds.cesr:
+            raise KindError(f"Invalid serialization {kind=} for message protocol"
+                            f"  major version={pvrsn.major}")
         size = int(size, 16)
 
     else:

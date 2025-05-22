@@ -2641,7 +2641,7 @@ def test_cesr_native_dumps():
     assert len(rawqb2) == 138
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
-    rawjson = serder.dumps(serder.sad)
+    rawjson = serder.dumps(serder.sad)  # default kind is json so converts to json
     assert len(rawjson) == 252
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)

@@ -916,6 +916,7 @@ class Serder:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
+
         fields = self.Fields[proto][pvrsn][ilk]  # get FieldDom of fields
 
         alls = fields.alls  # faster local reference
@@ -997,39 +998,43 @@ class Serder:
                                           f" in sad = {sad}.")
 
         if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
-            # this size of sad needs to be computed based on actual version string span
+            # Non native the size the version string depends on version so we
+            # need to dummy the version string in order to get the size right.
+            # It needs to be computed based on actual version string span
             # since not same for all versions
             sad['v'] = self.Dummy * self.Spans[pvrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
 
             raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
             size = len(raw)
 
-            # generate new version string with correct size
-            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size)
+            # generate version string with correct size
+            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
             sad["v"] = vs  # update version string in sad
             # now have correctly sized version string in sad
 
 
-        # compute saidive digestive field values using raw from sized dummied sad
-        # need proto and pvrsn for CESR native ._dumps
-        raw = self.dumps(sad, kind=kind, proto=proto, pvrsn=pvrsn)  # serialize sized dummied sad
-        for label, code in _saids.items():  # replace dummied fields with computed digests
-            if code in DigDex:  # subclass override if non digestive allowed
-                sad[label] = Diger(ser=raw, code=code).qb64
-
-        # Now reserialize raw with undummied field values
-        raw = self.dumps(sad, kind=kind, proto=proto, pvrsn=pvrsn)  # assign final raw
-        if kind == Kinds.cesr:# cesr kind version string does not set size
-            size = len(raw) # size of whole message
-
-        self._raw = raw
-        self._sad = sad
+        # do this now so ._dumps of cesr native can use properties without having
+        # re-deversify sad['v'] each time
         self._proto = proto
         self._pvrsn = pvrsn
         self._genus = genus
         self._gvrsn = gvrsn
         self._kind = kind
+
+        # compute saidive digestive field values using raw from sized dummied sad
+        raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
+        for label, code in _saids.items():  # replace dummied fields with computed digests
+            if code in DigDex:  # subclass override if non digestive allowed
+                sad[label] = Diger(ser=raw, code=code).qb64
+
+        # Now reserialize raw with undummied field values
+        raw = self.dumps(sad, kind=kind)  # assign final raw
+        if kind == Kinds.cesr:# cesr kind version string does not set size
+            size = len(raw) # size of whole message
+
+        self._raw = raw
         self._size = size
+        self._sad = sad
 
 
 
@@ -1159,7 +1164,7 @@ class Serder:
     def _exhale(self, sad):
         """Serializes sad and assigns attributes.
         Asssumes all field values in sad are valid
-        Call .verify to otherwise
+        Otherwise must first call .verify
 
         Parameters:
             sad (dict): serializable attribute dict of saidified data
@@ -1171,7 +1176,14 @@ class Serder:
         proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
         # cesr native  uses self.proto, self,prvsn, and self.gvsn  in dumps
         # need kind to indicate dump without relooking at version.
-        raw = self.dumps(sad, kind)  # uses self.gvrsn if not None
+
+        self._proto = proto
+        self._pvrsn = pvrsn
+        self._gvrsn = gvrsn
+        self._kind = kind
+        self._size = size
+
+        raw = self.dumps(sad, kind)
 
         if kind in (Kinds.cesr):  # cesr kind version string does not set size
             size = len(raw) # size of whole message
@@ -1179,14 +1191,10 @@ class Serder:
         # must call .verify to ensure these are compatible
         self._raw = raw  # crypto opts want bytes not bytearray
         self._sad = sad
-        self._proto = proto
-        self._pvrsn = pvrsn
-        self._gvrsn = gvrsn
-        self._kind = kind
-        self._size = size
 
 
-    def dumps(self, sad=None, kind=Kinds.json, proto=None, pvrsn=None):
+
+    def dumps(self, sad=None, kind=Kinds.json):
         """Method to handle serialization by kind
         Assumes sad fields are properly filled out for serialization kind.
 
@@ -1194,15 +1202,10 @@ class Serder:
             raw (bytes): serialization of sad dict using serialization kind
 
         Parameters:
-            sad (dict | list | None)): serializable dict or list to serialize
+            sad (dict|None)): serializable dict or list to serialize
+                              If None use self.sad
             kind (str): value of Serials (Serialage) serialization kind
                 "JSON", "MGPK", "CBOR", "CESR"
-            proto (str | None): when CESR, desired protocol type str value
-                of Protocols If None then eventually use self.proto
-                Need initially
-            pvrsn (Versionage | None): when CESR, native instance desired protocol
-                version If None then eventually self.pvrsn
-
 
         Notes:
             dumps of json uses str whereas dumps of cbor and msgpack use bytes
@@ -1210,18 +1213,21 @@ class Serder:
         """
         sad = sad if sad is not None else self.sad
 
-        if kind == Kinds.json:
-            raw = json.dumps(sad, separators=(",", ":"),
-                             ensure_ascii=False).encode("utf-8")
+        if not isinstance(sad, Mapping):
+            raise ValueError(f"Serder sad must be Mapping not {type(sad)}")
 
-        elif kind == Kinds.mgpk:
+        if kind == Kinds.json: # json.dumps returns str
+            raw = json.dumps(sad, separators=(",", ":"),
+                             ensure_ascii=False).encode()
+
+        elif kind == Kinds.mgpk:  # mgpk.dumps returns bytes
             raw = msgpack.dumps(sad)
 
-        elif kind == Kinds.cbor:
+        elif kind == Kinds.cbor:  # cbor.dumps returns bytes
             raw = cbor.dumps(sad)
 
-        elif kind == Kinds.cesr:  # does not support list only dict
-            raw = self._dumps(sad, proto=proto, pvrsn=pvrsn)
+        elif kind == Kinds.cesr:  # _dumps returns bytes qb64b
+            raw = self._dumps(sad)
 
         else:
             raise SerializeError(f"Invalid serialization kind = {kind}")
@@ -1229,18 +1235,15 @@ class Serder:
         return raw
 
 
-    def _dumps(self, sad=None, proto=None, pvrsn=None):
+    def _dumps(self, sad=None):
         """CESR native serialization of sad in qb64b text domain bytes
 
         Returns:
             raw (bytes): CESR native serialization of sad dict in qb64b text domain
 
         Parameters:
-            sad (dict | None)): serializable dict to serialize
-            proto (str | None): desired protocol type str value of Protocols
-                If None then self.proto
-            pvrsn (Versionage | None): instance desired protocol version
-                If None then self.pvrsn
+            sad (dict|None)): serializable dict to serialize
+                              If None use self.sad
 
         Versioning:
             CESR native serialization includes in its fixed version field
@@ -1255,12 +1258,13 @@ class Serder:
 
         """
         sad = sad if sad is not None else self.sad
-        proto = proto if proto is not None else self.proto
-        pvrsn = pvrsn if pvrsn is not None else self.pvrsn
+        proto = self.proto
+        pvrsn = self.pvrsn
+        gvrsn = self.gvrsn
 
-        if ((self.gvrsn is not None and self.gvrsn.major < Vrsn_2_0.major) or
+        if ((gvrsn is not None and gvrsn.major < Vrsn_2_0.major) or
                 pvrsn.major < Vrsn_2_0.major):
-            raise SerializeError(f"Invalid major genus version={self.gvrsn}"
+            raise SerializeError(f"Invalid major genus version={gvrsn}"
                                 f"or Invalid major protocol version={pvrsn}"
                                 f" for native CESR serialization.")
 
@@ -1270,8 +1274,6 @@ class Serder:
         if getattr(GenDex, proto, None) != self.genus:
             raise SerializeError(f"Incompatible protocol={proto} with "
                                  f"genus={self.genus}.")
-
-
 
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
@@ -1301,8 +1303,8 @@ class Serder:
 
             for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
-                    case "v":  # protocol+version  do not use version string itself
-                        val = Verser(proto=proto, pvrsn=pvrsn).qb64b
+                    case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                        val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
 
                     case "t":  # message type (ilk), already got ilk
                         val = Ilker(ilk=v).qb64b  # assumes same
