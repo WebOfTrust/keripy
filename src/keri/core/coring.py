@@ -307,7 +307,8 @@ class MatterCodex:
     Label2:               str = 'W'  # Label2 2 bytes for label lead size 0
     Tag3:                 str = 'X'  # Tag3  3 B64 encoded chars for special values
     Tag7:                 str = 'Y'  # Tag7  7 B64 encoded chars for special values
-    Blind:                str = 'Z'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
+    Tag11:                str = 'Z'  # Tag11  11 B64 encoded chars for special values
+    Blind:                str = 'a'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
     Salt_128:             str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -558,6 +559,7 @@ class TagCodex:
     Tag8:  str = '1AAN'  # 8 B64 char tag
     Tag9:  str = '0N'  # 9 B64 char tag with 1 pre pad
     Tag10: str = '0O'  # 10 B64 char tag
+    Tag11: str = 'Z'  # 11 B64 char tag
 
     def __iter__(self):
         return iter(astuple(self))
@@ -584,6 +586,7 @@ class LabelCodex:
     Tag8:  str = '1AAN'  # 8 B64 char tag
     Tag9:  str = '0N'  # 9 B64 char tag with 1 pre pad
     Tag10: str = '0O'  # 10 B64 char tag
+    Tag11: str = 'Z'   # 11 B64 char tag
     StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
     StrB64_L1:     str = '5A'  # String Base64 Only Leader Size 1
     StrB64_L2:     str = '6A'  # String Base64 Only Leader Size 2
@@ -800,7 +803,8 @@ class Matter:
         'W': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=3, xs=0, fs=4, ls=0),
         'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'Z': Sizage(hs=1, ss=11, xs=0, fs=12, ls=0),
+        'a': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
@@ -2387,9 +2391,9 @@ class Traitor(Tagger):
 
 # Versage namedtuple
 # proto (str): protocol element of Protocols
-# vrsn (Versionage): instance protocol version namedtuple (major, minor) ints
+# pvrsn (Versionage): instance protocol version namedtuple (major, minor) ints
 # gvrsn (Versionage | None): instance genus version namedtuple (major, minor) ints
-Versage = namedtuple("Versage", "proto vrsn gvrsn", defaults=(None, ))
+Versage = namedtuple("Versage", "proto pvrsn gvrsn", defaults=(None, ))
 
 
 class Verser(Tagger):
@@ -2428,7 +2432,7 @@ class Verser(Tagger):
 
 
     Properties:
-        versage (Versage):  named tuple of (proto, vrsn, gvrsn)
+        versage (Versage):  named tuple of (proto, pvrsn, gvrsn)
 
     Inherited Hidden:  (See Tagger)
         _code (str): value for .code property
@@ -2451,7 +2455,7 @@ class Verser(Tagger):
 
 
     def __init__(self, qb64b=None, qb64=None, qb2=None, versage=None,
-                 proto=Protocols.keri, vrsn=Vrsn_2_0, gvrsn=None, tag='', **kwa):
+                 proto=Protocols.keri, pvrsn=Vrsn_2_0, gvrsn=None, tag='', **kwa):
         """
         Inherited Parameters:  (see Tagger)
             raw (bytes | bytearray | None): unqualified crypto material usable
@@ -2469,9 +2473,9 @@ class Verser(Tagger):
             tag (str | bytes):  Base64 plain. Prepad is added as needed.
 
         Parameters:
-            versage (Versage | None): namedtuple of (proto, vrsn, gvrsn)
+            versage (Versage | None): namedtuple of (proto, pvrsn, gvrsn)
             proto (str | None): protocol from Protocols
-            vrsn  (Versionage | None): instance protocol version.
+            pvrsn  (Versionage | None): instance protocol version.
                namedtuple (major, minor) of ints
             gvrsn (Versionage | None): instance genus version.
                namedtuple (major, minor) of ints
@@ -2479,9 +2483,9 @@ class Verser(Tagger):
         """
         if not (qb64b or qb64 or qb2):
             if versage:
-                proto, vrsn, gvrsn = versage
+                proto, pvrsn, gvrsn = versage
 
-            tag = proto + self.verToB64(vrsn)
+            tag = proto + self.verToB64(pvrsn)
 
             if gvrsn:
                 tag += self.verToB64(gvrsn)
@@ -2496,15 +2500,15 @@ class Verser(Tagger):
     @property
     def versage(self):
         """Returns:
-            versage (Versage):  named tuple of (proto, vrsn, gvrsn)
+            versage (Versage):  named tuple of (proto, pvrsn, gvrsn)
 
         """
         gvrsn = None
         proto = self.tag[:4]
-        vrsn = self.b64ToVer(self.tag[4:7])
+        pvrsn = self.b64ToVer(self.tag[4:7])
         gvrsn = self.b64ToVer(self.tag[7:10]) if len(self.tag) == 10 else None
 
-        return Versage(proto=proto, vrsn=vrsn, gvrsn=gvrsn)
+        return Versage(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn)
 
 
     @staticmethod

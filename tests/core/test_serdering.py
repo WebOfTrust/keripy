@@ -30,6 +30,7 @@ from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
 
 from keri.core.eventing import (incept, interact, rotate, delcept, deltate)
+from keri.core import GenDex
 
 from keri.app import habbing
 
@@ -2569,18 +2570,18 @@ def test_serdery():
 
     serdery = Serdery()
 
-    serder = serdery.reap(ims)
+    serder = serdery.reap(ims, genus=GenDex.KERI, svrsn=Vrsn_2_0)
     assert isinstance(serder, SerderKERI)
     assert serder.raw == serderKeri.raw
 
-    serder = serdery.reap(ims)
+    serder = serdery.reap(ims, genus=GenDex.KERI, svrsn=Vrsn_2_0)
     assert isinstance(serder, SerderACDC)
     assert serder.raw == serderAcdc.raw
 
     assert ims == bytearray(b'Not a Serder here or there or anywhere.')
 
     with pytest.raises(kering.VersionError):
-        serder = serdery.reap(ims)
+        serder = serdery.reap(ims, genus=GenDex.KERI, svrsn=Vrsn_2_0)
 
     assert ims == bytearray(b'Not a Serder here or there or anywhere.')
 

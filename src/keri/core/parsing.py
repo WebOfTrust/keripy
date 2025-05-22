@@ -948,7 +948,7 @@ class Parser:
                                                         abort=framed)
                     serder = serdery.reap(ims=texter.raw,
                                           genus=self.genus,
-                                          gvrsn=self.version)
+                                          svrsn=self.version)
                     exts['serder'] = serder
 
                 elif ctr.code in self.mucodes:  # process other native message group
@@ -976,7 +976,7 @@ class Parser:
                     try:
                         serder = serdery.reap(ims=ims,
                                               genus=self.genus,
-                                              gvrsn=self.version)
+                                              svrsn=self.version)
                     except kering.ShortageError as ex:  # need more bytes
                         if framed:  # pre-extracted
                             raise  # incomplete frame or group so abort by raising error

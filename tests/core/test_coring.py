@@ -236,7 +236,8 @@ def test_matter_class():
         'Label2': 'W',
         'Tag3': 'X',
         'Tag7': 'Y',
-        'Blind': 'Z',
+        'Tag11': 'Z',
+        'Blind': 'a',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -347,7 +348,8 @@ def test_matter_class():
         'W': 'Label2',
         'X': 'Tag3',
         'Y': 'Tag7',
-        'Z': 'Blind',
+        'Z': 'Tag11',
+        'a': 'Blind',
         '0A': 'Salt_128',
         '0B': 'Ed25519_Sig',
         '0C': 'ECDSA_256k1_Sig',
@@ -472,7 +474,8 @@ def test_matter_class():
         'W': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=3, xs=0, fs=4, ls=0),
         'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'Z': Sizage(hs=1, ss=11, xs=0, fs=12, ls=0),
+        'a': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
@@ -3630,7 +3633,7 @@ def test_tagger():
     assert tagger.tag == tag
 
 
-    tags = 'abcdefghij'
+    tags = 'abcdefghijk'
     alltags = dict()
     for l in range(1, len(astuple(TagDex)) + 1):
         tag = tags[:l]
@@ -3651,7 +3654,8 @@ def test_tagger():
             7: ('abcdefg', 'Y'),
             8: ('abcdefgh', '1AAN'),
             9: ('abcdefghi', '0N'),
-            10: ('abcdefghij', '0O')
+            10: ('abcdefghij', '0O'),
+            11: ('abcdefghijk', 'Z'),
          }
     """ Done Test """
 
@@ -3856,7 +3860,7 @@ def test_verser():
     qb64b = qb64.encode()
     qb2 = decodeB64(qb64b)
     raw = b''
-    versage = Versage(proto=Protocols.keri, vrsn=Vrsn_2_0, gvrsn=None)
+    versage = Versage(proto=Protocols.keri, pvrsn=Vrsn_2_0, gvrsn=None)
 
     verser = Verser()  # defaults
     assert verser.code == verser.hard == code
@@ -3881,7 +3885,7 @@ def test_verser():
     assert verser.composable
     assert verser.versage == versage
 
-    verser = Verser(proto=Protocols.keri, vrsn=Vrsn_2_0)
+    verser = Verser(proto=Protocols.keri, pvrsn=Vrsn_2_0)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
     assert verser.tag == tag
@@ -3929,7 +3933,7 @@ def test_verser():
     qb64b = qb64.encode()
     qb2 = decodeB64(qb64b)
     raw = b''
-    versage = Versage(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+    versage = Versage(proto=Protocols.acdc, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
 
     verser = Verser(versage=versage)
     assert verser.code == verser.hard == code
@@ -3942,7 +3946,7 @@ def test_verser():
     assert verser.composable
     assert verser.versage == versage
 
-    verser = Verser(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+    verser = Verser(proto=Protocols.acdc, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
     assert verser.tag == tag

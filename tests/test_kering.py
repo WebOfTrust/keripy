@@ -177,14 +177,14 @@ def test_smell():
 
     raw = b'{"vs":"KERICAAJSONAAAB.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
     assert smell(raw) == Smellage(proto='KERI',
-                                  vrsn=Versionage(major=2, minor=0),
+                                  pvrsn=Versionage(major=2, minor=0),
                                   kind='JSON',
                                   size=1,
                                   gvrsn=None)
 
     raw = b'{"vs":"KERI10JSON000002_","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
     assert smell(raw) == Smellage(proto='KERI',
-                                  vrsn=Versionage(major=1, minor=0),
+                                  pvrsn=Versionage(major=1, minor=0),
                                   kind='JSON',
                                   size=2,
                                   gvrsn=None)
@@ -209,7 +209,6 @@ def test_snuff():
 
 
     """
-
     # version field in CESR native serialization
     VFFULLSPAN = 12  # number of characters in full version string
     VFREX = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
@@ -223,7 +222,7 @@ def test_snuff():
     def snatch(match, size=0):
         """ Returns:
             smellage (Smellage): named tuple extracted from version string regex match
-                                (protocol, version, kind, size)
+                                (protocol, version, kind, size, gvrsn)
 
         Parameters:
             match (re.Match):  instance of Match class
@@ -243,9 +242,9 @@ def test_snuff():
             proto = proto.decode("utf-8")
             if proto not in Protocols:
                 raise ProtocolError(f"Invalid protocol type = {proto}.")
-            vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
-            if vrsn.major < 2:  # version2 vs but major < 2
-                raise VersionError(f"Incompatible {vrsn=} with version string.")
+            pvrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
+            if pvrsn.major < 2:  # version2 vs but major < 2
+                raise VersionError(f"Incompatible {pvrsn=} with version string.")
 
             gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
             if gvrsn.major < 2:  # version2 vs but major < 2
@@ -256,7 +255,7 @@ def test_snuff():
         else:
             raise VersionError(f"Bad snatch.")
 
-        return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size, gvrsn=gvrsn)
+        return Smellage(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
 
 
     def snuff(raw, size=0):

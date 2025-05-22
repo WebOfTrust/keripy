@@ -61,14 +61,14 @@ SMELLSIZE = MAXVSOFFSET + MAXVERFULLSPAN  # min buffer size to inhale
 """
 Smellage  (results of smelling a version string such as in a Serder)
     proto (str): protocol type value of Protocols examples 'KERI', 'ACDC'
-    vrsn (Versionage): protocol version namedtuple (major, minor) of ints
+    pvrsn (Versionage): protocol version namedtuple (major, minor) of ints
     kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
     size (int): int size of raw serialization in bytes
     gvrsn (None | Versionage): optional default is None
                 For CESR native genus version namedtuple (major, minor) of ints
 
 """
-Smellage = namedtuple("Smellage", "proto vrsn kind size gvrsn", defaults=(None, ))
+Smellage = namedtuple("Smellage", "proto pvrsn kind size gvrsn", defaults=(None, ))
 
 def rematch(match):
     """
@@ -93,9 +93,9 @@ def rematch(match):
         proto = proto.decode("utf-8")
         if proto not in Protocols:
             raise ProtocolError(f"Invalid protocol={proto}.")
-        vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
-        if vrsn.major < 2:  # version2 vs but major < 2
-            raise VersionError(f"Incompatible {vrsn=} with version string.")
+        pvrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
+        if pvrsn.major < 2:  # version2 vs but major < 2
+            raise VersionError(f"Incompatible {pvrsn=} with version string.")
 
         kind = kind.decode("utf-8")
         if kind not in Kinds:
@@ -111,9 +111,9 @@ def rematch(match):
         proto = proto.decode("utf-8")
         if proto not in Protocols:
             raise ProtocolError(f"Invalid protocol={proto}.")
-        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
-        if vrsn.major > 1:  # version1 vs but major > 1
-            raise VersionError(f"Incompatible {vrsn=} with version string.")
+        pvrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
+        if pvrsn.major > 1:  # version1 vs but major > 1
+            raise VersionError(f"Incompatible {pvrsn=} with version string.")
 
         kind = kind.decode("utf-8")
         if kind not in Kinds:
@@ -123,7 +123,7 @@ def rematch(match):
     else:
         raise VersionError(f"Bad rematch.")
 
-    return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size)
+    return Smellage(proto=proto, pvrsn=pvrsn, kind=kind, size=size)
 
 
 def versify(protocol=Protocols.keri, version=Version, kind=Kinds.json, size=0):

@@ -66,8 +66,8 @@ def annot(ims):
             val = Verser(qb64b=ims, strip=True)
             versage = val.versage
             oms.extend(f"{' ' * indent * 2}{val.qb64} # 'v' version  Verser {val.name} "
-                       f"proto={versage.proto} vrsn={versage.vrsn.major}."
-                       f"{versage.vrsn.minor:02}\n".encode())
+                       f"proto={versage.proto} vrsn={versage.pvrsn.major}."
+                       f"{versage.pvrsn.minor:02}\n".encode())
             # ilk
             ilker = Ilker(qb64b=ims, strip=True)
             ilk = ilker.ilk

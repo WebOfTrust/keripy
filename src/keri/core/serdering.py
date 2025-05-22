@@ -151,7 +151,7 @@ Begine regex with b'^' or b'\A' to match at start of string.
 
 So change Smellage to return extra field that has gvrsn when used by snuff
 so can use Smellage for both smell and snuff in both reap and inhale
-where smellage is used. Change egacy uses of smell to ignore extra value.
+where smellage is used. Change legacy uses of smell to ignore extra value.
 
 """
 
@@ -174,7 +174,7 @@ class Serdery:
         self.version = version
 
 
-    def reap(self, ims, genus=GenDex.KERI, gvrsn=Vrsn_2_0, native=False, skip=0):
+    def reap(self, ims, genus, svrsn, native=False, skip=0):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -185,15 +185,16 @@ class Serdery:
         Parameters:
             ims (bytearray) of serialized incoming message stream. Assumes start
                 of stream is raw Serder.
-            genus (str): CESR genus code from stream parser.
+            genus (str): stream genus CESR code from stream parser.
                     Provides genus of enclosing stream top-level or nested group
-            gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+            svrsn (Versionage): stream genus version instance CESR genus code
+                    table version (Major, Minor)
                     Provides CESR version of enclosing stream top-level or nested group
             native (bool): True means sniff determined may be CESR native message
                            so snuff instead of smell.
                            False means sniff determined not CESR native i.e
                            JSON, CBOR, MGPK field map. so use smell. Default False
-             skip (int): bytes to skip at front of ims. Useful when CESR native
+            skip (int): bytes to skip at front of ims. Useful when CESR native
                 serialization where skip is size of the message counter so smell
                 does need to see counter
 
@@ -203,14 +204,19 @@ class Serdery:
             #smellage = smell(memoryview(ims)[skip:])  # does not copy to skip
 
         else:
-            smellage = smell(ims)
+            smellage = smell(ims)  # "proto pvrsn kind size gvrsn"
+            if smellage.pvrsn.major > svrsn.major:
+                raise SerializeError(f"Incompatible major protocol version="
+                                     f"{smellage.pvrsn} with stream major genus "
+                                     f"version={svrsn}.")
+            if getattr(GenDex, smellage.proto, None) != genus:
+                raise SerializeError(f"Incompatible protocol={smellage.proto} with "
+                                     f"genus={genus}.")
 
         if smellage.proto == Protocols.keri:
-            return SerderKERI(raw=ims, strip=True, smellage=smellage,
-                              genus=genus, gvrsn=gvrsn)
+            return SerderKERI(raw=ims, strip=True, smellage=smellage)
         elif smellage.proto == Protocols.acdc:
-            return SerderACDC(raw=ims, strip=True, smellage=smellage,
-                              genus=genus, gvrsn=gvrsn)
+            return SerderACDC(raw=ims, strip=True, smellage=smellage)
         else:
             raise ProtocolError(f"Unsupported protocol type = {smellage.proto}.")
 
@@ -261,16 +267,20 @@ class Serder:
     Properties:
         raw (bytes): of serialized event only
         sad (dict): self addressed data dict
-        genus (str): CESR genus code
-        gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+
         proto (str): Protocolage value as protocol identifier such as KERI, ACDC
                      alias of .protocol
         protocol (str): Protocolage value as protocol identifier such as KERI, ACDC
                         alias of .proto
-        vrsn (Versionage): protocol version (Major, Minor) alias of .version
-        version (Versionage): protocol version (Major, Minor) alias of .vrsn
+        pvrsn (Versionage): protocol version (Major, Minor)
+        genus (str): CESR genus code when version field includes it (future native)
+                      Otherwise use one compatible with proto
+        gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+                            when version field includes it (future) otherwise
+                            assigned to pvrsn
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
+
         said (str): qb64 said of .raw given by appropriate field
         saidb (bytes): qb64b of .said
         ilk (str | None): packet type for this Serder if any (may be None)
@@ -506,7 +516,7 @@ class Serder:
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, verify=True,
-                 makify=False, genus=GenDex.KERI, gvrsn=Vrsn_2_0, smellage=None,
+                 makify=False, genus=None, gvrsn=None, smellage=None,
                  proto=None, pvrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
@@ -532,11 +542,6 @@ class Serder:
                            Ignore when raw empty or when raw and saidify is True
             makify (bool): True means compute fields for sad including size and
                 saids.
-            genus (str):  CESR genus portion of genus-version. Either provided
-                          by parser from stream or generated by Serder to stream
-            gvrsn (Versionage): instance of version portion of CESR genus-version
-                for code table version. Either provided by parser from stream
-                genus version or desired when generating Serder instance to stream
             smellage (Smellage | None): instance of deconstructed and converted
                 protocol version string elements. If none or empty ignore otherwise assume
                 that raw already had its version string extracted (reaped) into the
@@ -545,6 +550,11 @@ class Serder:
                 If None then its extracted from sad or uses default .Proto
             pvrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
+            genus (str): CESR genus code when version field includes it (future native)
+                      Otherwise use one compatible with proto
+            gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+                            when version field includes it (future) otherwise
+                            assigned to pvrsn
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
                 If None then its extracted from sad or uses default .Kind
@@ -566,8 +576,9 @@ class Serder:
         self._proto = proto
         self._pvrsn = pvrsn
         self._kind = kind
-        self._gvrsn = gvrsn
-        self._genus = genus
+        self._gvrsn = gvrsn if gvrsn is not None else self.pvrsn
+        self._genus = genus if genus is not None else (getattr(GenDex, proto, None)
+                                                       if proto is not None else None)
         self._size = None
 
 
@@ -836,6 +847,10 @@ class Serder:
             raise SerializeError(f"Required protocol={self.Protocol}, got "
                                  f"protocol={proto} instead.")
 
+        if self.genus is None and proto is not None:
+            self._genus = getattr(GenDex, proto, None)
+
+
         if self.genus not in GenDex:  # ensures self.genus != None
             raise SerializeError(f"Invalid genus={self.genus}.")
 
@@ -849,6 +864,9 @@ class Serder:
         if pvrsn not in self.Fields[proto]:
             raise SerializeError(f"Invalid version={pvrsn} for protocol={proto}.")
 
+        if self.gvrsn is None and pvrsn is not None:
+            self._gvrsn = pvrsn
+
         if pvrsn.major > self.gvrsn.major:
             raise SerializeError(f"Incompatible major protocol version={pvrsn} "
                                  f"with major genus version={self.gvrsn}.")
@@ -856,7 +874,7 @@ class Serder:
         if kind is None:
             kind = skind if skind is not None else self.Kind
 
-        if ilk is None:  # default is first ilk in Fields for given proto vrsn
+        if ilk is None:  # default is first ilk in Fields for given proto pvrsn
             ilk = (silk if silk is not None else
                    list(self.Fields[proto][pvrsn])[0])  # list(dict) gives list of keys
 
@@ -963,12 +981,12 @@ class Serder:
 
 
         # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=pvrsn)  # serialize sized dummied sad
+        raw = self.dumps(sad, kind=kind, proto=proto, pvrsn=pvrsn)  # serialize sized dummied sad
         for label, code in _saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
-        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=pvrsn)  # compute final raw
+        raw = self.dumps(sad, kind=kind, proto=proto, pvrsn=pvrsn)  # compute final raw
         if kind == Kinds.cesr:# cesr kind version string does not set size
             size = len(raw) # size of whole message
 
@@ -978,6 +996,10 @@ class Serder:
         self._pvrsn = pvrsn
         self._kind = kind
         self._size = size
+        if self.genus is None and proto is not None:
+            self._genus = getattr(GenDex, proto, None)
+        if self.gvrsn is None and pvrsn is not None:
+            self._gvrsn = pvrsn
 
 
     def _inhale(self, raw, *, smellage=None):
@@ -992,7 +1014,7 @@ class Serder:
         Returns: tuple (sad, proto, vrsn, kind, size) where:
             sad (dict): serializable attribute dict of saidified data
             proto (str): value of Protocols (Protocolage) protocol type
-            vrsn (Versionage | None): tuple of (major, minor) version ints
+            pvrsn (Versionage | None): protocol tuple of (major, minor) version ints
                 None means do not enforce version
             kind (str): value of Serials (Serialage) serialization kind
 
@@ -1008,9 +1030,9 @@ class Serder:
 
         """
         if smellage:  # passed in so don't need to smell raw again
-            proto, vrsn, kind, size, gvrsn = smellage  # tuple unpack
+            proto, pvrsn, kind, size, gvrsn = smellage  # tuple unpack
         else:  # not passed in so smell raw
-            proto, vrsn, kind, size, gvrsn = smell(raw)
+            proto, pvrsn, kind, size, gvrsn = smell(raw)
 
         if len(raw) < size:
             raise ShortageError(f"Need more bytes to de-serialize Serder")
@@ -1025,9 +1047,13 @@ class Serder:
         self._raw = bytes(raw[:size])  # make copy so strip not affect
         self._sad = sad
         self._proto = proto
-        self._pvrsn = vrsn
+        self._pvrsn = pvrsn
         self._kind = kind
         self._size = size
+        if self.genus is None and proto is not None:
+            self._genus = getattr(GenDex, proto, None)
+        if self.gvrsn is None and pvrsn is not None:
+            self._gvrsn = pvrsn
 
 
 
@@ -1105,7 +1131,7 @@ class Serder:
             raise SerializeError(f"Missing version string field in {sad}.")
 
         # extract elements so can replace size element but keep others
-        proto, vrsn, kind, size, opt = deversify(sad["v"])
+        proto, pvrsn, kind, size, opt = deversify(sad["v"])
 
         raw = self.dumps(sad, kind)
 
@@ -1116,12 +1142,16 @@ class Serder:
         self._raw = raw  # crypto opts want bytes not bytearray
         self._sad = sad
         self._proto = proto
-        self._pvrsn = vrsn
+        self._pvrsn = pvrsn
         self._kind = kind
         self._size = size
+        if self.genus is None and proto is not None:
+            self._genus = getattr(GenDex, proto, None)
+        if self.gvrsn is None and pvrsn is not None:
+            self._gvrsn = pvrsn
 
 
-    def dumps(self, sad=None, kind=Kinds.json, proto=None, vrsn=None):
+    def dumps(self, sad=None, kind=Kinds.json, proto=None, pvrsn=None):
         """Method to handle serialization by kind
         Assumes sad fields are properly filled out for serialization kind.
 
@@ -1131,11 +1161,11 @@ class Serder:
         Parameters:
             sad (dict | list | None)): serializable dict or list to serialize
             kind (str): value of Serials (Serialage) serialization kind
-                "JSON", "MGPK", "CBOR", "CSER"
-            proto (str | None): desired protocol type str value of Protocols
-                If None then eventually use self.proto
-            vrsn (Versionage | None): instance desired protocol version
-                If None then eventually self.vrsn
+                "JSON", "MGPK", "CBOR", "CESR"
+            proto (str | None): when cesr native desired protocol type str value
+                of Protocols If None then eventually use self.proto
+            pvrsn (Versionage | None): when cesr native instance desired protocol
+                version If None then eventually self.pvrsn
 
 
         Notes:
@@ -1155,7 +1185,7 @@ class Serder:
             raw = cbor.dumps(sad)
 
         elif kind == Kinds.cesr:  # does not support list only dict
-            raw = self._dumps(sad, proto=proto, vrsn=vrsn)
+            raw = self._dumps(sad, proto=proto, pvrsn=pvrsn)
 
         else:
             raise SerializeError(f"Invalid serialization kind = {kind}")
@@ -1163,7 +1193,7 @@ class Serder:
         return raw
 
 
-    def _dumps(self, sad=None, proto=None, vrsn=None):
+    def _dumps(self, sad=None, proto=None, pvrsn=None):
         """CESR native serialization of sad
 
         Returns:
@@ -1173,8 +1203,8 @@ class Serder:
             sad (dict | None)): serializable dict to serialize
             proto (str | None): desired protocol type str value of Protocols
                 If None then self.proto
-            vrsn (Versionage | None): instance desired protocol version
-                If None then self.vrsn
+            pvrsn (Versionage | None): instance desired protocol version
+                If None then self.pvrsn
 
         Versioning:
             CESR native serialization includes in its fixed version field
@@ -1190,11 +1220,11 @@ class Serder:
         """
         sad = sad if sad is not None else self.sad
         proto = proto if proto is not None else self.proto
-        vrsn = vrsn if vrsn is not None else self.pvrsn
+        pvrsn = pvrsn if pvrsn is not None else self.pvrsn
 
-        if (self.gvrsn.major < Vrsn_2_0.major or vrsn.major < Vrsn_2_0.major):
+        if (self.gvrsn.major < Vrsn_2_0.major or pvrsn.major < Vrsn_2_0.major):
             raise SerializeError(f"Invalid major genus version={self.gvrsn}"
-                                f"or Invalid major protocol version={vrsn}"
+                                f"or Invalid major protocol version={pvrsn}"
                                 f" for native CESR serialization.")
 
         if self.genus not in GenDex:  # ensures self.genus != None
@@ -1209,13 +1239,13 @@ class Serder:
 
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
-        ilks = self.Fields[proto][vrsn]  # get fields keyed by ilk
+        ilks = self.Fields[proto][pvrsn]  # get fields keyed by ilk
 
         ilk = sad.get('t')  # returns None if missing message type (ilk)
         if ilk not in ilks:  #
             raise SerializeError(f"Missing message type field "
                                  f"'t' for protocol={proto} "
-                                 f"version={vrsn} with {sad=}.")
+                                 f"version={pvrsn} with {sad=}.")
 
         fields = ilks[ilk]  # FieldDom for given protocol and ilk
 
@@ -1236,7 +1266,7 @@ class Serder:
             for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
                     case "v":  # protocol+version  do not use version string itself
-                        val = Verser(proto=proto, vrsn=vrsn).qb64b
+                        val = Verser(proto=proto, pvrsn=pvrsn).qb64b
 
                     case "t":  # message type (ilk), already got ilk
                         val = Ilker(ilk=v).qb64b  # assumes same
@@ -1316,7 +1346,7 @@ class Serder:
                     case _:  # if extra fields this is where logic would be
                         raise SerializeError(f"Unsupported protocol field label"
                                              f"='{l}' for protocol={proto}"
-                                             f" version={vrsn}.")
+                                             f" version={pvrsn}.")
 
                 bdy.extend(val)
 
