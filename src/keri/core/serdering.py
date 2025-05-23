@@ -650,7 +650,7 @@ class Serder:
 
             if verify:  # verify fields including the said(s) provided in sad
                 try:
-                    self._verify()  # raises exception when not verify
+                    self._verify()  # raises exception if failure
                 except Exception as ex:
                     logger.error("Invalid sad for Serder %s\n%s",
                                  self.pretty(), ex.args[0])
@@ -700,18 +700,24 @@ class Serder:
             raise ValidationError(f"Invalid protocol type = {self.proto}.")
 
         if self.genus not in GenDex:  # ensures self.genus != None
-            raise SerializeError(f"Invalid genus={self.genus}.")
+            raise ValidationError(f"Invalid genus={self.genus}.")
 
         if getattr(GenDex, self.proto, None) != self.genus:
-            raise SerializeError(f"Incompatible protocol={self.proto} with "
+            raise ValidationError(f"Incompatible protocol={self.proto} with "
                                  f"genus={self.genus}.")
 
         if self.gvrsn is not None and self.pvrsn.major > self.gvrsn.major:
-            raise SerializeError(f"Incompatible major protocol version={self.pvrsn}"
+            raise ValidationError(f"Incompatible major protocol version={self.pvrsn}"
                                  f" with major genus version={self.gvrsn}.")
 
+        if (self.kind == Kinds.cesr and (self.pvrsn.major < Vrsn_2_0.major or
+                (self.gvrsn is not None and self.gvrsn.major < Vrsn_2_0.major))):
+            raise ValidationError(f"Invalid major protocol version={pvrsn} and/or"
+                                  f" invalid major genus version={gvrsn} "
+                                  f"for native CESR serialization.")
+
         if self.pvrsn not in self.Fields[self.proto]:
-            raise SerializeError(f"Invalid version={self.pvrsn} for "
+            raise ValidationError(f"Invalid version={self.pvrsn} for "
                                  f"protocol={self.proto}.")
 
         if self.ilk not in self.Fields[self.proto][self.pvrsn]:
@@ -1063,8 +1069,6 @@ class Serder:
                 already had its version string extracted (reaped) into the
                 elements of smellage.
 
-
-
         """
         # CESR native must always pass in smellage since can't smell native
         if smellage:  # passed in so don't need to smell raw again
@@ -1076,7 +1080,6 @@ class Serder:
             raise ShortageError(f"Need more bytes to de-serialize Serder")
 
         sad = self.loads(raw=raw, size=size, kind=kind)
-        # ._gvrsn may be set in loads when CESR native deserialization provides _gvrsn
 
         if "v" not in sad:  # Regex does not check for version string label itself
             raise FieldError(f"Missing version string field in {sad}.")
@@ -1112,7 +1115,6 @@ class Serder:
             loads of json uses str whereas loads of cbor and msgpack use bytes
         """
         if kind == Kinds.cesr:
-            #raise DeserializeError(f"Invalid deserialization kind: {kind}")
             try:
                 sad = self._loads(raw=raw, size=size)
             except Exception as ex:
@@ -1160,52 +1162,48 @@ class Serder:
 
 
         """
-        sad = {}
         # assumes that .proto, .kind, .size, .pvrsn, .gvrsn set above in
         # .inhale with passed in smellage
 
-        # read off ctr and confirm size of raw is enough else raise ShortageError
-        # read off Verser and confirm proto pvrsn gvrsn == .proto .pvrsn. gvrsn
+        sad = {}
+        # make copy so strip here does not collide with .__init__ strip
+        raw = bytearray(raw[:size])
+
+        # consume body ctr and version field
+        ctr = Counter(qb64=raw, strip=True)  # version defaults to 2
+        versage = Verser(qb64b=raw, strip=True).versage
+        # assumes compatible versage witn .proto .pvrsn .gvrsn
 
 
-        if ((self.gvrsn is not None and self.gvrsn.major < Vrsn_2_0.major) or
-                self.pvrsn.major < Vrsn_2_0.major):
-            raise SerializeError(f"Invalid major genus version={self.gvrsn}"
-                                     f"or Invalid major protocol version={self.pvrsn}"
-                                    f" for native CESR serialization.")
+        # read off ilk so can get rest of fields in order to parse
+        ilker = Ilker(qb64b=raw, strip=True)
+        if ilker.ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
+            raise DeserializeError(f"Expected key event ilk got {ilk=}")
 
-        if self.genus not in GenDex:  # ensures self.genus != None
-            raise SerializeError(f"Invalid genus={self.genus}.")
-
-        if getattr(GenDex, self.proto, None) != self.genus:
-            raise SerializeError(f"Incompatible protocol={self.proto} with "
-                                     f"genus={self.genus}.")
-
-        # read off ilk so can get rest of fields
-
+        # must be fixed filed see check below
         ilks = self.Fields[self.proto][self.pvrsn]  # get fields keyed by ilk
-
-        fields = ilks[ilk]  # FieldDom for given protocol and ilk
+        fields = ilks[ilker.ilk]  # FieldDom for given protocol and ilk
 
         if fields.opts or not fields.strict:  # optional or extra fields allowed
-            fixed = False  # so must use field map
+            fixed = False  # not fixed field so must use a field map
         else:
-            fixed = True  #fixed field
+            fixed = True  # fixed field
 
         # assumes that sad's field ordering and field inclusion is correct
         # so can serialize in order to compute saidive fields
 
-        if proto == Protocols.keri:
+        if self.proto == Protocols.keri:
             if not fixed:  # prepend label
-                pass  # raise error
+                raise DeserializeError(f"Not fixed field {ilk=}")
 
-            for l, v in sad.items():  # assumes valid field order & presence
+            for l, v in fields.items():  # assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
-                        val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
+                        sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                           size=size, gvrsn=self.gvrsn)
 
                     case "t":  # message type (ilk), already got ilk
-                        val = Ilker(ilk=v).qb64b  # assumes same
+                        sad['t'] = ilker.ilk
 
                     case "d" | "i" | "p" | "di":  # said or aid
                         val = v.encode("utf-8")  # already primitive qb64 make qb6b
@@ -1306,12 +1304,6 @@ class Serder:
             raw.extend(bdy)
         else:
             pass
-
-
-        return raw
-
-
-
 
 
         return sad
@@ -1419,18 +1411,6 @@ class Serder:
         pvrsn = self.pvrsn
         gvrsn = self.gvrsn
 
-        if ((gvrsn is not None and gvrsn.major < Vrsn_2_0.major) or
-                pvrsn.major < Vrsn_2_0.major):
-            raise SerializeError(f"Invalid major genus version={gvrsn}"
-                                f"or Invalid major protocol version={pvrsn}"
-                                f" for native CESR serialization.")
-
-        if self.genus not in GenDex:  # ensures self.genus != None
-            raise SerializeError(f"Invalid genus={self.genus}.")
-
-        if getattr(GenDex, proto, None) != self.genus:
-            raise SerializeError(f"Incompatible protocol={proto} with "
-                                 f"genus={self.genus}.")
 
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
@@ -1454,7 +1434,7 @@ class Serder:
 
         if proto == Protocols.keri:
             if not fixed:  # prepend label
-                pass  # raise error
+                raise SerializeError(f"Not fixed field {ilk=}")
 
             for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
