@@ -1031,6 +1031,7 @@ class Serder:
         raw = self.dumps(sad, kind=kind)  # assign final raw
         if kind == Kinds.cesr:# cesr kind version string does not set size
             size = len(raw) # size of whole message
+            sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
 
         self._raw = raw
         self._size = size
@@ -1065,9 +1066,10 @@ class Serder:
 
 
         """
+        # CESR native must always pass in smellage since can't smell native
         if smellage:  # passed in so don't need to smell raw again
             proto, pvrsn, kind, size, gvrsn = smellage  # tuple unpack
-        else:  # not passed in so smell raw
+        else:  # not passed in so smell raw raises VersionError if native
             proto, pvrsn, kind, size, gvrsn = smell(raw)
 
         if len(raw) < size:
@@ -1155,9 +1157,163 @@ class Serder:
                                    to deserialze as dict
            size (int): number of bytes to consume for the deserialization.
                        If None then consume all bytes in raw
+
+
         """
-        # ._gvrsn may be set in loads when CESR native deserialization provides _gvrsn
         sad = {}
+        # assumes that .proto, .kind, .size, .pvrsn, .gvrsn set above in
+        # .inhale with passed in smellage
+
+        # read off ctr and confirm size of raw is enough else raise ShortageError
+        # read off Verser and confirm proto pvrsn gvrsn == .proto .pvrsn. gvrsn
+
+
+        if ((self.gvrsn is not None and self.gvrsn.major < Vrsn_2_0.major) or
+                self.pvrsn.major < Vrsn_2_0.major):
+            raise SerializeError(f"Invalid major genus version={self.gvrsn}"
+                                     f"or Invalid major protocol version={self.pvrsn}"
+                                    f" for native CESR serialization.")
+
+        if self.genus not in GenDex:  # ensures self.genus != None
+            raise SerializeError(f"Invalid genus={self.genus}.")
+
+        if getattr(GenDex, self.proto, None) != self.genus:
+            raise SerializeError(f"Incompatible protocol={self.proto} with "
+                                     f"genus={self.genus}.")
+
+        # read off ilk so can get rest of fields
+
+        ilks = self.Fields[self.proto][self.pvrsn]  # get fields keyed by ilk
+
+        fields = ilks[ilk]  # FieldDom for given protocol and ilk
+
+        if fields.opts or not fields.strict:  # optional or extra fields allowed
+            fixed = False  # so must use field map
+        else:
+            fixed = True  #fixed field
+
+        # assumes that sad's field ordering and field inclusion is correct
+        # so can serialize in order to compute saidive fields
+
+        if proto == Protocols.keri:
+            if not fixed:  # prepend label
+                pass  # raise error
+
+            for l, v in sad.items():  # assumes valid field order & presence
+                match l:  # label
+                    case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                        val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
+
+                    case "t":  # message type (ilk), already got ilk
+                        val = Ilker(ilk=v).qb64b  # assumes same
+
+                    case "d" | "i" | "p" | "di":  # said or aid
+                        val = v.encode("utf-8")  # already primitive qb64 make qb6b
+
+                    case "s" | "bt":  # sequence number or numeric threshold
+                        val = coring.Number(numh=v).qb64b  # convert hex str
+
+                    case "kt" | "nt": # current or next signing threshold
+                        val = coring.Tholder(sith=v).limen  # convert sith str
+
+                    case "k" | "n" | "b" | "ba" | "br":  # list of primitives
+                        frame = bytearray()
+                        for e in v:  # list
+                            frame.extend(e.encode("utf-8"))
+
+                        val = bytearray(Counter(Codens.GenericListGroup,
+                                                count=len(frame) // 4).qb64b)
+                        val.extend(frame)
+
+                    case "c":  # list of config traits strings
+                        frame = bytearray()
+                        for e in v:  # list
+                            frame.extend(Traitor(trait=e).qb64b)
+
+                        val = bytearray(Counter(Codens.GenericListGroup,
+                                                count=len(frame) // 4).qb64b)
+                        val.extend(frame)
+
+                    case "a":  # list of seals or field map of attributes
+                        frame = bytearray()  # whole list
+                        gcode = None  # code for counter for consecutive same type seals
+                        gframe = bytearray()  # consecutive same type seals
+                        for e in v:  # list of seal dicts
+                            # need support for grouping consecutive seals of same type with same counter
+
+                            try:
+                                sealer = Sealer(crew=e)
+                                code = self.ClanCodes[sealer.name]
+                                if gcode and gcode == code:
+                                    gframe.extend(sealer.qb64b)
+                                else:
+                                    if gframe:  # not same so close off and rotate group
+                                        counter = Counter(code=gcode, count=len(gframe) // 4)
+                                        frame.extend(counter.qb64b + gframe)
+                                        gframe = bytearray()  # new group
+                                    gcode = code  # new group or keep same group
+                                    gframe.extend(sealer.qb64b)  # extend in new group
+
+                            except kering.InvalidValueError:
+                                if gframe:
+                                    counter = Counter(code=gcode, count=len(gframe) // 4)
+                                    frame.extend(counter.qb64b + gframe)
+                                    gframe = bytearray()
+                                    gcode = None
+
+                                #unknown seal type so serialize as field map
+                                #generic seal no count type (v, Mapping):
+                                #for l, e in v.items():
+                                    #pass
+                                #val = bytearray(Counter(tag=""GenericMapGroup"",
+                                               # count=len(frame) // 4).qb64b)
+                                #val.extend(mapframe)
+
+                        if gframe:  # close off last group if any
+                            counter = Counter(code=gcode, count=len(gframe) // 4)
+                            frame.extend(counter.qb64b + gframe)
+                            gframe = bytearray()
+                            gcode = None
+
+                        val = bytearray(Counter(Codens.GenericListGroup,
+                                                count=len(frame) // 4).qb64b)
+                        val.extend(frame)
+
+                    case _:  # if extra fields this is where logic would be
+                        raise SerializeError(f"Unsupported protocol field label"
+                                             f"='{l}' for protocol={proto}"
+                                             f" version={pvrsn}.")
+
+                bdy.extend(val)
+
+
+        elif proto == Protocols.acdc:
+            for l, val in sad.items():  # assumes valid field order & presence
+                if not fixed:
+                    pass  # prepend label
+
+
+
+        else:
+            raise SerializeError(f"Unsupported protocol={self.proto}.")
+
+
+        # prepend count code for message
+        if fixed:
+
+            raw = bytearray(Counter(Codens.FixedMessageBodyGroup,
+                                    count=len(bdy) // 4).qb64b)
+            raw.extend(bdy)
+        else:
+            pass
+
+
+        return raw
+
+
+
+
+
         return sad
 
 
@@ -1181,15 +1337,16 @@ class Serder:
         self._pvrsn = pvrsn
         self._gvrsn = gvrsn
         self._kind = kind
-        self._size = size
 
         raw = self.dumps(sad, kind)
 
-        if kind in (Kinds.cesr):  # cesr kind version string does not set size
+        if kind == Kinds.cesr:  # cesr kind version string does not set size
             size = len(raw) # size of whole message
+            sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
 
         # must call .verify to ensure these are compatible
         self._raw = raw  # crypto opts want bytes not bytearray
+        self._size = size
         self._sad = sad
 
 
@@ -1292,10 +1449,8 @@ class Serder:
         else:
             fixed = True  #fixed field
 
-
         # assumes that sad's field ordering and field inclusion is correct
         # so can serialize in order to compute saidive fields
-        # need to fix ._verify and .makify to account for CESR native serialization
 
         if proto == Protocols.keri:
             if not fixed:  # prepend label

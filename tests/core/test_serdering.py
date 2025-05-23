@@ -2609,7 +2609,7 @@ def test_cesr_native_dumps():
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAAA.',
+        'v': 'KERICAACESRAAC4.',
         't': 'icp',
         'd': 'EAXi2ueSrATBdAYAey6hA9LOS6WuITh90eq4L_SM0C4o',
         'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
@@ -2699,7 +2699,7 @@ def test_cesr_native_dumps():
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAAA.',
+        'v': 'KERICAACESRAAMM.',
         't': 'icp',
         'd': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
         'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
@@ -2848,7 +2848,7 @@ def test_cesr_native_dumps():
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAAA.',
+        'v': 'KERICAACESRAAHs.',
         't': 'ixn',
         'd': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
         'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
@@ -2942,7 +2942,7 @@ def test_cesr_native_dumps():
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAAA.',
+        'v': 'KERICAACESRAAIc.',
         't': 'rot',
         'd': 'EHFimzZzXYC2GXauZOZpj5qGhMHoKalUVF9sLmLNb99o',
         'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
@@ -3060,7 +3060,7 @@ def test_cesr_native_dumps():
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAAA.',
+        'v': 'KERICAACESRAAN8.',
         't': 'dip',
         'd': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
         'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
@@ -3184,7 +3184,7 @@ def test_cesr_native_dumps():
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAAA.',
+        'v': 'KERICAACESRAAFs.',
         't': 'drt',
         'd': 'ELPki1ox4BKNSKw-dcvh5G0SuTaNpb97aBBZR3ZpX0bX',
         'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
