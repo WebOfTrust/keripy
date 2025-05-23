@@ -895,7 +895,7 @@ class Parser:
                     # change version at top level this persists is not stacked
                     self.version = Counter.b64ToVer(ctr.countToB64(l=3))
 
-            # check for MessageAttachmentGroup or non-native message or native message groups
+            # check for BodyWithAttachmentGroup or non-native message or native message groups
             cold = sniff(ims)  # front of top level of this substream
             if cold != Colds.msg:  # counter found so peek at it
                 ctr = yield from self._extractor(ims=ims,
@@ -904,8 +904,8 @@ class Parser:
                                          abort=framed,
                                          strip=False)
 
-                if ctr and ctr.code in (self.sucodes.MessageAttachmentGroup,
-                                       self.sucodes.BigMessageAttachmentGroup):
+                if ctr and ctr.code in (self.sucodes.BodyWithAttachmentGroup,
+                                       self.sucodes.BigBodyWithAttachmentGroup):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # compute enclosing group size based on txt or bny
                     emgs = ctr.byteCount(cold=cold)
@@ -940,8 +940,8 @@ class Parser:
                                                         strip=False)
 
                 # Check for message groups
-                if (ctr.code in (self.mucodes.MessageGroup,
-                                 self.mucodes.BigMessageGroup)):
+                if (ctr.code in (self.mucodes.NonNativeBodyGroup,
+                                 self.mucodes.BigNonNativeBodyGroup)):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # process non-native message group with texter
                     texter = yield from self._extractor(ims=ims,
@@ -953,8 +953,8 @@ class Parser:
                                           svrsn=self.version)
                     exts['serder'] = serder
 
-                elif (ctr.code in (self.mucodes.FixedMessageBodyGroup,
-                                   self.mucodes.BigFixedMessageBodyGroup)):
+                elif (ctr.code in (self.mucodes.FixedBodyGroup,
+                                   self.mucodes.BigFixedBodyGroup)):
                     #del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
                     fmgs = ctr.byteCount(cold=cold)  # fixed body group size

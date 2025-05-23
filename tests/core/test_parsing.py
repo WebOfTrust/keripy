@@ -957,11 +957,11 @@ def test_parser_v1_enclosed_message():
         # create event stream
         msgs = bytearray()
 
-        # eventually enclose message plus attachments in MessageAttachmentGroup
-        # put genus-version at front of MessageAttachmentGroup substream
+        # eventually enclose message plus attachments in BodyWithAttachmentGroup
+        # put genus-version at front of BodyWithAttachmentGroup substream
         eims = bytearray()  # enclosed message+attachment stream
 
-        # put as genus-version counter first in MessageAttachmentGroup
+        # put as genus-version counter first in BodyWithAttachmentGroup
         gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                  minor=Vrsn_1_0.minor),
                        code=Codens.KERIACDCGenusVersion,
@@ -982,11 +982,11 @@ def test_parser_v1_enclosed_message():
                         b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_1_0))
 
         # do not enclose attachments in own attachment group
@@ -1100,10 +1100,10 @@ def test_parser_v1_enclosed_message():
         eims.extend(texter.qb64b)
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.BodyWithAttachmentGroup, version=Vrsn_1_0))
 
         # next event
-        # eventually enclose message plus attachment in AttachmentGroup in MessageAttachmentGroup
+        # eventually enclose message plus attachment in AttachmentGroup in BodyWithAttachmentGroup
         eims = bytearray()  # enclosed message+attachment stream
         # Event 1 Rotation Transferable
         serder = rotate(pre=pre,
@@ -1113,11 +1113,11 @@ def test_parser_v1_enclosed_message():
                         sn=1)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                        code=Codens.MessageGroup,
+                                        code=Codens.NonNativeBodyGroup,
                                         version=Vrsn_1_0))
 
         aims = bytearray()  # attachment group stream
@@ -1132,11 +1132,11 @@ def test_parser_v1_enclosed_message():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup, version=Vrsn_1_0))
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.BodyWithAttachmentGroup, version=Vrsn_1_0))
 
 
         # Next event
-        # eventually enclose message plus attachment in AttachmentGroup in MessageAttachmentGroup
+        # eventually enclose message plus attachment in AttachmentGroup in BodyWithAttachmentGroup
         eims = bytearray()  # enclosed message+attachment stream
         # Event 2 Rotation Transferable
         serder = rotate(pre=pre,
@@ -1146,11 +1146,11 @@ def test_parser_v1_enclosed_message():
                         sn=2)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                        code=Codens.MessageGroup,
+                                        code=Codens.NonNativeBodyGroup,
                                             version=Vrsn_1_0))
 
         aims = bytearray()  # attachment group stream
@@ -1172,14 +1172,14 @@ def test_parser_v1_enclosed_message():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup, version=Vrsn_1_0))
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.BodyWithAttachmentGroup, version=Vrsn_1_0))
 
         # next event
-        # eventually enclose message plus attachments in MessageAttachmentGroup
-        # put genus-version at front of MessageAttachmentGroup substream
+        # eventually enclose message plus attachments in BodyWithAttachmentGroup
+        # put genus-version at front of BodyWithAttachmentGroup substream
         eims = bytearray()  # enclosed message+attachment stream
 
-        # put as genus-version counter first in MessageAttachmentGroup
+        # put as genus-version counter first in BodyWithAttachmentGroup
         gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                      minor=Vrsn_1_0.minor),
                            code=Codens.KERIACDCGenusVersion,
@@ -1192,11 +1192,11 @@ def test_parser_v1_enclosed_message():
                           sn=3)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         eims.extend(Counter.enclose(qb64=texter.qb64b,
-                                        code=Codens.MessageGroup,
+                                        code=Codens.NonNativeBodyGroup,
                                             version=Vrsn_1_0))
 
         aims = bytearray()  # attachment group stream
@@ -1219,7 +1219,7 @@ def test_parser_v1_enclosed_message():
         eims.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup, version=Vrsn_1_0))
 
         # enclose  message+attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=eims, code=Codens.MessageAttachmentGroup, version=Vrsn_1_0))
+        msgs.extend(Counter.enclose(qb64=eims, code=Codens.BodyWithAttachmentGroup, version=Vrsn_1_0))
 
 
         # Event 4 Interaction
@@ -1391,11 +1391,11 @@ def test_parser_v1_non_native_message():
                         b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         msgs.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_1_0))
 
         # do not enclose attachments in own attachment group
@@ -1517,11 +1517,11 @@ def test_parser_v1_non_native_message():
                         sn=1)
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         msgs.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_1_0))
 
         # create attachment group
@@ -2978,7 +2978,7 @@ def test_parser_v2_enclosed_message():
 
 
     with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
-        # put as genus-version counter first in MessageAttachmentGroup
+        # put as genus-version counter first in BodyWithAttachmentGroup
         gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                      minor=Vrsn_1_0.minor),
                            code=Codens.KERIACDCGenusVersion,
@@ -2997,8 +2997,8 @@ def test_parser_v2_enclosed_message():
         msgs = bytearray()
         msgs.extend(gvc2.qb64b)  # set genus-version code at top-level to v2
 
-        # eventually enclose message plus attachments in MessageAttachmentGroup
-        # put genus-version at front of MessageAttachmentGroup substream
+        # eventually enclose message plus attachments in BodyWithAttachmentGroup
+        # put genus-version at front of BodyWithAttachmentGroup substream
         # do not enclose attachments separately
         emas = bytearray()  # enclosed message+attachment stream
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
@@ -3013,11 +3013,11 @@ def test_parser_v2_enclosed_message():
                         b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # create sig counter for two sigs one is spurious since single sig AID
         # sign serialization indexed controller sigs group count quadlets
@@ -3139,7 +3139,7 @@ def test_parser_v2_enclosed_message():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.BigESSRPayloadGroup))
 
         # enclose  message attachements and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
         # Event 1 Rotation Transferable
         emas = bytearray()  # message + attachement substream
@@ -3153,7 +3153,7 @@ def test_parser_v2_enclosed_message():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[1].sign(serder.raw, index=0)  # returns siger
@@ -3166,7 +3166,7 @@ def test_parser_v2_enclosed_message():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 2 Rotation Transferable
@@ -3180,7 +3180,7 @@ def test_parser_v2_enclosed_message():
                         version=Vrsn_1_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_1_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -3195,7 +3195,7 @@ def test_parser_v2_enclosed_message():
                                     code=Codens.AttachmentGroup,
                                     version=Vrsn_1_0))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 3 Interaction  default V2 set at top level
@@ -3206,7 +3206,7 @@ def test_parser_v2_enclosed_message():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -3218,7 +3218,7 @@ def test_parser_v2_enclosed_message():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
 
@@ -3231,7 +3231,7 @@ def test_parser_v2_enclosed_message():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -3244,7 +3244,7 @@ def test_parser_v2_enclosed_message():
         # enclose  message attachements with v2 counter
         emas.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup))
         # enclose message plus attachments with v2
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 5 Rotation Transferable
@@ -3257,7 +3257,7 @@ def test_parser_v2_enclosed_message():
                         version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -3269,7 +3269,7 @@ def test_parser_v2_enclosed_message():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
 
@@ -3281,7 +3281,7 @@ def test_parser_v2_enclosed_message():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -3293,7 +3293,7 @@ def test_parser_v2_enclosed_message():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 7 Rotation to null NonTransferable Abandon
@@ -3307,7 +3307,7 @@ def test_parser_v2_enclosed_message():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -3319,7 +3319,7 @@ def test_parser_v2_enclosed_message():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 8 Interaction but already abandoned
@@ -3331,7 +3331,7 @@ def test_parser_v2_enclosed_message():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -3343,7 +3343,7 @@ def test_parser_v2_enclosed_message():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 8 Rotation override interaction but already abandoned
@@ -3357,7 +3357,7 @@ def test_parser_v2_enclosed_message():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -3369,7 +3369,7 @@ def test_parser_v2_enclosed_message():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to msgs
-        msgs.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
         kevery = Kevery(db=valDB)
         parser = Parser(kvy=kevery, version=Vrsn_1_0)  # default v1 but override at top level above
@@ -3418,7 +3418,7 @@ def test_parse_generic_group():
 
 
     with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
-        # put as genus-version counter first in MessageAttachmentGroup
+        # put as genus-version counter first in BodyWithAttachmentGroup
         gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                      minor=Vrsn_1_0.minor),
                            code=Codens.KERIACDCGenusVersion,
@@ -3441,8 +3441,8 @@ def test_parse_generic_group():
         ggms = bytearray()
         ggms.extend(gvc2.qb64b)  # set genus-version code at outer most generic
 
-        # eventually enclose message plus attachments in MessageAttachmentGroup
-        # put genus-version at front of MessageAttachmentGroup substream
+        # eventually enclose message plus attachments in BodyWithAttachmentGroup
+        # put genus-version at front of BodyWithAttachmentGroup substream
         # do not enclose attachments separately
         emas = bytearray()  # enclosed message+attachment stream
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
@@ -3457,11 +3457,11 @@ def test_parse_generic_group():
                         b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # create sig counter for two sigs one is spurious since single sig AID
         # sign serialization indexed controller sigs group count quadlets
@@ -3583,7 +3583,7 @@ def test_parse_generic_group():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.BigESSRPayloadGroup))
 
         # enclose  message attachements and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
         ngms0 = bytearray()  # nested generic group
         ngms1 = bytearray()  # coubly nested generic group
@@ -3599,7 +3599,7 @@ def test_parse_generic_group():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[1].sign(serder.raw, index=0)  # returns siger
@@ -3612,7 +3612,7 @@ def test_parse_generic_group():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to
-        ngms1.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms1.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ngms0.extend(Counter.enclose(qb64=ngms1, code=Codens.GenericGroup))
 
         # Event 2 Rotation Transferable
@@ -3626,7 +3626,7 @@ def test_parse_generic_group():
                         version=Vrsn_1_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_1_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -3641,7 +3641,7 @@ def test_parse_generic_group():
                                     code=Codens.AttachmentGroup,
                                     version=Vrsn_1_0))
         # enclose message + attachments and add to enclosing group
-        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
 
@@ -3653,7 +3653,7 @@ def test_parse_generic_group():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -3665,7 +3665,7 @@ def test_parse_generic_group():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         ngms0 = bytearray()
@@ -3678,7 +3678,7 @@ def test_parse_generic_group():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -3691,7 +3691,7 @@ def test_parse_generic_group():
         # enclose  message attachements with v2 counter
         emas.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup))
         # enclose message plus attachments with v2
-        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
 
@@ -3706,7 +3706,7 @@ def test_parse_generic_group():
                         version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -3718,7 +3718,7 @@ def test_parse_generic_group():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
         # Event 6 Interaction
         emas = bytearray()  # message + attachement substream
@@ -3728,7 +3728,7 @@ def test_parse_generic_group():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -3740,7 +3740,7 @@ def test_parse_generic_group():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 7 Rotation to null NonTransferable Abandon
@@ -3754,7 +3754,7 @@ def test_parse_generic_group():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -3766,7 +3766,7 @@ def test_parse_generic_group():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 8 Interaction but already abandoned
@@ -3778,7 +3778,7 @@ def test_parse_generic_group():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -3790,7 +3790,7 @@ def test_parse_generic_group():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 8 Rotation override interaction but already abandoned
@@ -3804,7 +3804,7 @@ def test_parse_generic_group():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -3816,7 +3816,7 @@ def test_parse_generic_group():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to outermost generic
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         # enclose outermost generic and add to top level stream
         msgs.extend(Counter.enclose(qb64=ggms, code=Codens.GenericGroup))
 
@@ -3868,7 +3868,7 @@ def test_group_parsator():
 
 
     with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
-        # put as genus-version counter first in MessageAttachmentGroup
+        # put as genus-version counter first in BodyWithAttachmentGroup
         gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
                                                      minor=Vrsn_1_0.minor),
                            code=Codens.KERIACDCGenusVersion,
@@ -3891,8 +3891,8 @@ def test_group_parsator():
         ggms = bytearray()
         ggms.extend(gvc2.qb64b)  # set genus-version code at outer most generic
 
-        # eventually enclose message plus attachments in MessageAttachmentGroup
-        # put genus-version at front of MessageAttachmentGroup substream
+        # eventually enclose message plus attachments in BodyWithAttachmentGroup
+        # put genus-version at front of BodyWithAttachmentGroup substream
         # do not enclose attachments separately
         emas = bytearray()  # enclosed message+attachment stream
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
@@ -3907,11 +3907,11 @@ def test_group_parsator():
                         b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
-        # 24 bit boundaries and then include in MessageGroup
+        # 24 bit boundaries and then include in NonNativeBodyGroup
         # extend key event stream with msg
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # create sig counter for two sigs one is spurious since single sig AID
         # sign serialization indexed controller sigs group count quadlets
@@ -4033,7 +4033,7 @@ def test_group_parsator():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.BigESSRPayloadGroup))
 
         # enclose  message attachements and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
         ngms0 = bytearray()  # nested generic group
         ngms1 = bytearray()  # coubly nested generic group
@@ -4049,7 +4049,7 @@ def test_group_parsator():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[1].sign(serder.raw, index=0)  # returns siger
@@ -4062,7 +4062,7 @@ def test_group_parsator():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to
-        ngms1.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms1.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ngms0.extend(Counter.enclose(qb64=ngms1, code=Codens.GenericGroup))
 
         # Event 2 Rotation Transferable
@@ -4076,7 +4076,7 @@ def test_group_parsator():
                         version=Vrsn_1_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_1_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -4091,7 +4091,7 @@ def test_group_parsator():
                                     code=Codens.AttachmentGroup,
                                     version=Vrsn_1_0))
         # enclose message + attachments and add to enclosing group
-        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
 
@@ -4103,7 +4103,7 @@ def test_group_parsator():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -4115,7 +4115,7 @@ def test_group_parsator():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         ngms0 = bytearray()
@@ -4128,7 +4128,7 @@ def test_group_parsator():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -4141,7 +4141,7 @@ def test_group_parsator():
         # enclose  message attachements with v2 counter
         emas.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup))
         # enclose message plus attachments with v2
-        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
 
@@ -4156,7 +4156,7 @@ def test_group_parsator():
                         version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -4168,7 +4168,7 @@ def test_group_parsator():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
         # Event 6 Interaction
         emas = bytearray()  # message + attachement substream
@@ -4178,7 +4178,7 @@ def test_group_parsator():
                           version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -4190,7 +4190,7 @@ def test_group_parsator():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 7 Rotation to null NonTransferable Abandon
@@ -4204,7 +4204,7 @@ def test_group_parsator():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -4216,7 +4216,7 @@ def test_group_parsator():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 8 Interaction but already abandoned
@@ -4228,7 +4228,7 @@ def test_group_parsator():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -4240,7 +4240,7 @@ def test_group_parsator():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
         # Event 8 Rotation override interaction but already abandoned
@@ -4254,7 +4254,7 @@ def test_group_parsator():
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
-                                    code=Codens.MessageGroup,
+                                    code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_2_0))
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -4266,7 +4266,7 @@ def test_group_parsator():
         # enclose  attachments and add to emas
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to outermost generic
-        ggms.extend(Counter.enclose(qb64=emas, code=Codens.MessageAttachmentGroup))
+        ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         # enclose outermost generic and add to top level stream
         msgs.extend(Counter.enclose(qb64=ggms, code=Codens.GenericGroup))
 

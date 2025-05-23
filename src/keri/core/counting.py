@@ -64,12 +64,12 @@ class CounterCodex_1_0(MapDom):
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
@@ -95,12 +95,12 @@ class QuadTripCodex_1_0(MapDom):
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
 
@@ -120,12 +120,12 @@ class UniversalCodex_1_0(MapDom):
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -147,8 +147,8 @@ class SpecialUniversalCodex_1_0(MapDom):
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
 
@@ -168,8 +168,8 @@ class MessageUniversalCodex_1_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -188,20 +188,20 @@ class CounterCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BodyWithAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
-    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
     GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
     BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
     GenericListGroup: str = '-J'  # Generic List Group (Universal).
@@ -256,20 +256,20 @@ class UniversalCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BodyWithAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
-    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
     GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
     BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
     GenericListGroup: str = '-J'  # Generic List Group (Universal).
@@ -294,8 +294,8 @@ class SpecialUniversalCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BodyWithAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
 
@@ -319,12 +319,12 @@ class MessageUniversalCodex_2_0(MapDom):
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
-    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"

@@ -210,8 +210,8 @@ class Serdery:
             # then can populate smellage  "proto pvrsn kind size gvrsn"
             # smellage "proto pvrsn kind size gvrsn"
             # Serder._inhale then does the .loads given the smellage is CESR
-            if (ctr.code in (MUDex_2_0.FixedMessageBodyGroup,
-                             MUDex_2_0.BigFixedMessageBodyGroup)):
+            if (ctr.code in (MUDex_2_0.FixedBodyGroup,
+                             MUDex_2_0.BigFixedBodyGroup)):
                 proto = Protocols.keri
             else:
                 proto = Protocols.acdc
@@ -1299,7 +1299,7 @@ class Serder:
         # prepend count code for message
         if fixed:
 
-            raw = bytearray(Counter(Codens.FixedMessageBodyGroup,
+            raw = bytearray(Counter(Codens.FixedBodyGroup,
                                     count=len(bdy) // 4).qb64b)
             raw.extend(bdy)
         else:
@@ -1538,7 +1538,7 @@ class Serder:
         # prepend count code for message
         if fixed:
 
-            raw = bytearray(Counter(Codens.FixedMessageBodyGroup,
+            raw = bytearray(Counter(Codens.FixedBodyGroup,
                                     count=len(bdy) // 4).qb64b)
             raw.extend(bdy)
         else:
