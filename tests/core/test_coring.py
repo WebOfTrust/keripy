@@ -53,15 +53,15 @@ from keri.core.indexing import (Siger, Xizage, IdrDex, IdxSigDex,
                                 IdxCrtSigDex, IdxBthSigDex, Indexer)
 
 
-from keri.core.coring import MapHood, MapDom
+from keri.core.coring import MapHood, IceMapDom
 
 
 
-def test_mapdom():
-    """Test MapDom base dataclass"""
+def test_icemapdom():
+    """Test IceMapDom base dataclass"""
 
     @dataclass
-    class TestMapDom(MapHood):
+    class TestIceMapDom(MapHood):
         """
 
         """
@@ -72,7 +72,7 @@ def test_mapdom():
         def __iter__(self):  # so value in dataclass not key in dataclass
             return iter(astuple(self))
 
-    tmd = TestMapDom()
+    tmd = TestIceMapDom()
 
     assert 'X' in tmd
     assert 'Y' in tmd
@@ -152,7 +152,7 @@ def test_mapcodex():
 
 
     @dataclass(frozen=True)
-    class TestMapCodex(MapDom):
+    class TestMapCodex(IceMapDom):
         """
 
         """
@@ -319,6 +319,12 @@ def test_matter_class():
         'HPKEAuth_Cipher_Big_L0': '7AAG',
         'HPKEAuth_Cipher_Big_L1': '8AAG',
         'HPKEAuth_Cipher_Big_L2': '9AAG',
+        'Decimal_L0': '4H',
+        'Decimal_L1': '5H',
+        'Decimal_L2': '6H',
+        'Decimal_Big_L0': '7AAH',
+        'Decimal_Big_L1': '8AAH',
+        'Decimal_Big_L2': '9AAH',
     }
 
     assert Matter.Names == \
@@ -431,6 +437,12 @@ def test_matter_class():
         '7AAG': 'HPKEAuth_Cipher_Big_L0',
         '8AAG': 'HPKEAuth_Cipher_Big_L1',
         '9AAG': 'HPKEAuth_Cipher_Big_L2',
+        '4H': 'Decimal_L0',
+        '5H': 'Decimal_L1',
+        '6H': 'Decimal_L2',
+        '7AAH': 'Decimal_Big_L0',
+        '8AAH': 'Decimal_Big_L1',
+        '9AAH': 'Decimal_Big_L2',
     }
 
 
@@ -557,6 +569,12 @@ def test_matter_class():
         '7AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
         '8AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
         '9AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
 
@@ -3461,6 +3479,10 @@ def test_number():
     """ Done Test """
 
 
+def test_decimer():
+    """Test Decimer subclass of Matter"""
+    """Done Test"""
+
 def test_dater():
     """
     Test Dater date time subclass of Matter
@@ -5806,7 +5828,7 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_mapdom()
+    test_icemapdom()
     test_mapcodex()
     test_matter_class()
     test_matter()
@@ -5819,11 +5841,10 @@ if __name__ == "__main__":
     test_texter()
     test_bexter()
     test_labeler()
-    #test_prodex()
+    test_seqner()
     test_number()
-    #test_seqner()
-    #test_siger()
-    #test_nexter()
-    #test_tholder()
+    test_decimer()
+    test_dater()
+    test_tholder()
     test_prefixer()
 

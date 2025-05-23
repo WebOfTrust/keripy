@@ -17,12 +17,12 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
 from .. import kering
 from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0)
 
-from ..core.coring import MapDom
+from ..core.coring import IceMapDom
 
 
 
 @dataclass(frozen=True)
-class GenusCodex(MapDom):
+class GenusCodex(IceMapDom):
     """GenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.
@@ -43,7 +43,7 @@ GenDex = GenusCodex()  # Make instance
 
 
 @dataclass(frozen=True)
-class CounterCodex_1_0(MapDom):
+class CounterCodex_1_0(IceMapDom):
     """CounterCodex_1_0 is codex hard (stable) part of all V1 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -81,7 +81,7 @@ class CounterCodex_1_0(MapDom):
 CtrDex_1_0 = CounterCodex_1_0()
 
 @dataclass(frozen=True)
-class QuadTripCodex_1_0(MapDom):
+class QuadTripCodex_1_0(IceMapDom):
     """QuadTripCodex_1_0 is codex hard (stable) part of all V1 counter codes that
     count quadlets/triplets.
 
@@ -110,7 +110,7 @@ class QuadTripCodex_1_0(MapDom):
 QTDex_1_0 = QuadTripCodex_1_0()
 
 @dataclass(frozen=True)
-class UniversalCodex_1_0(MapDom):
+class UniversalCodex_1_0(IceMapDom):
     """CounterCodex_1_0 is codex hard (stable) part of all V1 universal counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -134,7 +134,7 @@ class UniversalCodex_1_0(MapDom):
 UniDex_1_0 = UniversalCodex_1_0()
 
 @dataclass(frozen=True)
-class SpecialUniversalCodex_1_0(MapDom):
+class SpecialUniversalCodex_1_0(IceMapDom):
     """SpecialUniversalCodex_1_0 is codex hard (stable) part of all V1 special
     universal counter codes that may have optional genus-version override as
     first code in enclosed group.
@@ -158,7 +158,7 @@ class SpecialUniversalCodex_1_0(MapDom):
 SUDex_1_0 = SpecialUniversalCodex_1_0()
 
 @dataclass(frozen=True)
-class MessageUniversalCodex_1_0(MapDom):
+class MessageUniversalCodex_1_0(IceMapDom):
     """MessageUniversalCodex_1_0 is codex hard (stable) part of all V1 message
     universal counter codes that support CESR native messages. (currently none)
     But needed for symmetry when changing versions in how lookup happens in parser.
@@ -178,7 +178,7 @@ MUDex_1_0 = MessageUniversalCodex_1_0()
 
 
 @dataclass(frozen=True)
-class CounterCodex_2_0(MapDom):
+class CounterCodex_2_0(IceMapDom):
     """CounterCodex_2_0 is codex hard (stable) part of all V2 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -246,7 +246,7 @@ class CounterCodex_2_0(MapDom):
 CtrDex_2_0 = CounterCodex_2_0()
 
 @dataclass(frozen=True)
-class UniversalCodex_2_0(MapDom):
+class UniversalCodex_2_0(IceMapDom):
     """CounterCodex_2_0 is codex hard (stable) part of all V2 universal counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -282,7 +282,7 @@ class UniversalCodex_2_0(MapDom):
 UniDex_2_0 = UniversalCodex_2_0()
 
 @dataclass(frozen=True)
-class SpecialUniversalCodex_2_0(MapDom):
+class SpecialUniversalCodex_2_0(IceMapDom):
     """SpecialUniversalCodex_2_0 is codex hard (stable) part of all V2 special
     universal counter codes that may have optional genus-version override as
     first code in enclosed group.
@@ -306,7 +306,7 @@ class SpecialUniversalCodex_2_0(MapDom):
 SUDex_2_0 = SpecialUniversalCodex_2_0()
 
 @dataclass(frozen=True)
-class MessageUniversalCodex_2_0(MapDom):
+class MessageUniversalCodex_2_0(IceMapDom):
     """MessageUniversalCodex_2_0 is codex hard (stable) part of all V2 message
     universal counter codes that support CESR native messages.
     Only provide defined codes.
@@ -344,7 +344,7 @@ Codens = Codenage()
 
 
 @dataclass(frozen=True)
-class SealCodex_2_0(MapDom):
+class SealCodex_2_0(IceMapDom):
     """
     SealCodex_2_0 is codex of seal counter derivation codes.
     Only provide defined codes.

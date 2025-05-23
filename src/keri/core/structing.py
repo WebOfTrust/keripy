@@ -17,7 +17,7 @@ from .. import help
 from ..help import nonStringSequence
 
 from . import coring
-from .coring import (MapDom, Matter, Diger, Prefixer, Number, Verser)
+from .coring import (IceMapDom, Matter, Diger, Prefixer, Number, Verser)
 
 
 
@@ -101,7 +101,7 @@ Castage = namedtuple('Castage', "kls prm", defaults=(None, ))
 
 
 @dataclass(frozen=True)
-class EmptyClanDom(MapDom):
+class EmptyClanDom(IceMapDom):
     """
     SealClanDom is dataclass of namedtuple seal class references (clans) each
     indexed by its class name.
@@ -122,7 +122,7 @@ EClanDom = EmptyClanDom()  # create instance
 
 
 @dataclass(frozen=True)
-class EmptyCastDom(MapDom):
+class EmptyCastDom(IceMapDom):
     """
     SealCastCodex is dataclass of namedtuple instances (seal casts) whose values
     are named primitive class references
@@ -145,7 +145,7 @@ ECastDom = EmptyCastDom()  # create instance
 
 
 @dataclass(frozen=True)
-class SealClanDom(MapDom):
+class SealClanDom(IceMapDom):
     """
     SealClanDom is dataclass of namedtuple seal class references (clans) each
     indexed by its class name.
@@ -176,7 +176,7 @@ SClanDom = SealClanDom()  # create instance
 
 
 @dataclass(frozen=True)
-class SealCastDom(MapDom):
+class SealCastDom(IceMapDom):
     """
     SealCastDom is dataclass of namedtuple instances (seal casts) whose values
     are named primitive class references

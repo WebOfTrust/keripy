@@ -241,7 +241,7 @@ class MapHood:
 
 
 @dataclass(frozen=True)
-class MapDom:
+class IceMapDom:
     """Base class for frozen dataclasses (codexes) that support map syntax
     Adds support for dunder methods for map syntax dc[name].
     Converts exceptions from attribute syntax to raise map syntax when using
@@ -390,11 +390,15 @@ class MatterCodex:
     HPKEAuth_Cipher_Big_L0: str = '7AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 0
     HPKEAuth_Cipher_Big_L1: str = '8AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 1
     HPKEAuth_Cipher_Big_L2: str = '9AAG'  # HPKE Auth cipher bytes of sniffable stream plaintext big lead size 2
-
+    Decimal_L0:     str = '4H'  # Decimal B64 string float and int lead size 0
+    Decimal_L1:     str = '5H'  # Decimal B64 string float and int lead size 1
+    Decimal_L2:     str = '6H'  # Decimal B64 string float and intlead size 2
+    Decimal_Big_L0: str = '7AAH'  # Decimal B64 string float and int big lead size 0
+    Decimal_Big_L1: str = '8AAH'  # Decimal B64 string float and int big lead size 1
+    Decimal_Big_L2: str = '9AAH'  # Decimal B64 string float and int big lead size 2
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
-
 
 MtrDex = MatterCodex()  # Make instance
 
@@ -418,7 +422,6 @@ class SmallVarRawSizeCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-
 SmallVrzDex = SmallVarRawSizeCodex()  # Make instance
 
 
@@ -438,7 +441,6 @@ class LargeVarRawSizeCodex:
 
     def __iter__(self):
         return iter(astuple(self))
-
 
 LargeVrzDex = LargeVarRawSizeCodex()  # Make instance
 
@@ -461,7 +463,6 @@ class BextCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-
 BexDex = BextCodex()  # Make instance
 
 
@@ -483,9 +484,27 @@ class TextCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-
 TexDex = TextCodex()  # Make instance
 
+
+@dataclass(frozen=True)
+class DecimalCodex:
+    """DecimalCodex is codex of all variable sized Base64 String representation
+    of decimal numbers both signed and unsigned, float and int.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Decimal_L0:     str = '4H'  # Decimal B64 string float and int lead size 0
+    Decimal_L1:     str = '5H'  # Decimal B64string float and int lead size 1
+    Decimal_L2:     str = '6H'  # Decimal B64string float and intlead size 2
+    Decimal_Big_L0: str = '7AAH'  # Decimal B64string float and int big lead size 0
+    Decimal_Big_L1: str = '8AAH'  # Decimal B64string float and int big lead size 1
+    Decimal_Big_L2: str = '9AAH'  # Decimal B64string float and int big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+DecDex = DecimalCodex()  # Make instance
 
 
 # When add new to DigCodes update Saider.Digests and Serder.Digests class attr
@@ -511,7 +530,6 @@ class DigCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-
 DigDex = DigCodex()  # Make instance
 
 
@@ -535,7 +553,6 @@ class NumCodex:
 
     def __iter__(self):
         return iter(astuple(self))
-
 
 NumDex = NumCodex()  # Make instance
 
@@ -563,7 +580,6 @@ class TagCodex:
 
     def __iter__(self):
         return iter(astuple(self))
-
 
 TagDex = TagCodex()  # Make instance
 
@@ -605,9 +621,7 @@ class LabelCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-
 LabelDex = LabelCodex()  # Make instance
-
 
 
 @dataclass(frozen=True)
@@ -640,7 +654,6 @@ class PreCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-
 PreDex = PreCodex()  # Make instance
 
 
@@ -658,7 +671,6 @@ class NonTransCodex:
 
     def __iter__(self):
         return iter(astuple(self))
-
 
 NonTransDex = NonTransCodex()  # Make instance
 
@@ -682,10 +694,7 @@ class PreNonDigCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-
 PreNonDigDex = PreNonDigCodex()  # Make instance
-
-
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -886,6 +895,12 @@ class Matter:
         '7AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
         '8AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
         '9AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
     Codes = asdict(MtrDex)  # map code name to code
@@ -1923,6 +1938,119 @@ class Number(Matter):
 
         """
         return True if self.num == 0 else False
+
+
+class Decimer(Matter):
+    """Decimer is subclass of Matter, for variable length decimal number strings
+    (dns) that are encoded in Base64 for compactness. Decimer encoded decimal
+    number strings only contain Base64 URL safe characters that map to decimal
+    number strings that can be converted to decimal numbers.
+    These strings support signed and unsigned, int and float.
+
+    When created using the dns parameter, the encoded matter in qb64 format
+    in the text domain is more compact than would be the case if the string were
+    Base64 encoded from a utf-8 decimal string.
+
+    Example:
+        Decimer(dns='-5.6').qb64 == 'BBB'
+
+
+
+
+    Attributes: (See Matter)
+
+    Inherited Properties:  (See Matter)
+
+    Properties:
+        .dns (str):  decimal number string
+        .num (int|float): decimal number
+
+    Inherited Hidden Properties:  (See Matter)
+
+    Methods:
+        ._rawify(self, bext)
+
+    Codes:  (See DecimalCodex or  DecDex)
+        Decimal_L0:     str = '4H'  # Decimal B64 string float and int lead size 0
+        Decimal_L1:     str = '5H'  # Decimal B64string float and int lead size 1
+        Decimal_L2:     str = '6H'  # Decimal B64string float and intlead size 2
+        Decimal_Big_L0: str = '7AAH'  # Decimal B64string float and int big lead size 0
+        Decimal_Big_L1: str = '8AAH'  # Decimal B64string float and int big lead size 1
+        Decimal_Big_L2: str = '9AAH'  # Decimal B64string float and int big lead size 2
+
+    """
+    @classmethod
+    def _derawify(cls, raw, code):
+        """Returns decoded raw as B64 str aka bext value
+
+        Returns:
+           bext (str): decoded raw as B64 str aka bext value
+        """
+        _, _, _, _, ls = cls.Sizes[code]
+        bext = encodeB64(bytes([0] * ls) + raw)
+        ws = 0
+        if ls == 0 and bext:
+            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
+                ws = 1
+        else:
+            ws = (ls + 1) % 4
+        return bext.decode('utf-8')[ws:]
+
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=MtrDex.Decimal_L0, dns=None, num=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+            dns (str|bytes):  decimal number string
+            num (int|float): decimal number
+        """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if bext is None:
+                raise EmptyMaterialError("Missing bext string.")
+            if hasattr(bext, "encode"):
+                bext = bext.encode("utf-8")  # convert to bytes
+            if not Reb64.match(bext):
+                raise ValueError("Invalid Base64.")
+            raw = self._rawify(bext)  # convert bytes to raw with padding
+
+        super(Bexter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                     code=code, **kwa)
+        if self.code not in BexDex:
+            raise ValidationError("Invalid code = {} for Bexter."
+                                  "".format(self.code))
+
+    @staticmethod
+    def _rawify(bext):
+        """Returns raw value equivalent of Base64 text.
+        Suitable for variable sized matter
+
+        Parameters:
+            text (bytes): Base64 bytes
+        """
+        ts = len(bext) % 4  # bext size mod 4
+        ws = (4 - ts) % 4  # pre conv wad size in chars
+        ls = (3 - ts) % 3  # post conv lead size in bytes
+        base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
+        raw = decodeB64(base)[ls:]  # convert and remove leader
+        return raw  # raw binary equivalent of text
+
+
+    @property
+    def dns(self):
+        """
+        Property bext: Base64 text value portion of qualified b64 str
+        Returns the value portion of .qb64 with text code and leader removed
+        """
+        return self._derawify(raw=self.raw, code=self.code)
+
 
 
 
