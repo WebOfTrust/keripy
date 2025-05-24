@@ -343,7 +343,7 @@ class LMDBer(filing.Filer):
     MaxNamedDBs = 96
     ConfigKey = 'lmdber'
 
-    def __init__(self, readonly=False, **kwa):
+    def __init__(self, readonly=False, cf=None, **kwa):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .path.
@@ -385,10 +385,10 @@ class LMDBer(filing.Filer):
         self._version = None
         self.readonly = True if readonly else False
         self._mapSize = 104_857_600  # 10MB fallback default
-        self.cf = kwa["cf"] if "cf" in kwa else None
+        self.cf = cf
         super(LMDBer, self).__init__(**kwa)
 
-    def reopen(self, readonly=False, **kwa):
+    def reopen(self, readonly=False, cf=None, **kwa):
         """
         Open if closed or close and reopen if opened or create and open if not
         preexistent, directory path for lmdb at .path and then
@@ -419,9 +419,13 @@ class LMDBer(filing.Filer):
         if readonly is not None:
             self.readonly = readonly
 
-        config = self.cf.get() if self.cf is not None else None
-        lmdberConf = config.get(self.ConfigKey, None) if config is not None else None
-        if lmdberConf is not None:
+        cf = cf if cf is not None else self.cf
+        config = cf.get() if cf is not None else None
+        lmdberConf = config.get(LMDBer.ConfigKey) if config is not None else None
+        dbconf = config.get(self.ConfigKey, None) if config is not None else None
+        if dbconf is not None:
+            self.mapSize = dbconf.get("mapSize", 104_857_600)  # 10MB default
+        elif config and lmdberConf: # fall back to LMDBer size if present
             self.mapSize = lmdberConf.get("mapSize", 104_857_600)  # 10MB default
 
         # open lmdb major database instance
