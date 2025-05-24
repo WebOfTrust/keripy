@@ -3897,7 +3897,9 @@ class Tholder:
         expressions for satisfaction of a threshold
 
         The limen representation is meant to parse threshold expressions from
-        CESR serializations of key event message fields or attachments.
+        CESR serializations of key event message fields or attachments. Limen
+        is passed to Matter to process and accepts all Matter kwa including
+        strip which is useful when extracting from a CESR stream.
 
         The sith representation is meant to parse threhold expressions from
         deserializations of JSON, CBOR, or MGPK key event message fields  or

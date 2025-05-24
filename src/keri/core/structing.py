@@ -92,7 +92,7 @@ StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
 StateEvent = namedtuple("StateEvent", 's t d')
 
 
-# Cast conversion: duple (c, k)
+# Cast conversion: duple (kls, prm)
 # kls = primitive class reference in order to cast as appropriate
 #       namedtuple with values as primitive classes
 # prm = primitive __init__ keyword parameter name to use when casting
@@ -214,11 +214,12 @@ SCastDom = SealCastDom()  # create instance
 class Structor:
     """Structor class each instance holds a namedtuple .data of named values.
     Each value is a primitive instance of CESR primitive subclass that supports
-    text (ab64) and binary (qb2) domains.
+    text (qb64) and binary (qb2) domains.
     Structor instances can be serialized to or deserialized from concatenation
     of the qb64 or qb2 representations of the data values. Creation requires
-    input of a ordered named classes for creating the named instances from the
-    input data. Smart data format input are supported to accomodate the many ways
+    input of an instance of an ordered collection of named classes for creating
+    the named instances from the input data.
+    Smart data format inputs are supported to accomodate the many ways
     the named data may appear in messages and or databases.
 
     Instance Creation Patterns:
@@ -259,11 +260,11 @@ class Structor:
 
 
     Properties:
-        data (NamedTuple): fields are named instances of CESR primitives
-        clan (type[NamedTuple]): class reference of .data's class
+        data (NamedTuple): instance whose fields are named instances of CESR primitives
+        clan (type[NamedTuple]): .data's class, class object reference
         cast (NamedTuple | None): values are Castage instances that each provide
-                    CESR primitive class references and primitive init parameter
-                    used to .data's primitive instances.
+                    CESR primitive class references and primitive init parameters
+                    used to initialize .data's primitive instances.
         crew (NamedTuple): named qb64 values of .data's primitive instances
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
@@ -283,7 +284,7 @@ class Structor:
     # Create .Names dict that maps tuple of clan/cast fields names to its namedtuple
     # class type name so can look up a know clan or cast given a matching tuple
     # of either field names from a namedtuple or keys from a dict. The tuple of
-    # field names is a mark of the structor type. Maps mark to class name.
+    # field names is a mark of the structor type. This maps a mark to a class name
     Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
 
 
@@ -294,17 +295,16 @@ class Structor:
         Parameters:
             data (NamedTuple | None): fields are named primitive instances for .data
                 Given data can derive clan, cast, crew, qb64, and qb2
-            clan (type[NamedTuple]): provides class reference for generated .data
-                when data missing.
+            clan (type[NamedTuple]): data's class, provides class reference for
+                generating .data when data missing.
             cast (NamedTuple | dict | Iterable | None):  values are Castage
-                    instances that each provide CESR primitive class references
-                    and primitive init parameter used to .data's primitive
-                    instances. None means .data provided directly not generated
-                    from cast
-            each value provides CESR
-                primitive subclass reference used to create primitive instances
-                for generating .data. Can be used to infer namedtuple type of
-                .data when data and clan missing. Takes precendence over crew.
+                instances that each provide CESR primitive class references
+                and primitive init parameter used to .data's primitive
+                instances. None means .data provided directly not generated
+                from cast. Each value provides CESR  primitive subclass reference
+                used to create primitive instances for generating .data.
+                Can be used to infer namedtuple type of .data when data and
+                clan missing. Takes precendence over crew.
             crew (NamedTuple | dict | Iterable | None): each value provides qb64 value
                 of primitive for generating .data with .cast when data missing.
                 Can be used to infer namedtuple type of .data when data and clan
@@ -314,10 +314,9 @@ class Structor:
             qb2 (bytes | bytearray | None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
             strip (bool): False means do not strip each value from qb64 or qb2.
-                            Default is False.
-                          True means if qb64 or qb2 are bytearray then strip
-                            contained concatenated data values. Enables parser
-                            to extract data fields from front of CESR stream.
+                Default is False. True means if qb64 or qb2 are bytearray then strip
+                contained concatenated data values. Enables parser to extract
+                data fields from front of CESR stream.
 
 
         """
@@ -579,7 +578,7 @@ class Sealer(Structor):
             known primitive classes given NamedTuple class of clan or instance
             of cast or crew.
 
-    When known casts or provided in .Clans/.Casts then more flexible creation
+    When known casts are provided in .Clans/.Casts then more flexible creation
     is supported for different types of provided cast and crew.
     When no clan is provided and an unknown cast and/or crew are provided as
     Mappings then Structor may create custom clan from the names given by the
@@ -603,6 +602,21 @@ class Sealer(Structor):
 
     Hidden:
         _data (NamedTuple): named CESR primitive instances
+
+    Example:
+        dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+        diger = Diger(qb64=dig)
+        data = SealDigest(d=diger)
+        name = SealDigest.__name__
+
+        sealer = Sealer(data=data)
+        assert sealer.data == data
+        assert sealer.clan == SealDigest
+        assert sealer.name == SealDigest.__name__
+        assert sealer.cast == SealDigest(d=Castage(Diger))
+        assert sealer.crew == SealDigest(d=dig)
+        assert sealer.asdict == data
+
 
 
     """

@@ -37,8 +37,8 @@ from ..help import helping
 from . import coring
 from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
                      Saids,  Digestage)
-from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
-                     Ilker, Traitor, Verser, )
+from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
+                     Tagger, Ilker, Traitor, Verser, )
 
 from .counting import GenDex, Counter, Codens, SealDex_2_0, MUDex_2_0
 
@@ -1170,7 +1170,7 @@ class Serder:
         raw = bytearray(raw[:size])
 
         # consume body ctr and version field
-        ctr = Counter(qb64=raw, strip=True)  # version defaults to 2
+        bctr = Counter(qb64=raw, strip=True)  # version defaults to 2
         versage = Verser(qb64b=raw, strip=True).versage
         # assumes compatible versage witn .proto .pvrsn .gvrsn
 
@@ -1196,43 +1196,66 @@ class Serder:
             if not fixed:  # prepend label
                 raise DeserializeError(f"Not fixed field {ilk=}")
 
-            for l, v in fields.items():  # assumes valid field order & presence
+            for l in fields:  # l for label assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
-                        sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                        sad[l] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
                            size=size, gvrsn=self.gvrsn)
 
                     case "t":  # message type (ilk), already got ilk
-                        sad['t'] = ilker.ilk
+                        sad[l] = ilker.ilk
 
-                    case "d" | "i" | "p" | "di":  # said or aid
-                        val = v.encode("utf-8")  # already primitive qb64 make qb6b
+                    case "d" | "p":  # said
+                        sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                    case "i" | "di":  # aid
+                        sad[l] = Prefixer(qb64b=raw, strip=True).qb64
 
                     case "s" | "bt":  # sequence number or numeric threshold
-                        val = coring.Number(numh=v).qb64b  # convert hex str
+                        sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
 
                     case "kt" | "nt": # current or next signing threshold
-                        val = coring.Tholder(sith=v).limen  # convert sith str
+                        sad[l] = Tholder(limen=raw, strip=True).sith  # as sith str
 
                     case "k" | "n" | "b" | "ba" | "br":  # list of primitives
-                        frame = bytearray()
-                        for e in v:  # list
-                            frame.extend(e.encode("utf-8"))
-
-                        val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
-                        val.extend(frame)
+                        ctr = Counter(qb64b=raw, strip=True)
+                        if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                            raise DeserializeError(f"Expected List group got {ctr.name}")
+                        fs = ctr.count * 4  # frame size since qb64 text mode
+                        frame = raw[:fs]  # extract list frame
+                        raw = raw[fs:]
+                        elements = []
+                        while frame:  # not yet empty
+                            elements.append(Matter(qb64b=frame, strip=True).qb64)
+                        sad[l] = elements
 
                     case "c":  # list of config traits strings
-                        frame = bytearray()
-                        for e in v:  # list
-                            frame.extend(Traitor(trait=e).qb64b)
+                        ctr = Counter(qb64b=raw, strip=True)
+                        if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                            raise DeserializeError(f"Expected List group got {ctr.name}")
+                        fs = ctr.count * 4  # frame size since qb64 text mode
+                        frame = raw[:fs]  # extract list frame
+                        raw = raw[fs:]
+                        elements = []
+                        while frame:  # not yet empty
+                            elements.append(Traitor(qb64b=frame, strip=True).trait) # as trait str
+                        sad[l] = elements
 
-                        val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
-                        val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
+                        ctr = Counter(qb64b=raw, strip=True)
+                        if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                            raise DeserializeError(f"Expected List group got {ctr.name}")
+                        fs = ctr.count * 4  # frame size since qb64 text mode
+                        frame = raw[:fs]  # extract list frame
+                        raw = raw[fs:]
+                        elements = []
+                        while frame:  # not yet empty
+                            elements.append(Traitor(qb64b=frame, strip=True).trait) # as trait str
+                        sad[l] = elements
+
+
+
                         frame = bytearray()  # whole list
                         gcode = None  # code for counter for consecutive same type seals
                         gframe = bytearray()  # consecutive same type seals
@@ -1258,14 +1281,6 @@ class Serder:
                                     frame.extend(counter.qb64b + gframe)
                                     gframe = bytearray()
                                     gcode = None
-
-                                #unknown seal type so serialize as field map
-                                #generic seal no count type (v, Mapping):
-                                #for l, e in v.items():
-                                    #pass
-                                #val = bytearray(Counter(tag=""GenericMapGroup"",
-                                               # count=len(frame) // 4).qb64b)
-                                #val.extend(mapframe)
 
                         if gframe:  # close off last group if any
                             counter = Counter(code=gcode, count=len(gframe) // 4)

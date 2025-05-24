@@ -569,6 +569,9 @@ def test_sealer():
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
+    # test round trip
+    #sealer = Sealer(cast=S)
+
     # Test no clan but with one or the other of cast and crew as dict or namedtuple
     sealer = Sealer(crew=crew)  # uses known cast
     assert sealer.clan == clan
@@ -669,6 +672,8 @@ def test_sealer():
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
+
+    """Done Test"""
 
 
 
