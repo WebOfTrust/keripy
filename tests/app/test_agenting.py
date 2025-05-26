@@ -120,7 +120,7 @@ def test_witness_sender(seeder):
 
         # looks like bad magic value in seeder is causing this to fail
         pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby, seeder)
-        directing.runController(doers=[pdoer], expire=15.0)
+        directing.runController(doers=[pdoer], expire=10.0)
         assert pdoer.done is True
 
 
