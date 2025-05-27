@@ -25,15 +25,19 @@ class Mailboxer(dbing.LMDBer):
     TailDirPath = "keri/mbx"
     AltTailDirPath = ".keri/mbx"
     TempPrefix = "keri_mbx_"
+    ConfigKey = "mailboxer"
 
     def __init__(self, name="mbx", headDirPath=None, reopen=True, **kwa):
         """
+        Sets up the mailbox named sub database where all mailbox messages are stored.
 
         Parameters:
-            headDirPath:
-            perm:
-            reopen:
-            kwa:
+            headDirPath(str): optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
+            perm(int): is numeric os permissions for directory and/or file(s)
+            reopen(bool): True means database will be reopened by this init
+            cf (Configer): optional Configer to configure the opened LMDB database via kwa
+            kwa: pass through init args to reopen and LMDBer
 
         Mailboxer uses two dbs for mailbox messages these are .tpcs and .msgs.
         The message index is in .tpcs (topics).
@@ -58,6 +62,7 @@ class Mailboxer(dbing.LMDBer):
         :return:
         """
         super(Mailboxer, self).reopen(**kwa)
+        logger.info("[%s] Mailboxer map size set to %s", self.name, self.mapSize)
         self.tpcs = subing.OnSuber(db=self, subkey='tpcs.')
         self.msgs = subing.Suber(db=self, subkey='msgs.')  # key states
 
