@@ -225,7 +225,7 @@ class ConfigerDoer(doing.Doer):
         super(ConfigerDoer, self).__init__(**kwa)
         self.configer = configer
 
-    def enter(self):
+    def enter(self, *, temp=None):
         """"""
         if not self.configer.opened:
             self.configer.reopen()

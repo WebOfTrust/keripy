@@ -60,7 +60,7 @@ class ReceiptDoer(doing.DoDoer):
 
         super(ReceiptDoer, self).__init__(doers=[doing.doify(self.testDo)])
 
-    def testDo(self, tymth, tock=0.0):
+    def testDo(self, tymth, tock=0.0, **kwa):
         """ Execute a series of kli commands for this test scenario """
         # enter context
         self.wind(tymth)
@@ -145,7 +145,7 @@ class PublishDoer(doing.DoDoer):
 
         super(PublishDoer, self).__init__(doers=doers)
 
-    def testDo(self, tymth, tock=0.0):
+    def testDo(self, tymth, tock=0.0, **kwa):
         """ Run the test and exit and remove all child doers when done """
         self.wind(tymth)
         self.tock = tock

@@ -3277,7 +3277,7 @@ class BaserDoer(doing.Doer):
         super(BaserDoer, self).__init__(**kwa)
         self.baser = baser
 
-    def enter(self):
+    def enter(self, *, temp=False):
         """"""
         if not self.baser.opened:
             self.baser.reopen()
