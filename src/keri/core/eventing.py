@@ -679,6 +679,8 @@ def incept(keys,
     cnfg = cnfg if cnfg is not None else []
 
     data = data if data is not None else []
+    if not isinstance(data, list):
+        raise ValueError(f"Expected list got {data=}")
 
     ked = dict(v=vs,  # version string
                t=ilk,
@@ -854,6 +856,13 @@ def rotate(pre,
         if toader.num != 0:  # invalid toad
             raise ValueError(f"Invalid toad = {toader.num} for wits = {newitset}")
 
+    if not (isinstance(data, list) or data is None):
+        raise ValueError(f"Expected list got {data=}")
+
+    data = data if data is not None else []
+    if not isinstance(data, list):
+        raise ValueError(f"Expected list got {data=}")
+
     ked = dict(v=vs,  # version string
                t=ilk,
                d="",  # qb64 SAID
@@ -869,7 +878,7 @@ def rotate(pre,
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
-               a= data if data is not None else [],  # list of seals
+               a=data,  # list of seals
                )
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
@@ -939,6 +948,8 @@ def interact(pre,
 
 
     data = data if data is not None else []
+    if not isinstance(data, list):
+        raise ValueError(f"Expected list got {data=}")
 
     sad = dict(v=vs,  # version string
                t=ilk,

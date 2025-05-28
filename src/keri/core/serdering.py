@@ -8,7 +8,8 @@ import json
 from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, asdict, field
-
+from base64 import urlsafe_b64decode as decodeB64
+from base64 import urlsafe_b64encode as encodeB64
 
 import cbor2 as cbor
 import msgpack
@@ -26,7 +27,7 @@ from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
-from ..kering import SMELLSIZE, Smellage, smell
+from ..kering import SMELLSIZE, Smellage, smell, sniff, Colds
 
 from ..kering import Protocols, Kinds, versify, deversify, Ilks
 
@@ -201,7 +202,7 @@ class Serdery:
             size (None|int): Not None means CESR native messag using ctr and
                              size already calculated. All bytes in stream.
         """
-        if ctr:  # sniffed already to be couter fixed body or map body group code
+        if ctr:  # sniffed already to be counter of fixed body or map body code
             # peeked to see .FixedBodyGroup or .MapBodyGroup so know it's native
             # get counter
             # Now peek into to see Verser (just index past leading group small or big size
@@ -545,7 +546,7 @@ class Serder:
             given by label(s) according to proto and ilk and code.
 
         Parameters:
-            raw (bytes | bytearray): serialized event
+            raw (bytes|bytearray): serialized event
             sad (dict): serializable saidified field map of message.
                 Ignored if raw provided
             strip (bool): True means strip (delete) raw from input stream
@@ -598,7 +599,7 @@ class Serder:
 
 
         if raw:  # deserialize raw using property setter
-            self._inhale(raw=raw, smellage=smellage)
+            self._inhale(raw=raw, smellage=smellage, strip=strip)
             # ._inhale updates ._raw, ._sad, ._proto, ._pvrsn, .gvrsn, ._kind, ._size
 
             # primary said field label
@@ -610,11 +611,11 @@ class Serder:
             except Exception as ex:
                 self._said = None  # no saidive field
 
-            if strip:  #only when raw is bytearray
-                try:
-                    del raw[:self._size]
-                except TypeError:
-                    pass  # ignore if bytes
+            #if strip:  #only when raw is bytearray
+                #try:
+                    #del raw[:self._size]
+                #except TypeError:
+                    #pass  # ignore if bytes
 
             if verify:  # verify fields including the said(s) provided in raw
                 try:
@@ -1045,7 +1046,7 @@ class Serder:
 
 
 
-    def _inhale(self, raw, *, smellage=None):
+    def _inhale(self, raw, *, smellage=None, strip=False):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -1063,35 +1064,76 @@ class Serder:
 
         Parameters:
             clas (Serder): class reference
-            raw (bytes): serialized sad message
+            raw (bytes|bytearray): serialized sad message
             smellage (Smellage | None): instance of deconstructed version string
                 elements. If none or empty ignore otherwise assume that raw
                 already had its version string extracted (reaped) into the
                 elements of smellage.
+            strip (bool): True means strip (delete) raw from input stream
+                bytearray after parsing. False means do not strip.
+                Assumes that raw is bytearray when strip is True.
 
         """
         # CESR native must always pass in smellage since can't smell native
         if smellage:  # passed in so don't need to smell raw again
             proto, pvrsn, kind, size, gvrsn = smellage  # tuple unpack
+            if len(raw) < size:
+                raise ShortageError(f"Need more bytes to de-serialize Serder")
+
+            sraw = raw[:size]
+            if strip and isinstance(raw, bytearray):
+                del raw[:size]
+
         else:  # not passed in so smell raw raises VersionError if native
-            proto, pvrsn, kind, size, gvrsn = smell(raw)
+            cold = sniff(raw)
+            if cold == Colds.msg:
+                proto, pvrsn, kind, size, gvrsn = smell(raw)
+                if len(raw) < size:
+                    raise ShortageError(f"Need more bytes to de-serialize Serder")
 
-        if len(raw) < size:
-            raise ShortageError(f"Need more bytes to de-serialize Serder")
+                sraw = raw[:size]
+                if strip and isinstance(raw, bytearray):
+                    del raw[:size]
 
-        sad = self.loads(raw=raw, size=size, kind=kind)
+            else:
+                if cold == Colds.bny:
+                    counter = Counter(qb2=raw)
+                    ss = counter.byteCount(cold=cold) + counter.byteSize(cold=cold)
+                    if len(raw) < ss:
+                        raise ShortageError(f"Not enough raw bytes for serder")
+                    sraw = raw[:ss]  # only copy enough bytes for serder
+                    if strip and isinstance(raw, bytearray):
+                        del raw[:ss]
+                    sraw = encodeB64(raw)  # loads expects Base64 text domain
+                elif cold == Colds.txt:
+                    counter = Counter(qb64b=raw)
+                    ss = counter.byteCount(cold=cold) + counter.byteSize(cold=cold)
+                    if len(raw) < ss:
+                        raise ShortageError(f"Not enough raw bytes for serder")
+                    sraw = raw[:ss]  # only copy enough bytes for serder
+                    if strip and isinstance(raw, bytearray):
+                        del raw[:ss]
+                else:
+                    raise ValueError(f"Invalid {cold=} for Serder raw")
 
-        if "v" not in sad:  # Regex does not check for version string label itself
-            raise FieldError(f"Missing version string field in {sad}.")
+                size = len(sraw)
+                kind = Kinds.cesr
+                proto, pvrsn, gvrsn = Verser(qb64b=sraw[counter.fullSize:]).versage
 
-        # cypto opts want bytes not bytearray
-        self._raw = bytes(raw[:size])  # make copy so strip not affect
-        self._sad = sad
         self._proto = proto
         self._pvrsn = pvrsn
         self._kind = kind
         self._size = size
         self._gvrsn = gvrsn
+
+        sad = self.loads(raw=sraw, size=size, kind=kind)
+
+        if "v" not in sad:  # Regex does not check for version string label itself
+            raise FieldError(f"Missing version string field in {sad}.")
+
+        # cypto opts want bytes not bytearray
+        self._raw = bytes(sraw)  # make bytes if bytearray
+        self._sad = sad
 
 
 
@@ -1114,6 +1156,9 @@ class Serder:
         Notes:
             loads of json uses str whereas loads of cbor and msgpack use bytes
         """
+        if size is None:
+            size = len(raw)
+
         if kind == Kinds.cesr:
             try:
                 sad = self._loads(raw=raw, size=size)
@@ -1121,7 +1166,7 @@ class Serder:
                 raise DeserializeError(f"Error deserializing CESR: "
                                       f"{raw[:size].decode()}") from ex
 
-        if kind == Kinds.json:
+        elif kind == Kinds.json:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
@@ -1167,18 +1212,21 @@ class Serder:
 
         sad = {}
         # make copy so strip here does not collide with .__init__ strip
+        if size is None:
+            size = len(raw)
         raw = bytearray(raw[:size])
 
         # consume body ctr and version field
-        bctr = Counter(qb64=raw, strip=True)  # version defaults to 2
+        bctr = Counter(qb64b=raw, strip=True)  # version defaults to 2
         versage = Verser(qb64b=raw, strip=True).versage
         # assumes compatible versage witn .proto .pvrsn .gvrsn
 
 
         # read off ilk so can get rest of fields in order to parse
         ilker = Ilker(qb64b=raw, strip=True)
-        if ilker.ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
-            raise DeserializeError(f"Expected key event ilk got {ilk=}")
+        if ilker.ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
+                             Ilks.rct):
+            raise DeserializeError(f"Unexpected {ilk=}")
 
         # must be fixed filed see check below
         ilks = self.Fields[self.proto][self.pvrsn]  # get fields keyed by ilk
@@ -1190,13 +1238,13 @@ class Serder:
             fixed = True  # fixed field
 
         # assumes that sad's field ordering and field inclusion is correct
-        # so can serialize in order to compute saidive fields
+        # so can deserialize in order
 
         if self.proto == Protocols.keri:
-            if not fixed:  # prepend label
-                raise DeserializeError(f"Not fixed field {ilk=}")
+            if not fixed:
+                raise DeserializeError(f"Expected fixed field got {ilk=}")
 
-            for l in fields:  # l for label assumes valid field order & presence
+            for l in fields.alls:  # l for label assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
                         sad[l] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
@@ -1243,83 +1291,45 @@ class Serder:
 
 
                     case "a":  # list of seals or field map of attributes
+                        seals = []
                         ctr = Counter(qb64b=raw, strip=True)
                         if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
                             raise DeserializeError(f"Expected List group got {ctr.name}")
                         fs = ctr.count * 4  # frame size since qb64 text mode
                         frame = raw[:fs]  # extract list frame
-                        raw = raw[fs:]
-                        elements = []
-                        while frame:  # not yet empty
-                            elements.append(Traitor(qb64b=frame, strip=True).trait) # as trait str
-                        sad[l] = elements
+                        raw = raw[fs:]  # strip frame from raw
+                        while frame:  # while list frame not empty
+                            sctr = Counter(qb64b=frame, strip=True)  # seal counter
+                            if sctr.code not in Serder.CodeClans:
+                                raise DeserializeError(f"Expected Sealer group got {sctr.name}")
+                            cast = Sealer.Casts[Serder.CodeClans[sctr.code]]
+                            sfs = sctr.count * 4
+                            sframe = frame[:sfs]  # extra seal frame
+                            frame = frame[sfs:]  # strip sfram from frame
+                            while sframe:  # while seal frame not empty
+                                # append sad dict version of seal to seals
+                                seals.append(Sealer(cast=cast,
+                                                    qb64b=sframe,
+                                                    strip=True).asdict)
+                        sad[l] = seals
 
-
-
-                        frame = bytearray()  # whole list
-                        gcode = None  # code for counter for consecutive same type seals
-                        gframe = bytearray()  # consecutive same type seals
-                        for e in v:  # list of seal dicts
-                            # need support for grouping consecutive seals of same type with same counter
-
-                            try:
-                                sealer = Sealer(crew=e)
-                                code = self.ClanCodes[sealer.name]
-                                if gcode and gcode == code:
-                                    gframe.extend(sealer.qb64b)
-                                else:
-                                    if gframe:  # not same so close off and rotate group
-                                        counter = Counter(code=gcode, count=len(gframe) // 4)
-                                        frame.extend(counter.qb64b + gframe)
-                                        gframe = bytearray()  # new group
-                                    gcode = code  # new group or keep same group
-                                    gframe.extend(sealer.qb64b)  # extend in new group
-
-                            except kering.InvalidValueError:
-                                if gframe:
-                                    counter = Counter(code=gcode, count=len(gframe) // 4)
-                                    frame.extend(counter.qb64b + gframe)
-                                    gframe = bytearray()
-                                    gcode = None
-
-                        if gframe:  # close off last group if any
-                            counter = Counter(code=gcode, count=len(gframe) // 4)
-                            frame.extend(counter.qb64b + gframe)
-                            gframe = bytearray()
-                            gcode = None
-
-                        val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
-                        val.extend(frame)
 
                     case _:  # if extra fields this is where logic would be
-                        raise SerializeError(f"Unsupported protocol field label"
+                        raise DeserializeError(f"Unsupported protocol field label"
                                              f"='{l}' for protocol={proto}"
                                              f" version={pvrsn}.")
 
-                bdy.extend(val)
 
 
-        elif proto == Protocols.acdc:
-            for l, val in sad.items():  # assumes valid field order & presence
-                if not fixed:
-                    pass  # prepend label
+        elif self.proto == Protocols.acdc:
+            if fixed:
+                raise DeserializeError(f"Expected non-fixed field got {ilk=}")
 
-
+            for l in fields:  # assumes valid field order & presence
+                pass
 
         else:
-            raise SerializeError(f"Unsupported protocol={self.proto}.")
-
-
-        # prepend count code for message
-        if fixed:
-
-            raw = bytearray(Counter(Codens.FixedBodyGroup,
-                                    count=len(bdy) // 4).qb64b)
-            raw.extend(bdy)
-        else:
-            pass
-
+            raise DeserializeError(f"Unsupported protocol={self.proto}.")
 
         return sad
 
@@ -1433,9 +1443,13 @@ class Serder:
 
         ilk = sad.get('t')  # returns None if missing message type (ilk)
         if ilk not in ilks:  #
-            raise SerializeError(f"Missing message type field "
-                                 f"'t' for protocol={proto} "
+            raise SerializeError(f"Missing or unsupported message type field "
+                                 f"'t', {ilk=} for protocol={proto} "
                                  f"version={pvrsn} with {sad=}.")
+
+        if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
+                                               Ilks.rct):
+            raise SerializeError(f"Unexpected {ilk=}")
 
         fields = ilks[ilk]  # FieldDom for given protocol and ilk
 

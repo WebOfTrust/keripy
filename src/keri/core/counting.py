@@ -1120,8 +1120,9 @@ class Counter:
     def _exfil(self, qb64b):
         """Extracts self.code and self.count from qualified base64 bytes qb64b
         """
-        if not qb64b:  # empty need more bytes
+        if not qb64b or len(qb64b) < 2:  # need more bytes
             raise kering.ShortageError("Empty material, Need more characters.")
+
 
         first = qb64b[:2]  # extract first two char code selector
         if hasattr(first, "decode"):
@@ -1164,7 +1165,7 @@ class Counter:
     def _bexfil(self, qb2):
         """Extracts self.code and self.count from qualified base2 bytes qb2
         """
-        if not qb2:  # empty need more bytes
+        if not qb2 or len(qb2) < 2:  # need more bytes
             raise kering.ShortageError("Empty material, Need more bytes.")
 
         first = nabSextets(qb2, 2)  # extract first two sextets as code selector

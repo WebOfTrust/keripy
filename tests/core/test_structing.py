@@ -52,18 +52,18 @@ def test_structor_doms():
 
     assert asdict(SCastDom) == \
     {
-        'SealDigest': SealDigest(d=Castage(kls=Diger, prm=None)),
-        'SealRoot': SealRoot(rd=Castage(kls=Diger, prm=None)),
-        'SealEvent': SealEvent(i=Castage(kls=Prefixer, prm=None),
-                               s=Castage(kls=Number, prm='numh'),
-                               d=Castage(kls=Diger, prm=None)),
-        'SealTrans': SealTrans(s=Castage(kls=Number, prm='numh'),
-                               d=Castage(kls=Diger, prm=None)),
-        'SealLast': SealLast(i=Castage(kls=Prefixer, prm=None)),
-        'SealBack': SealBack(bi=Castage(kls=Prefixer, prm=None),
-                                 d=Castage(kls=Diger, prm=None)),
-        'SealKind': SealKind(t=Castage(kls=Verser, prm=None),
-                                 d=Castage(kls=Diger, prm=None)),
+        'SealDigest': SealDigest(d=Castage(kls=Diger, ipn=None)),
+        'SealRoot': SealRoot(rd=Castage(kls=Diger, ipn=None)),
+        'SealEvent': SealEvent(i=Castage(kls=Prefixer, ipn=None),
+                               s=Castage(kls=Number, ipn='numh'),
+                               d=Castage(kls=Diger, ipn=None)),
+        'SealTrans': SealTrans(s=Castage(kls=Number, ipn='numh'),
+                               d=Castage(kls=Diger, ipn=None)),
+        'SealLast': SealLast(i=Castage(kls=Prefixer, ipn=None)),
+        'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
+                                 d=Castage(kls=Diger, ipn=None)),
+        'SealKind': SealKind(t=Castage(kls=Verser, ipn=None),
+                                 d=Castage(kls=Diger, ipn=None)),
     }
 
 
@@ -96,6 +96,7 @@ def test_structor():
     number = Number(num=num)
     snq = number.qb64
     snh = number.numh
+    assert snh == 'e'
     dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
     diger = Diger(qb64=dig)
 
@@ -124,8 +125,7 @@ def test_structor():
     assert structor.name == name
     assert structor.cast == cast
     assert structor.crew == crew
-    assert structor.asdict == data._asdict()
-    assert structor.asdict == {'d': diger}
+    assert structor.asdict == dcrew == {'d': dig} # data._asdict()
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -137,6 +137,7 @@ def test_structor():
     assert structor.name == name
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -146,6 +147,7 @@ def test_structor():
     assert structor.name == name
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -154,6 +156,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -163,6 +166,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -173,6 +177,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -183,6 +188,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -192,6 +198,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -202,6 +209,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -213,6 +221,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -222,6 +231,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -231,6 +241,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -240,6 +251,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -250,6 +262,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -260,6 +273,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -269,6 +283,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -282,30 +297,34 @@ def test_structor():
     assert structor.cast == cast  # tuple compare is by field value not type
     assert structor.cast.__class__.__name__ == "d"
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
 
-    # Test with multiple field namedtuple for data
+    # Test with multiple field namedtuple for data.  Using ipn parameter name
+    # allows a different value than default numh instead of qb64
     data = SealEvent(i=prefixer, s=number, d=diger)
     clan = SealEvent
     cast = SealEvent(i=Castage(Prefixer),
                      s=Castage(Number, 'numh'),
                      d=Castage(Diger))
 
-    #naive cast doesn't know about prm for Number
+    #naive cast doesn't know about ipn for Number
     ncast = SealEvent(i=Castage(Prefixer),
                      s=Castage(Number),
                      d=Castage(Diger))
     crew = SealEvent(i=aid, s=snh, d=dig)
 
-    # naive crew does't know about prm for Number
+    # naive crew does't know about ipn for Number (ipn init parameter name)
+    # so value must be the default of qb64.
     ncrew = SealEvent(i=aid, s=snq, d=dig)
     name = SealEvent.__name__
 
     dcast = cast._asdict()
     dcrew = crew._asdict()
+    dncrew = ncrew._asdict()
 
     assert data._fields == SealEvent._fields
     klas = data.__class__
@@ -320,14 +339,13 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == ncast
     assert structor.crew == ncrew
-    assert structor.name == name
-    assert structor.asdict == data._asdict()
-    assert structor.asdict == \
+    assert structor.asdict == dncrew ==  \
     {
-        'i': prefixer,
-        's': number,
-        'd': diger,
+        'i': 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR',
+        's': 'MAAO',
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
     }
+    assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -337,6 +355,12 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew == \
+    {
+        'i': 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR',
+        's': 'e',
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+    }
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -346,6 +370,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -355,6 +380,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -364,6 +390,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -374,6 +401,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -384,6 +412,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -393,6 +422,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -403,6 +433,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -414,6 +445,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -423,6 +455,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -432,6 +465,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -441,6 +475,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -452,6 +487,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -463,6 +499,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -472,6 +509,7 @@ def test_structor():
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.name == name
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
@@ -485,6 +523,7 @@ def test_structor():
     assert structor.cast == cast  # tuple compare is by field value not type
     assert structor.cast.__class__.__name__ == "i_s_d"
     assert structor.crew == crew
+    assert structor.asdict == dcrew
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
@@ -534,7 +573,9 @@ def test_sealer():
     num = 14
     number = Number(num=num)
     snq = number.qb64
+    assert snq == 'MAAO'
     snh = number.snh
+    assert snh == 'e'
     dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
     diger = Diger(qb64=dig)
 
@@ -542,11 +583,13 @@ def test_sealer():
 
     data = SealDigest(d=diger)
     clan = SealDigest
-    cast = SealDigest(d=Castage(Diger))
+    cast = SCastDom.SealDigest  # defined dom cast
+    ncast = SealDigest(d=Castage(Diger))  # naive cast
     crew = SealDigest(d=dig)
+    ncrew = crew  # since Castage.ipn is None
     name = SealDigest.__name__
 
-    dcast = cast._asdict()
+    dncast = ncast._asdict()
     dcrew = crew._asdict()
 
     assert data._fields == SealDigest._fields
@@ -561,42 +604,61 @@ def test_sealer():
     assert sealer.data == data
     assert sealer.clan == clan
     assert sealer.name == name
-    assert sealer.cast == cast
-    assert sealer.crew == crew
-    assert sealer.asdict == data._asdict()
-    assert sealer.asdict == {'d': diger}
+    assert sealer.cast == ncast
+    assert sealer.crew == crew == ncrew
+    assert sealer.asdict == dcrew == {'d': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'}
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
-    # test round trip
-    #sealer = Sealer(cast=S)
+    # test round trip using naive cast
+    sealer = Sealer(cast=ncast, qb64=diger.qb64)
+    assert isinstance(sealer.data, SealDigest)
+    assert sealer.data.d.qb64 == diger.qb64 # not same instance but same serialization
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == ncast == cast  # since ipn == None
+    assert sealer.crew == crew
+    assert sealer.asdict == crew._asdict()
+
+    # test round trip using known cast (not naive)
+    sealer = Sealer(cast=cast, qb64=diger.qb64)
+    assert isinstance(sealer.data, SealDigest)
+    assert sealer.data.d.qb64 == diger.qb64 # not same instance but same serialization
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast == ncast  # since ipn == None
+    assert sealer.crew == crew
+    assert sealer.asdict == crew._asdict()
 
     # Test no clan but with one or the other of cast and crew as dict or namedtuple
-    sealer = Sealer(crew=crew)  # uses known cast
+    sealer = Sealer(crew=crew)  # crew uses known cast i.e. not naive cast
     assert sealer.clan == clan
     assert sealer.name == name
     assert sealer.cast == cast
     assert sealer.crew == crew
+    assert sealer.asdict == crew._asdict()
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
-    sealer = Sealer(crew=dcrew)  # uses known cast
+    sealer = Sealer(crew=dcrew)  # crew uses known cast i.e. not naive cast
     assert sealer.clan == clan
     assert sealer.name == name
     assert sealer.cast == cast
     assert sealer.crew == crew
+    assert sealer.asdict == crew._asdict()
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
-    # uses known class
-    sealer = Sealer(cast=dcast, crew=dcrew)
+    # naive cast as dict gets converted to known (not-naive) cast
+    sealer = Sealer(cast=dncast, crew=dcrew)
     assert sealer.clan == clan
     assert sealer.name == name
     assert sealer.cast == cast  # tuple compare is by field value not type
     assert sealer.crew == crew
+    assert sealer.asdict == crew._asdict()
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
@@ -608,19 +670,20 @@ def test_sealer():
     cast = SealEvent(i=Castage(Prefixer),
                      s=Castage(Number, "numh"),
                      d=Castage(Diger))
-    # naive cast since data does not provide prm for number
+    # naive cast since data does not provide ipn for number
     ncast = SealEvent(i=Castage(Prefixer),
                      s=Castage(Number),
                      d=Castage(Diger))
 
     crew = SealEvent(i=aid, s=snh, d=dig)
-    # naive crew since data does not provide prm for number
+    # naive crew since data does not provide ipn for number
     ncrew = SealEvent(i=aid, s=snq, d=dig)
 
     name = SealEvent.__name__
 
-    dcast = cast._asdict()
+    dncast = ncast._asdict()
     dcrew = crew._asdict()
+    dncrew = ncrew._asdict()
 
     assert data._fields == SealEvent._fields
     klas = data.__class__
@@ -630,45 +693,75 @@ def test_sealer():
     qb2 = prefixer.qb2 + number.qb2 + diger.qb2
 
     # Test data
-    sealer = Sealer(data=data)
+    sealer = Sealer(data=data)  # bare data so uses naive cast
     assert sealer.data == data
     assert sealer.clan == clan
     assert sealer.name == name
-    assert sealer.cast == ncast
+    assert sealer.cast == ncast != cast  # since ipn for s is not None
     assert sealer.crew == ncrew
-    assert sealer.asdict == data._asdict()
-    assert sealer.asdict == {'i': prefixer,
-                             's': number,
-                             'd': diger}
+    assert sealer.asdict == dncrew == \
+           {'i': 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR',
+            's': 'MAAO',
+            'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'}
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
+
+    # test round trip using naive cast
+    sealer = Sealer(cast=ncast, qb64=qb64)
+    assert isinstance(sealer.data, SealEvent)
+    assert sealer.data.s.qb64 == number.qb64 # not same instance but same serialization
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == ncast != cast  # since ipn for s is not None
+    assert sealer.crew == ncrew
+    assert sealer.asdict == dncrew == \
+           {'i': 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR',
+            's': 'MAAO',
+            'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'}
+
+    # test round trip using known cast (not naive)
+    sealer = Sealer(cast=cast, qb64=qb64)
+    assert isinstance(sealer.data, SealEvent)
+    assert sealer.data.d.qb64 == diger.qb64 # not same instance but same serialization
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast != ncast  # since ipn for s is not None
+    assert sealer.crew == crew
+    assert sealer.asdict == dcrew == \
+           {'i': 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR',
+            's': 'e',
+            'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'}
+
 
     # Test no clan but with one or the other of cast and crew as dict or namedtuple
-    sealer = Sealer(crew=crew)  # uses known cast
+    sealer = Sealer(crew=crew)  # uses known cast i.e not naive
     assert sealer.clan == clan
     assert sealer.name == name
     assert sealer.cast == cast
     assert sealer.crew == crew
+    assert sealer.asdict == dcrew
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
-    sealer = Sealer(crew=dcrew)  # uses known cast
+    sealer = Sealer(crew=dcrew)  # uses known cast i.e. not naive
     assert sealer.clan == clan
     assert sealer.name == name
     assert sealer.cast == cast
     assert sealer.crew == crew
+    assert sealer.asdict == dcrew
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
-    # uses known class
-    sealer = Sealer(cast=dcast, crew=dcrew)
+    # uses naive cast as dict which uses known cast (i.e. not-naive cast)
+    sealer = Sealer(cast=dncast, crew=dcrew)
     assert sealer.clan == clan
     assert sealer.name == name
     assert sealer.cast == cast  # tuple compare is by field value not type
     assert sealer.crew == crew
+    assert sealer.asdict == dcrew
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2

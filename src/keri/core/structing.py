@@ -92,12 +92,12 @@ StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
 StateEvent = namedtuple("StateEvent", 's t d')
 
 
-# Cast conversion: duple (kls, prm)
+# Cast conversion: duple (kls, ipn)
 # kls = primitive class reference in order to cast as appropriate
 #       namedtuple with values as primitive classes
-# prm = primitive __init__ keyword parameter name to use when casting
+# ipn = primitive __init__ keyword parameter name to use when casting
 #        default None. When default then use qb64 or qb64b as appropriate.
-Castage = namedtuple('Castage', "kls prm", defaults=(None, ))
+Castage = namedtuple('Castage', "kls ipn", defaults=(None, ))
 
 
 @dataclass(frozen=True)
@@ -278,6 +278,31 @@ class Structor:
         _data (NamedTuple): named CESR primitive instances
 
 
+    Requires that any Castage where castage.ipn is not None must have a
+    matching property or attribute name (same as value of ipn) on its Matter
+    subclass so it can round trip as a data field in a structor.crew
+
+    For example:
+    Given the cast for a structor of
+    SealEvent(i=Castage(kls=<class 'keri.core.coring.Prefixer'>, ipn=None),
+              s=Castage(kls=<class 'keri.core.coring.Number'>, ipn='numh'),
+              d=Castage(kls=<class 'keri.core.coring.Diger'>, ipn=None))
+
+    Then the castage.ipn = 'numh' for its field as a  Number instance,
+    then number.numh must be property or attribute whose value is a
+    serialization that would be the value of the same named __init__
+    parameter 'numh', as in, getattr(number, ipn) == serialization value
+
+    as in:
+    number = Number(numh=value)
+    getattr(number,'numh')== value
+
+    Note that default of ipn='qb64' is already property of Matter base class
+    as in:
+    matter = Matter(qb64=value)
+    matter.qb64 == value
+
+
     """
     Clans = EClanDom  # known namedtuple clans. Override in subclass with non-empty
     Casts = ECastDom  # known namedtuple casts. Override in subclass with non-empty
@@ -289,7 +314,7 @@ class Structor:
 
 
     def __init__(self, data=None, *, clan=None, cast=None, crew=None,
-                 qb64=None, qb2=None, strip=False):
+                 qb64=None, qb64b=None, qb2=None, strip=False):
         """Initialize instance
 
         Parameters:
@@ -311,6 +336,8 @@ class Structor:
                 missing.
             qb64 (str | bytes | bytearray | None): concatenation of qb64 data values to
                 generate .data with data and crew missing.
+            qb64b (str | bytes | bytearray | None): alias for qb64 to match Counter
+                interface.
             qb2 (bytes | bytearray | None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
             strip (bool): False means do not strip each value from qb64 or qb2.
@@ -401,7 +428,8 @@ class Structor:
                     raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
                                             " Primitive.")
 
-            # have clan and cast but may not have crew
+            # have clan and cast but may not have crew but have qb64/qb64b
+            qb64 = qb64 if qb64 is not None else qb64b  # copy qb64b to qb64
             if crew:
                 if not isinstance(crew, clan):
                     if isinstance(crew, tuple) and hasattr(crew, "_fields"):
@@ -426,9 +454,9 @@ class Structor:
                     else:
                         raise InvalidValueError(f"Invalid {crew=}.")
 
-                data = clan(*(cstg.kls(**{cstg.prm if cstg.prm is not None else 'qb64': val})
+                data = clan(*(cstg.kls(**{cstg.ipn if cstg.ipn is not None else 'qb64': val})
                               for cstg, val in zip(cast, crew)))
-                # data = clan(*(klas(qb64=val) for klas, val in zip(cast, crew)))
+
 
             elif qb64:
                 if hasattr(qb64, "encode"):
@@ -518,19 +546,49 @@ class Structor:
         """Return:
             crew (NamedTuple): named qb64 field values from .data
 
+        Requires that any Castage where castage.ipn is not None must have a
+        matching property or attribute name (same as value of ipn) on its Matter
+        subclass so it can round trip as a data field in a structor.crew
+
+        For example:
+        Given the cast for a structor of
+        SealEvent(i=Castage(kls=<class 'keri.core.coring.Prefixer'>, ipn=None),
+                  s=Castage(kls=<class 'keri.core.coring.Number'>, ipn='numh'),
+                  d=Castage(kls=<class 'keri.core.coring.Diger'>, ipn=None))
+
+        Then the castage.ipn = 'numh' for its field as a  Number instance,
+        then number.numh must be property or attribute whose value is a
+        serialization that would be the value of the same named __init__
+        parameter 'numh', as in, getattr(number, ipn) == serialization value
+
+        given:
+        number = Number(numh=value)
+        getattr(number,'numh')== value
+
+        Note that default of ipn='qb64' is already property of Matter base class
+        as in:
+        matter = Matter(qb64=value)
+        matter.qb64 == value
+
         """
-        return (self.clan(*(getattr(val, cstg.prm if cstg.prm is not None else "qb64")
+        return (self.clan(*(getattr(val, cstg.ipn if cstg.ipn is not None else "qb64")
                     for cstg, val in zip(self.cast, self.data))))
-        # return self.clan(*(val.qb64 for val in self.data))
 
 
     @property
     def asdict(self):
-        """Returns:
-            map (dict): .data as a dictionary
+        """Shorthand for .crew._asdict() for round trip conversion for sad dict
+        representation in Serder instances.
+        .crew is namedtuple whose fields values are serializations of the data
+        values that respect .cast Castage.ipn formats.
+
+        Returns:
+            dcrew (dict): .crew._asdict() as a field value map (dict) with
+            serialized values of the data value Matter instances whose
+            serializations respect the .cast Castage.ipn serialization formats.
 
         """
-        return self.data._asdict()
+        return self.crew._asdict()
 
 
     @property
