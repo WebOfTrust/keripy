@@ -955,7 +955,6 @@ class Parser:
 
                 elif (ctr.code in (self.mucodes.FixedBodyGroup,
                                    self.mucodes.BigFixedBodyGroup)):
-                    #del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
                     fmgs = ctr.byteCount(cold=cold)  # fixed body group size
                     size = cbs + fmgs
@@ -963,7 +962,7 @@ class Parser:
                         yield  # until full group in ims
 
                     fims = ims[:size]  # copy out
-                    del ims[:fmgs]  # strip off from ims
+                    del ims[:size]  # strip off from ims
 
                     if cold == Colds.bny:  # tranform to text domain
                         fims = encodeB64(fims)  # always process event in qb64 text domain
@@ -975,6 +974,7 @@ class Parser:
                                          svrsn=self.version,
                                          ctr=ctr,
                                          size=size)
+                    exts['serder'] = serder
 
                 elif ctr.code in self.mucodes:  # process other native message group
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
@@ -986,6 +986,7 @@ class Parser:
                     del ims[:nmgs]  # strip off from ims
                     # now nims includes just the native message not attachments
                     # and native message has been stripped from ims
+                    #exts['serder'] = serder
 
                 elif (ctr.code in (self.sucodes.GenericGroup,
                                    self.sucodes.BigGenericGroup)):

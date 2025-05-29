@@ -1574,7 +1574,7 @@ class Serder:
             pass
 
 
-        return raw
+        return bytes(raw)  # must return bytes so can sign, do crypto operations
 
 
 
