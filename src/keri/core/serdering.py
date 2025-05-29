@@ -8,6 +8,8 @@ import json
 from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, asdict, field
+from base64 import urlsafe_b64decode as decodeB64
+from base64 import urlsafe_b64encode as encodeB64
 
 import cbor2 as cbor
 import msgpack
@@ -25,7 +27,7 @@ from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE, VERFMT,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
-from ..kering import SMELLSIZE, Smellage, smell
+from ..kering import SMELLSIZE, Smellage, smell, sniff, Colds
 
 from ..kering import Protocols, Kinds, versify, deversify, Ilks
 
@@ -36,10 +38,10 @@ from ..help import helping
 from . import coring
 from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
                      Saids,  Digestage)
-from .coring import (Matter, Saider, Verfer, Diger, Number, Tholder, Tagger,
-                     Ilker, Traitor, Verser, )
+from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
+                     Tagger, Ilker, Traitor, Verser, )
 
-from .counting import GenDex, Counter, Codens, SealDex_2_0
+from .counting import GenDex, Counter, Codens, SealDex_2_0, MUDex_2_0
 
 from .structing import Sealer, SClanDom
 
@@ -151,7 +153,7 @@ Begine regex with b'^' or b'\A' to match at start of string.
 
 So change Smellage to return extra field that has gvrsn when used by snuff
 so can use Smellage for both smell and snuff in both reap and inhale
-where smellage is used. Change egacy uses of smell to ignore extra value.
+where smellage is used. Change legacy uses of smell to ignore extra value.
 
 """
 
@@ -174,7 +176,7 @@ class Serdery:
         self.version = version
 
 
-    def reap(self, ims, genus=GenDex.KERI, gvrsn=Vrsn_2_0, native=False, skip=0):
+    def reap(self, ims, genus, svrsn, cold=None, ctr=None, size=None):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -185,32 +187,55 @@ class Serdery:
         Parameters:
             ims (bytearray) of serialized incoming message stream. Assumes start
                 of stream is raw Serder.
-            genus (str): CESR genus code from stream parser.
+            genus (str): stream genus CESR code from stream parser.
                     Provides genus of enclosing stream top-level or nested group
-            gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+            svrsn (Versionage): stream genus version instance CESR genus code
+                    table version (Major, Minor)
                     Provides CESR version of enclosing stream top-level or nested group
-            native (bool): True means sniff determined may be CESR native message
-                           so snuff instead of smell.
-                           False means sniff determined not CESR native i.e
-                           JSON, CBOR, MGPK field map. so use smell. Default False
-             skip (int): bytes to skip at front of ims. Useful when CESR native
-                serialization where skip is size of the message counter so smell
-                does need to see counter
-
+            cold (None|Colds): Not None means sniff determined CESR native message
+                                Using ctr. Must then be colds.txt or colds.bny.
+                                Otherwise JSON, CBOR, MGPK field map.
+                                so use smell. Default None
+            ctr (None|Counter): Not None means sniff determined CESR native message
+                                Using ctr. Otherwise JSON, CBOR, MGPK field map.
+                                so use smell. Default None
+            size (None|int): Not None means CESR native messag using ctr and
+                             size already calculated. All bytes in stream.
         """
-        if native:
-            pass
-            #smellage = smell(memoryview(ims)[skip:])  # does not copy to skip
+        if ctr:  # sniffed already to be counter of fixed body or map body code
+            # peeked to see .FixedBodyGroup or .MapBodyGroup so know it's native
+            # get counter
+            # Now peek into to see Verser (just index past leading group small or big size
+            # with verser can get proto and pvrsn (and also gvrsn if long version)
+            # set kind to Kinds.CESR,
+            # then can populate smellage  "proto pvrsn kind size gvrsn"
+            # smellage "proto pvrsn kind size gvrsn"
+            # Serder._inhale then does the .loads given the smellage is CESR
+            if (ctr.code in (MUDex_2_0.FixedBodyGroup,
+                             MUDex_2_0.BigFixedBodyGroup)):
+                proto = Protocols.keri
+            else:
+                proto = Protocols.acdc
 
+            verser = Verser(qb64b=ims[ctr.fullSize:])  # in text domain
+            proto, pvrsn, gvrsn = verser.versage
+            smellage = Smellage(proto=proto, pvrsn=pvrsn, kind=Kinds.cesr,
+                                size=size, gvrsn=gvrsn)
         else:
-            smellage = smell(ims)
+            smellage = smell(ims)  #
+
+        if smellage.pvrsn.major > svrsn.major:
+            raise SerializeError(f"Incompatible major protocol version="
+                                 f"{smellage.pvrsn} with stream major genus "
+                                 f"version={svrsn}.")
+        if getattr(GenDex, smellage.proto, None) != genus:
+            raise SerializeError(f"Incompatible protocol={smellage.proto} with "
+                                 f"genus={genus}.")
 
         if smellage.proto == Protocols.keri:
-            return SerderKERI(raw=ims, strip=True, smellage=smellage,
-                              genus=genus, gvrsn=gvrsn)
+            return SerderKERI(raw=ims, strip=True, smellage=smellage)
         elif smellage.proto == Protocols.acdc:
-            return SerderACDC(raw=ims, strip=True, smellage=smellage,
-                              genus=genus, gvrsn=gvrsn)
+            return SerderACDC(raw=ims, strip=True, smellage=smellage)
         else:
             raise ProtocolError(f"Unsupported protocol type = {smellage.proto}.")
 
@@ -261,16 +286,18 @@ class Serder:
     Properties:
         raw (bytes): of serialized event only
         sad (dict): self addressed data dict
-        genus (str): CESR genus code
-        gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+
         proto (str): Protocolage value as protocol identifier such as KERI, ACDC
                      alias of .protocol
         protocol (str): Protocolage value as protocol identifier such as KERI, ACDC
                         alias of .proto
-        vrsn (Versionage): protocol version (Major, Minor) alias of .version
-        version (Versionage): protocol version (Major, Minor) alias of .vrsn
+        pvrsn (Versionage): protocol version (Major, Minor)
+        genus (str): CESR genus code for supported cesr genus
+        gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+                            when version field includes it (future)
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
+
         said (str): qb64 said of .raw given by appropriate field
         saidb (bytes): qb64b of .said
         ilk (str | None): packet type for this Serder if any (may be None)
@@ -279,9 +306,11 @@ class Serder:
     Hidden Attributes:
         ._raw (bytes): serialized message
         ._sad (dict): sad dict (key event dict)
-        ._cvrsn (Versionage): CESR code table version
         ._proto (str):  Protocolage value as protocol type identifier
-        ._vrsn is Versionage instance of event version
+        ._pvrsn (Versionage): instance of protocol version
+        ._genus (str): GenDex genus code for CESR
+        ._gvrsn (Versionage): instance of genus version for CESR
+        ._pvrsn (Versionage): CESR code table version
         ._kind is serialization kind string value (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
@@ -328,8 +357,6 @@ class Serder:
     ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
     ClanCodes[SClanDom.SealBack.__name__] = SealDex_2_0.BackerRegistrarSealCouples
 
-
-
     # map seal counter code to seal clan name for parsing seal groups in anchor list
     CodeClans = { val: key for key, val in ClanCodes.items()}  # invert dict
 
@@ -338,7 +365,8 @@ class Serder:
     Proto = Protocols.keri  # default message protocol type for makify on base Serder
     Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Kinds.json  # default serialization kind
-    CVrsn = Vrsn_2_0  # default CESR code table version
+    Genus = GenDex.KERI  # default CESR genus code
+    GVrsn = Vrsn_2_0  # default CESR genus version
 
 
     # Nested dict keyed by protocol.
@@ -506,8 +534,8 @@ class Serder:
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, verify=True,
-                 makify=False, genus=GenDex.KERI, gvrsn=Vrsn_2_0, smellage=None,
-                 proto=None, pvrsn=None, kind=None, ilk=None, saids=None):
+                 makify=False, smellage=None, proto=None, pvrsn=None,
+                 genus=GenDex.KERI, gvrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -518,7 +546,7 @@ class Serder:
             given by label(s) according to proto and ilk and code.
 
         Parameters:
-            raw (bytes | bytearray): serialized event
+            raw (bytes|bytearray): serialized event
             sad (dict): serializable saidified field map of message.
                 Ignored if raw provided
             strip (bool): True means strip (delete) raw from input stream
@@ -532,11 +560,6 @@ class Serder:
                            Ignore when raw empty or when raw and saidify is True
             makify (bool): True means compute fields for sad including size and
                 saids.
-            genus (str):  CESR genus portion of genus-version. Either provided
-                          by parser from stream or generated by Serder to stream
-            gvrsn (Versionage): instance of version portion of CESR genus-version
-                for code table version. Either provided by parser from stream
-                genus version or desired when generating Serder instance to stream
             smellage (Smellage | None): instance of deconstructed and converted
                 protocol version string elements. If none or empty ignore otherwise assume
                 that raw already had its version string extracted (reaped) into the
@@ -545,6 +568,10 @@ class Serder:
                 If None then its extracted from sad or uses default .Proto
             pvrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
+            genus (str): CESR genus code when version field includes it (future native)
+                      Otherwise use one compatible with proto
+            gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+                when version field includes it (future)
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
                 If None then its extracted from sad or uses default .Kind
@@ -565,15 +592,15 @@ class Serder:
         self._sad = sad
         self._proto = proto
         self._pvrsn = pvrsn
-        self._kind = kind
-        self._gvrsn = gvrsn
         self._genus = genus
+        self._gvrsn = gvrsn
+        self._kind = kind
         self._size = None
 
 
         if raw:  # deserialize raw using property setter
-            self._inhale(raw=raw, smellage=smellage)
-            # ._inhale updates ._raw, ._sad, ._proto, ._vrsn, ._kind, ._size
+            self._inhale(raw=raw, smellage=smellage, strip=strip)
+            # ._inhale updates ._raw, ._sad, ._proto, ._pvrsn, .gvrsn, ._kind, ._size
 
             # primary said field label
             try:
@@ -584,11 +611,11 @@ class Serder:
             except Exception as ex:
                 self._said = None  # no saidive field
 
-            if strip:  #only when raw is bytearray
-                try:
-                    del raw[:self._size]
-                except TypeError:
-                    pass  # ignore if bytes
+            #if strip:  #only when raw is bytearray
+                #try:
+                    #del raw[:self._size]
+                #except TypeError:
+                    #pass  # ignore if bytes
 
             if verify:  # verify fields including the said(s) provided in raw
                 try:
@@ -601,14 +628,17 @@ class Serder:
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
-                # makify resets sad, raw, proto, vrsn, kind, ilk, and size
-                self.makify(sad=sad, proto=proto, pvrsn=pvrsn, kind=kind,
+                # makify resets sad, raw, proto, pvrsn, genus, gvrsn, kind, ilk, and size
+                self.makify(sad=sad, proto=proto, pvrsn=pvrsn,
+                            genus=genus, gvrsn=gvrsn, kind=kind,
                             ilk=ilk, saids=saids)
-                # .makify updates ._raw, ._sad, ._proto, ._vrsn, ._kind, ._size
+                # .makify updates ._raw, ._sad, ._proto, ._pvrsn, ._kind, ._size
+                # .makify uses .gvrsn
 
             else:
                 self._exhale(sad=sad)
-                # .exhale updates ._raw, ._sad, ._proto, ._vrsn, ._kind, ._size
+                # .exhale updates ._raw, ._sad, ._proto, ._pvrsn, ._kind, ._size
+                # .exhale uses .gvrsn
 
             # primary said field label
             try:
@@ -621,7 +651,7 @@ class Serder:
 
             if verify:  # verify fields including the said(s) provided in sad
                 try:
-                    self._verify()  # raises exception when not verify
+                    self._verify()  # raises exception if failure
                 except Exception as ex:
                     logger.error("Invalid sad for Serder %s\n%s",
                                  self.pretty(), ex.args[0])
@@ -671,18 +701,24 @@ class Serder:
             raise ValidationError(f"Invalid protocol type = {self.proto}.")
 
         if self.genus not in GenDex:  # ensures self.genus != None
-            raise SerializeError(f"Invalid genus={self.genus}.")
+            raise ValidationError(f"Invalid genus={self.genus}.")
 
         if getattr(GenDex, self.proto, None) != self.genus:
-            raise SerializeError(f"Incompatible protocol={self.proto} with "
+            raise ValidationError(f"Incompatible protocol={self.proto} with "
                                  f"genus={self.genus}.")
 
-        if self.pvrsn.major > self.gvrsn.major:
-            raise SerializeError(f"Incompatible major protocol version={self.pvrsn}"
+        if self.gvrsn is not None and self.pvrsn.major > self.gvrsn.major:
+            raise ValidationError(f"Incompatible major protocol version={self.pvrsn}"
                                  f" with major genus version={self.gvrsn}.")
 
+        if (self.kind == Kinds.cesr and (self.pvrsn.major < Vrsn_2_0.major or
+                (self.gvrsn is not None and self.gvrsn.major < Vrsn_2_0.major))):
+            raise ValidationError(f"Invalid major protocol version={pvrsn} and/or"
+                                  f" invalid major genus version={gvrsn} "
+                                  f"for native CESR serialization.")
+
         if self.pvrsn not in self.Fields[self.proto]:
-            raise SerializeError(f"Invalid version={self.pvrsn} for "
+            raise ValidationError(f"Invalid version={self.pvrsn} for "
                                  f"protocol={self.proto}.")
 
         if self.ilk not in self.Fields[self.proto][self.pvrsn]:
@@ -761,28 +797,38 @@ class Serder:
             raise ValidationError(f"Missing version string field in {sad}.")
 
         # extract version string elements to verify consistency with attributes
-        proto, vrsn, kind, size, opt = deversify(sad["v"])
-        if self.proto != proto:
-            raise ValidationError(f"Inconsistent protocol={self.proto} in {sad}.")
 
-        if self.pvrsn != vrsn:
-            raise ValidationError(f"Inconsistent version={self.pvrsn} in {sad}.")
+        proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
+        if self.proto != proto:
+            raise ValidationError(f"Inconsistent protocol={self.proto} from"
+                                  f" deversify of sad.")
+
+        if self.pvrsn != pvrsn:
+            raise ValidationError(f"Inconsistent version={self.pvrsn} from"
+                                  f" deversify of sad.")
 
         if self.kind != kind:
-            raise ValidationError(f"Inconsistent kind={self.kind} in {sad}.")
+            raise ValidationError(f"Inconsistent kind={self.kind} ifrom"
+                                  f" deversify of sad.")
 
         if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
             if size != self.size != len(raw):
-                raise ValidationError(f"Inconsistent size={self.size} in {sad}.")
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
         else:  # size is not set in version string when kind is CESR
             if self.size != len(raw):
-                raise ValidationError(f"Inconsistent size={self.size} in {sad}.")
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
+
+        if self.gvrsn != gvrsn:
+            raise ValidationError(f"Inconsistent genus version={self.gvrsn} from"
+                                  f" deversify of sad.")
 
         # verified successfully since no exception
 
 
-    def makify(self, sad, *, proto=None, pvrsn=None, kind=None,
-               ilk=None, saids=None):
+    def makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
+               kind=None, ilk=None, saids=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
         raw, sad, proto, version, kind, size
@@ -804,6 +850,10 @@ class Serder:
                 If None then its extracted from sad or uses default .Proto
             pvrsn (Versionage | None): instance desired protocol version
                 If None then its extracted from sad or uses default .Vrsn
+            genus (str): desired CESR genus code
+                If None then its uses one compatible with proto
+            gvrsn (Versionage): instance desired CESR genus code table version
+                If None then stays None
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
                 If None then its extracted from sad or uses default .Kind
@@ -817,10 +867,10 @@ class Serder:
                    - the code extracted from sad[said label] when valid CESR
                    - the code provided in .Fields...saids
         """
-        sproto = svrsn = skind = silk = None
+        sproto = svrsn = skind = silk = sgvrsn = None
         if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
-                sproto, svrsn, skind, _, _ = deversify(sad["v"])
+                sproto, svrsn, skind, _, sgvrsn = deversify(sad["v"])
             except VersionError as ex:
                 pass
             else:
@@ -836,12 +886,15 @@ class Serder:
             raise SerializeError(f"Required protocol={self.Protocol}, got "
                                  f"protocol={proto} instead.")
 
-        if self.genus not in GenDex:  # ensures self.genus != None
+        if genus is None:  # and proto is not None
+            genus = self.Genus # getattr(GenDex, proto, None)
+
+        if genus not in GenDex:  # ensures valid genus != None
             raise SerializeError(f"Invalid genus={self.genus}.")
 
-        if getattr(GenDex, proto, None) != self.genus:
+        if getattr(GenDex, proto, None) != genus:  # ensure compatible proto
             raise SerializeError(f"Incompatible protocol={proto} with "
-                                 f"genus={self.genus}.")
+                                 f"{genus=}.")
 
         if pvrsn is None:
             pvrsn = svrsn if svrsn is not None else self.Vrsn
@@ -849,14 +902,17 @@ class Serder:
         if pvrsn not in self.Fields[proto]:
             raise SerializeError(f"Invalid version={pvrsn} for protocol={proto}.")
 
-        if pvrsn.major > self.gvrsn.major:
+        if gvrsn is None and sgvrsn is not None:
+            gvrsn = sgvrsn
+
+        if gvrsn is not None and pvrsn.major > self.gvrsn.major:
             raise SerializeError(f"Incompatible major protocol version={pvrsn} "
                                  f"with major genus version={self.gvrsn}.")
 
         if kind is None:
             kind = skind if skind is not None else self.Kind
 
-        if ilk is None:  # default is first ilk in Fields for given proto vrsn
+        if ilk is None:  # default is first ilk in Fields for given proto pvrsn
             ilk = (silk if silk is not None else
                    list(self.Fields[proto][pvrsn])[0])  # list(dict) gives list of keys
 
@@ -867,13 +923,13 @@ class Serder:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
+
         fields = self.Fields[proto][pvrsn][ilk]  # get FieldDom of fields
 
         alls = fields.alls  # faster local reference
         oalls = oset(alls)  # ordereset of field labels
         oopts = oset(fields.opts)  # ordereset of field labels
         oreqs = oalls - oopts  # required fields
-
 
         if not sad:  # empty or None so create sad dict
             sad = {}
@@ -949,38 +1005,48 @@ class Serder:
                                           f" in sad = {sad}.")
 
         if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
-            # this size of sad needs to be computed based on actual version string span
+            # Non native the size the version string depends on version so we
+            # need to dummy the version string in order to get the size right.
+            # It needs to be computed based on actual version string span
             # since not same for all versions
             sad['v'] = self.Dummy * self.Spans[pvrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
 
             raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
             size = len(raw)
 
-            # generate new version string with correct size
-            vs = versify(protocol=proto, version=pvrsn, kind=kind, size=size)
+            # generate version string with correct size
+            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
             sad["v"] = vs  # update version string in sad
             # now have correctly sized version string in sad
 
 
+        # do this now so ._dumps of cesr native can use properties without having
+        # re-deversify sad['v'] each time
+        self._proto = proto
+        self._pvrsn = pvrsn
+        self._genus = genus
+        self._gvrsn = gvrsn
+        self._kind = kind
+
         # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=pvrsn)  # serialize sized dummied sad
-        for label, code in _saids.items():
+        raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
+        for label, code in _saids.items():  # replace dummied fields with computed digests
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
-        raw = self.dumps(sad, kind=kind, proto=proto, vrsn=pvrsn)  # compute final raw
+        # Now reserialize raw with undummied field values
+        raw = self.dumps(sad, kind=kind)  # assign final raw
         if kind == Kinds.cesr:# cesr kind version string does not set size
             size = len(raw) # size of whole message
+            sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
 
         self._raw = raw
-        self._sad = sad
-        self._proto = proto
-        self._pvrsn = pvrsn
-        self._kind = kind
         self._size = size
+        self._sad = sad
 
 
-    def _inhale(self, raw, *, smellage=None):
+
+    def _inhale(self, raw, *, smellage=None, strip=False):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -992,42 +1058,82 @@ class Serder:
         Returns: tuple (sad, proto, vrsn, kind, size) where:
             sad (dict): serializable attribute dict of saidified data
             proto (str): value of Protocols (Protocolage) protocol type
-            vrsn (Versionage | None): tuple of (major, minor) version ints
+            pvrsn (Versionage | None): protocol tuple of (major, minor) version ints
                 None means do not enforce version
             kind (str): value of Serials (Serialage) serialization kind
 
         Parameters:
             clas (Serder): class reference
-            raw (bytes): serialized sad message
+            raw (bytes|bytearray): serialized sad message
             smellage (Smellage | None): instance of deconstructed version string
                 elements. If none or empty ignore otherwise assume that raw
                 already had its version string extracted (reaped) into the
                 elements of smellage.
-
-
+            strip (bool): True means strip (delete) raw from input stream
+                bytearray after parsing. False means do not strip.
+                Assumes that raw is bytearray when strip is True.
 
         """
+        # CESR native must always pass in smellage since can't smell native
         if smellage:  # passed in so don't need to smell raw again
-            proto, vrsn, kind, size, gvrsn = smellage  # tuple unpack
-        else:  # not passed in so smell raw
-            proto, vrsn, kind, size, gvrsn = smell(raw)
+            proto, pvrsn, kind, size, gvrsn = smellage  # tuple unpack
+            if len(raw) < size:
+                raise ShortageError(f"Need more bytes to de-serialize Serder")
 
-        if len(raw) < size:
-            raise ShortageError(f"Need more bytes to de-serialize Serder")
+            sraw = raw[:size]
+            if strip and isinstance(raw, bytearray):
+                del raw[:size]
 
-        sad = self.loads(raw=raw, size=size, kind=kind)
-        # ._gvrsn may be set in loads when CESR native deserialization provides _gvrsn
+        else:  # not passed in so smell raw raises VersionError if native
+            cold = sniff(raw)
+            if cold == Colds.msg:
+                proto, pvrsn, kind, size, gvrsn = smell(raw)
+                if len(raw) < size:
+                    raise ShortageError(f"Need more bytes to de-serialize Serder")
+
+                sraw = raw[:size]
+                if strip and isinstance(raw, bytearray):
+                    del raw[:size]
+
+            else:
+                if cold == Colds.bny:
+                    counter = Counter(qb2=raw)
+                    ss = counter.byteCount(cold=cold) + counter.byteSize(cold=cold)
+                    if len(raw) < ss:
+                        raise ShortageError(f"Not enough raw bytes for serder")
+                    sraw = raw[:ss]  # only copy enough bytes for serder
+                    if strip and isinstance(raw, bytearray):
+                        del raw[:ss]
+                    sraw = encodeB64(raw)  # loads expects Base64 text domain
+                elif cold == Colds.txt:
+                    counter = Counter(qb64b=raw)
+                    ss = counter.byteCount(cold=cold) + counter.byteSize(cold=cold)
+                    if len(raw) < ss:
+                        raise ShortageError(f"Not enough raw bytes for serder")
+                    sraw = raw[:ss]  # only copy enough bytes for serder
+                    if strip and isinstance(raw, bytearray):
+                        del raw[:ss]
+                else:
+                    raise ValueError(f"Invalid {cold=} for Serder raw")
+
+                size = len(sraw)
+                kind = Kinds.cesr
+                proto, pvrsn, gvrsn = Verser(qb64b=sraw[counter.fullSize:]).versage
+
+        self._proto = proto
+        self._pvrsn = pvrsn
+        self._kind = kind
+        self._size = size
+        self._gvrsn = gvrsn
+
+        sad = self.loads(raw=sraw, size=size, kind=kind)
 
         if "v" not in sad:  # Regex does not check for version string label itself
             raise FieldError(f"Missing version string field in {sad}.")
 
         # cypto opts want bytes not bytearray
-        self._raw = bytes(raw[:size])  # make copy so strip not affect
+        self._raw = bytes(sraw)  # make bytes if bytearray
         self._sad = sad
-        self._proto = proto
-        self._pvrsn = vrsn
-        self._kind = kind
-        self._size = size
 
 
 
@@ -1037,8 +1143,8 @@ class Serder:
         serialization size and kind
 
         Returns:
-           sad (dict | list): deserialized dict or list. Assumes attribute
-                dict of saidified data.
+           sad (dict|list): de-serialized dict or list.
+                            Supposed to be dict of saidified data.
 
         Parameters:
            raw (bytes | bytearray): raw serialization to deserialze as dict
@@ -1050,26 +1156,36 @@ class Serder:
         Notes:
             loads of json uses str whereas loads of cbor and msgpack use bytes
         """
-        if kind == Kinds.json:
+        if size is None:
+            size = len(raw)
+
+        if kind == Kinds.cesr:
+            try:
+                sad = self._loads(raw=raw, size=size)
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing CESR: "
+                                      f"{raw[:size].decode()}") from ex
+
+        elif kind == Kinds.json:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing JSON: "
-                    f"{raw[:size].decode('utf-8')}") from ex
+                    f"{raw[:size].decode()}") from ex
 
         elif kind == Kinds.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing MGPK: "
-                    f"{raw[:size].decode('utf-8')}") from ex
+                    f"{raw[:size].decode()}") from ex
 
         elif kind == Kinds.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing CBOR: "
-                    f"{raw[:size].decode('utf-8')}") from ex
+                    f"{raw[:size].decode()}") from ex
 
         else:
             raise DeserializeError(f"Invalid deserialization kind: {kind}")
@@ -1078,25 +1194,150 @@ class Serder:
 
 
     def _loads(self, raw, size=None):
-        """CESR native desserialization of raw
+        """CESR native de-serialization from raw in qb64b text domain bytes
 
         Returns:
            sad (dict): deserialized dict of CESR native serialization.
 
         Parameters:
-           clas (Serder): class reference
-           raw (bytes |bytearray): raw serialization to deserialze as dict
+           raw (bytes |bytearray): qb64b raw serialization in text domain byte
+                                   to deserialze as dict
            size (int): number of bytes to consume for the deserialization.
                        If None then consume all bytes in raw
+
+
         """
-        # ._gvrsn may be set in loads when CESR native deserialization provides _gvrsn
-        pass
+        # assumes that .proto, .kind, .size, .pvrsn, .gvrsn set above in
+        # .inhale with passed in smellage
+
+        sad = {}
+        # make copy so strip here does not collide with .__init__ strip
+        if size is None:
+            size = len(raw)
+        raw = bytearray(raw[:size])
+
+        # consume body ctr and version field
+        bctr = Counter(qb64b=raw, strip=True)  # version defaults to 2
+        versage = Verser(qb64b=raw, strip=True).versage
+        # assumes compatible versage witn .proto .pvrsn .gvrsn
+
+
+        # read off ilk so can get rest of fields in order to parse
+        ilker = Ilker(qb64b=raw, strip=True)
+        if ilker.ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
+                             Ilks.rct):
+            raise DeserializeError(f"Unexpected {ilk=}")
+
+        # must be fixed filed see check below
+        ilks = self.Fields[self.proto][self.pvrsn]  # get fields keyed by ilk
+        fields = ilks[ilker.ilk]  # FieldDom for given protocol and ilk
+
+        if fields.opts or not fields.strict:  # optional or extra fields allowed
+            fixed = False  # not fixed field so must use a field map
+        else:
+            fixed = True  # fixed field
+
+        # assumes that sad's field ordering and field inclusion is correct
+        # so can deserialize in order
+
+        if self.proto == Protocols.keri:
+            if not fixed:
+                raise DeserializeError(f"Expected fixed field got {ilk=}")
+
+            for l in fields.alls:  # l for label assumes valid field order & presence
+                match l:  # label
+                    case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                        sad[l] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                           size=size, gvrsn=self.gvrsn)
+
+                    case "t":  # message type (ilk), already got ilk
+                        sad[l] = ilker.ilk
+
+                    case "d" | "p":  # said
+                        sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                    case "i" | "di":  # aid
+                        sad[l] = Prefixer(qb64b=raw, strip=True).qb64
+
+                    case "s" | "bt":  # sequence number or numeric threshold
+                        sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
+
+                    case "kt" | "nt": # current or next signing threshold
+                        sad[l] = Tholder(limen=raw, strip=True).sith  # as sith str
+
+                    case "k" | "n" | "b" | "ba" | "br":  # list of primitives
+                        ctr = Counter(qb64b=raw, strip=True)
+                        if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                            raise DeserializeError(f"Expected List group got {ctr.name}")
+                        fs = ctr.count * 4  # frame size since qb64 text mode
+                        frame = raw[:fs]  # extract list frame
+                        raw = raw[fs:]
+                        elements = []
+                        while frame:  # not yet empty
+                            elements.append(Matter(qb64b=frame, strip=True).qb64)
+                        sad[l] = elements
+
+                    case "c":  # list of config traits strings
+                        ctr = Counter(qb64b=raw, strip=True)
+                        if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                            raise DeserializeError(f"Expected List group got {ctr.name}")
+                        fs = ctr.count * 4  # frame size since qb64 text mode
+                        frame = raw[:fs]  # extract list frame
+                        raw = raw[fs:]
+                        elements = []
+                        while frame:  # not yet empty
+                            elements.append(Traitor(qb64b=frame, strip=True).trait) # as trait str
+                        sad[l] = elements
+
+
+                    case "a":  # list of seals or field map of attributes
+                        seals = []
+                        ctr = Counter(qb64b=raw, strip=True)
+                        if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                            raise DeserializeError(f"Expected List group got {ctr.name}")
+                        fs = ctr.count * 4  # frame size since qb64 text mode
+                        frame = raw[:fs]  # extract list frame
+                        raw = raw[fs:]  # strip frame from raw
+                        while frame:  # while list frame not empty
+                            sctr = Counter(qb64b=frame, strip=True)  # seal counter
+                            if sctr.code not in Serder.CodeClans:
+                                raise DeserializeError(f"Expected Sealer group got {sctr.name}")
+                            cast = Sealer.Casts[Serder.CodeClans[sctr.code]]
+                            sfs = sctr.count * 4
+                            sframe = frame[:sfs]  # extra seal frame
+                            frame = frame[sfs:]  # strip sfram from frame
+                            while sframe:  # while seal frame not empty
+                                # append sad dict version of seal to seals
+                                seals.append(Sealer(cast=cast,
+                                                    qb64b=sframe,
+                                                    strip=True).asdict)
+                        sad[l] = seals
+
+
+                    case _:  # if extra fields this is where logic would be
+                        raise DeserializeError(f"Unsupported protocol field label"
+                                             f"='{l}' for protocol={proto}"
+                                             f" version={pvrsn}.")
+
+
+
+        elif self.proto == Protocols.acdc:
+            if fixed:
+                raise DeserializeError(f"Expected non-fixed field got {ilk=}")
+
+            for l in fields:  # assumes valid field order & presence
+                pass
+
+        else:
+            raise DeserializeError(f"Unsupported protocol={self.proto}.")
+
+        return sad
 
 
     def _exhale(self, sad):
         """Serializes sad and assigns attributes.
-        Asssumes all field values in sad are valid.
-        Call .verify to otherwise
+        Asssumes all field values in sad are valid
+        Otherwise must first call .verify
 
         Parameters:
             sad (dict): serializable attribute dict of saidified data
@@ -1104,24 +1345,30 @@ class Serder:
         if "v" not in sad:
             raise SerializeError(f"Missing version string field in {sad}.")
 
-        # extract elements so can replace size element but keep others
-        proto, vrsn, kind, size, opt = deversify(sad["v"])
+        # extract elements so can get kind, replace size element but keep others
+        proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
+        # cesr native  uses self.proto, self,prvsn, and self.gvsn  in dumps
+        # need kind to indicate dump without relooking at version.
+
+        self._proto = proto
+        self._pvrsn = pvrsn
+        self._gvrsn = gvrsn
+        self._kind = kind
 
         raw = self.dumps(sad, kind)
 
-        if kind in (Kinds.cesr):  # cesr kind version string does not set size
+        if kind == Kinds.cesr:  # cesr kind version string does not set size
             size = len(raw) # size of whole message
+            sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
 
         # must call .verify to ensure these are compatible
         self._raw = raw  # crypto opts want bytes not bytearray
-        self._sad = sad
-        self._proto = proto
-        self._pvrsn = vrsn
-        self._kind = kind
         self._size = size
+        self._sad = sad
 
 
-    def dumps(self, sad=None, kind=Kinds.json, proto=None, vrsn=None):
+
+    def dumps(self, sad=None, kind=Kinds.json):
         """Method to handle serialization by kind
         Assumes sad fields are properly filled out for serialization kind.
 
@@ -1129,14 +1376,10 @@ class Serder:
             raw (bytes): serialization of sad dict using serialization kind
 
         Parameters:
-            sad (dict | list | None)): serializable dict or list to serialize
+            sad (dict|None)): serializable dict or list to serialize
+                              If None use self.sad
             kind (str): value of Serials (Serialage) serialization kind
-                "JSON", "MGPK", "CBOR", "CSER"
-            proto (str | None): desired protocol type str value of Protocols
-                If None then eventually use self.proto
-            vrsn (Versionage | None): instance desired protocol version
-                If None then eventually self.vrsn
-
+                "JSON", "MGPK", "CBOR", "CESR"
 
         Notes:
             dumps of json uses str whereas dumps of cbor and msgpack use bytes
@@ -1144,18 +1387,21 @@ class Serder:
         """
         sad = sad if sad is not None else self.sad
 
-        if kind == Kinds.json:
-            raw = json.dumps(sad, separators=(",", ":"),
-                             ensure_ascii=False).encode("utf-8")
+        if not isinstance(sad, Mapping):
+            raise ValueError(f"Serder sad must be Mapping not {type(sad)}")
 
-        elif kind == Kinds.mgpk:
+        if kind == Kinds.json: # json.dumps returns str
+            raw = json.dumps(sad, separators=(",", ":"),
+                             ensure_ascii=False).encode()
+
+        elif kind == Kinds.mgpk:  # mgpk.dumps returns bytes
             raw = msgpack.dumps(sad)
 
-        elif kind == Kinds.cbor:
+        elif kind == Kinds.cbor:  # cbor.dumps returns bytes
             raw = cbor.dumps(sad)
 
-        elif kind == Kinds.cesr:  # does not support list only dict
-            raw = self._dumps(sad, proto=proto, vrsn=vrsn)
+        elif kind == Kinds.cesr:  # _dumps returns bytes qb64b
+            raw = self._dumps(sad)
 
         else:
             raise SerializeError(f"Invalid serialization kind = {kind}")
@@ -1163,18 +1409,15 @@ class Serder:
         return raw
 
 
-    def _dumps(self, sad=None, proto=None, vrsn=None):
-        """CESR native serialization of sad
+    def _dumps(self, sad=None):
+        """CESR native serialization of sad in qb64b text domain bytes
 
         Returns:
-            raw (bytes): CESR native serialization of sad dict
+            raw (bytes): CESR native serialization of sad dict in qb64b text domain
 
         Parameters:
-            sad (dict | None)): serializable dict to serialize
-            proto (str | None): desired protocol type str value of Protocols
-                If None then self.proto
-            vrsn (Versionage | None): instance desired protocol version
-                If None then self.vrsn
+            sad (dict|None)): serializable dict to serialize
+                              If None use self.sad
 
         Versioning:
             CESR native serialization includes in its fixed version field
@@ -1189,33 +1432,24 @@ class Serder:
 
         """
         sad = sad if sad is not None else self.sad
-        proto = proto if proto is not None else self.proto
-        vrsn = vrsn if vrsn is not None else self.pvrsn
-
-        if (self.gvrsn.major < Vrsn_2_0.major or vrsn.major < Vrsn_2_0.major):
-            raise SerializeError(f"Invalid major genus version={self.gvrsn}"
-                                f"or Invalid major protocol version={vrsn}"
-                                f" for native CESR serialization.")
-
-        if self.genus not in GenDex:  # ensures self.genus != None
-            raise SerializeError(f"Invalid genus={self.genus}.")
-
-        if getattr(GenDex, proto, None) != self.genus:
-            raise SerializeError(f"Incompatible protocol={proto} with "
-                                 f"genus={self.genus}.")
-
-
+        proto = self.proto
+        pvrsn = self.pvrsn
+        gvrsn = self.gvrsn
 
 
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
-        ilks = self.Fields[proto][vrsn]  # get fields keyed by ilk
+        ilks = self.Fields[proto][pvrsn]  # get fields keyed by ilk
 
         ilk = sad.get('t')  # returns None if missing message type (ilk)
         if ilk not in ilks:  #
-            raise SerializeError(f"Missing message type field "
-                                 f"'t' for protocol={proto} "
-                                 f"version={vrsn} with {sad=}.")
+            raise SerializeError(f"Missing or unsupported message type field "
+                                 f"'t', {ilk=} for protocol={proto} "
+                                 f"version={pvrsn} with {sad=}.")
+
+        if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
+                                               Ilks.rct):
+            raise SerializeError(f"Unexpected {ilk=}")
 
         fields = ilks[ilk]  # FieldDom for given protocol and ilk
 
@@ -1224,19 +1458,17 @@ class Serder:
         else:
             fixed = True  #fixed field
 
-
         # assumes that sad's field ordering and field inclusion is correct
         # so can serialize in order to compute saidive fields
-        # need to fix ._verify and .makify to account for CESR native serialization
 
         if proto == Protocols.keri:
             if not fixed:  # prepend label
-                pass  # raise error
+                raise SerializeError(f"Not fixed field {ilk=}")
 
             for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
-                    case "v":  # protocol+version  do not use version string itself
-                        val = Verser(proto=proto, vrsn=vrsn).qb64b
+                    case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                        val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
 
                     case "t":  # message type (ilk), already got ilk
                         val = Ilker(ilk=v).qb64b  # assumes same
@@ -1316,7 +1548,7 @@ class Serder:
                     case _:  # if extra fields this is where logic would be
                         raise SerializeError(f"Unsupported protocol field label"
                                              f"='{l}' for protocol={proto}"
-                                             f" version={vrsn}.")
+                                             f" version={pvrsn}.")
 
                 bdy.extend(val)
 
@@ -1335,14 +1567,14 @@ class Serder:
         # prepend count code for message
         if fixed:
 
-            raw = bytearray(Counter(Codens.FixedMessageBodyGroup,
+            raw = bytearray(Counter(Codens.FixedBodyGroup,
                                     count=len(bdy) // 4).qb64b)
             raw.extend(bdy)
         else:
             pass
 
 
-        return raw
+        return bytes(raw)  # must return bytes so can sign, do crypto operations
 
 
 

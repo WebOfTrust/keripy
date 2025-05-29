@@ -17,12 +17,12 @@ from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64
 from .. import kering
 from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0)
 
-from ..core.coring import MapDom
+from ..core.coring import IceMapDom
 
 
 
 @dataclass(frozen=True)
-class GenusCodex(MapDom):
+class GenusCodex(IceMapDom):
     """GenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.
@@ -43,7 +43,7 @@ GenDex = GenusCodex()  # Make instance
 
 
 @dataclass(frozen=True)
-class CounterCodex_1_0(MapDom):
+class CounterCodex_1_0(IceMapDom):
     """CounterCodex_1_0 is codex hard (stable) part of all V1 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -64,12 +64,12 @@ class CounterCodex_1_0(MapDom):
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
@@ -81,7 +81,7 @@ class CounterCodex_1_0(MapDom):
 CtrDex_1_0 = CounterCodex_1_0()
 
 @dataclass(frozen=True)
-class QuadTripCodex_1_0(MapDom):
+class QuadTripCodex_1_0(IceMapDom):
     """QuadTripCodex_1_0 is codex hard (stable) part of all V1 counter codes that
     count quadlets/triplets.
 
@@ -95,12 +95,12 @@ class QuadTripCodex_1_0(MapDom):
     BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group Quadlets (not implemented as quadlets)
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group Quadlets (not implemented as quadlets)
 
@@ -110,7 +110,7 @@ class QuadTripCodex_1_0(MapDom):
 QTDex_1_0 = QuadTripCodex_1_0()
 
 @dataclass(frozen=True)
-class UniversalCodex_1_0(MapDom):
+class UniversalCodex_1_0(IceMapDom):
     """CounterCodex_1_0 is codex hard (stable) part of all V1 universal counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -120,12 +120,12 @@ class UniversalCodex_1_0(MapDom):
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -134,7 +134,7 @@ class UniversalCodex_1_0(MapDom):
 UniDex_1_0 = UniversalCodex_1_0()
 
 @dataclass(frozen=True)
-class SpecialUniversalCodex_1_0(MapDom):
+class SpecialUniversalCodex_1_0(IceMapDom):
     """SpecialUniversalCodex_1_0 is codex hard (stable) part of all V1 special
     universal counter codes that may have optional genus-version override as
     first code in enclosed group.
@@ -147,8 +147,8 @@ class SpecialUniversalCodex_1_0(MapDom):
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
-    MessageAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
-    BigMessageAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
+    BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--U'  # Big Message Body plus Attachments Quadlet (Universal with Override)
     AttachmentGroup: str = '-V'  # Message Attachments Only Quadlet (Universal with Override)
     BigAttachmentGroup: str = '--V'  # Message Attachments Only Quadlet (Universal with Override)
 
@@ -158,7 +158,7 @@ class SpecialUniversalCodex_1_0(MapDom):
 SUDex_1_0 = SpecialUniversalCodex_1_0()
 
 @dataclass(frozen=True)
-class MessageUniversalCodex_1_0(MapDom):
+class MessageUniversalCodex_1_0(IceMapDom):
     """MessageUniversalCodex_1_0 is codex hard (stable) part of all V1 message
     universal counter codes that support CESR native messages. (currently none)
     But needed for symmetry when changing versions in how lookup happens in parser.
@@ -168,8 +168,8 @@ class MessageUniversalCodex_1_0(MapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    MessageGroup: str = '-W'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -178,7 +178,7 @@ MUDex_1_0 = MessageUniversalCodex_1_0()
 
 
 @dataclass(frozen=True)
-class CounterCodex_2_0(MapDom):
+class CounterCodex_2_0(IceMapDom):
     """CounterCodex_2_0 is codex hard (stable) part of all V2 counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -188,20 +188,20 @@ class CounterCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BodyWithAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
-    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
     GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
     BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
     GenericListGroup: str = '-J'  # Generic List Group (Universal).
@@ -246,7 +246,7 @@ class CounterCodex_2_0(MapDom):
 CtrDex_2_0 = CounterCodex_2_0()
 
 @dataclass(frozen=True)
-class UniversalCodex_2_0(MapDom):
+class UniversalCodex_2_0(IceMapDom):
     """CounterCodex_2_0 is codex hard (stable) part of all V2 universal counter codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -256,20 +256,20 @@ class UniversalCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BodyWithAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
-    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
     GenericMapGroup: str = '-I'  # Generic Field Map Group (Universal).
     BigGenericMapGroup: str = '--I'  # Big Generic Field Map Group (Universal).
     GenericListGroup: str = '-J'  # Generic List Group (Universal).
@@ -282,7 +282,7 @@ class UniversalCodex_2_0(MapDom):
 UniDex_2_0 = UniversalCodex_2_0()
 
 @dataclass(frozen=True)
-class SpecialUniversalCodex_2_0(MapDom):
+class SpecialUniversalCodex_2_0(IceMapDom):
     """SpecialUniversalCodex_2_0 is codex hard (stable) part of all V2 special
     universal counter codes that may have optional genus-version override as
     first code in enclosed group.
@@ -294,8 +294,8 @@ class SpecialUniversalCodex_2_0(MapDom):
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
     BigGenericGroup: str = '--A'  # Big Generic Group (Universal with Override).
-    MessageAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
-    BigMessageAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
+    BodyWithAttachmentGroup: str = '-B'  # Message Body plus Attachments Group (Universal with Override).
+    BigBodyWithAttachmentGroup: str = '--B'  # Big Message Body plus Attachments Group (Universal with Override).
     AttachmentGroup: str = '-C'  # Message Attachments Only Group (Universal with Override).
     BigAttachmentGroup: str = '--C'  # Big Attachments Only Group (Universal with Override).
 
@@ -306,7 +306,7 @@ class SpecialUniversalCodex_2_0(MapDom):
 SUDex_2_0 = SpecialUniversalCodex_2_0()
 
 @dataclass(frozen=True)
-class MessageUniversalCodex_2_0(MapDom):
+class MessageUniversalCodex_2_0(IceMapDom):
     """MessageUniversalCodex_2_0 is codex hard (stable) part of all V2 message
     universal counter codes that support CESR native messages.
     Only provide defined codes.
@@ -319,12 +319,12 @@ class MessageUniversalCodex_2_0(MapDom):
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedMessageBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedMessageBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
-    MapMessageBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
-    BigMapMessageBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
-    MessageGroup: str = '-H'  # Message body Non-native enclosed with Texter
-    BigMessageGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -344,7 +344,7 @@ Codens = Codenage()
 
 
 @dataclass(frozen=True)
-class SealCodex_2_0(MapDom):
+class SealCodex_2_0(IceMapDom):
     """
     SealCodex_2_0 is codex of seal counter derivation codes.
     Only provide defined codes.
@@ -1120,8 +1120,9 @@ class Counter:
     def _exfil(self, qb64b):
         """Extracts self.code and self.count from qualified base64 bytes qb64b
         """
-        if not qb64b:  # empty need more bytes
+        if not qb64b or len(qb64b) < 2:  # need more bytes
             raise kering.ShortageError("Empty material, Need more characters.")
+
 
         first = qb64b[:2]  # extract first two char code selector
         if hasattr(first, "decode"):
@@ -1164,7 +1165,7 @@ class Counter:
     def _bexfil(self, qb2):
         """Extracts self.code and self.count from qualified base2 bytes qb2
         """
-        if not qb2:  # empty need more bytes
+        if not qb2 or len(qb2) < 2:  # need more bytes
             raise kering.ShortageError("Empty material, Need more bytes.")
 
         first = nabSextets(qb2, 2)  # extract first two sextets as code selector

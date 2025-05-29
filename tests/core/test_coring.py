@@ -53,15 +53,15 @@ from keri.core.indexing import (Siger, Xizage, IdrDex, IdxSigDex,
                                 IdxCrtSigDex, IdxBthSigDex, Indexer)
 
 
-from keri.core.coring import MapHood, MapDom
+from keri.core.coring import MapHood, IceMapDom
 
 
 
-def test_mapdom():
-    """Test MapDom base dataclass"""
+def test_icemapdom():
+    """Test IceMapDom base dataclass"""
 
     @dataclass
-    class TestMapDom(MapHood):
+    class TestIceMapDom(MapHood):
         """
 
         """
@@ -72,7 +72,7 @@ def test_mapdom():
         def __iter__(self):  # so value in dataclass not key in dataclass
             return iter(astuple(self))
 
-    tmd = TestMapDom()
+    tmd = TestIceMapDom()
 
     assert 'X' in tmd
     assert 'Y' in tmd
@@ -152,7 +152,7 @@ def test_mapcodex():
 
 
     @dataclass(frozen=True)
-    class TestMapCodex(MapDom):
+    class TestMapCodex(IceMapDom):
         """
 
         """
@@ -236,7 +236,8 @@ def test_matter_class():
         'Label2': 'W',
         'Tag3': 'X',
         'Tag7': 'Y',
-        'Blind': 'Z',
+        'Tag11': 'Z',
+        'Blind': 'a',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -318,6 +319,12 @@ def test_matter_class():
         'HPKEAuth_Cipher_Big_L0': '7AAG',
         'HPKEAuth_Cipher_Big_L1': '8AAG',
         'HPKEAuth_Cipher_Big_L2': '9AAG',
+        'Decimal_L0': '4H',
+        'Decimal_L1': '5H',
+        'Decimal_L2': '6H',
+        'Decimal_Big_L0': '7AAH',
+        'Decimal_Big_L1': '8AAH',
+        'Decimal_Big_L2': '9AAH',
     }
 
     assert Matter.Names == \
@@ -347,7 +354,8 @@ def test_matter_class():
         'W': 'Label2',
         'X': 'Tag3',
         'Y': 'Tag7',
-        'Z': 'Blind',
+        'Z': 'Tag11',
+        'a': 'Blind',
         '0A': 'Salt_128',
         '0B': 'Ed25519_Sig',
         '0C': 'ECDSA_256k1_Sig',
@@ -429,6 +437,12 @@ def test_matter_class():
         '7AAG': 'HPKEAuth_Cipher_Big_L0',
         '8AAG': 'HPKEAuth_Cipher_Big_L1',
         '9AAG': 'HPKEAuth_Cipher_Big_L2',
+        '4H': 'Decimal_L0',
+        '5H': 'Decimal_L1',
+        '6H': 'Decimal_L2',
+        '7AAH': 'Decimal_Big_L0',
+        '8AAH': 'Decimal_Big_L1',
+        '9AAH': 'Decimal_Big_L2',
     }
 
 
@@ -472,7 +486,8 @@ def test_matter_class():
         'W': Sizage(hs=1, ss=0, xs=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=3, xs=0, fs=4, ls=0),
         'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
-        'Z': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'Z': Sizage(hs=1, ss=11, xs=0, fs=12, ls=0),
+        'a': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
@@ -554,6 +569,12 @@ def test_matter_class():
         '7AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
         '8AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
         '9AAG': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
+        '4H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=0),
+        '5H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=1),
+        '6H': Sizage(hs=2, ss=2, xs=0, fs=None, ls=2),
+        '7AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=0),
+        '8AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=1),
+        '9AAH': Sizage(hs=4, ss=4, xs=0, fs=None, ls=2),
     }
 
 
@@ -3458,6 +3479,10 @@ def test_number():
     """ Done Test """
 
 
+def test_decimer():
+    """Test Decimer subclass of Matter"""
+    """Done Test"""
+
 def test_dater():
     """
     Test Dater date time subclass of Matter
@@ -3630,7 +3655,7 @@ def test_tagger():
     assert tagger.tag == tag
 
 
-    tags = 'abcdefghij'
+    tags = 'abcdefghijk'
     alltags = dict()
     for l in range(1, len(astuple(TagDex)) + 1):
         tag = tags[:l]
@@ -3651,7 +3676,8 @@ def test_tagger():
             7: ('abcdefg', 'Y'),
             8: ('abcdefgh', '1AAN'),
             9: ('abcdefghi', '0N'),
-            10: ('abcdefghij', '0O')
+            10: ('abcdefghij', '0O'),
+            11: ('abcdefghijk', 'Z'),
          }
     """ Done Test """
 
@@ -3856,7 +3882,7 @@ def test_verser():
     qb64b = qb64.encode()
     qb2 = decodeB64(qb64b)
     raw = b''
-    versage = Versage(proto=Protocols.keri, vrsn=Vrsn_2_0, gvrsn=None)
+    versage = Versage(proto=Protocols.keri, pvrsn=Vrsn_2_0, gvrsn=None)
 
     verser = Verser()  # defaults
     assert verser.code == verser.hard == code
@@ -3881,7 +3907,7 @@ def test_verser():
     assert verser.composable
     assert verser.versage == versage
 
-    verser = Verser(proto=Protocols.keri, vrsn=Vrsn_2_0)
+    verser = Verser(proto=Protocols.keri, pvrsn=Vrsn_2_0)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
     assert verser.tag == tag
@@ -3929,7 +3955,7 @@ def test_verser():
     qb64b = qb64.encode()
     qb2 = decodeB64(qb64b)
     raw = b''
-    versage = Versage(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+    versage = Versage(proto=Protocols.acdc, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
 
     verser = Verser(versage=versage)
     assert verser.code == verser.hard == code
@@ -3942,7 +3968,7 @@ def test_verser():
     assert verser.composable
     assert verser.versage == versage
 
-    verser = Verser(proto=Protocols.acdc, vrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
+    verser = Verser(proto=Protocols.acdc, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0)
     assert verser.code == verser.hard == code
     assert verser.soft == soft
     assert verser.tag == tag
@@ -5162,7 +5188,7 @@ def test_saider():
 
     # Load from vaccuous dict
     label = Saids.d
-    vs = versify(version=Version, kind=kind, size=0)  # vaccuous size == 0
+    vs = versify(pvrsn=Version, kind=kind, size=0)  # vaccuous size == 0
     assert vs == 'KERI10JSON000000_'
     sad4 = dict(
         v=vs,
@@ -5242,7 +5268,7 @@ def test_saider():
     assert saider.verify(sad8, prefixed=True)
 
     # verify gets kind from version string if provided when loading from dict
-    vs = versify(version=Version, kind=Kinds.mgpk, size=0)  # vaccuous size == 0
+    vs = versify(pvrsn=Version, kind=Kinds.mgpk, size=0)  # vaccuous size == 0
     assert vs == 'KERI10MGPK000000_'
     sad9 = dict(sad4)
     sad9['v'] = vs
@@ -5802,7 +5828,7 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_mapdom()
+    test_icemapdom()
     test_mapcodex()
     test_matter_class()
     test_matter()
@@ -5815,11 +5841,10 @@ if __name__ == "__main__":
     test_texter()
     test_bexter()
     test_labeler()
-    #test_prodex()
+    test_seqner()
     test_number()
-    #test_seqner()
-    #test_siger()
-    #test_nexter()
-    #test_tholder()
+    test_decimer()
+    test_dater()
+    test_tholder()
     test_prefixer()
 

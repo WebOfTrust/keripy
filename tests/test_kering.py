@@ -17,7 +17,7 @@ from keri.kering import Protocolage, Protocols
 from keri.kering import Kindage,  Kinds
 from keri.kering import Ilkage, Ilks
 from keri.kering import ColdCodex, ColdDex, TraitCodex, TraitDex
-from keri.kering import (Versionage, Version, MAXVERFULLSPAN,
+from keri.kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0, MAXVERFULLSPAN,
                          versify, deversify, Rever, Smellage, smell,
                          VER1FULLSPAN, VER1TERM, VEREX1,
                          VER2FULLSPAN, VER2TERM, VEREX2,
@@ -177,14 +177,14 @@ def test_smell():
 
     raw = b'{"vs":"KERICAAJSONAAAB.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
     assert smell(raw) == Smellage(proto='KERI',
-                                  vrsn=Versionage(major=2, minor=0),
+                                  pvrsn=Versionage(major=2, minor=0),
                                   kind='JSON',
                                   size=1,
                                   gvrsn=None)
 
     raw = b'{"vs":"KERI10JSON000002_","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
     assert smell(raw) == Smellage(proto='KERI',
-                                  vrsn=Versionage(major=1, minor=0),
+                                  pvrsn=Versionage(major=1, minor=0),
                                   kind='JSON',
                                   size=2,
                                   gvrsn=None)
@@ -202,14 +202,14 @@ def test_smell():
 
 def test_snuff():
     """
-    Test snuff for looking ahead at CESR native messages from stream
+    Test conceptually snuff for looking ahead at CESR native messages from stream
+    Not used just concept testing for future reference
 
     VER0FULLSPAN = 12  # number of characters in full version string
     VEREX0 = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
 
 
     """
-
     # version field in CESR native serialization
     VFFULLSPAN = 12  # number of characters in full version string
     VFREX = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
@@ -223,7 +223,7 @@ def test_snuff():
     def snatch(match, size=0):
         """ Returns:
             smellage (Smellage): named tuple extracted from version string regex match
-                                (protocol, version, kind, size)
+                                (protocol, version, kind, size, gvrsn)
 
         Parameters:
             match (re.Match):  instance of Match class
@@ -243,9 +243,9 @@ def test_snuff():
             proto = proto.decode("utf-8")
             if proto not in Protocols:
                 raise ProtocolError(f"Invalid protocol type = {proto}.")
-            vrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
-            if vrsn.major < 2:  # version2 vs but major < 2
-                raise VersionError(f"Incompatible {vrsn=} with version string.")
+            pvrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
+            if pvrsn.major < 2:  # version2 vs but major < 2
+                raise VersionError(f"Incompatible {pvrsn=} with version string.")
 
             gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
             if gvrsn.major < 2:  # version2 vs but major < 2
@@ -256,7 +256,7 @@ def test_snuff():
         else:
             raise VersionError(f"Bad snatch.")
 
-        return Smellage(proto=proto, vrsn=vrsn, kind=kind, size=size, gvrsn=gvrsn)
+        return Smellage(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
 
 
     def snuff(raw, size=0):
@@ -282,11 +282,6 @@ def test_snuff():
                                f"{raw[: SNUFFSIZE]}.")
 
         return snatch(match, size=size)
-
-
-
-
-
 
 
     #pattern = re.compile(VFREX)  # compile is faster
@@ -427,34 +422,12 @@ def test_snuff():
 
 
 
-    #raw = b'-FAM0NKERICAACABXicpEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
-    #assert smell(raw) == Smellage(protocol='KERI',
-                                  #version=Versionage(major=2, minor=0),
-                                  #kind='CESR',
-                                  #size=0)
-
-    #raw =b'-0FAAAAM0NKERICAACABXrotEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
-    #assert smell(raw, size=4096) == Smellage(protocol='KERI',
-                                             #version=Versionage(major=2, minor=0),
-                                             #kind='CESR',
-                                             #size=4096)
-
-    #raw =b'-0FAAAAM0MKERICAACABXrotEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
-    #with pytest.raises(VersionError):
-        #smell(raw)
-
-    #raw =b'-0FAAAAMNKERICAACABXrotEPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf'
-    #with pytest.raises(VersionError):
-        #smell(raw)
-
-
-
 def test_serials():
     """
     Test Serializations namedtuple instance Serials
     """
 
-    assert Version == Versionage(major=1, minor=0)
+    assert Version == Versionage(major=1, minor=0) == Vrsn_1_0
 
     assert isinstance(Kinds, Kindage)
 
@@ -471,13 +444,13 @@ def test_serials():
     Vstrings = Kindage(json=versify(kind=Kinds.json, size=0),
                          mgpk=versify(kind=Kinds.mgpk, size=0),
                          cbor=versify(kind=Kinds.cbor, size=0),
-                         cesr=versify(kind=Kinds.cesr, size=0))
+                         cesr=versify(pvrsn=Vrsn_2_0, kind=Kinds.cesr, size=0))
 
 
     assert Vstrings.json == 'KERI10JSON000000_'
     assert Vstrings.mgpk == 'KERI10MGPK000000_'
     assert Vstrings.cbor == 'KERI10CBOR000000_'
-    assert Vstrings.cesr == 'KERI10CESR000000_'
+    assert Vstrings.cesr == 'KERICAACESRAAAA.'
 
     icp = dict(vs=Vstrings.json,
                pre='AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
@@ -602,7 +575,7 @@ def test_versify_v1():
     assert vrsn == Version
     assert size == 65
 
-    vs = versify(protocol=Protocols.acdc, kind=Kinds.json, size=86)
+    vs = versify(proto=Protocols.acdc, kind=Kinds.json, size=86)
     assert vs == "ACDC10JSON000056_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -647,7 +620,7 @@ def test_versify_v1():
     assert vrsn == Version
     assert size == 65
 
-    vs = versify(version=Versionage(major=1, minor=1))   # defaults
+    vs = versify(pvrsn=Versionage(major=1, minor=1))   # defaults
     assert vs == "KERI11JSON000000_"
     assert len(vs) == VER1FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -680,7 +653,7 @@ def test_versify_v2():
     version = Versionage(major=2, minor=0)
     assert version == (2, 0)
 
-    vs = versify(version=version)   # defaults
+    vs = versify(pvrsn=version)   # defaults
     assert vs == "KERICAAJSONAAAA."
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -689,7 +662,7 @@ def test_versify_v2():
     assert vrsn == version
     assert size == 0
 
-    vs = versify(version=version, kind=Kinds.json, size=65)
+    vs = versify(pvrsn=version, kind=Kinds.json, size=65)
     assert vs == "KERICAAJSONAABB."
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -698,7 +671,7 @@ def test_versify_v2():
     assert vrsn == version
     assert size == 65
 
-    vs = versify(protocol=Protocols.acdc, version=version, kind=Kinds.json, size=86)
+    vs = versify(proto=Protocols.acdc, pvrsn=version, kind=Kinds.json, size=86)
     assert vs == "ACDCCAAJSONAABW."
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -707,7 +680,7 @@ def test_versify_v2():
     assert version == version
     assert size == 86
 
-    vs = versify(version=version, kind=Kinds.mgpk, size=0)
+    vs = versify(pvrsn=version, kind=Kinds.mgpk, size=0)
     assert vs == 'KERICAAMGPKAAAA.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -716,7 +689,7 @@ def test_versify_v2():
     assert vrsn == version
     assert size == 0
 
-    vs = versify(version=version, kind=Kinds.mgpk, size=65)
+    vs = versify(pvrsn=version, kind=Kinds.mgpk, size=65)
     assert vs == 'KERICAAMGPKAABB.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -725,7 +698,7 @@ def test_versify_v2():
     assert vrsn == version
     assert size == 65
 
-    vs = versify(version=version, kind=Kinds.cbor, size=0)
+    vs = versify(pvrsn=version, kind=Kinds.cbor, size=0)
     assert vs == 'KERICAACBORAAAA.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -734,7 +707,7 @@ def test_versify_v2():
     assert vrsn == version
     assert size == 0
 
-    vs = versify(version=version, kind=Kinds.cbor, size=65)
+    vs = versify(pvrsn=version, kind=Kinds.cbor, size=65)
     assert vs == 'KERICAACBORAABB.'
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)
@@ -743,7 +716,7 @@ def test_versify_v2():
     assert vrsn == version
     assert size == 65
 
-    vs = versify(version=Versionage(major=2, minor=1))   # defaults
+    vs = versify(pvrsn=Versionage(major=2, minor=1))   # defaults
     assert vs == "KERICABJSONAAAA."
     assert len(vs) == VER2FULLSPAN
     proto, vrsn, kind, size, opt = deversify(vs)

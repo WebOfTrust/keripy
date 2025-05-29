@@ -8,6 +8,8 @@ import copy
 import logging
 from dataclasses import asdict
 from collections import deque
+from base64 import urlsafe_b64decode as decodeB64
+from base64 import urlsafe_b64encode as encodeB64
 
 from .. import kering
 from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
@@ -893,7 +895,7 @@ class Parser:
                     # change version at top level this persists is not stacked
                     self.version = Counter.b64ToVer(ctr.countToB64(l=3))
 
-            # check for MessageAttachmentGroup or non-native message or native message groups
+            # check for BodyWithAttachmentGroup or non-native message or native message groups
             cold = sniff(ims)  # front of top level of this substream
             if cold != Colds.msg:  # counter found so peek at it
                 ctr = yield from self._extractor(ims=ims,
@@ -902,8 +904,8 @@ class Parser:
                                          abort=framed,
                                          strip=False)
 
-                if ctr and ctr.code in (self.sucodes.MessageAttachmentGroup,
-                                       self.sucodes.BigMessageAttachmentGroup):
+                if ctr and ctr.code in (self.sucodes.BodyWithAttachmentGroup,
+                                       self.sucodes.BigBodyWithAttachmentGroup):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # compute enclosing group size based on txt or bny
                     emgs = ctr.byteCount(cold=cold)
@@ -938,8 +940,8 @@ class Parser:
                                                         strip=False)
 
                 # Check for message groups
-                if (ctr.code in (self.mucodes.MessageGroup,
-                                 self.mucodes.BigMessageGroup)):
+                if (ctr.code in (self.mucodes.NonNativeBodyGroup,
+                                 self.mucodes.BigNonNativeBodyGroup)):
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
                     # process non-native message group with texter
                     texter = yield from self._extractor(ims=ims,
@@ -948,7 +950,30 @@ class Parser:
                                                         abort=framed)
                     serder = serdery.reap(ims=texter.raw,
                                           genus=self.genus,
-                                          gvrsn=self.version)
+                                          svrsn=self.version)
+                    exts['serder'] = serder
+
+                elif (ctr.code in (self.mucodes.FixedBodyGroup,
+                                   self.mucodes.BigFixedBodyGroup)):
+                    cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
+                    fmgs = ctr.byteCount(cold=cold)  # fixed body group size
+                    size = cbs + fmgs
+                    while len(ims) < size and not framed:  # framed already in ims
+                        yield  # until full group in ims
+
+                    fims = ims[:size]  # copy out
+                    del ims[:size]  # strip off from ims
+
+                    if cold == Colds.bny:  # tranform to text domain
+                        fims = encodeB64(fims)  # always process event in qb64 text domain
+                        size = (size * 4) // 3
+
+                    # fims includes full body with counter but no attachments
+                    serder = serdery.reap(ims=fims,
+                                         genus=self.genus,
+                                         svrsn=self.version,
+                                         ctr=ctr,
+                                         size=size)
                     exts['serder'] = serder
 
                 elif ctr.code in self.mucodes:  # process other native message group
@@ -957,10 +982,11 @@ class Parser:
                     while len(ims) < nmgs and not framed:  # framed already in ims
                         yield
 
-                    nims = ims[:nmgs]  # copy out substream enclosed attachments
+                    nims = ims[:nmgs]  # copy out substream
                     del ims[:nmgs]  # strip off from ims
                     # now nims includes just the native message not attachments
                     # and native message has been stripped from ims
+                    #exts['serder'] = serder
 
                 elif (ctr.code in (self.sucodes.GenericGroup,
                                    self.sucodes.BigGenericGroup)):
@@ -976,7 +1002,7 @@ class Parser:
                     try:
                         serder = serdery.reap(ims=ims,
                                               genus=self.genus,
-                                              gvrsn=self.version)
+                                              svrsn=self.version)
                     except kering.ShortageError as ex:  # need more bytes
                         if framed:  # pre-extracted
                             raise  # incomplete frame or group so abort by raising error
