@@ -1942,10 +1942,11 @@ class Number(Matter):
 
 class Decimer(Matter):
     """Decimer is subclass of Matter, for variable length decimal number strings
-    (dns) that are encoded in Base64 for compactness. Decimer encoded decimal
-    number strings only contain Base64 URL safe characters that map to decimal
-    number strings that can be converted to decimal numbers.
+    (dns) that are translated to Base64 and converted in Base2 raw for compactness.
+    Decimer encoded decimal number strings only contain Base64 URL safe characters
+    that map to decimal number strings that can be converted to decimal numbers.
     These strings support signed and unsigned, int and float.
+    The numeric value can be retrieved with the .decimal property.
 
     When created using the dns parameter, the encoded matter in qb64 format
     in the text domain is more compact than would be the case if the string were
@@ -1953,9 +1954,10 @@ class Decimer(Matter):
 
     Example:
         Decimer(dns='-5.6').qb64 == 'BBB'
-
-
-
+        Decimer(dns='-5.6').raw == 'BBB'
+        Decimer(dns='-5.6').dns == '-5.6'
+        Decimer(dns='-5.6').decimal == -5.6
+        Decimer(decimal=-5.6).dns = '-5.6'
 
     Attributes: (See Matter)
 
@@ -1963,7 +1965,7 @@ class Decimer(Matter):
 
     Properties:
         .dns (str):  decimal number string
-        .num (int|float): decimal number
+        .decimal (int|float): decimal number
 
     Inherited Hidden Properties:  (See Matter)
 
@@ -1979,26 +1981,11 @@ class Decimer(Matter):
         Decimal_Big_L2: str = '9AAH'  # Decimal B64string float and int big lead size 2
 
     """
-    @classmethod
-    def _derawify(cls, raw, code):
-        """Returns decoded raw as B64 str aka bext value
-
-        Returns:
-           bext (str): decoded raw as B64 str aka bext value
-        """
-        _, _, _, _, ls = cls.Sizes[code]
-        bext = encodeB64(bytes([0] * ls) + raw)
-        ws = 0
-        if ls == 0 and bext:
-            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
-                ws = 1
-        else:
-            ws = (ls + 1) % 4
-        return bext.decode('utf-8')[ws:]
-
+    ToB64 = str.maketrans(".", "p")  #  translate characters
+    FromB64 = str.maketrans("p", ".")  #  translate characters
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.Decimal_L0, dns=None, num=None, **kwa):
+                 code=MtrDex.Decimal_L0, dns=None, decimal=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -2010,46 +1997,83 @@ class Decimer(Matter):
 
         Parameters:
             dns (str|bytes):  decimal number string
-            num (int|float): decimal number
+            decimal (int|float): decimal number
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if bext is None:
-                raise EmptyMaterialError("Missing bext string.")
-            if hasattr(bext, "encode"):
-                bext = bext.encode("utf-8")  # convert to bytes
-            if not Reb64.match(bext):
-                raise ValueError("Invalid Base64.")
-            raw = self._rawify(bext)  # convert bytes to raw with padding
 
-        super(Bexter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+            if decimal is not None:
+                dns = f"{decimal}"
+
+            if dns is None:
+                raise EmptyMaterialError(f"Need one of raw, qb64, qb64b, qb2, "
+                                         f"dns, or decimer input")
+
+            if hasattr(dns, "decode"):
+                dns = dns.decode("")  # convert to str
+
+            # make round trippable extra leading 0's , +
+            try:
+                decimal = int(dns)  # make round trippable  -0 +0 leading 0's
+                dns = f"{decimal}"  # removes leading + - extra 0's
+            except ValueError:  # float not int
+                decimal = float(dns)  # make round trippable
+                dns = f"{decimal}"  # -0.0 is valid, float('-0.0') is -0.0
+
+            raw = self._rawify(dns)
+
+        super(Decimer, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
-        if self.code not in BexDex:
-            raise ValidationError("Invalid code = {} for Bexter."
-                                  "".format(self.code))
+        if self.code not in DecDex:
+            raise ValidationError(f"Invalid code={self.code} for Decimer")
 
-    @staticmethod
-    def _rawify(bext):
-        """Returns raw value equivalent of Base64 text.
+    def _rawify(self, dns):
+        """Returns raw value equivalent of dns.
         Suitable for variable sized matter
 
         Parameters:
-            text (bytes): Base64 bytes
+            dns (str): decimal number string
         """
-        ts = len(bext) % 4  # bext size mod 4
+        dns = dns.translate(self.ToB64).encode() # replace period with 'p'
+        ts = len(dns) % 4  # dns size mod 4
         ws = (4 - ts) % 4  # pre conv wad size in chars
         ls = (3 - ts) % 3  # post conv lead size in bytes
-        base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
+        base = b'A' * ws + dns  # pre pad with wad of zeros in Base64 == 'A'
         raw = decodeB64(base)[ls:]  # convert and remove leader
-        return raw  # raw binary equivalent of text
+        return raw  # raw binary equivalent of dns
 
 
     @property
     def dns(self):
+        """Returns decoded raw as dns
+
+        Returns:
+           dns (str): decoded raw decimal number string
         """
-        Property bext: Base64 text value portion of qualified b64 str
-        Returns the value portion of .qb64 with text code and leader removed
+        _, _, _, _, ls = self.Sizes[self.code]
+        dns = encodeB64(bytes([0] * ls) + self.raw)
+        ws = 0
+        if ls == 0 and dns:
+            if dns[0] == ord(b'A'):  # strip leading 'A' zero pad
+                ws = 1
+        else:
+            ws = (ls + 1) % 4
+        dns = dns[ws:].decode()  # strip padding
+        return dns.translate(self.FromB64)  # replace 'p' with  period if any
+
+
+    @property
+    def decimal(self):
+        """Property decimal: raw as int or float
+
+        Returns:
+            decimal (int|float):  .raw converted to int or float as appropriate
         """
-        return self._derawify(raw=self.raw, code=self.code)
+        dns = self.dns
+        try:
+            return (int(dns))
+        except ValueError:
+            return float(dns)
+
 
 
 
