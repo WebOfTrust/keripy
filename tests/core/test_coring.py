@@ -40,7 +40,7 @@ from keri.help.helping import (sceil, intToB64, intToB64b, b64ToInt,
 from keri import core
 from keri.core import coring
 from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
-                              Dater, Bexter, Texter,
+                              Decimer, DecDex, Dater, Bexter, Texter,
                               TagDex, Tagger, Ilker, Traitor, Labeler, LabelDex,
                               Verser, Versage, )
 from keri.core.coring import Kindage, Kinds
@@ -3481,6 +3481,448 @@ def test_number():
 
 def test_decimer():
     """Test Decimer subclass of Matter"""
+
+    assert asdict(DecDex) == \
+    {
+        'Decimal_L0': '4H',
+        'Decimal_L1': '5H',
+        'Decimal_L2': '6H',
+        'Decimal_Big_L0': '7AAH',
+        'Decimal_Big_L1': '8AAH',
+        'Decimal_Big_L2': '9AAH'
+    }
+
+    with pytest.raises(EmptyMaterialError):
+        decimer = Decimer()  # default raises error
+
+    # test integer
+    dns = '0'
+    decimal = 0
+    qb64 = '6HABAAA0'
+    qb64b = b'6HABAAA0'
+    qb2 = b'\xe8p\x01\x00\x004'
+    raw = b'4'
+    code = '6H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(raw=raw)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb64=qb64)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb2=qb2)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+
+    # test float
+    dns = '0.0'
+    decimal = 0.0
+    qb64 = '4HABA0p0'
+    qb64b = b'4HABA0p0'
+    qb2 = b'\xe0p\x01\x03Jt'
+    raw = b'\x03Jt'
+    code = '4H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(raw=raw)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb64=qb64)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb2=qb2)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+
+    # test integer '-0' case
+    dns = '-0'
+    decimal = 0
+    qb64 = '6HABAAA0'
+    qb64b = b'6HABAAA0'
+    qb2 = b'\xe8p\x01\x00\x004'
+    raw = b'4'
+    code = '6H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no minus zero
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no minus zero
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=-0)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no minus zero
+    assert decimer.decimal == decimal
+
+    # test integer '+0' case
+    dns = '+0'
+    decimal = 0
+    qb64 = '6HABAAA0'
+    qb64b = b'6HABAAA0'
+    qb2 = b'\xe8p\x01\x00\x004'
+    raw = b'4'
+    code = '6H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no plus zero
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no plus zero
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=+0)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no plus zero
+    assert decimer.decimal == decimal
+
+    # test integer extra leading '0' case
+    dns = '00'
+    decimal = 0
+    qb64 = '6HABAAA0'
+    qb64b = b'6HABAAA0'
+    qb2 = b'\xe8p\x01\x00\x004'
+    raw = b'4'
+    code = '6H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no plus zero
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no plus zero
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=+0)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L2
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0' != dns  # no plus zero
+    assert decimer.decimal == decimal
+
+    # test float  -0.0 case
+    dns = '-0.0'
+    decimal = -0.0
+    qb64 = '4HAB-0p0'
+    qb64b = b'4HAB-0p0'
+    qb2 = b'\xe0p\x01\xfbJt'
+    raw = b'\xfbJt'
+    code = '4H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal  # same -0.0 constant,
+    assert decimer.decimal == 0.0  # == equivalent 0.0 constant
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal  # same -0.0 constant,
+    assert decimer.decimal == 0.0  # == equivalent 0.0 constant
+
+    # test float  +0.0 case
+    dns = '+0.0'
+    decimal = 0.0
+    qb64 = '4HABA0p0'
+    qb64b = b'4HABA0p0'
+    qb2 = b'\xe0p\x01\x03Jt'
+    raw = b'\x03Jt'
+    code = '4H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0.0' != dns
+    assert decimer.decimal == decimal  # same 0.0 constant,
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0.0' != dns
+    assert decimer.decimal == decimal  # same 0.0 constant,
+
+    decimer = Decimer(decimal=+0.0)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0.0' != dns
+    assert decimer.decimal == decimal  # same 0.0 constant,
+
+    # test float  extra leading 0 case
+    dns = '00.0'
+    decimal = 0.0
+    qb64 = '4HABA0p0'
+    qb64b = b'4HABA0p0'
+    qb2 = b'\xe0p\x01\x03Jt'
+    raw = b'\x03Jt'
+    code = '4H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0.0' != dns
+    assert decimer.decimal == decimal  # same 0.0 constant,
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0.0' != dns
+    assert decimer.decimal == decimal  # same 0.0 constant,
+
+    decimer = Decimer(decimal=+0.0)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == '0.0' != dns
+    assert decimer.decimal == decimal  # same 0.0 constant,
+
+    # test integer
+    dns = '12345678'
+    decimal = 12345678
+    qb64 = '4HAC12345678'
+    qb64b = b'4HAC12345678'
+    qb2 =b'\xe0p\x02\xd7m\xf8\xe7\xae\xfc'
+    raw = b'\xd7m\xf8\xe7\xae\xfc'
+    code = '4H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(raw=raw)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb64=qb64)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb2=qb2)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L0
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+
+    # test float
+    dns = '12.3456789'
+    decimal = 12.3456789
+    qb64 = '5HADAA12p3456789'
+    qb64b = b'5HADAA12p3456789'
+    qb2 = b'\xe4p\x03\x00\rv\xa7~9\xeb\xbf='
+    raw = b'\rv\xa7~9\xeb\xbf='
+    code = '5H'
+
+    decimer = Decimer(dns=dns)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L1
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(decimal=decimal)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L1
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(raw=raw)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L1
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb64=qb64)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L1
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
+    decimer = Decimer(qb2=qb2)
+    assert decimer.raw == raw
+    assert decimer.code == code == DecDex.Decimal_L1
+    assert decimer.qb64 == qb64
+    assert decimer.qb64b == qb64b
+    assert decimer.qb2 == qb2
+    assert decimer.dns == dns
+    assert decimer.decimal == decimal
+
     """Done Test"""
 
 def test_dater():
