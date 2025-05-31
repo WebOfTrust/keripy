@@ -110,6 +110,22 @@ class FieldDom:
            If opts is not empty then fields in opts are optional but the rest of
                 the fields in alls are required
 
+    ACDC messages have an additional set of special rules. When an ACDC message
+    is fixed field using the universal group count code -F## or --F##### then all
+    fields are required. And one or both of fields 'a' or 'A' must be empty.
+
+    Emptiness for field values that allow a field map count code as a value
+    is indicated by a generic map count code with zero-length contents.
+    Emptiness for field values that allow a list field count code as a value
+    is indicated by a generic list count code with zero-length contents.
+    Emptiness for field values that require a CESR primitive is indicated
+    by the `Null` CESR primitive code, `1AAK`.
+
+    The `ace`  message type in the ACDC protocol is for ACDC messages that allows
+    extra field i.e. ace means ac dc with e xtra fields. This is an experimental
+    type may not be normative.
+
+
     """
     alls: dict  # all allowed fields when strict
     opts: dict = field(default_factory=dict)  # optional fields
@@ -520,7 +536,9 @@ class Serder:
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.agg: FieldDom(alls=dict(v='', t='', d='', A=''),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.rul: FieldDom(alls=dict(v='', t='', d='', e=''),
+                Ilks.edg: FieldDom(alls=dict(v='', t='', d='', e=''),
+                    saids={Saids.d: DigDex.Blake3_256}),
+                Ilks.rul: FieldDom(alls=dict(v='', t='', d='', r=''),
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.rip: FieldDom(alls=dict(v='', t='', d='', u='', i='',
                                               s='', dt=''),
