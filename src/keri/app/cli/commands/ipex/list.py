@@ -16,6 +16,7 @@ from hio.base import doing
 from keri import help, kering
 from keri.app import indirecting, notifying, connecting
 from keri.app.cli.common import existing, terming
+from keri.app.cli.common.parsing import Parsery
 from keri.core import scheming
 from keri.help import helping
 from keri.peer import exchanging
@@ -25,16 +26,11 @@ from keri.vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List notifications related to IPEX protocol messages')
-parser.set_defaults(handler=lambda args: listNotes(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser = argparse.ArgumentParser(description='List notifications related to IPEX protocol messages', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: listNotes(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     default=None)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 
 parser.add_argument("--verbose", "-V", help="print full JSON of all credentials", action="store_true")
 parser.add_argument("--said", "-s", help="display only the SAID of found exn message, one per line.",

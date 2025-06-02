@@ -5,20 +5,17 @@ from hio.base import doing
 from keri import help
 from keri.app import indirecting, habbing, grouping
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import serdering
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Checks the status of a credential registry')
+parser = argparse.ArgumentParser(description='Checks the status of a credential registry', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: registryStatus(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None, required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 
 

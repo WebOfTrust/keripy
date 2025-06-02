@@ -9,16 +9,15 @@ from hio.base import doing
 
 from keri import help
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.db import basing
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Update the index for a given topic for a witness')
-parser.set_defaults(handler=lambda args: handler(args), transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Update the index for a given topic for a witness', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
 
@@ -26,9 +25,6 @@ parser.add_argument("--witness", "-w", help="qualified b64 AID of witness to upd
 parser.add_argument("--topic", "-t", help="topic name to update", required=True)
 parser.add_argument("--index", "-i", help="new index for topic on witness", required=True)
 
-# Authentication for keystore
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
 

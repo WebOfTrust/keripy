@@ -10,22 +10,19 @@ from hio.base import doing
 from keri import kering
 from keri.app import indirecting, habbing, grouping, forwarding, connecting, notifying
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
 from keri.core import coring, serdering
 from keri.core.eventing import SealEvent
 from keri.peer import exchanging
 from keri.vdr import credentialing, verifying
 
-parser = argparse.ArgumentParser(description='Revoke a verifiable credential')
+parser = argparse.ArgumentParser(description='Revoke a verifiable credential', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: revokeCredential(args))
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--said', help='is SAID vc content qb64')
 parser.add_argument('--send', help='alias of contact to send the revocation events to (can be repeated)',
                     required=False, action="append")

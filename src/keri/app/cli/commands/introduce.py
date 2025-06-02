@@ -7,18 +7,15 @@ import argparse
 
 from hio.base import doing
 
+from keri.app.cli.common.parsing import Parsery
 from keri.core import serdering
 from ..common import existing
 from ... import habbing, connecting, forwarding
 
-parser = argparse.ArgumentParser(description='Send an rpy /introduce message to recipient with OOBI')
+parser = argparse.ArgumentParser(description='Send an rpy /introduce message to recipient with OOBI', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: introduce(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--recipient', help='alias or contact to send the introduction to', required=True)
 parser.add_argument('--introducee', help='alias or contact of the OOBI to send', required=True)
 parser.add_argument("--role", "-r", help="role of oobi to send", required=True)
