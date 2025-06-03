@@ -28,10 +28,10 @@ class GenusCodex(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    KERI_ACDC_SPAC: str = '-_AAA'  # KERI, ACDC, and  SPAC Protocol Stacks share the same tables
-    KERI: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    ACDC: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
-    SPAC: str = '-_AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    KERI: str = '-_AAA'  # KERI Tables may be shared by ACDC and SPAC and TSP_
+    ACDC: str = '-_AAB'  # Reserved in case ACDC can no longer share with KERI
+    SPAC: str = '-_AAC'  # Reserved in case SPAC can no longer share with KERI
+    TSP_: str = '-_AAD'  # Reserved in case TSP_ can no longer share with KERI
 
 
     def __iter__(self):
@@ -40,6 +40,12 @@ class GenusCodex(IceMapDom):
         # in inclusion still works
 
 GenDex = GenusCodex()  # Make instance
+
+
+#ToDo. ProtoGenus table that maps protocol code to Genus Code in cases
+# where protocol code name and genus code name are different as would be
+# the case where a protocol is using a shared genus table with some other protocal
+
 
 
 @dataclass(frozen=True)

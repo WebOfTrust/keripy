@@ -162,7 +162,7 @@ class Parser:
         self.vry = vry
         self.local = True if local else False
 
-        self._genus = GenDex.KERI_ACDC_SPAC  # only supports KERI_ACDC_SPAC
+        self._genus = GenDex.KERI  # only supports KERI
         self.version = version  # provided version may be earlier than supported version
         # version sets  .methods, .codes, .sucodes, and .mucodes
 
