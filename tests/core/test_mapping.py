@@ -83,6 +83,32 @@ def test_mapper_basic():
     assert mapper.byteCount() == size
     assert mapper.byteCount(Colds.bny) == bc
 
+    # test strip
+    ims = bytearray(qb64b)
+    mapper = Mapper(qb64b=ims, strip=True)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert ims == bytearray(b'')  # stripped
+
+    ims = bytearray(qb2)
+    mapper = Mapper(qb2=ims, strip=True)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert ims == bytearray(b'')  # stripped
+
+
     # test with nested value types
     mad = dict(a="Hi There", nest=dict(a=[True, False, None], b=dict(z=True)),
                icky=[["z", "y"], dict(d=5), "abc"])

@@ -39,7 +39,8 @@ from . import coring
 from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
                      Saids,  Digestage)
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
-                     Tagger, Ilker, Traitor, Verser, )
+                     Tagger, Ilker, Traitor, Verser, Dater, Texter)
+from .mapping import Mapper
 
 from .counting import GenDex, Counter, Codens, SealDex_2_0, MUDex_2_0
 
@@ -1232,7 +1233,7 @@ class Serder:
         # make copy so strip here does not collide with .__init__ strip
         if size is None:
             size = len(raw)
-        raw = bytearray(raw[:size])
+        raw = bytearray(raw[:size])  # extract full message from raw as bytearray
 
         # consume body ctr and version field
         bctr = Counter(qb64b=raw, strip=True)  # version defaults to 2
@@ -1243,7 +1244,8 @@ class Serder:
         # read off ilk so can get rest of fields in order to parse
         ilker = Ilker(qb64b=raw, strip=True)
         if ilker.ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
-                             Ilks.rct):
+                             Ilks.rct, Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar,
+                             Ilks.xip, Ilks.exn):
             raise DeserializeError(f"Unexpected {ilk=}")
 
         # must be fixed filed see check below
@@ -1271,16 +1273,16 @@ class Serder:
                     case "t":  # message type (ilk), already got ilk
                         sad[l] = ilker.ilk
 
-                    case "d" | "p":  # said
+                    case "d" | "p" | "x":  # said
                         sad[l] = Diger(qb64b=raw, strip=True).qb64
 
-                    case "i" | "di":  # aid
+                    case "i" | "di" | "ri":  # aid
                         sad[l] = Prefixer(qb64b=raw, strip=True).qb64
 
                     case "s" | "bt":  # sequence number or numeric threshold
                         sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
 
-                    case "kt" | "nt": # current or next signing threshold
+                    case "kt" | "nt":  # current or next signing threshold
                         sad[l] = Tholder(limen=raw, strip=True).sith  # as sith str
 
                     case "k" | "n" | "b" | "ba" | "br":  # list of primitives
@@ -1295,6 +1297,12 @@ class Serder:
                             elements.append(Matter(qb64b=frame, strip=True).qb64)
                         sad[l] = elements
 
+                    case "dt":  # datetime string
+                        sad[l] = Dater(qb64b=raw, strip=True).dts
+
+                    case "r" | "rr":  # route or return route
+                        sad[l] = Texter(qb64b=raw, strip=True).text
+
                     case "c":  # list of config traits strings
                         ctr = Counter(qb64b=raw, strip=True)
                         if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
@@ -1307,30 +1315,38 @@ class Serder:
                             elements.append(Traitor(qb64b=frame, strip=True).trait) # as trait str
                         sad[l] = elements
 
-
                     case "a":  # list of seals or field map of attributes
-                        seals = []
-                        ctr = Counter(qb64b=raw, strip=True)
-                        if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
-                            raise DeserializeError(f"Expected List group got {ctr.name}")
-                        fs = ctr.count * 4  # frame size since qb64 text mode
-                        frame = raw[:fs]  # extract list frame
-                        raw = raw[fs:]  # strip frame from raw
-                        while frame:  # while list frame not empty
-                            sctr = Counter(qb64b=frame, strip=True)  # seal counter
-                            if sctr.code not in Serder.CodeClans:
-                                raise DeserializeError(f"Expected Sealer group got {sctr.name}")
-                            cast = Sealer.Casts[Serder.CodeClans[sctr.code]]
-                            sfs = sctr.count * 4
-                            sframe = frame[:sfs]  # extra seal frame
-                            frame = frame[sfs:]  # strip sfram from frame
-                            while sframe:  # while seal frame not empty
-                                # append sad dict version of seal to seals
-                                seals.append(Sealer(cast=cast,
-                                                    qb64b=sframe,
-                                                    strip=True).asdict)
-                        sad[l] = seals
+                        ctr = Counter(qb64b=raw)  # peek at counter
+                        if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                            sad[l] = Mapper(qb64b=raw, strip=True).mad
 
+                        elif ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
+                            del raw[:ctr.fullSize]  # consume counter
+                            seals = []
+                            fs = ctr.count * 4  # frame size since qb64 text mode
+                            frame = raw[:fs]  # extract list frame
+                            raw = raw[fs:]  # strip frame from raw
+                            while frame:  # while list frame not empty
+                                sctr = Counter(qb64b=frame, strip=True)  # seal counter
+                                if sctr.code not in Serder.CodeClans:
+                                    raise DeserializeError(f"Expected Sealer group got {sctr.name}")
+                                cast = Sealer.Casts[Serder.CodeClans[sctr.code]]
+                                sfs = sctr.count * 4
+                                sframe = frame[:sfs]  # extra seal frame
+                                frame = frame[sfs:]  # strip sfram from frame
+                                while sframe:  # while seal frame not empty
+                                    # append sad dict version of seal to seals
+                                    seals.append(Sealer(cast=cast,
+                                                        qb64b=sframe,
+                                                        strip=True).asdict)
+                            sad[l] = seals
+
+                        else:
+                            raise DeserializeError(f"Expected Map or List group"
+                                                   f"got {ctr.name}")
+
+                    case "q":  # Query parameters field map
+                        sad[l] = Mapper(qb64b=raw, strip=True).mad
 
                     case _:  # if extra fields this is where logic would be
                         raise DeserializeError(f"Unsupported protocol field label"
@@ -1466,7 +1482,8 @@ class Serder:
                                  f"version={pvrsn} with {sad=}.")
 
         if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
-                                               Ilks.rct):
+                        Ilks.rct, Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar,
+                        Ilks.xip, Ilks.exn):
             raise SerializeError(f"Unexpected {ilk=}")
 
         fields = ilks[ilk]  # FieldDom for given protocol and ilk
@@ -1491,14 +1508,14 @@ class Serder:
                     case "t":  # message type (ilk), already got ilk
                         val = Ilker(ilk=v).qb64b  # assumes same
 
-                    case "d" | "i" | "p" | "di":  # said or aid
+                    case "d" | "i" | "p" | "di" | "ri" | "x":  # said or aid
                         val = v.encode("utf-8")  # already primitive qb64 make qb6b
 
                     case "s" | "bt":  # sequence number or numeric threshold
-                        val = coring.Number(numh=v).qb64b  # convert hex str
+                        val = Number(numh=v).qb64b  # convert hex str
 
                     case "kt" | "nt": # current or next signing threshold
-                        val = coring.Tholder(sith=v).limen  # convert sith str
+                        val = Tholder(sith=v).limen  # convert sith str
 
                     case "k" | "n" | "b" | "ba" | "br":  # list of primitives
                         frame = bytearray()
@@ -1508,6 +1525,12 @@ class Serder:
                         val = bytearray(Counter(Codens.GenericListGroup,
                                                 count=len(frame) // 4).qb64b)
                         val.extend(frame)
+
+                    case "dt":  # iso datetime
+                        val = Dater(dts=v).qb64b  # dts to qb64b
+
+                    case "r" | "rr":  # route or return route
+                        val = Texter(text=v).qb64b  # text to qb64b
 
                     case "c":  # list of config traits strings
                         frame = bytearray()
@@ -1519,49 +1542,56 @@ class Serder:
                         val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
-                        frame = bytearray()  # whole list
-                        gcode = None  # code for counter for consecutive same type seals
-                        gframe = bytearray()  # consecutive same type seals
-                        for e in v:  # list of seal dicts
-                            # need support for grouping consecutive seals of same type with same counter
+                        if isinstance(v, Mapping): # field map of attributes
+                            val = Mapper(mad=v).qb64b
 
-                            try:
-                                sealer = Sealer(crew=e)
-                                code = self.ClanCodes[sealer.name]
-                                if gcode and gcode == code:
-                                    gframe.extend(sealer.qb64b)
-                                else:
-                                    if gframe:  # not same so close off and rotate group
+                        else:  # assumes list of seals
+                            frame = bytearray()  # whole list
+                            gcode = None  # code for counter for consecutive same type seals
+                            gframe = bytearray()  # consecutive same type seals
+                            for e in v:  # list of seal dicts
+                                # need support for grouping consecutive seals of same type with same counter
+
+                                try:
+                                    sealer = Sealer(crew=e)
+                                    code = self.ClanCodes[sealer.name]
+                                    if gcode and gcode == code:
+                                        gframe.extend(sealer.qb64b)
+                                    else:
+                                        if gframe:  # not same so close off and rotate group
+                                            counter = Counter(code=gcode, count=len(gframe) // 4)
+                                            frame.extend(counter.qb64b + gframe)
+                                            gframe = bytearray()  # new group
+                                        gcode = code  # new group or keep same group
+                                        gframe.extend(sealer.qb64b)  # extend in new group
+
+                                except kering.InvalidValueError:
+                                    if gframe:
                                         counter = Counter(code=gcode, count=len(gframe) // 4)
                                         frame.extend(counter.qb64b + gframe)
-                                        gframe = bytearray()  # new group
-                                    gcode = code  # new group or keep same group
-                                    gframe.extend(sealer.qb64b)  # extend in new group
+                                        gframe = bytearray()
+                                        gcode = None
 
-                            except kering.InvalidValueError:
-                                if gframe:
-                                    counter = Counter(code=gcode, count=len(gframe) // 4)
-                                    frame.extend(counter.qb64b + gframe)
-                                    gframe = bytearray()
-                                    gcode = None
+                                    #unknown seal type so serialize as field map
+                                    #generic seal no count type (v, Mapping):
+                                    #for l, e in v.items():
+                                        #pass
+                                    #val = bytearray(Counter(tag=""GenericMapGroup"",
+                                                   # count=len(frame) // 4).qb64b)
+                                    #val.extend(mapframe)
 
-                                #unknown seal type so serialize as field map
-                                #generic seal no count type (v, Mapping):
-                                #for l, e in v.items():
-                                    #pass
-                                #val = bytearray(Counter(tag=""GenericMapGroup"",
-                                               # count=len(frame) // 4).qb64b)
-                                #val.extend(mapframe)
+                            if gframe:  # close off last group if any
+                                counter = Counter(code=gcode, count=len(gframe) // 4)
+                                frame.extend(counter.qb64b + gframe)
+                                gframe = bytearray()
+                                gcode = None
 
-                        if gframe:  # close off last group if any
-                            counter = Counter(code=gcode, count=len(gframe) // 4)
-                            frame.extend(counter.qb64b + gframe)
-                            gframe = bytearray()
-                            gcode = None
+                            val = bytearray(Counter(Codens.GenericListGroup,
+                                                    count=len(frame) // 4).qb64b)
+                            val.extend(frame)
 
-                        val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
-                        val.extend(frame)
+                    case "q":  # map of query parameters
+                        val = Mapper(mad=v).qb64b
 
                     case _:  # if extra fields this is where logic would be
                         raise SerializeError(f"Unsupported protocol field label"

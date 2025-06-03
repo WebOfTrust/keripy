@@ -41,7 +41,8 @@ class Mapper:
 
     """
 
-    def __init__(self, *, mad=None, qb64=None, qb64b=None, qb2=None, verify=True):
+    def __init__(self, *, mad=None, qb64=None, qb64b=None, qb2=None, strip=False,
+                 verify=True):
         """Initialize instance
 
         Parameters:
@@ -53,6 +54,9 @@ class Mapper:
                 Ignored if None or mad provided. Alias for qb64
             qb2 (bytes|bytearray|None): fields serialization in qb2 binary domain
                 Ignored if None or mad provided
+            strip (bool):  True means strip mapper contents from input stream
+                bytearray after parsing qb64, qb64b or qb2. False means do not strip.
+                default False
             verify (bool): True means verify serialization against mad.
 
         Assumes that when qb64 or qb64b or qb2 are provided that they have
@@ -71,16 +75,28 @@ class Mapper:
             self._exhale(mad=mad)  # sets ._mad, ._qb64b, and ._count
 
         else:
-            if qb64b is None and qb2:
-                qb64b = encodeB64(qb2)  # deserialize in qb64 text domain
+            if qb64b:
+                if hasattr(qb64b, "encode"):
+                    qb64b = qb64b.encode()
 
-            if hasattr(qb64b, "encode"):
-                qb64b = qb64b.encode()
+                ctr = Counter(qb64b=qb64b)  # peek at counter
+                bs = ctr.byteCount() + ctr.byteSize()
+                buf = qb64b[:bs]
+                if strip and isinstance(qb64b, bytearray):
+                    del qb64b[:bs]
 
-            if qb64b is None:
-                raise EmptyMaterialError(f"Need fields or qb64 or qb64b or qb2.")
 
-            self._inhale(qb64b)  # sets ._mad, ._qb64b, and ._count
+            elif qb2:
+                ctr = Counter(qb2=qb2)  # peek at counter
+                bs = ctr.byteCount(cold=Colds.bny) + ctr.byteSize(Colds.bny)
+                buf = encodeB64(qb2[:bs])  # deserialize in qb64 text domain
+                if strip and isinstance(qb2, bytearray):
+                    del qb2[:bs]
+
+            else:
+                raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
+
+            self._inhale(buf)  # sets ._mad, ._qb64b, and ._count
 
     @property
     def mad(self):
@@ -190,10 +206,9 @@ class Mapper:
 
         # consume map ctr assumes already extracted full map
         mctr = Counter(qb64b=ser, strip=True)
-        if (mctr.code not in (UniDex_2_0.GenericMapGroup,
-                                 UniDex_2_0.BigGenericMapGroup)):
-            raise DeserializeError(f"Expected GenericMapGroup got code="
-                                   f"{mctr.code}")
+        if mctr.name not in ('GenericMapGroup', 'BigGenericMapGroup'):
+            raise DeserializeError(f"Expected GenericMapGroup got counter name="
+                                   f"{mctr.name}")
         self._count = mctr.count + (mctr.fullSize // 4)  # include counter & contents
         if len(ser) != mctr.count * 4:
             raise DeserializeError(f"Invalid map content qb64b for count="
@@ -219,9 +234,7 @@ class Mapper:
         """
         if ser[0] == ord(b'-'):  # value is group (Counter) serialization
             vctr = Counter(qb64b=ser, strip=True)
-            if (vctr.code in (UniDex_2_0.GenericListGroup,
-                             UniDex_2_0.BigGenericListGroup)):
-
+            if vctr.name in ('GenericListGroup', 'BigGenericListGroup'):
                 ls = vctr.byteCount()
                 lser = ser[:ls]  # extract list bytes
                 del ser[:ls]  # strip list bytes from ser
@@ -229,8 +242,7 @@ class Mapper:
                 while lser:  # recursively deserialize list elements
                     value.append(self._deserialize(lser))
 
-            elif (vctr.code in (UniDex_2_0.GenericMapGroup,
-                             UniDex_2_0.BigGenericMapGroup)):
+            elif vctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
                 ms = vctr.byteCount()
                 mser = ser[:ms]  # extract map bytes
                 del ser[:ms]  # strip map bytes from ser
@@ -239,7 +251,7 @@ class Mapper:
                     label = Labeler(qb64b=mser, strip=True).label
                     value[label] = self._deserialize(mser)
             else:
-                raise DeserializeError("Invalid counter code={vctr.code}")
+                raise DeserializeError("Invalid counter name={vctr.name}")
 
         else:  # ser is primitive (Matter) serialization
             mtr = Matter(qb64b=ser, strip=True)
