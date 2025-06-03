@@ -8,10 +8,13 @@ from collections.abc import Mapping, Iterable
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
-from hio.help import NonStringIterable
+
 
 from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
+
+from ..help import nonStringIterable
+
 from .counting import  Codens, CtrDex_2_0, UniDex_2_0, Counter
 from .coring import MtrDex, Matter, Labeler, LabelDex, Decimer, DecDex
 
@@ -46,7 +49,7 @@ class Mapper:
         """Initialize instance
 
         Parameters:
-            mad (Mapping|NonStringIterable|None):  Either dict or iterable of duples
+            mad (Mapping|Iterable|None):  Either dict or iterable of duples
                 of (field, value) pairs or None. Ignored if None
             qb64 (str|bytes|bytearray|None): mad serialization in qb64 text domain
                 Ignored if None or fields provided. Alias for qb64b
@@ -63,7 +66,7 @@ class Mapper:
             already been extracted from a stream and are self contained
 
         """
-        if isinstance(mad, NonStringIterable):
+        if nonStringIterable(mad):
             mad = dict(mad)
         self._mad = mad if mad is not None else dict()
         self._qb64b = b''  # override later
