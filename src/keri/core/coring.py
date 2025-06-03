@@ -210,7 +210,7 @@ Tiers = Tierage(low='low', med='med', high='high')
 
 
 @dataclass
-class MapHood:
+class MapDom:
     """Base class for mutable dataclasses that support map syntax
     Adds support for dunder methods for map syntax dc[name].
     Converts exceptions from attribute syntax to raise map syntax when using
@@ -242,12 +242,12 @@ class MapHood:
 
 @dataclass(frozen=True)
 class IceMapDom:
-    """Base class for frozen dataclasses (codexes) that support map syntax
+    """Base class for frozen dataclasses (such as codexes) that support map syntax
     Adds support for dunder methods for map syntax dc[name].
     Converts exceptions from attribute syntax to raise map syntax when using
     map syntax.
 
-    Enables dataclass instances to use Mapping item syntax
+    Enables frozen dataclass instances to use Mapping item syntax
     """
 
     def __getitem__(self, name):
@@ -1404,7 +1404,7 @@ class Matter:
         Detects if str and converts to bytes
 
         Parameters:
-            qb64b (str | bytes | bytearray | memoryview): fully qualified base64 from stream
+            qb64b (str|bytes|bytearray|memoryview): fully qualified base64 from stream
 
         """
         if not qb64b:  # empty need more bytes
@@ -1418,7 +1418,7 @@ class Matter:
         if first not in self.Hards:
             if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
-                                               "while extracing Matter.")
+                                               "while extracting Matter.")
             elif first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                             "while extracing Matter.")

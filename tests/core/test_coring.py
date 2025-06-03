@@ -53,7 +53,7 @@ from keri.core.indexing import (Siger, Xizage, IdrDex, IdxSigDex,
                                 IdxCrtSigDex, IdxBthSigDex, Indexer)
 
 
-from keri.core.coring import MapHood, IceMapDom
+from keri.core.coring import MapDom, IceMapDom
 
 
 
@@ -61,7 +61,7 @@ def test_icemapdom():
     """Test IceMapDom base dataclass"""
 
     @dataclass
-    class TestIceMapDom(MapHood):
+    class TestIceMapDom(MapDom):
         """
 
         """
@@ -5006,7 +5006,7 @@ def test_labeler():
 
     # Test all sizes taggable labels
     labels = ('A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF', 'ABCDEFG', 'ABCDEFGH',
-              'ABCDEFGHI', 'ABCDEFGHIJ')
+              'ABCDEFGHI', 'ABCDEFGHIJ', 'ABCDEFGHIJK')
 
     raw = b''
     for i, label in enumerate(labels):
@@ -5353,12 +5353,9 @@ def test_diger():
     assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
     assert diger.qb64b == b'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
-    #b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
 
     digb = b'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
-    #b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
-    #'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     diger = Diger(qb64b=digb)
     assert diger.qb64b == digb
     assert diger.qb64 == dig
