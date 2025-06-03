@@ -23,7 +23,7 @@ from ..kering import (MissingEntryError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError)
-from ..kering import Version, Versionage, TraitDex
+from ..kering import Version, Versionage, TraitDex, Vrsn_1_0, Vrsn_2_0
 
 from .. import help
 from ..help import helping
@@ -1002,7 +1002,8 @@ def receipt(pre,
     return serder
 
 
-def query(route="",
+def query(pre="",
+          route="",
           replyRoute="",
           query=None,
           stamp=None,
@@ -1014,6 +1015,7 @@ def query(route="",
 
 
     Parameters:
+        pre (str): Identifier prefix (AID) of sender controller (Version 2)
         route (str): namesapaced path, '/' delimited, that indicates data flow
                      handler (behavior) to processs the query
         replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
@@ -1024,7 +1026,7 @@ def query(route="",
         version (Version): KERI message Version namedtuple instance
         kind (str): serialization kind value of Serials
 
-
+    Version 1.0
     {
       "v" : "KERI10JSON00011c_",
       "t" : "qry",
@@ -1039,18 +1041,49 @@ def query(route="",
         "dt": "2020-08-01T12:20:05.123456+00:00",
       }
     }
+
+    Version 2.0
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "qry",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "logs",
+      "rr": "log/processor",
+      "q" :
+      {
+        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "sn": "5",
+        "dt": "2020-08-01T12:20:05.123456+00:00",
+      }
+    }
+
     """
     vs = versify(pvrsn=version, kind=kind, size=0)
     ilk = Ilks.qry
 
-    sad = dict(v=vs,  # version string
-               t=ilk,
-               d="",
-               dt=stamp if stamp is not None else helping.nowIso8601(),
-               r=route,  # resource type for single item request
-               rr=replyRoute,
-               q=query,
-               )
+    if version.major == Vrsn_1_0.major:
+        sad = dict(v=vs,  # version string
+                   t=ilk,
+                   d="",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route,  # resource type for single item request
+                   rr=replyRoute,
+                   q=query,
+                   )
+
+    else:
+        sad = dict(v=vs,  # version string
+                   t=ilk,
+                   d="",
+                   i=pre,
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route,  # resource type for single item request
+                   rr=replyRoute,
+                   q=query,
+                   )
+
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
     return serder
@@ -1060,7 +1093,8 @@ def query(route="",
     #return Serder(ked=ked)  # return serialized ked
 
 
-def reply(route="",
+def reply(pre="",
+          route="",
           data=None,
           stamp=None,
           version=Version,
@@ -1072,6 +1106,7 @@ def reply(route="",
     'd' field.
 
      Parameters:
+        pre (str): identifier prefix of sender (AID)
         route (str):  '/' delimited path identifier of data flow handler
             (behavior) to processs the reply if any
         data (dict): attribute section of reply
@@ -1080,6 +1115,7 @@ def reply(route="",
         version (Version):  KERI message Version namedtuple instance
         kind (str): serialization kind value of Serials
 
+    Version 1:
     {
       "v" : "KERI10JSON00011c_",
       "t" : "rpy",
@@ -1094,19 +1130,49 @@ def reply(route="",
          "role": "Founder",
       }
     }
+
+    Version 2:
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rpy",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "logs/processor",
+      "a" :
+      {
+         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+         "name": "John Jones",
+         "role": "Founder",
+      }
+    }
+
+
     """
     label = coring.Saids.d
     vs = versify(pvrsn=version, kind=kind, size=0)
     if data is None:
         data = {}
 
-    sad = dict(v=vs,  # version string
-               t=Ilks.rpy,
-               d="",
-               dt=stamp if stamp is not None else helping.nowIso8601(),
-               r=route if route is not None else "",  # route
-               a=data if data else {},  # attributes
-               )
+    if version.major == Vrsn_1_0.major:
+        sad = dict(v=vs,  # version string
+                   t=Ilks.rpy,
+                   d="",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",  # route
+                   a=data if data else {},  # attributes
+                   )
+    else:  # Vrsn_2_0
+        sad = dict(v=vs,  # version string
+                   t=Ilks.rpy,
+                   d="",
+                   i=pre,
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",  # route
+                   a=data if data else {},  # attributes
+                   )
+
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
     return serder

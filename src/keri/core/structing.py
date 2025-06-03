@@ -11,7 +11,7 @@ from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, astuple, asdict
 
-from ..kering import (EmptyMaterialError, InvalidValueError,)
+from ..kering import InvalidValueError, EmptyMaterialError
 
 from .. import help
 from ..help import nonStringSequence
@@ -334,16 +334,17 @@ class Structor:
                 of primitive for generating .data with .cast when data missing.
                 Can be used to infer namedtuple type of .data when data and clan
                 missing.
-            qb64 (str | bytes | bytearray | None): concatenation of qb64 data values to
+            qb64 (str|bytes|bytearray|None): concatenation of qb64 data values to
                 generate .data with data and crew missing.
-            qb64b (str | bytes | bytearray | None): alias for qb64 to match Counter
+            qb64b (str|bytes|bytearray|None): alias for qb64 to match Counter
                 interface.
-            qb2 (bytes | bytearray | None): concatenation of qb2 data values to generate
+            qb2 (bytes|bytearray|None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
             strip (bool): False means do not strip each value from qb64 or qb2.
-                Default is False. True means if qb64 or qb2 are bytearray then strip
-                contained concatenated data values. Enables parser to extract
-                data fields from front of CESR stream.
+                Default is False. True means if qb64 or qb2 are bytearray then
+                strip contained concatenated data values. Else convert qb64 or
+                qb2 to bytearray so can strip inplace. Enables parser to extract
+                data fields from front of CESR stream when stream is bytearray.
 
 
         """
