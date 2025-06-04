@@ -17,7 +17,8 @@ from keri.help.helping import isign, sceil
 from keri.help.helping import extractValues
 from keri.help.helping import dictify, datify, klasify
 from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
-                               codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
+                               codeB64ToB2, codeB2ToB64, Reb64, nabSextets,
+                               Reat)
 
 def test_utilities():
     """
@@ -243,10 +244,10 @@ def test_iso8601():
 
     dts1 = helping.nowIso8601()
     dt1 = helping.fromIso8601(dts1)
-    
+
     # Add a small delay to ensure timestamps are different
     time.sleep(0.001)
-    
+
     dts2 = helping.nowIso8601()
     dt2 = helping.fromIso8601(dts2)
 
@@ -256,7 +257,7 @@ def test_iso8601():
     assert dts2 == helping.toIso8601(dt2)
 
     time.sleep(0.001)
-    
+
     dts3 = helping.toIso8601()
     dt3 = helping.fromIso8601(dts3)
 
@@ -443,6 +444,27 @@ def test_b64_conversions():
     """End Test"""
 
 
+
+
+def test_reat():
+    """Test regular expression Reat for attribute name """
+    name = b"hello"
+    assert Reat.match(name)
+
+    name = b"_hello"
+    assert Reat.match(name)
+
+    name = b"hell1"
+    assert Reat.match(name)
+
+    name = b"1hello"
+    assert not Reat.match(name)
+
+    name = b"hello.hello"
+    assert not Reat.match(name)
+    """Done Test"""
+
+
 if __name__ == "__main__":
     test_utilities()
     test_datify()
@@ -451,3 +473,4 @@ if __name__ == "__main__":
     test_extractvalues()
     test_iso8601()
     test_b64_conversions()
+    test_reat()

@@ -45,7 +45,7 @@ from ..kering import (Kinds, Kindage, Protocols, Protocolage, Ilkage, Ilks,
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable, nonStringSequence
 from ..help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
-                            codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
+                            codeB64ToB2, codeB2ToB64, Reb64, nabSextets, Reat)
 
 
 
@@ -3198,44 +3198,69 @@ class Labeler(Matter):
     """
 
 
-    def __init__(self, label='', raw=None, code=None, soft=None, **kwa):
+    def __init__(self, label='', text='', raw=None, code=None, soft=None, **kwa):
         """
         Inherited Parameters:
             (see Matter)
 
         Parameters:
-            label (str | bytes):  base value before encoding
+            label (str|bytes):  base value before encoding as label
+                A valid label must match rules for attribute name
+            text (str|bytes): base value for encoding as text, Can be any
+                str or bytes
 
         """
         if label:
             if hasattr(label, "encode"):  # make label bytes
-                label = label.encode("utf-8")
+                label = label.encode()
 
-            if Reb64.match(label):  # candidate for Base64 compact encoding
+            if not Reat.match(label):
+                raise InvalidValueError(f"Invalid {label=}")
+
+            # candidate for Base64 compact encoding
+            try:
+                code = Tagger._codify(tag=label)
+                soft = label
+
+            except InvalidSoftError as ex:  # too big
+                if label[0] != ord(b'A'):  # use Bexter code
+                    code = LabelDex.StrB64_L0
+                    raw = Bexter._rawify(label)
+
+                else:  # use Texter code since ambiguity if starts with 'A'
+                    code = LabelDex.Bytes_L0
+                    raw = label
+
+        elif text:
+            if hasattr(text, "encode"):  # make text bytes
+                text = text.encode()
+
+            if Reb64.match(text):  # candidate for Base64 compact encoding
                 try:
-                    code = Tagger._codify(tag=label)
-                    soft = label
+                    code = Tagger._codify(tag=text)
+                    soft = text
 
                 except InvalidSoftError as ex:  # too big
-                    if label[0] != ord(b'A'):  # use Bexter code
+                    if text[0] != ord(b'A'):  # use Bexter code
                         code = LabelDex.StrB64_L0
-                        raw = Bexter._rawify(label)
+                        raw = Bexter._rawify(text)
 
                     else:  # use Texter code since ambiguity if starts with 'A'
                         code = LabelDex.Bytes_L0
-                        raw = label
+                        raw = text
 
             else:
-                if len(label) == 1:
+                if len(text) == 1:
                     code = LabelDex.Label1
 
-                elif len(label) == 2:
+                elif len(text) == 2:
                     code = LabelDex.Label2
 
                 else:
                     code = LabelDex.Bytes_L0
 
-                raw = label
+                raw = text
+
 
         super(Labeler, self).__init__(raw=raw, code=code, soft=soft, **kwa)
 
@@ -3249,7 +3274,30 @@ class Labeler(Matter):
         """Extracts and returns label from .code and .soft or .code and .raw
 
         Returns:
-            label (str): base value without encoding
+            label (str): base value without encoding. Must match rules for
+                attribute name
+        """
+        if self.code in TagDex:  # tag
+            label = self.soft  # soft part of code
+
+        elif self.code in BexDex:  # bext
+            label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
+
+        else:
+            label = self.raw.decode()  # everything else is just raw as str
+
+        if not Reat.match(label.encode()):
+            raise InvalidValueError(f"Invalid {label=}")
+
+        return label
+
+
+    @property
+    def text(self):
+        """Extracts and returns text from .code and .soft or .code and .raw
+
+        Returns:
+            text (str): base value without encoding
         """
         if self.code in TagDex:  # tag
             return self.soft  # soft part of code

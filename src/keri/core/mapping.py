@@ -13,7 +13,7 @@ from base64 import urlsafe_b64decode as decodeB64
 from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
 
-from ..help import nonStringIterable
+from ..help import nonStringIterable, Reat
 
 from .counting import  Codens, CtrDex_2_0, UniDex_2_0, Counter
 from .coring import MtrDex, Matter, Labeler, LabelDex, Decimer, DecDex
@@ -218,8 +218,11 @@ class Mapper:
                                    f"{mctr.count}")
 
         while (ser):
-            label = Labeler(qb64b=ser, strip=True).label
-            mad[label] = self._deserialize(ser)
+            try:
+                label = Labeler(qb64b=ser, strip=True).label
+                mad[label] = self._deserialize(ser)
+            except  InvalidValueError as ex:
+                raise DeserializeError(f"Invalid value while deserializing") from ex
 
         self._mad = mad
         return self.mad
@@ -267,7 +270,7 @@ class Mapper:
             elif mtr.code in DecDex:
                 value = Decimer(qb64b=mtr.qb64b).decimal
             elif mtr.code in LabelDex:
-                value = Labeler(qb64b=mtr.qb64b).label
+                value = Labeler(qb64b=mtr.qb64b).text
             else:
                 value = mtr.qb64
 
@@ -288,8 +291,12 @@ class Mapper:
         ser = bytearray()  # full field map serialization as qb64 with counter
         bdy = bytearray()
         for l, v in mad.items():  # assumes valid field order & presence
-            bdy.extend(Labeler(label=l).qb64b)
-            bdy.extend(self._serialize(v))
+            try:
+                bdy.extend(Labeler(label=l).qb64b)
+                bdy.extend(self._serialize(v))
+            except InvalidValueError as ex:
+                raise SerializeError("Invalid value while serializing") from ex
+
         ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericMapGroup))
         self._qb64b = bytes(ser)  # bytes so can sign, do crypto operations on it
         self._count = len(ser) // 4
@@ -321,10 +328,10 @@ class Mapper:
             try:
                 primitive = Matter(qb64=val)
             except Exception as ex:  # not valid primitive
-                ser.extend(Labeler(label=val).qb64b)  # so serialize as label
+                ser.extend(Labeler(text=val).qb64b)  # so serialize as text
             else:  # valid primitive in qb64 format
                 if len(primitive.qb64) != len(val):  # not complete so not really valid
-                    ser.extend(Labeler(label=val).qb64b)  # so serialize as label
+                    ser.extend(Labeler(text=val).qb64b)  # so serialize as text
                 else:  # really valid complete primitive in qb64
                     ser.extend(primitive.qb64b)
         elif isinstance(val, Mapping):
@@ -341,6 +348,6 @@ class Mapper:
             ser.extend(Counter.enclose(qb64=bdy,
                                        code=Codens.GenericListGroup))
         else:
-            raise DeserializeError(f"Nonserializible {val=}")
+            raise SerializeError(f"Nonserializible {val=}")
 
         return ser

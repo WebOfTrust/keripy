@@ -431,3 +431,7 @@ def verify64uEd25519(signature, message, verkey):
     return (verifyEd25519(sig, msg, vk))
 
 
+# Regular expression to detect valid attributish names as bytes
+ATREX = rb'^[a-zA-Z_][a-zA-Z0-9_]*$'  # bytes
+# Usage: if Reat.match(name): or if not Reat.match(name):
+Reat = re.compile(ATREX)  # compile is faster
