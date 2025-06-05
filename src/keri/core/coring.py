@@ -342,7 +342,7 @@ class MatterCodex:
     No:                   str = '1AAL'  # No Falsey Boolean value
     Yes:                  str = '1AAM'  # Yes Truthy Boolean value
     Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
-    Escape:               str = '1AAO'  # Escape code for excaping special map fields
+    Escape:               str = '1AAO'  # Escape code for escaping special map fields
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
     TBD0:                 str = '1___'  # Testing purposes only, fixed with lead size 0
     TBD1S:                str = '2__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
