@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-. "$(dirname "$0")/../demo-scripts.sh"
-. "$(dirname "$0")/script-utils.sh"
+source "$(dirname "$0")/script-utils.sh"
 
 delegator=$(random_name delegator)
 delegate=$(random_name delegate)
