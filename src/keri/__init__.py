@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
 
-__version__ = '1.2.5-dev0'  # also change in setup.py
+__version__ = '2.0.0-dev0'  # also change in setup.py
 
 
