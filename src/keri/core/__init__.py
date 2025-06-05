@@ -15,5 +15,5 @@ from .coring import (Matter, MtrDex, Number, NumDex, Dater, DecDex, Decimer,
 from .indexing import Indexer, Siger, IdrDex, IdxSigDex
 from .signing import Signer, Salter, Cipher, CiXDex, Encrypter, Decrypter
 from .counting import Counter, Codens, GenDex, CtrDex_1_0, CtrDex_2_0
-from .mapping import Mapper
+from .mapping import Mapper, EscapeDex
 from .streaming import Streamer

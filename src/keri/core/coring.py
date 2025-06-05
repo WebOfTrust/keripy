@@ -342,6 +342,7 @@ class MatterCodex:
     No:                   str = '1AAL'  # No Falsey Boolean value
     Yes:                  str = '1AAM'  # Yes Truthy Boolean value
     Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
+    Escape:               str = '1AAO'  # Escape code for excaping special map fields
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
     TBD0:                 str = '1___'  # Testing purposes only, fixed with lead size 0
     TBD1S:                str = '2__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
@@ -586,8 +587,8 @@ TagDex = TagCodex()  # Make instance
 
 @dataclass(frozen=True)
 class LabelCodex:
-    """
-    LabelCodex is codex of.
+    """LabelCodex is codex of codes to compactly ser/des labels and string values
+    in maps or lists.
 
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
@@ -847,6 +848,7 @@ class Matter:
         '1AAL': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
+        '1AAO': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),

@@ -7,7 +7,7 @@ Creates label value, field map data structures
 from collections.abc import Mapping, Iterable
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
-
+from dataclasses import dataclass, astuple, asdict
 
 
 from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
@@ -17,6 +17,59 @@ from ..help import nonStringIterable, Reat
 
 from .counting import  Codens, CtrDex_2_0, UniDex_2_0, Counter
 from .coring import MtrDex, Matter, Labeler, LabelDex, Decimer, DecDex
+
+
+
+@dataclass(frozen=True)
+class EscapeCodex:
+    """EscapeCodex is codex of values that may need to be escaped
+    in order to round trip correctly as either labels or values in a field map
+    via Mapper.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Escape: str = '1AAO'  # Escape code for excaping special map fields
+    Null: str = '1AAK'  # Null None or empty value
+    No: str = '1AAL'  # No Falsey Boolean value
+    Yes: str = '1AAM'  # Yes Truthy Boolean value
+    Decimal_L0: str = '4H'  # Decimal B64 string float and int lead size 0
+    Decimal_L1: str = '5H'  # Decimal B64 string float and int lead size 1
+    Decimal_L2: str = '6H'  # Decimal B64 string float and intlead size 2
+    Decimal_Big_L0: str = '7AAH'  # Decimal B64 string float and int big lead size 0
+    Decimal_Big_L1: str = '8AAH'  # Decimal B64 string float and int big lead size 1
+    Decimal_Big_L2: str = '9AAH'  # Decimal B64 string float and int big lead size 2
+    Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
+    Tag2:  str = '0K'  # 2 B64 char tag
+    Tag3:  str = 'X'  # 3 B64 char tag
+    Tag4:  str = '1AAF'  # 4 B64 char tag
+    Tag5:  str = '0L'  # 5 B64 char tag with 1 pre pad
+    Tag6:  str = '0M'  # 6 B64 char tag
+    Tag7:  str = 'Y'  # 7 B64 char tag
+    Tag8:  str = '1AAN'  # 8 B64 char tag
+    Tag9:  str = '0N'  # 9 B64 char tag with 1 pre pad
+    Tag10: str = '0O'  # 10 B64 char tag
+    Tag11: str = 'Z'   # 11 B64 char tag
+    StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1:     str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2:     str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
+    Label1:        str = 'V'  # Label1 1 bytes for label lead size 1
+    Label2:        str = 'W'  # Label2 2 bytes for label lead size 0
+    Bytes_L0:     str = '4B'  # Byte String lead size 0
+    Bytes_L1:     str = '5B'  # Byte String lead size 1
+    Bytes_L2:     str = '6B'  # Byte String lead size 2
+    Bytes_Big_L0: str = '7AAB'  # Byte String big lead size 0
+    Bytes_Big_L1: str = '8AAB'  # Byte String big lead size 1
+    Bytes_Big_L2: str = '9AAB'  # Byte String big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+EscapeDex = EscapeCodex()  # Make instance
+
 
 # ToDo;  ""saidive"" Mapper that computs SAID on any map that has a 'd' field
 # also recursively computes nested SAID on any nested maps using the ACDC
@@ -229,7 +282,7 @@ class Mapper:
 
 
     def _deserialize(self, ser):
-        """Deseralizes value from ser recursively
+        """Recursively deserializes ser as value
 
         Parameters:
             ser (bytearray): deserializable bytearray for value
@@ -261,18 +314,21 @@ class Mapper:
 
         else:  # ser is primitive (Matter) serialization
             mtr = Matter(qb64b=ser, strip=True)
-            if mtr.code == MtrDex.Null:
-                value = None
-            elif mtr.code == MtrDex.Yes:
-                value = True
-            elif mtr.code == MtrDex.No:
-                value = False
-            elif mtr.code in DecDex:
-                value = Decimer(qb64b=mtr.qb64b).decimal
-            elif mtr.code in LabelDex:
-                value = Labeler(qb64b=mtr.qb64b).text
+            if mtr.code == EscapeDex.Escape:  # yes escaped so get escaped value
+                value = Matter(qb64b=ser, strip=True).qb64  # value is verbatim qb64
             else:
-                value = mtr.qb64
+                if mtr.code == MtrDex.Null:
+                    value = None
+                elif mtr.code == MtrDex.Yes:
+                    value = True
+                elif mtr.code == MtrDex.No:
+                    value = False
+                elif mtr.code in DecDex:
+                    value = Decimer(qb64b=mtr.qb64b).decimal
+                elif mtr.code in LabelDex:
+                    value = Labeler(qb64b=mtr.qb64b).text
+                else:
+                    value = mtr.qb64
 
         return value
 
@@ -305,7 +361,7 @@ class Mapper:
 
 
     def _serialize(self, val):
-        """Serializes val recursively
+        """Recursively serializes val
 
         Parameters:
             val (None|bool|int|float|str|bytes|bytearray|list|dict): serializable value
@@ -330,10 +386,13 @@ class Mapper:
             except Exception as ex:  # not valid primitive
                 ser.extend(Labeler(text=val).qb64b)  # so serialize as text
             else:  # valid primitive in qb64 format
-                if len(primitive.qb64) != len(val):  # not complete so not really valid
+                if len(primitive.qb64) != len(val):  # not complete so invalid
                     ser.extend(Labeler(text=val).qb64b)  # so serialize as text
                 else:  # really valid complete primitive in qb64
-                    ser.extend(primitive.qb64b)
+                    if primitive.code in EscapeDex:  # verbatim text is special primitive
+                        # need to escape so insert escape code
+                        ser.extend(Matter(raw=b'', code=EscapeDex.Escape).qb64b)
+                    ser.extend(primitive.qb64b)  # so serialize as primitive verbatim
         elif isinstance(val, Mapping):
             bdy = bytearray()
             for l, v in val.items():
