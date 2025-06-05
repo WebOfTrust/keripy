@@ -20,3 +20,9 @@ print_lcyan() {
   text=$1
   printf "\e[96m${text}\e[0m\n"
 }
+
+random_name () {
+   suffix=$(head /dev/urandom | tr -dc a-z0-9 | head -c4)
+   prefix="${1:-test}"
+   echo "${prefix}_${suffix}"
+}
