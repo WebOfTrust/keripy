@@ -8,15 +8,13 @@ delegator=$(random_name delegator)
 delegate=$(random_name delegate)
 validator=$(random_name validator)
 
-background_start kli init --name "$delegator" --nopasscode
-background_start kli init --name "$delegate" --nopasscode
-background_start kli init --name "$validator" --nopasscode
-background_wait
+kli init --name "$delegator" --nopasscode
+kli init --name "$delegate" --nopasscode
+kli init --name "$validator" --nopasscode
 
-background_start kli oobi resolve --name "$delegator" --oobi http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller
-background_start kli oobi resolve --name "$delegate" --oobi http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller
-background_start kli oobi resolve --name "$validator" --oobi http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller
-background_wait
+kli oobi resolve --name "$delegator" --oobi http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller
+kli oobi resolve --name "$delegate" --oobi http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller
+kli oobi resolve --name "$validator" --oobi http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller
 
 kli incept --name "$delegator" --alias delegator \
     --wit BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM \
@@ -69,18 +67,19 @@ cat << EOF > "$delegate_json"
 EOF
 
 # Create delegated identifier
-background_start kli incept --name "$delegate" --alias delegate --proxy proxy --file "$delegate_json"
-background_start kli delegate confirm --name "$delegator" --alias delegator --interact -Y
-background_wait
+kli incept --name "$delegate" --alias delegate --proxy proxy --file "$delegate_json" &
+pid=$!
+kli delegate confirm --name "$delegator" --alias delegator --interact -Y
+wait $pid
 
 kli status --name "$delegate" --alias delegate
 delegate_oobi=$(kli oobi generate --name "$delegate" --alias delegate --role witness | tail -n 1)
 delegate_aid=$(kli aid --name "$delegate" --alias delegate)
 
 # Rotate delegated identifier
-background_start kli rotate --name "$delegate" --alias delegate --proxy proxy
-background_start kli delegate confirm --name "$delegator" --alias delegator --interact -Y
-background_wait
+kli rotate --name "$delegate" --alias delegate --proxy proxy &
+pid=$!
+kli delegate confirm --name "$delegator" --alias delegator --interact -Y
 
 kli status --name "$delegate" --alias delegate
 
