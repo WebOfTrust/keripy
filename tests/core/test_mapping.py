@@ -8,9 +8,54 @@ import cbor2 as cbor
 
 import pytest
 
-from keri.kering import Colds, SerializeError, DeserializeError
-from keri.core import Mapper, Diger
+from dataclasses import dataclass, astuple, asdict
 
+from keri.kering import Colds, SerializeError, DeserializeError
+from keri.core import EscapeDex, Mapper, Diger, Decimer, Labeler
+
+
+def test_special_dex():
+    """Test SpecialCodex"""
+    assert asdict(EscapeDex) == \
+    {
+        'Escape': '1AAO',
+        'Null': '1AAK',
+        'No': '1AAL',
+        'Yes': '1AAM',
+        'Decimal_L0': '4H',
+        'Decimal_L1': '5H',
+        'Decimal_L2': '6H',
+        'Decimal_Big_L0': '7AAH',
+        'Decimal_Big_L1': '8AAH',
+        'Decimal_Big_L2': '9AAH',
+        'Tag1': '0J',
+        'Tag2': '0K',
+        'Tag3': 'X',
+        'Tag4': '1AAF',
+        'Tag5': '0L',
+        'Tag6': '0M',
+        'Tag7': 'Y',
+        'Tag8': '1AAN',
+        'Tag9': '0N',
+        'Tag10': '0O',
+        'Tag11': 'Z',
+        'StrB64_L0': '4A',
+        'StrB64_L1': '5A',
+        'StrB64_L2': '6A',
+        'StrB64_Big_L0': '7AAA',
+        'StrB64_Big_L1': '8AAA',
+        'StrB64_Big_L2': '9AAA',
+        'Label1': 'V',
+        'Label2': 'W',
+        'Bytes_L0': '4B',
+        'Bytes_L1': '5B',
+        'Bytes_L2': '6B',
+        'Bytes_Big_L0': '7AAB',
+        'Bytes_Big_L1': '8AAB',
+        'Bytes_Big_L2': '9AAB'
+    }
+
+    """Done Test"""
 
 def test_mapper_basic():
     """Test Mapper class"""
@@ -308,6 +353,7 @@ def test_mapper_basic():
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
     assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
     assert mapper.byteCount() == size
@@ -317,7 +363,161 @@ def test_mapper_basic():
     with pytest.raises(DeserializeError):
         mapper = Mapper(qb64=bad)
 
+
+    # test escape values of field map
+    # value is verbatim qb64 of escape code
+    mad = dict(a=EscapeDex.Escape)
+    assert mad['a'] == '1AAO'
+    qb64 =  '-IAD0J_a1AAO1AAO'
+    qb64b =  b'-IAD0J_a1AAO1AAO'
+    qb2 = b'\xf8\x80\x03\xd0\x9f\xda\xd4\x00\x0e\xd4\x00\x0e'
+
+    count = 4
+    size = 16
+    bc = 12
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    # value is verbatim qb64 of null code
+    mad = dict(a=EscapeDex.Null)
+    assert mad['a'] == '1AAK'
+    qb64 =  '-IAD0J_a1AAO1AAK'
+    qb64b =  b'-IAD0J_a1AAO1AAK'
+    qb2 = b'\xf8\x80\x03\xd0\x9f\xda\xd4\x00\x0e\xd4\x00\n'
+
+    count = 4
+    size = 16
+    bc = 12
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    # value is verbatim qb64 of No code i.e. boolean False
+    mad = dict(a=EscapeDex.No)
+    assert mad['a'] == '1AAL'
+    qb64 =  '-IAD0J_a1AAO1AAL'
+    qb64b =  b'-IAD0J_a1AAO1AAL'
+    qb2 = b'\xf8\x80\x03\xd0\x9f\xda\xd4\x00\x0e\xd4\x00\x0b'
+
+    count = 4
+    size = 16
+    bc = 12
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    # value is verbatim qb64 of Yes code i.e. boolean True
+    mad = dict(a=EscapeDex.Yes)
+    assert mad['a'] == '1AAM'
+    qb64 =  '-IAD0J_a1AAO1AAM'
+    qb64b =  b'-IAD0J_a1AAO1AAM'
+    qb2 = b'\xf8\x80\x03\xd0\x9f\xda\xd4\x00\x0e\xd4\x00\x0c'
+
+    count = 4
+    size = 16
+    bc = 12
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    # value is verbatim qb64 of Decimer qb64
+    dqb64 = Decimer(decimal=1).qb64
+    mad = dict(a=dqb64)
+    assert mad['a'] == '6HABAAA1'
+    qb64 =  '-IAE0J_a1AAO6HABAAA1'
+    qb64b =  b'-IAE0J_a1AAO6HABAAA1'
+    qb2 = b'\xf8\x80\x04\xd0\x9f\xda\xd4\x00\x0e\xe8p\x01\x00\x005'
+
+    count = 5
+    size = 20
+    bc = 15
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    # value is verbatim qb64 of Labeler qb64 as Tag3
+    lqb64 = Labeler(text="Pet").qb64
+    mad = dict(a=lqb64)
+    assert mad['a'] == 'XPet'
+    qb64 =  '-IAD0J_a1AAOXPet'
+    qb64b =  b'-IAD0J_a1AAOXPet'
+    qb2 = b'\xf8\x80\x03\xd0\x9f\xda\xd4\x00\x0e\\\xf7\xad'
+
+    count = 4
+    size = 16
+    bc = 12
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    # value is verbatim qb64 of Labeler qb64 as Bytes variable length
+    lqb64 = Labeler(text="@home").qb64
+    mad = dict(a=lqb64)
+    assert mad['a'] == '5BACAEBob21l'
+    qb64 =  '-IAF0J_a1AAO5BACAEBob21l'
+    qb64b =  b'-IAF0J_a1AAO5BACAEBob21l'
+    qb2 = b'\xf8\x80\x05\xd0\x9f\xda\xd4\x00\x0e\xe4\x10\x02\x00@home'
+
+    count = 6
+    size = 24
+    bc = 18
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+
     """Done Test"""
 
 if __name__ == "__main__":
+    test_special_dex()
     test_mapper_basic()

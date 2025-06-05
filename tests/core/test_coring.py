@@ -271,6 +271,7 @@ def test_matter_class():
         'No': '1AAL',
         'Yes': '1AAM',
         'Tag8': '1AAN',
+        'Escape': '1AAO',
         'TBD0S': '1__-',
         'TBD0': '1___',
         'TBD1S': '2__-',
@@ -389,6 +390,7 @@ def test_matter_class():
         '1AAL': 'No',
         '1AAM': 'Yes',
         '1AAN': 'Tag8',
+        '1AAO': 'Escape',
         '1__-': 'TBD0S',
         '1___': 'TBD0',
         '2__-': 'TBD1S',
@@ -521,6 +523,7 @@ def test_matter_class():
         '1AAL': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
+        '1AAO': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
@@ -2219,6 +2222,42 @@ def test_matter_special():
     assert matter.special
     assert matter.composable
 
+    # Test escape code
+    code = MtrDex.Escape
+    rs = Matter._rawSize(code)  # raw size
+    soft = ''
+    qb64 = '1AAO'
+    qb2 = b'\xd4\x00\x0e'
+    raw = b''
+
+    assert rs == 0  # empty raw only hard code
+
+    matter = Matter(raw=raw, code=code)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert not matter.special
+    assert matter.composable
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert not matter.special
+    assert matter.composable
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == matter.hard == code
+    assert matter.soft == soft
+    assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert not matter.special
+    assert matter.composable
 
 
     # Test TBD0S  '1__-'
