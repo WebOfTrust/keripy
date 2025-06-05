@@ -163,7 +163,6 @@ class JoinDoer(doing.DoDoer):
 
         smids = payload["smids"]
         rmids = payload["rmids"] if "rmids" in payload else None
-        ked = exn.ked
         both = list(set(smids + (rmids or [])))
 
         mhab = None
@@ -190,10 +189,8 @@ class JoinDoer(doing.DoDoer):
 
         inits["toad"] = oicp.ked["bt"]
         inits["wits"] = oicp.ked["b"]
-        inits["delpre"] = oicp.ked["di"] if "di" in ked else None
+        inits["delpre"] = oicp.ked["di"] if "di" in oicp.ked else None
 
-        print()
-        print("Group Multisig Inception proposed:")
         self.showEvent(mhab, both, oicp.ked)
 
         if self.auto:
@@ -345,6 +342,8 @@ class JoinDoer(doing.DoDoer):
         tab = PrettyTable()
         tab.field_names = ["Name", "Value"]
         tab.align["Name"] = "l"
+
+        tab.add_row(["Digest", ked["d"]])
 
         if "di" in ked:
             m = self.org.get(ked["di"])
