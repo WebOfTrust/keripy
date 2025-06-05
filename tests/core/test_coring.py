@@ -4988,20 +4988,28 @@ def test_labeler():
 
     labeler = Labeler(label=label)
     assert labeler.label == label
+    assert labeler.text == label
     assert labeler.code == code
     assert labeler.soft == label
     assert labeler.raw == raw
     assert labeler.qb64 == qb64
     assert labeler.qb2 == qb2
 
+    labeler = Labeler(text=label)
+    assert labeler.label == label
+    assert labeler.text == label
+
     labeler = Labeler(raw=raw, code=code, soft=label)
     assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb64=qb64)
     assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb2=qb2)
     assert labeler.label == label
+    assert labeler.text == label
 
 
     # Test all sizes taggable labels
@@ -5017,21 +5025,28 @@ def test_labeler():
 
         labeler = Labeler(label=label)
         assert labeler.label == label
+        assert labeler.text == label
         assert labeler.code == code
         assert labeler.soft == label
         assert labeler.raw == raw
         assert labeler.qb64 == qb64
         assert labeler.qb2 == qb2
 
+        labeler = Labeler(text=label)
+        assert labeler.label == label
+        assert labeler.text == label
+
         labeler = Labeler(raw=raw, code=code, soft=label)
         assert labeler.label == label
+        assert labeler.text == label
 
         labeler = Labeler(qb64=qb64)
         assert labeler.label == label
+        assert labeler.text == label
 
         labeler = Labeler(qb2=qb2)
         assert labeler.label == label
-
+        assert labeler.text == label
 
     # test bextable labels
     label = 'zyxwvutsrqponm'
@@ -5042,6 +5057,7 @@ def test_labeler():
 
     labeler = Labeler(label=label)
     assert labeler.label == label
+    assert labeler.text == label
     assert labeler.code == code
     rs = (len(label) + len(label) % 4) // 4
     assert labeler.soft == intToB64(rs, 2) == 'AE'
@@ -5049,14 +5065,21 @@ def test_labeler():
     assert labeler.qb64 == qb64
     assert labeler.qb2 == qb2
 
+    labeler = Labeler(text=label)
+    assert labeler.label == label
+    assert labeler.text == label
+
     labeler = Labeler(raw=raw, code=code, soft=label)
     assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb64=qb64)
     assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb2=qb2)
     assert labeler.label == label
+    assert labeler.text == label
 
     # test textable labels
     # fixed size short
@@ -5066,8 +5089,13 @@ def test_labeler():
     qb64 = 'VABA'
     qb2 = decodeB64(qb64) # b'T\x00@'
 
-    labeler = Labeler(label=label)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        labeler = Labeler(label=label)
+
+    labeler = Labeler(text=label)
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
     assert labeler.code == code
     assert labeler.soft == ''
     assert labeler.raw == raw
@@ -5075,13 +5103,19 @@ def test_labeler():
     assert labeler.qb2 == qb2
 
     labeler = Labeler(raw=raw, code=code)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb64=qb64)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb2=qb2)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     label = '!$'
     code = LabelDex.Label2
@@ -5089,8 +5123,13 @@ def test_labeler():
     qb64 = 'WCEk'
     qb2 = decodeB64(qb64) # b'X!$'
 
-    labeler = Labeler(label=label)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        labeler = Labeler(label=label)
+
+    labeler = Labeler(text=label)
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
     assert labeler.code == code
     assert labeler.soft == ''
     assert labeler.raw == raw
@@ -5098,13 +5137,19 @@ def test_labeler():
     assert labeler.qb2 == qb2
 
     labeler = Labeler(raw=raw, code=code)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb64=qb64)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb2=qb2)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
 
     # variable sized
@@ -5115,8 +5160,13 @@ def test_labeler():
     qb2 = decodeB64(qb64)
 
 
-    labeler = Labeler(label=label)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        labeler = Labeler(label=label)
+
+    labeler = Labeler(text=label)
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
     assert labeler.code == code
     assert labeler.soft == 'AF'
     assert labeler.raw == raw
@@ -5124,13 +5174,19 @@ def test_labeler():
     assert labeler.qb2 == qb2
 
     labeler = Labeler(raw=raw, code=code)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb64=qb64)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb2=qb2)
-    assert labeler.label == label
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
 
     # test base64 that starts with 'A' get encoded as textable, is not bextable
     label = 'Ayxwvutsrqponm'
@@ -5142,6 +5198,7 @@ def test_labeler():
 
     labeler = Labeler(label=label)
     assert labeler.label == label
+    assert labeler.text == label
     assert labeler.code == code
     assert labeler.soft == 'AF'
     assert labeler.raw == raw
@@ -5150,12 +5207,15 @@ def test_labeler():
 
     labeler = Labeler(raw=raw, code=code)
     assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb64=qb64)
     assert labeler.label == label
+    assert labeler.text == label
 
     labeler = Labeler(qb2=qb2)
     assert labeler.label == label
+    assert labeler.text == label
 
     """ Done Test """
 

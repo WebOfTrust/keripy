@@ -36,23 +36,27 @@ def test_genus_codex():
 
     assert asdict(GenDex) == \
     {
-        'KERI_ACDC_SPAC': '-_AAA',
         'KERI': '-_AAA',
-        'ACDC': '-_AAA',
-        'SPAC': '-_AAA'
+        'ACDC': '-_AAB',
+        'SPAC': '-_AAC',
+        'TSP_': '-_AAD',
     }
 
     assert '-_AAA' in GenDex
+    assert '-_AAB' in GenDex
+    assert '-_AAC' in GenDex
+    assert '-_AAD' in GenDex
+
     assert GenDex.KERI == "-_AAA"
-    assert GenDex.ACDC == "-_AAA"
-    assert GenDex.SPAC == "-_AAA"
-    assert GenDex.KERI_ACDC_SPAC == "-_AAA"
-    assert GenDex.KERI == GenDex.ACDC
+    assert GenDex.ACDC == "-_AAB"
+    assert GenDex.SPAC == "-_AAC"
+    assert GenDex.TSP_ == "-_AAD"
+
 
     assert hasattr(GenDex, "KERI")
     assert hasattr(GenDex, "ACDC")
     assert hasattr(GenDex, "SPAC")
-    assert hasattr(GenDex, "KERI_ACDC_SPAC")
+    assert hasattr(GenDex, "TSP_")
 
     """End Test"""
 

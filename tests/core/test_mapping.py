@@ -8,7 +8,7 @@ import cbor2 as cbor
 
 import pytest
 
-from keri.kering import Colds
+from keri.kering import Colds, SerializeError, DeserializeError
 from keri.core import Mapper, Diger
 
 
@@ -287,6 +287,35 @@ def test_mapper_basic():
     assert mapper.byteCount() == size
     assert mapper.byteCount(Colds.bny) == bc
 
+
+
+    # test bad label
+    mad = {"1abc": "Hello",}
+    with pytest.raises(SerializeError):
+        mapper = Mapper(mad=mad)
+
+    # test bad qb64 due to bad label
+    mad = dict(a="bye")
+    qb64 =  '-IAC0J_aXbye'
+    qb64b =  b'-IAC0J_aXbye'
+    qb2 = b'\xf8\x80\x02\xd0\x9f\xda]\xbc\x9e'
+
+    count = 3
+    size = 12
+    bc = 9
+
+    mapper = Mapper(mad=mad)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.count == count
+    assert mapper.size ==size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    bad = '-IAC0J_1Xbye'
+    with pytest.raises(DeserializeError):
+        mapper = Mapper(qb64=bad)
 
     """Done Test"""
 
