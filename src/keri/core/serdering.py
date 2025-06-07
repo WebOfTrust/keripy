@@ -957,7 +957,7 @@ class Serder:
         for label in oreqs:
             if label not in sad:
                 value = alls[label]
-                if helping.nonStringIterable(value):
+                if helping.isNonStringIterable(value):
                     value = copy.copy(value)  # copy iterable defaults
                 sad[label] = value
 

@@ -43,9 +43,11 @@ from ..kering import (Kinds, Kindage, Protocols, Protocolage, Ilkage, Ilks,
                       TraitDex, )
 
 from ..help import helping
-from ..help.helping import sceil, nonStringIterable, nonStringSequence
+from ..help.helping import (sceil, isNonStringIterable, isNonStringSequence,
+                            NonStringIterable, NonStringSequence)
 from ..help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
-                            codeB64ToB2, codeB2ToB64, Reb64, nabSextets, Reat)
+                            codeB64ToB2, codeB2ToB64, Reb64, nabSextets, Reatt,
+                            Repath)
 
 
 
@@ -1306,8 +1308,7 @@ class Matter:
 
 
     def _infil(self):
-        """
-        Create text domain representation
+        """Create b64 text domain representation from raw and code
 
         Returns:
             primitive (bytes): fully qualified base64 characters.
@@ -1369,8 +1370,7 @@ class Matter:
 
 
     def _binfil(self):
-        """
-        Create binary domain representation
+        """Create qb2 binary domain representation from raw and code
 
         Returns bytes of fully qualified base2 bytes, that is .qb2
         self.code converted to Base2 + self.raw left shifted with pad bits
@@ -1399,8 +1399,7 @@ class Matter:
 
 
     def _exfil(self, qb64b):
-        """
-        Extracts self.code and self.raw from qualified base64 qb64b of type
+        """Extracts self.code and self.raw from qualified base64 qb64b of type
         str or bytes or bytearray or memoryview
 
         Detects if str and converts to bytes
@@ -1494,8 +1493,7 @@ class Matter:
 
 
     def _bexfil(self, qb2):
-        """
-        Extracts self.code and self.raw from qualified base2 qb2
+        """Extracts self.code and self.raw from qualified base2 qb2
 
         Parameters:
             qb2 (bytes | bytearray | memoryview): fully qualified base2 from stream
@@ -2975,7 +2973,7 @@ class Pather(Bexter):
     """
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None, bext=None,
-                 code=MtrDex.StrB64_L0, path=None, **kwa):
+                 code=MtrDex.StrB64_L0, parts=None, path=None, relative=False, **kwa):
         """
         Inherited Parameters:  (see Bexter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -2985,19 +2983,64 @@ class Pather(Bexter):
             code is str of derivation code
             index is int of count of attached receipts for CryCntDex codes
             bext is the variable sized Base64 text string
+            relative (bool): True means relative paths allowed
+                             False means all paths are forced to absolute
 
         Parameters:
-            path (list): array of path field components
+            parts (NonStringIterable): of path parts
+            path (str|bytes|NonStringIterable): as either  '/' delimited string
+                or as NonStringIterable of path parts. When path parts then always
+                make path absolute by starting with '/'.
         """
 
         if raw is None and bext is None and qb64b is None and qb64 is None and qb2 is None:
-            if path is None:
-                raise EmptyMaterialError("Missing path list.")
+            if parts is None and path is None:
+                raise EmptyMaterialError("Missing parts or path or trail")
 
-            bext = self._bextify(path)
+            if parts is None:  # therefore path must not be None
+                if isNonStringIterable(path):  # convert to bytes
+                    parts = [part.encode() if hasattr(part, 'encode') else part for part in path]
+                    if not relative:  # force absolute
+                        if parts and parts[0]:  # zeroth part is not empty from path
+                            parts.insert(0, b'')  #  insert empty part forces absolute path
+                        elif not parts:  # empty parts
+                            parts = [b'', b'']  # to empty makes bare aboslute "/"
+                else:
+                    if hasattr(path, 'encode'):
+                        path = path.encode()  # make bytes, allow relative
+                    parts = path.split(b'/')  # "/".split("/") == ["",""]
+
+            for part in parts:
+                if not Repath.match(part):  # matches empty
+                    raise InvalidValueError(f"Invalid path {part=}")
+
+
+            #bext = self._bextify(parts)
+            bext = b"-".join(parts)
+
+            #if text[0] != ord(b'A'):  # use Bexter code
+                #code = MtrDex.StrB64_L0
+                #raw = Bexter._rawify(text)
+
+            #else:  # use Texter code since ambiguity if starts with 'A'
+                #code = MtrDex.Bytes_L0
+                #raw = text
+
 
         super(Pather, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2, bext=bext,
                                      code=code, **kwa)
+
+    @property
+    def text(self):
+        """Extracts and returns text from .code and .raw
+
+        Returns:
+            text (str): text value without encoding
+        """
+        if self.code in BexDex:  # text is raw after stripping B64 prepad
+            return Bexter._derawify(raw=self.raw, code=self.code)  # derawify
+
+        return self.raw.decode()  # text is just raw as str
 
     @property
     def path(self):
@@ -3007,6 +3050,22 @@ class Pather(Bexter):
 
         Returns:
             list: array of field specs of the path
+
+        """
+        if not self.bext.startswith("-"):
+            raise Exception("invalid SAD ptr")
+
+        path = self.bext.strip("-").split("-")
+        return path if path[0] != '' else []
+
+
+    @property
+    def parts(self):
+        """Path as a tuple of path parts
+
+        Returns:
+            parts (tuple): parts of path, absolute path has zero part as
+                empty string.
 
         """
         if not self.bext.startswith("-"):
@@ -3216,7 +3275,7 @@ class Labeler(Matter):
             if hasattr(label, "encode"):  # make label bytes
                 label = label.encode()
 
-            if not Reat.match(label):
+            if not Reatt.match(label):
                 raise InvalidValueError(f"Invalid {label=}")
 
             # candidate for Base64 compact encoding
@@ -3288,7 +3347,7 @@ class Labeler(Matter):
         else:
             label = self.raw.decode()  # everything else is just raw as str
 
-        if not Reat.match(label.encode()):
+        if not Reatt.match(label.encode()):
             raise InvalidValueError(f"Invalid {label=}")
 
         return label
@@ -4186,7 +4245,7 @@ class Tholder:
 
             # is it non str sequence of sequences? or non str sequnce of strs?
             # must test for emply mask because all([]) == True
-            mask = [nonStringSequence(c) for c in sith]  # check each element
+            mask = [isNonStringSequence(c) for c in sith]  # check each element
             if mask and not all(mask):  # not empty and not sequence of sequenes
                 sith = [sith]  # attempt to make sequnce of sequqnces of strs
 

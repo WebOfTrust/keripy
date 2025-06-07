@@ -18,7 +18,7 @@ from keri.help.helping import extractValues
 from keri.help.helping import dictify, datify, klasify
 from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
                                codeB64ToB2, codeB2ToB64, Reb64, nabSextets,
-                               Reat)
+                               Reatt, Repath)
 
 def test_utilities():
     """
@@ -446,22 +446,57 @@ def test_b64_conversions():
 
 
 
-def test_reat():
-    """Test regular expression Reat for attribute name """
+def test_reatt():
+    """Test regular expression Reatt for attribute name """
+    name = b""  # empty not match requires at least one non-empty char
+    assert not Reatt.match(name)
+
     name = b"hello"
-    assert Reat.match(name)
+    assert Reatt.match(name)
 
     name = b"_hello"
-    assert Reat.match(name)
+    assert Reatt.match(name)
 
     name = b"hell1"
-    assert Reat.match(name)
+    assert Reatt.match(name)
 
     name = b"1hello"
-    assert not Reat.match(name)
+    assert not Reatt.match(name)
 
     name = b"hello.hello"
-    assert not Reat.match(name)
+    assert not Reatt.match(name)
+    """Done Test"""
+
+
+def test_repath():
+    """Test regular expression Repath for path part"""
+
+    name = b""  # empty matches
+    assert Repath.match(name)
+
+    name = b"hello"
+    assert Repath.match(name)
+
+    name = b"_hello"
+    assert Repath.match(name)
+
+    name = b"hell1"
+    assert Repath.match(name)
+
+    name = b"1hello"
+    assert Repath.match(name)
+
+    name = b"hello.hello"
+    assert not Repath.match(name)
+
+    name = b"hello-hello"
+    assert not Repath.match(name)
+
+    name = b"-hello"
+    assert not Repath.match(name)
+
+    name = b"hello-"
+    assert not Repath.match(name)
     """Done Test"""
 
 
@@ -473,4 +508,5 @@ if __name__ == "__main__":
     test_extractvalues()
     test_iso8601()
     test_b64_conversions()
-    test_reat()
+    test_reatt()
+    test_repath()

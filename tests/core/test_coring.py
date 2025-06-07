@@ -4896,6 +4896,12 @@ def test_bexter():
     assert bexter.bext == 'BBB' != bext
 
 
+    x = b'\x00\x00\x40'
+    y = encodeB64(x)
+    assert y == b'AABA'
+    z = decodeB64(y)
+    assert z == b'\x00\x00@' == b'\x00\x00\x40'
+
     """ Done Test """
 
 
@@ -4981,8 +4987,10 @@ def test_pather():
     assert pather.path == ["0", "field1", "0"]
 
     path = ["Not$Base64", "@moreso", "*again"]
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidValueError):
         pather = coring.Pather(path=path)
+    #with pytest.raises(ValueError):
+        #pather = coring.Pather(path=path)
 
     text = "-a"
     a = coring.Pather(bext=text)
@@ -6378,6 +6386,7 @@ if __name__ == "__main__":
     test_diger()
     test_texter()
     test_bexter()
+    test_pather()
     test_labeler()
     test_seqner()
     test_number()

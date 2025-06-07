@@ -8,7 +8,7 @@ import dataclasses
 import datetime
 import re
 from collections import deque
-from collections.abc import Iterable, Sequence, Mapping
+from collections.abc import Iterable, Sequence, Mapping, ABCMeta
 
 import pysodium
 
@@ -103,8 +103,33 @@ def klasify(sers: Iterable, klases: Iterable, args: Iterable = None):
                  else ser for ser, klas, arg in zip(sers, klases, args))
 
 
+class NonStringIterable(metaclass=ABCMeta):
+    """
+    Allows isinstance check for iterable that is not a string
+    if isinstance(x, NonStringIterable):
+    """
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is NonStringIterable:
+            if (not issubclass(C, (str, bytes)) and issubclass(C, Iterable)):
+                return True
+        return NotImplemented
 
-def nonStringIterable(obj):
+
+class NonStringSequence(metaclass=ABCMeta):
+    """
+    Allows isinstance check for sequence that is not a string
+    if isinstance(x, NonStringSequence):
+    """
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is NonStringSequence:
+            if (not issubclass(C, (str, bytes)) and issubclass(C, Sequence)):
+                return True
+        return NotImplemented
+
+
+def isNonStringIterable(obj):
     """
     Returns:
         (bool): True if obj is non-string iterable, False otherwise
@@ -118,7 +143,7 @@ def nonStringIterable(obj):
     return (not isinstance(obj, (str, bytes)) and isinstance(obj, Iterable))
 
 
-def nonStringSequence(obj):
+def isNonStringSequence(obj):
     """
     Returns: True if obj is non-string sequence, False otherwise
 
@@ -149,7 +174,7 @@ def extractElementValues(element, values):
     return
 
     """
-    if nonStringIterable(element):
+    if isNonStringIterable(element):
         if isinstance(element, Mapping):  # dict like
             for k in element:
                 extractElementValues(element=element[k], values=values)
@@ -263,7 +288,7 @@ B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
 B64_CHARS = tuple(B64ChrByIdx.values())  # tuple of characters in Base64
 
 
-B64REX = rb'^[0-9A-Za-z_-]*\Z'   # [A-Za-z0-9\-\_]  bytes
+B64REX = rb'^[0-9A-Za-z_-]*\Z'   # [A-Za-z0-9\-\_]  bytes MAY be empty string
 Reb64 = re.compile(B64REX)  # compile is faster
 # Usage: if Reb64.match(bext): or if not Reb64.match(bext): bext is bytes
 
@@ -432,6 +457,14 @@ def verify64uEd25519(signature, message, verkey):
 
 
 # Regular expression to detect valid attributish names as bytes
-ATREX = rb'^[a-zA-Z_][a-zA-Z0-9_]*$'  # bytes
+ATREX = rb'^[a-zA-Z_][a-zA-Z0-9_]*$'  # bytes MUST NOT be empty string
 # Usage: if Reat.match(name): or if not Reat.match(name):
-Reat = re.compile(ATREX)  # compile is faster
+Reatt = re.compile(ATREX)  # compile is faster
+
+
+# Regular expression to detect Base64 path parts as bytes excluding b'-' in part
+# because '-' is path separator when in B64
+PATHREX = rb'^[a-zA-Z0-9_]*$'  # bytes May be empty string
+# Usage: if Reat.match(name): or if not Reat.match(name):
+Repath = re.compile(PATHREX)  # compile is faster
+
