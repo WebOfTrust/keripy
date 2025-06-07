@@ -703,7 +703,7 @@ PreNonDigDex = PreNonDigCodex()  # Make instance
 # namedtuple for size entries in Matter  and Counter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
-# xs is the xtra size into number of xtra (pre-pad) chars as part of soft
+# xs is the xtra size int number of xtra (pre-pad) chars as part of soft
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
 Sizage = namedtuple("Sizage", "hs ss xs fs ls")
@@ -2920,7 +2920,7 @@ class Bexter(Matter):
         Suitable for variable sized matter
 
         Parameters:
-            text (bytes): Base64 bytes
+            bext (bytes): Base64 bytes
         """
         ts = len(bext) % 4  # bext size mod 4
         ws = (4 - ts) % 4  # pre conv wad size in chars
@@ -3284,11 +3284,12 @@ class Labeler(Matter):
                 soft = label
 
             except InvalidSoftError as ex:  # too big
-                if label[0] != ord(b'A'):  # use Bexter code
+                ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
+                if label[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
                     code = LabelDex.StrB64_L0
                     raw = Bexter._rawify(label)
 
-                else:  # use Texter code since ambiguity if starts with 'A'
+                else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
                     code = LabelDex.Bytes_L0
                     raw = label
 
@@ -3302,11 +3303,12 @@ class Labeler(Matter):
                     soft = text
 
                 except InvalidSoftError as ex:  # too big
-                    if text[0] != ord(b'A'):  # use Bexter code
+                    ws = (4 - (len(text) % 4)) % 4  # pre conv wad size in chars
+                    if text[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
                         code = LabelDex.StrB64_L0
                         raw = Bexter._rawify(text)
 
-                    else:  # use Texter code since ambiguity if starts with 'A'
+                    else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
                         code = LabelDex.Bytes_L0
                         raw = text
 

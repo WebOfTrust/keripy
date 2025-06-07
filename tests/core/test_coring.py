@@ -5235,19 +5235,51 @@ def test_labeler():
         assert labeler.label == label
     assert labeler.text == label
 
-    # test base64 that starts with 'A' get encoded as textable, is not bextable
-    label = 'Ayxwvutsrqponm'
-    code = LabelDex.Bytes_L1
+    # test base64 that starts with 'A' and ws in (0,1) get encoded as textable,
+    # is not bextable
+    label = 'Ayxwvutsrqponmp'
+    ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
+    assert ws in (0, 1)
+    code = LabelDex.Bytes_L0
     raw = label.encode()
-    qb64 = '5BAFAEF5eHd2dXRzcnFwb25t'
+    qb64 = '4BAFQXl4d3Z1dHNycXBvbm1w'
     qb2 = decodeB64(qb64)
-
 
     labeler = Labeler(label=label)
     assert labeler.label == label
     assert labeler.text == label
     assert labeler.code == code
     assert labeler.soft == 'AF'
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    # test base64 that starts with 'A' and ws  not in (0,1) get encoded as bextable,
+    label = 'Ayxwvutsrqpon'
+    ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
+    assert ws not in (0, 1)
+    code = LabelDex.StrB64_L2
+    raw = b"\x00\xcb\x1c/\xba\xdb+\xaa\x9a'"
+    qb64 = '6AAEAAAAyxwvutsrqpon'
+    qb2 = decodeB64(qb64)
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.text == label
+    assert labeler.code == code
+    assert labeler.soft == 'AE'
     assert labeler.raw == raw
     assert labeler.qb64 == qb64
     assert labeler.qb2 == qb2
