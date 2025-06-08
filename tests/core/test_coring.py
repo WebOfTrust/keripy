@@ -5235,6 +5235,32 @@ def test_pather():
     assert pather.parts == parts
     assert pather.rparts == rparts
 
+
+    # test rooting with trailing / and leading /
+    root = coring.Pather(path='/a/b/c/')
+    assert root.path == '/a/b/c/'
+    base = coring.Pather(path='/d/e/f/')
+    assert base.path == '/d/e/f/'
+    reroot = base.root(root)
+    assert reroot.path == '/a/b/c/d/e/f/'
+
+    # test rooting with absolute empty root
+    root = coring.Pather(path='/', relative=True)
+    assert root.path == '/'
+    base = coring.Pather(path='d/e/f/', relative=True)
+    assert base.path == 'd/e/f/'
+    reroot = base.root(root)
+    assert reroot.path == '/d/e/f/'
+
+    # test rooting with absolute empty root and absolute base
+    root = coring.Pather(path='/', relative=True)
+    assert root.path == '/'
+    base = coring.Pather(path='/d/e/f/', relative=True)
+    assert base.path == '/d/e/f/'
+    reroot = base.root(root)
+    assert reroot.path == '/d/e/f/'
+
+
     # test with bad path parts
     path = "/AA@/BBB"
 

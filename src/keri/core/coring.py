@@ -3131,7 +3131,11 @@ class Pather(Matter):
         Returns:
             Pather: new path anchored at root
         """
-        return Pather(parts=root.parts + self.rparts)
+        parts = list(root.parts)
+        if parts and len(parts) >= 2 and parts[-1] == '':
+            del parts[-1]  # remove trailing '/'
+
+        return Pather(parts=parts + self.rparts)
 
 
     def strip(self, root):
