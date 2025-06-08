@@ -77,7 +77,7 @@ def signPaths(hab, serder, paths):
     Parameters:
         hab (Habitat): environment used to sign the SAD
         serder (Union[Serder,Creder]): the self addressing data (SAD)
-        paths (list): list of paths specified as arrays of path components
+        paths (list[list]): list of lists of path parts
 
     Returns:
         str: qb64 signature attachment
@@ -89,8 +89,8 @@ def signPaths(hab, serder, paths):
 
     if hab.kever.prefixer.transferable:
         prefixer, seqner, saider, indices = transSeal(hab)
-        for path in paths:
-            pather = coring.Pather(path=path)
+        for parts in paths:
+            pather = coring.Pather(parts=parts)
             data = pather.tail(serder=serder)
 
             sigers = hab.sign(ser=data,
@@ -99,8 +99,8 @@ def signPaths(hab, serder, paths):
             sadsigers.append((pather, prefixer, seqner, saider, sigers))
 
     else:
-        for path in paths:
-            pather = coring.Pather(path=path)
+        for parts in paths:
+            pather = coring.Pather(parts=parts)
             data = pather.tail(serder=serder)
             cigars = hab.sign(ser=data,
                               verfers=hab.kever.verfers,

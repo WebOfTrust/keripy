@@ -159,7 +159,7 @@ def test_parser_v1_basic():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -170,7 +170,7 @@ def test_parser_v1_basic():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -535,7 +535,7 @@ def test_parser_v1_version():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -546,7 +546,7 @@ def test_parser_v1_version():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -725,7 +725,7 @@ def test_parser_v1_enclosed_attachments():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -736,7 +736,7 @@ def test_parser_v1_enclosed_attachments():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -1067,7 +1067,7 @@ def test_parser_v1_enclosed_message():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -1078,7 +1078,7 @@ def test_parser_v1_enclosed_message():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -1476,7 +1476,7 @@ def test_parser_v1_non_native_message():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -1487,7 +1487,7 @@ def test_parser_v1_non_native_message():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -1884,7 +1884,7 @@ def test_parser_v2_basic():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -1893,7 +1893,7 @@ def test_parser_v2_basic():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -2310,7 +2310,7 @@ def test_parser_v2_mix():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -2319,7 +2319,7 @@ def test_parser_v2_mix():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -2721,7 +2721,7 @@ def test_parser_v2_enclosed_attachments():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -2730,7 +2730,7 @@ def test_parser_v2_enclosed_attachments():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -3108,7 +3108,7 @@ def test_parser_v2_enclosed_message():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -3117,7 +3117,7 @@ def test_parser_v2_enclosed_message():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -3552,7 +3552,7 @@ def test_parse_generic_group():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -3561,7 +3561,7 @@ def test_parse_generic_group():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -4002,7 +4002,7 @@ def test_group_parsator():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -4011,7 +4011,7 @@ def test_group_parsator():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
@@ -4479,7 +4479,7 @@ def test_parse_native_cesr_fixed_field():
 
         # add small PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('Z', 'W'))
+        pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
@@ -4488,7 +4488,7 @@ def test_parse_native_cesr_fixed_field():
 
         # add big PathedMaterialGroup
         pms = bytearray()
-        pather = Pather(path=('K', 'P'))
+        pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)

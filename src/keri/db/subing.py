@@ -98,7 +98,7 @@ from typing import Type, Union
 from collections.abc import Iterable, Iterator
 
 from .. import help
-from ..help.helping import nonStringIterable, Reb64
+from ..help.helping import isNonStringIterable, Reb64
 from .. import core
 from ..core import coring, scheming, serdering
 from . import dbing
@@ -769,7 +769,7 @@ class B64SuberBase(SuberBase):
            val (Union[Iterable, bytes]): of Base64 bytes
 
         """
-        if not nonStringIterable(val):  # not iterable
+        if not isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
         return (self._toval(val))
 
@@ -959,7 +959,7 @@ class CatCesrSuberBase(CesrSuberBase):
         """
         if klas is None:
             klas = (coring.Matter, )  # set default to tuple of single Matter
-        if not nonStringIterable(klas):  # not iterable
+        if not isNonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
         super(CatCesrSuberBase, self).__init__(*pa, klas=klas, **kwa)
 
@@ -976,7 +976,7 @@ class CatCesrSuberBase(CesrSuberBase):
            val (Union[Iterable, coring.Matter]): of subclass instances.
 
         """
-        if not nonStringIterable(val):  # not iterable
+        if not isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
         return (b''.join(obj.qb64b for obj in val))
 
@@ -1091,7 +1091,7 @@ class IoSetSuber(SuberBase):
             result (bool): True If successful, False otherwise.
 
         """
-        if not nonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
@@ -1138,7 +1138,7 @@ class IoSetSuber(SuberBase):
             result (bool): True If successful, False otherwise.
 
         """
-        if not nonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.setIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
@@ -1802,7 +1802,7 @@ class DupSuber(SuberBase):
         Apparently always returns True (how .put works with dupsort=True)
 
         """
-        if not nonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putVals(db=self.sdb,
                                 key=self._tokey(keys),
@@ -1849,7 +1849,7 @@ class DupSuber(SuberBase):
         """
         key = self._tokey(keys)
         self.db.delVals(db=self.sdb, key=key)  # delete all values
-        if not nonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putVals(db=self.sdb,
                                 key=key,
@@ -2014,7 +2014,7 @@ class IoDupSuber(DupSuber):
             result (bool): True If successful, False otherwise.
 
         """
-        if not nonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putIoDupVals(db=self.sdb,
                                      key=self._tokey(keys),
@@ -2059,7 +2059,7 @@ class IoDupSuber(DupSuber):
         """
         key = self._tokey(keys)
         self.db.delIoDupVals(db=self.sdb, key=key)  # delete all values
-        if not nonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return self.db.putIoDupVals(db=self.sdb,
                                      key=key,

@@ -14,7 +14,7 @@ from dataclasses import dataclass, astuple, asdict
 from ..kering import InvalidValueError, EmptyMaterialError
 
 from .. import help
-from ..help import nonStringSequence
+from ..help import isNonStringSequence
 
 from . import coring
 from .coring import (IceMapDom, Matter, Diger, Prefixer, Number, Verser)
@@ -411,7 +411,7 @@ class Structor:
 
                         cast = clan(**cast)  # convert to clan
 
-                    elif isinstance(cast, nonStringSequence):
+                    elif isinstance(cast, isNonStringSequence):
                         cast = clan(*cast)  # convert to clan assumes elements in correct order
 
                     else:
@@ -449,7 +449,7 @@ class Structor:
 
                         crew = clan(**crew)  # convert to clan
 
-                    elif isinstance(crew, nonStringSequence):
+                    elif isinstance(crew, isNonStringSequence):
                         crew = clan(*crew)  # convert to clan assumes elements in correct order
 
                     else:

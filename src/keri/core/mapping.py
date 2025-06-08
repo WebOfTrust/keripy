@@ -13,7 +13,7 @@ from dataclasses import dataclass, astuple, asdict
 from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
 
-from ..help import nonStringIterable, Reat
+from ..help import isNonStringIterable, Reatt
 
 from .counting import  Codens, CtrDex_2_0, UniDex_2_0, Counter
 from .coring import MtrDex, Matter, Labeler, LabelDex, Decimer, DecDex
@@ -119,7 +119,7 @@ class Mapper:
             already been extracted from a stream and are self contained
 
         """
-        if nonStringIterable(mad):
+        if isNonStringIterable(mad):
             mad = dict(mad)
         self._mad = mad if mad is not None else dict()
         self._qb64b = b''  # override later

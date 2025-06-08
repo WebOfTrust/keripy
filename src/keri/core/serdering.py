@@ -39,7 +39,7 @@ from . import coring
 from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
                      Saids,  Digestage)
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
-                     Tagger, Ilker, Traitor, Verser, Dater, Texter)
+                     Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather)
 from .mapping import Mapper
 
 from .counting import GenDex, Counter, Codens, SealDex_2_0, MUDex_2_0
@@ -957,7 +957,7 @@ class Serder:
         for label in oreqs:
             if label not in sad:
                 value = alls[label]
-                if helping.nonStringIterable(value):
+                if helping.isNonStringIterable(value):
                     value = copy.copy(value)  # copy iterable defaults
                 sad[label] = value
 
@@ -1301,7 +1301,7 @@ class Serder:
                         sad[l] = Dater(qb64b=raw, strip=True).dts
 
                     case "r" | "rr":  # route or return route
-                        sad[l] = Texter(qb64b=raw, strip=True).text
+                        sad[l] = Pather(qb64b=raw, strip=True).path
 
                     case "c":  # list of config traits strings
                         ctr = Counter(qb64b=raw, strip=True)
@@ -1530,7 +1530,7 @@ class Serder:
                         val = Dater(dts=v).qb64b  # dts to qb64b
 
                     case "r" | "rr":  # route or return route
-                        val = Texter(text=v).qb64b  # text to qb64b
+                        val = Pather(path=v, relative=True, pathive=False).qb64b  # path to qb64b
 
                     case "c":  # list of config traits strings
                         frame = bytearray()
