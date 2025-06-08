@@ -3307,13 +3307,14 @@ class Labeler(Matter):
 
             except InvalidSoftError as ex:  # too big
                 ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
-                if label[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
-                    code = LabelDex.StrB64_L0
-                    raw = Bexter._rawify(label)
+                if label[0] == ord(b'A') and (ws in (0, 1)):  # use excape code
+                    label = b'-' + label
+                code = LabelDex.StrB64_L0
+                raw = Bexter._rawify(label)
 
-                else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
-                    code = LabelDex.Bytes_L0
-                    raw = label
+                #else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
+                    #code = LabelDex.Bytes_L0
+                    #raw = label
 
         elif text:
             if hasattr(text, "encode"):  # make text bytes
@@ -3367,6 +3368,8 @@ class Labeler(Matter):
 
         elif self.code in BexDex:  # bext
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
+            if label[0] == '-':  # excape code
+                label = label[1:]  # remove excape
 
         else:
             label = self.raw.decode()  # everything else is just raw as str
@@ -3388,7 +3391,10 @@ class Labeler(Matter):
             return self.soft  # soft part of code
 
         if self.code in BexDex:  # bext
-            return Bexter._derawify(raw=self.raw, code=self.code)  # derawify
+            label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
+            if label[0] == '-':  # excape code
+                label = label[1:]  # remove excape
+            return label
 
         return self.raw.decode()  # everything else is just raw as str
 

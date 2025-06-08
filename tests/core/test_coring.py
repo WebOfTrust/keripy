@@ -5549,21 +5549,20 @@ def test_labeler():
         assert labeler.label == label
     assert labeler.text == label
 
-    # test base64 that starts with 'A' and ws in (0,1) get encoded as textable,
-    # is not bextable
+    # test base64 that starts with 'A' and ws in (0,1) get encoded with escape
     label = 'Ayxwvutsrqponmp'
     ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
     assert ws in (0, 1)
-    code = LabelDex.Bytes_L0
-    raw = label.encode()
-    qb64 = '4BAFQXl4d3Z1dHNycXBvbm1w'
+    code = LabelDex.StrB64_L0
+    raw = b'\xf8\x0c\xb1\xc2\xfb\xad\xb2\xba\xa9\xa2y\xa9'
+    qb64 = '4AAE-Ayxwvutsrqponmp'
     qb2 = decodeB64(qb64)
 
     labeler = Labeler(label=label)
     assert labeler.label == label
     assert labeler.text == label
     assert labeler.code == code
-    assert labeler.soft == 'AF'
+    assert labeler.soft == 'AE'
     assert labeler.raw == raw
     assert labeler.qb64 == qb64
     assert labeler.qb2 == qb2
