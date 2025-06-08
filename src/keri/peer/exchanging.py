@@ -134,7 +134,7 @@ class Exchanger:
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             raise MissingSignatureError(msg)
 
-        e = coring.Pather(path=["e"])
+        e = coring.Pather(parts=["e"])
 
         kwa = dict()
         attachments = []
@@ -380,7 +380,7 @@ def exchange(route,
             continue
 
         pathed = bytearray()
-        pather = coring.Pather(path=["e", label])
+        pather = coring.Pather(parts=["e", label])
         pathed.extend(pather.qb64b)
         pathed.extend(atc)
         if len(pathed) // 4 < 4096:
@@ -446,7 +446,7 @@ def cloneMessage(hby, said):
     verify(hby=hby, serder=exn)
 
     pathed = dict()
-    e = coring.Pather(path=["e"])
+    e = coring.Pather(parts=["e"])
     for p in hby.db.epath.get(keys=(exn.said,)):
         pb = bytearray(p.encode("utf-8"))
         pather = coring.Pather(qb64b=pb, strip=True)

@@ -2939,41 +2939,47 @@ class Bexter(Matter):
         return self._derawify(raw=self.raw, code=self.code)
 
 
-class Pather(Bexter):
+class Pather(Matter):
+    """Pather is Matter subclass that provides path and route functionality.
+    It provides support for SAD Path language specific functionality. When path
+    parts contain only Base64 characters not including '-', the path will be
+    compactly encoded with special path separator '-' as a variable length
+    StrBase64. Otherwise paths are encoded as variable length Bytes.
+    Pather allows the specification of paths as a list of field parts which will
+    be converted to the compact Base64 URL safe character representation when
+    possible. Paths may be relative or absolute. A special, escape secquence is
+    used to encode relative paths in Base64
+
+    Pather can traverse paths that maintain Base64 URL character safety by
+    leveraging the fact that SADs must have static field ordering.
+    Any field label can be replaced by its field ordinal to allow for path
+    specification and traversal for any field labels that contain non-Base64
+    URL safe characters.
+
+    Inherited Properties and Attributes:  (See Matter class)
+
+
+    Properties:
+        path (str): '/' separated path. Absolute paths start with '/'.
+                        Relative paths do not.
+        parts (tuple): parts of path, absolute path has zeroth part as
+                empty string.  Bare absolute path has zeroth and first part
+                as empty strings.
+
+        rparts (tuple): parts of path in relative form. No leading '/' in
+                        associated path
+
+
+    Examples:
+        path = "AAAA" makes path = "/AAAA"
+        path = "AAA/BBB" with relative == True
+        path = "/@AA/BBB" with pathive == False
+
     """
-    Pather is a subclass of Bexter that provides SAD Path language specific functionality
-    for variable length strings that only contain Base64 URL safe characters.  Pather allows
-    the specification of SAD Paths as a list of field components which will be converted to the
-    Base64 URL safe character representation.
 
-    Additionally, Pather provides .rawify for extracting and serializing the content targeted by
-    .path for a SAD, represented as an instance of Serder.  Pather enforces Base64 URL character
-    safety by leveraging the fact that SADs must have static field ordering.  Any field label can
-    be replaced by its field ordinal to allow for path specification and traversal for any field
-    labels that contain non-Base64 URL safe characters.
-
-
-    Examples: strings:
-        path = []
-        text = "-"
-        qb64 = '6AABAAA-'
-
-        path = ["A"]
-        text = "-A"
-        qb64 = '5AABAA-A'
-
-        path = ["A", "B"]
-        text = "-A-B"
-        qb64 = '4AAB-A-B'
-
-        path = ["A", 1, "B", 3]
-        text = "-A-1-B-3"
-        qb64 = '4AAC-A-1-B-3'
-
-    """
-
-    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None, bext=None,
-                 code=MtrDex.StrB64_L0, parts=None, path=None, relative=False, **kwa):
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=MtrDex.StrB64_L0, parts=None, path=None, relative=False,
+                 pathive=True, **kwa):
         """
         Inherited Parameters:  (see Bexter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -2982,81 +2988,89 @@ class Pather(Bexter):
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code
             index is int of count of attached receipts for CryCntDex codes
-            bext is the variable sized Base64 text string
             relative (bool): True means relative paths allowed
-                             False means all paths are forced to absolute
+                             False means all paths are forced to be absolute
+            pathive (bool): True means must satisfy valid pathed material path
+                            False means must only satisfy valid route path
 
         Parameters:
             parts (NonStringIterable): of path parts
             path (str|bytes|NonStringIterable): as either  '/' delimited string
-                or as NonStringIterable of path parts. When path parts then always
-                make path absolute by starting with '/'.
+                or as NonStringIterable of path parts.
         """
-
-        if raw is None and bext is None and qb64b is None and qb64 is None and qb2 is None:
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if parts is None and path is None:
-                raise EmptyMaterialError("Missing parts or path or trail")
+                raise EmptyMaterialError("Need either parts or path")
 
             if parts is None:  # therefore path must not be None
-                if isNonStringIterable(path):  # convert to bytes
-                    parts = [part.encode() if hasattr(part, 'encode') else part for part in path]
-                    if not relative:  # force absolute
-                        if parts and parts[0]:  # zeroth part is not empty from path
-                            parts.insert(0, b'')  #  insert empty part forces absolute path
-                        elif not parts:  # empty parts
-                            parts = [b'', b'']  # to empty makes bare aboslute "/"
+                if isNonStringIterable(path):
+                    parts = path
                 else:
                     if hasattr(path, 'encode'):
                         path = path.encode()  # make bytes, allow relative
-                    parts = path.split(b'/')  # "/".split("/") == ["",""]
 
+                    if b'/' in path:
+                        parts = path.split(b'/')  # "/".split("/") == ["",""]
+                    else:
+                        parts = path.split(b'-')
+
+            parts = [part.encode() if hasattr(part, 'encode') else part for part in parts]
+
+            bextable = True  # TRue means more compact b64 raw, otherwise raw is text
             for part in parts:
                 if not Repath.match(part):  # matches empty
-                    raise InvalidValueError(f"Invalid path {part=}")
+                    if pathive:  # pathive so parts MUST satisfy Repath
+                        raise InvalidValueError(f"Invalid pathive path {part=}")
+                    bextable = False
 
+            if not relative:
+                if parts and parts[0]:  # zeroth part is not empty from path
+                    parts.insert(0, b'')  #  insert empty part forces absolute path
+                elif not parts:  # empty parts
+                    parts = [b'', b'']  # to empty makes bare absolute "/"
 
-            #bext = self._bextify(parts)
-            bext = b"-".join(parts)
+            if bextable:
+                path = b'-'.join(parts)
+                if b'--' in path:  # forbid double path separatorstext
+                    raise InvalidValueError(f"Non-unitary path separators for path={path}")
+            else:
+                path = b'/'.join(parts)
+                if b'//' in path:  # forbid double path separatorstext
+                    raise InvalidValueError(f"Non-unitary path separators for path={path}")
 
-            #if text[0] != ord(b'A'):  # use Bexter code
-                #code = MtrDex.StrB64_L0
-                #raw = Bexter._rawify(text)
+            if bextable:  # use StrB64 code
+                code = MtrDex.StrB64_L0
+                ws = (4 - (len(path) % 4)) % 4  # pre conv wad size in chars
+                if path[0] == ord(b'A') and (ws in (0, 1)):  # use escape sequence
+                    path = b'--' + path
+                raw = Bexter._rawify(path)
 
-            #else:  # use Texter code since ambiguity if starts with 'A'
-                #code = MtrDex.Bytes_L0
-                #raw = text
+            else:  # use Bytes code
+                code = MtrDex.Bytes_L0
+                raw = path
 
-
-        super(Pather, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2, bext=bext,
+        super(Pather, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
 
-    @property
-    def text(self):
-        """Extracts and returns text from .code and .raw
-
-        Returns:
-            text (str): text value without encoding
-        """
-        if self.code in BexDex:  # text is raw after stripping B64 prepad
-            return Bexter._derawify(raw=self.raw, code=self.code)  # derawify
-
-        return self.raw.decode()  # text is just raw as str
 
     @property
     def path(self):
-        """ Path property is an array of path elements
-
-        Path property is an array of path elements.  Empty path represents the top level.
+        """Extracts and returns path from .code and .raw
 
         Returns:
-            list: array of field specs of the path
-
+            path (str): '/' separated path. Absolute paths start with '/'.
+                        Relative paths do not.
         """
-        if not self.bext.startswith("-"):
-            raise Exception("invalid SAD ptr")
+        if self.code in BexDex:  # bextable
+            path = Bexter._derawify(raw=self.raw, code=self.code)
+            path = path.removeprefix('--')  # escape sequence for relative pathive path
+            parts = path.split("-")
+            path = '/'.join(parts)
 
-        path = self.bext.strip("-").split("-")
-        return path if path[0] != '' else []
+        else:
+            path = self.raw.decode()
+
+        return path
 
 
     @property
@@ -3064,15 +3078,47 @@ class Pather(Bexter):
         """Path as a tuple of path parts
 
         Returns:
-            parts (tuple): parts of path, absolute path has zero part as
-                empty string.
+            parts (tuple): parts of path, absolute path has zeroth part as
+                empty string.  Bare absolute path has zeroth and first part
+                as empty strings.
 
         """
-        if not self.bext.startswith("-"):
-            raise Exception("invalid SAD ptr")
 
-        path = self.bext.strip("-").split("-")
-        return path if path[0] != '' else []
+        if self.code in BexDex:  # pathive
+            path = Bexter._derawify(raw=self.raw, code=self.code)
+            path = path.removeprefix('--')  # escape sequence for relative pathive path
+            parts = path.split("-")
+        else:
+            path = self.raw.decode()
+            parts = path.split("/")
+
+        return parts
+
+
+    @property
+    def rparts(self):
+        """Path as a tuple of path parts but in relative form. Associate path
+        would not have leading '/'
+
+        Returns:
+            rparts (tuple): parts of path in relative form. No leading '/' in
+                        associated path
+
+        """
+
+        if self.code in BexDex:  # pathive
+            path = Bexter._derawify(raw=self.raw, code=self.code)
+            path = path.removeprefix('--')  # escape sequence for relative pathive path
+            parts = path.split("-")
+        else:
+            path = self.raw.decode()
+            parts = path.split("/")
+
+        while parts and parts[0] == "":
+            del parts[0]
+
+        return parts
+
 
     def root(self, root):
         """ Returns a new Pather anchored at new root
@@ -3085,7 +3131,11 @@ class Pather(Bexter):
         Returns:
             Pather: new path anchored at root
         """
-        return Pather(path=root.path + self.path)
+        parts = list(self.parts)
+        if parts and parts[0] == "": # absolute path
+            del parts[0]
+        return Pather(parts=root.parts + parts)
+
 
     def strip(self, root):
         """ Returns a new Pather with root stipped off the front if it exists
@@ -3098,41 +3148,31 @@ class Pather(Bexter):
         Returns:
             Pather: new path anchored at root
         """
-        if len(root.path) > len(self.path):
-            return Pather(path=self.path)
+        if len(root.parts) > len(self.parts):
+            return Pather(parts=self.parts)
 
-        path = list(self.path)
+        parts = list(self.parts)
         try:
-            for i in root.path:
-                path.remove(i)
+            for i in root.parts:
+                parts.remove(i)
         except ValueError:
-            return Pather(path=self.path)
+            return Pather(parts=self.parts)
 
-        return Pather(path=path)
+        return Pather(parts=parts)
 
-    def startswith(self, path):
-        """ Returns True if path is the root of self
+
+    def startswith(self, pather):
+        """ Returns True if pather.path text is the root of self.path text
 
         Parameters:
-            path (Pather): the path to check against self
+            pather (Pather): the path to check against self
 
         Returns:
-            bool: True if path is the root of self
+            bool: True if pather is the root of self
 
         """
 
-        return self.bext.startswith(path.bext)
-
-    def resolve(self, sad):
-        """ Recurses thru value following ptr
-
-        Parameters:
-            sad(dict or list): the next component
-
-        Returns:
-            Value at the end of the path
-        """
-        return self._resolve(sad, self.path)
+        return self.path.startswith(pather.path)
 
 
     def tail(self, serder):
@@ -3156,54 +3196,36 @@ class Pather(Bexter):
         elif isinstance(val, list):
             return dumps(val, serder.kind)
         else:
-            raise ValueError("Bad tail value at {} of {}"
-                             .format(self.path, serder.ked))
+            raise ValueError(f"Bad tail value at {self.rparts} of {serder.ked}")
 
 
-    @staticmethod
-    def _bextify(path):
-        """ Returns Base64 text delimited equivalent of path components
-
-        Suitable for variable sized matter
-
+    def resolve(self, sad):
+        """ Recurses thru sad dict following self.parts
 
         Parameters:
-            path (list): array of path field components
+            sad(dict or list): the next component
 
         Returns:
-            str:  textual representation of SAD path
-
+            Value at the end of the path
         """
-        vath = []  # valid path components
-        for p in path:
-            if hasattr(p, "decode"):
-                p = p.decode("utf-8")
+        return self._resolve(sad, self.rparts)  # use relative parts
 
-            elif isinstance(p, int):
-                p = str(p)
 
-            if not Reb64.match(p.encode("utf-8")):
-                raise ValueError(f"Non Base64 path component = {p}.")
-
-            vath.append(p)
-
-        return ("-" + "-".join(vath))
-
-    def _resolve(self, val, ptr):
+    def _resolve(self, val, parts):
         """ Recurses thru value following ptr
 
         Parameters:
             val(Optional(dict,list)): the next component
-            ptr(list): list of path components
+            parts(list): list of path parts
 
         Returns:
             Value at the end of the chain
         """
 
-        if len(ptr) == 0:
+        if len(parts) == 0:
             return val
 
-        idx = ptr.pop(0)
+        idx = parts.pop(0)
 
         if isinstance(val, dict):
             if idx.isdigit():
@@ -3229,7 +3251,7 @@ class Pather(Bexter):
         else:
             raise KeyError("invalid traversal type")
 
-        return self._resolve(cur, ptr)
+        return self._resolve(cur, parts)
 
 
 class Labeler(Matter):

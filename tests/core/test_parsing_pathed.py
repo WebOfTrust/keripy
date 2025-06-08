@@ -61,14 +61,14 @@ def test_pathed_material(mockHelpingNowUTC):
         attachments = handler.atcs.popleft()
         assert len(attachments) == 4
         (path1, attachment1) = attachments[0]
-        assert path1.bext == "-icp"
+        assert path1.path == "/icp"
         assert attachment1 == (b'-AADAADqkN1IwOepXk5LYPaLBCoHWnZpdWZ2qmhLQKY9I-ape8cTqwHKPg5EP98y'
                                b'bxgYDhAzpOkv9BzE2dhVeac0l7cKABBJhNtfZG642LFbrRurILy0iKMoT8bc1Olk'
                                b'cFYDpmCUwIYlH_jNk-7WlxtgunEMMcBvvGl_E5xuZ_Il6YLSUY4JACAIrMoryRki'
                                b'spZKXWabmx2aBrTgTaGBvysk7B3-mcF0Mg1riSikRar5d70gBZIQjAUuE6KYWLd1'
                                b'Sa0CTMzaTZAO')
         (path2, attachment2) = attachments[1]
-        assert path2.bext == "-ixn0"
+        assert path2.path == "/ixn0"
         assert attachment2 == (b'-AADAAA9aT5vgzKjSVl_xcCXiLIUIqYl9___1Gll8Sj6dDIAygsBQ-lVATd1ifTe'
                                b'_DcsKTwY6sCr1a29f1LNOY_tngoLABCUcENmDJH_Xeh7Pc5q8Nwww5FcTJtpHkBT'
                                b'wdeJ-v6aSPUMaTdkXI7n_3r-8ogrDlKddjgYiOTt2V7f53g-JbYCACAVG_IWtYZp'

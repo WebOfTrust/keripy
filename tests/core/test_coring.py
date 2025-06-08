@@ -4906,115 +4906,429 @@ def test_bexter():
 
 
 def test_pather():
-    """
-    """
+    """Test Pather class"""
 
     sad = dict(a=dict(z="value", b=dict(x=1, y=2, c="test")))
-    path = []
-    pather = coring.Pather(path=path)
-    assert pather.bext == "-"
+
+    rparts = []  # relative parts
+    aparts = ['', '']  # absolute parts
+    pather = coring.Pather(parts=rparts)
+    #assert pather.bext == "-"
+    assert pather.path == '/'
     assert pather.qb64 == "6AABAAA-"
     assert pather.raw == b'>'
     assert pather.resolve(sad) == sad
-    assert pather.path == path
+    assert pather.parts == aparts
+    assert pather.rparts == rparts
 
-    path = ["a", "b", "c"]
-    pather = coring.Pather(path=path)
-    assert pather.bext == "-a-b-c"
+    rparts = ["a", "b", "c"]
+    aparts = ["", "a", "b", "c"]
+    pather = coring.Pather(parts=rparts)
+    assert pather.path == "/a/b/c"
     assert pather.qb64 == "5AACAA-a-b-c"
     assert pather.raw == b'\x0f\x9a\xf9\xbf\x9c'
     assert pather.resolve(sad) == "test"
-    assert pather.path == path
+    assert pather.parts == aparts
+    assert pather.rparts == rparts
 
-    path = ["0", "1", "2"]
-    pather = coring.Pather(path=path)
-    assert pather.bext == "-0-1-2"
+    rparts = ["0", "1", "2"]
+    aparts = ["", "0", "1", "2"]
+    pather = coring.Pather(parts=rparts)
+    assert pather.path == "/0/1/2"
     assert pather.qb64 == "5AACAA-0-1-2"
     assert pather.raw == b'\x0f\xb4\xfb_\xb6'
     assert pather.resolve(sad) == "test"
-    assert pather.path == path
+    assert pather.parts == aparts
+    assert pather.rparts == rparts
 
     sad = dict(field0=dict(z="value", field1=dict(field2=1, field3=2, c="test")))
-    path = ["field0"]
-    pather = coring.Pather(path=path)
-    assert pather.bext == "-field0"
+    rparts = ["field0"]
+    aparts = ["", "field0"]
+    pather = coring.Pather(parts=rparts)
+    assert pather.path == "/field0"
     assert pather.qb64 == "4AACA-field0"
     assert pather.raw == b'\x03\xe7\xe2zWt'
-    assert pather.resolve(sad) == {'field1': {'c': 'test', 'field2': 1, 'field3': 2}, 'z': 'value'}
-    assert pather.path == path
+    assert pather.resolve(sad) == {'z': 'value', 'field1': {'field2': 1, 'field3': 2, 'c': 'test'}}
+    assert pather.parts == aparts
+    assert pather.rparts == rparts
 
-    path = ["field0", "field1", "field3"]
-    pather = coring.Pather(path=path)
-    assert pather.bext == "-field0-field1-field3"
+    rparts = ["field0", "field1", "field3"]
+    aparts = ["", "field0", "field1", "field3"]
+    pather = coring.Pather(parts=rparts)
+    assert pather.path == "/field0/field1/field3"
     assert pather.qb64 == "6AAGAAA-field0-field1-field3"
     assert pather.raw == b">~'\xa5wO\x9f\x89\xe9]\xd7\xe7\xe2zWw"
     assert pather.resolve(sad) == 2
-    assert pather.path == path
+    assert pather.parts == aparts
+    assert pather.rparts == rparts
 
-    path = ["field0", "1", "0"]
-    pather = coring.Pather(path=path)
-    assert pather.bext == "-field0-1-0"
+    rparts = ["field0", "1", "0"]
+    aparts = ["", "field0", "1", "0"]
+    pather = coring.Pather(parts=rparts)
+    assert pather.path == "/field0/1/0"
     assert pather.qb64 == "4AADA-field0-1-0"
     assert pather.raw == b'\x03\xe7\xe2zWt\xfb_\xb4'
     assert pather.resolve(sad) == 1
-    assert pather.path == path
+    assert pather.parts == aparts
+    assert pather.rparts == rparts
 
     sad = dict(field0=dict(z=dict(field2=1, field3=2, c="test"), field1="value"))
-    text = "-0-z-2"
-    pather = coring.Pather(bext=text)
-    assert pather.bext == text
+    path = "/0/z/2"
+    pather = coring.Pather(path=path)
+    assert pather.path == path
     assert pather.qb64 == "5AACAA-0-z-2"
     assert pather.raw == b'\x0f\xb4\xfb?\xb6'
     assert pather.resolve(sad) == "test"
-    assert pather.path == ["0", "z", "2"]
+    assert pather.parts == ["", "0", "z", "2"]
+    assert pather.rparts == ["0", "z", "2"]
 
-    text = "-0-a"
-    pather = coring.Pather(bext=text)
-    assert pather.bext == text
+    path ="/0/a"
+    pather = coring.Pather(path=path)
+    assert pather.path == path
     assert pather.qb64 == "4AAB-0-a"
     assert pather.raw == b'\xfbO\x9a'
     with pytest.raises(KeyError):
         pather.resolve(sad)
-    assert pather.path == ["0", "a"]
+    assert pather.parts == ["","0", "a"]
+    assert pather.rparts == ["0", "a"]
 
-    text = "-0-field1-0"
-    pather = coring.Pather(bext=text)
-    assert pather.bext == text
+    path = "/0/field1/0"
+    pather = coring.Pather(path=path)
+    assert pather.path == path
     assert pather.qb64 == "4AADA-0-field1-0"
     assert pather.raw == b"\x03\xed>~'\xa5w_\xb4"
     with pytest.raises(KeyError):
         pather.resolve(sad)
-    assert pather.path == ["0", "field1", "0"]
+    assert pather.parts == ["","0", "field1", "0"]
+    assert pather.rparts == ["0", "field1", "0"]
 
-    path = ["Not$Base64", "@moreso", "*again"]
+    rparts = ["Not$Base64", "@moreso", "*again"]
     with pytest.raises(InvalidValueError):
-        pather = coring.Pather(path=path)
-    #with pytest.raises(ValueError):
-        #pather = coring.Pather(path=path)
+        pather = coring.Pather(parts=rparts)
 
-    text = "-a"
-    a = coring.Pather(bext=text)
-    b = coring.Pather(bext="-a-b")
+    path = "/a"
+    a = coring.Pather(path=path)
+    b = coring.Pather(path="/a/b")
 
-    pather = coring.Pather(bext=text)
+    pather = coring.Pather(path=path)
     assert pather.startswith(a)
     assert not pather.startswith(b)
 
     pnew = pather.strip(a)
-    assert pnew.path == []
+    assert pnew.parts == ["", ""]
+    assert pnew.rparts == []
+    assert pnew.path == "/"
 
-    pnew = pather.strip(b)
+    pnew = pather.strip(b)  # no change since b not prefix to a
+    assert pnew.parts == pather.parts
     assert pnew.path == pather.path
+    assert pnew.path == '/a'
+    assert pnew.parts == ["", "a"]
+    assert pnew.rparts == ["a"]
 
-    pather = coring.Pather(bext="-a-b-c-d-e-f")
+    pather = coring.Pather(path="/a/b/c/d/e/f")
     assert pather.startswith(a)
     assert pather.startswith(b)
 
     pnew = pather.strip(a)
-    assert pnew.path == ["b", "c", "d", "e", "f"]
+    assert pnew.parts == ["", "b", "c", "d", "e", "f"]
+    assert pnew.rparts == ["b", "c", "d", "e", "f"]
 
     pnew = pather.strip(b)
-    assert pnew.path == ["c", "d", "e", "f"]
+    assert pnew.parts == ["", "c", "d", "e", "f"]
+    assert pnew.rparts == ["c", "d", "e", "f"]
+
+
+    # Test Relative paths
+    path = "a"
+    parts = ['a']
+    qb64 = '6AABAAAa'
+    qb2 = b'\xe8\x00\x01\x00\x00\x1a'
+    code = '6A'
+    raw = b'\x1a'
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == ['a']
+
+    pather = coring.Pather(parts=parts, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == ['a']
+
+    pather = coring.Pather(qb64=qb64)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == ['a']
+
+    pather = coring.Pather(qb2=qb2)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == ['a']
+
+    pather = coring.Pather(raw=raw, code=code)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == ['a']
+
+    path = "A"
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == '6AABAAAA'
+    assert pather.raw == b'\x00'
+    assert pather.parts == pather.rparts == ['A']
+
+    path = "AA"
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == '5AABAAAA'
+    assert pather.raw == b'\x00\x00'
+    assert pather.parts == pather.rparts == ['AA']
+
+    # test with escape sequence
+    path = "AAA"
+    parts = ['AAA']
+    qb64 = '6AACAAA--AAA'
+    qb2 = b'\xe8\x00\x02\x00\x00>\xf8\x00\x00'
+    code = '6A'
+    raw = b'>\xf8\x00\x00'
+
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == parts
+
+    pather = coring.Pather(parts=parts, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == parts
+
+    pather = coring.Pather(qb64=qb64)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == parts
+
+    pather = coring.Pather(qb2=qb2)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts  == parts
+
+    pather = coring.Pather(raw=raw, code=code)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == pather.rparts == parts
+
+    # test with escape sequence
+    path = "AAAA"
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == '5AACAA--AAAA'
+    assert pather.raw == b'\x0f\xbe\x00\x00\x00'
+    assert pather.parts == pather.rparts == ['AAAA']
+
+    # test with escape sequence
+    path = "AAA/BBB"
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == '6AADAAA--AAA-BBB'
+    assert pather.raw == b'>\xf8\x00\x00\xf8\x10A'
+    assert pather.parts == pather.rparts == ['AAA', 'BBB']
+
+    # test with relative allowed but absolute anyway
+    path = "/AAA/BBB"
+    parts = ['', 'AAA', 'BBB']
+    rparts = ['AAA', 'BBB']
+    qb64 = '4AAC-AAA-BBB'
+    qb2 = b'\xe0\x00\x02\xf8\x00\x00\xf8\x10A'
+    code = MtrDex.StrB64_L0
+    raw = b'\xf8\x00\x00\xf8\x10A'
+
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(parts=parts, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(qb64=qb64)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(qb2=qb2)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(raw=raw, code=code)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    # test with bad path parts
+    path = "/AA@/BBB"
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(path=path, relative=True)  # allow relative
+
+
+    # test with bad path parts
+    path = "@AA/BBB"
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(path=path, relative=True)  # allow relative
+
+
+    # test with bad path parts
+    path = "//a/b"
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(path=path)
+
+
+    # test with bad path parts
+    path = "/a//b"
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(path=path)
+
+    # test with bad path parts
+    parts = ['', '', 'a', 'b']
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(parts=parts)
+
+    # test with bad path parts
+    parts = ['', 'a', '', 'b']
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(parts=parts)
+
+    # test with bad path parts
+    parts = ['', '', 'a', 'b']
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(parts=parts)
+
+    # test with bad path parts
+    path = "//"
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(path=path)
+
+    # test with bad path parts
+    ['', '', '']
+
+    with pytest.raises(InvalidValueError):
+        pather = coring.Pather(parts=parts)
+
+
+    # test with non pathive so non B64 parts allowed
+    path = "/@AA/BBB"
+    parts = ['', '@AA', 'BBB']
+    rparts = ['@AA', 'BBB']
+    qb64 = '5BADAC9AQUEvQkJC'
+    qb2 = b'\xe4\x10\x03\x00/@AA/BBB'
+    code = MtrDex.Bytes_L1
+    raw = b'/@AA/BBB'
+
+    pather = coring.Pather(path=path, relative=True, pathive=False)  # allow non-B64
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(parts=parts, relative=True, pathive=False)  # allow non-B64
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(qb64=qb64)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(qb2=qb2)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+    pather = coring.Pather(raw=raw, code=code)
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
 
     """ Done Test """
 
