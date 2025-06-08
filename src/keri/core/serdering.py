@@ -1530,7 +1530,7 @@ class Serder:
                         val = Dater(dts=v).qb64b  # dts to qb64b
 
                     case "r" | "rr":  # route or return route
-                        val = Pather(path=v).qb64b  # path to qb64b
+                        val = Pather(path=v, relative=True, pathive=False).qb64b  # path to qb64b
 
                     case "c":  # list of config traits strings
                         frame = bytearray()
