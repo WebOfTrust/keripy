@@ -3429,14 +3429,14 @@ def test_cesr_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EIPHrHk7RlJfikF5mdT4Sixfv6hwgtmS7eJy9cY3dbg-'
+    assert said == 'ED7SlHBJGAnKp6EqkgLSOJOYUXCEnIntpWNNq7RtWXvY'
 
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAC4.',
+        'v': 'KERICAACESRAAC0.',
         't': 'qry',
-        'd': 'EIPHrHk7RlJfikF5mdT4Sixfv6hwgtmS7eJy9cY3dbg-',
+        'd': 'ED7SlHBJGAnKp6EqkgLSOJOYUXCEnIntpWNNq7RtWXvY',
         'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/fun',
@@ -3444,21 +3444,21 @@ def test_cesr_native_dumps_loads():
         'q': {'stuff': 'hello'}
     }
 
-    assert serder.raw == (b'-FAtYKERICAAXqryEIPHrHk7RlJfikF5mdT4Sixfv6hwgtmS7eJy9cY3dbg-EAydkSsFW7KqT1ms'
-                            b'BF5bH7tn3dzZ-etVVvi2UjIFSF2H1AAG2020-08-22T17c50c09d988921p00c006BACAAAvZnVu'
-                            b'5BACAC9ob21l-IAE0L_stuff0L_hello')
+    assert serder.raw == (b'-FAsYKERICAAXqryED7SlHBJGAnKp6EqkgLSOJOYUXCEnIntpWNNq7RtWXvYEAydkSsFW7KqT1ms'
+                          b'BF5bH7tn3dzZ-etVVvi2UjIFSF2H1AAG2020-08-22T17c50c09d988921p00c004AAB-fun6AAC'
+                          b'AAA-home-IAE0L_stuff0L_hello')
 
-    assert len(serder.raw) == serder.size == 184
+    assert len(serder.raw) == serder.size == 180
     sizeh = serder.raw[2:4]
-    assert sizeh == b"At"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 184
+    assert sizeh == b"As"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 180
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 184 == serder.size
+    assert len(rawqb64) == 180 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 138
+    assert len(rawqb2) == 135
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
@@ -3473,7 +3473,7 @@ def test_cesr_native_dumps_loads():
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.38, 1.38, 1.61]
+    assert ratios == [1.0, 1.33, 1.41, 1.41, 1.64]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -3506,26 +3506,22 @@ def test_cesr_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EAYl5ZMhOQZm_Sp1o0EAmwFLS5xOAkd6w7JKbyH0vHHB'
+    assert said == 'EDJuYSA1Hg-NGHnRtgILYBU6aZs9us2T3ETrCWq0HwGe'
 
     assert serder.sad == \
     {
         'v': 'KERICAACESRAADc.',
         't': 'rpy',
-        'd': 'EAYl5ZMhOQZm_Sp1o0EAmwFLS5xOAkd6w7JKbyH0vHHB',
+        'd': 'EDJuYSA1Hg-NGHnRtgILYBU6aZs9us2T3ETrCWq0HwGe',
         'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/home',
-        'a': \
-        {
-            'd': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
-            'name': 'John'
-        }
+        'a': {'d': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN', 'name': 'John'}
     }
 
-    assert serder.raw == (b'-FA2YKERICAAXrpyEAYl5ZMhOQZm_Sp1o0EAmwFLS5xOAkd6w7JKbyH0vHHBEAydkSsFW7KqT1ms'
-                        b'BF5bH7tn3dzZ-etVVvi2UjIFSF2H1AAG2020-08-22T17c50c09d988921p00c005BACAC9ob21l'
-                        b'-IAQ0J_dEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
+    assert serder.raw == (b'-FA2YKERICAAXrpyEDJuYSA1Hg-NGHnRtgILYBU6aZs9us2T3ETrCWq0HwGeEAydkSsFW7KqT1ms'
+                          b'BF5bH7tn3dzZ-etVVvi2UjIFSF2H1AAG2020-08-22T17c50c09d988921p00c006AACAAA-home'
+                          b'-IAQ0J_dEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
 
     assert len(serder.raw) == serder.size == 220
     sizeh = serder.raw[2:4]
