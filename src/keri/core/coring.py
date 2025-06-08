@@ -3328,6 +3328,7 @@ class Labeler(Matter):
                 except InvalidSoftError as ex:  # too big
                     ws = (4 - (len(text) % 4)) % 4  # pre conv wad size in chars
                     if text[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
+                        # can't use escape code here because Reb64 allows all B64 chars.
                         code = LabelDex.StrB64_L0
                         raw = Bexter._rawify(text)
 
@@ -3392,8 +3393,9 @@ class Labeler(Matter):
 
         if self.code in BexDex:  # bext
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
-            if label[0] == '-':  # excape code
-                label = label[1:]  # remove excape
+            if label[0] == '-':  # excape code see if Reatt
+                if Reatt.match(label[1:].encode()):  # so must have been escaped
+                    label = label[1:]  # remove excape
             return label
 
         return self.raw.decode()  # everything else is just raw as str
