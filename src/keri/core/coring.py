@@ -1970,7 +1970,7 @@ class Decimer(Matter):
     Inherited Hidden Properties:  (See Matter)
 
     Methods:
-        ._rawify(self, bext)
+        ._rawify(self, dns)
 
     Codes:  (See DecimalCodex or  DecDex)
         Decimal_L0:     str = '4H'  # Decimal B64 string float and int lead size 0
@@ -3131,7 +3131,11 @@ class Pather(Matter):
         Returns:
             Pather: new path anchored at root
         """
-        return Pather(parts=root.parts + self.rparts)
+        parts = list(root.parts)
+        if parts and len(parts) >= 2 and parts[-1] == '':
+            del parts[-1]  # remove trailing '/'
+
+        return Pather(parts=parts + self.rparts)
 
 
     def strip(self, root):

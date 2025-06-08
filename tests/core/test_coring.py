@@ -5217,6 +5217,50 @@ def test_pather():
     assert pather.parts == parts
     assert pather.rparts == rparts
 
+    # test trailing /
+    path = "/a/b/c/"
+    parts = ['', 'a', 'b', 'c', '']
+    rparts = ['a', 'b', 'c', '']
+    qb64 = '4AACA-a-b-c-'
+    qb2 = b'\xe0\x00\x02\x03\xe6\xbeo\xe7>'
+    code = MtrDex.StrB64_L0
+    raw = b'\x03\xe6\xbeo\xe7>'
+
+    pather = coring.Pather(path=path, relative=True)  # allow relative
+    assert pather.path == path
+    assert pather.qb64 == qb64
+    assert pather.qb2 == qb2
+    assert pather.code == code
+    assert pather.raw == raw
+    assert pather.parts == parts
+    assert pather.rparts == rparts
+
+
+    # test rooting with trailing / and leading /
+    root = coring.Pather(path='/a/b/c/')
+    assert root.path == '/a/b/c/'
+    base = coring.Pather(path='/d/e/f/')
+    assert base.path == '/d/e/f/'
+    reroot = base.root(root)
+    assert reroot.path == '/a/b/c/d/e/f/'
+
+    # test rooting with absolute empty root
+    root = coring.Pather(path='/', relative=True)
+    assert root.path == '/'
+    base = coring.Pather(path='d/e/f/', relative=True)
+    assert base.path == 'd/e/f/'
+    reroot = base.root(root)
+    assert reroot.path == '/d/e/f/'
+
+    # test rooting with absolute empty root and absolute base
+    root = coring.Pather(path='/', relative=True)
+    assert root.path == '/'
+    base = coring.Pather(path='/d/e/f/', relative=True)
+    assert base.path == '/d/e/f/'
+    reroot = base.root(root)
+    assert reroot.path == '/d/e/f/'
+
+
     # test with bad path parts
     path = "/AA@/BBB"
 

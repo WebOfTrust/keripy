@@ -452,7 +452,7 @@ def cloneMessage(hby, said):
         pather = coring.Pather(qb64b=pb, strip=True)
         if pather.startswith(e):
             np = pather.strip(e)
-            nesting(np.path, pathed, pb)
+            nesting(np.parts, pathed, pb)
 
     return exn, pathed
 
@@ -511,6 +511,11 @@ def serializeMessage(hby, said, pipelined=False):
 
 
 def nesting(paths, acc, val):
+    """Nesting Pather parts
+
+    Parameters:
+        paths (list[list]): list of path parts
+    """
     if len(paths) == 0:
         return val
     else:
