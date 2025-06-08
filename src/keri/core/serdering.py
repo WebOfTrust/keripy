@@ -42,7 +42,7 @@ from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
                      Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather)
 from .mapping import Mapper
 
-from .counting import GenDex, Counter, Codens, SealDex_2_0, MUDex_2_0
+from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
 
 from .structing import Sealer, SClanDom
 
@@ -245,9 +245,11 @@ class Serdery:
             raise SerializeError(f"Incompatible major protocol version="
                                  f"{smellage.pvrsn} with stream major genus "
                                  f"version={svrsn}.")
-        #if getattr(GenDex, smellage.proto, None) != genus:
-            #raise SerializeError(f"Incompatible protocol={smellage.proto} with "
-                                 #f"genus={genus}.")
+
+        if getattr(GenDex, ProGen.get(smellage.proto), None) != genus:
+            raise SerializeError(f"Incompatible protocol={smellage.proto} with "
+                                 f"genus={genus}.")
+
 
         if smellage.proto == Protocols.keri:
             return SerderKERI(raw=ims, strip=True, smellage=smellage)
@@ -722,9 +724,9 @@ class Serder:
         if self.genus not in GenDex:  # ensures self.genus != None
             raise ValidationError(f"Invalid genus={self.genus}.")
 
-        #if getattr(GenDex, self.proto, None) != self.genus:
-            #raise ValidationError(f"Incompatible protocol={self.proto} with "
-                                 #f"genus={self.genus}.")
+        if getattr(GenDex, ProGen.get(self.proto), None) != self.genus:
+            raise ValidationError(f"Incompatible protocol={self.proto} with "
+                                  f"genus={self.genus}.")
 
         if self.gvrsn is not None and self.pvrsn.major > self.gvrsn.major:
             raise ValidationError(f"Incompatible major protocol version={self.pvrsn}"
@@ -911,9 +913,9 @@ class Serder:
         if genus not in GenDex:  # ensures valid genus != None
             raise SerializeError(f"Invalid genus={self.genus}.")
 
-        #if getattr(GenDex, proto, None) != genus:  # ensure compatible proto
-            #raise SerializeError(f"Incompatible protocol={proto} with "
-                                 #f"{genus=}.")
+        if getattr(GenDex, ProGen.get(proto), None) != genus:   # ensure compatible proto
+            raise SerializeError(f"Incompatible protocol={proto} with "
+                                  f"genus={genus}.")
 
         if pvrsn is None:
             pvrsn = svrsn if svrsn is not None else self.Vrsn

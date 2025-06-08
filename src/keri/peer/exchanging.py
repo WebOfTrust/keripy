@@ -452,7 +452,7 @@ def cloneMessage(hby, said):
         pather = coring.Pather(qb64b=pb, strip=True)
         if pather.startswith(e):
             np = pather.strip(e)
-            nesting(np.parts, pathed, pb)
+            nesting(np.parts, pathed, pb)  # no unit test for this
 
     return exn, pathed
 

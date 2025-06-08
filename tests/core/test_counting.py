@@ -12,7 +12,7 @@ import pytest
 
 
 from keri import kering
-from keri.kering import Colds
+from keri.kering import Colds, Protocols
 
 from keri.help import helping
 from keri.help.helping import sceil
@@ -23,14 +23,15 @@ from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
 
 from keri.core import counting, Texter
 from keri.core.counting import (GenDex, Cizage, Counter, Codens,
-                                 CtrDex_1_0, CtrDex_2_0,
+                                 CtrDex_1_0, CtrDex_2_0, ProGen,
                                 Versionage, Vrsn_1_0, Vrsn_2_0)
 
 
 
-def test_genus_codex():
+def test_genus_codex_pro_gen():
     """
-    Test protocol genera in GenDex as instance of GenusCodex
+    Test protocol genera in GenDex as instance of GenusCodex and shared genus
+    code table mapping from Protocols via ProGen
 
     """
 
@@ -57,6 +58,16 @@ def test_genus_codex():
     assert hasattr(GenDex, "ACDC")
     assert hasattr(GenDex, "SPAC")
     assert hasattr(GenDex, "TSP_")
+
+
+    assert ProGen == \
+    {
+        'KERI': 'KERI',
+        'ACDC': 'KERI'
+    }
+
+    assert GenDex[ProGen[Protocols.keri]] == GenDex.KERI == '-_AAA'
+    assert GenDex[ProGen[Protocols.acdc]] == GenDex.KERI == '-_AAA'
 
     """End Test"""
 
@@ -1757,7 +1768,7 @@ def test_counter_v2():
 
 
 if __name__ == "__main__":
-    test_genus_codex()
+    test_genus_codex_pro_gen()
     test_codexes_tags()
     test_counter_class()
     test_counter_v1()
