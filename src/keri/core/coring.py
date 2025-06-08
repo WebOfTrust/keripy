@@ -1970,7 +1970,7 @@ class Decimer(Matter):
     Inherited Hidden Properties:  (See Matter)
 
     Methods:
-        ._rawify(self, bext)
+        ._rawify(self, dns)
 
     Codes:  (See DecimalCodex or  DecDex)
         Decimal_L0:     str = '4H'  # Decimal B64 string float and int lead size 0

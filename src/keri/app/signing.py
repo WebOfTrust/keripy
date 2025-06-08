@@ -22,26 +22,28 @@ def serialize(creder, prefixer, seqner, saider):
     return bytes(craw)
 
 
-def ratify(hab, serder, paths=None, pipelined=False):
-    """ Sign the SAD or SAIDs with the keys from the Habitat.
+#def ratify(hab, serder, paths=None, pipelined=False):
+    #""" Sign the SAD or SAIDs with the keys from the Habitat.
 
-    Sign the SADs or SAIDs of the SADs as identified by the paths.  If paths is
-    None, default to signing the root SAD only.
+    #Sign the SADs or SAIDs of the SADs as identified by the paths.  If paths is
+    #None, default to signing the root SAD only.
 
-    Parameters:
-        hab (Habitat): environment used to sign the SAD
-        serder (Union[Serder,Creder]): the self addressing data (SAD)
-        paths (list): list of paths specified as arrays of path components
-        pipelined (bool): True means prepend pipelining count code to attachemnts
-            False means to not prepend pipelining count code
+    #Parameters:
+        #hab (Habitat): environment used to sign the SAD
+        #serder (Union[Serder,Creder]): the self addressing data (SAD)
+        #paths (list): list of paths specified as arrays of path components
+        #pipelined (bool): True means prepend pipelining count code to attachemnts
+            #False means to not prepend pipelining count code
 
-    Returns:
-        bytes: serialized SAD with qb64 CESR Proof Signature attachments
+    #Returns:
+        #bytes: serialized SAD with qb64 CESR Proof Signature attachments
 
-    """
-    paths = [[]] if paths is None else paths
-    sadsigers, sadcigars = signPaths(hab=hab, serder=serder, paths=paths)
-    return provision(serder, sadsigers=sadsigers, sadcigars=sadcigars, pipelined=pipelined)
+    #"""
+    #paths = [[]] if paths is None else paths
+    #sadsigers, sadcigars = signPaths(hab=hab, serder=serder, paths=paths)
+    #return provision(serder, sadsigers=sadsigers, sadcigars=sadcigars, pipelined=pipelined)
+
+
 
 
 #def provision(serder, *, sadsigers=None, sadcigars=None, pipelined=False):
