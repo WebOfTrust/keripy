@@ -3131,10 +3131,7 @@ class Pather(Matter):
         Returns:
             Pather: new path anchored at root
         """
-        parts = list(self.parts)
-        if parts and parts[0] == "": # absolute path
-            del parts[0]
-        return Pather(parts=root.parts + parts)
+        return Pather(parts=root.parts + self.rparts)
 
 
     def strip(self, root):
