@@ -1236,7 +1236,7 @@ class Serder:
         raw = bytearray(raw[:size])  # extract full message from raw as bytearray
 
         # consume body ctr and version field
-        bctr = Counter(qb64b=raw, strip=True)  # version defaults to 2
+        bctr = Counter(qb64b=raw, strip=True, version=self.gvrsn) # gvrsn from smellage
         versage = Verser(qb64b=raw, strip=True).versage
         # assumes compatible versage witn .proto .pvrsn .gvrsn
 
@@ -1286,7 +1286,7 @@ class Serder:
                         sad[l] = Tholder(limen=raw, strip=True).sith  # as sith str
 
                     case "k" | "n" | "b" | "ba" | "br":  # list of primitives
-                        ctr = Counter(qb64b=raw, strip=True)
+                        ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
                         if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
                             raise DeserializeError(f"Expected List group got {ctr.name}")
                         fs = ctr.count * 4  # frame size since qb64 text mode
@@ -1304,7 +1304,7 @@ class Serder:
                         sad[l] = Pather(qb64b=raw, strip=True).path
 
                     case "c":  # list of config traits strings
-                        ctr = Counter(qb64b=raw, strip=True)
+                        ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
                         if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
                             raise DeserializeError(f"Expected List group got {ctr.name}")
                         fs = ctr.count * 4  # frame size since qb64 text mode
@@ -1316,7 +1316,7 @@ class Serder:
                         sad[l] = elements
 
                     case "a":  # list of seals or field map of attributes
-                        ctr = Counter(qb64b=raw)  # peek at counter
+                        ctr = Counter(qb64b=raw, version=self.gvrsn)  # peek at counter
                         if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
                             sad[l] = Mapper(qb64b=raw, strip=True).mad
 
@@ -1327,7 +1327,7 @@ class Serder:
                             frame = raw[:fs]  # extract list frame
                             raw = raw[fs:]  # strip frame from raw
                             while frame:  # while list frame not empty
-                                sctr = Counter(qb64b=frame, strip=True)  # seal counter
+                                sctr = Counter(qb64b=frame, strip=True, version=self.gvrsn)  # seal counter
                                 if sctr.code not in Serder.CodeClans:
                                     raise DeserializeError(f"Expected Sealer group got {sctr.name}")
                                 cast = Sealer.Casts[Serder.CodeClans[sctr.code]]
@@ -1470,7 +1470,6 @@ class Serder:
         pvrsn = self.pvrsn
         gvrsn = self.gvrsn
 
-
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
         ilks = self.Fields[proto][pvrsn]  # get fields keyed by ilk
@@ -1523,7 +1522,8 @@ class Serder:
                             frame.extend(e.encode("utf-8"))
 
                         val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
+                                                count=len(frame) // 4,
+                                                version=gvrsn).qb64b)
                         val.extend(frame)
 
                     case "dt":  # iso datetime
@@ -1538,7 +1538,8 @@ class Serder:
                             frame.extend(Traitor(trait=e).qb64b)
 
                         val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
+                                                count=len(frame) // 4,
+                                                version=gvrsn).qb64b)
                         val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
@@ -1559,7 +1560,9 @@ class Serder:
                                         gframe.extend(sealer.qb64b)
                                     else:
                                         if gframe:  # not same so close off and rotate group
-                                            counter = Counter(code=gcode, count=len(gframe) // 4)
+                                            counter = Counter(code=gcode,
+                                                              count=len(gframe) // 4,
+                                                              version=gvrsn)
                                             frame.extend(counter.qb64b + gframe)
                                             gframe = bytearray()  # new group
                                         gcode = code  # new group or keep same group
@@ -1567,7 +1570,9 @@ class Serder:
 
                                 except kering.InvalidValueError:
                                     if gframe:
-                                        counter = Counter(code=gcode, count=len(gframe) // 4)
+                                        counter = Counter(code=gcode,
+                                                          count=len(gframe) // 4,
+                                                          version=gvrsn)
                                         frame.extend(counter.qb64b + gframe)
                                         gframe = bytearray()
                                         gcode = None
@@ -1581,7 +1586,9 @@ class Serder:
                                     #val.extend(mapframe)
 
                             if gframe:  # close off last group if any
-                                counter = Counter(code=gcode, count=len(gframe) // 4)
+                                counter = Counter(code=gcode,
+                                                  count=len(gframe) // 4,
+                                                  version=gvrsn)
                                 frame.extend(counter.qb64b + gframe)
                                 gframe = bytearray()
                                 gcode = None
@@ -1616,7 +1623,8 @@ class Serder:
         if fixed:
 
             raw = bytearray(Counter(Codens.FixedBodyGroup,
-                                    count=len(bdy) // 4).qb64b)
+                                    count=len(bdy) // 4,
+                                    version=gvrsn).qb64b)
             raw.extend(bdy)
         else:
             pass
