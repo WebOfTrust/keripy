@@ -241,14 +241,31 @@ class Serdery:
         else:
             smellage = smell(ims)  #
 
-        if smellage.pvrsn.major > svrsn.major:
-            raise SerializeError(f"Incompatible major protocol version="
-                                 f"{smellage.pvrsn} with stream major genus "
+        if smellage.pvrsn.major > svrsn.major:  # likely not supported
+            raise SerializeError(f"Incompatible message protocol major version="
+                                 f"{smellage.pvrsn} with stream  genus major "
                                  f"version={svrsn}.")
 
         if getattr(GenDex, ProGen.get(smellage.proto), None) != genus:
-            raise SerializeError(f"Incompatible protocol={smellage.proto} with "
-                                 f"genus={genus}.")
+            raise SerializeError(f"Incompatible message protocol={smellage.proto}"
+                                 f" with genus={genus}.")
+
+        if smellage.gvrsn:
+            if smellage.gvrsn.major > svrsn.major:  # Message major later than stream
+                raise SerializeError(f"Incompatible message genus major version="
+                                 f"{smellage.gvrsn} with stream major genus "
+                                 f"version={svrsn}.")
+
+            if smellage.gvrsn.minor > svrsn.minor:  # message minor later than stream
+                raise SerializeError(f"Incompatible message minor genus version="
+                                     f"{smellage.gvrsn} with stream genus minor "
+                                     f"version={svrsn}.")
+
+            latest = list(Counter.Sizes[gvrsn.major])[-1]  # get latest supported minor version
+            if gvrsn.minor > latest:
+                raise SerializeError(f"Incompatible message genus minor version"
+                                     f"={gvrsn.minor} exceeds latest supported "
+                                     f"genus minor version={latest}.")
 
 
         if smellage.proto == Protocols.keri:

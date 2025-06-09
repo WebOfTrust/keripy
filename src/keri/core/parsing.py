@@ -883,6 +883,9 @@ class Parser:
             ctr = None  # no counter to process when not None then extracted need to process
 
             # Check for genus-version change
+            # Note: Genus-Version Counter count code and format is universal
+            # accross all genera and all versions of all genera. Therefore any
+            # version counter should work for parsing stream genus version
             cold = sniff(ims)  # front of top level of this substream
             if cold != Colds.msg:  # counter found so peek at it
                 ctr = yield from self._extractor(ims=ims,
