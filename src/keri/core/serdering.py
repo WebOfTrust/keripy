@@ -261,10 +261,10 @@ class Serdery:
                                      f"{smellage.gvrsn} with stream genus minor "
                                      f"version={svrsn}.")
 
-            latest = list(Counter.Sizes[gvrsn.major])[-1]  # get latest supported minor version
-            if gvrsn.minor > latest:
+            latest = list(Counter.Sizes[smellage.gvrsn.major])[-1]  # get latest supported minor version
+            if smellage.gvrsn.minor > latest:
                 raise SerializeError(f"Incompatible message genus minor version"
-                                     f"={gvrsn.minor} exceeds latest supported "
+                                     f"={smellage.gvrsn.minor} exceeds latest supported "
                                      f"genus minor version={latest}.")
 
 
