@@ -17,7 +17,7 @@ from  ordered_set import OrderedSet as oset
 
 from keri import kering
 from keri.kering import (Colds, Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE, VERFMT,
+                      VERRAWSIZE1, VERFMT1,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN,)
 
 from keri.help import helping
@@ -64,7 +64,7 @@ def test_spans():
     assert isinstance(Serder.Spans, dict)
 
     assert Serder.Spans[kering.Vrsn_1_0] == kering.VER1FULLSPAN == 17
-    assert Serder.Spans[kering.Vrsn_2_0] == kering.VER2FULLSPAN == 16
+    assert Serder.Spans[kering.Vrsn_2_0] == kering.VER2FULLSPAN == 19
 
     """End Test"""
 
@@ -2440,14 +2440,18 @@ def test_serder_v2():
     serder = Serder(makify=True,
                     proto=Protocols.acdc,
                     pvrsn=kering.Vrsn_2_0)  # make defaults for ACDC
-    assert serder.sad == {'v': 'ACDCCAAJSONAABZ.',
-                            'd': 'EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy',
-                            'i': '',
-                            's': ''}
-    assert serder.raw == (b'{"v":"ACDCCAAJSONAABZ.","d":"EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy","'
-                          b'i":"","s":""}')
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAABc.',
+        'd': 'EJ2rDLVBZUH9rnUbxsAI2fokeJ4-2FyhQNKIkuWqzm1S',
+        'i': '',
+        's': ''
+    }
+    assert serder.raw == (b'{"v":"ACDCCAACAAJSONAABc.","d":"EJ2rDLVBZUH9rnUbxsAI2fokeJ4-2FyhQNKIkuWqzm1S'
+                          b'","i":"","s":""}')
     assert serder.verify()
-    assert serder.pvrsn == serder.pvrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == kering.Vrsn_2_0
+    assert serder.gvrsn == kering.Vrsn_2_0
     sad = serder.sad
     raw = serder.raw
     said = serder.said
@@ -2458,7 +2462,8 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_2_0 == serder.pvrsn
+    assert serder.pvrsn == kering.Vrsn_2_0
+    assert serder.gvrsn == kering.Vrsn_2_0
     assert serder.size == size
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
@@ -2467,12 +2472,14 @@ def test_serder_v2():
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
     assert not serder.compare(said='EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE')
-    assert serder.pretty() == ('{\n'
-                ' "v": "ACDCCAAJSONAABZ.",\n'
-                ' "d": "EN-uBXL6rsJpJvDSsyOAnttQiI9gka4qLbe3MlIoYwYy",\n'
-                ' "i": "",\n'
-                ' "s": ""\n'
-                '}')
+    assert serder.pretty() == (
+        '{\n'
+        ' "v": "ACDCCAACAAJSONAABc.",\n'
+        ' "d": "EJ2rDLVBZUH9rnUbxsAI2fokeJ4-2FyhQNKIkuWqzm1S",\n'
+        ' "i": "",\n'
+        ' "s": ""\n'
+        '}'
+    )
 
     serder = Serder(raw=raw)
     assert serder.raw == raw
@@ -2506,25 +2513,29 @@ def test_serder_v2():
                     pvrsn=kering.Vrsn_2_0)  # make defaults for default proto
 
 
-    assert serder.sad == {'v': 'KERICAAJSONAADO.',
-                            't': 'icp',
-                            'd': 'EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf21VH3bn',
-                            'i': 'EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf21VH3bn',
-                            's': '0',
-                            'kt': '0',
-                            'k': [],
-                            'nt': '0',
-                            'n': [],
-                            'bt': '0',
-                            'b': [],
-                            'c': [],
-                            'a': []}
-    assert serder.raw == (b'{"v":"KERICAAJSONAADO.","t":"icp","d":"EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf'
-                        b'21VH3bn","i":"EGqrN042jSUT5bjUuQqGALW4inJMJA6BBlVKf21VH3bn","s":"0","kt":"0"'
-                        b',"k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAAJSONAADR.',
+        't': 'icp',
+        'd': 'EM47RHHi7oA__srCr3tgfzdsz9_O_ahatXmvl0IrfwFk',
+        'i': 'EM47RHHi7oA__srCr3tgfzdsz9_O_ahatXmvl0IrfwFk',
+        's': '0',
+        'kt': '0',
+        'k': [],
+        'nt': '0',
+        'n': [],
+        'bt': '0',
+        'b': [],
+        'c': [],
+        'a': []
+    }
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAADR.","t":"icp","d":"EM47RHHi7oA__srCr3tgfzdsz9_O_ahatX'
+                          b'mvl0IrfwFk","i":"EM47RHHi7oA__srCr3tgfzdsz9_O_ahatXmvl0IrfwFk","s":"0","kt":'
+                          b'"0","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
     assert serder.verify()
     assert serder.proto == Protocols.keri == Serder.Proto  # default
     assert serder.pvrsn == kering.Vrsn_2_0
+    assert serder.gvrsn == kering.Vrsn_2_0
     assert serder.kind == kering.Kinds.json == Serder.Kind  # default
     assert serder.ilk == kering.Ilks.icp  # default first one
     assert serder.genus == GenDex.KERI == Serder.Genus
@@ -2599,8 +2610,6 @@ def test_cesr_native_dumps_loads():
     csigners = salter.signers(count=12, transferable=True, temp=True)
     wsigners = salter.signers(count=12, transferable=False, temp=True)
 
-    serdery = Serdery()
-
     # simple inception event
 
     keys = [csigners[0].verfer.qb64]
@@ -2609,9 +2618,9 @@ def test_cesr_native_dumps_loads():
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAC4.',
+        'v': 'KERICAACAACESRAAC8.',
         't': 'icp',
-        'd': 'EAXi2ueSrATBdAYAey6hA9LOS6WuITh90eq4L_SM0C4o',
+        'd': 'ENcf5ii15MsVCx7wxKi4muIodYJULhkOaEbvbz4cF3d4',
         'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
         's': '0',
         'kt': '1',
@@ -2625,39 +2634,39 @@ def test_cesr_native_dumps_loads():
     }
 
 
-    assert serder.raw == (b'-FAtYKERICAAXicpEAXi2ueSrATBdAYAey6hA9LOS6WuITh90eq4L_SM0C4oDG9X'
-                          b'hvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-JALDG9XhvcVryHj'
-                          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAA-JAAMAAA-JAA-JAA-JAA')
-    assert len(serder.raw) == serder.size == 184
+    assert serder.raw == (b'-FAu0OKERICAACAAXicpENcf5ii15MsVCx7wxKi4muIodYJULhkOaEbvbz4cF3d4DG9XhvcVryHj'
+                        b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-JALDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+                        b'4fBJre3NGwTQMAAA-JAAMAAA-JAA-JAA-JAA')
+    assert len(serder.raw) == serder.size == 188
     sizeh = serder.raw[2:4]
-    assert sizeh == b"At"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 184
+    assert sizeh == b"Au"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 188
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 184 == serder.size
+    assert len(rawqb64) == 188 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 138
+    assert len(rawqb2) == 141
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)  # default kind is json so converts to json
-    assert len(rawjson) == 252
+    assert len(rawjson) == 255
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 202
+    assert len(rawcbor) == 205
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 202
+    assert len(rawmgpk) == 205
 
     rawcesr = serder.dumps(serder.sad, kind=kering.Kinds.cesr)
     assert rawcesr == serder.raw
-    assert len(rawcesr) == 184
+    assert len(rawcesr) == 188
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.46, 1.46, 1.83]
+    assert ratios == [1.0, 1.33, 1.45, 1.45, 1.81]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -2712,116 +2721,106 @@ def test_cesr_native_dumps_loads():
                     cnfg=['DND'],
                     data=data,
                     code=core.MtrDex.Blake3_256,
-                    version=Vrsn_2_0,
+                    pvrsn=Vrsn_2_0,
                     kind=kering.Kinds.cesr)
 
     pre = serder.pre
-    assert pre == 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g'
+    assert pre == 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie'
     said = serder.said
     assert said == pre
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAMM.',
+        'v': 'KERICAACAACESRAAMQ.',
         't': 'icp',
-        'd': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
-        'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
+        'd': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
+        'i': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
         's': '0',
         'kt': '2',
-        'k': [
-                'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-                'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-                'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-             ],
+        'k': ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+              'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+              'DMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'],
         'nt': '2',
-        'n': [
-                'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_',
-                'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG',
-                'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
-             ],
+        'n': ['EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_',
+              'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG',
+              'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'],
         'bt': '3',
-        'b': [
-                'BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-                'BK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-                'BMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-             ],
+        'b': ['BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+              'BK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+              'BMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'],
         'c': ['DND'],
-        'a': [
-                {
-                    'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
-                    's': '0',
-                    'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
-                },
-                {
-                    'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
-                    's': '1',
-                    'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
-                },
-                {
-                    's': 'f',
-                    'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
-                }
-             ]
+        'a':
+        [
+            {
+                'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+                's': '0',
+                'd': 'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+            },
+            {
+                'i': 'DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn',
+                's': '1',
+                'd': 'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG'
+            },
+            {
+                's': 'f',
+                'd': 'EEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZpZEyP'
+            }
+        ]
     }
 
 
-    assert serder.raw == (b'-FDCYKERICAAXicpEOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gEOPd'
-          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAAAMAAC-JAhDG9XhvcVryHj'
-          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
-          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAh'
-          b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
-          b'ZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
-          b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
-          b'gXZ2WYbr3AiPY1M0-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
-          b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
-          b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
-          b'ZJGJqQZpZEyP')
+    assert serder.raw == (b'-FDD0OKERICAACAAXicpEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_IeEPGk8hNbEwMV'
+                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAAAMAAC-JAhDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+                        b'4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnDMOmBoddcrRHShSajb4d'
+                        b'60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAhEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+                        b'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+                        b'ZJGJqQZpZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521o6nw'
+                        b'gcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+                        b'-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAEB9O4V-zUteZ'
+                        b'JJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn'
+                        b'MAABEMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISO'
+                        b'oQPYFEOpy22CZJGJqQZpZEyP')
 
 
-    assert len(serder.raw) == serder.size == 780
+    assert len(serder.raw) == serder.size == 784
     sizeh = serder.raw[2:4]
-    assert sizeh == b"DC"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 780
+    assert sizeh == b"DD"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 784
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert rawqb64 == (b'-FDCYKERICAAXicpEOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gEOPd'
-          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAAAMAAC-JAhDG9XhvcVryHj'
-          b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1'
-          b'bSORrxNSS9cnDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAh'
-          b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_EMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22CZJGJqQZp'
-          b'ZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521'
-          b'o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34'
-          b'gXZ2WYbr3AiPY1M0-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
-          b'4fBJre3NGwTQMAAAEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
-          b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAABEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISOoQPYFEOpy22C'
-          b'ZJGJqQZpZEyP')
+    assert rawqb64 == (b'-FDD0OKERICAACAAXicpEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_IeEPGk8hNbEwMV'
+                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAAAMAAC-JAhDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+                        b'4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnDMOmBoddcrRHShSajb4d'
+                        b'60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAhEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
+                        b'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22C'
+                        b'ZJGJqQZpZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521o6nw'
+                        b'gcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
+                        b'-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAEB9O4V-zUteZ'
+                        b'JJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn'
+                        b'MAABEMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISO'
+                        b'oQPYFEOpy22CZJGJqQZpZEyP')
 
 
-
-    assert len(rawqb64) == 780 == serder.size
+    assert len(rawqb64) == 784 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 585
+    assert len(rawqb2) == 588
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 915
+    assert len(rawjson) == 918
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 829
+    assert len(rawcbor) == 832
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 829
+    assert len(rawmgpk) == 832
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.42, 1.42, 1.56]
+    assert ratios == [1.0, 1.33, 1.41, 1.41, 1.56]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -2881,20 +2880,20 @@ def test_cesr_native_dumps_loads():
                       dig=prior,
                       sn=1,
                       data=data,
-                      version=Vrsn_2_0,
+                      pvrsn=Vrsn_2_0,
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN'
+    assert said == 'EBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaL'
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAHs.',
+        'v': 'KERICAACAACESRAAHw.',
         't': 'ixn',
-        'd': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
-        'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
+        'd': 'EBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaL',
+        'i': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
         's': '1',
-        'p': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
+        'p': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
         'a':
         [
             {
@@ -2919,41 +2918,40 @@ def test_cesr_native_dumps_loads():
         ]
     }
 
-    assert serder.raw == (b'-FB6YKERICAAXixnEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aNEOPd'
-          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAABEOPdbYtTSlD5eY4lR45O'
-          b'LM1ZOuDZQAhUKUra4k0N9U8g-JBU-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
-          b'4fBJre3NGwTQMAACEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58'
-          b'm521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAAiEMrowWRk6u1imR32ZNHn'
-          b'TPUtc7uSAvrchIPN3I8S6vUG-TAMMABDEEbufBpvagqe9kijKISOoQPYFEOpy22C'
-          b'ZJGJqQZpZEyP-SAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACA'
-          b'EB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_')
+    assert serder.raw == (b'-FB70OKERICAACAAXixnEBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaLEPGk8hNbEwMV'
+                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAABEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5'
+                        b'J_Ie-JBU-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAACEB9O4V-zUteZJJFu'
+                        b'bu1h0xMtzt0wuGpLMVj1sKVsElA_DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAAi'
+                        b'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-TAMMABDEEbufBpvagqe9kijKISOoQPY'
+                        b'FEOpy22CZJGJqQZpZEyP-SAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACAEB9O'
+                        b'4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_')
 
-    assert len(serder.raw) == serder.size == 492
+    assert len(serder.raw) == serder.size == 496
     sizeh = serder.raw[2:4]
-    assert sizeh == b"B6"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 492
+    assert sizeh == b"B7"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 496
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 492 == serder.size
+    assert len(rawqb64) == 496 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 369
+    assert len(rawqb2) == 372
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 601
+    assert len(rawjson) == 604
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 536
+    assert len(rawcbor) == 539
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 536
+    assert len(rawmgpk) == 539
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.45, 1.45, 1.63]
+    assert ratios == [1.0, 1.33, 1.45, 1.45, 1.62]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -2993,34 +2991,28 @@ def test_cesr_native_dumps_loads():
                       cuts=cuts,
                       adds=adds,
                       data=data,
-                      version=Vrsn_2_0,
+                      pvrsn=Vrsn_2_0,
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EHFimzZzXYC2GXauZOZpj5qGhMHoKalUVF9sLmLNb99o'
+    assert said == 'EAXN-CyfOKnz9qygXtfF-IE0HpM4jdSHWyrJSI1PWT8H'
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAIc.',
+        'v': 'KERICAACAACESRAAIg.',
         't': 'rot',
-        'd': 'EHFimzZzXYC2GXauZOZpj5qGhMHoKalUVF9sLmLNb99o',
-        'i': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g',
+        'd': 'EAXN-CyfOKnz9qygXtfF-IE0HpM4jdSHWyrJSI1PWT8H',
+        'i': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
         's': '2',
-        'p': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
+        'p': 'EBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaL',
         'kt': '2',
-        'k':
-        [
-            'DH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68',
-            'DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQ',
-            'DKhYdMBeP6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMER'
-        ],
+        'k': ['DH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68',
+              'DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQ',
+              'DKhYdMBeP6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMER'],
         'nt': '2',
-        'n':
-        [
-            'EBvDSpcj3y0y9W2-1GzYJ85KEkDIPxu4y_TxAK49k7ci',
-            'EEb97lh2oOd_yM3meBaRX5xSs8mIeBoPdhOTgVkd31jb',
-            'ECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStga'
-        ],
+        'n': ['EBvDSpcj3y0y9W2-1GzYJ85KEkDIPxu4y_TxAK49k7ci',
+              'EEb97lh2oOd_yM3meBaRX5xSs8mIeBoPdhOTgVkd31jb',
+              'ECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStga'],
         'bt': '3',
         'br': ['BG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ'],
         'ba': ['BH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68'],
@@ -3029,42 +3021,41 @@ def test_cesr_native_dumps_loads():
     }
 
 
-    assert serder.raw == (b'-FCGYKERICAAXrotEHFimzZzXYC2GXauZOZpj5qGhMHoKalUVF9sLmLNb99oEOPd'
-          b'bYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8gMAACEMFNZfsBmXvA-pkmetvM'
-          b'jTux9bIHnvaaXCsH6uqN1_aNMAAC-JAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1'
-          b'k4t2nm1C1A68DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQDKhYdMBe'
-          b'P6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-JAhEBvDSpcj3y0y9W2-1GzY'
-          b'J85KEkDIPxu4y_TxAK49k7ciEEb97lh2oOd_yM3meBaRX5xSs8mIeBoPdhOTgVkd'
-          b'31jbECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStgaMAAD-JALBG9XhvcV'
-          b'ryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ-JALBH7p14xo09rob5cEupmo8jSD'
-          b'i35ZOGt1k4t2nm1C1A68-JAA-JAA')
+    assert serder.raw == (b'-FCH0OKERICAACAAXrotEAXN-CyfOKnz9qygXtfF-IE0HpM4jdSHWyrJSI1PWT8HEPGk8hNbEwMV'
+                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAACEBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtF'
+                        b'xUaLMAAC-JAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68DIAdqJzLWEwQbhXEMOFj'
+                        b'vFVZ7oMCJP4XXDP_ILaTEBAQDKhYdMBeP6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-JAh'
+                        b'EBvDSpcj3y0y9W2-1GzYJ85KEkDIPxu4y_TxAK49k7ciEEb97lh2oOd_yM3meBaRX5xSs8mIeBoP'
+                        b'dhOTgVkd31jbECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStgaMAAD-JALBG9XhvcVryHj'
+                        b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ-JALBH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C'
+                        b'1A68-JAA-JAA')
 
-    assert len(serder.raw) == serder.size == 540
+    assert len(serder.raw) == serder.size == 544
     sizeh = serder.raw[2:4]
-    assert sizeh == b"CG"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 540
+    assert sizeh == b"CH"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 544
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 540 == serder.size
+    assert len(rawqb64) == 544 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 405
+    assert len(rawqb2) == 408
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 638
+    assert len(rawjson) == 641
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 577
+    assert len(rawcbor) == 580
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 577
+    assert len(rawmgpk) == 580
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.42, 1.42, 1.58]
+    assert ratios == [1.0, 1.33, 1.42, 1.42, 1.57]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -3126,42 +3117,33 @@ def test_cesr_native_dumps_loads():
                     data=data,
                     delpre=delpre,
                     code=core.MtrDex.Blake3_256,
-                    version=Vrsn_2_0,
+                    pvrsn=Vrsn_2_0,
                     kind=kering.Kinds.cesr)
 
     pre = serder.pre
-    assert pre == 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H'
+    assert pre == 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U'
     said = serder.said
     assert said == pre
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAN8.',
+        'v': 'KERICAACAACESRAAOA.',
         't': 'dip',
-        'd': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
-        'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
+        'd': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
         's': '0',
         'kt': ['1/2', '1/2', '1/2'],
-        'k':
-        [
-            'DIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV',
-            'DN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUti',
-            'DOE5jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY'
-        ],
+        'k': ['DIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV',
+              'DN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUti',
+              'DOE5jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY'],
         'nt': ['1/2', '1/2', '1/2'],
-        'n':
-        [
-            'EKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ44DS',
-            'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ',
-            'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCD'
-        ],
+        'n': ['EKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ44DS',
+              'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ',
+              'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCD'],
         'bt': '3',
-        'b':
-        [
-            'BIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV',
-            'BN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUti',
-            'BOE5jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY'
-        ],
+        'b': ['BIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV',
+              'BN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUti',
+              'BOE5jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY'],
         'c': [],
         'a':
         [
@@ -3176,55 +3158,52 @@ def test_cesr_native_dumps_loads():
                 'd': 'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ'
             },
             {
-                's': '15',
-                'd': 'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCD'
+                's': '15', 'd': 'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCD'
             },
             {
                 's': '3e12',
                 'd': 'EKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ44DS'
             }
         ],
-        'di': 'EOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g'
+        'di': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie'
     }
 
 
-    assert serder.raw == (b'-FDeYKERICAAXdipEAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2HEAyd'
-          b'kSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2HMAAA4AADA1s2c1s2c1s2-JAh'
-          b'DIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uVDN7WiKyjLLBTK92xayCu'
-          b'ddZsBuwPmD2BKrl83h1xEUtiDOE5jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl'
-          b'5nfY4AADA1s2c1s2c1s2-JAhEKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ'
-          b'44DSEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZEHgewy_ymPxtSFwu'
-          b'X2KaI_mPmoIUkxClviX3f-M38kCDMAAD-JAhBIR8GACw4z2GC5_XoReU4DMKbqi6'
-          b'-EdbgDZUAobRb8uVBN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiBOE5'
-          b'jmI9ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY-JAA-JBI-SAuDIR8GACw4z2G'
-          b'C5_XoReU4DMKbqi6-EdbgDZUAobRb8uVMAADEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
-          b'iD1D9Qx0MagJ44DSDN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiMAAE'
-          b'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-TAYMAAVEHgewy_ymPxt'
-          b'SFwuX2KaI_mPmoIUkxClviX3f-M38kCDMD4SEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
-          b'iD1D9Qx0MagJ44DSEOPdbYtTSlD5eY4lR45OLM1ZOuDZQAhUKUra4k0N9U8g')
+    assert serder.raw == (b'-FDf0OKERICAACAAXdipEJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UEJJkRAwNy0yH'
+                        b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UMAAA4AADA1s2c1s2c1s2-JAhDIR8GACw4z2GC5_XoReU'
+                        b'4DMKbqi6-EdbgDZUAobRb8uVDN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiDOE5jmI9'
+                        b'ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY4AADA1s2c1s2c1s2-JAhEKFoJ9Conb37zSn8zHLK'
+                        b'P3YwHbeQiD1D9Qx0MagJ44DSEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZEHgewy_y'
+                        b'mPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCDMAAD-JAhBIR8GACw4z2GC5_XoReU4DMKbqi6-Edb'
+                        b'gDZUAobRb8uVBN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiBOE5jmI9ktNSAddEke1r'
+                        b'H2cGMDq4uYmyagDkAzHl5nfY-JAA-JBI-SAuDIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobR'
+                        b'b8uVMAADEKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ44DSDN7WiKyjLLBTK92xayCuddZs'
+                        b'BuwPmD2BKrl83h1xEUtiMAAEEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-TAYMAAV'
+                        b'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCDMD4SEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
+                        b'iD1D9Qx0MagJ44DSEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie')
 
-    assert len(serder.raw) == serder.size == 892
+    assert len(serder.raw) == serder.size == 896
     sizeh = serder.raw[2:4]
-    assert sizeh == b"De"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 892
+    assert sizeh == b"Df"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 896
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
 
-    assert len(rawqb64) == 892 == serder.size
+    assert len(rawqb64) == 896 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 669
+    assert len(rawqb2) == 672
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 1059
+    assert len(rawjson) == 1062
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 953
+    assert len(rawcbor) == 956
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 953
+    assert len(rawmgpk) == 956
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
@@ -3269,20 +3248,20 @@ def test_cesr_native_dumps_loads():
                       cuts=cuts,
                       adds=adds,
                       data=data,
-                      version=Vrsn_2_0,
+                      pvrsn=Vrsn_2_0,
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'ELPki1ox4BKNSKw-dcvh5G0SuTaNpb97aBBZR3ZpX0bX'
+    assert said == 'EExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKl'
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAFs.',
+        'v': 'KERICAACAACESRAAFw.',
         't': 'drt',
-        'd': 'ELPki1ox4BKNSKw-dcvh5G0SuTaNpb97aBBZR3ZpX0bX',
-        'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
+        'd': 'EExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKl',
+        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
         's': '1',
-        'p': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
+        'p': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
         'kt': '1',
         'k': ['DJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f'],
         'nt': '1',
@@ -3294,40 +3273,39 @@ def test_cesr_native_dumps_loads():
         'a': []
     }
 
-    assert serder.raw == (b'-FBaYKERICAAXdrtELPki1ox4BKNSKw-dcvh5G0SuTaNpb97aBBZR3ZpX0bXEAyd'
-          b'kSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2HMAABEAydkSsFW7KqT1msBF5b'
-          b'H7tn3dzZ-etVVvi2UjIFSF2HMAAB-JALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWl'
-          b'K9NciJop9N4fMAAB-JALENX_LTL97uOSOkA1PEzam9vtmCLPprnbcpi71wXpmhFF'
-          b'MAAD-JALBIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV-JALBJ0pLe3f'
-          b'2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f-JAA-JAA')
+    assert serder.raw == (b'-FBb0OKERICAACAAXdrtEExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKlEJJkRAwNy0yH'
+                    b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UMAABEJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQl'
+                    b'MM4UMAAB-JALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4fMAAB-JALENX_LTL97uOS'
+                    b'OkA1PEzam9vtmCLPprnbcpi71wXpmhFFMAAD-JALBIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZU'
+                    b'AobRb8uV-JALBJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f-JAA-JAA')
 
 
-    assert len(serder.raw) == serder.size == 364
+    assert len(serder.raw) == serder.size == 368
     sizeh = serder.raw[2:4]
-    assert sizeh == b"Ba"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 364
+    assert sizeh == b"Bb"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 368
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 364 == serder.size
+    assert len(rawqb64) == 368 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 273
+    assert len(rawqb2) == 276
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 450
+    assert len(rawjson) == 453
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 393
+    assert len(rawcbor) == 396
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 393
+    assert len(rawmgpk) == 396
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.44, 1.44, 1.65]
+    assert ratios == [1.0, 1.33, 1.43, 1.43, 1.64]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -3348,54 +3326,54 @@ def test_cesr_native_dumps_loads():
     assert serder.sad == sad
 
     # Test receipt
-    said = 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN'
+    said == 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN'
     serder = receipt(pre=pre,
                       sn=1,
                       said=said,
-                      version=Vrsn_2_0,
+                      pvrsn=Vrsn_2_0,
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN'
+    assert said == said
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAABs.',
+        'v': 'KERICAACAACESRAABw.',
         't': 'rct',
-        'd': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
-        'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
+        'd': 'EExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKl',
+        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
         's': '1'
     }
 
-    assert serder.raw == (b'-FAaYKERICAAXrctEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aNEAyd'
-                          b'kSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2HMAAB')
+    assert serder.raw == (b'-FAb0OKERICAACAAXrctEExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKlEJJkRAwNy0yH'
+                         b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UMAAB')
 
-    assert len(serder.raw) == serder.size == 108
+    assert len(serder.raw) == serder.size == 112
     sizeh = serder.raw[2:4]
-    assert sizeh == b"Aa"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 108
+    assert sizeh == b"Ab"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 112
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 108 == serder.size
+    assert len(rawqb64) == 112 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 81
+    assert len(rawqb2) == 84
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 144
+    assert len(rawjson) == 147
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 126
+    assert len(rawcbor) == 129
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 126
+    assert len(rawmgpk) == 129
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.56, 1.56, 1.78]
+    assert ratios == [1.0, 1.33, 1.54, 1.54, 1.75]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -3425,55 +3403,54 @@ def test_cesr_native_dumps_loads():
                     replyRoute="/home",
                     query=q,
                     stamp=dts,
-                    version=Vrsn_2_0,
+                    pvrsn=Vrsn_2_0,
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'ED7SlHBJGAnKp6EqkgLSOJOYUXCEnIntpWNNq7RtWXvY'
-
+    assert said == 'EB0BOf57OnZnX9Ax6T-5Jf6hQtBlMsGdjBIMIgxNyaIa'
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAAC0.',
+        'v': 'KERICAACAACESRAAC4.',
         't': 'qry',
-        'd': 'ED7SlHBJGAnKp6EqkgLSOJOYUXCEnIntpWNNq7RtWXvY',
-        'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
+        'd': 'EB0BOf57OnZnX9Ax6T-5Jf6hQtBlMsGdjBIMIgxNyaIa',
+        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/fun',
         'rr': '/home',
         'q': {'stuff': 'hello'}
     }
 
-    assert serder.raw == (b'-FAsYKERICAAXqryED7SlHBJGAnKp6EqkgLSOJOYUXCEnIntpWNNq7RtWXvYEAydkSsFW7KqT1ms'
-                          b'BF5bH7tn3dzZ-etVVvi2UjIFSF2H1AAG2020-08-22T17c50c09d988921p00c004AAB-fun6AAC'
-                          b'AAA-home-IAE0L_stuff0L_hello')
+    assert serder.raw == (b'-FAt0OKERICAACAAXqryEB0BOf57OnZnX9Ax6T-5Jf6hQtBlMsGdjBIMIgxNyaIaEJJkRAwNy0yH'
+                          b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U1AAG2020-08-22T17c50c09d988921p00c004AAB-fun'
+                          b'6AACAAA-home-IAE0L_stuff0L_hello')
 
-    assert len(serder.raw) == serder.size == 180
+    assert len(serder.raw) == serder.size == 184
     sizeh = serder.raw[2:4]
-    assert sizeh == b"As"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 180
+    assert sizeh == b"At"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 184
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 180 == serder.size
+    assert len(rawqb64) == 184 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 135
+    assert len(rawqb2) == 138
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 222
+    assert len(rawjson) == 225
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 190
+    assert len(rawcbor) == 193
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 190
+    assert len(rawmgpk) == 193
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.41, 1.41, 1.64]
+    assert ratios == [1.0, 1.33, 1.4, 1.4, 1.63]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)
@@ -3502,53 +3479,57 @@ def test_cesr_native_dumps_loads():
                    route="/home",
                     data=data,
                     stamp=dts,
-                    version=Vrsn_2_0,
+                    pvrsn=Vrsn_2_0,
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EDJuYSA1Hg-NGHnRtgILYBU6aZs9us2T3ETrCWq0HwGe'
+    assert said == 'EL76gEjbu4KIFuzPJY4dB4QPdCjsUIlt-J_b49bZC--R'
 
     assert serder.sad == \
     {
-        'v': 'KERICAACESRAADc.',
+        'v': 'KERICAACAACESRAADg.',
         't': 'rpy',
-        'd': 'EDJuYSA1Hg-NGHnRtgILYBU6aZs9us2T3ETrCWq0HwGe',
-        'i': 'EAydkSsFW7KqT1msBF5bH7tn3dzZ-etVVvi2UjIFSF2H',
+        'd': 'EL76gEjbu4KIFuzPJY4dB4QPdCjsUIlt-J_b49bZC--R',
+        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/home',
-        'a': {'d': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN', 'name': 'John'}
+        'a':
+        {
+            'd': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
+            'name': 'John'
+        }
     }
 
-    assert serder.raw == (b'-FA2YKERICAAXrpyEDJuYSA1Hg-NGHnRtgILYBU6aZs9us2T3ETrCWq0HwGeEAydkSsFW7KqT1ms'
-                          b'BF5bH7tn3dzZ-etVVvi2UjIFSF2H1AAG2020-08-22T17c50c09d988921p00c006AACAAA-home'
-                          b'-IAQ0J_dEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
+    assert serder.raw == (b'-FA30OKERICAACAAXrpyEL76gEjbu4KIFuzPJY4dB4QPdCjsUIlt-J_b49bZC--REJJkRAwNy0yH'
+                          b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U1AAG2020-08-22T17c50c09d988921p00c006AACAAA-'
+                          b'home-IAQ0J_dEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
 
-    assert len(serder.raw) == serder.size == 220
+    assert len(serder.raw) == serder.size == 224
     sizeh = serder.raw[2:4]
-    assert sizeh == b"A2"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 220
+    assert sizeh == b"A3"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 224
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert len(rawqb64) == 220 == serder.size
+    assert len(rawqb64) == 224 == serder.size
 
     rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 165
+    assert len(rawqb2) == 168
     assert rawqb64 == encodeB64(rawqb2)  # round trips
 
     rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 259
+    assert len(rawjson) == 262
 
     rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 228
+    assert len(rawcbor) == 231
 
     rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 228
+    assert len(rawmgpk) == 231
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
     ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
 
-    assert ratios == [1.0, 1.33, 1.38, 1.38, 1.57]
+    assert ratios == [1.0, 1.33, 1.38, 1.38, 1.56]
 
     # Test ._loads
     sad = serder._loads(raw=rawqb64)

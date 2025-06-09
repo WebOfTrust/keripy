@@ -605,6 +605,8 @@ def incept(keys,
            cnfg=None,
            data=None,
            version=Version,
+           pvrsn=None,
+           gvrsn=None,
            kind=Kinds.json,
            code=None,
            intive=False,
@@ -623,7 +625,9 @@ def incept(keys,
         wits (list | None): witness identifier prefixes qb64
         cnfg (list | None): configuration traits from TraitDex
         data (list | None): seal dicts
-        version (Version): KERI protocol version string
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         code (str | None): derivation code for computed prefix
         intive (bool): True means sith, nsith, and toad are serialized as ints
@@ -632,7 +636,9 @@ def incept(keys,
         delpre (str | None): delegator identifier prefix qb64. When not None
             makes this a msg type "dip", delegated inception event.
     """
-    vs = versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
     ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
     sner = Number(num=0)  # sn for incept must be 0
 
@@ -729,7 +735,9 @@ def delcept(keys, delpre, **kwa):
         wits (list | None): witness identifier prefixes qb64
         cnfg (list | None): configuration traits from TraitDex
         data (list | None): seal dicts
-        version (Version): KERI protocol version string
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         code (str | None): derivation code for computed prefix
         intive (bool): True means sith, nsith, and toad are serialized as ints
@@ -755,6 +763,8 @@ def rotate(pre,
            adds=None,
            data=None,
            version=Version,
+           pvrsn=None,
+           gvrsn=None,
            kind=Kinds.json,
            intive = False,
            ):
@@ -776,12 +786,15 @@ def rotate(pre,
         cuts (list | None): witness prefixes to cut qb64
         adds (list | None): witness prefixes to add qb64
         data (list | None): seal dicts
-        version (Version): KERI protocol version string
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
                        instead of hex str when numeric threshold
     """
-    vs = versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
     ilk = ilk
     if ilk not in (Ilks.rot, Ilks.drt):
@@ -911,7 +924,9 @@ def deltate(pre,
         cuts (list): witness prefixes to cut qb64
         adds (list): witness prefixes to add qb64
         data (list): seal dicts
-        version (Version): KERI protocol version string
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
             not hex str when numeric threshold
@@ -926,6 +941,8 @@ def interact(pre,
              sn=1,
              data=None,
              version=Version,
+             pvrsn=None,
+             gvrsn=None,
              kind=Kinds.json,
              ):
     """
@@ -937,10 +954,14 @@ def interact(pre,
         dig is said digest of previous event qb64
         sn is int sequence number
         data is list of dicts of comitted data such as seals
-        version is Version instance
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind is serialization kind
     """
-    vs = versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
     ilk = Ilks.ixn
     sner = Number(num=sn)
     if sner.num < 1:  # sn for interact must be >= 1
@@ -969,6 +990,8 @@ def receipt(pre,
             said,
             *,
             version=Version,
+            pvrsn=None,
+            gvrsn=None,
             kind=Kinds.json
             ):
     """
@@ -981,10 +1004,14 @@ def receipt(pre,
         pre is qb64 str of prefix of event being receipted
         sn  is int sequence number of event being receipted
         said is qb64 of said of event being receipted
-        version is Version instance of receipt
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind  is serialization kind of receipt
     """
-    vs = versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
     ilk = Ilks.rct
 
     sner = Number(num=sn)
@@ -1008,6 +1035,8 @@ def query(pre="",
           query=None,
           stamp=None,
           version=Version,
+          pvrsn=None,
+          gvrsn=None,
           kind=Kinds.json):
     """
     Returns serder of query 'qry' message.
@@ -1023,7 +1052,9 @@ def query(pre="",
         query (dict): query data paramaters modifiers
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message
-        version (Version): KERI message Version namedtuple instance
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
     Version 1.0
@@ -1060,10 +1091,12 @@ def query(pre="",
     }
 
     """
-    vs = versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
     ilk = Ilks.qry
 
-    if version.major == Vrsn_1_0.major:
+    if pvrsn.major == Vrsn_1_0.major:
         sad = dict(v=vs,  # version string
                    t=ilk,
                    d="",
@@ -1098,6 +1131,8 @@ def reply(pre="",
           data=None,
           stamp=None,
           version=Version,
+          pvrsn=None,
+          gvrsn=None,
           kind=Kinds.json):
     """
     Returns serder of reply 'rpy' message.
@@ -1112,7 +1147,9 @@ def reply(pre="",
         data (dict): attribute section of reply
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data
-        version (Version):  KERI message Version namedtuple instance
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
     Version 1:
@@ -1150,12 +1187,13 @@ def reply(pre="",
 
 
     """
-    label = coring.Saids.d
-    vs = versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
     if data is None:
         data = {}
 
-    if version.major == Vrsn_1_0.major:
+    if pvrsn.major == Vrsn_1_0.major:
         sad = dict(v=vs,  # version string
                    t=Ilks.rpy,
                    d="",

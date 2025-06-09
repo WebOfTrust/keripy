@@ -25,7 +25,7 @@ from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE, VERFMT,
+                      VERRAWSIZE1, VERFMT1,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
 from ..kering import SMELLSIZE, Smellage, smell, sniff, Colds
 
@@ -382,10 +382,11 @@ class Serder:
     #override in subclass to enforce specific protocol
     Protocol = None  # class based message protocol, None means any in Protocols is ok
     Proto = Protocols.keri  # default message protocol type for makify on base Serder
-    Vrsn = Vrsn_1_0  # default protocol version for protocol type
+    PVrsn = Vrsn_1_0  # default protocol version
+    GVrsn = Vrsn_2_0  # default CESR genus version
     Kind = Kinds.json  # default serialization kind
     Genus = GenDex.KERI  # default CESR genus code
-    GVrsn = Vrsn_2_0  # default CESR genus version
+
 
 
     # Nested dict keyed by protocol.
@@ -632,12 +633,6 @@ class Serder:
             except Exception as ex:
                 self._said = None  # no saidive field
 
-            #if strip:  #only when raw is bytearray
-                #try:
-                    #del raw[:self._size]
-                #except TypeError:
-                    #pass  # ignore if bytes
-
             if verify:  # verify fields including the said(s) provided in raw
                 try:
                     self._verify()  # raises exception when not verify
@@ -728,7 +723,7 @@ class Serder:
             raise ValidationError(f"Incompatible protocol={self.proto} with "
                                   f"genus={self.genus}.")
 
-        if self.gvrsn is not None and self.pvrsn.major > self.gvrsn.major:
+        if self.gvrsn is not None and self.gvrsn.major < 2:
             raise ValidationError(f"Incompatible major protocol version={self.pvrsn}"
                                  f" with major genus version={self.gvrsn}.")
 
@@ -888,10 +883,10 @@ class Serder:
                    - the code extracted from sad[said label] when valid CESR
                    - the code provided in .Fields...saids
         """
-        sproto = svrsn = skind = silk = sgvrsn = None
+        sproto = spvrsn = skind = silk = sgvrsn = None  # from sad
         if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
-                sproto, svrsn, skind, _, sgvrsn = deversify(sad["v"])
+                sproto, spvrsn, skind, _, sgvrsn = deversify(sad["v"])
             except VersionError as ex:
                 pass
             else:
@@ -918,17 +913,20 @@ class Serder:
                                   f"genus={genus}.")
 
         if pvrsn is None:
-            pvrsn = svrsn if svrsn is not None else self.Vrsn
+            pvrsn = spvrsn if spvrsn is not None else self.PVrsn
 
         if pvrsn not in self.Fields[proto]:
             raise SerializeError(f"Invalid version={pvrsn} for protocol={proto}.")
 
-        if gvrsn is None and sgvrsn is not None:
-            gvrsn = sgvrsn
+        if gvrsn is None:  # use default GVrsn only if pvrsn >= 2 othwise leave gvrsn None
+            gvrsn = sgvrsn if sgvrsn is not None else (self.GVrsn if pvrsn.major >= 2 else None)
 
-        if gvrsn is not None and pvrsn.major > self.gvrsn.major:
+        #if gvrsn is None and sgvrsn is not None:
+            #gvrsn = sgvrsn
+
+        if gvrsn is not None and gvrsn.major < 2:
             raise SerializeError(f"Incompatible major protocol version={pvrsn} "
-                                 f"with major genus version={self.gvrsn}.")
+                                 f"with major genus version={gvrsn}")
 
         if kind is None:
             kind = skind if skind is not None else self.Kind

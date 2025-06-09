@@ -65,7 +65,7 @@ def test_version_regex():
     # Test VEREX2 by itself
     pattern = re.compile(VEREX2)  # compile is faster
 
-    vs = b'KERICAAJSONAAAB.'
+    vs = b'KERICAACAAJSONAAAB.'   #b'KERICAAJSONAAAB.'
 
     match = pattern.match(vs)
     assert match
@@ -74,21 +74,23 @@ def test_version_regex():
     assert full == vs
     span = len(full)
     assert span == VER2FULLSPAN
-    assert VER2TERM ==  chr(full[-1]).encode("utf-8")
+    assert VER2TERM ==  chr(full[-1]).encode("utf-8")  # terminator
     assert ord(VER2TERM) == full[-1]
 
     groups = match.group("proto2",
-                        "major2",
-                        "minor2",
+                        "pmajor2",
+                        "pminor2",
+                        "gmajor2",
+                        "gminor2",
                         "kind2",
                         "size2")
 
-    assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
+    assert groups == (b'KERI', b'C', b'AA', b'C', B'AA', b'JSON', b'AAAB')
 
     # Test VEREX with combined VEREXes
     pattern = re.compile(VEREX)  # compile is faster
 
-    vs = b'KERICAAJSONAAAB.'
+    vs = b'KERICAACAAJSONAAAB.'
 
     match = pattern.match(vs)
     assert match
@@ -101,12 +103,14 @@ def test_version_regex():
     assert ord(VER2TERM) == full[-1]
 
     groups = match.group("proto2",
-                        "major2",
-                        "minor2",
+                        "pmajor2",
+                        "pminor2",
+                        "gmajor2",
+                        "gminor2",
                         "kind2",
                         "size2")
 
-    assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
+    assert groups == (b'KERI', b'C', b'AA', b'C', B'AA', b'JSON', b'AAAB')
 
     vs = b'KERI10JSON000002_'
 
@@ -128,7 +132,7 @@ def test_version_regex():
 
     assert groups == (b'KERI', b'1', b'0', b'JSON', b'000002')
 
-    raw = b'{"vs":"KERICAAJSONAAAB.","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"}'
+    raw = b'{"v":"KERICAACAAJSONAAAB.","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"}'
 
     match = pattern.search(raw)
     assert match
@@ -140,15 +144,17 @@ def test_version_regex():
     assert ord(VER2TERM) == full[-1]
 
     groups = match.group("proto2",
-                        "major2",
-                        "minor2",
+                        "pmajor2",
+                        "pminor2",
+                        "gmajor2",
+                        "gminor2",
                         "kind2",
                         "size2")
 
-    assert groups == (b'KERI', b'C', b'AA', b'JSON', b'AAAB')
+    assert groups == (b'KERI', b'C', b'AA', b'C', B'AA', b'JSON', b'AAAB')
 
 
-    raw = b'{"vs":"KERI10JSON000002_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"}'
+    raw = b'{"v":"KERI10JSON000002_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"}'
 
     match = pattern.search(raw)
     assert match
@@ -175,12 +181,12 @@ def test_smell():
     Test smell function to parse into Serializations
     """
 
-    raw = b'{"vs":"KERICAAJSONAAAB.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
+    raw = b'{"vs":"KERICAACAAJSONAAAB.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
     assert smell(raw) == Smellage(proto='KERI',
                                   pvrsn=Versionage(major=2, minor=0),
                                   kind='JSON',
                                   size=1,
-                                  gvrsn=None)
+                                  gvrsn=Versionage(major=2, minor=0))
 
     raw = b'{"vs":"KERI10JSON000002_","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
     assert smell(raw) == Smellage(proto='KERI',
@@ -189,7 +195,7 @@ def test_smell():
                                   size=2,
                                   gvrsn=None)
 
-    raw = b'{"vs":"KERICAAJSONAAABX.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
+    raw = b'{"vs":"KERICAACAAJSONAAABX.","t":"ixn","d":"EPTgL0UEOa8xUWBqghryJYMLOd2eYjmclndQN4bArjSf"}'
     with pytest.raises(ProtocolError):
         smell(raw)
 
@@ -198,228 +204,6 @@ def test_smell():
         smell(raw)
 
     """End Test"""
-
-
-def test_snuff():
-    """
-    Test conceptually snuff for looking ahead at CESR native messages from stream
-    Not used just concept testing for future reference
-
-    VER0FULLSPAN = 12  # number of characters in full version string
-    VEREX0 = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
-
-
-    """
-    # version field in CESR native serialization
-    VFFULLSPAN = 12  # number of characters in full version string
-    VFREX = b'0N(?P<proto0>[A-Z]{4})(?P<major0>[0-9A-Za-z_-])(?P<minor0>[0-9A-Za-z_-]{2})(?P<gmajor0>[0-9A-Za-z_-])(?P<gminor0>[0-9A-Za-z_-]{2})'
-
-    Revfer = re.compile(VFREX)  # compile is faster
-
-    MAXVFOFFSET = 12
-
-    SNUFFSIZE = MAXVFOFFSET + VFFULLSPAN
-
-    def snatch(match, size=0):
-        """ Returns:
-            smellage (Smellage): named tuple extracted from version string regex match
-                                (protocol, version, kind, size, gvrsn)
-
-        Parameters:
-            match (re.Match):  instance of Match class
-            size (int): provided size to substitute when missing
-
-        Notes:
-            regular expressions work with memoryview objects not just bytes or
-            bytearrays
-        """
-        full = match.group()  # full matched version string
-        if len(full) == VFFULLSPAN:
-            proto, major, minor, gmajor, gminor = match.group("proto0",
-                                                         "major0",
-                                                         "minor0",
-                                                         "gmajor0",
-                                                         "gminor0")
-            proto = proto.decode("utf-8")
-            if proto not in Protocols:
-                raise ProtocolError(f"Invalid protocol type = {proto}.")
-            pvrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
-            if pvrsn.major < 2:  # version2 vs but major < 2
-                raise VersionError(f"Incompatible {pvrsn=} with version string.")
-
-            gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
-            if gvrsn.major < 2:  # version2 vs but major < 2
-                raise VersionError(f"Incompatible {gvrsn=} with CESR native version"
-                                   f"field.")
-            kind = Kinds.cesr
-            size = size
-        else:
-            raise VersionError(f"Bad snatch.")
-
-        return Smellage(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
-
-
-    def snuff(raw, size=0):
-        """Extract and return instance of Smellage from version string inside
-        raw serialization.
-
-        Returns:
-            smellage (Smellage): named Tuple of (protocol, version, kind, size)
-
-        Parameters:
-            raw (bytearray) of serialized incoming message stream. Assumes start
-                of stream is JSON, CBOR, or MGPK field map with first field
-                is labeled 'v' and value is version string.
-            size (int): provided size to substitute when missing
-
-        """
-        if len(raw) < SNUFFSIZE:
-            raise kering.ShortageError(f"Need more raw bytes to smell full version string.")
-
-        match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
-        if not match or match.start() > MAXVFOFFSET:
-            raise kering.VersionError(f"Invalid version string from smelled raw = "
-                               f"{raw[: SNUFFSIZE]}.")
-
-        return snatch(match, size=size)
-
-
-    #pattern = re.compile(VFREX)  # compile is faster
-    pattern = Revfer
-
-    vv = b'0NKERICAACAB'
-
-    match = pattern.match(vv)
-    assert match
-
-    full = match.group()  # not group args so returns full  match
-    assert full == vv
-    span = len(full)
-    assert span == VFFULLSPAN
-
-    groups = match.group("proto0",
-                        "major0",
-                        "minor0",
-                        "gmajor0",
-                        "gminor0")
-
-    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
-
-    raw = b'-FAM' + vv
-    assert raw == b'-FAM0NKERICAACAB'
-
-    match = pattern.search(raw)
-    assert match
-
-    full = match.group()  # not group args so returns full  match
-    assert full == vv
-    span = len(full)
-    assert span == VFFULLSPAN
-
-    groups = match.group("proto0",
-                        "major0",
-                        "minor0",
-                        "gmajor0",
-                        "gminor0")
-
-    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
-
-    raw = b'-0FAAAAM' + vv
-    assert raw == b'-0FAAAAM0NKERICAACAB'
-
-    match = pattern.search(raw)
-    assert match
-
-    full = match.group()  # not group args so returns full  match
-    assert full == vv
-    span = len(full)
-    assert span == VFFULLSPAN
-
-    groups = match.group("proto0",
-                        "major0",
-                        "minor0",
-                        "gmajor0",
-                        "gminor0")
-
-    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
-
-
-    vv = b'0NKERICAACAB'
-
-    match = pattern.match(vv)
-    assert match
-
-    full = match.group()  # not group args so returns full  match
-    assert full == vv
-    span = len(full)
-    assert span == VFFULLSPAN
-
-    groups = match.group("proto0",
-                        "major0",
-                        "minor0",
-                        "gmajor0",
-                        "gminor0")
-
-    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
-
-    raw = b'-FAM' + vv
-    assert raw == b'-FAM0NKERICAACAB'
-
-    match = pattern.search(raw)
-    assert match
-
-    full = match.group()  # not group args so returns full  match
-    assert full == vv
-    span = len(full)
-    assert span == VFFULLSPAN
-
-    groups = match.group("proto0",
-                        "major0",
-                        "minor0",
-                        "gmajor0",
-                        "gminor0")
-
-    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
-
-    raw = b'-0FAAAAM' + vv
-    assert raw == b'-0FAAAAM0NKERICAACAB'
-
-    match = pattern.search(raw)
-    assert match
-
-    full = match.group()  # not group args so returns full  match
-    assert full == vv
-    span = len(full)
-    assert span == VFFULLSPAN
-
-    groups = match.group("proto0",
-                        "major0",
-                        "minor0",
-                        "gmajor0",
-                        "gminor0")
-
-    assert groups == (b'KERI', b'C', b'AA', b'C', b'AB')
-
-    vv = b'0NKERI______'
-    raw = b'-0FAAAAM' + vv
-    assert raw == b'-0FAAAAM0NKERI______'
-
-    match = pattern.search(raw)
-    assert match
-
-    full = match.group()  # not group args so returns full  match
-    assert full == vv
-    span = len(full)
-    assert span == VFFULLSPAN
-
-    groups = match.group("proto0",
-                        "major0",
-                        "minor0",
-                        "gmajor0",
-                        "gminor0")
-
-    assert groups == (b'KERI', b'_', b'__', b'_', b'__')
-
 
 
 def test_serials():
@@ -444,13 +228,14 @@ def test_serials():
     Vstrings = Kindage(json=versify(kind=Kinds.json, size=0),
                          mgpk=versify(kind=Kinds.mgpk, size=0),
                          cbor=versify(kind=Kinds.cbor, size=0),
-                         cesr=versify(pvrsn=Vrsn_2_0, kind=Kinds.cesr, size=0))
+                         cesr=versify(pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0,
+                                      kind=Kinds.cesr, size=0))
 
 
     assert Vstrings.json == 'KERI10JSON000000_'
     assert Vstrings.mgpk == 'KERI10MGPK000000_'
     assert Vstrings.cbor == 'KERI10CBOR000000_'
-    assert Vstrings.cesr == 'KERICAACESRAAAA.'
+    assert Vstrings.cesr == 'KERICAACAACESRAAAA.'
 
     icp = dict(vs=Vstrings.json,
                pre='AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
@@ -553,7 +338,7 @@ def test_versify_v1():
     Test Versify support
     """
 
-    assert VER1FULLSPAN == MAXVERFULLSPAN
+    assert VER2FULLSPAN == MAXVERFULLSPAN
 
     # default version is version 1
 
@@ -654,79 +439,172 @@ def test_versify_v2():
     assert version == (2, 0)
 
     vs = versify(pvrsn=version)   # defaults
-    assert vs == "KERICAAJSONAAAA."
+    assert vs == "KERICAACAAJSONAAAA."
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.keri
     assert kind == Kinds.json
-    assert vrsn == version
+    assert pvrsn == version
+    assert gvrsn == version
     assert size == 0
 
     vs = versify(pvrsn=version, kind=Kinds.json, size=65)
-    assert vs == "KERICAAJSONAABB."
+    assert vs == "KERICAACAAJSONAABB."
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.keri
     assert kind == Kinds.json
-    assert vrsn == version
+    assert pvrsn == version
+    assert gvrsn == version
     assert size == 65
 
     vs = versify(proto=Protocols.acdc, pvrsn=version, kind=Kinds.json, size=86)
-    assert vs == "ACDCCAAJSONAABW."
+    assert vs == "ACDCCAACAAJSONAABW."
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.acdc
     assert kind == Kinds.json
-    assert version == version
+    assert pvrsn == version
+    assert gvrsn == version
     assert size == 86
 
     vs = versify(pvrsn=version, kind=Kinds.mgpk, size=0)
-    assert vs == 'KERICAAMGPKAAAA.'
+    assert vs == 'KERICAACAAMGPKAAAA.'
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.keri
     assert kind == Kinds.mgpk
-    assert vrsn == version
+    assert pvrsn == version
+    assert gvrsn == version
     assert size == 0
 
     vs = versify(pvrsn=version, kind=Kinds.mgpk, size=65)
-    assert vs == 'KERICAAMGPKAABB.'
+    assert vs == 'KERICAACAAMGPKAABB.'
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.keri
     assert kind == Kinds.mgpk
-    assert vrsn == version
+    assert pvrsn == version
+    assert gvrsn == version
     assert size == 65
 
     vs = versify(pvrsn=version, kind=Kinds.cbor, size=0)
-    assert vs == 'KERICAACBORAAAA.'
+    assert vs == 'KERICAACAACBORAAAA.'
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.keri
     assert kind == Kinds.cbor
-    assert vrsn == version
+    assert pvrsn == version
+    assert gvrsn == version
     assert size == 0
 
     vs = versify(pvrsn=version, kind=Kinds.cbor, size=65)
-    assert vs == 'KERICAACBORAABB.'
+    assert vs == 'KERICAACAACBORAABB.'
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.keri
     assert kind == Kinds.cbor
-    assert vrsn == version
+    assert pvrsn == version
+    assert gvrsn == version
     assert size == 65
 
     vs = versify(pvrsn=Versionage(major=2, minor=1))   # defaults
-    assert vs == "KERICABJSONAAAA."
+    assert vs == "KERICABCABJSONAAAA."
     assert len(vs) == VER2FULLSPAN
-    proto, vrsn, kind, size, opt = deversify(vs)
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
     assert proto == Protocols.keri
     assert kind == Kinds.json
-    assert vrsn == (2, 1)
+    assert pvrsn == (2, 1)
+    assert gvrsn == (2, 1)
+    assert size == 0
+
+    # gvrsn.minor not equal pvrsn.minor
+    pvrsn2 = Vrsn_2_0
+    gvrsn2 = Versionage(2, 2)
+    vs = versify(pvrsn=pvrsn2, gvrsn=gvrsn2)
+    assert vs == "KERICAACACJSONAAAA."
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.keri
+    assert kind == Kinds.json
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
+    assert size == 0
+
+    vs = versify(pvrsn=pvrsn2,gvrsn=gvrsn2, kind=Kinds.json, size=65)
+    assert vs == "KERICAACACJSONAABB."
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.keri
+    assert kind == Kinds.json
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
+    assert size == 65
+
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn2,gvrsn=gvrsn2, kind=Kinds.json, size=86)
+    assert vs == "ACDCCAACACJSONAABW."
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.acdc
+    assert kind == Kinds.json
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
+    assert size == 86
+
+    vs = versify(pvrsn=pvrsn2,gvrsn=gvrsn2, kind=Kinds.mgpk, size=0)
+    assert vs == 'KERICAACACMGPKAAAA.'
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.keri
+    assert kind == Kinds.mgpk
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
+    assert size == 0
+
+    vs = versify(pvrsn=pvrsn2,gvrsn=gvrsn2, kind=Kinds.mgpk, size=65)
+    assert vs == 'KERICAACACMGPKAABB.'
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.keri
+    assert kind == Kinds.mgpk
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
+    assert size == 65
+
+    vs = versify(pvrsn=pvrsn2,gvrsn=gvrsn2, kind=Kinds.cbor, size=0)
+    assert vs == 'KERICAACACCBORAAAA.'
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.keri
+    assert kind == Kinds.cbor
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
+    assert size == 0
+
+    vs = versify(pvrsn=pvrsn2,gvrsn=gvrsn2, kind=Kinds.cbor, size=65)
+    assert vs == 'KERICAACACCBORAABB.'
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.keri
+    assert kind == Kinds.cbor
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
+    assert size == 65
+
+    pvrsn2 = Versionage(major=2, minor=2)
+    gvrsn2 = Versionage(major=2, minor=1)
+    vs = versify(pvrsn=pvrsn2, gvrsn=gvrsn2)
+    assert vs == "KERICACCABJSONAAAA."
+    assert len(vs) == VER2FULLSPAN
+    proto, pvrsn, kind, size, gvrsn = deversify(vs)
+    assert proto == Protocols.keri
+    assert kind == Kinds.json
+    assert pvrsn == pvrsn2
+    assert gvrsn == gvrsn2
     assert size == 0
 
     # test bad version strings
-    vs = "KERIBAAJSONAAAA."
+    vs = "KERIBAACAAJSONAAAA."
     with pytest.raises(VersionError):
         smellage = deversify(vs)
 
@@ -734,11 +612,11 @@ def test_versify_v2():
     with pytest.raises(VersionError):
         smellage = deversify(vs)
 
-    vs = "ABLECAAJSONAAAA."
+    vs = "ABLECAACAAJSONAAAA."
     with pytest.raises(ProtocolError):
         smellage = deversify(vs)
 
-    vs = "KERICAAMSONAAAA."
+    vs = "KERICAACAAMSONAAAA."
     with pytest.raises(KindError):
         smellage = deversify(vs)
 
@@ -886,7 +764,6 @@ if __name__ == "__main__":
 
     test_version_regex()
     test_smell()
-    test_snuff()
     test_serials()
     test_versify_v1()
     test_versify_v2()
