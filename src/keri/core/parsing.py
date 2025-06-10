@@ -790,7 +790,6 @@ class Parser:
             raise  # no enclosing message group so can't preflush, must flush stream
 
         finally:  # restore version at top level
-            done = True
             while stack:  # when tail end of group has validation error
                 svrsn, _ = stack.pop()
                 if svrsn:
