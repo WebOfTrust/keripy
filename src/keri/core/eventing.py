@@ -1134,13 +1134,12 @@ def reply(pre="",
           pvrsn=None,
           gvrsn=None,
           kind=Kinds.json):
-    """
-    Returns serder of reply 'rpy' message.
+    """Returns serder of reply 'rpy' message.
     Utility function to automate creation of reply messages.
     Reply 'rpy' message is a SAD item with an associated derived SAID in its
     'd' field.
 
-     Parameters:
+    Parameters:
         pre (str): identifier prefix of sender (AID)
         route (str):  '/' delimited path identifier of data flow handler
             (behavior) to processs the reply if any
@@ -1216,17 +1215,37 @@ def reply(pre="",
     return serder
 
 
-def prod(route="",
+def prod(pre="",
+         route="",
           replyRoute="",
           query=None,
           stamp=None,
           version=Version,
+          pvrsn=None,
+          gvrsn=None,
           kind=Kinds.json):
-    """
-    Returns serder of prod, 'pro', msg to request disclosure via bare, 'bar' msg
+    """Prod message
+
+    Returns:
+        prod (SerderKERI):  of prod, 'pro', msg to request disclosure via bare, 'bar' msg
     of data anchored via seal(s) on KEL for identifier prefix, pre, when given
     by all SAIDs given in digs list.
 
+    Parameters:
+        pre (str): Identifier prefix (AID) of sender controller (Version 2)
+        route (str): namesapaced path, '/' delimited, that indicates data flow
+                     handler (behavior) to processs the query
+        replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
+                     handler (behavior) to processs reply message to query if any.
+        query (dict): query data paramaters modifiers
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
+        kind (str): serialization kind value of Serials
+
+    Version 1
     {
       "v" : "KERI10JSON00011c_",
       "t" : "pro",
@@ -1240,49 +1259,94 @@ def prod(route="",
       }
     }
 
+    Version 2
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "pro",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "data",
+      "rr": "data/processor",
+      "q":
+      {
+        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+      }
+    }
+
     """
-    vs = versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
     ilk = Ilks.pro
 
-    sad = dict(v=vs,  # version string
-               t=ilk,
-               d="",
-               dt=stamp if stamp is not None else helping.nowIso8601(),
-               r=route,  # resource type for single item request
-               rr=replyRoute,
-               q=query,
-               )
+    if pvrsn.major == Vrsn_1_0.major:
+        sad = dict(v=vs,  # version string
+                   t=ilk,
+                   d="",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route,  # resource type for single item request
+                   rr=replyRoute,
+                   q=query,
+                   )
+    else:
+        sad = dict(v=vs,  # version string
+                   t=ilk,
+                   d="",
+                   i=pre,
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route,  # resource type for single item request
+                   rr=replyRoute,
+                   q=query,
+                   )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
     return serder
 
-    #_, ked = coring.Saider.saidify(sad=ked)
 
-    #return Serder(ked=ked)  # return serialized ked
-
-def bare(route="",
+def bare(pre="",
+         route="",
            data=None,
            stamp=None,
            version=Version,
+           pvrsn=None,
+           gvrsn=None,
            kind=Kinds.json):
-    """
-    Returns serder of bare 'bar' message.
+    """Bare message
+
+
+    Returns:
+        bare (SerderKERI): serder of bare 'bar' message.
+
     Utility function to automate creation of unhiding (bareing) messages for
     disclosure of sealed data associated with anchored seals in a KEL.
     Reference to anchoring seal is provided as an attachment to bare message.
     Bare 'bar' message is a SAD item with an associated derived SAID in a 'd'
     field in side its 'a' block.
 
-     Parameters:
-        route is route path string that indicates data flow handler (behavior)
-            to processs the exposure
-        data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
+    Parameters:
+        pre (str): Identifier prefix (AID) of sender controller (Version 2)
+        route (str): namesapaced path, '/' delimited, that indicates data flow
+                     handler (behavior) to processs the exposure
+        data (dict): dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data
-        version is Version instance
-        kind is serialization kind
+                      creation of message
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
+        kind (str): serialization kind value of Serials
 
 
+       route is route path string that indicates data flow handler (behavior)
+           to processs the exposure
+       data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
+       stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                     creation of message or data
+       version is Version instance
+       kind is serialization kind
+
+    Version 1
     {
       "v" : "KERI10JSON00011c_",
       "t" : "bar",
@@ -1301,23 +1365,52 @@ def bare(route="",
             }
         }
     }
-    """
-    vs = versify(pvrsn=version, kind=kind, size=0)
 
-    sad = dict(v=vs,  # version string
-               t=Ilks.bar,
-               d="",
-               dt=stamp if stamp is not None else helping.nowIso8601(),
-               r=route if route is not None else "",  # route
-               a=data if data else {},  # dict of SADs
-               )
+    Version 2
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "bar",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "sealed/processor",
+      "a" :
+        {
+          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
+            {
+               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+               "dt": "2020-08-22T17:50:12.988921+00:00",
+               "name": "John Jones",
+               "role": "Founder",
+            }
+        }
+    }
+    """
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.bar
+
+    if pvrsn.major == Vrsn_1_0.major:
+        sad = dict(v=vs,  # version string
+                   t=ilk,
+                   d="",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",  # route
+                   a=data if data else {},  # dict of SADs
+                   )
+    else:
+        sad = dict(v=vs,  # version string
+                   t=ilk,
+                   d="",
+                   i=pre,
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",  # route
+                   a=data if data else {},  # dict of SADs
+                   )
 
     serder = serdering.SerderKERI(sad=sad, makify=True)
     return serder
-
-    #_, sad = coring.Saider.saidify(sad=sad)
-
-    #return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
