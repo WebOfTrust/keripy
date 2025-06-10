@@ -376,7 +376,7 @@ def exchange(route,
     dt = date if date is not None else helping.nowIso8601()
     xid = xid if xid is not None else ""
     p = dig if dig is not None else ""
-    rp = recipient if recipient is not None else ""
+    ri = recipient if recipient is not None else ""
     embeds = embeds if embeds is not None else {}
 
     e = dict()
@@ -414,8 +414,8 @@ def exchange(route,
         if diger is None:
             attrs = dict()
 
-            if rp is not None:
-                attrs['i'] = rp
+            if recipient is not None:
+                attrs['i'] = recipient
 
             attrs |= payload
 
@@ -426,7 +426,7 @@ def exchange(route,
                    t=ilk,
                    d="",
                    i=sender,
-                   rp=rp,
+                   rp=ri,
                    p=p,
                    dt=dt,
                    r=route,
@@ -449,7 +449,7 @@ def exchange(route,
                    t=ilk,
                    d="",
                    i=sender,
-                   ri=rp,
+                   ri=ri,
                    x=xid,
                    p=p,
                    dt=dt,
