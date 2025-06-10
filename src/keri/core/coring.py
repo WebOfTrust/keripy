@@ -37,7 +37,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE, VERFMT, MAXVERFULLSPAN,
+                      VERRAWSIZE1, VERFMT1, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell)
 from ..kering import (Kinds, Kindage, Protocols, Protocolage, Ilkage, Ilks,
                       TraitDex, )

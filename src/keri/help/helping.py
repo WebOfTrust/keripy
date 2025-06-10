@@ -9,7 +9,6 @@ import datetime
 import re
 from collections import deque
 from collections.abc import Iterable, Sequence, Mapping
-
 from abc import ABCMeta
 
 import pysodium
