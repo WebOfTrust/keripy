@@ -13,7 +13,7 @@ from .. import help, kering, core
 from ..app import habbing
 from ..core import eventing, coring, serdering
 from ..help import helping
-from ..kering import ValidationError, MissingSignatureError
+from ..kering import ValidationError, MissingSignatureError, Vrsn_1_0, Vrsn_2_0
 
 ExchangeMessageTimeWindow = timedelta(seconds=300)
 
@@ -341,33 +341,42 @@ def exchange(route,
              diger=None,
              recipient=None,
              date=None,
-             dig=None,
+             dig="",
+             xid="",
              modifiers=None,
              embeds=None,
              version=coring.Version,
+             pvrsn=None,
+             gvrsn=None,
              kind=coring.Kinds.json):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
         route (str): to destination route of the message
+        sender (str): qb64 AID of sender of the exn
         payload (list | dict): body of message to deliver to route
         diger (Diger): qb64 digest of payload
-        sender (str): qb64 AID of sender of the exn
+        xid (str): qb64 of exchange ID  SAID of exchange inception 'xip' if any
         recipient (str) optional qb64 AID recipient of exn
         date (str): Iso8601 formatted date string to use for this request
         dig (str) qb64 SAID of previous event if any
         modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
                          part of the payload
         embeds (dict): named embeded KERI event CESR stream with attachments
-        version (Version): is Version instance
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
         kind (Serials): is serialization kind
 
     """
-    vs = coring.versify(pvrsn=version, kind=kind, size=0)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = coring.versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
     ilk = eventing.Ilks.exn
     dt = date if date is not None else helping.nowIso8601()
+    xid = xid if xid is not None else ""
     p = dig if dig is not None else ""
-    rp = recipient if recipient is not None else ""
+    ri = recipient if recipient is not None else ""
     embeds = embeds if embeds is not None else {}
 
     e = dict()
@@ -399,33 +408,59 @@ def exchange(route,
 
     modifiers = modifiers if modifiers is not None else {}
 
-    if diger is None:
-        attrs = dict()
-
-        if recipient is not None:
-            attrs['i'] = recipient
-
-        attrs |= payload
-
-    else:
-        attrs = diger.qb64
-
     # Attr field 'a' can be either a said or a nested block and the fields
     # of the nested block can be saids of further nested block or nested blocks
-    ked = dict(v=vs,
-               t=ilk,
-               d="",
-               i=sender,
-               rp=rp,
-               p=p,
-               dt=dt,
-               r=route,
-               q=modifiers if modifiers is not None else {},  # q field required
-               a=attrs,
-               e=e)
+    if pvrsn.major == Vrsn_1_0.major:
+        if diger is None:
+            attrs = dict()
 
-    _, ked = coring.Saider.saidify(sad=ked)
-    return serdering.SerderKERI(sad=ked), end  # return serialized ked
+            if recipient is not None:
+                attrs['i'] = recipient
+
+            attrs |= payload
+
+        else:
+            attrs = diger.qb64
+
+        sad = dict(v=vs,
+                   t=ilk,
+                   d="",
+                   i=sender,
+                   rp=ri,
+                   p=p,
+                   dt=dt,
+                   r=route,
+                   q=modifiers if modifiers is not None else {},  # q field required
+                   a=attrs,
+                   e=e)
+    else:
+        if diger is None:
+            attrs = dict()
+
+            if e:
+                attrs['e'] = e
+
+            attrs |= payload
+
+        else:
+            attrs = diger.qb64
+
+        sad = dict(v=vs,
+                   t=ilk,
+                   d="",
+                   i=sender,
+                   ri=ri,
+                   x=xid,
+                   p=p,
+                   dt=dt,
+                   r=route,
+                   q=modifiers if modifiers is not None else {},  # q field required
+                   a=attrs)
+
+    #_, sad = coring.Saider.saidify(sad=sad)
+    return serdering.SerderKERI(sad=sad, makify=True), end  # return serialized ked
+
+    # serder = serdering.SerderKERI(sad=sad, makify=True)
 
 
 def cloneMessage(hby, said):
@@ -452,7 +487,7 @@ def cloneMessage(hby, said):
         pather = coring.Pather(qb64b=pb, strip=True)
         if pather.startswith(e):
             np = pather.strip(e)
-            nesting(np.rparts, pathed, pb)
+            nesting(np.rparts, pathed, pb)  # no unit test for this
 
     return exn, pathed
 

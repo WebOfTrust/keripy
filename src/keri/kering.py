@@ -30,8 +30,8 @@ Vrsn_2_0 = Versionage(major=2, minor=0)  # KERI Protocol Version Specific
 
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'
-VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
-VERRAWSIZE = 6  # hex characters in raw serialization size in version string
+VERFMT1 = "{}{:x}{:x}{}{:0{}x}_"  # version format string
+VERRAWSIZE1 = 6  # hex characters in raw serialization size in version string
 
 #VEREX0 = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 #Rever = re.compile(VEREX0)  # compile is faster
@@ -42,9 +42,17 @@ VER1TERM = b'_'
 VEREX1 = b'(?P<proto1>[A-Z]{4})(?P<major1>[0-9a-f])(?P<minor1>[0-9a-f])(?P<kind1>[A-Z]{4})(?P<size1>[0-9a-f]{6})_'
 
 # version string in JSON, CBOR, or MGPK field map serialization version 2
-VER2FULLSPAN = 16  # number of characters in full version string
-VER2TERM = b'.'
-VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<major2>[0-9A-Za-z_-])(?P<minor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\.'
+#VER2FULLSPAN = 16  # number of characters in full version string
+#VER2TERM = b'.'
+#VEREX2 = b'(?P<proto2>[A-Z]{4})(?P<pmajor2>[0-9A-Za-z_-])(?P<pminor2>[0-9A-Za-z_-]{2})(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\.'
+
+# version string in JSON, CBOR, or MGPK field map serialization version 2
+VER2FULLSPAN = 19  # number of characters in full version string
+VER2TERM = b'.'  # teminator character
+VEREX2 = ( b'(?P<proto2>[A-Z]{4})'
+           b'(?P<pmajor2>[0-9A-Za-z_-])(?P<pminor2>[0-9A-Za-z_-]{2})'
+           b'(?P<gmajor2>[0-9A-Za-z_-])(?P<gminor2>[0-9A-Za-z_-]{2})'
+           b'(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\.')
 
 VEREX = VEREX2 + b'|' + VEREX1
 
@@ -53,7 +61,7 @@ MAXVERFULLSPAN = max(VER2FULLSPAN, VER1FULLSPAN)
 
 Rever = re.compile(VEREX)  # compile is faster
 
-MAXVSOFFSET = 12
+MAXVSOFFSET = 8  # 12
 SMELLSIZE = MAXVSOFFSET + MAXVERFULLSPAN  # min buffer size to inhale
 
 
@@ -86,17 +94,18 @@ def rematch(match):
     gvrsn = None  # not yet supported by current version strings
     full = match.group()  # full matched version string
     if len(full) == VER2FULLSPAN and full[-1] == ord(VER2TERM):
-        proto, major, minor, kind, size  = match.group("proto2",
-                                                       "major2",
-                                                       "minor2",
-                                                       "kind2",
-                                                       "size2")
+        proto, pmajor, pminor, gmajor, gminor, kind, size  = match.group(
+            "proto2", "pmajor2", "pminor2", "gmajor2", "gminor2", "kind2", "size2")
         proto = proto.decode()
         if proto not in Protocols:
             raise ProtocolError(f"Invalid protocol={proto}.")
-        pvrsn = Versionage(major=b64ToInt(major), minor=b64ToInt(minor))
-        if pvrsn.major < 2:  # version2 vs but major < 2
+        pvrsn = Versionage(major=b64ToInt(pmajor), minor=b64ToInt(pminor))
+        if pvrsn.major != 2:  # version2 vs but major != 2
             raise VersionError(f"Incompatible {pvrsn=} with version string.")
+
+        gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
+        if gvrsn.major != 2:  # version2 vs but major != 2
+            raise VersionError(f"Incompatible {gvrsn=} with version string.")
 
         kind = kind.decode()
         if kind not in Kinds:
@@ -147,18 +156,24 @@ def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=
         raise ProtocolError(f"Invalid message protocol={proto}")
     if kind not in Kinds:
         raise KindError(f"Invalid serialization {kind=}")
-    if gvrsn is not None:
-        raise VersionError("Invalid (not None) CESR genus version "
-                           "value={gvrsn.major}.{}gvrsn.minor}")
 
     if pvrsn.major < 2:  # version1 version string
+        if gvrsn is not None:
+            raise VersionError(f"Invalid (not None) CESR genus version="
+                               f"{gvrsn.major}.{gvrsn.minor} for pvrsn="
+                               f"{pvrsn.major}.{pvrson.minor} ")
         if kind == Kinds.cesr:
             raise KindError(f"Invalid serialization {kind=} for message protocol"
                             f"  major version={pvrsn.major}")
-        return VERFMT.format(proto, pvrsn.major, pvrsn.minor, kind, size, VERRAWSIZE)
+        return VERFMT1.format(proto, pvrsn.major, pvrsn.minor, kind, size, VERRAWSIZE1)
     elif pvrsn.major == 2:  # version 2+ version string
-        return (f"{proto}{intToB64(pvrsn.major)}"
-                f"{intToB64(pvrsn.minor, l=2)}{kind}{intToB64(size, l=4)}.")
+        gvrsn = gvrsn if gvrsn is not None else pvrsn
+        if gvrsn.major != 2:  # version2 vs but major < 2
+            raise VersionError(f"Incompatible {gvrsn=} with version string.")
+        return (f"{proto}{intToB64(pvrsn.major)}{intToB64(pvrsn.minor, l=2)}"
+                f"{intToB64(gvrsn.major)}{intToB64(gvrsn.minor, l=2)}"
+                f"{kind}{intToB64(size, l=4)}.")
+
     else:
         raise VersionError("Invalid message protocol major version={pvrsn.major}")
 

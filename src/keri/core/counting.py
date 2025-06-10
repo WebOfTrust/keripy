@@ -41,11 +41,10 @@ class GenusCodex(IceMapDom):
 
 GenDex = GenusCodex()  # Make instance
 
-
-#ToDo. ProtoGenus table that maps protocol code to Genus Code in cases
-# where protocol code name and genus code name are different as would be
-# the case where a protocol is using a shared genus table with some other protocal
-
+# maps Protocol code from Protocols = Protocolage(keri="KERI", acdc="ACDC")
+# to Genus Name in GenDex so can lookup chared CESR Genus code from Protocol Code
+# Usage:   genus code = GenDex[ProGen["ACDC"]] == '-_AAA'
+ProGen = dict(KERI='KERI', ACDC='KERI')
 
 
 @dataclass(frozen=True)

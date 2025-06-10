@@ -1766,16 +1766,16 @@ def test_parser_v2_basic():
 
         pre = serder.pre
 
-        assert serder.raw == (b'{"v":"KERICAAJSONAAEq.","t":"icp","d":"EBJh76Q9fk3cUcXIjOz2VffYwX3CBlNUblpOq'
-                            b'KjtuRgQ","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":"1"'
-                            b',"k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXIx7U'
-                            b'Rwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
+        assert serder.raw == (b'{"v":"KERICAACAAJSONAAEt.","t":"icp","d":"EAAaPtGJw566KVqqKQvVu2GKViXDzQCJWe'
+                            b'QWhy4tdujg","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":'
+                            b'"1","k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXI'
+                            b'x7URwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         assert serder.sad == \
         {
-            'v': 'KERICAAJSONAAEq.',
+            'v': 'KERICAACAAJSONAAEt.',
             't': 'icp',
-            'd': 'EBJh76Q9fk3cUcXIjOz2VffYwX3CBlNUblpOqKjtuRgQ',
+            'd': 'EAAaPtGJw566KVqqKQvVu2GKViXDzQCJWeQWhy4tdujg',
             'i': 'DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx',
             's': '0',
             'kt': '1',
@@ -1788,7 +1788,9 @@ def test_parser_v2_basic():
             'a': []
         }
 
+
         assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
 
 
         event_digs.append(serder.said)
@@ -2193,16 +2195,16 @@ def test_parser_v2_mix():
 
         pre = serder.pre
 
-        assert serder.raw == (b'{"v":"KERICAAJSONAAEq.","t":"icp","d":"EBJh76Q9fk3cUcXIjOz2VffYwX3CBlNUblpOq'
-                            b'KjtuRgQ","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":"1"'
-                            b',"k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXIx7U'
-                            b'Rwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
+        assert serder.raw == (b'{"v":"KERICAACAAJSONAAEt.","t":"icp","d":"EAAaPtGJw566KVqqKQvVu2GKViXDzQCJWe'
+                            b'QWhy4tdujg","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":'
+                            b'"1","k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXI'
+                            b'x7URwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         assert serder.sad == \
         {
-            'v': 'KERICAAJSONAAEq.',
+            'v': 'KERICAACAAJSONAAEt.',
             't': 'icp',
-            'd': 'EBJh76Q9fk3cUcXIjOz2VffYwX3CBlNUblpOqKjtuRgQ',
+            'd': 'EAAaPtGJw566KVqqKQvVu2GKViXDzQCJWeQWhy4tdujg',
             'i': 'DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx',
             's': '0',
             'kt': '1',
@@ -2216,6 +2218,7 @@ def test_parser_v2_mix():
         }
 
         assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
 
         event_digs.append(serder.said)
         # extend key event stream with msg
@@ -2620,10 +2623,13 @@ def test_parser_v2_enclosed_attachments():
 
         pre = serder.pre
 
-        assert serder.raw == (b'{"v":"KERICAAJSONAAEq.","t":"icp","d":"EBJh76Q9fk3cUcXIjOz2VffYwX3CBlNUblpOq'
-                                b'KjtuRgQ","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":"1"'
-                                b',"k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXIx7U'
-                                b'Rwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
+        assert serder.raw == (b'{"v":"KERICAACAAJSONAAEt.","t":"icp","d":"EAAaPtGJw566KVqqKQvVu2GKViXDzQCJWe'
+                            b'QWhy4tdujg","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":'
+                            b'"1","k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXI'
+                            b'x7URwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
+
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
 
         # extend key event stream with msg
         msgs.extend(serder.raw)
@@ -4384,10 +4390,14 @@ def test_parse_native_cesr_fixed_field():
                         ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64],
                         version=Vrsn_2_0, kind=Kinds.cesr)
         pre = serder.pre
-        assert serder.raw == (b'-FA4YKERICAAXicpEBc4VG8T5vfbmogeQwegQNTjmzjx79gtTjJPaOvN35xLDNG2'
-                              b'arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4HxMAAAMAAB-JALDNG2arBDtHK_'
-                              b'JyHRAq-emRdC6UM-yIpCAeJIWDiXp4HxMAAB-JALEFXIx7URwmw7AVQTBcMxPXfO'
-                              b'OJ2YYA1SJAam69DXV8D2MAAA-JAA-JAA-JAA')
+
+        assert serder.raw == (b'-FA50OKERICAACAAXicpEFaYE2LTv8dItUgQzIHKRA9FaHDrHtIHNs-m5DJKWXRNDNG2arBDtHK_'
+                            b'JyHRAq-emRdC6UM-yIpCAeJIWDiXp4HxMAAAMAAB-JALDNG2arBDtHK_JyHRAq-emRdC6UM-yIpC'
+                            b'AeJIWDiXp4HxMAAB-JALEFXIx7URwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2MAAA-JAA-JAA'
+                            b'-JAA')
+
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
 
         emas.extend(serder.raw)
         # create sig counter for two sigs one is spurious since single sig AID

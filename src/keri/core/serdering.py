@@ -25,7 +25,7 @@ from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE, VERFMT,
+                      VERRAWSIZE1, VERFMT1,
                       MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
 from ..kering import SMELLSIZE, Smellage, smell, sniff, Colds
 
@@ -42,7 +42,7 @@ from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
                      Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather)
 from .mapping import Mapper
 
-from .counting import GenDex, Counter, Codens, SealDex_2_0, MUDex_2_0
+from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
 
 from .structing import Sealer, SClanDom
 
@@ -241,13 +241,32 @@ class Serdery:
         else:
             smellage = smell(ims)  #
 
-        if smellage.pvrsn.major > svrsn.major:
-            raise SerializeError(f"Incompatible major protocol version="
-                                 f"{smellage.pvrsn} with stream major genus "
+        if smellage.pvrsn.major > svrsn.major:  # likely not supported
+            raise SerializeError(f"Incompatible message protocol major version="
+                                 f"{smellage.pvrsn} with stream  genus major "
                                  f"version={svrsn}.")
-        #if getattr(GenDex, smellage.proto, None) != genus:
-            #raise SerializeError(f"Incompatible protocol={smellage.proto} with "
-                                 #f"genus={genus}.")
+
+        if getattr(GenDex, ProGen.get(smellage.proto), None) != genus:
+            raise SerializeError(f"Incompatible message protocol={smellage.proto}"
+                                 f" with genus={genus}.")
+
+        if smellage.gvrsn:
+            if smellage.gvrsn.major > svrsn.major:  # Message major later than stream
+                raise SerializeError(f"Incompatible message genus major version="
+                                 f"{smellage.gvrsn} with stream major genus "
+                                 f"version={svrsn}.")
+
+            if smellage.gvrsn.minor > svrsn.minor:  # message minor later than stream
+                raise SerializeError(f"Incompatible message minor genus version="
+                                     f"{smellage.gvrsn} with stream genus minor "
+                                     f"version={svrsn}.")
+
+            latest = list(Counter.Sizes[smellage.gvrsn.major])[-1]  # get latest supported minor version
+            if smellage.gvrsn.minor > latest:
+                raise SerializeError(f"Incompatible message genus minor version"
+                                     f"={smellage.gvrsn.minor} exceeds latest supported "
+                                     f"genus minor version={latest}.")
+
 
         if smellage.proto == Protocols.keri:
             return SerderKERI(raw=ims, strip=True, smellage=smellage)
@@ -380,10 +399,11 @@ class Serder:
     #override in subclass to enforce specific protocol
     Protocol = None  # class based message protocol, None means any in Protocols is ok
     Proto = Protocols.keri  # default message protocol type for makify on base Serder
-    Vrsn = Vrsn_1_0  # default protocol version for protocol type
+    PVrsn = Vrsn_1_0  # default protocol version
+    GVrsn = Vrsn_2_0  # default CESR genus version
     Kind = Kinds.json  # default serialization kind
     Genus = GenDex.KERI  # default CESR genus code
-    GVrsn = Vrsn_2_0  # default CESR genus version
+
 
 
     # Nested dict keyed by protocol.
@@ -630,12 +650,6 @@ class Serder:
             except Exception as ex:
                 self._said = None  # no saidive field
 
-            #if strip:  #only when raw is bytearray
-                #try:
-                    #del raw[:self._size]
-                #except TypeError:
-                    #pass  # ignore if bytes
-
             if verify:  # verify fields including the said(s) provided in raw
                 try:
                     self._verify()  # raises exception when not verify
@@ -722,11 +736,11 @@ class Serder:
         if self.genus not in GenDex:  # ensures self.genus != None
             raise ValidationError(f"Invalid genus={self.genus}.")
 
-        #if getattr(GenDex, self.proto, None) != self.genus:
-            #raise ValidationError(f"Incompatible protocol={self.proto} with "
-                                 #f"genus={self.genus}.")
+        if getattr(GenDex, ProGen.get(self.proto), None) != self.genus:
+            raise ValidationError(f"Incompatible protocol={self.proto} with "
+                                  f"genus={self.genus}.")
 
-        if self.gvrsn is not None and self.pvrsn.major > self.gvrsn.major:
+        if self.gvrsn is not None and self.gvrsn.major < 2:
             raise ValidationError(f"Incompatible major protocol version={self.pvrsn}"
                                  f" with major genus version={self.gvrsn}.")
 
@@ -886,10 +900,10 @@ class Serder:
                    - the code extracted from sad[said label] when valid CESR
                    - the code provided in .Fields...saids
         """
-        sproto = svrsn = skind = silk = sgvrsn = None
+        sproto = spvrsn = skind = silk = sgvrsn = None  # from sad
         if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
-                sproto, svrsn, skind, _, sgvrsn = deversify(sad["v"])
+                sproto, spvrsn, skind, _, sgvrsn = deversify(sad["v"])
             except VersionError as ex:
                 pass
             else:
@@ -911,22 +925,25 @@ class Serder:
         if genus not in GenDex:  # ensures valid genus != None
             raise SerializeError(f"Invalid genus={self.genus}.")
 
-        #if getattr(GenDex, proto, None) != genus:  # ensure compatible proto
-            #raise SerializeError(f"Incompatible protocol={proto} with "
-                                 #f"{genus=}.")
+        if getattr(GenDex, ProGen.get(proto), None) != genus:   # ensure compatible proto
+            raise SerializeError(f"Incompatible protocol={proto} with "
+                                  f"genus={genus}.")
 
         if pvrsn is None:
-            pvrsn = svrsn if svrsn is not None else self.Vrsn
+            pvrsn = spvrsn if spvrsn is not None else self.PVrsn
 
         if pvrsn not in self.Fields[proto]:
             raise SerializeError(f"Invalid version={pvrsn} for protocol={proto}.")
 
-        if gvrsn is None and sgvrsn is not None:
-            gvrsn = sgvrsn
+        if gvrsn is None:  # use default GVrsn only if pvrsn >= 2 othwise leave gvrsn None
+            gvrsn = sgvrsn if sgvrsn is not None else (self.GVrsn if pvrsn.major >= 2 else None)
 
-        if gvrsn is not None and pvrsn.major > self.gvrsn.major:
+        #if gvrsn is None and sgvrsn is not None:
+            #gvrsn = sgvrsn
+
+        if gvrsn is not None and gvrsn.major < 2:
             raise SerializeError(f"Incompatible major protocol version={pvrsn} "
-                                 f"with major genus version={self.gvrsn}.")
+                                 f"with major genus version={gvrsn}")
 
         if kind is None:
             kind = skind if skind is not None else self.Kind
@@ -1236,7 +1253,7 @@ class Serder:
         raw = bytearray(raw[:size])  # extract full message from raw as bytearray
 
         # consume body ctr and version field
-        bctr = Counter(qb64b=raw, strip=True)  # version defaults to 2
+        bctr = Counter(qb64b=raw, strip=True, version=self.gvrsn) # gvrsn from smellage
         versage = Verser(qb64b=raw, strip=True).versage
         # assumes compatible versage witn .proto .pvrsn .gvrsn
 
@@ -1286,7 +1303,7 @@ class Serder:
                         sad[l] = Tholder(limen=raw, strip=True).sith  # as sith str
 
                     case "k" | "n" | "b" | "ba" | "br":  # list of primitives
-                        ctr = Counter(qb64b=raw, strip=True)
+                        ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
                         if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
                             raise DeserializeError(f"Expected List group got {ctr.name}")
                         fs = ctr.count * 4  # frame size since qb64 text mode
@@ -1304,7 +1321,7 @@ class Serder:
                         sad[l] = Pather(qb64b=raw, strip=True).path
 
                     case "c":  # list of config traits strings
-                        ctr = Counter(qb64b=raw, strip=True)
+                        ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
                         if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
                             raise DeserializeError(f"Expected List group got {ctr.name}")
                         fs = ctr.count * 4  # frame size since qb64 text mode
@@ -1316,7 +1333,7 @@ class Serder:
                         sad[l] = elements
 
                     case "a":  # list of seals or field map of attributes
-                        ctr = Counter(qb64b=raw)  # peek at counter
+                        ctr = Counter(qb64b=raw, version=self.gvrsn)  # peek at counter
                         if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
                             sad[l] = Mapper(qb64b=raw, strip=True).mad
 
@@ -1327,7 +1344,7 @@ class Serder:
                             frame = raw[:fs]  # extract list frame
                             raw = raw[fs:]  # strip frame from raw
                             while frame:  # while list frame not empty
-                                sctr = Counter(qb64b=frame, strip=True)  # seal counter
+                                sctr = Counter(qb64b=frame, strip=True, version=self.gvrsn)  # seal counter
                                 if sctr.code not in Serder.CodeClans:
                                     raise DeserializeError(f"Expected Sealer group got {sctr.name}")
                                 cast = Sealer.Casts[Serder.CodeClans[sctr.code]]
@@ -1470,7 +1487,6 @@ class Serder:
         pvrsn = self.pvrsn
         gvrsn = self.gvrsn
 
-
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
         ilks = self.Fields[proto][pvrsn]  # get fields keyed by ilk
@@ -1523,7 +1539,8 @@ class Serder:
                             frame.extend(e.encode("utf-8"))
 
                         val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
+                                                count=len(frame) // 4,
+                                                version=gvrsn).qb64b)
                         val.extend(frame)
 
                     case "dt":  # iso datetime
@@ -1538,7 +1555,8 @@ class Serder:
                             frame.extend(Traitor(trait=e).qb64b)
 
                         val = bytearray(Counter(Codens.GenericListGroup,
-                                                count=len(frame) // 4).qb64b)
+                                                count=len(frame) // 4,
+                                                version=gvrsn).qb64b)
                         val.extend(frame)
 
                     case "a":  # list of seals or field map of attributes
@@ -1559,7 +1577,9 @@ class Serder:
                                         gframe.extend(sealer.qb64b)
                                     else:
                                         if gframe:  # not same so close off and rotate group
-                                            counter = Counter(code=gcode, count=len(gframe) // 4)
+                                            counter = Counter(code=gcode,
+                                                              count=len(gframe) // 4,
+                                                              version=gvrsn)
                                             frame.extend(counter.qb64b + gframe)
                                             gframe = bytearray()  # new group
                                         gcode = code  # new group or keep same group
@@ -1567,7 +1587,9 @@ class Serder:
 
                                 except kering.InvalidValueError:
                                     if gframe:
-                                        counter = Counter(code=gcode, count=len(gframe) // 4)
+                                        counter = Counter(code=gcode,
+                                                          count=len(gframe) // 4,
+                                                          version=gvrsn)
                                         frame.extend(counter.qb64b + gframe)
                                         gframe = bytearray()
                                         gcode = None
@@ -1581,7 +1603,9 @@ class Serder:
                                     #val.extend(mapframe)
 
                             if gframe:  # close off last group if any
-                                counter = Counter(code=gcode, count=len(gframe) // 4)
+                                counter = Counter(code=gcode,
+                                                  count=len(gframe) // 4,
+                                                  version=gvrsn)
                                 frame.extend(counter.qb64b + gframe)
                                 gframe = bytearray()
                                 gcode = None
@@ -1616,7 +1640,8 @@ class Serder:
         if fixed:
 
             raw = bytearray(Counter(Codens.FixedBodyGroup,
-                                    count=len(bdy) // 4).qb64b)
+                                    count=len(bdy) // 4,
+                                    version=gvrsn).qb64b)
             raw.extend(bdy)
         else:
             pass
