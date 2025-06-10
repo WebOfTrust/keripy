@@ -705,7 +705,7 @@ class Parser:
         stack = deque()  # (svrsn, ims) stack of nested substreams framed by generic groegups
         svrsn = None
         eggs = None  # used in preflused error
-
+        done = False
         try:
             while True:  # process stream until done
                 while not ims and stack:  # happens when ascending (un-nesting)
