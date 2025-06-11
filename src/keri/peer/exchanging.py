@@ -340,6 +340,7 @@ def xincept(sender="",
             route="",
             modifiers=None,
             attributes=None,
+            nonce=None,
             stamp=None,
             pvrsn=Vrsn_2_0,
             gvrsn=None,
@@ -362,6 +363,7 @@ def xincept(sender="",
                (behavior) to processs the reply if any
         modifiers (dict): modifiers
         attributes (dict): attributes
+        nonce (str|None): qb64 of UUID salty nonce. When None generate nonce.
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
         pvrsn (Versionage): KERI protocol version
@@ -397,6 +399,7 @@ def xincept(sender="",
     sad = dict(v=vs,  # version string
                t=ilk, # message type
                d="",  # message said
+               u=nonce if nonce is not None else coring.Noncer(),
                i=sender,  # sender aid qb64
                ri=receiver,  # receiver aid qb64
                dt=stamp if stamp is not None else helping.nowIso8601(),
@@ -526,10 +529,7 @@ def exchange(route,
                    q=modifiers if modifiers is not None else {},  # q field required
                    a=attrs)
 
-    #_, sad = coring.Saider.saidify(sad=sad)
     return serdering.SerderKERI(sad=sad, makify=True), end  # return serialized ked
-
-    # serder = serdering.SerderKERI(sad=sad, makify=True)
 
 
 def cloneMessage(hby, said):
