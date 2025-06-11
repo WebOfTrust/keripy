@@ -138,42 +138,6 @@ class FieldDom:
     def __iter__(self):
         return iter(asdict(self))
 
-"""Design Notes:
-
-Problems is that sniff only determines if counter not which type of
-counter. Then smell does regex lookahead to find out which serialization
-when not count code but extractor does not look ahead but strips from
-stream. So when possibility that CESR message is next either need to
-not strip from stream when extracting or if counter is message
-then grab rest of frame and reattach so raw in Serder includes the
-message counter. Latter is better since always keep counter around
-until later. So need to check counter type and if message then
-extract rest of counter frame (message) and reattach counter raw.
-Then can call Serder with raw and smellage that indicates CESR kind
-
-But this does not solve the problem of using the Serder subclass
-for the given protocol. Merely knowing is a CESR message is not
-enough also have to know the protocol which comes in the version
-field (not version string).
-
-One solution is to modify smell so that it also can lookahead and
-see the version field. Or lookahead and see the version field with
-count codes in front. Problem is that the Regexes don't separate
-cleanly.
-
-Another solution is to use distinct function for cesr native called
-snuff like smell but regex only for CESR native. Reap can be told which
-because sniff tells which it is.
-So question for snuff is should it be searching over the counter or should it
-start at version field. This changes regex so forced start at front of raw.
-so if reattach counter but use skip then can snuff at start of string.
-Begine regex with b'^' or b'\A' to match at start of string.
-
-So change Smellage to return extra field that has gvrsn when used by snuff
-so can use Smellage for both smell and snuff in both reap and inhale
-where smellage is used. Change legacy uses of smell to ignore extra value.
-
-"""
 
 
 class Serdery:

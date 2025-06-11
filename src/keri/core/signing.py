@@ -328,8 +328,7 @@ class Signer(Matter):
 
 
 class Salter(Matter):
-    """
-    Salter is Matter subclass to maintain random salt for secrets (private keys)
+    """Salter is Matter subclass to maintain random salt for secrets (private keys)
     Its .raw is random salt, .code as cipher suite for salt
 
     To initialize with deterministic salt pass in 16 bytes for raw:
