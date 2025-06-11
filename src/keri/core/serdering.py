@@ -37,9 +37,10 @@ from ..help import helping
 
 from . import coring
 from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
-                     Saids,  Digestage)
+                     Saids,  Digestage, NonceDex)
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
-                     Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather)
+                     Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
+                     Noncer)
 from .mapping import Mapper
 
 from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
@@ -1290,10 +1291,13 @@ class Serder:
                     case "t":  # message type (ilk), already got ilk
                         sad[l] = ilker.ilk
 
-                    case "d" | "p" | "x":  # said
+                    case "d" | "p" | "x":  # SAID
                         sad[l] = Diger(qb64b=raw, strip=True).qb64
 
-                    case "i" | "di" | "ri":  # aid
+                    case "u":  # UUID salty Nonce
+                        sad[l] = Noncer(qb64b=raw, strip=True).qb64
+
+                    case "i" | "di" | "ri":  # AID
                         sad[l] = Prefixer(qb64b=raw, strip=True).qb64
 
                     case "s" | "bt":  # sequence number or numeric threshold
@@ -1338,6 +1342,9 @@ class Serder:
                             sad[l] = Mapper(qb64b=raw, strip=True).mad
 
                         elif ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
+                            if ilker.ilk not in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
+                                raise SerializeError(f"Unexpected list value for"
+                                            f"field='{l}' for ilk={ilker.ilk}")
                             del raw[:ctr.fullSize]  # consume counter
                             seals = []
                             fs = ctr.count * 4  # frame size since qb64 text mode
@@ -1524,7 +1531,7 @@ class Serder:
                     case "t":  # message type (ilk), already got ilk
                         val = Ilker(ilk=v).qb64b  # assumes same
 
-                    case "d" | "i" | "p" | "di" | "ri" | "x":  # said or aid
+                    case "d" | "i" | "p" | "u" | "di" | "ri" | "x":  # said or aid
                         val = v.encode("utf-8")  # already primitive qb64 make qb6b
 
                     case "s" | "bt":  # sequence number or numeric threshold
@@ -1564,6 +1571,9 @@ class Serder:
                             val = Mapper(mad=v).qb64b
 
                         else:  # assumes list of seals
+                            if ilk not in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
+                                raise SerializeError(f"Unexpected list value for"
+                                                     f" field='{l}' for {ilk=}")
                             frame = bytearray()  # whole list
                             gcode = None  # code for counter for consecutive same type seals
                             gframe = bytearray()  # consecutive same type seals

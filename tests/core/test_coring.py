@@ -46,7 +46,7 @@ from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
 from keri.core.coring import Kindage, Kinds
 from keri.core.coring import (Sizage, MtrDex, Matter)
 from keri.core.coring import (Verfer, Cigar, Saider, DigDex,
-                              Diger, Prefixer,)
+                              Diger, Prefixer, PreDex, Noncer, NonceDex)
 from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
 
 from keri.core.indexing import (Siger, Xizage, IdrDex, IdxSigDex,
@@ -5936,10 +5936,149 @@ def test_diger():
     """ Done Test """
 
 
+def test_noncer():
+    """Test the support functionality for noncer subclass of Matter"""
+
+    assert asdict(NonceDex) == \
+    {
+        'Salt_128': '0A',
+        'Blake3_256': 'E',
+        'Blake2b_256': 'F',
+        'Blake2s_256': 'G',
+        'SHA3_256': 'H',
+        'SHA2_256': 'I',
+        'Blake3_512': '0D',
+        'Blake2b_512': '0E',
+        'SHA3_512': '0F',
+        'SHA2_512': '0G'
+    }
+
+    assert 16 == pysodium.crypto_pwhash_SALTBYTES
+    salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    assert len(salt) == 16
+
+    noncer = Noncer()  # defaults
+    assert noncer.code == NonceDex.Salt_128
+    assert noncer.fullSize == 24
+    assert not noncer.special
+
+    raw = b'1\xc8|\x16\xea\x1bNg\xfa\xc04\xe6\x99ocv'
+    code = NonceDex.Salt_128
+    qb64 = '0AAxyHwW6htOZ_rANOaZb2N2'
+    qb64b = b'0AAxyHwW6htOZ_rANOaZb2N2'
+    qb2 = b'\xd0\x001\xc8|\x16\xea\x1bNg\xfa\xc04\xe6\x99ocv'
+
+    noncer = Noncer(raw=raw)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 24
+    assert not noncer.special
+
+    noncer = Noncer(qb64=qb64)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 24
+    assert not noncer.special
+
+    noncer = Noncer(qb64b=qb64b)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 24
+    assert not noncer.special
+
+    noncer = Noncer(qb2=qb2)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 24
+    assert not noncer.special
+
+    # create something to digest and verify
+    ser = b'ABCDEFGHIJKLMNopqrstuvwxyz0123456789'
+    raw = blake3.blake3(ser).digest()
+    assert raw == b'\x9b&\xbfxS\x1f?\x92nC7)\xb2\xca{3\x81z\xfb\x8f<\xdc]@\xb5]\xca\xb9\xe8^:\xd0'
+    code = NonceDex.Blake3_256
+    qb64 = 'EJsmv3hTHz-SbkM3KbLKezOBevuPPNxdQLVdyrnoXjrQ'
+    qb64b = b'EJsmv3hTHz-SbkM3KbLKezOBevuPPNxdQLVdyrnoXjrQ'
+    qb2 = (b'\x10\x9b&\xbfxS\x1f?\x92nC7)\xb2\xca{3\x81z\xfb\x8f<\xdc]@\xb5]\xca\xb9\xe8^:\xd0')
+
+    noncer = Noncer(raw=raw, code=code)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 44
+    assert not noncer.special
+
+    noncer = Noncer(qb64=qb64)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 44
+    assert not noncer.special
+
+    noncer = Noncer(qb64b=qb64b)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 44
+    assert not noncer.special
+
+    noncer = Noncer(qb2=qb2)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 44
+    assert not noncer.special
+
+
+    """ Done Test """
+
+
+
 def test_prefixer():
-    """
-    Test the support functionality for prefixer subclass of crymat
-    """
+    """Test the support functionality for prefixer subclass of Matter"""
+
+    assert asdict(PreDex) == \
+    {
+        'Ed25519N': 'B',
+        'Ed25519': 'D',
+        'Blake3_256': 'E',
+        'Blake2b_256': 'F',
+        'Blake2s_256': 'G',
+        'SHA3_256': 'H',
+        'SHA2_256': 'I',
+        'Blake3_512': '0D',
+        'Blake2b_512': '0E',
+        'SHA3_512': '0F',
+        'SHA2_512': '0G',
+        'ECDSA_256k1N': '1AAA',
+        'ECDSA_256k1': '1AAB',
+        'Ed448N': '1AAC',
+        'Ed448': '1AAD',
+        'Ed448_Sig': '1AAE',
+        'ECDSA_256r1N': '1AAI',
+        'ECDSA_256r1': '1AAJ'
+    }
+
     preN = 'BKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
     # 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
     pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
@@ -6773,6 +6912,8 @@ if __name__ == "__main__":
     test_traitor()
     test_verser()
     test_diger()
+    test_noncer()
+    test_prefixer()
     test_texter()
     test_bexter()
     test_pather()
@@ -6782,5 +6923,5 @@ if __name__ == "__main__":
     test_decimer()
     test_dater()
     test_tholder()
-    test_prefixer()
+
 

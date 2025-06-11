@@ -536,6 +536,32 @@ class DigCodex:
 DigDex = DigCodex()  # Make instance
 
 
+
+@dataclass(frozen=True)
+class NonceCodex:
+    """NonceCodex is codex all derivation codes for  salty nonces (UUIDs) either
+    as random numbers or as digests deterministically derived from salty nonces.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Salt_128: str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
+    Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256: str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256: str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    Blake3_512: str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512: str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512: str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+NonceDex = NonceCodex()  # Make instance
+
+
 @dataclass(frozen=True)
 class NumCodex:
     """
@@ -3744,6 +3770,36 @@ class Prefixer(Matter):
 
 
 
+class Noncer(Matter):
+    """Noncer is Matter subclass for UUIDs as salty nonces or UUIDs as digest
+    deterministically derived from salty nonces
+
+    Attributes:
+
+    Inherited Properties:  (see Matter)
+
+    Properties:
+
+    Methods:
+
+    Hidden:
+
+    """
+
+    def __init__(self, raw=None, code=NonceDex.Salt_128, **kwa):
+        """Checks for .code in NonceDex so valid noncive code
+        Inherited Parameters:
+            See Matter
+
+        """
+        try:
+            super(Noncer, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+            super(Noncer, self).__init__(raw=raw, code=NonceDex.Salt_128, **kwa)
+
+        if self.code not in NonceDex:
+            raise InvalidCodeError(f"Invalid noncer code = {self.code}.")
 
 
 class Saider(Matter):

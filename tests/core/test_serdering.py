@@ -781,8 +781,6 @@ def test_serderkeri():
     assert serder.delpre == None
     assert serder.delpreb == None
 
-
-
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
@@ -3626,6 +3624,87 @@ def test_cesr_native_dumps_loads():
     assert serder.sad == sad
 
     # Test bare
+    dsaid = 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN'
+    data = dict(d=dsaid, name="John")
+    dts = '2020-08-22T17:50:09.988921+00:00'
+
+    serder = bare(pre=pre,
+                   route="/home",
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    kind=kering.Kinds.cesr)
+
+    said = serder.said
+    assert said == 'EMQzaOIDL2UknJTXwOVDSazRySUh3uQ9jdNMin-wI597'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAADg.',
+        't': 'bar',
+        'd': 'EMQzaOIDL2UknJTXwOVDSazRySUh3uQ9jdNMin-wI597',
+        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'dt': '2020-08-22T17:50:09.988921+00:00',
+        'r': '/home',
+        'a':
+        {
+            'd': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
+            'name': 'John'
+        }
+    }
+
+    assert serder.raw == (b'-FA30OKERICAACAAXbarEMQzaOIDL2UknJTXwOVDSazRySUh3uQ9jdNMin-wI597EJJkRAwNy0yH'
+                          b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U1AAG2020-08-22T17c50c09d988921p00c006AACAAA-'
+                          b'home-IAQ0J_dEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
+
+
+    assert len(serder.raw) == serder.size == 224
+    sizeh = serder.raw[2:4]
+    assert sizeh == b"A3"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 224
+
+    rawqb64 = serder._dumps()  # default is it dumps self.sad
+    assert rawqb64 == serder.raw
+    assert len(rawqb64) == 224 == serder.size
+
+    rawqb2 = decodeB64(rawqb64)
+    assert len(rawqb2) == 168
+    assert rawqb64 == encodeB64(rawqb2)  # round trips
+
+    rawjson = serder.dumps(serder.sad)
+    assert len(rawjson) == 262
+
+    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    assert len(rawcbor) == 231
+
+    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    assert len(rawmgpk) == 231
+
+    raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
+    ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
+
+    assert ratios == [1.0, 1.33, 1.38, 1.38, 1.56]
+
+    # Test ._loads
+    sad = serder._loads(raw=rawqb64)
+    assert sad == serder.sad  # round tripped
+
+    # Test .loads
+    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    assert sad == serder.sad  # round tripped
+
+    # test Serder inhale from raw
+    serder = SerderKERI(raw=rawqb64)
+    assert serder.sad == sad
+
+    serder = SerderKERI(raw=rawqb2)
+    assert serder.sad == sad
+
+    serder = Serder(raw=rawqb64)
+    assert serder.sad == sad
+
+
+    # Test xip
     dsaid = 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN'
     data = dict(d=dsaid, name="John")
     dts = '2020-08-22T17:50:09.988921+00:00'
