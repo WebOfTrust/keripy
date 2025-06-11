@@ -1491,7 +1491,7 @@ def xincept(sender="",
     return serder
 
 
-def exchange(sender="",
+def xchange(sender="",
              receiver="",
              xid="",
              prior="",

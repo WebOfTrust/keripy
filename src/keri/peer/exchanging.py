@@ -335,7 +335,7 @@ class Exchanger:
         return True
 
 
-def xincept(sender="",
+def exincept(sender="",
             receiver="",
             route="",
             modifiers=None,

@@ -31,7 +31,7 @@ from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
 
 from keri.core.eventing import (incept, interact, rotate, delcept, deltate,
                                 receipt, query, reply, prod, bare,
-                                xincept, exchange)
+                                xincept, xchange)
 
 from keri.peer import exchanging
 
@@ -3804,7 +3804,7 @@ def test_cesr_native_dumps_loads():
     attributes = dict(name="Sue")
     dts = '2020-08-22T17:50:09.988921+00:00'
 
-    serder = exchange(sender=sender,
+    serder = xchange(sender=sender,
                      receiver=receiver,
                      xid='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
                      prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
@@ -3894,7 +3894,7 @@ def test_cesr_native_dumps_loads():
     nonce = '0AAxyHwW6htOZ_rANOaZb2N2'
     dts = '2020-08-22T17:50:09.988921+00:00'
 
-    serder = exchanging.xincept(sender=sender,
+    serder = exchanging.exincept(sender=sender,
                      receiver=receiver,
                      route="/home",
                      modifiers=modifiers,
