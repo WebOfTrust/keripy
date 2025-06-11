@@ -509,7 +509,7 @@ class Serder:
                 Ilks.bar: FieldDom(alls=dict(v='', t='',d='', i='', dt='',
                         r='',a={}),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.xip: FieldDom(alls=dict(v='', t='', d='', i="", ri="",
+                Ilks.xip: FieldDom(alls=dict(v='', t='', d='', u='', i="", ri="",
                                              dt='', r='', q={}, a={}),
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.exn: FieldDom(alls=dict(v='', t='', d='', i="", ri="",

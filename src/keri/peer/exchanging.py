@@ -352,7 +352,7 @@ def xincept(sender="",
         xincept (SerderKERI): xincept 'xip' message.
 
     Fields in order:
-    (v='', t='', d='', i="", ri="", dt='', r='', q={}, a={}),
+    (v, t, d, u, ri, dt, r, q, a),
 
 
     Parameters:
@@ -373,6 +373,7 @@ def xincept(sender="",
       "v" : "KERI10JSON00011c_",
       "t" : "rpy",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
       "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
       "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
       "dt": "2020-08-22T17:50:12.988921+00:00",
@@ -507,16 +508,11 @@ def exchange(route,
                    a=attrs,
                    e=e)
     else:
-        if diger is None:
-            attrs = dict()
+        attrs = {}
+        if e:
+            attrs['e'] = e
 
-            if e:
-                attrs['e'] = e
-
-            attrs |= payload
-
-        else:
-            attrs = diger.qb64
+        attrs |= payload
 
         sad = dict(v=vs,
                    t=ilk,
