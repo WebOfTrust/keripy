@@ -37,9 +37,10 @@ from ..help import helping
 
 from . import coring
 from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
-                     Saids,  Digestage)
+                     Saids,  Digestage, NonceDex)
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
-                     Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather)
+                     Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
+                     Noncer)
 from .mapping import Mapper
 
 from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
@@ -137,42 +138,6 @@ class FieldDom:
     def __iter__(self):
         return iter(asdict(self))
 
-"""Design Notes:
-
-Problems is that sniff only determines if counter not which type of
-counter. Then smell does regex lookahead to find out which serialization
-when not count code but extractor does not look ahead but strips from
-stream. So when possibility that CESR message is next either need to
-not strip from stream when extracting or if counter is message
-then grab rest of frame and reattach so raw in Serder includes the
-message counter. Latter is better since always keep counter around
-until later. So need to check counter type and if message then
-extract rest of counter frame (message) and reattach counter raw.
-Then can call Serder with raw and smellage that indicates CESR kind
-
-But this does not solve the problem of using the Serder subclass
-for the given protocol. Merely knowing is a CESR message is not
-enough also have to know the protocol which comes in the version
-field (not version string).
-
-One solution is to modify smell so that it also can lookahead and
-see the version field. Or lookahead and see the version field with
-count codes in front. Problem is that the Regexes don't separate
-cleanly.
-
-Another solution is to use distinct function for cesr native called
-snuff like smell but regex only for CESR native. Reap can be told which
-because sniff tells which it is.
-So question for snuff is should it be searching over the counter or should it
-start at version field. This changes regex so forced start at front of raw.
-so if reattach counter but use skip then can snuff at start of string.
-Begine regex with b'^' or b'\A' to match at start of string.
-
-So change Smellage to return extra field that has gvrsn when used by snuff
-so can use Smellage for both smell and snuff in both reap and inhale
-where smellage is used. Change legacy uses of smell to ignore extra value.
-
-"""
 
 
 class Serdery:
@@ -509,7 +474,7 @@ class Serder:
                 Ilks.bar: FieldDom(alls=dict(v='', t='',d='', i='', dt='',
                         r='',a={}),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.xip: FieldDom(alls=dict(v='', t='', d='', i="", ri="",
+                Ilks.xip: FieldDom(alls=dict(v='', t='', d='', u='', i="", ri="",
                                              dt='', r='', q={}, a={}),
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.exn: FieldDom(alls=dict(v='', t='', d='', i="", ri="",
@@ -525,7 +490,8 @@ class Serder:
                         ri='', s='', a='', A='', e='', r=''),
                     opts=dict(u='', ri='', a='', A='', e='', r=''),
                     alts=dict(a="A", A="a"),
-                    saids={Saids.d: DigDex.Blake3_256}),
+                    saids={Saids.d: DigDex.Blake3_256},
+                    strict=True),
                 Ilks.ace: FieldDom(alls=dict(v='', t='', d='', u='', i='',
                         ri='', s='', a='', A='', e='', r=''),
                     opts=dict(u='', ri='', a='', A='', e='', r=''),
@@ -540,17 +506,23 @@ class Serder:
                     opts=dict(u='', rd='', a='', A='', e='', r=''),
                     alts=dict(a="A", A="a"),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.acd: FieldDom(alls=dict(v='', t='', d='', u='', i='',
+                Ilks.acm: FieldDom(alls=dict(v='', t='', d='', u='', i='',
                         rd='', s='', a='', A='', e='', r=''),
-                    opts=dict(u='', rd='', a='', A='', e='', r=''),
+                    opts=dict(t='', u='', rd='', a='', A='', e='', r=''),
                     alts=dict(a="A", A="a"),
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.ace: FieldDom(alls=dict(v='', t='', d='', u='', i='',
-                        rd='', s='', a='', A='', e='', r=''),
-                    opts=dict(u='', rd='', a='', A='', e='', r=''),
+                        ri='', s='', a='', A='', e='', r=''),
+                    opts=dict(u='', ri='', a='', A='', e='', r=''),
                     alts=dict(a="A", A="a"),
                     saids={Saids.d: DigDex.Blake3_256},
                     strict=False),
+                Ilks.act: FieldDom(alls=dict(v='', t='', d='', u='', i='',
+                        rd='', s='', a='', e='', r=''),
+                    saids={Saids.d: DigDex.Blake3_256}),
+                Ilks.acg: FieldDom(alls=dict(v='', t='', d='', u='', i='',
+                        rd='', s='', A='', e='', r=''),
+                    saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.sch: FieldDom(alls=dict(v='', t='', d='', s=''),
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.att: FieldDom(alls=dict(v='', t='', d='', a=''),
@@ -1290,10 +1262,13 @@ class Serder:
                     case "t":  # message type (ilk), already got ilk
                         sad[l] = ilker.ilk
 
-                    case "d" | "p" | "x":  # said
+                    case "d" | "p" | "x":  # SAID
                         sad[l] = Diger(qb64b=raw, strip=True).qb64
 
-                    case "i" | "di" | "ri":  # aid
+                    case "u":  # UUID salty Nonce
+                        sad[l] = Noncer(qb64b=raw, strip=True).qb64
+
+                    case "i" | "di" | "ri":  # AID
                         sad[l] = Prefixer(qb64b=raw, strip=True).qb64
 
                     case "s" | "bt":  # sequence number or numeric threshold
@@ -1338,6 +1313,9 @@ class Serder:
                             sad[l] = Mapper(qb64b=raw, strip=True).mad
 
                         elif ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
+                            if ilker.ilk not in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
+                                raise SerializeError(f"Unexpected list value for"
+                                            f"field='{l}' for ilk={ilker.ilk}")
                             del raw[:ctr.fullSize]  # consume counter
                             seals = []
                             fs = ctr.count * 4  # frame size since qb64 text mode
@@ -1524,7 +1502,7 @@ class Serder:
                     case "t":  # message type (ilk), already got ilk
                         val = Ilker(ilk=v).qb64b  # assumes same
 
-                    case "d" | "i" | "p" | "di" | "ri" | "x":  # said or aid
+                    case "d" | "i" | "p" | "u" | "di" | "ri" | "x":  # said or aid
                         val = v.encode("utf-8")  # already primitive qb64 make qb6b
 
                     case "s" | "bt":  # sequence number or numeric threshold
@@ -1564,6 +1542,9 @@ class Serder:
                             val = Mapper(mad=v).qb64b
 
                         else:  # assumes list of seals
+                            if ilk not in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
+                                raise SerializeError(f"Unexpected list value for"
+                                                     f" field='{l}' for {ilk=}")
                             frame = bytearray()  # whole list
                             gcode = None  # code for counter for consecutive same type seals
                             gframe = bytearray()  # consecutive same type seals

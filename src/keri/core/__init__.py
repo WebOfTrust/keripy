@@ -11,7 +11,7 @@ from .coring import (Tiers, )
 from .coring import (Matter, MtrDex, Number, NumDex, Dater, DecDex, Decimer,
                      Texter, Bexter, Pather, Verfer, Cigar, Diger, DigDex,
                      Prefixer, PreDex, Seqner, Verser, Tholder,
-                     Labeler, LabelDex, Decimer, DecDex)
+                     Labeler, LabelDex, Decimer, DecDex, Noncer, NonceDex)
 from .indexing import Indexer, Siger, IdrDex, IdxSigDex
 from .signing import Signer, Salter, Cipher, CiXDex, Encrypter, Decrypter
 from .counting import Counter, Codens, GenDex, CtrDex_1_0, CtrDex_2_0, ProGen

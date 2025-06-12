@@ -662,7 +662,7 @@ def test_ilks():
               rct='rct',
               qry='qry', rpy='rpy', xip='xip', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv',
-              rip='rip', upd='upd', acd='acd', ace='ace',
+              rip='rip', upd='upd', acm='acm', act='act', acg='acg', ace='ace',
               sch='sch', att='att', agg='agg', edg='edg', rul='rul')
 
     assert isinstance(Ilks, Ilkage)
@@ -714,8 +714,12 @@ def test_ilks():
     assert 'upd' in Ilks
     assert Ilks.upd == 'upd'
 
-    assert 'acd' in Ilks
-    assert Ilks.acd == 'acd'
+    assert 'acm' in Ilks
+    assert Ilks.acm == 'acm'
+    assert 'act' in Ilks
+    assert Ilks.act == 'act'
+    assert 'acg' in Ilks
+    assert Ilks.acg == 'acg'
     assert 'ace' in Ilks
     assert Ilks.ace == 'ace'
     assert 'sch' in Ilks

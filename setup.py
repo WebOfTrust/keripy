@@ -37,7 +37,7 @@ from os.path import splitext
 from setuptools import find_packages, setup
 setup(
     name='keri',
-    version='2.0.0-dev0',  # also change in src/keri/__init__.py
+    version='2.0.0-dev1',  # also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -57,7 +57,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
         # 'Programming Language :: Python :: Implementation :: PyPy',
@@ -76,32 +76,32 @@ setup(
     ],
     python_requires='>=3.13.2',
     install_requires=[
-                        'lmdb>=1.4.1',
-                        'pysodium>=0.7.17',
-                        'blake3>=0.4.1',
-                        'msgpack>=1.0.8',
-                        'cbor2>=5.6.2',
-                        'multidict>=6.0.5',
+                        'lmdb>=1.6.2',
+                        'pysodium>=0.7.18',
+                        'blake3>=1.0.5',
+                        'msgpack>=1.1.0',
+                        'cbor2>=5.6.5',
+                        'multidict>=6.4.4',
                         'ordered-set>=4.1.0',
                         'hio>=0.7.14',
                         'multicommand>=1.0.0',
-                        'jsonschema>=4.21.1',
-                        'falcon>=3.1.3',
+                        'jsonschema>=4.24.0',
+                        'falcon>=4.0.2',
                         'hjson>=3.1.0',
-                        'PyYaml>=6.0.1',
-                        'apispec>=6.6.0',
+                        'PyYaml>=6.0.2',
+                        'apispec>=6.8.2',
                         'mnemonic>=0.21',
-                        'PrettyTable>=3.10.0',
+                        'PrettyTable>=3.16.0',
                         'http_sfv>=0.9.9',
-                        'cryptography>=42.0.5',
-                        'semver>=3.0.2',
-                        'qrcode>=7.4.2'
+                        'cryptography>=45.0.4',
+                        'semver>=3.0.4',
+                        'qrcode>=8.2'
     ],
     extras_require={
     },
     tests_require=[
-                    'coverage>=7.4.4',
-                    'pytest>=8.1.1',
+                    'coverage>=7.9.0',
+                    'pytest>=8.4.0',
                     'pytest-shell>=0.3.2'
                   ],
     setup_requires=[

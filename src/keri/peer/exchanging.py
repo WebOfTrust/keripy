@@ -335,6 +335,83 @@ class Exchanger:
         return True
 
 
+def exincept(sender="",
+            receiver="",
+            route="",
+            modifiers=None,
+            attributes=None,
+            nonce=None,
+            stamp=None,
+            pvrsn=Vrsn_2_0,
+            gvrsn=None,
+            kind=coring.Kinds.json):
+    """Utility function to automate creation of exchange incept, 'xip', messages.
+    Xincept 'xip' message is a SAD item with an associated derived SAID in its
+    'd' field.  Only defined for KERI v2.
+
+    Returns:
+        xincept (SerderKERI): xincept 'xip' message.
+
+    Fields in order:
+    (v, t, d, u, ri, dt, r, q, a),
+
+
+    Parameters:
+        sender (str): qb64 of sender identifier (AID)
+        receiver (str): qb64 of receiver identifier (AID)
+        route (str):  '/' delimited path identifier of data flow handler
+               (behavior) to processs the reply if any
+        modifiers (dict): modifiers
+        attributes (dict): attributes
+        nonce (str|None): qb64 of UUID salty nonce. When None generate nonce.
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message or data, default is now.
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR genus vrsion
+        kind (str): serialization kind value of Serials
+
+    Version 2:
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rpy",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
+      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+      "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/logs/processor",
+      "q":
+      {
+           "name": "Zoe",
+           "color": "Blue"
+      }
+      "a":
+      {
+          "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+      }
+    }
+    """
+    pvrsn = pvrsn if pvrsn is not None else Vrsn_2_0
+    vs = kering.versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
+    ilk = kering.Ilks.xip
+
+    sad = dict(v=vs,  # version string
+               t=ilk, # message type
+               d="",  # message said
+               u=nonce if nonce is not None else coring.Noncer(),
+               i=sender,  # sender aid qb64
+               ri=receiver,  # receiver aid qb64
+               dt=stamp if stamp is not None else helping.nowIso8601(),
+               r=route if route is not None else "",  # route
+               q=modifiers if modifiers is not None else {},  # modifiers
+               a=attributes if attributes is not None else {},  # attributes
+               )
+
+    serder = serdering.SerderKERI(sad=sad, makify=True)
+    return serder
+
+
 def exchange(route,
              sender,
              payload=None,
@@ -434,16 +511,11 @@ def exchange(route,
                    a=attrs,
                    e=e)
     else:
-        if diger is None:
-            attrs = dict()
+        attrs = {}
+        if e:
+            attrs['e'] = e
 
-            if e:
-                attrs['e'] = e
-
-            attrs |= payload
-
-        else:
-            attrs = diger.qb64
+        attrs |= payload
 
         sad = dict(v=vs,
                    t=ilk,
@@ -457,10 +529,7 @@ def exchange(route,
                    q=modifiers if modifiers is not None else {},  # q field required
                    a=attrs)
 
-    #_, sad = coring.Saider.saidify(sad=sad)
     return serdering.SerderKERI(sad=sad, makify=True), end  # return serialized ked
-
-    # serder = serdering.SerderKERI(sad=sad, makify=True)
 
 
 def cloneMessage(hby, said):

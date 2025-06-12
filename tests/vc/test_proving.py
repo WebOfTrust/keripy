@@ -311,6 +311,6 @@ def test_credential_parsator():
 
 
 if __name__ == '__main__':
-    test_proving()
+    #test_proving()
     test_credentialer()
-    test_credential()
+    #test_credential()
