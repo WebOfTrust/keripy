@@ -516,6 +516,83 @@ def test_mapper_basic():
     assert mapper.byteCount(Colds.bny) == bc
 
 
+
+    # Test not strict needed for json schema
+    # test with nested value types
+    mad = {}
+    mad['$1d'] = "Json ID field value"
+    mad['nest'] = {'1a': [True, False, None], '1b': {'z': 15,},}
+
+    assert mad == \
+    {
+        '$1d': 'Json ID field value',
+        'nest': \
+        {
+            '1a': [True, False, None],
+            '1b': {'z': 15}
+        }
+    }
+
+    qb64 = '-IAX4BABJDFk6BAHAABKc29uIElEIGZpZWxkIHZhbHVl1AAFnest-IAK0K1a-JAD1AAM1AAL1AAK0K1b-IAD0J_z5HABAA15'
+    qb64b = b'-IAX4BABJDFk6BAHAABKc29uIElEIGZpZWxkIHZhbHVl1AAFnest-IAK0K1a-JAD1AAM1AAL1AAK0K1b-IAD0J_z5HABAA15'
+    qb2 = (b'\xf8\x80\x17\xe0\x10\x01$1d\xe8\x10\x07\x00\x00Json ID field valu'
+            b'e\xd4\x00\x05\x9d\xeb-\xf8\x80\n\xd0\xadZ\xf8\x90\x03\xd4\x00\x0c\xd4'
+            b'\x00\x0b\xd4\x00\n\xd0\xad[\xf8\x80\x03\xd0\x9f\xf3\xe4p\x01\x00\ry')
+
+    count = 24
+    size = 96
+    bc = 72
+
+    mapper = Mapper(mad=mad, strict=False)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    jser = json.dumps(mad)
+    assert jser == ('{"$1d": "Json ID field value", "nest": {"1a": [true, false, null], "1b": '
+                    '{"z": 15}}}')
+    assert len(jser) == 84
+
+    cser = cbor.dumps(mad)
+    assert len(cser) == 45
+
+    # test round trips
+    mapper = Mapper(qb64=qb64, strict=False)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    mapper = Mapper(qb64b=qb64b, strict=False)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+    mapper = Mapper(qb2=qb2, strict=False)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
+
     """Done Test"""
 
 if __name__ == "__main__":

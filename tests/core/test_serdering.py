@@ -670,8 +670,8 @@ def test_serder():
     with pytest.raises(kering.SerializeError):
         serder = Serder(makify=True, sad=sad)  # make using sad
 
-    # test not strict
-    # test opts
+
+    # test opts  using acdc extra type for test purposes
     serder = Serder(makify=True, proto=Protocols.acdc, ilk=kering.Ilks.ace)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON000064_',
                             't': 'ace',
@@ -680,6 +680,7 @@ def test_serder():
                             's': ''}
     assert serder.verify()
 
+    # text extra with not strict
     sad = serder.sad
     sad["x"] = ""
     serder = Serder(makify=True, sad=sad)  # make using sad

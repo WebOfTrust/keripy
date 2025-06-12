@@ -89,16 +89,22 @@ class Mapper:
         byteCount (int): number of bytes in .count quadlets/triplets given cold
         size (int):  Number of bytes of field map serialization in text
                 domain (qb64b)
+        strict (bool): True means labels must match strict formal limitations
+                            labels must be valid attribute names,
+                            i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                            which usually serialize more compactly
+                       False means labels may be any utf-8 text
 
     Hidden Attributes:
         ._mad (bytes): field map dict
         ._qb64b (bytes): mad serialization in qb64b text domain
         ._count (int): number of quadlets/triplets in mad serialization
+        ._strict (bool): labels strict format for strict property
 
     """
 
     def __init__(self, *, mad=None, qb64=None, qb64b=None, qb2=None, strip=False,
-                 verify=True):
+                 verify=True, strict=True):
         """Initialize instance
 
         Parameters:
@@ -114,11 +120,18 @@ class Mapper:
                 bytearray after parsing qb64, qb64b or qb2. False means do not strip.
                 default False
             verify (bool): True means verify serialization against mad.
+            strict (bool): True means labels must match strict formal limitations
+                            labels must be valid attribute names,
+                            i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                            which usually serialize more compactly
+                           False means labels may be any utf-8 text
 
         Assumes that when qb64 or qb64b or qb2 are provided that they have
             already been extracted from a stream and are self contained
 
         """
+        self._strict = True if strict else False
+
         if isNonStringIterable(mad):
             mad = dict(mad)
         self._mad = mad if mad is not None else dict()
@@ -226,6 +239,19 @@ class Mapper:
         """
         return self._count * 4  # always text domain
 
+    @property
+    def strict(self):
+        """Getter for ._strict
+
+        Returns:
+              strict (bool): True means labels must match strict formal limitations
+                               labels must be valid attribute names,
+                               i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                               which usually serialize more compactly
+                             False means labels may be any utf-8 text
+        """
+        return self._strict
+
 
     def byteCount(self, cold=Colds.txt):
         """Computes number of bytes from .count quadlets/triplets given cold
@@ -272,7 +298,10 @@ class Mapper:
 
         while (ser):
             try:
-                label = Labeler(qb64b=ser, strip=True).label
+                if self.strict:
+                    label = Labeler(qb64b=ser, strip=True).label
+                else:
+                    label = Labeler(qb64b=ser, strip=True).text
                 mad[label] = self._deserialize(ser)
             except  InvalidValueError as ex:
                 raise DeserializeError(f"Invalid value while deserializing") from ex
@@ -307,7 +336,10 @@ class Mapper:
                 del ser[:ms]  # strip map bytes from ser
                 value = {}
                 while mser:  # recursively deserialize map items
-                    label = Labeler(qb64b=mser, strip=True).label
+                    if self.strict:
+                        label = Labeler(qb64b=mser, strip=True).label
+                    else:
+                        label = Labeler(qb64b=mser, strip=True).text
                     value[label] = self._deserialize(mser)
             else:
                 raise DeserializeError("Invalid counter name={vctr.name}")
@@ -348,7 +380,10 @@ class Mapper:
         bdy = bytearray()
         for l, v in mad.items():  # assumes valid field order & presence
             try:
-                bdy.extend(Labeler(label=l).qb64b)
+                if self.strict:
+                    bdy.extend(Labeler(label=l).qb64b)
+                else:
+                    bdy.extend(Labeler(text=l).qb64b)
                 bdy.extend(self._serialize(v))
             except InvalidValueError as ex:
                 raise SerializeError("Invalid value while serializing") from ex
@@ -396,7 +431,10 @@ class Mapper:
         elif isinstance(val, Mapping):
             bdy = bytearray()
             for l, v in val.items():
-                bdy.extend(Labeler(label=l).qb64b)
+                if self.strict:
+                    bdy.extend(Labeler(label=l).qb64b)
+                else:
+                    bdy.extend(Labeler(text=l).qb64b)
                 bdy.extend(self._serialize(v))
             ser.extend(Counter.enclose(qb64=bdy,
                                        code=Codens.GenericMapGroup))
