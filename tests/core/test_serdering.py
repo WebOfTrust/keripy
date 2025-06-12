@@ -110,6 +110,17 @@ def test_serder_class():
                 assert oset(vf.alts) <= oset(vf.opts)
                 assert oset(vf.saids) <= oset(vf.alls)
 
+    assert Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].saids == {'d': 'E', 'i': 'E'}
+    assert (Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].alls ==
+        {'v': '','t': '','d': '','i': '','s': '0','kt': '0','k': [],'nt': '0','n': [],'bt': '0','b': [],'c': [],'a': []})
+    assert (Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].opts == {})
+    assert (Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].alts == {})
+    assert Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].strict
+
+    # said field labels must be subset of all field labels
+    assert (set(Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].saids) <=
+            set(Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].alls))
+
 
     assert Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].saids == {'d': 'E'}
     assert (Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].alls ==
@@ -645,13 +656,37 @@ def test_serder():
     sad["ri"] = ""
 
     serder = Serder(makify=True, sad=sad)  # make using sad fixes order
+    assert serder.sad == \
+    {
+        'v': 'ACDC10JSON000077_',
+        'd': 'EKT4pucP748gLz7wkFWzWynMMj0hZDJMT6Tw4ayd2llp',
+        'i': '',
+        'ri': '',
+        's': '',
+        'a': '',
+        'e': '',
+        'r': ''
+    }
 
     # extra field with strict
-    sad = serder.sad
+    sad = {}
     sad["x"] = ""
-
     with pytest.raises(kering.SerializeError):
-        serder = Serder(makify=True, sad=sad)  # make using sad
+        serder = Serder(makify=True, sad=sad, proto=Protocols.acdc)
+
+
+    # extra field  without strict
+    #sad = {}
+    #sad["x"] = ""
+    #serder = Serder(makify=True, sad=sad, proto=Protocols.acdc)
+    #assert serder.sad == \
+    #{
+        #'v': 'ACDC10JSON000061_',
+        #'d': 'EK95expNqB5E9YBViXM_1w8LgqNftZJOznjWE6PmUszF',
+        #'i': '',
+        #'s': '',
+        #'x': ''
+    #}
 
     # test alts
     serder = Serder(makify=True, proto=Protocols.acdc)  # make defaults for ACDC
