@@ -310,8 +310,8 @@ class MatterCodex:
     Tag3:                 str = 'X'  # Tag3  3 B64 encoded chars for special values
     Tag7:                 str = 'Y'  # Tag7  7 B64 encoded chars for special values
     Tag11:                str = 'Z'  # Tag11  11 B64 encoded chars for special values
-    Blind:                str = 'a'  # Blinding factor 256 bits, Cryptographic strength deterministically generated from random salt
-    Salt_128:             str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
+    Salt_256:             str = 'a'  # Salt/seed/nonce/blind 256 bits
+    Salt_128:             str = '0A'  # Salt/seed/nonce 128 bits or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
     Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
@@ -545,7 +545,8 @@ class NonceCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Salt_128: str = '0A'  # random salt/seed/nonce/private key or number of length 128 bits (Huge)
+    Salt_128: str = '0A'  # random salt/seed/nonce/private key
+    Salt_256: str = 'a'  # Salt/seed/nonce/blind 256 bits
     Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
     Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
     Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.

@@ -237,7 +237,7 @@ def test_matter_class():
         'Tag3': 'X',
         'Tag7': 'Y',
         'Tag11': 'Z',
-        'Blind': 'a',
+        'Salt_256': 'a',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -356,7 +356,7 @@ def test_matter_class():
         'X': 'Tag3',
         'Y': 'Tag7',
         'Z': 'Tag11',
-        'a': 'Blind',
+        'a': 'Salt_256',
         '0A': 'Salt_128',
         '0B': 'Ed25519_Sig',
         '0C': 'ECDSA_256k1_Sig',
@@ -5942,6 +5942,7 @@ def test_noncer():
     assert asdict(NonceDex) == \
     {
         'Salt_128': '0A',
+        'Salt_256': 'a',
         'Blake3_256': 'E',
         'Blake2b_256': 'F',
         'Blake2s_256': 'G',
