@@ -9,23 +9,16 @@ import tempfile
 import pytest
 
 import os
-import json
-import datetime
 
 import lmdb
 from  ordered_set import OrderedSet as oset
 
-from hio.base import doing
-
+from keri.app import configing
 from keri.db import dbing
-from keri.db.dbing import clearDatabaserDir, openLMDB
-from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
-                           splitOnKey, splitKeyFN, splitSnKey, splitKeyDT)
+from keri.db.dbing import openLMDB
+from keri.db.dbing import (dgKey, onKey, snKey, dtKey, splitKey,
+                           splitOnKey, splitSnKey, splitKeyDT)
 from keri.db.dbing import LMDBer
-
-
-
-from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 from keri.help import helping
 
 def test_key_funcs():
@@ -228,12 +221,12 @@ def test_lmdber():
     """
     Test LMDBer creation
     """
-    databaser = LMDBer()
+    databaser = LMDBer(reopen=True, base="unique")  # used a unique directory to make it pass on Windows in CI
     assert isinstance(databaser, LMDBer)
     assert databaser.name == "main"
     assert databaser.temp == False
     assert isinstance(databaser.env, lmdb.Environment)
-    assert databaser.path.endswith(os.path.join("keri", "db", "main"))
+    assert databaser.path.endswith(os.path.join("keri", "db", "unique", "main"))  # used a unique directory to make it pass on Windows in CI
     assert databaser.env.path() == databaser.path
     assert os.path.exists(databaser.path)
     assert databaser.opened
@@ -252,7 +245,7 @@ def test_lmdber():
     assert not databaser.opened
 
     # test not opened on init
-    databaser = LMDBer(reopen=False)
+    databaser = LMDBer(reopen=False, base="other_unique")  # used a unique directory to make it pass on Windows in CI
     assert isinstance(databaser, LMDBer)
     assert databaser.name == "main"
     assert databaser.temp == False
@@ -263,7 +256,7 @@ def test_lmdber():
     databaser.reopen()
     assert databaser.opened
     assert isinstance(databaser.env, lmdb.Environment)
-    assert databaser.path.endswith(os.path.join("keri", "db", "main"))
+    assert databaser.path.endswith(os.path.join("keri", "db", "other_unique", "main"))  # used a unique directory to make it pass on Windows in CI
     assert databaser.env.path() == databaser.path
     assert os.path.exists(databaser.path)
 
@@ -1157,6 +1150,47 @@ def test_lmdber():
     assert not os.path.exists(dber.path)
 
     """ End Test """
+
+
+def test_lmdber_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        lmdber=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    db = LMDBer(cf=cf)
+    assert db.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB
+    db.close()
+
+    badConfigStr = dict(
+        lmdber=dict(
+            mapSize="somestr"
+        )
+    )
+    cf.put(badConfigStr)
+    with pytest.raises(ValueError):
+        LMDBer(cf=cf)
+
+    badConfigNone = dict(
+        lmdber=dict(
+            mapSize=None
+        )
+    )
+    cf.put(badConfigNone)
+    with pytest.raises(ValueError):
+        LMDBer(cf=cf)
+
+    badConfigNeg = dict(
+        lmdber=dict(
+            mapSize=-1
+        )
+    )
+    cf.put(badConfigNeg)
+    with pytest.raises(ValueError):
+        LMDBer(cf=cf)
 
 
 if __name__ == "__main__":
