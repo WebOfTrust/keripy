@@ -987,46 +987,37 @@ class Serder:
                 raise SerializeError(f"Missing or out-of-order field = {label} "
                                             f"from = {list(osalls)} in sad.")
 
+        if 'v' not in sad:  # ensures that 'v' is always required by .Labels
+            raise SerializeError(f"Missing required version string field 'v'"
+                                          f" in sad = {sad}.")
+
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         _saids = copy.copy(fields.saids)  # get copy of defaults
-        if not (set(_saids) <= set(alls)):
+        if not (set(_saids) <= set(alls)):  # sets from labels (dict keys)
             raise SerializeError(f"Missing one or more required said fields "
                                  f"from {list(_saids)} in sad = {sad}.")
 
         # override saidive defaults
         for label in _saids:
-            if saids and label in saids:  # use parameter override
-                _saids[label] = saids[label]
-            else:
-                try:  # use sad field override
+            if saids and label in saids:  # use makify parameter override
+                _saids[label] = saids[label]  # value is cesr code
+            else:  # use provided sad field override if any
+                try:  # use code of sad field value if present
                     _saids[label] = Matter(qb64=sad[label]).code
                 except Exception:
-                    pass  # no override
-
+                    pass  # no provided sad field override
+            # when code is digestive then we know we have to compute said dummy
+            # this accounts for aid fields that may or may not be saids
             if _saids[label] in DigDex:  # if digestive then fill with dummy
                 sad[label] = self.Dummy * Matter.Sizes[_saids[label]].fs
 
-
-        if 'v' not in sad:  # ensures that 'v' is always required by .Labels
-            raise SerializeError(f"Missing requires version string field 'v'"
-                                          f" in sad = {sad}.")
-
-        if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
+        if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # dummy version string
             # Non native the size the version string depends on version so we
             # need to dummy the version string in order to get the size right.
             # It needs to be computed based on actual version string span
             # since not same for all versions
             sad['v'] = self.Dummy * self.Spans[pvrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
-
-            raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
-            size = len(raw)
-
-            # generate version string with correct size
-            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
-            sad["v"] = vs  # update version string in sad
-            # now have correctly sized version string in sad
-
 
         # do this now so ._dumps of cesr native can use properties without having
         # re-deversify sad['v'] each time
@@ -1035,6 +1026,16 @@ class Serder:
         self._genus = genus
         self._gvrsn = gvrsn
         self._kind = kind
+
+        # assumes sad['v'] sad said fields are fully dummied at this point
+        if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
+            raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
+            size = len(raw)
+
+            # generate version string with correct size
+            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
+            sad["v"] = vs  # update version string in sad
+            # now have correctly sized version string in sad
 
         # compute saidive digestive field values using raw from sized dummied sad
         raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
