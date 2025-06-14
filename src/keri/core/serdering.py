@@ -770,7 +770,11 @@ class Serder:
                                     f" from {list(saids)} in sad = "
                                     f"{self._sad}.")
 
-        sad = self.sad  # make shallow copy so don't clobber original .sad
+        if "v" not in self._sad:
+            raise ValidationError(f"Missing version string field in {self._sad}.")
+
+        sad = copy.copy(self._sad)  # make shallow copy so don't clobber original .sad
+
         for label in saids:
             try:  # replace default code with code of value from sad
                 saids[label] = Matter(qb64=sad[label]).code
@@ -782,24 +786,25 @@ class Serder:
             if saids[label] in DigDex:  # if digestive then replace with dummy
                 sad[label] = self.Dummy * len(sad[label])
 
-        # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
-        for label, code in saids.items():
-            if code in DigDex:  # subclass override if non digestive allowed
-                dig = Diger(ser=raw, code=code).qb64
-                if dig != self._sad[label]:  # compare to original
-                    raise ValidationError(f"Invalid said field '{label}' in sad"
-                                          f" = {self._sad}, should be {dig}.")
-                sad[label] = dig
+        sad, raw, size = self.compute(sad=sad, saids=saids)
 
-        raw = self.dumps(sad, kind=self.kind)  # compute final raw
+        ## compute saidive digestive field values using raw from sized dummied sad
+        #raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
+        #for label, code in saids.items():
+            #if code in DigDex:  # subclass override if non digestive allowed
+                #dig = Diger(ser=raw, code=code).qb64
+                #if dig != self._sad[label]:  # compare to original
+                    #raise ValidationError(f"Invalid said field '{label}' in sad"
+                                          #f" = {self._sad}, should be {dig}.")
+                #sad[label] = dig
+
+        #raw = self.dumps(sad, kind=self.kind)  # compute final raw
 
         if raw != self.raw:
             raise ValidationError(f"Invalid round trip of {sad} != \n"
                                   f"{self.sad}.")
 
-        if "v" not in sad:
-            raise ValidationError(f"Missing version string field in {sad}.")
+
 
         # extract version string elements to verify consistency with attributes
 
@@ -1027,32 +1032,80 @@ class Serder:
         self._gvrsn = gvrsn
         self._kind = kind
 
-        # assumes sad['v'] sad said fields are fully dummied at this point
-        if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
-            raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
-            size = len(raw)
+        ## assumes sad['v'] sad said fields are fully dummied at this point
+        #if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
+            #raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
+            #size = len(raw)
 
-            # generate version string with correct size
-            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
-            sad["v"] = vs  # update version string in sad
-            # now have correctly sized version string in sad
+            ## generate version string with correct size
+            #vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
+            #sad["v"] = vs  # update version string in sad
+            ## now have correctly sized version string in sad
 
-        # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
-        for label, code in _saids.items():  # replace dummied fields with computed digests
-            if code in DigDex:  # subclass override if non digestive allowed
-                sad[label] = Diger(ser=raw, code=code).qb64
+        ## compute saidive digestive field values using raw from sized dummied sad
+        #raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
+        #for label, code in _saids.items():  # replace dummied fields with computed digests
+            #if code in DigDex:  # subclass override if non digestive allowed
+                #sad[label] = Diger(ser=raw, code=code).qb64
 
-        # Now reserialize raw with undummied field values
-        raw = self.dumps(sad, kind=kind)  # assign final raw
-        if kind == Kinds.cesr:# cesr kind version string does not set size
-            size = len(raw) # size of whole message
-            sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
+        ## Now reserialize raw with undummied field values
+        #raw = self.dumps(sad, kind=kind)  # assign final raw
+        #if kind == Kinds.cesr:# cesr kind version string does not set size
+            #size = len(raw) # size of whole message
+            #sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
+
+        sad, raw, size = self.compute(sad=sad, saids=_saids)
 
         self._raw = raw
         self._size = size
         self._sad = sad
 
+
+    def compute(self, sad, saids):
+        """Computes computed fields. These include size and said fields that have
+        dummy characters. Replaces dummied fields with computed values.
+        In the case of version strings replaces dummy size characters with
+        actual size. In the case of SAID fields replaces dummy said characters
+        with actual computed saids
+
+        Returns:
+            stuff (tuple): of form (sad, raw, size) where:
+                sad is de-dummied sad, raw is raw serialization of dedummied sad,
+                and size is size of raw or None when sized is True and hence the
+                size is not calculated.
+
+        Parameters:
+            sad (dict): dummied serder sad (self addressed data dict)
+            saids (dict): said field labels and cesr code that identifies how
+
+
+        """
+        # assumes sad['v'] sad said fields are fully dummied at this point
+
+        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
+            raw = self.dumps(sad, self.kind)  # get size of sad with fully dummied vs and saids
+            size = len(raw)
+
+            # generate version string with correct size
+            vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind, size=size, gvrsn=self.gvrsn)
+            sad["v"] = vs  # update version string in sad
+            # now have correctly sized version string in sad
+
+        # compute saidive digestive field values using raw from sized dummied sad
+        raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+        for label, code in saids.items():  # replace dummied fields with computed digests
+            if code in DigDex:  # subclass override if non digestive allowed
+                sad[label] = Diger(ser=raw, code=code).qb64
+
+        # Now reserialize raw with undummied field values
+        raw = self.dumps(sad, kind=self.kind)  # assign final raw
+
+        if self.kind == Kinds.cesr:# cesr kind version string does not set size
+            size = len(raw) # size of whole message
+            sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn,
+                               kind=self.kind, size=size, gvrsn=self.gvrsn)
+
+        return (sad, raw, size)
 
 
     def _inhale(self, raw, *, smellage=None, strip=False):

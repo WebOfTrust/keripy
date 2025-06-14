@@ -47,12 +47,23 @@ def mapACDC(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
     (u='', rd='', a='', A='', e='', r='')
 
 
-    ACDC .sad is the most compact sad. Its serialization is the one that is signed
-         ie. raw. Its said is literally the said of its serialization.
-    ACDC .unsad is the uncompacted sad. It is what may be disclosed  at end of
-         graduated disclosure.  Its serialization is special since its said is
-         not literally the said of its serialization.
+    ACDC .sad and its serialization .raw. Is whatever in input to the serder. Its
+    degree of compactification is whatever is input to the Serder. In the case of
+    the .raw its the over the wire serialization to be deserialized.
+    This is the same semantic as for KERI messages except that for ACDCs the
+    SAIDS and nested SAIDs in ACDCs are calculated using the most compact algorithm.
+    So if the serder gets an uncompacted sad or an uncompated raw, these become
+    .sad and .raw.  These may be a received disclosure or a disclosure
+    to be sent at any stage in a graduated disclosure.  The serialization of
+    the uncompacted sad is special since its said is not literally the said of
+    its  uncompact serialization but is the SAID of its most compact form.
 
+    ACDC .csad and its serialization .craw is the most compact sad and raw
+    respectively. This must be generated in order to compute the SAID of the ACDC,
+    as well the SAIDs of any nested parts of the uncompacted sad regardless of
+    degree of compactness. The most compact SAID is the one that is anchored in
+    its TEL. The most compact said is literally the said of .csad computed via
+    the most compact serialization .craw
 
     So need to hoist serder SAID calculation code to own method so ACDC can
     override SAID calculation with most compact variant SAID calculation.
