@@ -343,6 +343,14 @@ class Serder:
             saids (dict):
             strict (bool):
 
+    ToDo:
+        Hoist common functionality out of ._verify and ._makify joint or exclusive
+        so that can override ._verify and ._makify in SerderACDC without huge
+        amounts of duplicated code.
+        ._verifyFields
+        ._makifyFields  ._fieldify
+        ._dummifyFields  ._dummify
+
     """
     Dummy = "#"  # dummy spaceholder char for SAID. Must not be a valid Base64 char
 
@@ -730,8 +738,6 @@ class Serder:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
 
-
-
         fields = self.Fields[self.proto][self.pvrsn][self.ilk]  # get labelage
 
         alls = fields.alls  # faster local reference
@@ -786,7 +792,7 @@ class Serder:
             if saids[label] in DigDex:  # if digestive then replace with dummy
                 sad[label] = self.Dummy * len(sad[label])
 
-        sad, raw, size = self.compute(sad=sad, saids=saids)
+        sad, raw, size = self._compute(sad=sad, saids=saids)
 
         if raw != self.raw:
             raise ValidationError(f"Invalid round trip of {sad} != \n"
@@ -1038,14 +1044,14 @@ class Serder:
             #size = len(raw) # size of whole message
             #sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
 
-        sad, raw, size = self.compute(sad=sad, saids=_saids)
+        sad, raw, size = self._compute(sad=sad, saids=_saids)
 
         self._raw = raw
         self._size = size
         self._sad = sad
 
 
-    def compute(self, sad, saids):
+    def _compute(self, sad, saids):
         """Computes computed fields. These include size and said fields that have
         dummy characters. Replaces dummied fields with computed values.
         In the case of version strings replaces dummy size characters with
