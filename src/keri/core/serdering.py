@@ -712,6 +712,53 @@ class Serder:
         Raises a ValidationError (or subclass) if any verification fails
 
         """
+        sad, saids = self._validate()
+
+        sad, raw, size = self._compute(sad=sad, saids=saids)
+
+        if raw != self.raw:
+            raise ValidationError(f"Invalid round trip of {sad} != \n"
+                                  f"{self.sad}.")
+
+        # extract version string elements to verify consistency with attributes
+        proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
+        if self.proto != proto:
+            raise ValidationError(f"Inconsistent protocol={self.proto} from"
+                                  f" deversify of sad.")
+
+        if self.pvrsn != pvrsn:
+            raise ValidationError(f"Inconsistent version={self.pvrsn} from"
+                                  f" deversify of sad.")
+
+        if self.kind != kind:
+            raise ValidationError(f"Inconsistent kind={self.kind} ifrom"
+                                  f" deversify of sad.")
+
+        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
+            if size != self.size != len(raw):
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
+        else:  # size is not set in version string when kind is CESR
+            if self.size != len(raw):
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
+
+        if self.gvrsn != gvrsn:
+            raise ValidationError(f"Inconsistent genus version={self.gvrsn} from"
+                                  f" deversify of sad.")
+        # verified successfully since no exception
+
+
+    def _validate(self):
+        """Validate field presence and values but not including SAID or size
+        computation. Raises exception if anything is invalid
+
+        Returns:
+           tuple (sad, saids):  where
+                sad (dict): self addressed data dict with dummied fields
+                saids (dict)
+        """
+
         if self.Protocol and self.proto != self.Protocol:  # class required
             raise ValidationError(f"Required protocol = {self.Protocol}, got "
                                  f"{self.proto} instead.")
@@ -798,39 +845,8 @@ class Serder:
             if saids[label] in DigDex:  # if digestive then replace with dummy
                 sad[label] = self.Dummy * len(sad[label])
 
-        sad, raw, size = self._compute(sad=sad, saids=saids)
+        return (sad, saids)
 
-        if raw != self.raw:
-            raise ValidationError(f"Invalid round trip of {sad} != \n"
-                                  f"{self.sad}.")
-
-        # extract version string elements to verify consistency with attributes
-        proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
-        if self.proto != proto:
-            raise ValidationError(f"Inconsistent protocol={self.proto} from"
-                                  f" deversify of sad.")
-
-        if self.pvrsn != pvrsn:
-            raise ValidationError(f"Inconsistent version={self.pvrsn} from"
-                                  f" deversify of sad.")
-
-        if self.kind != kind:
-            raise ValidationError(f"Inconsistent kind={self.kind} ifrom"
-                                  f" deversify of sad.")
-
-        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
-            if size != self.size != len(raw):
-                raise ValidationError(f"Inconsistent size={self.size} from"
-                                  f" deversify of sad.")
-        else:  # size is not set in version string when kind is CESR
-            if self.size != len(raw):
-                raise ValidationError(f"Inconsistent size={self.size} from"
-                                  f" deversify of sad.")
-
-        if self.gvrsn != gvrsn:
-            raise ValidationError(f"Inconsistent genus version={self.gvrsn} from"
-                                  f" deversify of sad.")
-        # verified successfully since no exception
 
 
     def _makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
