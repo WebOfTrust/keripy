@@ -641,20 +641,26 @@ class Serder:
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
-                # makify resets sad, raw, proto, pvrsn, genus, gvrsn, kind, ilk, and size
-                self.makify(sad=sad, proto=proto, pvrsn=pvrsn,
-                            genus=genus, gvrsn=gvrsn, kind=kind,
-                            ilk=ilk, saids=saids)
-                # .makify updates ._raw, ._sad, ._proto, ._pvrsn, ._kind, ._size
-                # .makify uses .gvrsn
+                # makify resets: sad, raw, size,
+                # proto, pvrsn, genus, gvrsn, kind, and ilk
+
+                # sets ._proto, ._pvrsn, ._genus, ._gvrsn, ._kind
+                sad, saids = self._makify(sad, proto=proto, pvrsn=pvrsn, genus=genus,
+                                                gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
+
+                sad, raw, size = self._compute(sad=sad, saids=saids)
+
+                self._raw = raw
+                self._size = size
+                self._sad = sad
 
             else:
-                self._exhale(sad=sad)
                 # .exhale updates ._raw, ._sad, ._proto, ._pvrsn, ._kind, ._size
                 # .exhale uses .gvrsn
+                self._exhale(sad=sad)
 
-            # primary said field label
-            try:
+
+            try:  # ensure primary said field label is present
                 label = list(self.Fields[self.proto][self.pvrsn][self.ilk].saids)[0]
                 if label not in self._sad:
                     raise DeserializeError(f"Missing primary said field in {self._sad}.")
@@ -827,20 +833,24 @@ class Serder:
         # verified successfully since no exception
 
 
-    def makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
-               kind=None, ilk=None, saids=None):
-        """Makify given sad dict makes the versions string and computes the said
-        field values and sets associated properties:
-        raw, sad, proto, version, kind, size
+    def _makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
+                   kind=None, ilk=None, saids=None):
+        """_makify ensures sad has appropriate fields and field values from
+        provided sad as template and parameter proto, pvrsn, genus, gvrsn,
+        kind, ilk and saids, include filling in any dummy values for computing
+        size and saids. Assigns hidden attributes for properties:
+        proto, pvrsn, genus, gvrsn, kind
 
-        Override for protocol and ilk specific saidification behavior. Especially
-        for inceptive ilks that have more than one said field like a said derived
-        identifier prefix.
 
         Default prioritization.
            Use method parameter if not None
-           Else use provided version string if valid
+           Else use version string from provided sad if valid
            Otherwise use class attribute
+
+        Returns:
+           tuple (sad, saids):  where
+                sad (dict): self addressed data dict with dummied fields
+                saids (dict)
 
 
         Parameters:
@@ -868,13 +878,18 @@ class Serder:
                    - the code provided in .Fields...saids
         """
         sproto = spvrsn = skind = silk = sgvrsn = None  # from sad
-        if sad and 'v' in sad:  # attempt to get from vs in sad
-            try:  # extract version string elements as defaults if provided
-                sproto, spvrsn, skind, _, sgvrsn = deversify(sad["v"])
-            except VersionError as ex:
-                pass
-            else:
-                silk = sad.get('t')  # if 't' not in sad .get returns None which may be valid
+        if sad:
+            if 'v' in sad:  # attempt to get from vs in sad
+                try:  # extract version string elements as defaults if provided
+                    sproto, spvrsn, skind, _, sgvrsn = deversify(sad["v"])
+                except VersionError as ex:
+                    pass
+                else:
+                    silk = sad.get('t')  # if 't' not in sad .get returns None which may be valid
+
+        else:  # empty or None so create sad dict
+            sad = {}
+
 
         if proto is None:
             proto = sproto if sproto is not None else self.Proto
@@ -905,8 +920,6 @@ class Serder:
         if gvrsn is None:  # use default GVrsn only if pvrsn >= 2 othwise leave gvrsn None
             gvrsn = sgvrsn if sgvrsn is not None else (self.GVrsn if pvrsn.major >= 2 else None)
 
-        #if gvrsn is None and sgvrsn is not None:
-            #gvrsn = sgvrsn
 
         if gvrsn is not None and gvrsn.major < 2:
             raise SerializeError(f"Incompatible major protocol version={pvrsn} "
@@ -926,16 +939,12 @@ class Serder:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
-
         fields = self.Fields[proto][pvrsn][ilk]  # get FieldDom of fields
 
         alls = fields.alls  # faster local reference
         oalls = oset(alls)  # ordereset of field labels
         oopts = oset(fields.opts)  # ordereset of field labels
         oreqs = oalls - oopts  # required fields
-
-        if not sad:  # empty or None so create sad dict
-            sad = {}
 
         # ensure all required fields are in sad. If not provide default
         for label in oreqs:
@@ -1022,33 +1031,7 @@ class Serder:
         self._gvrsn = gvrsn
         self._kind = kind
 
-        ## assumes sad['v'] sad said fields are fully dummied at this point
-        #if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
-            #raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
-            #size = len(raw)
-
-            ## generate version string with correct size
-            #vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
-            #sad["v"] = vs  # update version string in sad
-            ## now have correctly sized version string in sad
-
-        ## compute saidive digestive field values using raw from sized dummied sad
-        #raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
-        #for label, code in _saids.items():  # replace dummied fields with computed digests
-            #if code in DigDex:  # subclass override if non digestive allowed
-                #sad[label] = Diger(ser=raw, code=code).qb64
-
-        ## Now reserialize raw with undummied field values
-        #raw = self.dumps(sad, kind=kind)  # assign final raw
-        #if kind == Kinds.cesr:# cesr kind version string does not set size
-            #size = len(raw) # size of whole message
-            #sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
-
-        sad, raw, size = self._compute(sad=sad, saids=_saids)
-
-        self._raw = raw
-        self._size = size
-        self._sad = sad
+        return (sad, _saids)
 
 
     def _compute(self, sad, saids):
