@@ -641,22 +641,15 @@ class Serder:
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
-                # makify resets: sad, raw, size,
-                # proto, pvrsn, genus, gvrsn, kind, and ilk
-
-                # sets ._proto, ._pvrsn, ._genus, ._gvrsn, ._kind
-                sad, saids = self._makify(sad, proto=proto, pvrsn=pvrsn, genus=genus,
-                                                gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
-
-                sad, raw, size = self._compute(sad=sad, saids=saids)
-
-                self._raw = raw
-                self._size = size
-                self._sad = sad
+                # makify resets properties:
+                # sad, raw, size, proto, pvrsn, genus, gvrsn, kind, and ilk
+                self.makify(sad, proto=proto, pvrsn=pvrsn,
+                            genus=genus, gvrsn=gvrsn,
+                            kind=kind, ilk=ilk, saids=saids)
 
             else:
-                # .exhale updates ._raw, ._sad, ._proto, ._pvrsn, ._kind, ._size
-                # .exhale uses .gvrsn
+                # .exhale potentially updates properties:
+                # sad, raw, size, proto, pvrsn, genus, gvrsn, kind, ilk
                 self._exhale(sad=sad)
 
 
@@ -846,6 +839,53 @@ class Serder:
                 sad[label] = self.Dummy * len(sad[label])
 
         return (sad, saids)
+
+
+    def makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
+                   kind=None, ilk=None, saids=None):
+        """makify builds serder with valid properties and attributes. Computes
+        saids and sizes. and assigns hidden attributes for properties:
+        sad, raw, size, proto, pvrsn, genus, gvrsn, kind
+
+        Prioritization of assigned and default values.
+           Use method parameter if not None
+           Else use version string from provided sad if valid
+           Otherwise use class attribute
+
+        Parameters:
+            sad (dict): serializable saidified field map of message.
+                Ignored if raw provided
+            proto (str | None): desired protocol type str value of Protocols
+                If None then its extracted from sad or uses default .Proto
+            pvrsn (Versionage | None): instance desired protocol version
+                If None then its extracted from sad or uses default .Vrsn
+            genus (str): desired CESR genus code
+                If None then its uses one compatible with proto
+            gvrsn (Versionage): instance desired CESR genus code table version
+                If None then stays None
+            kind (str None): serialization kind string value of Serials
+                supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+                If None then its extracted from sad or uses default .Kind
+            ilk (str | None): desired ilk packet type str value of Ilks
+                If None then its extracted from sad or uses default .Ilk
+            saids (dict): of keyed by label of codes for saidive fields to
+                override defaults given in .Fields for a given ilk.
+                If None then use defaults
+                Code assignment for each saidive field in desending priority:
+                   - the code provided in saids when not None
+                   - the code extracted from sad[said label] when valid CESR
+                   - the code provided in .Fields...saids
+
+        """
+        # sets ._proto, ._pvrsn, ._genus, ._gvrsn, ._kind
+        sad, saids = self._makify(sad, proto=proto, pvrsn=pvrsn, genus=genus,
+                                gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
+
+        sad, raw, size = self._compute(sad=sad, saids=saids)
+
+        self._raw = raw
+        self._size = size
+        self._sad = sad
 
 
 
