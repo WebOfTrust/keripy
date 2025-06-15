@@ -14,21 +14,17 @@ from keri import help
 from keri.app import indirecting, challenging, connecting, signaling
 from keri.app.cli.commands.challenge.generate import generateWords
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.help import helping
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Check mailbox for EXN challenge response messages and verify their '
-                                             'signatures and data against provided words and signer')
+                                             'signatures and data against provided words and signer',
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: verify(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--alias', '-a', help='Unused, kept for backwards compatibility', default=None)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-
 parser.add_argument('--words', '-d', help='JSON formatted array of words to verfiy, \'@\' allowed to load from a file',
                     action="store", required=False)
 parser.add_argument('--generate', '-g', help="Generate words, print to stdout and wait for verification",

@@ -16,20 +16,17 @@ from hio.base import doing
 from keri import help, kering
 from keri.app import indirecting, grouping, habbing, forwarding
 from keri.app.cli.common import existing, displaying
+from keri.app.cli.common.parsing import Parsery
 from keri.app.notifying import Notifier
 from keri.core import coring, serdering
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a group identifier prefix')
+parser = argparse.ArgumentParser(description='Initialize a group identifier prefix', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: inceptMultisig(args))
-parser.add_argument('--name', '-n', help='Human readable environment reference for local identifier', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--wait", "-w", help="number of seconds to wait for other multisig events, defaults to 10",
                     default=10)
 

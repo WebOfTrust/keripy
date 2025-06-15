@@ -9,6 +9,7 @@ import getpass
 from hio.base import doing
 
 from keri import core, help
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring
 from keri.kering import ConfigurationError
 
@@ -17,15 +18,10 @@ from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: set_passcode(args),
-                    transferable=True)
+parser = argparse.ArgumentParser(description='Initialize a prefix', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: set_passcode(args))
 parser.add_argument("--new", help="new  21 character encryption passcode for keystore", required=False, default=None)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='existing 21 character encryption passcode for keystore',
-                    dest="bran", default=None)  # passcode => bran
 
 
 def handler(args):
