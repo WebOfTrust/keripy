@@ -74,6 +74,6 @@ kli status --name "$delegate_2" --alias delegate
 delegate_aid_from_2=$(kli aid --name "$delegate_2" --alias delegate)
 
 if [[ "$delegate_aid_from_1" != "$delegate_aid_from_2" ]]; then
-    echo "Delegator AIDs do not match"
+    echo "Delegate AIDs do not match"
     exit 1
 fi
