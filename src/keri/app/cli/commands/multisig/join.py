@@ -191,6 +191,8 @@ class JoinDoer(doing.DoDoer):
         inits["wits"] = oicp.ked["b"]
         inits["delpre"] = oicp.ked["di"] if "di" in oicp.ked else None
 
+        print()
+        print("Group Multisig Inception proposed:")
         self.showEvent(mhab, both, oicp.ked)
 
         if self.auto:
@@ -342,8 +344,6 @@ class JoinDoer(doing.DoDoer):
         tab = PrettyTable()
         tab.field_names = ["Name", "Value"]
         tab.align["Name"] = "l"
-
-        tab.add_row(["Digest", ked["d"]])
 
         if "di" in ked:
             m = self.org.get(ked["di"])
