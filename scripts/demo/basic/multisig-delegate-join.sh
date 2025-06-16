@@ -26,7 +26,6 @@ kli ends add --name "$delegator" --alias delegator --eid "$delegator_witness_aid
 delegator_aid=$(kli aid --name "$delegator" --alias delegator)
 delegator_oobi=$(kli oobi generate --name "$delegator" --alias delegator --role witness | tail -n 1)
 
-# Create proxy and resolve OOBIs
 kli incept --name "$delegate_1" --alias member --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
 kli incept --name "$delegate_2" --alias member --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
 kli ends add --name "$delegate_1" --alias member --eid "$delegate_witness_aid" --role mailbox
