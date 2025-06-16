@@ -2404,16 +2404,14 @@ def test_serderacdc():
     assert serder.said == 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT'
     assert serder.ilk == None
 
+    # Test empty issuer field value (must be valid AID)
     assert serder.issuer == serder.sad['i'] == ''
     assert serder.issuerb == serder.issuer.encode("utf-8")
 
     sad = serder.sad
     raw = serder.raw
 
-    with pytest.raises(kering.ValidationError):
-        serder = SerderACDC(sad=sad)
-
-    with pytest.raises(kering.ValidationError):
+    with pytest.raises(kering.ValidationError):  # no issuer
         serder = SerderACDC(sad=sad)
 
     isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
