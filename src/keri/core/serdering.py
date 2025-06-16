@@ -2317,13 +2317,18 @@ class SerderACDC(Serder):
 
 
     @property
-    def regi(self):
-        """regi property getter (registry identifier SAID)
+    def regid(self):
+        """regi property getter (registry SAID)
         Optional fields return None when not present
         Returns:
-           regi (str | None): qb64  of .sad["ri"] registry SAID
+           regi (str | None): qb64  registry SAID
+                              v1 .sad["ri"]
+                              v2 .said["rd"]
         """
-        return self._sad.get('ri')
+        if self.pvrsn.major == 1:
+            return self._sad.get('ri')
+        else:
+            return self._sad.get('rd')
 
 
     @property
@@ -2333,7 +2338,7 @@ class SerderACDC(Serder):
         Returns:
         regib (bytes | None): qb64b  of .issuer AID as bytes
         """
-        return self.issuer.encode("utf-8") if self.issuer is not None else None
+        return self.regid.encode() if self.regid is not None else None
 
 
     @property

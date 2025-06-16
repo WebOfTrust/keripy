@@ -28,3 +28,10 @@ On init relative (bool) False forces path to be absolute Relative True allows
 relative path if expressed as relative.
 On init pathive(bool) True forces B64 compliant path parts
 raises exception if not. False allows non B64 path parts.
+
+#### keri.core.serdering.SerderACDC
+Changed .regi property to .regid  to avoid confusion with regd regk and other reg
+        and to avoid the confusion of i meaning a AID, whereas regid is a said
+        its an identifier for registry but not an aid.
+
+
