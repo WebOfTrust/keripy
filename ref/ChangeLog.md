@@ -31,7 +31,9 @@ raises exception if not. False allows non B64 path parts.
 
 #### keri.core.serdering.SerderACDC
 Changed .regi property to .regid  to avoid confusion with regd regk and other reg
-        and to avoid the confusion of i meaning a AID, whereas regid is a said
-        its an identifier for registry but not an aid.
+and to avoid the confusion of i meaning a AID, whereas regid is a said
+its an identifier for registry but not an aid.  Since regd is already
+used to mean something else, we picked the regid which was not previously
+used anywhere.
 
 
