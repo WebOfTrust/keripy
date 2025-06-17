@@ -7,6 +7,7 @@ from hio.base import doing
 from keri import core, help, kering
 from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring, eventing, serdering
 from keri.help import helping
 from keri.peer import exchanging
@@ -14,11 +15,9 @@ from keri.vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Issue a verifiable credential')
+parser = argparse.ArgumentParser(description='Issue a verifiable credential', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: issueCredential(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
 parser.add_argument('--schema', '-s', help='qb64 SAID of Schema to issue',
@@ -39,8 +38,6 @@ parser.add_argument("--private-credential-nonce", help="nonce for vc",
                     action="store")
 parser.add_argument("--private-subject-nonce", help="nonce for subject",
                     action="store")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--time", help="timestamp for the credential creation", required=False, default=None)
 
 

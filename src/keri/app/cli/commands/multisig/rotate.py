@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import help, kering
 from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import rotating, existing, displaying, config
+from keri.app.cli.common.parsing import Parsery
 from keri.app.notifying import Notifier
 from keri.core import coring, serdering
 from keri.db import dbing
@@ -19,15 +20,10 @@ from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier')
-parser.set_defaults(handler=lambda args: rotateGroupIdentifier(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: rotateGroupIdentifier(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--smids", "-s", help="List of other participant qb64 identifiers with signing authority in "
                                           "rotation event",
                     action="append", required=False, default=None)

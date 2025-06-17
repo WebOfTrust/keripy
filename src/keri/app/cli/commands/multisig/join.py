@@ -15,22 +15,18 @@ from keri import help, kering
 from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
 from keri.app.cli.common import existing, displaying
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring, eventing, scheming, parsing, routing, serdering
 from keri.peer import exchanging
 from keri.vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.')
+parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: join(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--group', '-g', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
-
 
 def join(args):
     """ Wait for and provide interactive confirmation of group multisig inception, rotation or interaction events
