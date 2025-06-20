@@ -262,7 +262,7 @@ class Registry(BaseRegistry):
 
     """
 
-    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False, vcp=None):
+    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False, vcp=None, temp=None):
         """ Delayed initialization of Issuer.
 
         Actual initialization of Issuer from properties or loaded from .reger.  Should
