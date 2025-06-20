@@ -6,18 +6,15 @@ tests.db.dbing module
 import pytest
 
 import os
-import json
-import datetime
 
 import lmdb
 from  ordered_set import OrderedSet as oset
 
-from hio.base import doing
-
+from keri.app import configing
 from keri.db import dbing
-from keri.db.dbing import clearDatabaserDir, openLMDB
-from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
-                           splitOnKey, splitKeyFN, splitSnKey, splitKeyDT)
+from keri.db.dbing import openLMDB
+from keri.db.dbing import (dgKey, onKey, snKey, dtKey, splitKey,
+                           splitOnKey, splitSnKey, splitKeyDT)
 from keri.db.dbing import LMDBer
 
 
@@ -1152,6 +1149,46 @@ def test_lmdber():
     assert not os.path.exists(dber.path)
 
     """ End Test """
+
+
+def test_lmdber_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        lmdber=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    databaser = LMDBer(cf=cf)
+    assert databaser.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB
+
+    badConfigStr = dict(
+        lmdber=dict(
+            mapSize="somestr"
+        )
+    )
+    cf.put(badConfigStr)
+    with pytest.raises(ValueError):
+        LMDBer(cf=cf)
+
+    badConfigNone = dict(
+        lmdber=dict(
+            mapSize=None
+        )
+    )
+    cf.put(badConfigNone)
+    with pytest.raises(ValueError):
+        LMDBer(cf=cf)
+
+    badConfigNeg = dict(
+        lmdber=dict(
+            mapSize=-1
+        )
+    )
+    cf.put(badConfigNeg)
+    with pytest.raises(ValueError):
+        LMDBer(cf=cf)
 
 
 if __name__ == "__main__":

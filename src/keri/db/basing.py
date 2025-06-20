@@ -943,6 +943,7 @@ class Baser(dbing.LMDBer):
         kevers (dbdict): read through cache of kevers of states for KELs in db
 
     """
+    ConfigKey = "baser"
 
     def __init__(self, headDirPath=None, reopen=False, **kwa):
         """
@@ -959,17 +960,17 @@ class Baser(dbing.LMDBer):
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
             reopen (bool): True means database will be reopened by this init
-
-
+            cf (Configer): optional Configer to configure the opened LMDB database via kwa
         """
         self.prefixes = oset()  # should change to hids for hab ids
         self.groups = oset()  # group hab ids
         self._kevers = dbdict()
         self._kevers.db = self  # assign db for read through cache of kevers
 
+        # Alternate way to set map size by environment variable
         if (mapSize := os.getenv(KERIBaserMapSizeKey)) is not None:
             try:
-                self.MapSize = int(mapSize)
+                self.mapSize = int(mapSize)
             except ValueError:
                 logger.error("KERI_BASER_MAP_SIZE must be an integer value >1!")
                 raise
@@ -1000,6 +1001,7 @@ class Baser(dbing.LMDBer):
 
         """
         super(Baser, self).reopen(**kwa)
+        logger.debug("[%s] Baser map size set to %s", self.name, self.mapSize)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
