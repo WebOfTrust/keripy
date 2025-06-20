@@ -167,7 +167,7 @@ class RotateDoer(doing.DoDoer):
 
         super(RotateDoer, self).__init__(doers=doers)
 
-    def rotateDo(self, tymth, tock=0.0):
+    def rotateDo(self, tymth, tock=0.0, **kwa):
         """
         Returns:  doifiable Doist compatible generator method
         Usage:
