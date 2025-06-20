@@ -112,6 +112,7 @@ class Exchanger:
                                                 " for evt = {}.".format(cigar,
                                                                         serder.ked))
         else:
+            self.escrowPSEvent(serder=serder, tsgs=[], pathed=pathed, essrs=essrs)
             raise MissingSignatureError("Failure satisfying exn, no cigs or sigs"
                                         " for evt = {}.".format(serder.ked))
 
