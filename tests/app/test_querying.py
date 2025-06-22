@@ -3,15 +3,22 @@
 keri.app.querying module
 
 """
+import logging
+
 from hio.base import doing
 
+from keri import help
 from keri.app import habbing
 from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
 from keri.core import parsing, eventing, serdering
 from keri.db.dbing import dgKey
 
 
+logger = help.ogler.getLogger()
+
+
 def test_querying():
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
     with habbing.openHby() as hby, \
             habbing.openHby() as hby1:
         inqHab = hby.makeHab(name="inquisitor")
@@ -150,13 +157,17 @@ def test_querying():
         assert len(adoer.witq.msgs) == 1
 
 def test_query_not_found_escrow():
-    with habbing.openHby() as hby, \
-            habbing.openHby() as hby1:
-        inqHab = hby.makeHab(name="inquisitor")
-        subHab = hby1.makeHab(name="subject")
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
+    with habbing.openHby() as inqHby, \
+            habbing.openHby() as subHby:
+        inqHab = inqHby.makeHab(name="inquisitor")
+        subHab = subHby.makeHab(name="subject")
+
+        psr = parsing.Parser()
 
         icp = inqHab.makeOwnInception()
-        subHab.psr.parseOne(ims=icp)
+        subKvy = eventing.Kevery(db=subHab.db, lax=False, local=False)
+        psr.parseOne(ims=bytearray(icp), kvy=subKvy)
         assert inqHab.pre in subHab.kevers
 
         qry = inqHab.query(subHab.pre, route="/foo", src=inqHab.pre)
