@@ -24,7 +24,7 @@ from keri.core import (Matter, Diger, Prefixer, Number, Verser, Labeler,
 from keri.core import structing
 from keri.core.structing import (SealDigest, SealRoot, SealBack, SealEvent,
                                  SealLast, SealTrans, SealKind, BlindState)
-from keri.core.structing import (Castage,
+from keri.core.structing import (Castage, CodeToClans, ClanToCodes,
                                  Structor, EClanDom, ECastDom,
                                  Sealer, SClanDom, SCastDom,
                                  Blinder, BClanDom, BCastDom)
@@ -82,8 +82,30 @@ def test_structor_doms():
     }
 
 
-    """End Test"""
+    assert ClanToCodes == \
+    {
+        'SealDigest': '-Q',
+        'SealRoot': '-R',
+        'SealEvent': '-S',
+        'SealTrans': '-T',
+        'SealLast': '-U',
+        'SealBack': '-V',
+        'SealKind': '-W',
+        'BlindState': '-a'
+    }
+    assert CodeToClans == \
+    {
+        '-Q': 'SealDigest',
+        '-R': 'SealRoot',
+        '-S': 'SealEvent',
+        '-T': 'SealTrans',
+        '-U': 'SealLast',
+        '-V': 'SealBack',
+        '-W': 'SealKind',
+        '-a': 'BlindState'
+    }
 
+    """End Test"""
 
 
 def test_structor_class():
@@ -92,6 +114,29 @@ def test_structor_class():
     assert Structor.Clans == EClanDom
     assert Structor.Casts == ECastDom
     assert Structor.Names == {}
+    assert Structor.ClanCodes == ClanToCodes == \
+    {
+        'SealDigest': '-Q',
+        'SealRoot': '-R',
+        'SealEvent': '-S',
+        'SealTrans': '-T',
+        'SealLast': '-U',
+        'SealBack': '-V',
+        'SealKind': '-W',
+        'BlindState': '-a'
+    }
+    assert Structor.CodeClans == CodeToClans == \
+    {
+        '-Q': 'SealDigest',
+        '-R': 'SealRoot',
+        '-S': 'SealEvent',
+        '-T': 'SealTrans',
+        '-U': 'SealLast',
+        '-V': 'SealBack',
+        '-W': 'SealKind',
+        '-a': 'BlindState'
+    }
+
 
     """End Test"""
 
@@ -811,8 +856,6 @@ def test_sealer():
 def test_blinder():
     """test blinder instance"""
 
-    assert Blinder.ClanCodes == {'BlindState': '-a'}
-    assert Blinder.CodeClans == {'-a': 'BlindState'}
 
     with pytest.raises(kering.InvalidValueError):
         blinder = Blinder()  # test default

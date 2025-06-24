@@ -267,6 +267,21 @@ class BlindCastDom(IceMapDom):
 BCastDom = BlindCastDom()  # create instance
 
 
+# map Structor clan names to counter code for ser/des as counted group
+ClanToCodes = dict()
+ClanToCodes[SClanDom.SealDigest.__name__] = CtrDex_2_0.DigestSealSingles
+ClanToCodes[SClanDom.SealRoot.__name__] = CtrDex_2_0.MerkleRootSealSingles
+ClanToCodes[SClanDom.SealEvent.__name__] = CtrDex_2_0.SealSourceTriples
+ClanToCodes[SClanDom.SealTrans.__name__] = CtrDex_2_0.SealSourceCouples
+ClanToCodes[SClanDom.SealLast.__name__] = CtrDex_2_0.SealSourceLastSingles
+ClanToCodes[SClanDom.SealBack.__name__] = CtrDex_2_0.BackerRegistrarSealCouples
+ClanToCodes[SClanDom.SealKind.__name__] = CtrDex_2_0.TypedDigestSealCouples
+ClanToCodes[BClanDom.BlindState.__name__] = CtrDex_2_0.BlindedStateQuadruples
+
+
+# map counter code to Structor clan name for ser/des as counted group
+CodeToClans = { val: key for key, val in ClanToCodes.items()}  # invert dict
+
 
 class Structor:
     """Structor class each instance holds a namedtuple .data of named values.
@@ -368,6 +383,8 @@ class Structor:
     # of either field names from a namedtuple or keys from a dict. The tuple of
     # field names is a mark of the structor type. This maps a mark to a class name
     Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
+    ClanCodes = ClanToCodes  # map of clan to counter code for ser/des as group
+    CodeClans = CodeToClans  # map of counter code to clan for ser/des as group
 
 
     def __init__(self, data=None, *, clan=None, cast=None, crew=None,
