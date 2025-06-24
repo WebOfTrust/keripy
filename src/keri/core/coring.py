@@ -345,6 +345,7 @@ class MatterCodex:
     Yes:                  str = '1AAM'  # Yes Truthy Boolean value
     Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
     Escape:               str = '1AAO'  # Escape code for escaping special map fields
+    Empty:                str = '1AAP'  # Empty value for Nonce, UUID, or related fields
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
     TBD0:                 str = '1___'  # Testing purposes only, fixed with lead size 0
     TBD1S:                str = '2__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
@@ -545,6 +546,7 @@ class NonceCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
+    Empty: str = '1AAP'  # Empty value for Nonce, UUID, or related fields
     Salt_128: str = '0A'  # random salt/seed/nonce/private key
     Salt_256: str = 'a'  # Salt/seed/nonce/blind 256 bits
     Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
@@ -622,6 +624,7 @@ class LabelCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
+    Empty: str = '1AAP'  # Empty value for Nonce, UUID, state or related fields
     Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
     Tag2:  str = '0K'  # 2 B64 char tag
     Tag3:  str = 'X'  # 3 B64 char tag
@@ -878,6 +881,7 @@ class Matter:
         '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
         '1AAO': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAP': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
@@ -3309,7 +3313,7 @@ class Labeler(Matter):
     """
 
 
-    def __init__(self, label='', text='', raw=None, code=None, soft=None, **kwa):
+    def __init__(self, label=None, text=None, raw=None, code=None, soft=None, **kwa):
         """
         Inherited Parameters:
             (see Matter)
@@ -3321,7 +3325,7 @@ class Labeler(Matter):
                 str or bytes
 
         """
-        if label:
+        if label:  # label can't be empty string '' since '' is not Reatt
             if hasattr(label, "encode"):  # make label bytes
                 label = label.encode()
 
@@ -3344,27 +3348,32 @@ class Labeler(Matter):
                     #code = LabelDex.Bytes_L0
                     #raw = label
 
-        elif text:
+        elif text is not None:  # text can be empty strin since '' is Reb64
             if hasattr(text, "encode"):  # make text bytes
                 text = text.encode()
 
-            if Reb64.match(text):  # candidate for Base64 compact encoding
-                try:
-                    code = Tagger._codify(tag=text)
-                    soft = text
+            if Reb64.match(text):  # try Base64 compact encoding includes ''
+                if len(text) == 0:
+                    code = LabelDex.Empty
+                    raw = text
 
-                except InvalidSoftError as ex:  # too big
-                    ws = (4 - (len(text) % 4)) % 4  # pre conv wad size in chars
-                    if text[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
-                        # can't use escape code here because Reb64 allows all B64 chars.
-                        code = LabelDex.StrB64_L0
-                        raw = Bexter._rawify(text)
+                else:
+                    try:
+                        code = Tagger._codify(tag=text)
+                        soft = text
 
-                    else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
-                        code = LabelDex.Bytes_L0
-                        raw = text
+                    except InvalidSoftError as ex:  # too big
+                        ws = (4 - (len(text) % 4)) % 4  # pre conv wad size in chars
+                        if text[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
+                            # can't use escape code here because Reb64 allows all B64 chars.
+                            code = LabelDex.StrB64_L0
+                            raw = Bexter._rawify(text)
 
-            else:
+                        else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
+                            code = LabelDex.Bytes_L0
+                            raw = text
+
+            else:  # not Reb64
                 if len(text) == 1:
                     code = LabelDex.Label1
 
@@ -3780,27 +3789,90 @@ class Noncer(Matter):
     Inherited Properties:  (see Matter)
 
     Properties:
+        nonce (str): round trippable nonce value that is empty string when nonce
+            is empty. Otherwise qb64 of nonce.
+        nonceb (bytes): round trippable nonce value that is empty string when nonce
+            is empty. Otherwise qb64 of nonce.
 
     Methods:
 
     Hidden:
 
+
+    ToDo. Add nonce init paramerter and nonce property so can round trip like
+    stuctor for UUID fields that may be empty. Add Empty matter code that
+    round trips to empty string. This is special not variable length empty
+    because we want to specifically test for empty uuid unlike fields that
+    are strings that may be empty. so nonce roundtrips as qb64 when not empty
+    and as "" when empty.
+
     """
 
-    def __init__(self, raw=None, code=NonceDex.Salt_128, **kwa):
+    def __init__(self, raw=None, code=NonceDex.Salt_128, qb64b=None, qb64=None,
+                 qb2=None, nonce=None, **kwa):
         """Checks for .code in NonceDex so valid noncive code
         Inherited Parameters:
             See Matter
 
+        Parameters:
+            nonce (str|bytes|None):  round trippable nonce value with nonce property
+                that accounts for empty nonce indicated by empty string.
+                Otherwise nonce is qb64 of nonce value
+
         """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if nonce is not None:
+                if hasattr(nonce, "encode"):
+                    nonce = nonce.encode()
+
+                if nonce == b'':
+                    raw = nonce
+                    code = NonceDex.Empty
+                else:
+                    qb64b = nonce  # should be qb64b of non-empty nonce
+
+
         try:
-            super(Noncer, self).__init__(raw=raw, code=code, **kwa)
+            super(Noncer, self).__init__(raw=raw, code=code, qb64b=qb64b,
+                                         qb64=qb64, qb2=qb2, **kwa)
+
         except EmptyMaterialError as ex:
-            raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-            super(Noncer, self).__init__(raw=raw, code=NonceDex.Salt_128, **kwa)
+            if code == NonceDex.Salt_128:
+                raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+            elif code == NonceDex.Salt_256:
+                raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+            else:
+                raise
+            super(Noncer, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code not in NonceDex:
             raise InvalidCodeError(f"Invalid noncer code = {self.code}.")
+
+
+    @property
+    def nonce(self):
+        """Property nonce:
+        Returns:
+            nonce (str): Either empty str when Nonce is NonceDex.Empty or
+                         qb64 of nonce primitive otherwise
+        """
+        if self.code == NonceDex.Empty:
+            return ''
+
+        return self.qb64
+
+
+    @property
+    def nonceb(self):
+        """Property nonceb:
+        Returns:
+            nonce (bytes): Either empty bytes when Nonce is NonceDex.Empty or
+                         qb64b of nonce primitive otherwise
+        """
+        if self.code == NonceDex.Empty:
+            return b''
+
+        return self.qb64b
 
 
 class Saider(Matter):

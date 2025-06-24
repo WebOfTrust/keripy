@@ -17,21 +17,22 @@ from keri.kering import InvalidValueError, EmptyMaterialError
 
 from keri.help import helping
 
-from keri.core import (Matter, Diger, Prefixer, Number, Verser)
+from keri.core import (Matter, Diger, Prefixer, Number, Verser, Labeler,
+                       Noncer, NonceDex)
 
 
 from keri.core import structing
 from keri.core.structing import (SealDigest, SealRoot, SealBack, SealEvent,
-                                 SealLast, SealTrans, SealKind)
+                                 SealLast, SealTrans, SealKind, BlindState)
 from keri.core.structing import (Castage,
                                  Structor, EClanDom, ECastDom,
-                                 Sealer, SClanDom, SCastDom, )
+                                 Sealer, SClanDom, SCastDom,
+                                 Blinder, BClanDom, BCastDom)
 
 
 def test_structor_doms():
-    """
-    test doms in structure
-    """
+    """test doms in structure"""
+
     assert EClanDom == structing.EmptyClanDom()
     assert ECastDom == structing.EmptyCastDom()
     assert SClanDom == structing.SealClanDom()
@@ -67,15 +68,27 @@ def test_structor_doms():
                                  d=Castage(kls=Diger, ipn=None)),
     }
 
+    assert asdict(BClanDom) == \
+    {
+        'BlindState': BlindState,
+    }
+
+    assert asdict(BCastDom) == \
+    {
+        'BlindState': BlindState(d=Castage(kls=Diger, ipn=None),
+                                 u=Castage(kls=Noncer, ipn='nonce'),
+                                 td=Castage(kls=Noncer, ipn='nonce'),
+                                 ts=Castage(kls=Labeler, ipn='text'))
+    }
+
 
     """End Test"""
 
 
 
 def test_structor_class():
-    """
-    test Structor class variables etc
-    """
+    """test Structor class variables etc"""
+
     assert Structor.Clans == EClanDom
     assert Structor.Casts == ECastDom
     assert Structor.Names == {}
@@ -83,9 +96,7 @@ def test_structor_class():
     """End Test"""
 
 def test_structor():
-    """
-    test Structor instance
-    """
+    """test Structor instance"""
 
     with pytest.raises(kering.InvalidValueError):
         structor = Structor()  # test default
@@ -130,6 +141,19 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+
+    # Test data with cast
+    structor = Structor(data=data, cast=cast)
+    assert structor.data == data
+    assert structor.clan == clan
+    assert structor.name == name
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew == {'d': dig} # data._asdict()
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
 
     # Test cast
     structor = Structor(cast=cast, crew=crew)
@@ -351,6 +375,23 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
+    # Test data with cast so not naive
+    structor = Structor(data=data, cast=cast)
+    assert structor.data == data
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew ==  \
+    {
+        'i': 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR',
+        's': 'e',
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+    }
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
     # Test cast
     structor = Structor(cast=cast, crew=crew)
     assert structor.clan == clan
@@ -561,9 +602,7 @@ def test_sealer_class():
 
 
 def test_sealer():
-    """
-    test sealer instance
-    """
+    """test sealer instance"""
 
     with pytest.raises(kering.InvalidValueError):
         sealer = Sealer()  # test default
@@ -769,6 +808,302 @@ def test_sealer():
 
     """Done Test"""
 
+def test_blinder():
+    """test blinder instance"""
+
+    assert Blinder.ClanCodes == {'BlindState': '-a'}
+    assert Blinder.CodeClans == {'-a': 'BlindState'}
+
+    with pytest.raises(kering.InvalidValueError):
+        blinder = Blinder()  # test default
+
+
+    sdig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    sdiger = Diger(qb64=sdig)
+    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    noncer = Noncer(nonce=nonce)
+    adig = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    adiger = Noncer(nonce=adig)
+    labeler = Labeler(text="issued")
+    text = labeler.text
+    textq = labeler.qb64
+    name = BlindState.__name__
+
+    data = BlindState(d=sdiger, u=noncer, td=adiger, ts=labeler)
+    clan = BlindState
+    cast = BCastDom.BlindState  # defined dom cast with non-None ipns
+    ncast = BlindState(d=Castage(Diger),
+                       u=Castage(Noncer),
+                       td=Castage(Noncer),
+                       ts=Castage(Labeler))  # naive cast
+    crew = BlindState(d=sdig, u=nonce, td=adig, ts=text)
+    ncrew = BlindState(d=sdig, u=nonce, td=adig, ts=textq)
+
+    dncast = ncast._asdict()
+    dcrew = crew._asdict()
+    dncrew = ncrew._asdict()
+
+    assert data._fields == BlindState._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = sdiger.qb64 + noncer.qb64 + adiger.qb64 + labeler.qb64
+    qb64b = qb64.encode()
+    qb2 = sdiger.qb2 + noncer.qb2 + adiger.qb2 + labeler.qb2
+
+    # Test data naive (no cast)
+    blinder = Blinder(data=data)  # bare data so uses naive cast
+    assert blinder.data == data
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == ncast != cast  # since naive data
+    assert blinder.crew == ncrew != crew  # since naive data
+    assert blinder.asdict == dncrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+        'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+        'ts': '0Missued'
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # test round trip using naive cast
+    blinder = Sealer(cast=ncast, qb64=qb64)
+    assert isinstance(blinder.data, BlindState)
+    assert blinder.data.ts.qb64 == labeler.qb64 # not same instance but same serialization
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == ncast != cast  # since naive ipn
+    assert blinder.crew == ncrew != crew  # since naive ipn
+    assert blinder.asdict == dncrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+        'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+        'ts': '0Missued'
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # Test data with cast so not naive cast
+    blinder = Blinder(data=data, cast=cast)  # not bare data has cast so use it
+    assert blinder.data == data
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast != ncast
+    assert blinder.crew == crew != ncrew
+    assert blinder.asdict == dcrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+        'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+        'ts': 'issued'
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # test round trip using known cast (not naive)
+    blinder = Blinder(cast=cast, qb64=qb64)
+    assert isinstance(blinder.data, BlindState)
+    assert blinder.data.d.qb64 == sdiger.qb64 # not same instance but same serialization
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast != ncast  # since ipn for s is not None
+    assert blinder.crew == crew != ncrew
+    assert blinder.asdict == dcrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+        'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+        'ts': 'issued'
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # Test no clan but with one or the other of cast and crew as dict or namedtuple
+    blinder = Blinder(crew=crew)  # uses known cast i.e not naive
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast != ncast
+    assert blinder.crew == crew != ncrew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+
+    blinder = Blinder(crew=dcrew)  # uses known cast i.e. not naive
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+
+    # uses naive cast as dict so looks up known cast == not-naive cast
+    blinder = Blinder(cast=dncast, crew=dcrew)
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast  # tuple compare is by field value not type
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+
+    # repeat tests with empty nonce and empty 'td' trans said and empty state
+    sdig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    sdiger = Diger(qb64=sdig)
+
+    nonce = ''
+    noncer = Noncer(nonce=nonce)
+    nonceq = noncer.qb64
+
+    adig = ''
+    adiger = Noncer(nonce=adig)
+    adigq = adiger.qb64
+
+    text = ''
+    labeler = Labeler(text=text)
+    textq = labeler.qb64
+
+    name = BlindState.__name__
+
+    data = BlindState(d=sdiger, u=noncer, td=adiger, ts=labeler)
+    clan = BlindState
+    cast = BCastDom.BlindState  # defined dom cast with non-None ipns
+    ncast = BlindState(d=Castage(Diger),
+                       u=Castage(Noncer),
+                       td=Castage(Noncer),
+                       ts=Castage(Labeler))  # naive cast
+    crew = BlindState(d=sdig, u=nonce, td=adig, ts=text)
+    ncrew = BlindState(d=sdig, u=nonceq, td=adigq, ts=textq)
+
+    dncast = ncast._asdict()
+    dcrew = crew._asdict()
+    dncrew = ncrew._asdict()
+
+    assert data._fields == BlindState._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = sdiger.qb64 + noncer.qb64 + adiger.qb64 + labeler.qb64
+    qb64b = qb64.encode()
+    qb2 = sdiger.qb2 + noncer.qb2 + adiger.qb2 + labeler.qb2
+
+    # Test data naive (no cast)
+    blinder = Blinder(data=data)  # bare data so uses naive cast
+    assert blinder.data == data
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == ncast != cast  # since naive data
+    assert blinder.crew == ncrew != crew  # since naive data
+    assert blinder.asdict == dncrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': '1AAP',
+        'td': '1AAP',
+        'ts': '1AAP'
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # test round trip using naive cast
+    blinder = Sealer(cast=ncast, qb64=qb64)
+    assert isinstance(blinder.data, BlindState)
+    assert blinder.data.ts.qb64 == labeler.qb64 # not same instance but same serialization
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == ncast != cast  # since naive ipn
+    assert blinder.crew == ncrew != crew  # since naive ipn
+    assert blinder.asdict == dncrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': '1AAP',
+        'td': '1AAP',
+        'ts': '1AAP'
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # Test data with cast so non-naive
+    blinder = Blinder(data=data, cast=cast)  # data with cast
+    assert blinder.data == data
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast != ncast
+    assert blinder.crew == crew != ncrew
+    assert blinder.asdict == dcrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': '',
+        'td': '',
+        'ts': ''
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # test round trip using known cast (not naive)
+    blinder = Blinder(cast=cast, qb64=qb64)
+    assert isinstance(blinder.data, BlindState)
+    assert blinder.data.d.qb64 == sdiger.qb64 # not same instance but same serialization
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast != ncast  # since ipn for s is not None
+    assert blinder.crew == crew != ncrew
+    assert blinder.asdict == dcrew == \
+    {
+        'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
+        'u': '',
+        'td': '',
+        'ts': ''
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+
+    # Test no clan but with one or the other of cast and crew as dict or namedtuple
+    blinder = Blinder(crew=crew)  # uses known cast i.e not naive
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast != ncast
+    assert blinder.crew == crew != ncrew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+
+    blinder = Blinder(crew=dcrew)  # uses known cast i.e. not naive
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+
+    # uses naive cast as dict so looks up known cast == not-naive cast
+    blinder = Blinder(cast=dncast, crew=dcrew)
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast  # tuple compare is by field value not type
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+
+    """Done Test"""
 
 
 if __name__ == "__main__":
@@ -777,6 +1112,7 @@ if __name__ == "__main__":
     test_structor()
     test_sealer_class()
     test_sealer()
+    test_blinder()
 
 
 

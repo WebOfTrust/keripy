@@ -1414,7 +1414,7 @@ def bare(pre="",
 
 
 
-def xincept(sender="",
+def exchept(sender="",
             receiver="",
             route="",
             modifiers=None,
@@ -1424,12 +1424,12 @@ def xincept(sender="",
             pvrsn=Vrsn_2_0,
             gvrsn=None,
             kind=coring.Kinds.json):
-    """Utility function to automate creation of exchange incept, 'xip', messages.
-    Xincept 'xip' message is a SAD item with an associated derived SAID in its
-    'd' field.  Only defined for KERI v2.
+    """Utility function to automate creation of exchange incept, exchept, 'xip',
+    message. The exchept 'xip' message is a SAD item with an associated derived
+    SAID in its 'd' field.  Only defined for KERI v2.
 
     Returns:
-        xincept (SerderKERI): xincept 'xip' message.
+        exchept (SerderKERI):  'xip' message.
 
     Fields in order:
     (v, t, d, u, ri, dt, r, q, a),
@@ -1491,7 +1491,7 @@ def xincept(sender="",
     return serder
 
 
-def xchange(sender="",
+def exchange(sender="",
              receiver="",
              xid="",
              prior="",

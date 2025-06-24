@@ -192,6 +192,8 @@ def test_codexes_tags():
         'BigTransLastIdxSigGroups': '--Y',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '--Z',
+        'BlindedStateQuadruples': '-a',
+        'BigBlindedStateQuadruples': '--a',
         'KERIACDCGenusVersion': '-_AAA'
     }
 
@@ -300,7 +302,9 @@ def test_codexes_tags():
         'BigTransLastIdxSigGroups',
         'ESSRPayloadGroup',
         'BigESSRPayloadGroup',
-        'KERIACDCGenusVersion'
+        'BlindedStateQuadruples',
+        'BigBlindedStateQuadruples',
+        'KERIACDCGenusVersion',
     )
 
     assert 'ControllerIdxSigs' in counting.CodeNames
@@ -358,6 +362,8 @@ def test_codexes_tags():
         BigTransLastIdxSigGroups='BigTransLastIdxSigGroups',
         ESSRPayloadGroup='ESSRPayloadGroup',
         BigESSRPayloadGroup='BigESSRPayloadGroup',
+        BlindedStateQuadruples='BlindedStateQuadruples',
+        BigBlindedStateQuadruples='BigBlindedStateQuadruples',
         KERIACDCGenusVersion='KERIACDCGenusVersion'
     )
 
@@ -512,6 +518,8 @@ def test_counter_class():
                     '--Y': 'BigTransLastIdxSigGroups',
                     '-Z': 'ESSRPayloadGroup',
                     '--Z': 'BigESSRPayloadGroup',
+                    '-a': 'BlindedStateQuadruples',
+                    '--a': 'BigBlindedStateQuadruples',
                     '-_AAA': 'KERIACDCGenusVersion'
                 }
             }
@@ -605,6 +613,8 @@ def test_counter_class():
                     '--Y': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '--Z': Cizage(hs=3, ss=5, fs=8),
+                    '-a': Cizage(hs=2, ss=2, fs=4),
+                    '--a': Cizage(hs=3, ss=5, fs=8),
                     '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             }

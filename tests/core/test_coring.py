@@ -272,6 +272,7 @@ def test_matter_class():
         'Yes': '1AAM',
         'Tag8': '1AAN',
         'Escape': '1AAO',
+        'Empty': '1AAP',
         'TBD0S': '1__-',
         'TBD0': '1___',
         'TBD1S': '2__-',
@@ -391,6 +392,7 @@ def test_matter_class():
         '1AAM': 'Yes',
         '1AAN': 'Tag8',
         '1AAO': 'Escape',
+        '1AAP': 'Empty',
         '1__-': 'TBD0S',
         '1___': 'TBD0',
         '2__-': 'TBD1S',
@@ -524,6 +526,7 @@ def test_matter_class():
         '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
         '1AAO': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAP': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
@@ -5423,7 +5426,7 @@ def test_labeler():
 
     raw = b''
     for i, label in enumerate(labels):
-        code = astuple(LabelDex)[i]
+        code = astuple(TagDex)[i]
         xs = Matter._xtraSize(code)
         qb64 = code + ('_' * xs) + label
         qb2 = decodeB64(qb64)
@@ -5651,6 +5654,41 @@ def test_labeler():
 
     labeler = Labeler(qb2=qb2)
     assert labeler.label == label
+    assert labeler.text == label
+
+    # empty
+    label = ''
+    code = LabelDex.Empty
+    raw = label.encode()
+    qb64 = '1AAP'
+    qb2 = decodeB64(qb64)
+
+    with pytest.raises(EmptyMaterialError):
+        labeler = Labeler(label=label)
+
+    labeler = Labeler(text=label)
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
+    assert labeler.code == code
+    assert labeler.soft == ''
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb64=qb64)
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb2=qb2)
+    with pytest.raises(InvalidValueError):
+        assert labeler.label == label
     assert labeler.text == label
 
     """ Done Test """
@@ -5941,6 +5979,7 @@ def test_noncer():
 
     assert asdict(NonceDex) == \
     {
+        'Empty': '1AAP',
         'Salt_128': '0A',
         'Salt_256': 'a',
         'Blake3_256': 'E',
@@ -5958,9 +5997,14 @@ def test_noncer():
     salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     assert len(salt) == 16
 
-    noncer = Noncer()  # defaults
+    noncer = Noncer()  # default raw random code Salt_128
     assert noncer.code == NonceDex.Salt_128
     assert noncer.fullSize == 24
+    assert not noncer.special
+
+    noncer = Noncer(code=NonceDex.Salt_256)  # default raw random
+    assert noncer.code == NonceDex.Salt_256
+    assert noncer.fullSize == 44
     assert not noncer.special
 
     raw = b'1\xc8|\x16\xea\x1bNg\xfa\xc04\xe6\x99ocv'
@@ -5977,6 +6021,8 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 24
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
 
     noncer = Noncer(qb64=qb64)
     assert noncer.code == code
@@ -5986,6 +6032,8 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 24
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
 
     noncer = Noncer(qb64b=qb64b)
     assert noncer.code == code
@@ -5995,6 +6043,8 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 24
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
 
     noncer = Noncer(qb2=qb2)
     assert noncer.code == code
@@ -6004,6 +6054,31 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 24
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
+
+    noncer = Noncer(nonce=qb64)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 24
+    assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
+
+    noncer = Noncer(nonce=qb64b)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 24
+    assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
+
 
     # create something to digest and verify
     ser = b'ABCDEFGHIJKLMNopqrstuvwxyz0123456789'
@@ -6022,6 +6097,8 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 44
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
 
     noncer = Noncer(qb64=qb64)
     assert noncer.code == code
@@ -6031,6 +6108,8 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 44
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
 
     noncer = Noncer(qb64b=qb64b)
     assert noncer.code == code
@@ -6040,6 +6119,8 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 44
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
 
     noncer = Noncer(qb2=qb2)
     assert noncer.code == code
@@ -6049,6 +6130,107 @@ def test_noncer():
     assert noncer.qb2 == qb2
     assert noncer.fullSize == 44
     assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
+
+    noncer = Noncer(nonce=qb64)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 44
+    assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
+
+    noncer = Noncer(nonce=qb64b)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 44
+    assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
+
+
+    # Test Empty
+    ser = b'ABCDEFGHIJKLMNopqrstuvwxyz0123456789'
+    raw = b""
+    empty = ""
+    code = NonceDex.Empty
+    assert code == '1AAP'
+    qb64 = '1AAP'
+    qb64b = b'1AAP'
+    qb2 = b'\xd4\x00\x0f'
+
+    noncer = Noncer(raw=raw, code=code)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 4
+    assert not noncer.special
+    assert noncer.nonce == empty
+    assert noncer.nonceb == empty.encode()
+
+    noncer = Noncer(qb64=qb64)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 4
+    assert not noncer.special
+    assert noncer.nonce == empty
+    assert noncer.nonceb == empty.encode()
+
+    noncer = Noncer(qb64b=qb64b)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 4
+    assert not noncer.special
+    assert noncer.nonce == empty
+    assert noncer.nonceb == empty.encode()
+
+    noncer = Noncer(qb2=qb2)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 4
+    assert not noncer.special
+    assert noncer.nonce == empty
+    assert noncer.nonceb == empty.encode()
+
+    noncer = Noncer(nonce=empty)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 4
+    assert not noncer.special
+    assert noncer.nonce == empty
+    assert noncer.nonceb == empty.encode()
+
+    noncer = Noncer(nonce=empty.encode())
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 4
+    assert not noncer.special
+    assert noncer.nonce == empty
+    assert noncer.nonceb == empty.encode()
 
 
     """ Done Test """
