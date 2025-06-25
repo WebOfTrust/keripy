@@ -358,6 +358,7 @@ class Serder:
     Spans = {Vrsn_1_0: VER1FULLSPAN, Vrsn_2_0: VER2FULLSPAN}
 
     # map seal clan names to seal counter code for grouping seals in anchor list
+    # change to Coden (Code Name)
     ClanCodes = dict()
     ClanCodes[SClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
     ClanCodes[SClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles

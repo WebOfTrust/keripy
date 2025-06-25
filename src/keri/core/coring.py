@@ -789,6 +789,7 @@ class Matter:
         _soft (str): soft value of full code
         _raw (bytes): value for .raw property
         _rawSize():
+        _fullSize():
         _leadSize():
         _special():
         _infil(): creates qb64b from .raw and .code (fully qualified Base64)
@@ -952,9 +953,23 @@ class Matter:
         hs, ss, xs, fs, ls = cls.Sizes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
         if fs is None:
-            raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
+            raise InvalidCodeSizeError(f"Non-fixed raw size {code=}.")
         # assumes .Sizes only has valid entries, cs % 4 != 3, and fs % 4 == 0
         return (((fs - cs) * 3 // 4) - ls)
+
+    @classmethod
+    def _fullSize(cls, code):
+        """
+        Returns raw size in bytes not including leader for a given code
+        Parameters:
+            code (str): derivation code Base64
+        """
+        _, _, _, fs, _ = cls.Sizes[code]  # get sizes
+
+        if fs is None:
+            raise InvalidCodeSizeError(f"Non-fixed full size {code=}.")
+
+        return fs
 
 
     @classmethod

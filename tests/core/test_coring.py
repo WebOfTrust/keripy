@@ -611,6 +611,9 @@ def test_matter_class():
             # variable raw with lead is 24 bit aligned, where rs is raw size.
             assert code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex
 
+            with pytest.raises(InvalidCodeSizeError):
+                Matter._fullSize(code)
+
             if code[0] in coring.SmallVrzDex:  # small variable sized code
                 assert hs == 2 and ss == 2 and fs is None
                 assert code[0] == astuple(coring.SmallVrzDex)[ls]
@@ -642,6 +645,7 @@ def test_matter_class():
             assert not (code[0] in coring.SmallVrzDex or code[0] in coring.LargeVrzDex)
             assert isinstance(fs, int) and fs > 0 and not fs % 4
             assert fs >= cs
+            assert Matter._fullSize(code) == fs
             assert xs <= ss  # xs must be zero if ss is
             assert cs % 4 != 3  # prevent ambiguous conversion
             if ss > 0 and fs == cs:  # special soft value with raw empty
@@ -681,6 +685,7 @@ def test_matter_class():
         assert Matter.Bards[ckey] == sval
 
     assert Matter._rawSize(MtrDex.Ed25519) == 32
+    assert Matter._fullSize(MtrDex.Ed25519) == 44
     assert Matter._leadSize(MtrDex.Ed25519) == 0
     assert Matter._xtraSize(MtrDex.Ed25519) == 0
     assert not Matter._special(MtrDex.Ed25519)
@@ -689,11 +694,7 @@ def test_matter_class():
 
 
 def test_matter():
-    """
-    Test Matter instances
-    """
-
-
+    """Test Matter instances"""
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
     prefix = 'BGlOiUdp5sMmfotHfCWQKEzWR91C72AH0lT84c0um-Qj'  # str
