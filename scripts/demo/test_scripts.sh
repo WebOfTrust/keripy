@@ -48,6 +48,12 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
+printf "Running multisig-delegate-join.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/multisig-delegate-join.sh"
+isSuccess
+
+printf "\n************************************\n"
 printf "Running multisig.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/multisig.sh"
@@ -59,9 +65,13 @@ printf "\n************************************\n"
 "${script_dir}/basic/multisig-rotate-three-stooges.sh"
 isSuccess
 
+printf "Running multisig-delegator.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/multisig-delegator.sh"
+isSuccess
+
 printf "\n************************************\n"
 printf "Running multisig-delegate-delegator.sh"
-printf "\n************************************\n"
 "${script_dir}/basic/multisig-delegate-delegator.sh"
 isSuccess
 
