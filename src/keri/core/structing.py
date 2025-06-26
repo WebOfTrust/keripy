@@ -1133,6 +1133,8 @@ class Blinder(Structor):
         elif verify:
             size = self.data.d.fullSize
             code = self.data.d.code
+            if code not in DigDex:
+                raise ValidationError(f"Invalid {code =} for blinder said={self.crew}")
             ser = self.Dummy * size + self.qb64b[size:]
             diger = Diger(ser=ser, code=code)
             if diger.qb64b != self.data.d.qb64b:
