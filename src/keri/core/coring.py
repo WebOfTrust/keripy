@@ -3682,7 +3682,8 @@ class Diger(Matter):
         return (raw)
 
 
-    def __init__(self, raw=None, ser=None, code=DigDex.Blake3_256, **kwa):
+    def __init__(self, raw=None, code=DigDex.Blake3_256, ser=None, strict=True,
+                 **kwa):
         """Initialize attributes
 
         Inherited Parameters:
@@ -3690,7 +3691,9 @@ class Diger(Matter):
 
         Parameters:
            ser (bytes): serialization from which raw is computed if not raw
-
+           strict (bool): True means enforce code must be in DigDex
+                          False means do not enfoce code in DigDex this allows
+                            subclasses to enforce different codex
         """
 
         try:
@@ -3703,7 +3706,7 @@ class Diger(Matter):
 
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
 
-        if self.code not in DigDex:
+        if strict and self.code not in DigDex:
             raise InvalidCodeError(f"Unsupported Digest {code=}.")
 
 
@@ -3795,13 +3798,13 @@ class Prefixer(Matter):
 
 
 
-class Noncer(Matter):
-    """Noncer is Matter subclass for UUIDs as salty nonces or UUIDs as digest
+class Noncer(Diger):
+    """Noncer is Diger subclass for UUIDs as salty nonces or UUIDs as digest
     deterministically derived from salty nonces
 
     Attributes:
 
-    Inherited Properties:  (see Matter)
+    Inherited Properties:  (see Diger)
 
     Properties:
         nonce (str): round trippable nonce value that is empty string when nonce
@@ -3813,21 +3816,12 @@ class Noncer(Matter):
 
     Hidden:
 
-
-    ToDo. Add nonce init paramerter and nonce property so can round trip like
-    stuctor for UUID fields that may be empty. Add Empty matter code that
-    round trips to empty string. This is special not variable length empty
-    because we want to specifically test for empty uuid unlike fields that
-    are strings that may be empty. so nonce roundtrips as qb64 when not empty
-    and as "" when empty.
-
     """
-
-    def __init__(self, raw=None, code=NonceDex.Salt_128, qb64b=None, qb64=None,
-                 qb2=None, nonce=None, **kwa):
+    def __init__(self, raw=None, code=NonceDex.Salt_128, qb64b=None, nonce=None,
+                 **kwa):
         """Checks for .code in NonceDex so valid noncive code
-        Inherited Parameters:
-            See Matter
+
+        Inherited Parameters:  (see Diger)
 
         Parameters:
             nonce (str|bytes|None):  round trippable nonce value with nonce property
@@ -3835,7 +3829,11 @@ class Noncer(Matter):
                 Otherwise nonce is qb64 of nonce value
 
         """
-        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+        try:
+            super(Noncer, self).__init__(raw=raw, qb64b=qb64b, code=code,
+                                         strict=False, **kwa)
+
+        except EmptyMaterialError as ex:
             if nonce is not None:
                 if hasattr(nonce, "encode"):
                     nonce = nonce.encode()
@@ -3843,22 +3841,20 @@ class Noncer(Matter):
                 if nonce == b'':
                     raw = nonce
                     code = NonceDex.Empty
+                    qb64b = None
                 else:
                     qb64b = nonce  # should be qb64b of non-empty nonce
-
-
-        try:
-            super(Noncer, self).__init__(raw=raw, code=code, qb64b=qb64b,
-                                         qb64=qb64, qb2=qb2, **kwa)
-
-        except EmptyMaterialError as ex:
-            if code == NonceDex.Salt_128:
-                raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-            elif code == NonceDex.Salt_256:
-                raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+                    raw = None
             else:
-                raise
-            super(Noncer, self).__init__(raw=raw, code=code, **kwa)
+                if code == NonceDex.Salt_128:
+                    raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+                elif code == NonceDex.Salt_256:
+                    raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+                else:
+                    raise
+
+            super(Noncer, self).__init__(raw=raw, code=code, qb64b=qb64b,
+                                         strict=False, **kwa)
 
         if self.code not in NonceDex:
             raise InvalidCodeError(f"Invalid noncer code = {self.code}.")

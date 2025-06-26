@@ -1117,17 +1117,17 @@ class Blinder(Structor):
                 code = saidCode
             elif isinstance(self.data.d, Noncer):
                 code = self.data.d.code
-                if code not in DigDex:
-                    code = self.SaidCode
             else:
                 code = self.SaidCode
 
-            size = Diger._fullSize(code)  #
+            if code not in DigDex:  # ensures valid digest code
+                code = self.SaidCode
+
+            size = Noncer._fullSize(code)
             ser = self.Dummy * size + tail  # prepend dummy to tail end
             # create diger of said by digesting dummied serialization
-            diger = Diger(ser=ser, code=code)  # ensures creates digest
-            noncer = Noncer(qb64b=diger.qb64b)  # cast is Noncer for empty case
-            # and replace .data.d with diger/noncer of said
+            noncer = Noncer(ser=ser, code=code)  # ensures creates digest
+            # and replace .data.d with noncer of said
             self._data = self.data._replace(d=noncer)
 
         elif verify:
