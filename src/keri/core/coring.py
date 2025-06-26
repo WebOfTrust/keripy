@@ -959,8 +959,13 @@ class Matter:
 
     @classmethod
     def _fullSize(cls, code):
-        """
-        Returns raw size in bytes not including leader for a given code
+        """Fullsize of non-variable sized primitives indicated by code
+
+        Returns:
+            fullsize (int): full size in bytes for a given non-variable sized
+                            primitive as indicated by code
+                            When variable size raise InvalideCodeSizeError
+
         Parameters:
             code (str): derivation code Base64
         """
@@ -1250,8 +1255,11 @@ class Matter:
 
     @property
     def fullSize(self):
-        """
-        Returns full size of matter in bytes
+        """Full size of primitive for both fixed and variable size primitives
+
+        Returns:
+            fullsize (int): full size of primitive in bytes
+
         Fixed size codes returns fs from .Sizes
         Variable size codes where fs==None computes fs from .size and sizes
         """

@@ -178,6 +178,7 @@ def test_serder():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
     assert not serder.compare(said='EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE')
@@ -199,6 +200,7 @@ def test_serder():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
 
@@ -227,6 +229,7 @@ def test_serder():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
 
     serder = Serder(raw=raw, verify=False)  # test not verify
@@ -239,6 +242,7 @@ def test_serder():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
 
 
@@ -265,6 +269,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == None
+    assert serder.stamp == None
 
     # test verify bad digest value
     badraw = (b'{"v":"ACDC10JSON00005a_",'
@@ -363,6 +368,7 @@ def test_serder():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
     assert not serder.compare(said='EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE')
@@ -384,6 +390,7 @@ def test_serder():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
 
@@ -435,6 +442,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk == kering.Ilks.icp
+    assert serder.stamp == None
 
     serder = Serder(raw=raw)
     assert serder.raw == raw
@@ -444,6 +452,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk == kering.Ilks.icp
+    assert serder.stamp == None
 
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp
@@ -486,6 +495,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     serder = Serder(raw=raw)
     assert serder.raw == raw
@@ -496,6 +506,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
 
     # Test with non-digestive code for 'i' saidive field no sad
@@ -570,6 +581,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     serder = Serder(raw=raw)
     assert serder.raw == raw
@@ -580,6 +592,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rot
     serder = Serder(makify=True, ilk=kering.Ilks.rot)  # make with defaults
@@ -622,6 +635,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     serder = Serder(raw=raw)
     assert serder.raw == raw
@@ -632,6 +646,7 @@ def test_serder():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     # test opts
     serder = Serder(makify=True, proto=Protocols.acdc)  # make defaults for ACDC
@@ -800,7 +815,7 @@ def test_serderkeri():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.pre == pre
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -830,6 +845,7 @@ def test_serderkeri():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == kering.Ilks.icp
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -933,6 +949,7 @@ def test_serderkeri_icp():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1040,6 +1057,7 @@ def test_serderkeri_icp():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1075,6 +1093,7 @@ def test_serderkeri_icp():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1160,6 +1179,7 @@ def test_serderkeri_rot():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1190,6 +1210,7 @@ def test_serderkeri_rot():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1266,6 +1287,7 @@ def test_serderkeri_ixn():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -1299,6 +1321,7 @@ def test_serderkeri_ixn():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -1398,6 +1421,7 @@ def test_serderkeri_dip():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1431,6 +1455,7 @@ def test_serderkeri_dip():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1563,6 +1588,7 @@ def test_serderkeri_dip():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1596,6 +1622,7 @@ def test_serderkeri_dip():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1687,6 +1714,7 @@ def test_serderkeri_drt():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1720,6 +1748,7 @@ def test_serderkeri_drt():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
@@ -1789,6 +1818,7 @@ def test_serderkeri_rct():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -1817,6 +1847,7 @@ def test_serderkeri_rct():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == None
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -1873,6 +1904,7 @@ def test_serderkeri_qry():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -1904,6 +1936,7 @@ def test_serderkeri_qry():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -1963,6 +1996,7 @@ def test_serderkeri_rpy():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -1991,6 +2025,7 @@ def test_serderkeri_rpy():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -2049,6 +2084,7 @@ def test_serderkeri_pro():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -2080,6 +2116,7 @@ def test_serderkeri_pro():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -2138,6 +2175,7 @@ def test_serderkeri_bar():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -2169,6 +2207,7 @@ def test_serderkeri_bar():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -2234,6 +2273,7 @@ def test_serderkeri_exn():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -2265,6 +2305,7 @@ def test_serderkeri_exn():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
+    assert serder.stamp == ''
 
     assert not serder.estive
     assert serder.ked == serder.sad
@@ -2435,6 +2476,7 @@ def test_serderacdc():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.issuer ==  isr
 
 
@@ -2447,6 +2489,7 @@ def test_serderacdc():
     assert serder.kind == kering.Kinds.json
     assert serder.said == said
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.issuer ==  isr
 
 
@@ -2506,6 +2549,7 @@ def test_serder_v2():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
     assert not serder.compare(said='EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE')
@@ -2529,6 +2573,7 @@ def test_serder_v2():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
 
@@ -2543,6 +2588,7 @@ def test_serder_v2():
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.stamp == None
     assert serder.compare(said=said)
 
     # test default
