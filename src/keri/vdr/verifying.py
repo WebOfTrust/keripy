@@ -102,7 +102,7 @@ class Verifier:
             saider (Saider): SAID of source anchoring KEL or TEL event
 
         """
-        regk = creder.regi
+        regk = creder.regid
         vcid = creder.said
         schema = creder.schema
         prov = creder.edge if creder.edge is not None else {}
@@ -366,10 +366,10 @@ class Verifier:
             if op == "DI2I":
                 raise NotImplementedError()
 
-        if creder.regi not in self.tevers:
+        if creder.regid not in self.tevers:
             return None
 
-        tever = self.tevers[creder.regi]
+        tever = self.tevers[creder.regid]
 
         state = tever.vcState(nodeSaid)
         if state is None:

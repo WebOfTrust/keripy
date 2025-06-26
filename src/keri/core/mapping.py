@@ -72,6 +72,7 @@ EscapeDex = EscapeCodex()  # Make instance
 
 
 # ToDo;  ""saidive"" Mapper that computs SAID on any map that has a 'd' field
+# field with designated label like '$id' for schema
 # also recursively computes nested SAID on any nested maps using the ACDC
 # most compact version SAID algorithm if "compactive" is True
 

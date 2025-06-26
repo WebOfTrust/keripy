@@ -343,6 +343,14 @@ class Serder:
             saids (dict):
             strict (bool):
 
+    ToDo:
+        Hoist common functionality out of ._verify and ._makify joint or exclusive
+        so that can override ._verify and ._makify in SerderACDC without huge
+        amounts of duplicated code.
+        ._verifyFields
+        ._makifyFields  ._fieldify
+        ._dummifyFields  ._dummify
+
     """
     Dummy = "#"  # dummy spaceholder char for SAID. Must not be a valid Base64 char
 
@@ -350,6 +358,7 @@ class Serder:
     Spans = {Vrsn_1_0: VER1FULLSPAN, Vrsn_2_0: VER2FULLSPAN}
 
     # map seal clan names to seal counter code for grouping seals in anchor list
+    # change to Coden (Code Name)
     ClanCodes = dict()
     ClanCodes[SClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
     ClanCodes[SClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
@@ -357,6 +366,7 @@ class Serder:
     ClanCodes[SClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
     ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
     ClanCodes[SClanDom.SealBack.__name__] = SealDex_2_0.BackerRegistrarSealCouples
+    ClanCodes[SClanDom.SealKind.__name__] = SealDex_2_0.TypedDigestSealCouples
 
     # map seal counter code to seal clan name for parsing seal groups in anchor list
     CodeClans = { val: key for key, val in ClanCodes.items()}  # invert dict
@@ -536,8 +546,11 @@ class Serder:
                 Ilks.rip: FieldDom(alls=dict(v='', t='', d='', u='', i='',
                                               s='', dt=''),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.upd: FieldDom(alls=dict(v='', t='', d='', r='', s='',
+                Ilks.bup: FieldDom(alls=dict(v='', t='', d='', r='', s='',
                                               p='', dt='', a=''),
+                    saids={Saids.d: DigDex.Blake3_256}),
+                Ilks.upd: FieldDom(alls=dict(v='', t='', d='', r='', s='',
+                                              p='', dt='', td='', ts=''),
                     saids={Saids.d: DigDex.Blake3_256}),
             },
         },
@@ -633,20 +646,19 @@ class Serder:
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
-                # makify resets sad, raw, proto, pvrsn, genus, gvrsn, kind, ilk, and size
-                self.makify(sad=sad, proto=proto, pvrsn=pvrsn,
-                            genus=genus, gvrsn=gvrsn, kind=kind,
-                            ilk=ilk, saids=saids)
-                # .makify updates ._raw, ._sad, ._proto, ._pvrsn, ._kind, ._size
-                # .makify uses .gvrsn
+                # makify resets properties:
+                # sad, raw, size, proto, pvrsn, genus, gvrsn, kind, and ilk
+                self.makify(sad, proto=proto, pvrsn=pvrsn,
+                            genus=genus, gvrsn=gvrsn,
+                            kind=kind, ilk=ilk, saids=saids)
 
             else:
+                # .exhale potentially updates properties:
+                # sad, raw, size, proto, pvrsn, genus, gvrsn, kind, ilk
                 self._exhale(sad=sad)
-                # .exhale updates ._raw, ._sad, ._proto, ._pvrsn, ._kind, ._size
-                # .exhale uses .gvrsn
 
-            # primary said field label
-            try:
+
+            try:  # ensure primary said field label is present
                 label = list(self.Fields[self.proto][self.pvrsn][self.ilk].saids)[0]
                 if label not in self._sad:
                     raise DeserializeError(f"Missing primary said field in {self._sad}.")
@@ -698,6 +710,53 @@ class Serder:
         Raises a ValidationError (or subclass) if any verification fails
 
         """
+        sad, saids = self._validate()
+
+        sad, raw, size = self._compute(sad=sad, saids=saids)
+
+        if raw != self.raw:
+            raise ValidationError(f"Invalid round trip of {sad} != \n"
+                                  f"{self.sad}.")
+
+        # extract version string elements to verify consistency with attributes
+        proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
+        if self.proto != proto:
+            raise ValidationError(f"Inconsistent protocol={self.proto} from"
+                                  f" deversify of sad.")
+
+        if self.pvrsn != pvrsn:
+            raise ValidationError(f"Inconsistent version={self.pvrsn} from"
+                                  f" deversify of sad.")
+
+        if self.kind != kind:
+            raise ValidationError(f"Inconsistent kind={self.kind} ifrom"
+                                  f" deversify of sad.")
+
+        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
+            if size != self.size != len(raw):
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
+        else:  # size is not set in version string when kind is CESR
+            if self.size != len(raw):
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
+
+        if self.gvrsn != gvrsn:
+            raise ValidationError(f"Inconsistent genus version={self.gvrsn} from"
+                                  f" deversify of sad.")
+        # verified successfully since no exception
+
+
+    def _validate(self):
+        """Validate field presence and values but not including SAID or size
+        computation. Raises exception if anything is invalid
+
+        Returns:
+           tuple (sad, saids):  where
+                sad (dict): self addressed data dict with dummied fields
+                saids (dict)
+        """
+
         if self.Protocol and self.proto != self.Protocol:  # class required
             raise ValidationError(f"Required protocol = {self.Protocol}, got "
                                  f"{self.proto} instead.")
@@ -729,8 +788,6 @@ class Serder:
         if self.ilk not in self.Fields[self.proto][self.pvrsn]:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
-
-
 
         fields = self.Fields[self.proto][self.pvrsn][self.ilk]  # get labelage
 
@@ -770,7 +827,11 @@ class Serder:
                                     f" from {list(saids)} in sad = "
                                     f"{self._sad}.")
 
-        sad = self.sad  # make shallow copy so don't clobber original .sad
+        if "v" not in self._sad:
+            raise ValidationError(f"Missing version string field in {self._sad}.")
+
+        sad = copy.copy(self._sad)  # make shallow copy so don't clobber original .sad
+
         for label in saids:
             try:  # replace default code with code of value from sad
                 saids[label] = Matter(qb64=sad[label]).code
@@ -782,70 +843,74 @@ class Serder:
             if saids[label] in DigDex:  # if digestive then replace with dummy
                 sad[label] = self.Dummy * len(sad[label])
 
-        # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
-        for label, code in saids.items():
-            if code in DigDex:  # subclass override if non digestive allowed
-                dig = Diger(ser=raw, code=code).qb64
-                if dig != self._sad[label]:  # compare to original
-                    raise ValidationError(f"Invalid said field '{label}' in sad"
-                                          f" = {self._sad}, should be {dig}.")
-                sad[label] = dig
-
-        raw = self.dumps(sad, kind=self.kind)  # compute final raw
-
-        if raw != self.raw:
-            raise ValidationError(f"Invalid round trip of {sad} != \n"
-                                  f"{self.sad}.")
-
-        if "v" not in sad:
-            raise ValidationError(f"Missing version string field in {sad}.")
-
-        # extract version string elements to verify consistency with attributes
-
-        proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
-        if self.proto != proto:
-            raise ValidationError(f"Inconsistent protocol={self.proto} from"
-                                  f" deversify of sad.")
-
-        if self.pvrsn != pvrsn:
-            raise ValidationError(f"Inconsistent version={self.pvrsn} from"
-                                  f" deversify of sad.")
-
-        if self.kind != kind:
-            raise ValidationError(f"Inconsistent kind={self.kind} ifrom"
-                                  f" deversify of sad.")
-
-        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
-            if size != self.size != len(raw):
-                raise ValidationError(f"Inconsistent size={self.size} from"
-                                  f" deversify of sad.")
-        else:  # size is not set in version string when kind is CESR
-            if self.size != len(raw):
-                raise ValidationError(f"Inconsistent size={self.size} from"
-                                  f" deversify of sad.")
-
-        if self.gvrsn != gvrsn:
-            raise ValidationError(f"Inconsistent genus version={self.gvrsn} from"
-                                  f" deversify of sad.")
-
-        # verified successfully since no exception
+        return (sad, saids)
 
 
     def makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
-               kind=None, ilk=None, saids=None):
-        """Makify given sad dict makes the versions string and computes the said
-        field values and sets associated properties:
-        raw, sad, proto, version, kind, size
+                   kind=None, ilk=None, saids=None):
+        """makify builds serder with valid properties and attributes. Computes
+        saids and sizes. and assigns hidden attributes for properties:
+        sad, raw, size, proto, pvrsn, genus, gvrsn, kind
 
-        Override for protocol and ilk specific saidification behavior. Especially
-        for inceptive ilks that have more than one said field like a said derived
-        identifier prefix.
+        Prioritization of assigned and default values.
+           Use method parameter if not None
+           Else use version string from provided sad if valid
+           Otherwise use class attribute
+
+        Parameters:
+            sad (dict): serializable saidified field map of message.
+                Ignored if raw provided
+            proto (str | None): desired protocol type str value of Protocols
+                If None then its extracted from sad or uses default .Proto
+            pvrsn (Versionage | None): instance desired protocol version
+                If None then its extracted from sad or uses default .Vrsn
+            genus (str): desired CESR genus code
+                If None then its uses one compatible with proto
+            gvrsn (Versionage): instance desired CESR genus code table version
+                If None then stays None
+            kind (str None): serialization kind string value of Serials
+                supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+                If None then its extracted from sad or uses default .Kind
+            ilk (str | None): desired ilk packet type str value of Ilks
+                If None then its extracted from sad or uses default .Ilk
+            saids (dict): of keyed by label of codes for saidive fields to
+                override defaults given in .Fields for a given ilk.
+                If None then use defaults
+                Code assignment for each saidive field in desending priority:
+                   - the code provided in saids when not None
+                   - the code extracted from sad[said label] when valid CESR
+                   - the code provided in .Fields...saids
+
+        """
+        # sets ._proto, ._pvrsn, ._genus, ._gvrsn, ._kind
+        sad, saids = self._makify(sad, proto=proto, pvrsn=pvrsn, genus=genus,
+                                gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
+
+        sad, raw, size = self._compute(sad=sad, saids=saids)
+
+        self._raw = raw
+        self._size = size
+        self._sad = sad
+
+
+    def _makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
+                   kind=None, ilk=None, saids=None):
+        """_makify ensures sad has appropriate fields and field values from
+        provided sad as template and parameter proto, pvrsn, genus, gvrsn,
+        kind, ilk and saids, include filling in any dummy values for computing
+        size and saids. Assigns hidden attributes for properties:
+        proto, pvrsn, genus, gvrsn, kind
+
 
         Default prioritization.
            Use method parameter if not None
-           Else use provided version string if valid
+           Else use version string from provided sad if valid
            Otherwise use class attribute
+
+        Returns:
+           tuple (sad, saids):  where
+                sad (dict): self addressed data dict with dummied fields
+                saids (dict)
 
 
         Parameters:
@@ -873,13 +938,18 @@ class Serder:
                    - the code provided in .Fields...saids
         """
         sproto = spvrsn = skind = silk = sgvrsn = None  # from sad
-        if sad and 'v' in sad:  # attempt to get from vs in sad
-            try:  # extract version string elements as defaults if provided
-                sproto, spvrsn, skind, _, sgvrsn = deversify(sad["v"])
-            except VersionError as ex:
-                pass
-            else:
-                silk = sad.get('t')  # if 't' not in sad .get returns None which may be valid
+        if sad:
+            if 'v' in sad:  # attempt to get from vs in sad
+                try:  # extract version string elements as defaults if provided
+                    sproto, spvrsn, skind, _, sgvrsn = deversify(sad["v"])
+                except VersionError as ex:
+                    pass
+                else:
+                    silk = sad.get('t')  # if 't' not in sad .get returns None which may be valid
+
+        else:  # empty or None so create sad dict
+            sad = {}
+
 
         if proto is None:
             proto = sproto if sproto is not None else self.Proto
@@ -910,8 +980,6 @@ class Serder:
         if gvrsn is None:  # use default GVrsn only if pvrsn >= 2 othwise leave gvrsn None
             gvrsn = sgvrsn if sgvrsn is not None else (self.GVrsn if pvrsn.major >= 2 else None)
 
-        #if gvrsn is None and sgvrsn is not None:
-            #gvrsn = sgvrsn
 
         if gvrsn is not None and gvrsn.major < 2:
             raise SerializeError(f"Incompatible major protocol version={pvrsn} "
@@ -931,16 +999,12 @@ class Serder:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
-
         fields = self.Fields[proto][pvrsn][ilk]  # get FieldDom of fields
 
         alls = fields.alls  # faster local reference
         oalls = oset(alls)  # ordereset of field labels
         oopts = oset(fields.opts)  # ordereset of field labels
         oreqs = oalls - oopts  # required fields
-
-        if not sad:  # empty or None so create sad dict
-            sad = {}
 
         # ensure all required fields are in sad. If not provide default
         for label in oreqs:
@@ -987,46 +1051,37 @@ class Serder:
                 raise SerializeError(f"Missing or out-of-order field = {label} "
                                             f"from = {list(osalls)} in sad.")
 
+        if 'v' not in sad:  # ensures that 'v' is always required by .Labels
+            raise SerializeError(f"Missing required version string field 'v'"
+                                          f" in sad = {sad}.")
+
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         _saids = copy.copy(fields.saids)  # get copy of defaults
-        if not (set(_saids) <= set(alls)):
+        if not (set(_saids) <= set(alls)):  # sets from labels (dict keys)
             raise SerializeError(f"Missing one or more required said fields "
                                  f"from {list(_saids)} in sad = {sad}.")
 
         # override saidive defaults
         for label in _saids:
-            if saids and label in saids:  # use parameter override
-                _saids[label] = saids[label]
-            else:
-                try:  # use sad field override
+            if saids and label in saids:  # use makify parameter override
+                _saids[label] = saids[label]  # value is cesr code
+            else:  # use provided sad field override if any
+                try:  # use code of sad field value if present
                     _saids[label] = Matter(qb64=sad[label]).code
                 except Exception:
-                    pass  # no override
-
+                    pass  # no provided sad field override
+            # when code is digestive then we know we have to compute said dummy
+            # this accounts for aid fields that may or may not be saids
             if _saids[label] in DigDex:  # if digestive then fill with dummy
                 sad[label] = self.Dummy * Matter.Sizes[_saids[label]].fs
 
-
-        if 'v' not in sad:  # ensures that 'v' is always required by .Labels
-            raise SerializeError(f"Missing requires version string field 'v'"
-                                          f" in sad = {sad}.")
-
-        if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
+        if kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # dummy version string
             # Non native the size the version string depends on version so we
             # need to dummy the version string in order to get the size right.
             # It needs to be computed based on actual version string span
             # since not same for all versions
             sad['v'] = self.Dummy * self.Spans[pvrsn]  # ensure span of vs is dummied MAXVERFULLSPAN
-
-            raw = self.dumps(sad, kind)  # get size of sad with fully dummied vs and saids
-            size = len(raw)
-
-            # generate version string with correct size
-            vs = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
-            sad["v"] = vs  # update version string in sad
-            # now have correctly sized version string in sad
-
 
         # do this now so ._dumps of cesr native can use properties without having
         # re-deversify sad['v'] each time
@@ -1036,22 +1091,54 @@ class Serder:
         self._gvrsn = gvrsn
         self._kind = kind
 
+        return (sad, _saids)
+
+
+    def _compute(self, sad, saids):
+        """Computes computed fields. These include size and said fields that have
+        dummy characters. Replaces dummied fields with computed values.
+        In the case of version strings replaces dummy size characters with
+        actual size. In the case of SAID fields replaces dummy said characters
+        with actual computed saids
+
+        Returns:
+            stuff (tuple): of form (sad, raw, size) where:
+                sad is de-dummied sad, raw is raw serialization of dedummied sad,
+                and size is size of raw or None when sized is True and hence the
+                size is not calculated.
+
+        Parameters:
+            sad (dict): dummied serder sad (self addressed data dict)
+            saids (dict): said field labels and cesr code that identifies how
+
+
+        """
+        # assumes sad['v'] sad said fields are fully dummied at this point
+
+        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
+            raw = self.dumps(sad, self.kind)  # get size of sad with fully dummied vs and saids
+            size = len(raw)
+
+            # generate version string with correct size
+            vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind, size=size, gvrsn=self.gvrsn)
+            sad["v"] = vs  # update version string in sad
+            # now have correctly sized version string in sad
+
         # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
-        for label, code in _saids.items():  # replace dummied fields with computed digests
+        raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+        for label, code in saids.items():  # replace dummied fields with computed digests
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
         # Now reserialize raw with undummied field values
-        raw = self.dumps(sad, kind=kind)  # assign final raw
-        if kind == Kinds.cesr:# cesr kind version string does not set size
+        raw = self.dumps(sad, kind=self.kind)  # assign final raw
+
+        if self.kind == Kinds.cesr:# cesr kind version string does not set size
             size = len(raw) # size of whole message
-            sad['v'] = versify(proto=proto, pvrsn=pvrsn, kind=kind, size=size, gvrsn=gvrsn)
+            sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn,
+                               kind=self.kind, size=size, gvrsn=self.gvrsn)
 
-        self._raw = raw
-        self._size = size
-        self._sad = sad
-
+        return (sad, raw, size)
 
 
     def _inhale(self, raw, *, smellage=None, strip=False):
@@ -2184,32 +2271,15 @@ class SerderACDC(Serder):
        properties for exposing field values of ACDC messages
 
        See docs for Serder
+
+    ToDo:
+        Schemer property getter. Schemer object should change name to Schemar
     """
     #override in subclass to enforce specific protocol
     Protocol = Protocols.acdc  # required protocol, None means any in Protocols is ok
     Proto = Protocols.acdc  # default protocol type
 
 
-
-    def _verify(self, **kwa):
-        """Verifies said(s) in sad against raw
-        Override for protocol and ilk specific verification behavior. Especially
-        for inceptive ilks that have more than one said field like a said derived
-        identifier prefix.
-
-        Raises a ValidationError (or subclass) if any verification fails
-
-        """
-        super(SerderACDC, self)._verify(**kwa)
-
-        try:
-            code = Matter(qb64=self.issuer).code
-        except Exception as ex:
-            raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.issuer}.") from ex
-
-        if code not in PreDex:
-            raise ValidationError(f"Invalid issuer AID code = {code}.")
 
     @property
     def uuid(self):
@@ -2252,13 +2322,18 @@ class SerderACDC(Serder):
 
 
     @property
-    def regi(self):
-        """regi property getter (registry identifier SAID)
+    def regid(self):
+        """regi property getter (registry SAID)
         Optional fields return None when not present
         Returns:
-           regi (str | None): qb64  of .sad["ri"] registry SAID
+           regi (str | None): qb64  registry SAID
+                              v1 .sad["ri"]
+                              v2 .said["rd"]
         """
-        return self._sad.get('ri')
+        if self.pvrsn.major == 1:
+            return self._sad.get('ri')
+        else:
+            return self._sad.get('rd')
 
 
     @property
@@ -2268,7 +2343,7 @@ class SerderACDC(Serder):
         Returns:
         regib (bytes | None): qb64b  of .issuer AID as bytes
         """
-        return self.issuer.encode("utf-8") if self.issuer is not None else None
+        return self.regid.encode() if self.regid is not None else None
 
 
     @property
@@ -2344,4 +2419,155 @@ class SerderACDC(Serder):
         """
         return self._sad.get("r") # or {}  # need to fix logic so can remove or since optional
 
-    # ToDo Schemer property getter. Schemer object should change name to Schemar
+
+
+    def _verify(self, **kwa):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Raises a ValidationError (or subclass) if any verification fails
+
+        """
+        #super(SerderACDC, self)._verify(**kwa)
+        sad, saids = self._validate()
+
+        sad, raw, size = self._compute(sad=sad, saids=saids)
+
+        if raw != self.raw:
+            raise ValidationError(f"Invalid round trip of {sad} != \n"
+                                  f"{self.sad}.")
+
+        # extract version string elements to verify consistency with attributes
+        proto, pvrsn, kind, size, gvrsn = deversify(sad["v"])
+        if self.proto != proto:
+            raise ValidationError(f"Inconsistent protocol={self.proto} from"
+                                  f" deversify of sad.")
+
+        if self.pvrsn != pvrsn:
+            raise ValidationError(f"Inconsistent version={self.pvrsn} from"
+                                  f" deversify of sad.")
+
+        if self.kind != kind:
+            raise ValidationError(f"Inconsistent kind={self.kind} ifrom"
+                                  f" deversify of sad.")
+
+        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):
+            if size != self.size != len(raw):
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
+        else:  # size is not set in version string when kind is CESR
+            if self.size != len(raw):
+                raise ValidationError(f"Inconsistent size={self.size} from"
+                                  f" deversify of sad.")
+
+        if self.gvrsn != gvrsn:
+            raise ValidationError(f"Inconsistent genus version={self.gvrsn} from"
+                                  f" deversify of sad.")
+        # verified successfully since no exception
+
+        # required issuer field as valid AID, not empty
+        try:
+            code = Matter(qb64=self.issuer).code
+        except Exception as ex:
+            raise ValidationError(f"Invalid issuer AID = "
+                                  f"{self.issuer}.") from ex
+
+        if code not in PreDex:
+            raise ValidationError(f"Invalid issuer AID code = {code}.")
+
+
+
+    def makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
+                   kind=None, ilk=None, saids=None):
+        """makify builds serder with valid properties and attributes. Computes
+        saids and sizes. and assigns hidden attributes for properties:
+        sad, raw, size, proto, pvrsn, genus, gvrsn, kind
+
+        Prioritization of assigned and default values.
+           Use method parameter if not None
+           Else use version string from provided sad if valid
+           Otherwise use class attribute
+
+        Parameters:
+            sad (dict): serializable saidified field map of message.
+                Ignored if raw provided
+            proto (str | None): desired protocol type str value of Protocols
+                If None then its extracted from sad or uses default .Proto
+            pvrsn (Versionage | None): instance desired protocol version
+                If None then its extracted from sad or uses default .Vrsn
+            genus (str): desired CESR genus code
+                If None then its uses one compatible with proto
+            gvrsn (Versionage): instance desired CESR genus code table version
+                If None then stays None
+            kind (str None): serialization kind string value of Serials
+                supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+                If None then its extracted from sad or uses default .Kind
+            ilk (str | None): desired ilk packet type str value of Ilks
+                If None then its extracted from sad or uses default .Ilk
+            saids (dict): of keyed by label of codes for saidive fields to
+                override defaults given in .Fields for a given ilk.
+                If None then use defaults
+                Code assignment for each saidive field in desending priority:
+                   - the code provided in saids when not None
+                   - the code extracted from sad[said label] when valid CESR
+                   - the code provided in .Fields...saids
+
+        """
+        # sets ._proto, ._pvrsn, ._genus, ._gvrsn, ._kind
+        sad, saids = self._makify(sad, proto=proto, pvrsn=pvrsn, genus=genus,
+                                gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
+
+        sad, raw, size = self._compute(sad=sad, saids=saids)
+
+        self._raw = raw
+        self._size = size
+        self._sad = sad
+
+
+    def _compute(self, sad, saids):
+        """Computes computed fields. These include size and said fields that have
+        dummy characters. Replaces dummied fields with computed values.
+        In the case of version strings replaces dummy size characters with
+        actual size. In the case of SAID fields replaces dummy said characters
+        with actual computed saids
+
+        Returns:
+            stuff (tuple): of form (sad, raw, size) where:
+                sad is de-dummied sad, raw is raw serialization of dedummied sad,
+                and size is size of raw or None when sized is True and hence the
+                size is not calculated.
+
+        Parameters:
+            sad (dict): dummied serder sad (self addressed data dict)
+            saids (dict): said field labels and cesr code that identifies how
+
+
+        """
+        # assumes sad['v'] sad said fields are fully dummied at this point
+
+        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
+            raw = self.dumps(sad, self.kind)  # get size of sad with fully dummied vs and saids
+            size = len(raw)
+
+            # generate version string with correct size
+            vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind, size=size, gvrsn=self.gvrsn)
+            sad["v"] = vs  # update version string in sad
+            # now have correctly sized version string in sad
+
+        # compute saidive digestive field values using raw from sized dummied sad
+        raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+        for label, code in saids.items():  # replace dummied fields with computed digests
+            if code in DigDex:  # subclass override if non digestive allowed
+                sad[label] = Diger(ser=raw, code=code).qb64
+
+        # Now reserialize raw with undummied field values
+        raw = self.dumps(sad, kind=self.kind)  # assign final raw
+
+        if self.kind == Kinds.cesr:# cesr kind version string does not set size
+            size = len(raw) # size of whole message
+            sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn,
+                               kind=self.kind, size=size, gvrsn=self.gvrsn)
+
+        return (sad, raw, size)

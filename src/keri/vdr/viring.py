@@ -402,7 +402,7 @@ class Reger(dbing.LMDBer):
             atc = bytearray(signing.serialize(creder, prefixer, seqner, saider))
             del atc[0:creder.size]
 
-            regk = creder.regi
+            regk = creder.regid
             status = self.tevers[regk].vcState(saider.qb64)
             schemer = db.schema.get(creder.schema)
 

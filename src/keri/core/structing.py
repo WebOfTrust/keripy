@@ -11,14 +11,15 @@ from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, astuple, asdict
 
-from ..kering import InvalidValueError, EmptyMaterialError
+from ..kering import ValidationError, InvalidValueError, EmptyMaterialError, Colds
 
 from .. import help
 from ..help import isNonStringSequence
 
 from . import coring
-from .coring import (IceMapDom, Matter, Diger, Prefixer, Number, Verser)
-
+from .coring import (IceMapDom, Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
+                     Noncer, )
+from .counting import CtrDex_2_0, Codens, Counter
 
 
 # ToDo: ? Consider if should change seal namedtuple definitions to NamedTuple subclasses so can
@@ -74,6 +75,16 @@ SealEvent = namedtuple("SealEvent", 'i s d')
 # use TypedDigestSealCouples count code for attachment
 SealKind = namedtuple("SealKind", 't d')
 
+# Following is Blinded State Attribute Block for 'bup' Transaction Event
+
+# Blinded State for Blindable State Update Event for Transaction Event Registry
+# d = SAID digest qb64 of blindable state
+# u = UUID blind as deterministically derived salty nonce
+# tc = SAID of ACDC top-level 'd' field value
+# ts = state as string of Labler.label type
+# use BlindStateGroup count code for attachment
+BlindState = namedtuple("BlindState", 'd u td ts')
+
 
 # Following are not seals only used in database
 
@@ -102,8 +113,7 @@ Castage = namedtuple('Castage', "kls ipn", defaults=(None, ))
 
 @dataclass(frozen=True)
 class EmptyClanDom(IceMapDom):
-    """
-    SealClanDom is dataclass of namedtuple seal class references (clans) each
+    """EmptyClanDom is dataclass of namedtuple empty class references (clans) each
     indexed by its class name.
 
     Only provide defined classes.
@@ -123,9 +133,9 @@ EClanDom = EmptyClanDom()  # create instance
 
 @dataclass(frozen=True)
 class EmptyCastDom(IceMapDom):
-    """
-    SealCastCodex is dataclass of namedtuple instances (seal casts) whose values
-    are named primitive class references
+    """EmptyCastCodex is dataclass of namedtuple instances (empty casts) whose
+    field values are Castage instances of named primitive class class references
+    for those fields.
 
     indexed by its namedtuple class name.
 
@@ -146,8 +156,7 @@ ECastDom = EmptyCastDom()  # create instance
 
 @dataclass(frozen=True)
 class SealClanDom(IceMapDom):
-    """
-    SealClanDom is dataclass of namedtuple seal class references (clans) each
+    """SealClanDom is dataclass of namedtuple seal class references (clans) each
     indexed by its class name.
 
     Only provide defined classes.
@@ -156,15 +165,15 @@ class SealClanDom(IceMapDom):
     As subclass of MapCodex can get class reference with item syntax using
     name variables.
 
-    Example: ClanDom[name]
+    Example: SealClanDom[name]
     """
-    SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference
-    SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference
-    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple
-    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple
-    SealLast: type[NamedTuple] = SealLast  # SealLast class reference single
-    SealBack: type[NamedTuple] = SealBack  # SealBack class reference
-    SealKind: type[NamedTuple] = SealKind  # SealKind class reference
+    SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference (d,)
+    SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference (rd,)
+    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple (i,s,d)
+    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple (s,d)
+    SealLast: type[NamedTuple] = SealLast  # SealLast class reference single (i,)
+    SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
+    SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
 
 
     def __iter__(self):
@@ -177,9 +186,8 @@ SClanDom = SealClanDom()  # create instance
 
 @dataclass(frozen=True)
 class SealCastDom(IceMapDom):
-    """
-    SealCastDom is dataclass of namedtuple instances (seal casts) whose values
-    are named primitive class references
+    """SealCastDom is dataclass of namedtuple instances (seal casts) whose
+    field values are Castage instances of named primitive class class references for those fields.
 
     indexed by its namedtuple class name.
 
@@ -189,7 +197,7 @@ class SealCastDom(IceMapDom):
     As subclass of MapCodex can get namedtuple instance with item syntax using
     name variables.
 
-    Example: CastDom[name]
+    Example: SealCastDom[name]
     """
     SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
     SealRoot: NamedTuple = SealRoot(rd=Castage(Diger))  # SealRoot class reference
@@ -209,6 +217,137 @@ class SealCastDom(IceMapDom):
 
 SCastDom = SealCastDom()  # create instance
 
+
+@dataclass(frozen=True)
+class BlindClanDom(IceMapDom):
+    """BlindClanDom is dataclass of namedtuple blinded state class references
+    (clans) each indexed by its class name.
+
+    Only provide defined classes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get class reference with item syntax using
+    name variables.
+
+    Example: BlindClanDom[name]
+    """
+    BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+BClanDom = BlindClanDom()  # create instance
+
+@dataclass(frozen=True)
+class BlindCastDom(IceMapDom):
+    """BlindCastDom is dataclass of namedtuple instances (blind casts) whose
+    field values are Castage instances of named primitive class class references
+    for those fields.
+
+    indexed by its namedtuple class name.
+
+    Only provide defined namedtuples casts.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get namedtuple instance with item syntax using
+    name variables.
+
+    Example: BlindCastDom[name]
+    Note: the td field value is a SAID but when placeholder may be empty so
+    instead of Diger users Noncer which allows all the Diger codes plus empty
+    """
+    BlindState: NamedTuple = BlindState(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        td=Castage(Noncer, 'nonce'),
+                                        ts=Castage(Labeler, 'text'))  # BlindState instance
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+BCastDom = BlindCastDom()  # create instance
+
+
+@dataclass(frozen=True)
+class AllClanDom(IceMapDom):
+    """AllClanDom is dataclass of all namedtuple class references (clans) each
+    indexed by its class name.
+
+    Only provide defined classes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get class reference with item syntax using
+    name variables.
+
+    Example: AllClanDom[name]
+    """
+    SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference (d,)
+    SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference (rd,)
+    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple (i,s,d)
+    SealTrans: type[NamedTuple] = SealTrans  # SealTrans class reference couple (s,d)
+    SealLast: type[NamedTuple] = SealLast  # SealLast class reference single (i,)
+    SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
+    SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
+    BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+AClanDom = AllClanDom()  # create instance
+
+
+@dataclass(frozen=True)
+class AllCastDom(IceMapDom):
+    """AllCastDom is dataclass of namedtuple instances (casts) whose
+    field values are Castage instances of named primitive class class references
+    for those fields.
+
+    indexed by its namedtuple class name.
+
+    Only provide defined namedtuples casts.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of MapCodex can get namedtuple instance with item syntax using
+    name variables.
+
+    Example: AllCastDom[name]
+    """
+    SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
+    SealRoot: NamedTuple = SealRoot(rd=Castage(Diger))  # SealRoot class reference
+    SealEvent: NamedTuple = SealEvent(i=Castage(Prefixer),
+                                      s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealEvent class reference triple
+    SealTrans: NamedTuple = SealTrans(s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealTrans class reference couple
+    SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
+    SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
+                                        d=Castage(Diger))  # SealBack class reference
+    SealKind: NamedTuple = SealKind(t=Castage(Verser),
+                                        d=Castage(Diger))  # SealKind class reference
+    BlindState: NamedTuple = BlindState(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        td=Castage(Noncer, 'nonce'),
+                                        ts=Castage(Labeler, 'text'))  # BlindState instance
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+ACastDom = AllCastDom()  # create instance
+
+
+# map Structor clan names to counter code names for ser/des as counted group
+ClanToCodens = dict()
+ClanToCodens[SClanDom.SealDigest.__name__] = Codens.DigestSealSingles
+ClanToCodens[SClanDom.SealRoot.__name__] = Codens.MerkleRootSealSingles
+ClanToCodens[SClanDom.SealEvent.__name__] = Codens.SealSourceTriples
+ClanToCodens[SClanDom.SealTrans.__name__] = Codens.SealSourceCouples
+ClanToCodens[SClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
+ClanToCodens[SClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
+ClanToCodens[SClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
+ClanToCodens[BClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+
+
+# map counter codename to Structor clan name for ser/des as counted group
+CodenToClans = { val: key for key, val in ClanToCodens.items()}  # invert dict
 
 
 class Structor:
@@ -245,11 +384,18 @@ class Structor:
         Clans (type[Namedtuple]): each value is known NamedTuple class keyed
             by its own field names (tuple). Enables easy query of its values() to
             find known data types given field names tuple.
-
         Casts (NamedTuple): each value is primitive class of cast keyed by fields
             names of the associated NamedTuple class in .Clans. Enables finding
             known primitive classes given NamedTuple class of clan or instance
             of cast or crew.
+        Names (dict):  maps tuple of clan/cast fields names to its namedtuple
+                       class type name so can look up a know clan or cast
+                       given a matching tuple
+        ClanCodens (dict): map of clan namedtuple to counter code name for
+                           ser/des as group
+        CodenClans (dict): map of counter code name to clan named tuple for
+                           ser/des as group
+
 
     When known casts or provided in .Clans/.Casts then more flexible creation
     is supported for different types of provided cast and crew.
@@ -304,13 +450,68 @@ class Structor:
 
 
     """
-    Clans = EClanDom  # known namedtuple clans. Override in subclass with non-empty
-    Casts = ECastDom  # known namedtuple casts. Override in subclass with non-empty
+    Clans = AClanDom  # EClanDom known namedtuple clans. Override in subclass with non-empty
+    Casts = ACastDom  # ECastDom known namedtuple casts. Override in subclass with non-empty
     # Create .Names dict that maps tuple of clan/cast fields names to its namedtuple
     # class type name so can look up a know clan or cast given a matching tuple
     # of either field names from a namedtuple or keys from a dict. The tuple of
     # field names is a mark of the structor type. This maps a mark to a class name
     Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
+
+    ClanCodens = ClanToCodens  # map of clan namedtuple to counter code name
+    CodenClans = CodenToClans  # map of counter code name to clan namedtuple
+
+
+    @classmethod
+    def extract(cls, qb64=None, qb2=None, strip=False):
+        """Structor from  serialization of counted group
+
+        Returns:
+            structor (Structor): extracts structor instance of type cls from
+                qb64 or qb2 of encoded Counter and framed group that is structor
+                uses counter.code that maps to clan given by .CodeClans
+
+        Parameters:
+            qb64 (str|bytes|bytearray|memoryview|None): text domain CESR
+                serializaton of framed counter group (count code inclusive)
+            qb2 (bytes|bytearray|memoryview|None): binary domain CESR
+                serializaton of framed counter group (count code inclusive)
+            strip (bool): when True and qb64 or qb2 is bytearray then strip
+                                extracted group from qb64/qb2
+                          Otherwise  do not strip
+
+        """
+        if qb64 is not None:
+            if hasattr(qb64, 'encode'):
+                qb64 = qb64.encode()
+
+            ims = qb64   # reference start of stream
+            ctr = Counter(qb64b=qb64)
+            clan = cls.Clans[cls.CodenClans[ctr.name]]  # get clan from code name
+            bs = ctr.byteSize(cold=Colds.txt)
+            qb64 = qb64[bs:]  # skip over counter
+            structor = cls(clan=clan, qb64b=qb64)
+            gs = bs + ctr.byteCount(cold=Colds.txt)  # size of group including ctr
+            if strip and isinstance(ims, bytearray):
+                del ims[:gs]  # strip original
+
+            return structor
+
+        elif qb2 is not None:
+            ims = qb2   # reference start of stream
+            ctr = Counter(qb2=qb2)
+            clan = cls.Clans[cls.CodenClans[ctr.name]]  # get clan from code name
+            bs = ctr.byteSize(cold=Colds.bny)
+            qb2 = qb2[bs:]  # skip over counter
+            structor = cls(clan=clan, qb2=qb2)
+            gs = bs + ctr.byteCount(cold=Colds.bny)  # size of group including ctr
+            if strip and isinstance(ims, bytearray):
+                del ims[:gs]  # strip original
+
+            return structor
+
+        else:
+            raise EmptyMaterialError(f"Missing qb64 or qb2")
 
 
     def __init__(self, data=None, *, clan=None, cast=None, crew=None,
@@ -356,7 +557,8 @@ class Structor:
                 if not (hasattr(pi, "qb64") and hasattr(pi, "qb2")):
                     raise InvalidValueError(f"Non-primitive data member={pi}.")
 
-            cast = None  # ensure cast is None since not used to generate data
+            # when cast is not None then will be used instead of generating
+            # custom cast below
 
 
         else:
@@ -505,8 +707,6 @@ class Structor:
                       self.clan(*(Castage(val.__class__) for val in self.data)))
 
 
-
-
     @property
     def data(self):
         """Returns:
@@ -617,6 +817,32 @@ class Structor:
         return (b''.join(val.qb2 for val in self.data))
 
 
+    def enclose(self, cold=Colds.txt):
+        """Serializes self with prepended counter code in either text or binary
+        domain as bytes determined by kind where text='txt' or binary='bny'
+        Uses .clan to determine counter.code from .ClanCodes
+
+        Returns:
+            enclosure (bytes): encloses own fields in Counter using .clan that
+                maps to Counter code given by .ClanCodes
+                When cold==Colds.txt then enclosure is in qb64 text domain
+                When cold==Colds.bny then enclosure is in qb2 binary domain
+
+        Parameters:
+            cold (str): Colds value, 'txt' means qb64b text domain
+                        Colds value, 'bny' means qb2 binary domain
+        """
+        try:
+            coden = self.ClanCodens[self.clan.__name__]
+        except KeyError as ex:
+            raise InvalidValueError(f"Invalid on-the-fly clan={self.clan.__name__}") from ex
+
+        if cold == Colds.txt:
+            return Counter.enclose(qb64=self.qb64, code=coden)
+        elif cold == Colds.bny:
+            return Counter.enclose(qb2=self.qb2, code=coden)
+        else:
+            raise InvalidValueError(f"Invalid {cold=}, not {Cold.txt} or {Colds.bny}")
 
 
 class Sealer(Structor):
@@ -631,11 +857,18 @@ class Sealer(Structor):
         Clans (type[Namedtuple]): each value is known NamedTuple class keyed
             by its own field names (tuple). Enables easy query of its values() to
             find known data types given field names tuple.
-
         Casts (NamedTuple): each value is primitive class of cast keyed by fields
             names of the associated NamedTuple class in .Clans. Enables finding
             known primitive classes given NamedTuple class of clan or instance
             of cast or crew.
+        Names (dict):  maps tuple of clan/cast fields names to its namedtuple
+                       class type name so can look up a know clan or cast
+                       given a matching tuple
+        ClanCodens (dict): map of clan namedtuple to counter code name for
+                           ser/des as group
+        CodenClans (dict): map of counter code name to clan named tuple for
+                           ser/des as group
+
 
     When known casts are provided in .Clans/.Casts then more flexible creation
     is supported for different types of provided cast and crew.
@@ -674,7 +907,7 @@ class Sealer(Structor):
         assert sealer.name == SealDigest.__name__
         assert sealer.cast == SealDigest(d=Castage(Diger))
         assert sealer.crew == SealDigest(d=dig)
-        assert sealer.asdict == data
+        assert sealer.asdict == data._asdict() ==sealer.crew._asdict()
 
 
 
@@ -685,6 +918,19 @@ class Sealer(Structor):
     # class type name so can look up a know clan or cast given a matching set
     # of either field names from a namedtuple or keys from a dict.
     Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
+
+    # map clan names to counter code for ser/des as counted group
+    ClanCodens = dict()
+    ClanCodens[SClanDom.SealDigest.__name__] = Codens.DigestSealSingles
+    ClanCodens[SClanDom.SealRoot.__name__] = Codens.MerkleRootSealSingles
+    ClanCodens[SClanDom.SealEvent.__name__] = Codens.SealSourceTriples
+    ClanCodens[SClanDom.SealTrans.__name__] = Codens.SealSourceCouples
+    ClanCodens[SClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
+    ClanCodens[SClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
+    ClanCodens[SClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
+
+    # map counter code to clan name for ser/des as counted group
+    CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict
 
 
     def __init__(self, *pa, **kwa):
@@ -715,5 +961,184 @@ class Sealer(Structor):
                             to extract data fields from front of CESR stream.
 
         """
-
         super(Sealer, self).__init__(*pa, **kwa)
+
+        if self.clan not in self.Clans:
+            raise InvalidValueError("Unrecognized clan={self.clan}")
+
+
+
+class Blinder(Structor):
+    """Blinder is Structor subclass each instance holds a namedtuple .data of
+    named values belonging to ACDC blinded state attribute for blindable state
+    registry for TEL for ACDC to unblind the state attribute via a message
+    attachment.
+
+    See Structor class for more details.
+
+
+    Inherited Class Attributes:
+        Clans (type[Namedtuple]): each value is known NamedTuple class keyed
+            by its own field names (tuple). Enables easy query of its values() to
+            find known data types given field names tuple.
+        Casts (NamedTuple): each value is primitive class of cast keyed by fields
+            names of the associated NamedTuple class in .Clans. Enables finding
+            known primitive classes given NamedTuple class of clan or instance
+            of cast or crew.
+        Names (dict):  maps tuple of clan/cast fields names to its namedtuple
+                       class type name so can look up a know clan or cast
+                       given a matching tuple
+        ClanCodens (dict): map of clan namedtuple to counter code name for
+                           ser/des as group
+        CodenClans (dict): map of counter code name to clan named tuple for
+                           ser/des as group
+
+
+    Class Attributes:
+        Dummy (bytes): dummy byte for computing said = b'#'
+        SaidCode (str): default cesr code for computing said = DigDex.Blake3_256
+
+
+    When known casts are provided in .Clans/.Casts then more flexible creation
+    is supported for different types of provided cast and crew.
+    When no clan is provided and an unknown cast and/or crew are provided as
+    Mappings then Structor may create custom clan from the names given by the
+    cast and/or crew keys(). Subclasses may override this behavior by raising
+    an exception for unknown or custom clans.
+
+
+    Inherited Properties:
+        data (NamedTuple): fields are named instances of CESR primitives
+        clan (type[NamedTuple]): class reference of .data's class
+        cast (NamedTuple): CESR primitive class references of .data's primitive
+                           instances
+        crew (NamedTuple): named qb64 values of .data's primitive instances
+        qb64 (str): concatenated data values as qb64 str of data's primitives
+        qb64b (bytes): concatenated data values as qb64b  of data's primitives
+        qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
+
+
+    Methods:
+
+
+    Hidden:
+        _data (NamedTuple): named CESR primitive instances
+
+    Example:
+        sdig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+        sdiger = Diger(qb64=dig)
+        noncer = Noncer(code=NonceDex.Salt_256)
+        adig = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+        adiger = Diger(qb64=adig)
+        labeler = Labeler(text="issued")
+        data = BlindState(d=sdiger, u=noncer, td=adiger, ts=labeler)
+        name = BlindState.__name__
+
+        blinder = Blinder(data=data)
+        assert blinder.data == data
+        assert blinder.clan == BlindState
+        assert blinder.name == BlindState.__name__
+        assert blinder.cast == BlindState(d=Castage(Diger),
+                                          u=Castage(Noncer, 'nonce'),
+                                          td=Castage(Noncer, 'nonce'),
+                                          ts=Castage(Labeler, 'text'))
+        assert blinder.crew == BlindState(d=sdig,
+                                         u=noncer.nonce,
+                                         td=adig,
+                                         ts=labeler.text)
+        assert blinder.asdict == data._asdict() == sealer.crew._asdict()
+
+    ToDo:  CodeClans and ClanCodes to map to/from Counter codes to Structor Clan
+
+    """
+    Clans = BClanDom  # known namedtuple clans. Override in subclass with non-empty
+    Casts = BCastDom  # known namedtuple casts. Override in subclass with non-empty
+    # Create .Names dict that maps clan/cast fields names to its namedtuple
+    # class type name so can look up a know clan or cast given a matching set
+    # of either field names from a namedtuple or keys from a dict.
+    Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
+
+    # map clan names to counter code for ser/des as counted group
+    ClanCodens = dict()
+    ClanCodens[BClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+
+    # mapcounter code to clan name for ser/des as counted group
+    CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict
+
+    Dummy = b'#'
+    SaidCode = DigDex.Blake3_256
+
+
+    def __init__(self, data=None, makify=False, verify=True, saidCode=None, **kwa):
+        """Initialize instance
+
+
+        Inherited Parameters:  (see Structor)
+            data (NamedTuple): fields are named primitive instances for .data
+                Given data can derive clan, cast, crew, qb64, and qb2
+            clan (type[NamedTuple]): provides class reference for generated .data
+                when data missing.
+            cast (NamedTuple | dict | Iterable): each value provides CESR
+                primitive subclass reference used to create primitive instances
+                for generating .data. Can be used to infer namedtuple type of
+                .data when data and clan missing. Takes precendence over crew.
+            crew (NamedTuple | dict | Iterable): each value provides qb64 value
+                of primitive for generating .data with .cast when data missing.
+                Can be used to infer namedtuple type of .data when data and clan
+                missing.
+            qb64 (str | bytes | bytearray): concatenation of qb64 data values to
+                generate .data with data and crew missing.
+            qb2 (bytes | bytearray): concatenation of qb2 data values to generate
+                .data when data and crew and qb64 missing.
+            strip (bool): False means do not strip each value from qb64 or qb2.
+                            Default is False.
+                          True means if qb64 or qb2 are bytearray then strip
+                            contained concatenated data values. Enables parser
+                            to extract data fields from front of CESR stream.
+
+        Parameters:
+            makify (bool): True means compute SAID value of 'd' field
+                           False means do not compute SAID value of 'd' field
+            verify (bool): True means verify SAID provided by 'd' field
+                           False means do not verify SAID provided by 'd' field
+            saidCode(str|None): When not None then use to replace digest type
+                                in provided data.
+
+        """
+        super(Blinder, self).__init__(data=data, **kwa)
+        if self.clan not in self.Clans:
+            raise InvalidValueError("Unrecognized clan={self.clan}")
+
+        if makify:
+            # serialize all but leading 'd' field
+            tail = (b''.join(val.qb64b for key, val in self.data._asdict().items()
+                                                             if key != 'd'))
+            if saidCode is not None:
+                code = saidCode
+            elif isinstance(self.data.d, Noncer):
+                code = self.data.d.code
+                if code not in DigDex:
+                    code = self.SaidCode
+            else:
+                code = self.SaidCode
+
+            size = Diger._fullSize(code)  #
+            ser = self.Dummy * size + tail  # prepend dummy to tail end
+            # create diger of said by digesting dummied serialization
+            diger = Diger(ser=ser, code=code)  # ensures creates digest
+            noncer = Noncer(qb64b=diger.qb64b)  # cast is Noncer for empty case
+            # and replace .data.d with diger/noncer of said
+            self._data = self.data._replace(d=noncer)
+
+        elif verify:
+            size = self.data.d.fullSize
+            code = self.data.d.code
+            if code not in DigDex:
+                raise ValidationError(f"Invalid {code =} for blinder said={self.crew}")
+            ser = self.Dummy * size + self.qb64b[size:]
+            diger = Diger(ser=ser, code=code)
+            if diger.qb64b != self.data.d.qb64b:
+                raise ValidationError(f"Invalid SAID for blinder={self.crew}")
+
+
+

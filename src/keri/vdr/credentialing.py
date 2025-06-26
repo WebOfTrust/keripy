@@ -553,7 +553,7 @@ class Registrar(doing.DoDoer):
             anc (SerderKERI): Serder object of anchoring event
 
         """
-        regk = creder.regi
+        regk = creder.regid
         registry = self.rgy.regs[regk]
         hab = registry.hab
 
@@ -593,7 +593,7 @@ class Registrar(doing.DoDoer):
             anc (Serder): Serder object of anchoring event
         """
 
-        regk = creder.regi
+        regk = creder.regid
         registry = self.rgy.regs[regk]
         hab = registry.hab
 
@@ -963,7 +963,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
     """
     issr = creder.issuer
     isse = creder.attrib["i"] if "i" in creder.attrib else None
-    regk = creder.regi
+    regk = creder.regid
 
     ikever = hby.db.kevers[issr]
     for msg in hby.db.cloneDelegation(ikever):
@@ -1002,7 +1002,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
 
 def sendRegistry(hby, reger, postman, creder, sender, recp):
     issr = creder.issuer
-    regk = creder.regi
+    regk = creder.regid
 
     if regk is None:
         return

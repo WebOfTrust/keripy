@@ -351,15 +351,15 @@ ilk is short for packet or message type for a given protocol
 
 # KERI/ACDC protocol packet (message) types
 Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy xip exn '
-                               'pro bar vcp vrt iss rev bis brv rip upd '
+                               'pro bar vcp vrt iss rev bis brv rip bup upd '
                                'acm act acg ace sch att agg edg rul '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
               rct='rct',
               qry='qry', rpy='rpy', xip='xip', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv',
-              rip='rip', upd='upd', acm='acm', act='act', acg='acg', ace='ace',
-              sch='sch', att='att', agg='agg', edg='edg', rul='rul')
+              rip='rip', bup='bup', upd='upd', acm='acm', act='act', acg='acg',
+              ace='ace', sch='sch', att='att', agg='agg', edg='edg', rul='rul')
 
 # Ilks needs to be versioned for Protocol versions or else use Serder.Fields
 

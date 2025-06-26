@@ -108,8 +108,8 @@ class ExportDoer(doing.DoDoer):
             self.outputKEL(issr)
 
         if self.tels:
-            if creder.regi is not None:
-                self.outputTEL(creder.regi)
+            if creder.regid is not None:
+                self.outputTEL(creder.regid)
                 self.outputTEL(creder.said)
 
         if self.chains:

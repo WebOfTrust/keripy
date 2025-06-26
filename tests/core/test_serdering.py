@@ -31,7 +31,7 @@ from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
 
 from keri.core.eventing import (incept, interact, rotate, delcept, deltate,
                                 receipt, query, reply, prod, bare,
-                                xincept, xchange)
+                                exchept, exchange)
 
 from keri.peer import exchanging
 
@@ -83,7 +83,8 @@ def test_serder_class():
         'SealEvent': '-S',
         'SealTrans': '-T',
         'SealLast': '-U',
-        'SealBack': '-V'
+        'SealBack': '-V',
+        'SealKind': '-W'
     }
 
     assert Serder.CodeClans
@@ -95,6 +96,7 @@ def test_serder_class():
         '-T': 'SealTrans',
         '-U': 'SealLast',
         '-V': 'SealBack',
+        '-W': 'SealKind'
     }
 
 
@@ -2404,16 +2406,14 @@ def test_serderacdc():
     assert serder.said == 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT'
     assert serder.ilk == None
 
+    # Test empty issuer field value (must be valid AID)
     assert serder.issuer == serder.sad['i'] == ''
     assert serder.issuerb == serder.issuer.encode("utf-8")
 
     sad = serder.sad
     raw = serder.raw
 
-    with pytest.raises(kering.ValidationError):
-        serder = SerderACDC(sad=sad)
-
-    with pytest.raises(kering.ValidationError):
+    with pytest.raises(kering.ValidationError):  # no issuer
         serder = SerderACDC(sad=sad)
 
     isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
@@ -2636,8 +2636,8 @@ def test_serdery():
     """End Test"""
 
 
-def test_cesr_native_dumps_loads():
-    """Test CESR native Serder._dumps and Serder._loads"""
+def test_keri_native_dumps_loads():
+    """Test KERI messages with CESR native Serder._dumps and Serder._loads"""
 
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
@@ -3752,7 +3752,7 @@ def test_cesr_native_dumps_loads():
     nonce = '0AAxyHwW6htOZ_rANOaZb2N2'
     dts = '2020-08-22T17:50:09.988921+00:00'
 
-    serder = xincept(sender=sender,
+    serder = exchept(sender=sender,
                      receiver=receiver,
                      route="/home",
                      modifiers=modifiers,
@@ -3840,7 +3840,7 @@ def test_cesr_native_dumps_loads():
     attributes = dict(name="Sue")
     dts = '2020-08-22T17:50:09.988921+00:00'
 
-    serder = xchange(sender=sender,
+    serder = exchange(sender=sender,
                      receiver=receiver,
                      xid='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
                      prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
@@ -3921,94 +3921,6 @@ def test_cesr_native_dumps_loads():
     assert serder.sad == sad
 
 
-    # Test xincept xip from exchanging
-    sender = 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U'
-    receiver = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
-    modifiers = dict(role="boss", motto="You got this!")
-    attributes = dict(d='EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN',
-                      name="John")
-    nonce = '0AAxyHwW6htOZ_rANOaZb2N2'
-    dts = '2020-08-22T17:50:09.988921+00:00'
-
-    serder = exchanging.exincept(sender=sender,
-                     receiver=receiver,
-                     route="/home",
-                     modifiers=modifiers,
-                     attributes=attributes,
-                     nonce=nonce,
-                    stamp=dts,
-                    pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
-
-    said = serder.said
-    assert said == 'EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4'
-
-    assert serder.sad == \
-    {
-        'v': 'KERICAACAACESRAAFY.',
-        't': 'xip',
-        'd': 'EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
-        'u': '0AAxyHwW6htOZ_rANOaZb2N2',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
-        'ri': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux',
-        'dt': '2020-08-22T17:50:09.988921+00:00',
-        'r': '/home',
-        'q': {'role': 'boss', 'motto': 'You got this!'},
-        'a': {'d': 'EMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN', 'name': 'John'}
-    }
-
-    assert serder.raw == (b'-FBV0OKERICAACAAXxipEFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws40AAxyHwW6htO'
-                        b'Z_rANOaZb2N2EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UELC5L3iBVD77d_MYbYGG'
-                        b'CUQgqQBju1o4x1Ud-z2sL-ux1AAG2020-08-22T17c50c09d988921p00c006AACAAA-home-IAM'
-                        b'1AAFrole1AAFboss0L_motto6BAFAABZb3UgZ290IHRoaXMh-IAQ0J_dEMFNZfsBmXvA-pkmetvM'
-                        b'jTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
-
-
-
-    assert len(serder.raw) == serder.size == 344
-    sizeh = serder.raw[2:4]
-    assert sizeh == b"BV"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 344
-
-    rawqb64 = serder._dumps()  # default is it dumps self.sad
-    assert rawqb64 == serder.raw
-    assert len(rawqb64) == 344 == serder.size
-
-    rawqb2 = decodeB64(rawqb64)
-    assert len(rawqb2) == 258
-    assert rawqb64 == encodeB64(rawqb2)  # round trips
-
-    rawjson = serder.dumps(serder.sad)
-    assert len(rawjson) == 389
-
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
-    assert len(rawcbor) == 341
-
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
-    assert len(rawmgpk) == 340
-
-    raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
-    ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
-
-    assert ratios == [1.0, 1.33, 1.32, 1.32, 1.51]
-
-    # Test ._loads
-    sad = serder._loads(raw=rawqb64)
-    assert sad == serder.sad  # round tripped
-
-    # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
-    assert sad == serder.sad  # round tripped
-
-    # test Serder inhale from raw
-    serder = SerderKERI(raw=rawqb64)
-    assert serder.sad == sad
-
-    serder = SerderKERI(raw=rawqb2)
-    assert serder.sad == sad
-
-    serder = Serder(raw=rawqb64)
-    assert serder.sad == sad
 
     # Test exchange exn from exchanging
     sender = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
@@ -4100,6 +4012,92 @@ def test_cesr_native_dumps_loads():
 
     """End Test"""
 
+def test_acdc_native_dumps_loads():
+    """Test ACDC messages with CESR native Serder._dumps and Serder._loads"""
+
+    # use same salter for all but different path
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = core.Salter(raw=rawsalt)
+
+    csigners = salter.signers(count=12, transferable=True, temp=True)
+    wsigners = salter.signers(count=12, transferable=False, temp=True)
+
+    # simple inception event
+
+    keys = [csigners[0].verfer.qb64]
+    assert keys == ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ']
+    serder = incept(keys, version=Vrsn_2_0, kind=kering.Kinds.cesr)
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAC8.',
+        't': 'icp',
+        'd': 'ENcf5ii15MsVCx7wxKi4muIodYJULhkOaEbvbz4cF3d4',
+        'i': 'DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
+        's': '0',
+        'kt': '1',
+        'k': ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ'],
+        'nt': '0',
+        'n': [],
+        'bt': '0',
+        'b': [],
+        'c': [],
+        'a': []
+    }
+
+
+    assert serder.raw == (b'-FAu0OKERICAACAAXicpENcf5ii15MsVCx7wxKi4muIodYJULhkOaEbvbz4cF3d4DG9XhvcVryHj'
+                        b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAMAAB-JALDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+                        b'4fBJre3NGwTQMAAA-JAAMAAA-JAA-JAA-JAA')
+    assert len(serder.raw) == serder.size == 188
+    sizeh = serder.raw[2:4]
+    assert sizeh == b"Au"
+    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 188
+
+    rawqb64 = serder._dumps()  # default is it dumps self.sad
+    assert rawqb64 == serder.raw
+    assert len(rawqb64) == 188 == serder.size
+
+    rawqb2 = decodeB64(rawqb64)
+    assert len(rawqb2) == 141
+    assert rawqb64 == encodeB64(rawqb2)  # round trips
+
+    rawjson = serder.dumps(serder.sad)  # default kind is json so converts to json
+    assert len(rawjson) == 255
+
+    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    assert len(rawcbor) == 205
+
+    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    assert len(rawmgpk) == 205
+
+    rawcesr = serder.dumps(serder.sad, kind=kering.Kinds.cesr)
+    assert rawcesr == serder.raw
+    assert len(rawcesr) == 188
+
+    raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
+    ratios = [ round(len(raw) / len(rawqb2), 2) for raw in raws]
+
+    assert ratios == [1.0, 1.33, 1.45, 1.45, 1.81]
+
+    # Test ._loads
+    sad = serder._loads(raw=rawqb64)
+    assert sad == serder.sad  # round tripped
+
+    # Test .loads
+    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    assert sad == serder.sad  # round tripped
+
+    # test Serder inhale from raw
+    serder = SerderKERI(raw=rawcesr)
+    assert serder.sad == sad
+
+    serder = SerderKERI(raw=rawqb2)
+    assert serder.sad == sad
+
+    serder = Serder(raw=rawcesr)
+    assert serder.sad == sad
 
 
 def test_cesr_native_dumps_hby():
@@ -4187,6 +4185,7 @@ if __name__ == "__main__":
     test_serderacdc()
     test_serder_v2()
     test_serdery()
-    test_cesr_native_dumps_loads()
+    test_keri_native_dumps_loads()
+    test_acdc_native_dumps_loads()
     test_cesr_native_dumps_hby()
 

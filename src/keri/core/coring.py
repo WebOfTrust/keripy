@@ -345,6 +345,7 @@ class MatterCodex:
     Yes:                  str = '1AAM'  # Yes Truthy Boolean value
     Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
     Escape:               str = '1AAO'  # Escape code for escaping special map fields
+    Empty:                str = '1AAP'  # Empty value for Nonce, UUID, or related fields
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
     TBD0:                 str = '1___'  # Testing purposes only, fixed with lead size 0
     TBD1S:                str = '2__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
@@ -545,6 +546,7 @@ class NonceCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
+    Empty: str = '1AAP'  # Empty value for Nonce, UUID, or related fields
     Salt_128: str = '0A'  # random salt/seed/nonce/private key
     Salt_256: str = 'a'  # Salt/seed/nonce/blind 256 bits
     Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
@@ -622,6 +624,7 @@ class LabelCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
+    Empty: str = '1AAP'  # Empty value for Nonce, UUID, state or related fields
     Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
     Tag2:  str = '0K'  # 2 B64 char tag
     Tag3:  str = 'X'  # 3 B64 char tag
@@ -786,6 +789,7 @@ class Matter:
         _soft (str): soft value of full code
         _raw (bytes): value for .raw property
         _rawSize():
+        _fullSize():
         _leadSize():
         _special():
         _infil(): creates qb64b from .raw and .code (fully qualified Base64)
@@ -878,6 +882,7 @@ class Matter:
         '1AAM': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
         '1AAO': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAP': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
@@ -948,9 +953,23 @@ class Matter:
         hs, ss, xs, fs, ls = cls.Sizes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
         if fs is None:
-            raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
+            raise InvalidCodeSizeError(f"Non-fixed raw size {code=}.")
         # assumes .Sizes only has valid entries, cs % 4 != 3, and fs % 4 == 0
         return (((fs - cs) * 3 // 4) - ls)
+
+    @classmethod
+    def _fullSize(cls, code):
+        """
+        Returns raw size in bytes not including leader for a given code
+        Parameters:
+            code (str): derivation code Base64
+        """
+        _, _, _, fs, _ = cls.Sizes[code]  # get sizes
+
+        if fs is None:
+            raise InvalidCodeSizeError(f"Non-fixed full size {code=}.")
+
+        return fs
 
 
     @classmethod
@@ -3309,7 +3328,7 @@ class Labeler(Matter):
     """
 
 
-    def __init__(self, label='', text='', raw=None, code=None, soft=None, **kwa):
+    def __init__(self, label=None, text=None, raw=None, code=None, soft=None, **kwa):
         """
         Inherited Parameters:
             (see Matter)
@@ -3321,7 +3340,7 @@ class Labeler(Matter):
                 str or bytes
 
         """
-        if label:
+        if label:  # label can't be empty string '' since '' is not Reatt
             if hasattr(label, "encode"):  # make label bytes
                 label = label.encode()
 
@@ -3344,27 +3363,32 @@ class Labeler(Matter):
                     #code = LabelDex.Bytes_L0
                     #raw = label
 
-        elif text:
+        elif text is not None:  # text can be empty strin since '' is Reb64
             if hasattr(text, "encode"):  # make text bytes
                 text = text.encode()
 
-            if Reb64.match(text):  # candidate for Base64 compact encoding
-                try:
-                    code = Tagger._codify(tag=text)
-                    soft = text
+            if Reb64.match(text):  # try Base64 compact encoding includes ''
+                if len(text) == 0:
+                    code = LabelDex.Empty
+                    raw = text
 
-                except InvalidSoftError as ex:  # too big
-                    ws = (4 - (len(text) % 4)) % 4  # pre conv wad size in chars
-                    if text[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
-                        # can't use escape code here because Reb64 allows all B64 chars.
-                        code = LabelDex.StrB64_L0
-                        raw = Bexter._rawify(text)
+                else:
+                    try:
+                        code = Tagger._codify(tag=text)
+                        soft = text
 
-                    else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
-                        code = LabelDex.Bytes_L0
-                        raw = text
+                    except InvalidSoftError as ex:  # too big
+                        ws = (4 - (len(text) % 4)) % 4  # pre conv wad size in chars
+                        if text[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
+                            # can't use escape code here because Reb64 allows all B64 chars.
+                            code = LabelDex.StrB64_L0
+                            raw = Bexter._rawify(text)
 
-            else:
+                        else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
+                            code = LabelDex.Bytes_L0
+                            raw = text
+
+            else:  # not Reb64
                 if len(text) == 1:
                     code = LabelDex.Label1
 
@@ -3780,32 +3804,94 @@ class Noncer(Matter):
     Inherited Properties:  (see Matter)
 
     Properties:
+        nonce (str): round trippable nonce value that is empty string when nonce
+            is empty. Otherwise qb64 of nonce.
+        nonceb (bytes): round trippable nonce value that is empty string when nonce
+            is empty. Otherwise qb64 of nonce.
 
     Methods:
 
     Hidden:
 
+
+    ToDo. Add nonce init paramerter and nonce property so can round trip like
+    stuctor for UUID fields that may be empty. Add Empty matter code that
+    round trips to empty string. This is special not variable length empty
+    because we want to specifically test for empty uuid unlike fields that
+    are strings that may be empty. so nonce roundtrips as qb64 when not empty
+    and as "" when empty.
+
     """
 
-    def __init__(self, raw=None, code=NonceDex.Salt_128, **kwa):
+    def __init__(self, raw=None, code=NonceDex.Salt_128, qb64b=None, qb64=None,
+                 qb2=None, nonce=None, **kwa):
         """Checks for .code in NonceDex so valid noncive code
         Inherited Parameters:
             See Matter
 
+        Parameters:
+            nonce (str|bytes|None):  round trippable nonce value with nonce property
+                that accounts for empty nonce indicated by empty string.
+                Otherwise nonce is qb64 of nonce value
+
         """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if nonce is not None:
+                if hasattr(nonce, "encode"):
+                    nonce = nonce.encode()
+
+                if nonce == b'':
+                    raw = nonce
+                    code = NonceDex.Empty
+                else:
+                    qb64b = nonce  # should be qb64b of non-empty nonce
+
+
         try:
-            super(Noncer, self).__init__(raw=raw, code=code, **kwa)
+            super(Noncer, self).__init__(raw=raw, code=code, qb64b=qb64b,
+                                         qb64=qb64, qb2=qb2, **kwa)
+
         except EmptyMaterialError as ex:
-            raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-            super(Noncer, self).__init__(raw=raw, code=NonceDex.Salt_128, **kwa)
+            if code == NonceDex.Salt_128:
+                raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+            elif code == NonceDex.Salt_256:
+                raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+            else:
+                raise
+            super(Noncer, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code not in NonceDex:
             raise InvalidCodeError(f"Invalid noncer code = {self.code}.")
 
 
+    @property
+    def nonce(self):
+        """Property nonce:
+        Returns:
+            nonce (str): Either empty str when Nonce is NonceDex.Empty or
+                         qb64 of nonce primitive otherwise
+        """
+        if self.code == NonceDex.Empty:
+            return ''
+
+        return self.qb64
+
+
+    @property
+    def nonceb(self):
+        """Property nonceb:
+        Returns:
+            nonce (bytes): Either empty bytes when Nonce is NonceDex.Empty or
+                         qb64b of nonce primitive otherwise
+        """
+        if self.code == NonceDex.Empty:
+            return b''
+
+        return self.qb64b
+
+
 class Saider(Matter):
-    """
-    Saider is Matter subclass for self-addressing identifier prefix using
+    """Saider is Matter subclass for self-addressing identifier prefix using
     derivation as determined by code from ked
 
     Properties: (inherited)
@@ -4043,6 +4129,273 @@ class Saider(Matter):
 
         return True
 
+
+class Sadder:
+    """
+    Sadder is self addressed data (SAD) serializer-deserializer class
+
+    Instance creation of a Sadder does not verifiy it .said property it merely
+    extracts it. In order to ensure Sadder instance has a verified .said then
+    must call .saider.verify(sad=self.ked)
+
+    Has the following public properties:
+
+    Properties:
+        raw (bytes): of serialized event only
+        ked (dict): self addressed data dict
+        kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
+        size (int): number of bytes in serialization
+        version (Versionage): protocol version (Major, Minor)
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
+        label (str): Saidage value as said field label
+        saider (Saider): of SAID of this SAD .ked['d'] if present
+        said (str): SAID of .saider qb64
+        saidb (bytes): SAID of .saider  qb64b
+        pretty (str): Pretty JSON of this SAD
+
+    Hidden Attributes:
+        ._raw is bytes of serialized event only
+        ._ked is key event dict
+        ._kind is serialization kind string value (see namedtuple coring.Serials)
+          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+        ._size is int of number of bytes in serialed event only
+        ._version is Versionage instance of event version
+        ._proto (str):  Protocolage value as protocol type identifier
+        ._saider (Saider): instance for this Sadder's SAID
+
+    Note:
+        loads and jumps of json use str whereas cbor and msgpack use bytes
+
+    """
+    MaxVSOffset = 12
+    SmellSize = MaxVSOffset + MAXVERFULLSPAN  # min buffer size to inhale
+
+    def __init__(self, raw=b'', ked=None, sad=None, kind=None, saidify=False,
+                 code=MtrDex.Blake3_256):
+        """
+        Deserialize if raw provided does not verify assumes embedded said is valid
+        Serialize if ked provided but not raw verifies if verify is True?
+        When serializing if kind provided then use kind instead of field in ked
+
+        Parameters:
+          raw (bytes): serialized event
+          ked is key event dict or None
+            if None its deserialized from raw
+          kind is serialization kind string value or None (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+            if kind is None then its extracted from ked or raw
+          saidify (bool): True means compute said for ked
+          code is .diger default digest code for computing said .saider
+
+        """
+        self._code = code  # need default code for .saider
+        if raw:  # deserialize raw using property setter
+            self.raw = raw  # raw property setter does the deserialization
+        elif ked:  # serialize ked using property setter
+            #ToDo  when pass in ked and saidify True then compute said
+            self._kind = kind
+            self.ked = ked  # ked property setter does the serialization
+        elif sad:
+            # ToDo do we need this or should we be using ked above with saidify flag
+            self._clone(sad=sad)  # copy fields from sad
+        else:
+            raise ValueError("Improper initialization need sad, raw or ked.")
+
+
+    def _clone(self, sad):
+        """ copy hidden attributes from sad """
+        self._raw = sad.raw
+        self._ked = sad.ked
+        self._kind = sad.kind
+        self._size = sad.size
+        self._version = sad.version
+        self._proto = sad.proto
+        self._saider = sad.saider
+
+
+    def _inhale(self, raw):
+        """
+        Parses serilized event ser of serialization kind and assigns to
+        instance attributes.
+
+        Parameters:
+          raw is bytes of serialized event
+          kind is str of raw serialization kind (see namedtuple Serials)
+          size is int size of raw to be deserialized
+
+        Note:
+          loads and jumps of json use str whereas cbor and msgpack use bytes
+
+        """
+        proto, vrsn, kind, size, _ = smell(raw)
+        if vrsn != Version:
+            raise VersionError("Unsupported version = {}.{}, expected {}."
+                               "".format(vrsn.major, vrsn.minor, Version))
+
+        ked = loads(raw=raw, size=size, kind=kind)
+
+        return ked, proto, kind, vrsn, size
+
+
+    def _exhale(self, ked, kind=None):
+        """
+        Returns sizeify(ked, kind)
+
+        From sizeify
+        Returns tuple of (raw, proto, kind, ked, version) where:
+            raw (str): serialized event as bytes of kind
+            proto (str): protocol type as value of Protocolage
+            kind (str): serialzation kind as value of Serialage
+            ked (dict): key event dict or sad dict
+            version (Versionage): instance
+
+        Parameters:
+            ked (dict): key event dict or sad dict
+            kind (str): value of Serials serialization kind.
+                When not provided use
+
+        Assumes only supports Version
+        """
+        return sizeify(ked=ked, kind=kind)
+
+
+    def compare(self, said=None):
+        """
+        Returns True  if said and either .saider.qb64 or .saider.qb64b match
+        via string equality ==
+
+        Convenience method to allow comparison of own .saider digest self.raw
+        with some other purported said of self.raw
+
+        Parameters:
+            said is qb64b or qb64 SAID of ser to compare with .said
+
+        """
+
+        if said is not None:
+            if hasattr(said, "encode"):
+                said = said.encode('utf-8')  # makes bytes
+
+            return said == self.saidb  # matching
+
+        else:
+            raise ValueError("Both said and saider may not be None.")
+
+
+    @property
+    def raw(self):
+        """ raw property getter """
+        return self._raw
+
+    @raw.setter
+    def raw(self, raw):
+        """ raw property setter """
+        ked, proto, kind, version, size = self._inhale(raw=raw)
+        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
+        self._ked = ked
+        self._proto = proto
+        self._kind = kind
+        self._version = version
+        self._size = size
+        self._saider = Saider(qb64=ked["d"], code=self._code)
+
+    @property
+    def ked(self):
+        """ ked property getter"""
+        return self._ked
+
+    @ked.setter
+    def ked(self, ked):
+        """ ked property setter  assumes ._kind """
+        raw, proto, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._proto = proto
+        self._kind = kind
+        self._size = size
+        self._version = version
+        self._saider = Saider(qb64=ked["d"], code=self._code)
+
+    @property
+    def kind(self):
+        """ kind property getter"""
+        return self._kind
+
+    @kind.setter
+    def kind(self, kind):
+        """ kind property setter Assumes ._ked. Serialization kind. """
+        raw, proto, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._proto = proto
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+        self._version = version
+        self._saider = Saider(qb64=ked["d"], code=self._code)
+
+
+    @property
+    def size(self):
+        """ size property getter"""
+        return self._size
+
+
+    @property
+    def version(self):
+        """
+        version property getter
+
+        Returns:
+            (Versionage):
+        """
+        return self._version
+
+
+    @property
+    def proto(self):
+        """ proto property getter
+        protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
+
+        Returns:
+            (str): Protocolage value as protocol type
+        """
+        return self._proto
+
+
+    @property
+    def saider(self):
+        """
+        Returns Diger of digest of self.raw
+        diger (digest material) property getter
+        """
+        return self._saider
+
+    @property
+    def said(self):
+        """
+        Returns str qb64  of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.saider.qb64
+
+    @property
+    def saidb(self):
+        """
+        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.saider.qb64b
+
+    def pretty(self, *, size=1024):
+        """
+        Returns str JSON of .ked with pretty formatting
+
+        ToDo: add default size limit on pretty when used for syslog UDP MCU
+        like 1024 for ogler.logger
+        """
+        return json.dumps(self.ked, indent=1)[:size if size is not None else None]
 
 
 class Tholder:
@@ -4551,275 +4904,6 @@ class Tholder:
             return False
 
         return False
-
-
-
-class Sadder:
-    """
-    Sadder is self addressed data (SAD) serializer-deserializer class
-
-    Instance creation of a Sadder does not verifiy it .said property it merely
-    extracts it. In order to ensure Sadder instance has a verified .said then
-    must call .saider.verify(sad=self.ked)
-
-    Has the following public properties:
-
-    Properties:
-        raw (bytes): of serialized event only
-        ked (dict): self addressed data dict
-        kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
-        size (int): number of bytes in serialization
-        version (Versionage): protocol version (Major, Minor)
-        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
-        label (str): Saidage value as said field label
-        saider (Saider): of SAID of this SAD .ked['d'] if present
-        said (str): SAID of .saider qb64
-        saidb (bytes): SAID of .saider  qb64b
-        pretty (str): Pretty JSON of this SAD
-
-    Hidden Attributes:
-        ._raw is bytes of serialized event only
-        ._ked is key event dict
-        ._kind is serialization kind string value (see namedtuple coring.Serials)
-          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-        ._size is int of number of bytes in serialed event only
-        ._version is Versionage instance of event version
-        ._proto (str):  Protocolage value as protocol type identifier
-        ._saider (Saider): instance for this Sadder's SAID
-
-    Note:
-        loads and jumps of json use str whereas cbor and msgpack use bytes
-
-    """
-    MaxVSOffset = 12
-    SmellSize = MaxVSOffset + MAXVERFULLSPAN  # min buffer size to inhale
-
-    def __init__(self, raw=b'', ked=None, sad=None, kind=None, saidify=False,
-                 code=MtrDex.Blake3_256):
-        """
-        Deserialize if raw provided does not verify assumes embedded said is valid
-        Serialize if ked provided but not raw verifies if verify is True?
-        When serializing if kind provided then use kind instead of field in ked
-
-        Parameters:
-          raw (bytes): serialized event
-          ked is key event dict or None
-            if None its deserialized from raw
-          kind is serialization kind string value or None (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-            if kind is None then its extracted from ked or raw
-          saidify (bool): True means compute said for ked
-          code is .diger default digest code for computing said .saider
-
-        """
-        self._code = code  # need default code for .saider
-        if raw:  # deserialize raw using property setter
-            self.raw = raw  # raw property setter does the deserialization
-        elif ked:  # serialize ked using property setter
-            #ToDo  when pass in ked and saidify True then compute said
-            self._kind = kind
-            self.ked = ked  # ked property setter does the serialization
-        elif sad:
-            # ToDo do we need this or should we be using ked above with saidify flag
-            self._clone(sad=sad)  # copy fields from sad
-        else:
-            raise ValueError("Improper initialization need sad, raw or ked.")
-
-
-    def _clone(self, sad):
-        """ copy hidden attributes from sad """
-        self._raw = sad.raw
-        self._ked = sad.ked
-        self._kind = sad.kind
-        self._size = sad.size
-        self._version = sad.version
-        self._proto = sad.proto
-        self._saider = sad.saider
-
-
-    def _inhale(self, raw):
-        """
-        Parses serilized event ser of serialization kind and assigns to
-        instance attributes.
-
-        Parameters:
-          raw is bytes of serialized event
-          kind is str of raw serialization kind (see namedtuple Serials)
-          size is int size of raw to be deserialized
-
-        Note:
-          loads and jumps of json use str whereas cbor and msgpack use bytes
-
-        """
-        proto, vrsn, kind, size, _ = smell(raw)
-        if vrsn != Version:
-            raise VersionError("Unsupported version = {}.{}, expected {}."
-                               "".format(vrsn.major, vrsn.minor, Version))
-
-        ked = loads(raw=raw, size=size, kind=kind)
-
-        return ked, proto, kind, vrsn, size
-
-
-    def _exhale(self, ked, kind=None):
-        """
-        Returns sizeify(ked, kind)
-
-        From sizeify
-        Returns tuple of (raw, proto, kind, ked, version) where:
-            raw (str): serialized event as bytes of kind
-            proto (str): protocol type as value of Protocolage
-            kind (str): serialzation kind as value of Serialage
-            ked (dict): key event dict or sad dict
-            version (Versionage): instance
-
-        Parameters:
-            ked (dict): key event dict or sad dict
-            kind (str): value of Serials serialization kind.
-                When not provided use
-
-        Assumes only supports Version
-        """
-        return sizeify(ked=ked, kind=kind)
-
-
-    def compare(self, said=None):
-        """
-        Returns True  if said and either .saider.qb64 or .saider.qb64b match
-        via string equality ==
-
-        Convenience method to allow comparison of own .saider digest self.raw
-        with some other purported said of self.raw
-
-        Parameters:
-            said is qb64b or qb64 SAID of ser to compare with .said
-
-        """
-
-        if said is not None:
-            if hasattr(said, "encode"):
-                said = said.encode('utf-8')  # makes bytes
-
-            return said == self.saidb  # matching
-
-        else:
-            raise ValueError("Both said and saider may not be None.")
-
-
-    @property
-    def raw(self):
-        """ raw property getter """
-        return self._raw
-
-    @raw.setter
-    def raw(self, raw):
-        """ raw property setter """
-        ked, proto, kind, version, size = self._inhale(raw=raw)
-        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
-        self._ked = ked
-        self._proto = proto
-        self._kind = kind
-        self._version = version
-        self._size = size
-        self._saider = Saider(qb64=ked["d"], code=self._code)
-
-    @property
-    def ked(self):
-        """ ked property getter"""
-        return self._ked
-
-    @ked.setter
-    def ked(self, ked):
-        """ ked property setter  assumes ._kind """
-        raw, proto, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
-        size = len(raw)
-        self._raw = raw[:size]
-        self._ked = ked
-        self._proto = proto
-        self._kind = kind
-        self._size = size
-        self._version = version
-        self._saider = Saider(qb64=ked["d"], code=self._code)
-
-    @property
-    def kind(self):
-        """ kind property getter"""
-        return self._kind
-
-    @kind.setter
-    def kind(self, kind):
-        """ kind property setter Assumes ._ked. Serialization kind. """
-        raw, proto, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
-        size = len(raw)
-        self._raw = raw[:size]
-        self._proto = proto
-        self._ked = ked
-        self._kind = kind
-        self._size = size
-        self._version = version
-        self._saider = Saider(qb64=ked["d"], code=self._code)
-
-
-    @property
-    def size(self):
-        """ size property getter"""
-        return self._size
-
-
-    @property
-    def version(self):
-        """
-        version property getter
-
-        Returns:
-            (Versionage):
-        """
-        return self._version
-
-
-    @property
-    def proto(self):
-        """ proto property getter
-        protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
-
-        Returns:
-            (str): Protocolage value as protocol type
-        """
-        return self._proto
-
-
-    @property
-    def saider(self):
-        """
-        Returns Diger of digest of self.raw
-        diger (digest material) property getter
-        """
-        return self._saider
-
-    @property
-    def said(self):
-        """
-        Returns str qb64  of .ked["d"] (said when ked is SAD)
-        said (self-addressing identifier) property getter
-        """
-        return self.saider.qb64
-
-    @property
-    def saidb(self):
-        """
-        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
-        said (self-addressing identifier) property getter
-        """
-        return self.saider.qb64b
-
-    def pretty(self, *, size=1024):
-        """
-        Returns str JSON of .ked with pretty formatting
-
-        ToDo: add default size limit on pretty when used for syslog UDP MCU
-        like 1024 for ogler.logger
-        """
-        return json.dumps(self.ked, indent=1)[:size if size is not None else None]
 
 
 
