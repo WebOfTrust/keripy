@@ -9,6 +9,54 @@ Utility functions for creating ACDC messages of all message types for v2
 from keri.kering import versify, Kinds, Vrsn_2_0
 
 
+def regcept(issuer, ilk=None, nonce=None,
+            pvrsn=Vrsn_2_0, gvrsn=None, kind=Kinds.json):
+    """Utility function to create registry inception message of type 'rip'
+    for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC 'rip' message
+
+    Parameters:
+        issuer  (str): qb64 of issuer AID
+        schema (str|dict): SAID of schema section or schema section block
+        ilk (str|None): message type as 3 char str or None if not present
+        issuee (str): qb64 of issuee AID if any. None means no issuee
+        nonce (str|None): qb64 of salty nonce (UUID) if any. None means no UUID
+        registry (str|None): qb64 of registry SAID if any. None means no registry
+        attributes (str|dict|None): SAID of attribute section block or None if
+                                    not present
+        aggregates (str|dict|None): SAID of aggregate section list or None if
+                                    not present
+        edges (str|dict|None): SAID of edge section block or None if
+                                    not present
+        rules (str|dict|None): SAID of rule section block or None if
+                                    not present
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage|None): CESR Genus version number. None means default
+                                 to pvrsn
+        kind (str): serialization kind from Kinds
+
+
+
+    all
+    (v='', d='', u='', i='', rd='', s='', a={}, A=[], e={}, r={}),
+    opts
+    (u='', rd='', a='', A='', e='', r='')
+
+
+    ACDC .sad and its serialization .raw. Is whatever in input to the serder.
+
+
+    """
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
+    sad = dict()
+
+
+    ilk = Ilks.rip
+
+
 
 
 def mapACDC(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,

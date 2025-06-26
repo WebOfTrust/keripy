@@ -76,7 +76,7 @@ def test_structor_doms():
 
     assert asdict(BCastDom) == \
     {
-        'BlindState': BlindState(d=Castage(kls=Diger, ipn=None),
+        'BlindState': BlindState(d=Castage(kls=Noncer, ipn='nonce'),
                                  u=Castage(kls=Noncer, ipn='nonce'),
                                  td=Castage(kls=Noncer, ipn='nonce'),
                                  ts=Castage(kls=Labeler, ipn='text'))
@@ -1066,7 +1066,7 @@ def test_blinder():
 
 
     sdig = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
-    sdiger = Diger(qb64=sdig)
+    sdiger = Noncer(qb64=sdig)
     nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
     noncer = Noncer(nonce=nonce)
     adig = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
@@ -1079,7 +1079,7 @@ def test_blinder():
     data = BlindState(d=sdiger, u=noncer, td=adiger, ts=labeler)
     clan = BlindState
     cast = BCastDom.BlindState  # defined dom cast with non-None ipns
-    ncast = BlindState(d=Castage(Diger),
+    ncast = BlindState(d=Castage(Noncer),
                        u=Castage(Noncer),
                        td=Castage(Noncer),
                        ts=Castage(Labeler))  # naive cast
@@ -1410,7 +1410,7 @@ def test_blinder():
         blinder = Blinder(crew=badcrew)  # uses known cast i.e not naive
 
 
-    # Test makify
+    # Test makify using data and cast to init
     # Test data with cast so not naive cast
     said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
 
@@ -1439,10 +1439,80 @@ def test_blinder():
     assert blinder.qb64b == mqb64b
     assert blinder.qb2 == mqb2
 
+    # Test makify with empty said 'd' field using crew to init
+    # Test data with cast so not naive cast
+    said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+
+
+    mcrew = crew._replace(d='')  # crew with empty value for said 'd' field
+    assert mcrew == BlindState(d='',
+                               u='aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+                               td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                               ts='issued')
+    dmcrew = dict(dcrew)
+    dmcrew['d'] = said
+    mqb64 = ('EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+             'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+             'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
+    mqb64b = (b'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+              b'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+              b'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
+    mqb2 = (b'\x10\x14\xc0)r\xf9\xb2-\xf5\xac"\x82\x8ac\xb0G\xf8\tM\x19\x8bj\xa8\xb1'
+            b'\xbe\xb2D\x8f\x93\xb3+\xbe\xbdh\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
+            b'\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/T\xe9\x14\xcfR\xf5`c\xdd\x10\x18'
+            b'\xee\xd6\x8e1\xd5G~\xcfk\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86'
+            b'\xd8\x18`\x94B\n\x90\xd0\xc8\xac\xb2\xe7\x9d')
+
+    blinder = Blinder(crew=mcrew, makify=True)
+    assert blinder.data.d.qb64 == said
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew._replace(d=said)
+    assert blinder.asdict == dmcrew
+    assert blinder.qb64 == mqb64
+    assert blinder.qb64b == mqb64b
+    assert blinder.qb2 == mqb2
+
+    # Test makify with empty said 'd' field using data and cast to init
+    # Test data with cast so not naive cast
+    said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    mdata = data._replace(d=Noncer(nonce=''))
+    assert mdata.d.qb64 == '1AAP'
+    mcrew = crew._replace(d='')  # crew with empty value for said 'd' field
+    assert mcrew == BlindState(d='',
+                               u='aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+                               td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                               ts='issued')
+    dmcrew = dict(dcrew)
+    dmcrew['d'] = said
+    mqb64 = ('EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+             'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+             'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
+    mqb64b = (b'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+              b'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+              b'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
+    mqb2 = (b'\x10\x14\xc0)r\xf9\xb2-\xf5\xac"\x82\x8ac\xb0G\xf8\tM\x19\x8bj\xa8\xb1'
+            b'\xbe\xb2D\x8f\x93\xb3+\xbe\xbdh\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
+            b'\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/T\xe9\x14\xcfR\xf5`c\xdd\x10\x18'
+            b'\xee\xd6\x8e1\xd5G~\xcfk\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86'
+            b'\xd8\x18`\x94B\n\x90\xd0\xc8\xac\xb2\xe7\x9d')
+
+    blinder = Blinder(data=mdata, cast=cast, makify=True)
+    assert blinder.data.d.qb64 == said
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew._replace(d=said)
+    assert blinder.asdict == dmcrew
+    assert blinder.qb64 == mqb64
+    assert blinder.qb64b == mqb64b
+    assert blinder.qb2 == mqb2
+
 
     # repeat tests with empty nonce and empty 'td' trans said and empty state
     sdig = 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD'
-    sdiger = Diger(qb64=sdig)
+    sdiger = Noncer(qb64=sdig)
 
     nonce = ''
     noncer = Noncer(nonce=nonce)
@@ -1461,7 +1531,7 @@ def test_blinder():
     data = BlindState(d=sdiger, u=noncer, td=adiger, ts=labeler)
     clan = BlindState
     cast = BCastDom.BlindState  # defined dom cast with non-None ipns
-    ncast = BlindState(d=Castage(Diger),
+    ncast = BlindState(d=Castage(Noncer),
                        u=Castage(Noncer),
                        td=Castage(Noncer),
                        ts=Castage(Labeler))  # naive cast

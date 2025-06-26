@@ -256,7 +256,7 @@ class BlindCastDom(IceMapDom):
     Note: the td field value is a SAID but when placeholder may be empty so
     instead of Diger users Noncer which allows all the Diger codes plus empty
     """
-    BlindState: NamedTuple = BlindState(d=Castage(Diger),
+    BlindState: NamedTuple = BlindState(d=Castage(Noncer, 'nonce'),
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),
                                         ts=Castage(Labeler, 'text'))  # BlindState instance
@@ -323,7 +323,7 @@ class AllCastDom(IceMapDom):
                                         d=Castage(Diger))  # SealBack class reference
     SealKind: NamedTuple = SealKind(t=Castage(Verser),
                                         d=Castage(Diger))  # SealKind class reference
-    BlindState: NamedTuple = BlindState(d=Castage(Diger),
+    BlindState: NamedTuple = BlindState(d=Castage(Noncer, 'nonce'),
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),
                                         ts=Castage(Labeler, 'text'))  # BlindState instance
@@ -1115,17 +1115,20 @@ class Blinder(Structor):
                                                              if key != 'd'))
             if saidCode is not None:
                 code = saidCode
-            elif isinstance(self.data.d, Diger):
+            elif isinstance(self.data.d, Noncer):
                 code = self.data.d.code
+                if code not in DigDex:
+                    code = self.SaidCode
             else:
                 code = self.SaidCode
 
             size = Diger._fullSize(code)  #
             ser = self.Dummy * size + tail  # prepend dummy to tail end
             # create diger of said by digesting dummied serialization
-            diger = Diger(ser=ser, code=code)
-            # and replace .data.d with diger of said
-            self._data = self.data._replace(d=diger)
+            diger = Diger(ser=ser, code=code)  # ensures creates digest
+            noncer = Noncer(qb64b=diger.qb64b)  # cast is Noncer for empty case
+            # and replace .data.d with diger/noncer of said
+            self._data = self.data._replace(d=noncer)
 
         elif verify:
             size = self.data.d.fullSize
