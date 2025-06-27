@@ -1322,7 +1322,8 @@ class Serder:
                              self.mucodes.BigMapBodyGroup)):
             fixed = False
         else:
-            raise DeserializeError(f"Unexpected message body grout code={bctr.code}")
+            raise DeserializeError(f"Unexpected CESR message body group "
+                                   f"code={bctr.code}")
 
 
         # consume label if field map (not fixed)
