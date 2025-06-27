@@ -158,7 +158,7 @@ class Serdery:
         self.version = version
 
 
-    def reap(self, ims, genus, svrsn, cold=None, ctr=None, size=None, fixed=None):
+    def reap(self, ims, genus, svrsn, cold=None, ctr=None, size=None, fixed=True):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -183,7 +183,7 @@ class Serdery:
                                 so use smell. Default None
             size (None|int): Not None means CESR native message using ctr and
                              size already calculated. All bytes in stream.
-            fixed (None|bool): Not None means CESR native message.
+            fixed (bool): when CESR native message.
                                True means top-level fixed field
                                False means top-level field map
         """
@@ -211,28 +211,28 @@ class Serdery:
             smellage = smell(ims)  # non native so smell to get version smellage
 
         if smellage.pvrsn.major > svrsn.major:  # likely not supported
-            raise SerializeError(f"Incompatible message protocol major version="
+            raise DeserializeError(f"Incompatible message protocol major version="
                                  f"{smellage.pvrsn} with stream  genus major "
                                  f"version={svrsn}.")
 
         if getattr(GenDex, ProGen.get(smellage.proto), None) != genus:
-            raise SerializeError(f"Incompatible message protocol={smellage.proto}"
+            raise DeserializeError(f"Incompatible message protocol={smellage.proto}"
                                  f" with genus={genus}.")
 
         if smellage.gvrsn:
             if smellage.gvrsn.major > svrsn.major:  # Message major later than stream
-                raise SerializeError(f"Incompatible message genus major version="
+                raise DeserializeError(f"Incompatible message genus major version="
                                  f"{smellage.gvrsn} with stream major genus "
                                  f"version={svrsn}.")
 
             if smellage.gvrsn.minor > svrsn.minor:  # message minor later than stream
-                raise SerializeError(f"Incompatible message minor genus version="
+                raise DeserializeError(f"Incompatible message minor genus version="
                                      f"{smellage.gvrsn} with stream genus minor "
                                      f"version={svrsn}.")
 
             latest = list(Counter.Sizes[smellage.gvrsn.major])[-1]  # get latest supported minor version
             if smellage.gvrsn.minor > latest:
-                raise SerializeError(f"Incompatible message genus minor version"
+                raise DeserializeError(f"Incompatible message genus minor version"
                                      f"={smellage.gvrsn.minor} exceeds latest supported "
                                      f"genus minor version={latest}.")
 
@@ -382,7 +382,7 @@ class Serder:
     GVrsn = Vrsn_2_0  # default CESR genus version
     Kind = Kinds.json  # default serialization kind
     Genus = GenDex.KERI  # default CESR genus code
-
+    MUCodes = Counter.MUCodes # message universal code tables from Counter
 
 
     # Nested dict keyed by protocol.
@@ -1242,14 +1242,14 @@ class Serder:
         serialization size and kind
 
         Returns:
-           sad (dict|list): de-serialized dict or list.
+            sad (dict|list): de-serialized dict or list.
                             Supposed to be dict of saidified data.
 
         Parameters:
-           raw (bytes | bytearray): raw serialization to deserialze as dict
-           size (int): number of bytes to consume for the deserialization.
+            raw (bytes | bytearray): raw serialization to deserialze as dict
+            size (int): number of bytes to consume for the deserialization.
                        If None then consume all bytes in raw
-           kind (str): value of Serials (Serialage) serialization kind
+            kind (str): value of Serials (Serialage) serialization kind
                        "JSON", "MGPK", "CBOR", "CESR"
 
         Notes:
@@ -1296,29 +1296,39 @@ class Serder:
         """CESR native de-serialization from raw in qb64b text domain bytes
 
         Returns:
-           sad (dict): deserialized dict of CESR native serialization.
+            sad (dict): deserialized dict of CESR native serialization.
 
         Parameters:
-           raw (bytes |bytearray): qb64b raw serialization in text domain byte
+            raw (bytes |bytearray): qb64b raw serialization in text domain byte
                                    to deserialze as dict
-           size (int): number of bytes to consume for the deserialization.
+            size (int): number of bytes to consume for the deserialization.
                        If None then consume all bytes in raw
-
-
         """
         # assumes that .proto, .kind, .size, .pvrsn, .gvrsn set above in
         # .inhale with passed in smellage
-
         sad = {}
         # make copy so strip here does not collide with .__init__ strip
         if size is None:
             size = len(raw)
         raw = bytearray(raw[:size])  # extract full message from raw as bytearray
 
-        # consume body ctr and version field
+        # consume body ctr
         bctr = Counter(qb64b=raw, strip=True, version=self.gvrsn) # gvrsn from smellage
+        # assign fixed
+        if (bctr.code in (self.mucodes.FixedBodyGroup,
+                          self.mucodes.BigFixedBodyGroup)):
+            fixed = True
+        elif  (bctr.code in (self.mucodes.MapBodyGroup,
+                             self.mucodes.BigMapBodyGroup)):
+            fixed = False
+        else:
+            raise DeserializeError(f"Unexpected message body grout code={bctr.code}")
+
+
+        # consume label if field map (not fixed)
+
+        # consume version field assumes compatible versage with prior smellage
         versage = Verser(qb64b=raw, strip=True).versage
-        # assumes compatible versage witn .proto .pvrsn .gvrsn
 
 
         if self.proto == Protocols.keri:
@@ -1332,17 +1342,14 @@ class Serder:
             # FieldDom for given protocol and ilk,must be fixed field see check below
             fields = self.Fields[self.proto][self.pvrsn][ilk]  # get fields keyed by ilk
 
-            if fields.opts or not fields.strict:  # optional or extra fields allowed
-                fixed = False  # not fixed field so must use a field map
-            else:
-                fixed = True  # fixed field
-
-            # assumes that sad's field ordering and field inclusion is correct
-            # so can deserialize in order
-
             if not fixed:
                 raise DeserializeError(f"Expected fixed field got {ilk=}")
 
+            if fields.opts or not fields.strict:  # optional or extra fields allowed
+                raise DeserializeError(f"Expected fixed field for {ilk=} got {fields=}")
+
+            # assumes that sad's field ordering and field inclusion is correct
+            # so can deserialize in order
             for l in fields.alls:  # l for label assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
@@ -1459,10 +1466,8 @@ class Serder:
                 ilk = None
                 fields = self.Fields[self.proto][self.pvrsn][ilk]
 
-            if fields.opts or not fields.strict:  # optional or extra fields allowed
-                fixed = False  # not fixed field so must use a field map
-            else:
-                fixed = True  # fixed field
+            if fields.opts or not fields.strict and fixed:  # optional or extra fields allowed
+                raise DeserializeError(f"Expected fixed field for {ilk=} got {fields=}")
 
 
             if ilk in (Ilks.rip, Ilks.bup, Ilks.upd, Ilks.act, Ilks.acg,
@@ -2017,6 +2022,16 @@ class Serder:
            stamp (str | None): sad["dt"] when present
         """
         return self._sad.get('dt')
+
+    @property
+    def mucodes(self):
+        """Selects mucodes from .MUCodes based on .gvrsn
+        Returns:
+            mucodes (MUDex): selected by .gvrsn latest from (MUDex_1_0, MUDex_2_0)
+        """
+        # get latest supported minor version
+        latest = list(self.MUCodes[self.gvrsn.major])[-1]
+        return self.MUCodes[self.gvrsn.major][latest]
 
 
 class SerderKERI(Serder):
