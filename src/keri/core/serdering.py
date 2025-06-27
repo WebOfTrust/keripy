@@ -188,7 +188,7 @@ class Serdery:
                                False means top-level field map
         """
         if ctr:  # parser sniffed and peekd so native and assigned ctr, size, fixed
-            # parser already peeked to see .FixedBodyGroup or .MapBodyGroup so
+            # parser already peeked to see .FixBodyGroup or .MapBodyGroup so
             # know it's native and assigned ctr, size, and fixed
             # So here peek further into ims to see version field if fixed
             # or label then version field if not fixed
@@ -1315,8 +1315,8 @@ class Serder:
         # consume body ctr
         bctr = Counter(qb64b=raw, strip=True, version=self.gvrsn) # gvrsn from smellage
         # assign fixed
-        if (bctr.code in (self.mucodes.FixedBodyGroup,
-                          self.mucodes.BigFixedBodyGroup)):
+        if (bctr.code in (self.mucodes.FixBodyGroup,
+                          self.mucodes.BigFixBodyGroup)):
             fixed = True
         elif  (bctr.code in (self.mucodes.MapBodyGroup,
                              self.mucodes.BigMapBodyGroup)):
@@ -1845,7 +1845,7 @@ class Serder:
         # prepend count code for message
         if fixed:
 
-            raw = bytearray(Counter(Codens.FixedBodyGroup,
+            raw = bytearray(Counter(Codens.FixBodyGroup,
                                     count=len(bdy) // 4,
                                     version=gvrsn).qb64b)
             raw.extend(bdy)

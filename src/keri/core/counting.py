@@ -201,8 +201,8 @@ class CounterCodex_2_0(IceMapDom):
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    FixBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
     BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
     NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
@@ -271,8 +271,8 @@ class UniversalCodex_2_0(IceMapDom):
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    FixBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
     BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
     NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
@@ -326,8 +326,8 @@ class MessageUniversalCodex_2_0(IceMapDom):
     BigDatagramSegmentGroup: str = '--D'  # Big Datagram Segment Group (Universal).
     ESSRWrapperGroup: str = '-E'  # ESSR Wrapper Group (Universal).
     BigESSRWrapperGroup: str = '--E'  # Big ESSR Wrapper Group (Universal).
-    FixedBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
-    BigFixedBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    FixBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
     MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
     BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
     NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter

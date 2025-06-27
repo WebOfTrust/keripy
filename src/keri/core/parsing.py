@@ -956,8 +956,8 @@ class Parser:
                                           svrsn=self.version)
                     exts['serder'] = serder
 
-                elif (ctr.code in (self.mucodes.FixedBodyGroup,
-                                   self.mucodes.BigFixedBodyGroup)): # native fixed field
+                elif (ctr.code in (self.mucodes.FixBodyGroup,
+                                   self.mucodes.BigFixBodyGroup)): # native fixed field
                     cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
                     fmgs = ctr.byteCount(cold=cold)  # fixed body content size
                     size = cbs + fmgs  # size of ctr and its content
