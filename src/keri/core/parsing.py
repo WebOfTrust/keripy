@@ -1042,17 +1042,8 @@ class Parser:
                     raise kering.ValidationError(msg)
 
                 try:
-                    if cigars:
-                        kvy.processReceipt(serder=serder, cigars=cigars,
-                                           local=local)
 
-                    if wigers:
-                        kvy.processReceiptWitness(serder=serder, wigers=wigers,
-                                                  local=local)
-
-                    if tsgs:
-                        kvy.processReceiptTrans(serder=serder, tsgs=tsgs,
-                                                local=local)
+                    kvy.processReceipt(serder=serder, cigars=cigars, tsgs=tsgs, wigers=wigers, local=local)
 
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"
