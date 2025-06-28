@@ -40,7 +40,7 @@ from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
                      Saids,  Digestage, NonceDex)
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
                      Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
-                     Noncer)
+                     Noncer, Labeler)
 from .mapping import Mapper
 
 from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
@@ -158,7 +158,7 @@ class Serdery:
         self.version = version
 
 
-    def reap(self, ims, genus, svrsn, cold=None, ctr=None, size=None):
+    def reap(self, ims, genus, svrsn, cold=None, ctr=None, size=None, fixed=True):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -181,54 +181,58 @@ class Serdery:
             ctr (None|Counter): Not None means sniff determined CESR native message
                                 Using ctr. Otherwise JSON, CBOR, MGPK field map.
                                 so use smell. Default None
-            size (None|int): Not None means CESR native messag using ctr and
+            size (None|int): Not None means CESR native message using ctr and
                              size already calculated. All bytes in stream.
+            fixed (bool): when CESR native message.
+                               True means top-level fixed field
+                               False means top-level field map
         """
-        if ctr:  # sniffed already to be counter of fixed body or map body code
-            # peeked to see .FixedBodyGroup or .MapBodyGroup so know it's native
-            # get counter
-            # Now peek into to see Verser (just index past leading group small or big size
-            # with verser can get proto and pvrsn (and also gvrsn if long version)
-            # set kind to Kinds.CESR,
+        if ctr:  # parser sniffed and peekd so native and assigned ctr, size, fixed
+            # parser already peeked to see .FixBodyGroup or .MapBodyGroup so
+            # know it's native and assigned ctr, size, and fixed
+            # So here peek further into ims to see version field if fixed
+            # or label then version field if not fixed
+            # (just index past ctr or ctr + label
+            # with version field can get proto, pvrsn, and gvrsn
+            # since native set kind to Kinds.CESR,
             # then can populate smellage  "proto pvrsn kind size gvrsn"
-            # smellage "proto pvrsn kind size gvrsn"
-            # Serder._inhale then does the .loads given the smellage is CESR
-            if (ctr.code in (MUDex_2_0.FixedBodyGroup,
-                             MUDex_2_0.BigFixedBodyGroup)):
-                proto = Protocols.keri
-            else:
-                proto = Protocols.acdc
+            # Serder._inhale then does its .loads given the smellage kind is CESR
 
-            verser = Verser(qb64b=ims[ctr.fullSize:])  # in text domain
+            lsize = 0  # label size in bytes
+            if not fixed:  # extract label for version field
+                labeler = Labeler(qb64b=ims[ctr.fullSize:])  # offset past ctr
+                lsize = labeler.fullsize
+
+            verser = Verser(qb64b=ims[ctr.fullSize+lsize:])  # in text domain
             proto, pvrsn, gvrsn = verser.versage
             smellage = Smellage(proto=proto, pvrsn=pvrsn, kind=Kinds.cesr,
                                 size=size, gvrsn=gvrsn)
         else:
-            smellage = smell(ims)  #
+            smellage = smell(ims)  # non native so smell to get version smellage
 
         if smellage.pvrsn.major > svrsn.major:  # likely not supported
-            raise SerializeError(f"Incompatible message protocol major version="
+            raise DeserializeError(f"Incompatible message protocol major version="
                                  f"{smellage.pvrsn} with stream  genus major "
                                  f"version={svrsn}.")
 
         if getattr(GenDex, ProGen.get(smellage.proto), None) != genus:
-            raise SerializeError(f"Incompatible message protocol={smellage.proto}"
+            raise DeserializeError(f"Incompatible message protocol={smellage.proto}"
                                  f" with genus={genus}.")
 
         if smellage.gvrsn:
             if smellage.gvrsn.major > svrsn.major:  # Message major later than stream
-                raise SerializeError(f"Incompatible message genus major version="
+                raise DeserializeError(f"Incompatible message genus major version="
                                  f"{smellage.gvrsn} with stream major genus "
                                  f"version={svrsn}.")
 
             if smellage.gvrsn.minor > svrsn.minor:  # message minor later than stream
-                raise SerializeError(f"Incompatible message minor genus version="
+                raise DeserializeError(f"Incompatible message minor genus version="
                                      f"{smellage.gvrsn} with stream genus minor "
                                      f"version={svrsn}.")
 
             latest = list(Counter.Sizes[smellage.gvrsn.major])[-1]  # get latest supported minor version
             if smellage.gvrsn.minor > latest:
-                raise SerializeError(f"Incompatible message genus minor version"
+                raise DeserializeError(f"Incompatible message genus minor version"
                                      f"={smellage.gvrsn.minor} exceeds latest supported "
                                      f"genus minor version={latest}.")
 
@@ -378,7 +382,7 @@ class Serder:
     GVrsn = Vrsn_2_0  # default CESR genus version
     Kind = Kinds.json  # default serialization kind
     Genus = GenDex.KERI  # default CESR genus code
-
+    MUCodes = Counter.MUCodes # message universal code tables from Counter
 
 
     # Nested dict keyed by protocol.
@@ -544,12 +548,12 @@ class Serder:
                 Ilks.rul: FieldDom(alls=dict(v='', t='', d='', r=''),
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.rip: FieldDom(alls=dict(v='', t='', d='', u='', i='',
-                                              s='', dt=''),
+                                              n='', dt=''),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.bup: FieldDom(alls=dict(v='', t='', d='', r='', s='',
-                                              p='', dt='', a=''),
+                Ilks.bup: FieldDom(alls=dict(v='', t='', d='', rd='', n='',
+                                              p='', dt='', b=''),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.upd: FieldDom(alls=dict(v='', t='', d='', r='', s='',
+                Ilks.upd: FieldDom(alls=dict(v='', t='', d='', rd='', n='',
                                               p='', dt='', td='', ts=''),
                     saids={Saids.d: DigDex.Blake3_256}),
             },
@@ -1238,15 +1242,15 @@ class Serder:
         serialization size and kind
 
         Returns:
-           sad (dict|list): de-serialized dict or list.
+            sad (dict|list): de-serialized dict or list.
                             Supposed to be dict of saidified data.
 
         Parameters:
-           raw (bytes | bytearray): raw serialization to deserialze as dict
-           size (int): number of bytes to consume for the deserialization.
+            raw (bytes | bytearray): raw serialization to deserialze as dict
+            size (int): number of bytes to consume for the deserialization.
                        If None then consume all bytes in raw
-           kind (str): value of Serials (Serialage) serialization kind
-                       "JSON", "MGPK", "CBOR"
+            kind (str): value of Serials (Serialage) serialization kind
+                       "JSON", "MGPK", "CBOR", "CESR"
 
         Notes:
             loads of json uses str whereas loads of cbor and msgpack use bytes
@@ -1292,54 +1296,64 @@ class Serder:
         """CESR native de-serialization from raw in qb64b text domain bytes
 
         Returns:
-           sad (dict): deserialized dict of CESR native serialization.
+            sad (dict): deserialized dict of CESR native serialization.
 
         Parameters:
-           raw (bytes |bytearray): qb64b raw serialization in text domain byte
+            raw (bytes |bytearray): qb64b raw serialization in text domain byte
                                    to deserialze as dict
-           size (int): number of bytes to consume for the deserialization.
+            size (int): number of bytes to consume for the deserialization.
                        If None then consume all bytes in raw
-
 
         """
         # assumes that .proto, .kind, .size, .pvrsn, .gvrsn set above in
         # .inhale with passed in smellage
-
         sad = {}
         # make copy so strip here does not collide with .__init__ strip
         if size is None:
             size = len(raw)
         raw = bytearray(raw[:size])  # extract full message from raw as bytearray
 
-        # consume body ctr and version field
+        # consume body ctr
         bctr = Counter(qb64b=raw, strip=True, version=self.gvrsn) # gvrsn from smellage
-        versage = Verser(qb64b=raw, strip=True).versage
-        # assumes compatible versage witn .proto .pvrsn .gvrsn
-
-
-        # read off ilk so can get rest of fields in order to parse
-        ilker = Ilker(qb64b=raw, strip=True)
-        if ilker.ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
-                             Ilks.rct, Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar,
-                             Ilks.xip, Ilks.exn):
-            raise DeserializeError(f"Unexpected {ilk=}")
-
-        # must be fixed filed see check below
-        ilks = self.Fields[self.proto][self.pvrsn]  # get fields keyed by ilk
-        fields = ilks[ilker.ilk]  # FieldDom for given protocol and ilk
-
-        if fields.opts or not fields.strict:  # optional or extra fields allowed
-            fixed = False  # not fixed field so must use a field map
+        # assign fixed
+        if (bctr.code in (self.mucodes.FixBodyGroup,
+                          self.mucodes.BigFixBodyGroup)):
+            fixed = True
+        elif  (bctr.code in (self.mucodes.MapBodyGroup,
+                             self.mucodes.BigMapBodyGroup)):
+            fixed = False
         else:
-            fixed = True  # fixed field
+            raise DeserializeError(f"Unexpected CESR message body group "
+                                   f"code={bctr.code}")
 
-        # assumes that sad's field ordering and field inclusion is correct
-        # so can deserialize in order
+
+        # consume label for version field if field map (not fixed)
+        if not fixed:
+            labeler = Labeler(qb64b=raw, strip=True)  # offset past ctr
+
+        # consume version field assumes compatible versage with prior smellage
+        versage = Verser(qb64b=raw, strip=True).versage
+
 
         if self.proto == Protocols.keri:
+            # read off ilk so can get rest of fields in order to parse
+            ilk = Ilker(qb64b=raw, strip=True).ilk
+            if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
+                                 Ilks.rct, Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar,
+                                 Ilks.xip, Ilks.exn):
+                raise DeserializeError(f"Unexpected {ilk=}")
+
+            # FieldDom for given protocol and ilk,must be fixed field see check below
+            fields = self.Fields[self.proto][self.pvrsn][ilk]  # get fields keyed by ilk
+
             if not fixed:
                 raise DeserializeError(f"Expected fixed field got {ilk=}")
 
+            if fields.opts or not fields.strict:  # optional or extra fields allowed
+                raise DeserializeError(f"Expected fixed field for {ilk=} got {fields=}")
+
+            # assumes that sad's field ordering and field inclusion is correct
+            # so can deserialize in order
             for l in fields.alls:  # l for label assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
@@ -1347,7 +1361,7 @@ class Serder:
                            size=size, gvrsn=self.gvrsn)
 
                     case "t":  # message type (ilk), already got ilk
-                        sad[l] = ilker.ilk
+                        sad[l] = ilk
 
                     case "d" | "p" | "x":  # SAID
                         sad[l] = Diger(qb64b=raw, strip=True).qb64
@@ -1400,9 +1414,9 @@ class Serder:
                             sad[l] = Mapper(qb64b=raw, strip=True).mad
 
                         elif ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
-                            if ilker.ilk not in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
+                            if ilk not in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
                                 raise SerializeError(f"Unexpected list value for"
-                                            f"field='{l}' for ilk={ilker.ilk}")
+                                            f"field='{l}' for {ilk=}")
                             del raw[:ctr.fullSize]  # consume counter
                             seals = []
                             fs = ctr.count * 4  # frame size since qb64 text mode
@@ -1439,10 +1453,81 @@ class Serder:
 
         elif self.proto == Protocols.acdc:
             if fixed:
-                raise DeserializeError(f"Expected non-fixed field got {ilk=}")
+                ilk = Ilker(qb64b=raw, strip=True).ilk  # consume message typle field
+                if ilk not in (Ilks.rip, Ilks.bup, Ilks.upd, Ilks.act, Ilks.acg,
+                              Ilks.sch, Ilks.att, Ilks.agg, Ilks.edg, Ilks.rul):
+                    raise DeserializeError(f"Unexpected {ilk=} for fixed field body")
+                # FieldDom for given protocol and ilk
+                fields = self.Fields[self.proto][self.pvrsn][ilk]  # get fields keyed by ilk
 
-            for l in fields:  # assumes valid field order & presence
-                pass
+                if fields.opts or not fields.strict and fixed:  # optional or extra fields allowed
+                    raise DeserializeError(f"Expected fixed field for {ilk=} got {fields=}")
+
+                # assumes that sad's field ordering and field inclusion is correct
+                # so can deserialize in order
+                for l in fields.alls:  # assumes valid field order & presence
+                    match l:  # label
+                        case "v":  # proto+pvrsn+gvrsn not vs
+                            sad[l] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                               size=size, gvrsn=self.gvrsn)
+
+                        case "t":  # message type (ilk), already got ilk
+                            sad[l] = ilk
+
+                        case "d"|"p"|"rd"|"b"|"td":  # SAID
+                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                        case "u":  # UUID salty Nonce
+                            sad[l] = Noncer(qb64b=raw, strip=True).qb64
+
+                        case "i":  # AID
+                            sad[l] = Prefixer(qb64b=raw, strip=True).qb64
+
+                        case "n":  # sequence number
+                            sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
+
+                        case "dt":  # datetime string
+                            sad[l] = Dater(qb64b=raw, strip=True).dts
+
+                        case "ts":  # transaction event state string
+                            sad[l] = Labeler(qb64b=raw, strip=True).label
+
+                        case "s":  # schema said, or schema block
+                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                        case "a"|"e"|"r" :  # attribute SAID or attribute block
+                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                        case "A":  # Aggregate said or Aggregate list of blocks
+                            ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
+                            if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                                raise DeserializeError(f"Expected List group got {ctr.name}")
+                            fs = ctr.count * 4  # frame size since qb64 text mode
+                            frame = raw[:fs]  # extract list frame
+                            raw = raw[fs:]
+                            elements = []
+                            while frame:  # not yet empty
+                                elements.append(Matter(qb64b=frame, strip=True).qb64)
+                            sad[l] = elements
+
+                        case _:  # if extra fields this is where logic would be
+                            raise DeserializeError(f"Unsupported protocol field label"
+                                                 f"='{l}' for protocol={proto}"
+                                                 f" version={pvrsn}.")
+
+
+
+            else:  # not fixed
+                labeler = Labeler(qb64b=raw, strip=True)  # consume message type label
+                ilk = Ilker(qb64b=raw, strip=True).ilk  # consume message typle field
+                if ilk not in (Ilks.acm,Ilks.ace):
+                    raise DeserializeError(f"Unexpected {ilk=} for field map body")
+
+                # FieldDom for given protocol and ilk
+                fields = self.Fields[self.proto][self.pvrsn][ilk]  # get fields keyed by ilk
+
+                # see mapper for how to deserialized field map here
+
 
         else:
             raise DeserializeError(f"Unsupported protocol={self.proto}.")
@@ -1554,33 +1639,29 @@ class Serder:
 
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
+
+
         ilks = self.Fields[proto][pvrsn]  # get fields keyed by ilk
 
-        ilk = sad.get('t')  # returns None if missing message type (ilk)
-        if ilk not in ilks:  #
-            raise SerializeError(f"Missing or unsupported message type field "
-                                 f"'t', {ilk=} for protocol={proto} "
-                                 f"version={pvrsn} with {sad=}.")
-
-        if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
-                        Ilks.rct, Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar,
-                        Ilks.xip, Ilks.exn):
-            raise SerializeError(f"Unexpected {ilk=}")
-
-        fields = ilks[ilk]  # FieldDom for given protocol and ilk
-
-        if fields.opts or not fields.strict:  # optional or extra fields allowed
-            fixed = False  # so must use field map
-        else:
-            fixed = True  #fixed field
-
-        # assumes that sad's field ordering and field inclusion is correct
-        # so can serialize in order to compute saidive fields
-
         if proto == Protocols.keri:
-            if not fixed:  # prepend label
+            ilk = sad.get('t')  # returns None if missing message type (ilk)
+            if ilk not in ilks:  #
+                raise SerializeError(f"Missing or unsupported message type field "
+                                     f"'t', {ilk=} for protocol={proto} "
+                                     f"version={pvrsn} with {sad=}.")
+
+            if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt,
+                            Ilks.rct, Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar,
+                            Ilks.xip, Ilks.exn):
+                raise SerializeError(f"Unexpected {ilk=} for protocol={proto}")
+
+            fields = ilks[ilk]  # FieldDom for given protocol and ilk
+
+            if fields.opts or not fields.strict:  # not fixed
                 raise SerializeError(f"Not fixed field {ilk=}")
 
+            # assumes that sad's field ordering and field inclusion is correct
+            # so can serialize in order to compute saidive fields
             for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
@@ -1692,27 +1773,97 @@ class Serder:
 
                 bdy.extend(val)
 
+            raw = bytearray(Counter(Codens.FixBodyGroup,
+                                    count=len(bdy) // 4,
+                                    version=gvrsn).qb64b)
+            raw.extend(bdy)
 
         elif proto == Protocols.acdc:
-            for l, val in sad.items():  # assumes valid field order & presence
-                if not fixed:
-                    pass  # prepend label
+            ilk = sad.get('t')  # returns None if missing message type (ilk)
+            if ilk not in ilks:  # allows None for implicit 'acm'
+                raise SerializeError(f"Missing or unsupported message type field "
+                                     f"'t', {ilk=} for protocol={proto} "
+                                     f"version={pvrsn} with {sad=}.")
+
+            if ilk not in (Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg,
+                           Ilks.sch, Ilks.att, Ilks.agg, Ilks.edg, Ilks.rul,
+                           Ilks.rip, Ilks.bup, Ilks.upd):
+                raise SerializeError(f"Unexpected {ilk=} for protocol={proto}")
+
+            fields = ilks[ilk]  # FieldDom for given protocol and ilk
+
+            if (fields.opts or not fields.strict) and ilk not in (Ilks.acm, Ilks.ace):
+                raise SerializeError(f"Mismatch field spec to {ilk=}")
+
+            # assumes that sad's field ordering and field inclusion is correct
+            # so can serialize in order to compute saidive fields
+
+            if ilk in (Ilks.acm, Ilks.ace):  # top-level field map
+                for l, v in sad.items():  # assumes valid field order & presence
+                    pass
+
+                raw = bytearray(Counter(Codens.MapBodyGroup,
+                                        count=len(bdy) // 4,
+                                        version=gvrsn).qb64b)
+                raw.extend(bdy)
+
+            else: # top-level fixed field
+                for l, v in sad.items():  # assumes valid field order & presence
+                    match l:  # label
+                        case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                            val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
+
+                        case "t":  # message type (ilk), already got ilk
+                            val = Ilker(ilk=v).qb64b  # assumes same
+
+                        case "d"|"i"|"p"|"u"|"rd"|"b"|"td":  # said or aid
+                            val = v.encode()  # already primitive qb64 make qb6b
 
 
+                        case "u":  # uuid or nonce
+                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
+
+                        case "n":  # sequence number
+                            val = Number(numh=v).qb64b  # convert hex str
+
+                        case "dt":  # iso datetime
+                            val = Dater(dts=v).qb64b  # dts to qb64b
+
+                        case "ts":  # transaction event state string
+                            val = Labeler(label=v).qb64b  # convert label to qb64b
+
+                        case "s":  # schema said or block
+                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+
+                        case "a"|"e"|"r" :  # said or block
+                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+
+                        case "A":  # list of blocks
+                            frame = bytearray()
+                            for e in v:  # list
+                                frame.extend(Mapper(mad=e).qb64b)
+
+                            val = bytearray(Counter(Codens.GenericListGroup,
+                                                    count=len(frame) // 4,
+                                                    version=gvrsn).qb64b)
+                            val.extend(frame)
+
+                        case _:  # if extra fields this is where logic would be
+                            raise SerializeError(f"Unsupported protocol field label"
+                                                 f"='{l}' for protocol={proto}"
+                                                 f" version={pvrsn}.")
+
+                    bdy.extend(val)
+
+                raw = bytearray(Counter(Codens.FixBodyGroup,
+                                        count=len(bdy) // 4,
+                                        version=gvrsn).qb64b)
+                raw.extend(bdy)
 
         else:
             raise SerializeError(f"Unsupported protocol={self.proto}.")
 
 
-        # prepend count code for message
-        if fixed:
-
-            raw = bytearray(Counter(Codens.FixedBodyGroup,
-                                    count=len(bdy) // 4,
-                                    version=gvrsn).qb64b)
-            raw.extend(bdy)
-        else:
-            pass
 
 
         return bytes(raw)  # must return bytes so can sign, do crypto operations
@@ -1876,6 +2027,24 @@ class Serder:
         """
         return self._sad.get('t')  # returns None if 't' not in sad
 
+    @property
+    def stamp(self):
+        """stamp property getter (datetime stamp in iso8601 format)
+        Optional fields return None when not present
+        Returns:
+           stamp (str | None): sad["dt"] when present
+        """
+        return self._sad.get('dt')
+
+    @property
+    def mucodes(self):
+        """Selects mucodes from .MUCodes based on .gvrsn
+        Returns:
+            mucodes (MUDex): selected by .gvrsn latest from (MUDex_1_0, MUDex_2_0)
+        """
+        # get latest supported minor version
+        latest = list(self.MUCodes[self.gvrsn.major])[-1]
+        return self.MUCodes[self.gvrsn.major][latest]
 
 
 class SerderKERI(Serder):
@@ -2467,15 +2636,17 @@ class SerderACDC(Serder):
                                   f" deversify of sad.")
         # verified successfully since no exception
 
-        # required issuer field as valid AID, not empty
-        try:
-            code = Matter(qb64=self.issuer).code
-        except Exception as ex:
-            raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.issuer}.") from ex
+        if (not self.ilk or self.ilk in
+                (Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg, Ilks.rip)):
+            # required issuer field as valid AID, not empty
+            try:
+                code = Matter(qb64=self.issuer).code
+            except Exception as ex:
+                raise ValidationError(f"Invalid issuer AID = "
+                                      f"{self.issuer}.") from ex
 
-        if code not in PreDex:
-            raise ValidationError(f"Invalid issuer AID code = {code}.")
+            if code not in PreDex:
+                raise ValidationError(f"Invalid issuer AID code = {code}.")
 
 
 

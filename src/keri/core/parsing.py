@@ -956,15 +956,15 @@ class Parser:
                                           svrsn=self.version)
                     exts['serder'] = serder
 
-                elif (ctr.code in (self.mucodes.FixedBodyGroup,
-                                   self.mucodes.BigFixedBodyGroup)):
+                elif (ctr.code in (self.mucodes.FixBodyGroup,
+                                   self.mucodes.BigFixBodyGroup)): # native fixed field
                     cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
-                    fmgs = ctr.byteCount(cold=cold)  # fixed body group size
-                    size = cbs + fmgs
+                    fmgs = ctr.byteCount(cold=cold)  # fixed body content size
+                    size = cbs + fmgs  # size of ctr and its content
                     while len(ims) < size and not framed:  # framed already in ims
-                        yield  # until full group in ims
+                        yield  # until full ctr and its content in ims
 
-                    fims = ims[:size]  # copy out
+                    fims = ims[:size]  # copy out ctr and its content
                     del ims[:size]  # strip off from ims
 
                     if cold == Colds.bny:  # tranform to text domain
@@ -973,23 +973,36 @@ class Parser:
 
                     # fims includes full body with counter but no attachments
                     serder = serdery.reap(ims=fims,
-                                         genus=self.genus,
-                                         svrsn=self.version,
-                                         ctr=ctr,
-                                         size=size)
+                                          genus=self.genus,
+                                          svrsn=self.version,
+                                          ctr=ctr,
+                                          size=size,
+                                          fixed=True)
                     exts['serder'] = serder
 
-                elif ctr.code in self.mucodes:  # process other native message group
-                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
-                    nmgs = ctr.byteCount(cold=cold)  # native message group size
-                    while len(ims) < nmgs and not framed:  # framed already in ims
-                        yield
+                elif (ctr.code in (self.mucodes.MapBodyGroup,
+                                   self.mucodes.BigMapBodyGroup)):  # native field map
+                    cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
+                    mmgs = ctr.byteCount(cold=cold)  # fixed body group size
+                    size = cbs + mmgs
+                    while len(ims) < size and not framed:  # framed already in ims
+                        yield  # until full ctr and its content in ims
 
-                    nims = ims[:nmgs]  # copy out substream
-                    del ims[:nmgs]  # strip off from ims
-                    # now nims includes just the native message not attachments
-                    # and native message has been stripped from ims
-                    #exts['serder'] = serder
+                    mims = ims[:size]  # copy out ctr and its content
+                    del ims[:size]  # strip off from ims
+
+                    if cold == Colds.bny:  # tranform to text domain
+                        mims = encodeB64(mims)  # always process event in qb64 text domain
+                        size = (size * 4) // 3
+
+                    # mims includes ctr and its content but no attachments
+                    serder = serdery.reap(ims=mims,
+                                          genus=self.genus,
+                                          svrsn=self.version,
+                                          ctr=ctr,
+                                          size=size,
+                                          fixed=False)
+                    exts['serder'] = serder
 
                 elif (ctr.code in (self.sucodes.GenericGroup,
                                    self.sucodes.BigGenericGroup)):

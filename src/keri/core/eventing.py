@@ -1478,7 +1478,7 @@ def exchept(sender="",
     sad = dict(v=vs,  # version string
                t=ilk, # message type
                d="",  # message said
-               u=nonce if nonce is not None else coring.Noncer(),
+               u=nonce if nonce is not None else coring.Noncer().qb64,
                i=sender,  # sender aid qb64
                ri=receiver,  # receiver aid qb64
                dt=stamp if stamp is not None else helping.nowIso8601(),

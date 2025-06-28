@@ -6,11 +6,12 @@ Utility functions for creating ACDC messages of all message types for v2
 
 """
 
-from keri.kering import versify, Kinds, Vrsn_2_0
+from ..kering import versify, Protocols, Kinds, Ilks, Vrsn_2_0
+from ..core import Number, Noncer, SerderACDC
+from ..help import nowIso8601
 
-
-def regcept(issuer, ilk=None, nonce=None,
-            pvrsn=Vrsn_2_0, gvrsn=None, kind=Kinds.json):
+def regcept(issuer, *, nonce=None, stamp=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create registry inception message of type 'rip'
     for ACDC protocol v2.
 
@@ -19,44 +20,88 @@ def regcept(issuer, ilk=None, nonce=None,
 
     Parameters:
         issuer  (str): qb64 of issuer AID
-        schema (str|dict): SAID of schema section or schema section block
-        ilk (str|None): message type as 3 char str or None if not present
-        issuee (str): qb64 of issuee AID if any. None means no issuee
         nonce (str|None): qb64 of salty nonce (UUID) if any. None means no UUID
-        registry (str|None): qb64 of registry SAID if any. None means no registry
-        attributes (str|dict|None): SAID of attribute section block or None if
-                                    not present
-        aggregates (str|dict|None): SAID of aggregate section list or None if
-                                    not present
-        edges (str|dict|None): SAID of edge section block or None if
-                                    not present
-        rules (str|dict|None): SAID of rule section block or None if
-                                    not present
+        stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                           creation of message. None means use
+
         pvrsn (Versionage): ACDC protocol version number
-        gvrsn (Versionage|None): CESR Genus version number. None means default
-                                 to pvrsn
+        gvrsn (Versionage): CESR Genus version number
         kind (str): serialization kind from Kinds
 
-
-
-    all
-    (v='', d='', u='', i='', rd='', s='', a={}, A=[], e={}, r={}),
-    opts
-    (u='', rd='', a='', A='', e='', r='')
-
-
-    ACDC .sad and its serialization .raw. Is whatever in input to the serder.
-
-
+    alls (v='', t='', d='', u='', i='', n='', dt='')
+    opts (,)
     """
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
-
-    sad = dict()
-
-
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
     ilk = Ilks.rip
+    nonce = nonce if nonce is not None else Noncer().qb64
+    snh = Number(num=0).numh  # sn for registry incept must be 0
+    stamp = stamp if stamp is not None else nowIso8601()
+    sad = dict(v=vs, t=ilk, d='', u=nonce, i=issuer, n=snh, dt=stamp)
+    return SerderACDC(sad=sad, makify=True)
 
 
+def blindate(regid, prior, blind, *, sn=1, stamp=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create registry blindable update message of type 'bup'
+    for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC 'bup' message
+
+    Parameters:
+        regid  (str): qb64 registry SAID  (said, 'd' field of 'rip')
+        prior  (str): qb64 prior message SAID  (said, 'd' field of 'rip' or 'bup')
+        blind  (str): qb64 blindable state attribute block said (not its nonce)
+        sn (int): sequence number of blindable update message
+        stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                           creation of message. None means use
+
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number
+        kind (str): serialization kind from Kinds
+
+    alls (v='', t='', d='', rd='', n='', p='', dt='', b='')
+    opts (,)
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.bup
+    snh = Number(num=sn).numh  # sn for registry incept must be 0
+    stamp = stamp if stamp is not None else nowIso8601()
+    sad = dict(v=vs, t=ilk, d='', rd=regid, n=snh, p=prior, dt=stamp, b=blind)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def update(regid, prior, acdc, state, *, sn=1, stamp=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create registry update message of type 'upd'
+    for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC 'bup' message
+
+    Parameters:
+        regid  (str): qb64 registry SAID  (said, 'd' field of 'rip')
+        prior  (str): qb64 prior message SAID  (said, 'd' field of 'rip' or 'upd')
+        acdc  (str): transaction event ACDC SAID qb64
+                        'd' field of associated acdc 'acm', 'ace', 'act', 'acg'
+        state  (str): transaction event state string
+        sn (int): sequence number of blindable update message
+        stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                           creation of message. None means use
+
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number
+        kind (str): serialization kind from Kinds
+
+    alls (v='', t='', d='', rd='', n='', p='', dt='', td='', ts='')
+    opts (,)
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.upd
+    snh = Number(num=sn).numh  # sn for registry incept must be 0
+    stamp = stamp if stamp is not None else nowIso8601()
+    sad = dict(v=vs, t=ilk, d='', rd=regid, n=snh, p=prior, dt=stamp, td=acdc, ts=state)
+    return SerderACDC(sad=sad, makify=True)
 
 
 def mapACDC(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,

@@ -6234,6 +6234,27 @@ def test_noncer():
     assert noncer.nonceb == empty.encode()
 
 
+    # Test Diger superclass stuff
+    code = NonceDex.Blake3_256
+    ser = b'ABCDEFGHIJKLMNopqrstuvwxyz0123456789'
+    raw = blake3.blake3(ser).digest()
+    assert raw == b'\x9b&\xbfxS\x1f?\x92nC7)\xb2\xca{3\x81z\xfb\x8f<\xdc]@\xb5]\xca\xb9\xe8^:\xd0'
+    qb64 = 'EJsmv3hTHz-SbkM3KbLKezOBevuPPNxdQLVdyrnoXjrQ'
+    qb64b = b'EJsmv3hTHz-SbkM3KbLKezOBevuPPNxdQLVdyrnoXjrQ'
+    qb2 = (b'\x10\x9b&\xbfxS\x1f?\x92nC7)\xb2\xca{3\x81z\xfb\x8f<\xdc]@\xb5]\xca\xb9\xe8^:\xd0')
+
+    noncer = Noncer(ser=ser, code=code)
+    assert noncer.code == code
+    assert noncer.raw == raw
+    assert noncer.qb64 == qb64
+    assert noncer.qb64b == qb64b
+    assert noncer.qb2 == qb2
+    assert noncer.fullSize == 44
+    assert not noncer.special
+    assert noncer.nonce == qb64
+    assert noncer.nonceb == qb64b
+
+
     """ Done Test """
 
 
