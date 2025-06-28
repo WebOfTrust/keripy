@@ -16,7 +16,7 @@ def test_regcept_message():
     issuer = 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
     nonce = '0AAxyHwW6htOZ_rANOaZb2N2'
     stamp = '2020-08-22T17:50:09.988921+00:00'
-    said = 'EG__x9JRLSY6IXDwMnnojrrxC2GzXFpdMeLlk0qIORAL'
+    said = 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq'
 
     # test default kind JSON
     serder = regcept(issuer=issuer, nonce=nonce, stamp=stamp)
@@ -37,16 +37,16 @@ def test_regcept_message():
     {
         'v': 'ACDCCAACAAJSONAADa.',
         't': 'rip',
-        'd': 'EG__x9JRLSY6IXDwMnnojrrxC2GzXFpdMeLlk0qIORAL',
+        'd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         'u': '0AAxyHwW6htOZ_rANOaZb2N2',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
-        's': '0',
+        'n': '0',
         'dt': '2020-08-22T17:50:09.988921+00:00'
     }
 
-    assert serder.raw == (b'{"v":"ACDCCAACAAJSONAADa.","t":"rip","d":"EG__x9JRLSY6IXDwMnnojrrxC2GzXFpdMe'
-                          b'Llk0qIORAL","u":"0AAxyHwW6htOZ_rANOaZb2N2","i":"EA2X8Lfrl9lZbCGz8cfKIvM_cqLy'
-                          b'TYVLSFLhnttezlzQ","s":"0","dt":"2020-08-22T17:50:09.988921+00:00"}')
+    assert serder.raw == (b'{"v":"ACDCCAACAAJSONAADa.","t":"rip","d":"EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhip'
+                        b'wgaoCdK_Wq","u":"0AAxyHwW6htOZ_rANOaZb2N2","i":"EA2X8Lfrl9lZbCGz8cfKIvM_cqLy'
+                        b'TYVLSFLhnttezlzQ","n":"0","dt":"2020-08-22T17:50:09.988921+00:00"}')
 
     # Test CESR
     said = 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8'
@@ -65,7 +65,6 @@ def test_regcept_message():
     assert serder.issuer == issuer
     assert serder.stamp == stamp
 
-
     assert serder.sad == \
     {
         'v': 'ACDCCAACAACESRAACs.',
@@ -73,14 +72,13 @@ def test_regcept_message():
         'd': 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8',
         'u': '0AAxyHwW6htOZ_rANOaZb2N2',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
-        's': '0',
+        'n': '0',
         'dt': '2020-08-22T17:50:09.988921+00:00'
     }
 
     assert serder.raw == (b'-FAq0OACDCCAACAAXripEM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR80AAxyHwW6htO'
                           b'Z_rANOaZb2N2EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQMAAA1AAG2020-08-22T1'
                           b'7c50c09d988921p00c00')
-
 
     # test Serder inhale from raw roundtripped
     sad = serder.sad

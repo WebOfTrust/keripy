@@ -548,12 +548,12 @@ class Serder:
                 Ilks.rul: FieldDom(alls=dict(v='', t='', d='', r=''),
                     saids={Saids.d: DigDex.Blake3_256}),
                 Ilks.rip: FieldDom(alls=dict(v='', t='', d='', u='', i='',
-                                              s='', dt=''),
+                                              n='', dt=''),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.bup: FieldDom(alls=dict(v='', t='', d='', r='', s='',
-                                              p='', dt='', a=''),
+                Ilks.bup: FieldDom(alls=dict(v='', t='', d='', rd='', n='',
+                                              p='', dt='', b=''),
                     saids={Saids.d: DigDex.Blake3_256}),
-                Ilks.upd: FieldDom(alls=dict(v='', t='', d='', r='', s='',
+                Ilks.upd: FieldDom(alls=dict(v='', t='', d='', rd='', n='',
                                               p='', dt='', td='', ts=''),
                     saids={Saids.d: DigDex.Blake3_256}),
             },
@@ -1474,25 +1474,28 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             sad[l] = ilk
 
-                        case "d" | "p" | "r" :  # SAID
+                        case "d"|"p"|"rd"|"b":  # SAID
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "u":  # UUID salty Nonce
                             sad[l] = Noncer(qb64b=raw, strip=True).qb64
 
-                        case "i" :  # AID
+                        case "i":  # AID
                             sad[l] = Prefixer(qb64b=raw, strip=True).qb64
 
-                        case "s" :  # sequence number, schema said, or schema block
+                        case "n":  # sequence number
                             sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
 
                         case "dt":  # datetime string
                             sad[l] = Dater(qb64b=raw, strip=True).dts
 
-                        case "a" :  # attribute SAID or attribute block
+                        case "s":  # schema said, or schema block
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
 
-                        case "A" :  # Aggregate said or Aggregate list of blocks
+                        case "a"|"e"|"r" :  # attribute SAID or attribute block
+                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                        case "A":  # Aggregate said or Aggregate list of blocks
                             ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
                             if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
                                 raise DeserializeError(f"Expected List group got {ctr.name}")
@@ -1810,17 +1813,23 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             val = Ilker(ilk=v).qb64b  # assumes same
 
-                        case "d" | "i" | "p" | "u":  # said or aid
-                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+                        case "d"|"i"|"p"|"u"|"rd"|"b":  # said or aid
+                            val = v.encode()  # already primitive qb64 make qb6b
 
-                        case "r" | "a" | "e" :  # said or block
-                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+                        case "u":  # uuid or nonce
+                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
-                        case "s" :  # sequence number or said or block
+                        case "n":  # sequence number
                             val = Number(numh=v).qb64b  # convert hex str
 
                         case "dt":  # iso datetime
                             val = Dater(dts=v).qb64b  # dts to qb64b
+
+                        case "s":  # schema said or block
+                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+
+                        case "a"|"e"|"r" :  # said or block
+                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
 
                         case "A":  # list of blocks
                             frame = bytearray()
@@ -1831,7 +1840,6 @@ class Serder:
                                                     count=len(frame) // 4,
                                                     version=gvrsn).qb64b)
                             val.extend(frame)
-
 
                         case _:  # if extra fields this is where logic would be
                             raise SerializeError(f"Unsupported protocol field label"

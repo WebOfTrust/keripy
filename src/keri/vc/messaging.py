@@ -30,7 +30,7 @@ def regcept(issuer, nonce=None, stamp=None,
         kind (str): serialization kind from Kinds
 
 
-    alls (v='', t='', d='', u='', i='', s='', dt='')
+    alls (v='', t='', d='', u='', i='', n='', dt='')
     opts (,)
 
 
@@ -42,13 +42,44 @@ def regcept(issuer, nonce=None, stamp=None,
     nonce = nonce if nonce is not None else Noncer().qb64
     snh = Number(num=0).numh  # sn for registry incept must be 0
     stamp = stamp if stamp is not None else nowIso8601()
-    sad = dict(v=vs, t=ilk, d='', u=nonce, i=issuer, s=snh, dt=stamp)
+    sad = dict(v=vs, t=ilk, d='', u=nonce, i=issuer, n=snh, dt=stamp)
     return SerderACDC(sad=sad, makify=True)
 
 
+def blindate(issuer, regid=None, blind=None, nonce=None, sn=1, stamp=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create registry blindable update message of type 'bup'
+    for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC 'rip' message
+
+    Parameters:
+        issuer  (str): qb64 of issuer AID
+        ilk (str|None): message type as 3 char str or None if not present
+        nonce (str|None): qb64 of salty nonce (UUID) if any. None means no UUID
+        stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                           creation of message. None means use
+
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number
+        kind (str): serialization kind from Kinds
+
+
+    alls (v='', t='', d='', u='', i='', n='', dt='')
+    opts (,)
 
 
 
+    .sad and its serialization .raw. Is whatever is input to the serder.
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.rip
+    nonce = nonce if nonce is not None else Noncer().qb64
+    snh = Number(num=0).numh  # sn for registry incept must be 0
+    stamp = stamp if stamp is not None else nowIso8601()
+    sad = dict(v=vs, t=ilk, d='', u=nonce, i=issuer, n=snh, dt=stamp)
+    return SerderACDC(sad=sad, makify=True)
 
 
 def mapACDC(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
