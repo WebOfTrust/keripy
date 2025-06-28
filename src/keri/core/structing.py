@@ -1142,3 +1142,19 @@ class Blinder(Structor):
 
 
 
+    @property
+    def said(self):
+        """said property getter
+        Returns:
+           said (str): qb64 said of BlindState CESR .data.d 'd' field
+        """
+        return self.data.d.qb64
+
+
+    @property
+    def saidb(self):
+        """saidb property getter
+        Returns:
+            saidb (bytes): qb64b said of BlindState CESR .data.d 'd' field
+        """
+        return self.data.d.qb64b

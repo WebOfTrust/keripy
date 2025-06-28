@@ -1125,6 +1125,8 @@ def test_blinder():
     assert blinder.qb64 == qb64
     assert blinder.qb64b == qb64b
     assert blinder.qb2 == qb2
+    assert blinder.said == sdig
+    assert blinder.saidb == sdig.encode()
 
     # test round trip with enclose and extract qb64
     assert blinder.enclose() == enclqb64  # ctr from clan
@@ -1142,6 +1144,8 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.said == sdig
+    assert eblinder.saidb == sdig.encode()
     assert ims  # not stripped
     eblinder = Blinder.extract(qb64=ims, strip=True)
     assert isinstance(eblinder, Blinder)
@@ -1168,6 +1172,8 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.said == sdig
+    assert eblinder.saidb == sdig.encode()
     assert ims  # not stripped
     eblinder = Blinder.extract(qb2=ims, strip=True)
     assert isinstance(eblinder, Blinder)
@@ -1179,6 +1185,8 @@ def test_blinder():
     assert eblinder.qb64 == qb64
     assert eblinder.qb64b == qb64b
     assert eblinder.qb2 == qb2
+    assert eblinder.said == sdig
+    assert eblinder.saidb == sdig.encode()
     assert not ims  # stripped
 
     # test round trip using naive cast
@@ -1442,7 +1450,6 @@ def test_blinder():
     # Test makify with empty said 'd' field using crew to init
     # Test data with cast so not naive cast
     said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
-
 
     mcrew = crew._replace(d='')  # crew with empty value for said 'd' field
     assert mcrew == BlindState(d='',

@@ -1474,7 +1474,7 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             sad[l] = ilk
 
-                        case "d"|"p"|"rd"|"b":  # SAID
+                        case "d"|"p"|"rd"|"b"|"td":  # SAID
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "u":  # UUID salty Nonce
@@ -1488,6 +1488,9 @@ class Serder:
 
                         case "dt":  # datetime string
                             sad[l] = Dater(qb64b=raw, strip=True).dts
+
+                        case "ts":  # transaction event state string
+                            sad[l] = Labeler(qb64b=raw, strip=True).label
 
                         case "s":  # schema said, or schema block
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
@@ -1813,8 +1816,9 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             val = Ilker(ilk=v).qb64b  # assumes same
 
-                        case "d"|"i"|"p"|"u"|"rd"|"b":  # said or aid
+                        case "d"|"i"|"p"|"u"|"rd"|"b"|"td":  # said or aid
                             val = v.encode()  # already primitive qb64 make qb6b
+
 
                         case "u":  # uuid or nonce
                             val = Noncer(nonce=v).qb64b  # convert nonce/uuid
@@ -1824,6 +1828,9 @@ class Serder:
 
                         case "dt":  # iso datetime
                             val = Dater(dts=v).qb64b  # dts to qb64b
+
+                        case "ts":  # transaction event state string
+                            val = Labeler(label=v).qb64b  # convert label to qb64b
 
                         case "s":  # schema said or block
                             val = v.encode("utf-8")  # already primitive qb64 make qb6b
@@ -2629,15 +2636,17 @@ class SerderACDC(Serder):
                                   f" deversify of sad.")
         # verified successfully since no exception
 
-        # required issuer field as valid AID, not empty
-        try:
-            code = Matter(qb64=self.issuer).code
-        except Exception as ex:
-            raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.issuer}.") from ex
+        if (not self.ilk or self.ilk in
+                (Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg, Ilks.rip)):
+            # required issuer field as valid AID, not empty
+            try:
+                code = Matter(qb64=self.issuer).code
+            except Exception as ex:
+                raise ValidationError(f"Invalid issuer AID = "
+                                      f"{self.issuer}.") from ex
 
-        if code not in PreDex:
-            raise ValidationError(f"Invalid issuer AID code = {code}.")
+            if code not in PreDex:
+                raise ValidationError(f"Invalid issuer AID code = {code}.")
 
 
 

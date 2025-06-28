@@ -10,7 +10,7 @@ from ..kering import versify, Protocols, Kinds, Ilks, Vrsn_2_0
 from ..core import Number, Noncer, SerderACDC
 from ..help import nowIso8601
 
-def regcept(issuer, nonce=None, stamp=None,
+def regcept(issuer, *, nonce=None, stamp=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create registry inception message of type 'rip'
     for ACDC protocol v2.
@@ -20,7 +20,6 @@ def regcept(issuer, nonce=None, stamp=None,
 
     Parameters:
         issuer  (str): qb64 of issuer AID
-        ilk (str|None): message type as 3 char str or None if not present
         nonce (str|None): qb64 of salty nonce (UUID) if any. None means no UUID
         stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                            creation of message. None means use
@@ -29,13 +28,8 @@ def regcept(issuer, nonce=None, stamp=None,
         gvrsn (Versionage): CESR Genus version number
         kind (str): serialization kind from Kinds
 
-
     alls (v='', t='', d='', u='', i='', n='', dt='')
     opts (,)
-
-
-
-    .sad and its serialization .raw. Is whatever is input to the serder.
     """
     vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
     ilk = Ilks.rip
@@ -46,18 +40,19 @@ def regcept(issuer, nonce=None, stamp=None,
     return SerderACDC(sad=sad, makify=True)
 
 
-def blindate(issuer, regid=None, blind=None, nonce=None, sn=1, stamp=None,
+def blindate(regid, prior, blind, *, sn=1, stamp=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create registry blindable update message of type 'bup'
     for ACDC protocol v2.
 
     Returns:
-        serder (SerderACDC): instance of ACDC 'rip' message
+        serder (SerderACDC): instance of ACDC 'bup' message
 
     Parameters:
-        issuer  (str): qb64 of issuer AID
-        ilk (str|None): message type as 3 char str or None if not present
-        nonce (str|None): qb64 of salty nonce (UUID) if any. None means no UUID
+        regid  (str): qb64 registry SAID  (said, 'd' field of 'rip')
+        prior  (str): qb64 prior message SAID  (said, 'd' field of 'rip' or 'bup')
+        blind  (str): qb64 blindable state attribute block said (not its nonce)
+        sn (int): sequence number of blindable update message
         stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                            creation of message. None means use
 
@@ -65,20 +60,47 @@ def blindate(issuer, regid=None, blind=None, nonce=None, sn=1, stamp=None,
         gvrsn (Versionage): CESR Genus version number
         kind (str): serialization kind from Kinds
 
-
-    alls (v='', t='', d='', u='', i='', n='', dt='')
+    alls (v='', t='', d='', rd='', n='', p='', dt='', b='')
     opts (,)
-
-
-
-    .sad and its serialization .raw. Is whatever is input to the serder.
     """
     vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
-    ilk = Ilks.rip
-    nonce = nonce if nonce is not None else Noncer().qb64
-    snh = Number(num=0).numh  # sn for registry incept must be 0
+    ilk = Ilks.bup
+    snh = Number(num=sn).numh  # sn for registry incept must be 0
     stamp = stamp if stamp is not None else nowIso8601()
-    sad = dict(v=vs, t=ilk, d='', u=nonce, i=issuer, n=snh, dt=stamp)
+    sad = dict(v=vs, t=ilk, d='', rd=regid, n=snh, p=prior, dt=stamp, b=blind)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def update(regid, prior, acdc, state, *, sn=1, stamp=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create registry update message of type 'upd'
+    for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC 'bup' message
+
+    Parameters:
+        regid  (str): qb64 registry SAID  (said, 'd' field of 'rip')
+        prior  (str): qb64 prior message SAID  (said, 'd' field of 'rip' or 'upd')
+        acdc  (str): transaction event ACDC SAID qb64
+                        'd' field of associated acdc 'acm', 'ace', 'act', 'acg'
+        state  (str): transaction event state string
+        sn (int): sequence number of blindable update message
+        stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                           creation of message. None means use
+
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number
+        kind (str): serialization kind from Kinds
+
+    alls (v='', t='', d='', rd='', n='', p='', dt='', td='', ts='')
+    opts (,)
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.upd
+    snh = Number(num=sn).numh  # sn for registry incept must be 0
+    stamp = stamp if stamp is not None else nowIso8601()
+    sad = dict(v=vs, t=ilk, d='', rd=regid, n=snh, p=prior, dt=stamp, td=acdc, ts=state)
     return SerderACDC(sad=sad, makify=True)
 
 

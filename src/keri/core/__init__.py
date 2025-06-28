@@ -18,4 +18,6 @@ from .counting import Counter, Codens, GenDex, CtrDex_1_0, CtrDex_2_0, ProGen
 from .mapping import Mapper, EscapeDex
 from .serdering import Serdery, Serder, SerderKERI, SerderACDC
 from .streaming import Streamer
-from .structing import Structor, Sealer, Blinder, CodenToClans, ClanToCodens
+from .structing import (Structor, Sealer, Blinder, CodenToClans, ClanToCodens,
+                        SealDigest, SealRoot, SealBack, SealLast, SealTrans,
+                        SealEvent, SealKind, BlindState)
