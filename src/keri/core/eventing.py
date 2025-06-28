@@ -3960,13 +3960,19 @@ class Kevery:
                         raise LikelyDuplicitousError(msg)
 
 
-    def processReceiptWitness(self, serder, wigers, local=None):
+    def processReceipt(self, serder, cigars=None, tsgs=None, wigers=None, local=None):
         """
-        Process one witness receipt serder with attached witness wigers
-        (indexed signatures)
+        Process one receipt serder with attached cigars
+        may or may not be a witness receipt. If prefix matches witness then
+        promote to indexed witness signature and store appropriately. Otherwise
+        signature is nontrans nonwitness endorser (watcher etc)
 
         Parameters:
-            serder (SerderKERI): instance of serialized receipt message not receipted event
+            serder (SerderKERI): rct instance of serialized receipt message
+            cigars (list[Cigar]): instances that contain receipt couple
+                signature in .raw and public key in .verfer
+            tsgs (list[tuple]): from extracted transferable indexed sig groups
+                each converted group is tuple of (i,s,d) triple plus list of sigs
             wigers (list[Siger]): instances that with witness indexed signatures
                 signature in .raw. Index is offset into witness list of latest
                 establishment event for receipted event. Signature uses key pair
@@ -3985,88 +3991,9 @@ class Kevery:
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
-        # fetch  pre dig to process
-        ked = serder.ked
-        pre = serder.pre
-        sn = serder.sn
-
-        # Only accept receipt if for last seen version of event at sn
-        snkey = snKey(pre=pre, sn=sn)
-        ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
-        if ldig is not None:  # verify digs match
-            ldig = bytes(ldig).decode("utf-8")
-            # retrieve event by dig assumes if ldig is not None that event exists at ldig
-            dgkey = dgKey(pre=pre, dig=ldig)
-            raw = bytes(self.db.getEvt(key=dgkey))  # retrieve receipted event at dig
-            # assumes db ensures that raw must not be none
-            lserder = serdering.SerderKERI(raw=raw)  # deserialize event raw
-
-            if not lserder.compare(said=ked["d"]):  # stale receipt at sn discard
-                msg = f"Stale receipt at sn = {ked['s']} for rct = {serder.said}."
-                logger.info(msg)
-                logger.debug("Stale receipt event body=\n%s\n", serder.pretty())
-                raise ValidationError(msg)
-
-            # process each couple verify sig and write to db
-            wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
-            for wiger in wigers:
-                # assign verfers from witness list
-                if wiger.index >= len(wits):
-                    continue  # skip invalid witness index
-                wiger.verfer = Verfer(qb64=wits[wiger.index])  # assign verfer
-                if wiger.verfer.transferable:  # skip transferable verfers
-                    continue  # skip invalid witness prefix
-
-                if not self.lax and wiger.verfer.qb64 in self.prefixes:  # own is witness
-                    if pre in self.prefixes:  # skip own receiptor of own event
-                        # sign own events not receipt them
-                        logger.info("Kevery: skipped own receipt attachment"
-                                    " on own event receipt=%s", serder.said)
-                        logger.debug("Event=\n%s\n", serder.pretty())
-
-                        continue  # skip own receipt attachment on own event
-                    if not local:  # so skip own receipt on other event when non-local source
-                        logger.debug("Kevery: skipped own receipt attachment"
-                                     " on nonlocal event receipt=%s", serder.said)
-                        logger.debug("Event=\n%s\n", serder.pretty())
-                        continue  # skip own receipt attachment on non-local event
-
-                if wiger.verfer.verify(wiger.raw, lserder.raw):
-                    # write receipt indexed sig to database
-                    self.db.addWig(key=dgkey, val=wiger.qb64b)
-
-        else:  # no events to be receipted yet at that sn so escrow
-            # get digest from receipt message not receipted event
-            self.escrowUWReceipt(serder=serder, wigers=wigers, said=ked["d"])
-            msg = f"Unverified witness receipt={serder.said}"
-            logger.info(msg)
-            logger.debug("Event=\n%s\n", serder.pretty())
-            raise UnverifiedWitnessReceiptError(msg)
-
-    def processReceipt(self, serder, cigars, local=None):
-        """
-        Process one receipt serder with attached cigars
-        may or may not be a witness receipt. If prefix matches witness then
-        promote to indexed witness signature and store appropriately. Otherwise
-        signature is nontrans nonwitness endorser (watcher etc)
-
-        Parameters:
-            serder (SerderKERI): rct instance of serialized receipt message
-            cigars (list[Cigar]): instances that contain receipt couple
-                signature in .raw and public key in .verfer
-            local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-
-        Receipt dict labels
-            vs  # version string
-            pre  # qb64 prefix
-            sn  # hex string sequence number
-            ilk  # rct
-            dig  # qb64 digest of receipted event
-        """
-        local = local if local is not None else self.local
-        local = True if local else False  # force boolean
+        cigars = cigars if cigars is not None else []
+        tsgs = tsgs if tsgs is not None else []
+        wigers = wigers if wigers is not None else []
 
         # fetch  pre dig to process
         ked = serder.ked
@@ -4120,13 +4047,97 @@ class Kevery:
                         couple = cigar.verfer.qb64b + cigar.qb64b
                         self.db.addRct(key=dgkey, val=couple)
 
+            for sprefixer, sseqner, saider, sigers in tsgs:  # iterate over each tsg
+                if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
+                    if pre in self.prefixes:  # skip own receipter of own event
+                        # sign own events as controller not endorse them via receipt
+                        raise ValidationError("Own pre={} receipter of own event"
+                                              " {}.".format(self.prefixes, serder.pretty()))
+                    if not local:  # skip own receipts of nonlocal events
+                        raise ValidationError("Own pre={} receipter of nonlocal event "
+                                              "{}.".format(self.prefixes, serder.pretty()))
+
+                # receipted event in db so attempt to get receipter est evt
+                # retrieve dig of last event at sn of est evt of receiptor.
+                sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b, sn=sseqner.sn))
+                if sdig is None:
+                    # receiptor's est event not yet in receiptors's KEL
+                    # so need cue to discover est evt KEL for receipter from watcher etc
+                    self.escrowTReceipts(serder, sprefixer, sseqner, saider, sigers)
+                    raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                                             "missing establishment event of transferable "
+                                                             "receipter for event={}."
+                                                             "".format(ked))
+
+                # retrieve last event itself of receiptor est evt from sdig.
+                sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
+                # assumes db ensures that sraw must not be none because sdig was in KE
+                sserder = serdering.SerderKERI(raw=bytes(sraw))
+                if not sserder.compare(said=saider.qb64):  # endorser's dig not match event
+                    raise ValidationError("Bad trans indexed sig group at sn = {}"
+                                          " for ksn = {}."
+                                          "".format(sseqner.sn, sserder.ked))
+
+                # verify sigs and if so write receipt to database
+                sverfers = sserder.verfers
+                if not sverfers:
+                    raise ValidationError("Invalid receipter's est. event"
+                                          " dig = {}  from pre ={}, no keys."
+                                          "".format(saider.qb64, sprefixer.qb64))
+
+                for siger in sigers:  # endorser (non-controller) signatures
+                    if siger.index >= len(sverfers):
+                        raise ValidationError("Index = {} to large for keys."
+                                              "".format(siger.index))
+                    siger.verfer = sverfers[siger.index]  # assign verfer
+                    if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        # good sig so write receipt quadruple to database
+                        quadruple = sprefixer.qb64b + sseqner.qb64b + saider.qb64b + siger.qb64b
+                        self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
+                                       val=quadruple)  # dups kept
+
+            wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
+            for wiger in wigers:
+                # assign verfers from witness list
+                if wiger.index >= len(wits):
+                    continue  # skip invalid witness index
+                wiger.verfer = Verfer(qb64=wits[wiger.index])  # assign verfer
+                if wiger.verfer.transferable:  # skip transferable verfers
+                    continue  # skip invalid witness prefix
+
+                if not self.lax and wiger.verfer.qb64 in self.prefixes:  # own is witness
+                    if pre in self.prefixes:  # skip own receiptor of own event
+                        # sign own events not receipt them
+                        logger.info("Kevery: skipped own receipt attachment"
+                                    " on own event receipt=%s", serder.said)
+                        logger.debug("Event=\n%s\n", serder.pretty())
+
+                        continue  # skip own receipt attachment on own event
+                    if not local:  # so skip own receipt on other event when non-local source
+                        logger.debug("Kevery: skipped own receipt attachment"
+                                     " on nonlocal event receipt=%s", serder.said)
+                        logger.debug("Event=\n%s\n", serder.pretty())
+                        continue  # skip own receipt attachment on non-local event
+
+                if wiger.verfer.verify(wiger.raw, lserder.raw):
+                    # write receipt indexed sig to database
+                    self.db.addWig(key=dgkey, val=wiger.qb64b)
+
+
         else:  # no events to be receipted yet at that sn so escrow
-            self.escrowUReceipt(serder, cigars, said=ked["d"])  # digest in receipt
+            if cigars:
+                self.escrowUReceipt(serder, cigars, said=ked["d"])  # digest in receipt
+
+            if tsgs:
+                self.escrowTRGroups(serder, tsgs)
+
+            if wigers:
+                self.escrowUWReceipt(serder=serder, wigers=wigers, said=ked["d"])
+
             msg = f"Unverified receipt = {serder.said}"
             logger.info(msg)
             logger.debug("event=\n%s\n", serder.pretty())
             raise UnverifiedReceiptError(msg)
-
 
     def processAttachedReceiptCouples(self, serder, cigars, firner=None, local=None):
         """
@@ -4207,102 +4218,6 @@ class Kevery:
                 else:  # write receipt couple to database
                     couple = cigar.verfer.qb64b + cigar.qb64b
                     self.db.addRct(key=dgKey(pre, ldig), val=couple)
-
-    def processReceiptTrans(self, serder, tsgs, local=None):
-        """
-        Process one transferable validator receipt (chit) serder with attached sigers
-        (indexed signatures) who are not controllers. Controllers may only attach signatures to
-        the associated event not by sending signature attached to receipt of event.
-
-        Parameters:
-            serder (serderKERI): rct (transferable validator receipt message)
-            tsgs (list[tuple]): from extracted transferable indexed sig groups
-                each converted group is tuple of (i,s,d) triple plus list of sigs
-            local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-
-        Receipt dict labels
-            vs  # version string
-            pre  # qb64 prefix
-            sn  # hex string sequence number
-            ilk  # rct
-            dig  # qb64 digest of receipted event
-
-        """
-        local = local if local is not None else self.local
-        local = True if local else False  # force boolean
-
-        # fetch  pre, dig,seal to process
-        ked = serder.ked
-        pre = serder.pre
-        sn = serder.sn
-
-        # Only accept receipt if for last seen version of event at sn
-        ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
-
-        if ldig is None:  # escrow because event does not yet exist in database
-            # take advantage of fact that receipt and event have same pre, sn fields
-            self.escrowTRGroups(serder, tsgs)
-            raise UnverifiedTransferableReceiptError("Unverified receipt={}.".format(ked))
-
-        # retrieve event by dig assumes if ldig is not None that event exists at ldig
-        ldig = bytes(ldig).decode("utf-8")
-        lraw = self.db.getEvt(key=dgKey(pre=pre, dig=ldig))
-        lserder = serdering.SerderKERI(raw=bytes(lraw))
-        # verify digs match
-        if not lserder.compare(said=ldig):  # mismatch events problem with replay
-            raise ValidationError("Mismatch receipt of event at sn = {} with db."
-                                  "".format(sn))
-
-        for sprefixer, sseqner, saider, sigers in tsgs:  # iterate over each tsg
-            if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
-                if pre in self.prefixes:  # skip own receipter of own event
-                    # sign own events as controller not endorse them via receipt
-                    raise ValidationError("Own pre={} receipter of own event"
-                                          " {}.".format(self.prefixes, serder.pretty()))
-                if not local:  # skip own receipts of nonlocal events
-                    raise ValidationError("Own pre={} receipter of nonlocal event "
-                                          "{}.".format(self.prefixes, serder.pretty()))
-
-            # receipted event in db so attempt to get receipter est evt
-            # retrieve dig of last event at sn of est evt of receiptor.
-            sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b, sn=sseqner.sn))
-            if sdig is None:
-                # receiptor's est event not yet in receiptors's KEL
-                # so need cue to discover est evt KEL for receipter from watcher etc
-                self.escrowTReceipts(serder, sprefixer, sseqner, saider, sigers)
-                raise UnverifiedTransferableReceiptError("Unverified receipt: "
-                                                         "missing establishment event of transferable "
-                                                         "receipter for event={}."
-                                                         "".format(ked))
-
-            # retrieve last event itself of receiptor est evt from sdig.
-            sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = serdering.SerderKERI(raw=bytes(sraw))
-            if not sserder.compare(said=saider.qb64):  # endorser's dig not match event
-                raise ValidationError("Bad trans indexed sig group at sn = {}"
-                                      " for ksn = {}."
-                                      "".format(sseqner.sn, sserder.ked))
-
-            # verify sigs and if so write receipt to database
-            sverfers = sserder.verfers
-            if not sverfers:
-                raise ValidationError("Invalid receipter's est. event"
-                                      " dig = {}  from pre ={}, no keys."
-                                      "".format(saider.qb64, sprefixer.qb64))
-
-            for siger in sigers:  # endorser (non-controller) signatures
-                if siger.index >= len(sverfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                          "".format(siger.index))
-                siger.verfer = sverfers[siger.index]  # assign verfer
-                if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                    # good sig so write receipt quadruple to database
-                    quadruple = sprefixer.qb64b + sseqner.qb64b + saider.qb64b + siger.qb64b
-                    self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
-                                   val=quadruple)  # dups kept
 
     def processAttachedReceiptQuadruples(self, serder, trqs, firner=None, local=None):
         """
