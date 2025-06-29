@@ -1174,14 +1174,8 @@ class Parser:
                     raise kering.ValidationError(msg)
 
                 try:
-                    if exts['cigars']: # cigars:
-                        kvy.processReceipt(**exts)
 
-                    if exts['wigers']: # wigers:
-                        kvy.processReceiptWitness(**exts)
-
-                    if exts['tsgs']: # tsgs:
-                        kvy.processReceiptTrans(**exts)
+                    kvy.processReceipt(**exts)
 
                 except AttributeError as ex:
                     raise kering.ValidationError(f"No kevery to process so dropped msg"
