@@ -1490,7 +1490,7 @@ class Serder:
                             sad[l] = Dater(qb64b=raw, strip=True).dts
 
                         case "ts":  # transaction event state string
-                            sad[l] = Labeler(qb64b=raw, strip=True).label
+                            sad[l] = Labeler(qb64b=raw, strip=True).text
 
                         case "s":  # schema said, or schema block
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
@@ -1830,7 +1830,7 @@ class Serder:
                             val = Dater(dts=v).qb64b  # dts to qb64b
 
                         case "ts":  # transaction event state string
-                            val = Labeler(label=v).qb64b  # convert label to qb64b
+                            val = Labeler(text=v).qb64b  # convert text to qb64b
 
                         case "s":  # schema said or block
                             val = v.encode("utf-8")  # already primitive qb64 make qb6b

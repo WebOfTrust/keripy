@@ -18,7 +18,7 @@ from keri.kering import ValidationError, InvalidValueError, EmptyMaterialError, 
 from keri.help import helping
 
 from keri.core import (Matter, Diger, Prefixer, Number, Verser, Labeler,
-                       Noncer, NonceDex)
+                       Noncer, NonceDex, Salter)
 
 
 from keri.core import structing
@@ -1055,47 +1055,120 @@ def test_blinder_class():
         'BlindedStateQuadruples': 'BlindState',
     }
 
+    # test makeUUID class method
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    salter = Salter(qb64=salt)  # default tier is Tiers.low
+    assert salter.qb64 == salt
+    sn = 1
+    path = Number(num=sn).huge
+    assert path == '0AAAAAAAAAAAAAAAAAAAAAAB'
+    uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+    assert uuid == 'aCkrG58J13tR9duKAZ7kw2kz5wsmCw-vx4_7DYpKsDZn'
+
+    muuid = Blinder.makeUUID(salt=salt, sn=sn)
+    assert muuid == uuid
+
+    #Test blind classmethod
+    #salt = Salter().qb64
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    salter = Salter(qb64=salt)  # default tier is Tiers.low
+    assert salter.qb64 == salt
+    sn = 1
+    path = Number(num=sn).huge
+    assert path == '0AAAAAAAAAAAAAAAAAAAAAAB'
+    uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+    assert uuid == 'aCkrG58J13tR9duKAZ7kw2kz5wsmCw-vx4_7DYpKsDZn'
+    acdc = ''
+    state = ''
+    said = 'EOKCz_vBJTpndJf-LBxf_-bPvF0CFK5ndzpBY1xN46eA'
+    blinder = Blinder.blind(salt=salt, sn=sn)  # defaults acdc='' sn=1, tier=Tiers.low
+    assert blinder.crew == BlindState(d='EOKCz_vBJTpndJf-LBxf_-bPvF0CFK5ndzpBY1xN46eA',
+                                      u='aCkrG58J13tR9duKAZ7kw2kz5wsmCw-vx4_7DYpKsDZn',
+                                      td='',
+                                      ts='')
+    assert blinder.said == said
+    assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
+
+    # test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    unblinder = Blinder.unblind(said=said,
+                                acdc='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                states=['issued', 'revoked'],
+                                salt=salt,
+                                sn=sn)
+    assert unblinder
+    assert unblinder.crew == blinder.crew
+
+
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    salter = Salter(qb64=salt)  # default tier is Tiers.low
+    assert salter.qb64 == salt
+    sn = 2
+    path = Number(num=sn).huge
+    assert path == '0AAAAAAAAAAAAAAAAAAAAAAC'
+    uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+    assert uuid == 'aCRMO8VEYG82ChwXeQymArvKrBFJ7126939-X_nEIBxM'
+    acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    state = 'revoked'
+    said = 'EDY1nxc4KkgAkgHylkBYMcW6xXQhG64b20TWFH4xJGtm'
+    blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)  # defaults tier=Tiers.low
+    assert blinder.crew == BlindState(d='EDY1nxc4KkgAkgHylkBYMcW6xXQhG64b20TWFH4xJGtm',
+                                      u='aCRMO8VEYG82ChwXeQymArvKrBFJ7126939-X_nEIBxM',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked')
+    assert blinder.said == said
+    assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
+
+    # test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    unblinder = Blinder.unblind(said=said,
+                                acdc='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                states=['issued', 'revoked'],
+                                salt=salt,
+                                sn=sn)
+    assert unblinder
+    assert unblinder.crew == blinder.crew
+
 
     # Test unblind classmethod
-    said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
-    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    said = 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
     acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
     states = ["issued", "revoked"]
 
-    blinder = Blinder.unblind(said=said, nonce=nonce, acdc=acdc, states=states)
+    blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states)
     assert blinder is not None
-    assert blinder.crew == BlindState(d=said, u=nonce, td=acdc, ts='issued')
+    assert blinder.crew == BlindState(d=said, u=uuid, td=acdc, ts='issued')
 
     # Test unblind classmethod with placeholder blinder
-    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    said = 'EH5AC1rOvPwID9Iz6bI-0Cr20pNSsD27JsemQBAYZYWi'
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
     # use empty for td and ts to create placeholder
-    crew = BlindState(d='', u=nonce, td='', ts='')
+    crew = BlindState(d='', u=uuid, td='', ts='')
     blinder = Blinder(crew=crew, makify=True)
-    assert blinder.said == 'EMbeEPVPFc_hklwr8AJEPgxr3lnVVwywnBKxXz7cYz9x'
-    said = 'EMbeEPVPFc_hklwr8AJEPgxr3lnVVwywnBKxXz7cYz9x'
+    assert blinder.said == said
     states = ["issued", "revoked"]
 
-    blinder = Blinder.unblind(said=said, nonce=nonce, acdc=acdc, states=states)
+    blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states)
     assert blinder is not None
-    assert blinder.crew == BlindState(d=said, u=nonce, td='', ts='')
+    assert blinder.crew == BlindState(d=said, u=uuid, td='', ts='')
 
     #test unblind fails when wrong nonce
-    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
-    blinder = Blinder.unblind(said=said, nonce=nonce, acdc=acdc, states=states)
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
+    blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states)
     assert blinder is None
-
     """End Test"""
 
 
 def test_blinder():
     """test blinder instance"""
 
-
     with pytest.raises(kering.InvalidValueError):
         blinder = Blinder()  # test default
 
-
-    sdig = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    sdig = 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
     sdiger = Noncer(qb64=sdig)
     nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
     noncer = Noncer(nonce=nonce)
@@ -1127,12 +1200,12 @@ def test_blinder():
     qb64 = sdiger.qb64 + noncer.qb64 + adiger.qb64 + labeler.qb64
     qb64b = qb64.encode()
     qb2 = sdiger.qb2 + noncer.qb2 + adiger.qb2 + labeler.qb2
-    enclqb64 = bytearray(b'-aAjEBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769aJte0a_x8dBbGQrB'
+    enclqb64 = bytearray(b'-aAjEJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5aJte0a_x8dBbGQrB'
                          b'kdYRgkzvFlQss3ovVOkUz1L1YGPdEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbY'
-                        b'GGCUQgqQ0Missued')
+                         b'GGCUQgqQ0Missued')
 
-    enclqb2 = bytearray(b'\xf9\xa0#\x10\x14\xc0)r\xf9\xb2-\xf5\xac"\x82\x8ac\xb0G\xf8'
-                        b'\tM\x19\x8bj\xa8\xb1\xbe\xb2D\x8f\x93\xb3+\xbe\xbdh\x9b^\xd1'
+    enclqb2 = bytearray(b'\xf9\xa0#\x10\x90\xac\x12?\r\xe7\xa9\xaf\xbdI\xb8\x82\xda*\xe9\x1b'
+                        b'\xa2z\x13\xa4\xd2\x19\xf6\ngLy\x1em\x1d\x12\xf9h\x9b^\xd1'
                         b'\xaf\xf1\xf1\xd0[\x19\n\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/'
                         b'T\xe9\x14\xcfR\xf5`c\xdd\x10\x18\xee\xd6\x8e1\xd5G~\xcfk'
                         b'\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86\xd8\x18`\x94B'
@@ -1147,7 +1220,7 @@ def test_blinder():
     assert blinder.crew == ncrew != crew  # since naive data
     assert blinder.asdict == dncrew == \
     {
-        'd': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769',
+        'd': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5',
         'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
         'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
         'ts': '0Missued'
@@ -1157,6 +1230,13 @@ def test_blinder():
     assert blinder.qb2 == qb2
     assert blinder.said == sdig
     assert blinder.saidb == sdig.encode()
+    assert blinder.uuid == nonce
+    assert blinder.uuidb == nonce.encode()
+    assert blinder.acdc == adig
+    assert blinder.acdcb == adig.encode()
+    assert blinder.state == text
+    assert blinder.stateb == text.encode()
+
 
     # test round trip with enclose and extract qb64
     assert blinder.enclose() == enclqb64  # ctr from clan
@@ -1229,7 +1309,7 @@ def test_blinder():
     assert blinder.crew == ncrew != crew  # since naive ipn
     assert blinder.asdict == dncrew == \
     {
-        'd': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769',
+        'd': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5',
         'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
         'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
         'ts': '0Missued'
@@ -1249,7 +1329,7 @@ def test_blinder():
     assert blinder.crew == crew != ncrew
     assert blinder.asdict == dcrew == \
     {
-        'd': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769',
+        'd': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5',
         'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
         'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
         'ts': 'issued'
@@ -1324,7 +1404,7 @@ def test_blinder():
     assert blinder.crew == crew != ncrew
     assert blinder.asdict == dcrew == \
     {
-        'd': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769',
+        'd': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5',
         'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
         'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
         'ts': 'issued'
@@ -1399,7 +1479,7 @@ def test_blinder():
     assert blinder.crew == crew != ncrew
     assert blinder.asdict == dcrew == \
     {
-        'd': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769',
+        'd': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5',
         'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
         'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
         'ts': 'issued'
@@ -1450,18 +1530,18 @@ def test_blinder():
 
     # Test makify using data and cast to init
     # Test data with cast so not naive cast
-    said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    said = 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
 
     dmcrew = dict(dcrew)
     dmcrew['d'] = said
-    mqb64 = ('EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    mqb64 = ('EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
              'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
              'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
-    mqb64b = (b'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    mqb64b = (b'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
               b'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
               b'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
-    mqb2 = (b'\x10\x14\xc0)r\xf9\xb2-\xf5\xac"\x82\x8ac\xb0G\xf8\tM\x19\x8bj\xa8\xb1'
-            b'\xbe\xb2D\x8f\x93\xb3+\xbe\xbdh\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
+    mqb2 = (b'\x10\x90\xac\x12?\r\xe7\xa9\xaf\xbdI\xb8\x82\xda*\xe9\x1b\xa2z\x13'
+            b'\xa4\xd2\x19\xf6\ngLy\x1em\x1d\x12\xf9h\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
             b'\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/T\xe9\x14\xcfR\xf5`c\xdd\x10\x18'
             b'\xee\xd6\x8e1\xd5G~\xcfk\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86'
             b'\xd8\x18`\x94B\n\x90\xd0\xc8\xac\xb2\xe7\x9d')
@@ -1479,7 +1559,7 @@ def test_blinder():
 
     # Test makify with empty said 'd' field using crew to init
     # Test data with cast so not naive cast
-    said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    said = 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
 
     mcrew = crew._replace(d='')  # crew with empty value for said 'd' field
     assert mcrew == BlindState(d='',
@@ -1488,17 +1568,18 @@ def test_blinder():
                                ts='issued')
     dmcrew = dict(dcrew)
     dmcrew['d'] = said
-    mqb64 = ('EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    mqb64 = ('EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
              'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
              'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
-    mqb64b = (b'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    mqb64b = (b'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
               b'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
               b'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
-    mqb2 = (b'\x10\x14\xc0)r\xf9\xb2-\xf5\xac"\x82\x8ac\xb0G\xf8\tM\x19\x8bj\xa8\xb1'
-            b'\xbe\xb2D\x8f\x93\xb3+\xbe\xbdh\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
+    mqb2 = (b'\x10\x90\xac\x12?\r\xe7\xa9\xaf\xbdI\xb8\x82\xda*\xe9\x1b\xa2z\x13'
+            b'\xa4\xd2\x19\xf6\ngLy\x1em\x1d\x12\xf9h\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
             b'\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/T\xe9\x14\xcfR\xf5`c\xdd\x10\x18'
             b'\xee\xd6\x8e1\xd5G~\xcfk\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86'
             b'\xd8\x18`\x94B\n\x90\xd0\xc8\xac\xb2\xe7\x9d')
+
 
     blinder = Blinder(crew=mcrew, makify=True)
     assert blinder.data.d.qb64 == said
@@ -1513,7 +1594,7 @@ def test_blinder():
 
     # Test makify with empty said 'd' field using data and cast to init
     # Test data with cast so not naive cast
-    said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    said = 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
     mdata = data._replace(d=Noncer(nonce=''))
     assert mdata.d.qb64 == '1AAP'
     mcrew = crew._replace(d='')  # crew with empty value for said 'd' field
@@ -1523,14 +1604,14 @@ def test_blinder():
                                ts='issued')
     dmcrew = dict(dcrew)
     dmcrew['d'] = said
-    mqb64 = ('EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    mqb64 = ('EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
              'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
              'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
-    mqb64b = (b'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    mqb64b = (b'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
               b'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
               b'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued')
-    mqb2 = (b'\x10\x14\xc0)r\xf9\xb2-\xf5\xac"\x82\x8ac\xb0G\xf8\tM\x19\x8bj\xa8\xb1'
-            b'\xbe\xb2D\x8f\x93\xb3+\xbe\xbdh\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
+    mqb2 = (b'\x10\x90\xac\x12?\r\xe7\xa9\xaf\xbdI\xb8\x82\xda*\xe9\x1b\xa2z\x13'
+            b'\xa4\xd2\x19\xf6\ngLy\x1em\x1d\x12\xf9h\x9b^\xd1\xaf\xf1\xf1\xd0[\x19\n'
             b'\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/T\xe9\x14\xcfR\xf5`c\xdd\x10\x18'
             b'\xee\xd6\x8e1\xd5G~\xcfk\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86'
             b'\xd8\x18`\x94B\n\x90\xd0\xc8\xac\xb2\xe7\x9d')
@@ -1546,9 +1627,8 @@ def test_blinder():
     assert blinder.qb64b == mqb64b
     assert blinder.qb2 == mqb2
 
-
     # repeat tests with empty nonce and empty 'td' trans said and empty state
-    sdig = 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD'
+    sdig = 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc'
     sdiger = Noncer(qb64=sdig)
 
     nonce = ''
@@ -1596,7 +1676,7 @@ def test_blinder():
     assert blinder.crew == ncrew != crew  # since naive data
     assert blinder.asdict == dncrew == \
     {
-        'd': 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD',
+        'd': 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc',
         'u': '1AAP',
         'td': '1AAP',
         'ts': '1AAP'
@@ -1604,6 +1684,14 @@ def test_blinder():
     assert blinder.qb64 == qb64
     assert blinder.qb64b == qb64b
     assert blinder.qb2 == qb2
+    assert blinder.said == sdig
+    assert blinder.saidb == sdig.encode()
+    assert blinder.uuid == nonce
+    assert blinder.uuidb == nonce.encode()
+    assert blinder.acdc == adig
+    assert blinder.acdcb == adig.encode()
+    assert blinder.state == text
+    assert blinder.stateb == text.encode()
 
     # test round trip using naive cast
     blinder = Blinder(cast=ncast, qb64=qb64)
@@ -1615,7 +1703,7 @@ def test_blinder():
     assert blinder.crew == ncrew != crew  # since naive ipn
     assert blinder.asdict == dncrew == \
     {
-        'd': 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD',
+        'd': 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc',
         'u': '1AAP',
         'td': '1AAP',
         'ts': '1AAP'
@@ -1633,7 +1721,7 @@ def test_blinder():
     assert blinder.crew == crew != ncrew
     assert blinder.asdict == dcrew == \
     {
-        'd': 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD',
+        'd': 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc',
         'u': '',
         'td': '',
         'ts': ''
@@ -1652,7 +1740,7 @@ def test_blinder():
     assert blinder.crew == crew != ncrew
     assert blinder.asdict == dcrew == \
     {
-        'd': 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD',
+        'd': 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc',
         'u': '',
         'td': '',
         'ts': ''
@@ -1671,7 +1759,7 @@ def test_blinder():
     assert blinder.crew == crew != ncrew
     assert blinder.asdict == dcrew == \
     {
-        'd': 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD',
+        'd': 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc',
         'u': '',
         'td': '',
         'ts': ''
@@ -1719,14 +1807,14 @@ def test_blinder():
 
     # Test makify
     # Test data with cast so not naive cast
-    said = 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD'
+    said = 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc'
 
     dmcrew = dict(dcrew)
     dmcrew['d'] = said
-    mqb64 = 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD1AAP1AAP1AAP'
-    mqb64b = b'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD1AAP1AAP1AAP'
-    mqb2 = (b'\x10\xd0\xe0A\x89,\xdd\xcbr\xe9\xe2(\xd2\r\xf4\xa4\x7f\x12p(sO\xe2\xa2'
-            b'\xb0\xd4q\xad\xfe\x9e6\xb7\x03\xd4\x00\x0f\xd4\x00\x0f\xd4\x00\x0f')
+    mqb64 = 'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc1AAP1AAP1AAP'
+    mqb64b = b'ENVNCgfL7yPno3U7eJ99EzABtuycUGfLYDFjx6x30VJc1AAP1AAP1AAP'
+    mqb2 = (b'\x10\xd5M\n\x07\xcb\xef#\xe7\xa3u;x\x9f}\x130\x01\xb6\xec\x9cPg\xcb`1c\xc7'
+            b'\xacw\xd1R\\\xd4\x00\x0f\xd4\x00\x0f\xd4\x00\x0f')
 
     blinder = Blinder(data=data, cast=cast, makify=True)
     assert blinder.data.d.qb64 == said
@@ -1738,6 +1826,14 @@ def test_blinder():
     assert blinder.qb64 == mqb64
     assert blinder.qb64b == mqb64b
     assert blinder.qb2 == mqb2
+    assert blinder.said == sdig
+    assert blinder.saidb == sdig.encode()
+    assert blinder.uuid == nonce
+    assert blinder.uuidb == nonce.encode()
+    assert blinder.acdc == adig
+    assert blinder.acdcb == adig.encode()
+    assert blinder.state == text
+    assert blinder.stateb == text.encode()
 
     """Done Test"""
 

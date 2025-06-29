@@ -26,10 +26,10 @@ from . import counting
 from .counting import Counter
 
 from . import structing
-from .structing import Sealer
+#from .structing import Sealer  circular import
 
 from . import serdering
-from .serdering import Serder
+# from .serdering import Serder circular import
 
 
 def annot(ims):
@@ -270,9 +270,9 @@ def annot(ims):
                     indent += 1
                     subframe = frame[:val.count*4]
                     del frame[:val.count*4]  # strip subframe
-                    clan = Sealer.Clans[Serder.CodeClans[val.code]]
+                    clan = structing.Sealer.Clans[serdering.Serder.CodeClans[val.code]]
                     while subframe:
-                        val = Sealer(clan=clan, qb64=subframe, strip=True)  # need to add qb64 parameter to structor
+                        val = structing.Sealer(clan=clan, qb64=subframe, strip=True)  # need to add qb64 parameter to structor
                         oms.extend(f"{' ' * indent * 2}{val.qb64}# seal Sealer {val.name}\n".encode())
                         indent += 1
                         for i, t in enumerate(val.crew._asdict().items()):

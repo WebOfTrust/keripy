@@ -5,6 +5,7 @@ keri.core.signing module
 Provides support Signer class
 """
 from dataclasses import dataclass, astuple, asdict
+from collections import namedtuple
 
 import pysodium
 
@@ -12,12 +13,13 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
+
 from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
                       InvalidValueError)
 
 from ..help import helping
 
-from .coring import (Tiers, )
+#from .coring import (Tiers, )
 from .coring import (SmallVrzDex, LargeVrzDex, Matter, MtrDex, Verfer, Cigar)
 from .indexing import IdrDex, Indexer, Siger
 from .streaming import Streamer
@@ -27,7 +29,10 @@ DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
 
+# secret derivation security tier
+Tierage = namedtuple("Tierage", 'low med high')
 
+Tiers = Tierage(low='low', med='med', high='high')
 
 
 class Signer(Matter):
