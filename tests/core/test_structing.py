@@ -1055,6 +1055,30 @@ def test_blinder_class():
         'BlindedStateQuadruples': 'BlindState',
     }
 
+
+    # Test unblind classmethod
+    said = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    states = ["issued", "revoked"]
+
+    blinder = Blinder.unblind(said=said, nonce=nonce, acdc=acdc, states=states)
+    assert blinder is not None
+    assert blinder.crew == BlindState(d=said, u=nonce, td=acdc, ts='issued')
+
+    # Test unblind classmethod with placeholder blinder
+    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    # use empty for td and ts to create placeholder
+    crew = BlindState(d='', u=nonce, td='', ts='')
+    blinder = Blinder(crew=crew, makify=True)
+    assert blinder.said == 'EMbeEPVPFc_hklwr8AJEPgxr3lnVVwywnBKxXz7cYz9x'
+    said = 'EMbeEPVPFc_hklwr8AJEPgxr3lnVVwywnBKxXz7cYz9x'
+    states = ["issued", "revoked"]
+
+    blinder = Blinder.unblind(said=said, nonce=nonce, acdc=acdc, states=states)
+    assert blinder is not None
+    assert blinder.crew == BlindState(d=said, u=nonce, td='', ts='')
+
     """End Test"""
 
 def test_blinder():

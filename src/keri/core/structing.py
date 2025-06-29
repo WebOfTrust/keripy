@@ -1068,6 +1068,36 @@ class Blinder(Structor):
     Dummy = b'#'
     SaidCode = DigDex.Blake3_256
 
+    @classmethod
+    def unblind(cls, said, nonce, acdc, states):
+        """Creates unblinded blinder given said, nonce (uuid), acdc said, and states
+        list of possible state values
+
+        Returns:
+            blinder (Blinder): unblinded blinder when possbile
+                               otherwise returns None
+
+        Parameters:
+            said (str): qb64 said of blinded blinder
+            nonce (str): qb64 blinding nonce
+            acdc (str): qb64 said of associated acdc (trans event acdc)
+            states (list[str]): list of possible state value string
+
+        Tests possible combinations of empty acdc, provided acdc,  with
+        empty state string plus all states strings provided by states to find
+        and unblinded blinder that verifies against the provided said and nonce.
+        Empty combinations for placeholder blinder
+        """
+        acdcs = ["", acdc]
+        states.append("")  # add empty string
+        for td in acdcs:
+            for ts in states:
+                crew = BlindState(d="", u=nonce, td=td, ts=ts)
+                blinder = cls(crew=crew, makify=True)
+                if blinder.crew.d == said:
+                    return blinder
+        return None
+
 
     def __init__(self, data=None, makify=False, verify=True, saidCode=None, **kwa):
         """Initialize instance
