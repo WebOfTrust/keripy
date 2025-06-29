@@ -16,17 +16,12 @@ from ..kering import ValidationError, InvalidValueError, EmptyMaterialError, Col
 from .. import help
 from ..help import isNonStringSequence
 
-from . import coring
-from .coring import (IceMapDom, Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
-                     Noncer, )
+from .coring import Tiers
+from .coring import (IceMapDom, Matter, Diger, DigDex, Prefixer, Number, Verser,
+                     Labeler, Noncer, NonceDex)
 from .counting import CtrDex_2_0, Codens, Counter
+from . import signing
 
-
-# ToDo: ? Consider if should change seal namedtuple definitions to NamedTuple subclasses so can
-# use typehints on field values which type hints are the primitive types. Use
-# union | on type hints to allow qb64, qb2, primitive instance, primitive class
-# as acceptable values  This provides more clarity in documentation. Actually
-# enforcing types is harder with union | but can still be accomplished.
 
 #  for the following Seal namedtuples use the ._asdict() method to convert to dict
 #  when using in events
@@ -79,7 +74,7 @@ SealKind = namedtuple("SealKind", 't d')
 
 # Blinded State for Blindable State Update Event for Transaction Event Registry
 # d = SAID digest qb64 of blindable state
-# u = UUID blind as deterministically derived salty nonce
+# u = UUID blind as deterministically derived from update sn and salty nonce
 # tc = SAID of ACDC top-level 'd' field value
 # ts = state as string of Labler.label type
 # use BlindStateGroup count code for attachment
@@ -1067,6 +1062,107 @@ class Blinder(Structor):
 
     Dummy = b'#'
     SaidCode = DigDex.Blake3_256
+    Tier = Tiers.low  # since used as blinding factor not authenticator
+
+    @classmethod
+    def makeUUID(cls, raw=None, salt=None, sn=1, tier=None):
+        """Creates UUID salty nonce from provided parameters
+
+        Returns:
+            uuid (str): blinding factor qb64
+
+        Parameters:
+            raw (bytes|None): random crypto material as salt
+            salt (str|None): qb64 of 128 bit random salt
+            sn (int): sequence number of blindable update message. Converted to
+                      Number.huge which is qb64 (24 char)
+            tier (str|None): used to generate salt when not provided
+        """
+        tier = tier if tier is not None else cls.Tier
+        salter = signing.Salter(raw=raw, qb64=salt, tier=tier)
+        path = Number(num=sn).huge
+        return Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+
+
+    @classmethod
+    def blind(cls, *, acdc='', state='', raw=None, salt=None, sn=1, tier=None):
+        """Creates blinded blinder by generating blinding factor uuid given:
+           either raw or salt as shared secret if both None then generate salt
+           sn of blindable update event,
+           acdc said (may be empty for placeholder
+           state string (may be empty for placeholder)
+           tier for generator salt when not provided
+
+        Returns:
+            blinder (Blinder): blinded blinder
+
+        Parameters:
+            acdc (str): qb64 said of associated acdc (trans event acdc).
+                        Allows empty str for placeholder
+            state (str): state string value.
+                        Allows empty str for placeholder
+            raw (bytes|None): random crypto material as salt used to generate uuid
+            salt (str|None): qb64 of 128 bit random salt used to generate uuid
+            sn (int): sequence number of blindable update message. Converted to
+                      Number.huge which is qb64 (24 char) used to generate uuid
+            tier (str|None): used to generate uuid
+        """
+        uuid = cls.makeUUID(raw=raw, salt=salt, sn=sn, tier=tier)
+
+        crew = BlindState(d="", u=uuid, td=acdc, ts=state)
+        return cls(crew=crew, makify=True)
+
+
+    @classmethod
+    def unblind(cls, said, *, uuid=None, acdc="", states=None,
+                raw=None, salt=None, sn=1, tier=None):
+        """Creates unblinded blinder given said, uuid, acdc said, and states
+        list of possible state values
+
+        Returns:
+            blinder (Blinder): unblinded blinder when possbile
+                               otherwise returns None
+
+        Parameters:
+            said (str): qb64 said of blinded blinder
+            uuid (str|None): qb64 blinding uuid hierarchically derived from blindable
+                        update sn and salty nonce
+            acdc (str): qb64 said of associated acdc (trans event acdc)
+            states (list[str]|None): list of possible state value string
+            raw (bytes|None): random crypto material as salt
+                            used to create uuid when provided uuid is None
+            salt (str|None): qb64 of 128 bit random salt
+                             used to create uuid when provided uuid is None
+                             and raw is none
+            sn (int): sequence number of blindable update message. Converted to
+                      Number.huge which is qb64 (24 char)
+                      used to create uuid when provided uuid is None
+            tier (str|None): used to create uuid when provided uuid is None
+
+        Tests possible combinations of empty acdc, provided acdc,  with
+        empty state string plus all states strings provided by states to find
+        and unblinded blinder that verifies against the provided said and uuid.
+        Empty combinations for placeholder blinder
+        """
+        if uuid is None:  # create uuid from salt and sn
+            if salt is None:
+                raise InvalidValueError(f"Invalid {salt=}")
+            uuid = cls.makeUUID(raw=raw, salt=salt, sn=sn, tier=tier)
+
+        acdcs = [acdc]
+        if "" not in acdcs:
+            acdcs.append('')
+        states = states if states is not None else []
+        if "" not in states:
+            states.append("")
+
+        for td in acdcs:
+            for ts in states:
+                crew = BlindState(d="", u=uuid, td=td, ts=ts)
+                blinder = cls(crew=crew, makify=True)
+                if blinder.crew.d == said:
+                    return blinder
+        return None
 
 
     def __init__(self, data=None, makify=False, verify=True, saidCode=None, **kwa):
@@ -1124,7 +1220,15 @@ class Blinder(Structor):
                 code = self.SaidCode
 
             size = Noncer._fullSize(code)
-            ser = self.Dummy * size + tail  # prepend dummy to tail end
+            dser = self.Dummy * size + tail  # prepend dummy to tail end
+
+            # now enclose
+            try:
+                coden = self.ClanCodens[self.clan.__name__]
+            except KeyError as ex:
+                raise InvalidValueError(f"Invalid on-the-fly clan={self.clan.__name__}") from ex
+            ser = Counter.enclose(qb64=dser, code=coden)
+
             # create diger of said by digesting dummied serialization
             noncer = Noncer(ser=ser, code=code)  # ensures creates digest
             # and replace .data.d with noncer of said
@@ -1135,7 +1239,15 @@ class Blinder(Structor):
             code = self.data.d.code
             if code not in DigDex:
                 raise ValidationError(f"Invalid {code =} for blinder said={self.crew}")
-            ser = self.Dummy * size + self.qb64b[size:]
+            dser = self.Dummy * size + self.qb64b[size:]
+
+            # now enclose
+            try:
+                coden = self.ClanCodens[self.clan.__name__]
+            except KeyError as ex:
+                raise InvalidValueError(f"Invalid on-the-fly clan={self.clan.__name__}") from ex
+            ser = Counter.enclose(qb64=dser, code=coden)
+
             diger = Diger(ser=ser, code=code)
             if diger.qb64b != self.data.d.qb64b:
                 raise ValidationError(f"Invalid SAID for blinder={self.crew}")
@@ -1158,3 +1270,63 @@ class Blinder(Structor):
             saidb (bytes): qb64b said of BlindState CESR .data.d 'd' field
         """
         return self.data.d.qb64b
+
+
+    @property
+    def uuid(self):
+        """uuid property getter
+        Returns:
+           uuid (str): uuid of BlindState CESR .data.u 'u' field
+        """
+        return self.data.u.nonce
+
+
+    @property
+    def uuidb(self):
+        """uuidb property getter
+        Returns:
+            uuidb (bytes): qb64b uuid of BlindState CESR .data.u 'u' field
+        """
+        return self.data.u.nonceb
+
+
+
+    @property
+    def acdc(self):
+        """acdc property getter
+        Returns:
+           acdc (str): transaction acdc said or empty of
+                       BlindState CESR .data.td 'td' field
+        """
+        return self.data.td.nonce
+
+
+    @property
+    def acdcb(self):
+        """acdcb property getter
+        Returns:
+            acdcb (bytes): qb64b transaction acdc said of
+                           BlindState CESR .data.td 'td' field
+        """
+        return self.data.td.nonceb
+
+
+    @property
+    def state(self):
+        """state property getter
+        Returns:
+           state (str):  transaction state string of
+                        BlindState CESR .data.ts 'ts' field
+        """
+        return self.data.ts.text
+
+
+    @property
+    def stateb(self):
+        """stateb property getter
+        Returns:
+            stateb (bytes): transaction state string of
+                            BlindState CESR .data.ts 'ts' field
+        """
+        return self.data.ts.text.encode()
+

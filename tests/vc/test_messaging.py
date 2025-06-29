@@ -14,12 +14,12 @@ from keri.core import SerderACDC, BlindState, Blinder
 def test_regcept_message():
     """Test regcept message"""
     issuer = 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    nonce = '0AAxyHwW6htOZ_rANOaZb2N2'
+    uuid = '0AAxyHwW6htOZ_rANOaZb2N2'
     stamp = '2020-08-22T17:50:09.988921+00:00'
     said = 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq'
 
     # test default kind JSON
-    serder = regcept(issuer=issuer, nonce=nonce, stamp=stamp)
+    serder = regcept(issuer=issuer, uuid=uuid, stamp=stamp)
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == Vrsn_2_0
     assert serder.genus == GenDex.KERI
@@ -28,7 +28,7 @@ def test_regcept_message():
 
     assert serder.ilk == Ilks.rip
     assert serder.said == said
-    assert serder.uuid == nonce
+    assert serder.uuid == uuid
     assert serder.issuer == issuer
     assert serder.stamp == stamp
 
@@ -50,7 +50,7 @@ def test_regcept_message():
 
     # Test CESR
     said = 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8'
-    serder = regcept(issuer=issuer, nonce=nonce, stamp=stamp, kind=Kinds.cesr)
+    serder = regcept(issuer=issuer, uuid=uuid, stamp=stamp, kind=Kinds.cesr)
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == Vrsn_2_0
     assert serder.genus == GenDex.KERI
@@ -59,7 +59,7 @@ def test_regcept_message():
 
     assert serder.ilk == Ilks.rip
     assert serder.said == said
-    assert serder.uuid == nonce
+    assert serder.uuid == uuid
     assert serder.issuer == issuer
     assert serder.stamp == stamp
 
@@ -94,7 +94,7 @@ def test_regcept_message():
 
     assert serder.ilk == Ilks.rip
     assert serder.said == said
-    assert serder.uuid == nonce
+    assert serder.uuid == uuid
     assert serder.issuer == issuer
     assert serder.stamp == stamp
     """Done Test"""
@@ -102,20 +102,21 @@ def test_regcept_message():
 
 def test_blindate_message():
     """Test blindate message"""
-    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
     tsaid = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
     tstate = 'issued'
-    crew = BlindState(d='', u=nonce, td=tsaid, ts=tstate)
+    crew = BlindState(d='', u=uuid, td=tsaid, ts=tstate)
     blinder = Blinder(crew=crew, makify=True)  # computes said
-    blind = blinder.said
+    blid = blinder.said
+    assert blid == 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
 
     regid = 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8'
     prior = 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8'
     stamp = '2020-08-23T18:06:10.988921+00:00'
-    said = 'EDGouTZMjO0HbHefvBrYtpWTY6y5TykF2LDgaZJNiJjB'
+    said = 'EFCUN22vSYr-O4XfM2TR6DysATSL7vco3JMm_VrWULmH'
 
     # test default kind JSON and default sn=1
-    serder = blindate(regid=regid, prior=prior, blind=blind, stamp=stamp)
+    serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp)
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == Vrsn_2_0
     assert serder.genus == GenDex.KERI
@@ -131,22 +132,22 @@ def test_blindate_message():
     {
         'v': 'ACDCCAACAAJSONAAEi.',
         't': 'bup',
-        'd': 'EDGouTZMjO0HbHefvBrYtpWTY6y5TykF2LDgaZJNiJjB',
+        'd': 'EFCUN22vSYr-O4XfM2TR6DysATSL7vco3JMm_VrWULmH',
         'rd': 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8',
         'n': '1',
         'p': 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8',
         'dt': '2020-08-23T18:06:10.988921+00:00',
-        'b': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+        'b': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
     }
 
-    assert serder.raw == (b'{"v":"ACDCCAACAAJSONAAEi.","t":"bup","d":"EDGouTZMjO0HbHefvBrYtpWTY6y5TykF2L'
-                        b'DgaZJNiJjB","rd":"EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8","n":"1","p":'
+    assert serder.raw == (b'{"v":"ACDCCAACAAJSONAAEi.","t":"bup","d":"EFCUN22vSYr-O4XfM2TR6DysATSL7vco3J'
+                        b'Mm_VrWULmH","rd":"EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8","n":"1","p":'
                         b'"EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8","dt":"2020-08-23T18:06:10.988'
-                        b'921+00:00","b":"EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769"}')
+                        b'921+00:00","b":"EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5"}')
 
     # Test CESR
-    said = 'EIOVlgnJvK96aMVLtB3PoaIcjpvPDoq41xtIKQE92Rx_'
-    serder = blindate(regid=regid, prior=prior, blind=blind, stamp=stamp, kind=Kinds.cesr)
+    said = 'EDyoNuGBvrXWj0I6V6jylRsePaz-yODKy8cKvC3zJa6w'
+    serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp, kind=Kinds.cesr)
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == Vrsn_2_0
     assert serder.genus == GenDex.KERI
@@ -161,18 +162,18 @@ def test_blindate_message():
     {
         'v': 'ACDCCAACAACESRAADs.',
         't': 'bup',
-        'd': 'EIOVlgnJvK96aMVLtB3PoaIcjpvPDoq41xtIKQE92Rx_',
+        'd': 'EDyoNuGBvrXWj0I6V6jylRsePaz-yODKy8cKvC3zJa6w',
         'rd': 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8',
         'n': '1',
         'p': 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8',
         'dt': '2020-08-23T18:06:10.988921+00:00',
-        'b': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+        'b': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
     }
 
-    assert serder.raw == (b'-FA60OACDCCAACAAXbupEIOVlgnJvK96aMVLtB3PoaIcjpvPDoq41xtIKQE92Rx_EM1hJSHgqklx'
+    assert serder.raw == (b'-FA60OACDCCAACAAXbupEDyoNuGBvrXWj0I6V6jylRsePaz-yODKy8cKvC3zJa6wEM1hJSHgqklx'
                         b'e-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8MAABEM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8'
-                        b'paR81AAG2020-08-23T18c06c10d988921p00c00EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJE'
-                        b'j5OzK769')
+                        b'paR81AAG2020-08-23T18c06c10d988921p00c00EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdM'
+                        b'eR5tHRL5')
 
     # test Serder inhale from raw roundtripped
     sad = serder.sad
