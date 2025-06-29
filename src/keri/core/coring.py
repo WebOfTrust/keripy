@@ -189,28 +189,6 @@ def loads(raw, size=None, kind=Kinds.json):
     return ked
 
 
-# Deprecated
-# randomNonce() refactored to match Salter().qb64 and only used in coring to avoid circular dependencies
-# use Salter().qb64 in other places
-
-def randomNonce():
-    """ Generate a random 128 bits salt and encode as qb64
-
-    Returns:
-        str: qb64 encoded 128 bits random salt
-    """
-    preseed = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    seedqb64 = Matter(raw=preseed, code=MtrDex.Salt_128).qb64
-    return seedqb64
-
-
-# secret derivation security tier
-Tierage = namedtuple("Tierage", 'low med high')
-
-Tiers = Tierage(low='low', med='med', high='high')
-
-
-
 @dataclass
 class MapDom:
     """Base class for mutable dataclasses that support map syntax
@@ -4910,8 +4888,6 @@ class Tholder:
         return False
 
 
-
-
 class Dicter:
     """ Dicter class is base class for objects that can be stored in a Suber
 
@@ -4919,14 +4895,16 @@ class Dicter:
     in the .raw property  Subclasses can add semantically appropriate properties
     that extract / add specific keys to the underlying dict .pad
 
-    """
+    ToDo: Needs unit tests
 
-    def __init__(self, raw=b'', pad=None, sad=None, label=Saids.i):
-        """ Create Dicter from either pad dict or raw bytes
+    """
+    def __init__(self, raw=b'', pad=None, dicter=None, label=Saids.i):
+        """ Create Dicter from either raw bytes, pad dict, or other dicter instance
 
         Parameters:
-            raw(bytes): raw JSON of dicter class
-            pad(dict) data dict for class:
+            raw (bytes): raw JSON of dicter class
+            pad (dict): data dict for class:
+            dicter (Dicter): dicter instance to clone
             label (str): field name of the SAID field.
 
         """
@@ -4935,8 +4913,8 @@ class Dicter:
             self.raw = raw  # raw property setter does the deserialization
         elif pad:  # serialize ked using property setter
             self.pad = pad  # pad property setter does the serialization
-        elif sad:
-            self._clone(sad=sad)
+        elif dicter:
+            self._clone(sad=dicter)
         else:
             raise ValueError("Improper initialization need sad, raw or ked.")
 
@@ -4956,7 +4934,7 @@ class Dicter:
         self._raw = raw
         self._pad = json.loads(self._raw.decode("utf-8"))
         if self._label not in self._pad or self._pad[self._label] == "":
-            self._pad[self._label] = randomNonce()
+            self._pad[self._label] = self._randomNonce()
 
         self._rid = self._pad[self._label]
 
@@ -4970,7 +4948,7 @@ class Dicter:
         """ pad property setter """
         self._pad = pad
         if self._label not in self._pad or self._pad[self._label] == "":
-            self._pad[self._label] = randomNonce()
+            self._pad[self._label] = self._randomNonce()
 
         self._raw = json.dumps(self._pad).encode("utf-8")
         self._rid = self._pad[self._label]
@@ -4989,4 +4967,16 @@ class Dicter:
         """
         return json.dumps(self.pad, indent=1)[:size if size is not None else None]
 
+    @staticmethod
+    def _randomNonce():
+        """ Generate a random 128 bits salt and encode as qb64
+
+        Returns:
+            str: qb64 encoded 128 bits random salt
+
+        Usually should use Salter().qb64 but this would create circular import
+        """
+        preseed = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+        seedqb64 = Matter(raw=preseed, code=MtrDex.Salt_128).qb64
+        return seedqb64
 

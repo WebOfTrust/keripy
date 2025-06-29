@@ -20,24 +20,23 @@ from keri.help import helping
 from keri.core import (Matter, Diger, Prefixer, Number, Verser, Labeler,
                        Noncer, NonceDex, Salter)
 
-
-from keri.core import structing
-from keri.core.structing import (SealDigest, SealRoot, SealBack, SealEvent,
+from keri.core import (Structor, Sealer, Blinder,
+                       SealDigest, SealRoot, SealBack, SealEvent,
                                  SealLast, SealTrans, SealKind, BlindState)
 from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
-                                 EClanDom, ECastDom,
-                                 Structor,  AClanDom, ACastDom,
-                                 Sealer, SClanDom, SCastDom,
-                                 Blinder, BClanDom, BCastDom)
+                                 EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
+                                 AClanDom, ACastDom,
+                                 SClanDom, SCastDom, SealClanDom, SealCastDom,
+                                 BClanDom, BCastDom)
 
 
 def test_structor_doms():
     """test doms in structure"""
 
-    assert EClanDom == structing.EmptyClanDom()
-    assert ECastDom == structing.EmptyCastDom()
-    assert SClanDom == structing.SealClanDom()
-    assert SCastDom == structing.SealCastDom()
+    assert isinstance(EClanDom, EmptyClanDom)
+    assert isinstance(ECastDom, EmptyCastDom)
+    assert isinstance(SClanDom, SealClanDom)
+    assert isinstance(SCastDom, SealCastDom)
 
     assert asdict(EClanDom) == {}
     assert asdict(ECastDom) == {}

@@ -29,11 +29,27 @@ relative path if expressed as relative.
 On init pathive(bool) True forces B64 compliant path parts
 raises exception if not. False allows non B64 path parts.
 
+Changed Dicter Class. made randomNonce a statice method. ._randomNonce instead
+of module method since only used inside Dicter
+Changed init parameter sad to dicter since more accurate.
+
 #### keri.core.serdering.SerderACDC
 Changed .regi property to .regid  to avoid confusion with regd regk and other reg
 and to avoid the confusion of i meaning a AID, whereas regid is a said
 its an identifier for registry but not an aid.  Since regd is already
 used to mean something else, we picked the regid which was not previously
 used anywhere.
+
+#### keri.core.streaming now keri.core.annotating
+Due to circular imports moved Streamer class to keri.core.signing  and
+renamed streaming.py and test_streaming.py to annotating.py and test_annotating
+from keri.core import Streamer still works.
+
+#### keri.core Tierage and Tiers
+moved Tierage and Tiers defintions from keri.core.coring to keri.core.signing
+where they more naturally belong (not used in coring)
+from keri.core import Tiers still works
+
+
 
 

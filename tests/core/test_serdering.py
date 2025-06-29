@@ -24,7 +24,7 @@ from keri.help import helping
 
 from keri import core
 
-from keri.core.structing import Sealer, SealEvent, SealTrans
+from keri.core import Sealer, SealEvent, SealTrans
 
 from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )

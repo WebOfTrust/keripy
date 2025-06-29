@@ -65,7 +65,7 @@ class Notice(coring.Dicter):
             pad (dict): is populated data
 
         """
-        super(Notice, self).__init__(raw=raw, pad=pad, sad=note)
+        super(Notice, self).__init__(raw=raw, pad=pad, dicter=note)
 
         if "a" not in self._pad:
             raise ValueError(f"invalid notice, missing attributes in {pad}")
@@ -97,10 +97,10 @@ class Notice(coring.Dicter):
 
 
 class DicterSuber(subing.Suber):
-    """ Data serialization for Sadder and subclasses
+    """ Data serialization for Dicter and subclasses
 
-    Sub class of Suber where data is serialized Sadder instance or subclass
-    Automatically serializes and deserializes using Sadder methods
+    Sub class of Suber where data is serialized Dicter instance or subclass
+    Automatically serializes and deserializes using Dicter methods
 
     """
 
@@ -119,7 +119,7 @@ class DicterSuber(subing.Suber):
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            val (Sadder): instance
+            val (Dicter): instance
 
         Returns:
             bool: True If successful, False otherwise, such as key

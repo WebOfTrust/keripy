@@ -73,7 +73,8 @@ def mockCoringRandomNonce(monkeypatch):
     def mockRandomSalt(self):
         return "0AAUiJMii_rPXXCiLTEEaDT7"
 
-    monkeypatch.setattr(coring, "randomNonce", mockRandomNonce)
+    #monkeypatch.setattr(coring, "randomNonce", mockRandomNonce)
+    monkeypatch.setattr(coring.Dicter, "_randomNonce", mockRandomNonce)
     monkeypatch.setattr(signing.Salter, "qb64", mockRandomSalt)
 
 

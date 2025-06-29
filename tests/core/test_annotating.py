@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-tests.core.test_streaming module
+tests.core.test_annotating module
 
 """
 from binascii import unhexlify
@@ -16,15 +16,8 @@ from keri.core import (Matter,)
 from keri.core.coring import dumps
 
 
-from keri.core import streaming
-from keri.core.streaming import (annot, denot, Streamer)
+from keri.core.annotating import (annot, denot)
 
-
-def test_streamer():
-    """Test streamer instance"""
-    pass
-
-    """End Test"""
 
 
 def test_annot():
@@ -193,7 +186,6 @@ def test_annot():
 
 
 if __name__ == "__main__":
-    test_streamer()
     test_annot()
 
 

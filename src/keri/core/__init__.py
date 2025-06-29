@@ -5,7 +5,7 @@ keri.core Package
 """
 
 # Constants etc
-from .coring import (Tiers, )
+#from .coring import (Tiers, )
 
 # Matter class and its subclasses
 from .coring import (Matter, MtrDex, Number, NumDex, Dater, DecDex, Decimer,
@@ -13,11 +13,12 @@ from .coring import (Matter, MtrDex, Number, NumDex, Dater, DecDex, Decimer,
                      Prefixer, PreDex, Seqner, Verser, Tholder,
                      Labeler, LabelDex, Decimer, DecDex, Noncer, NonceDex)
 from .indexing import Indexer, Siger, IdrDex, IdxSigDex
-from .signing import Signer, Salter, Cipher, CiXDex, Encrypter, Decrypter
+from .signing import (Tiers, Signer, Salter, Cipher, CiXDex,
+                      Encrypter, Decrypter, Streamer)
 from .counting import Counter, Codens, GenDex, CtrDex_1_0, CtrDex_2_0, ProGen
 from .mapping import Mapper, EscapeDex
 from .serdering import Serdery, Serder, SerderKERI, SerderACDC
-from .streaming import Streamer
-from .structing import (Structor, Sealer, Blinder, CodenToClans, ClanToCodens,
+from .structing import (Structor, Sealer, Blinder,
+                        CodenToClans, ClanToCodens,
                         SealDigest, SealRoot, SealBack, SealLast, SealTrans,
                         SealEvent, SealKind, BlindState)
