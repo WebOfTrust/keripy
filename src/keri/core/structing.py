@@ -16,12 +16,11 @@ from ..kering import ValidationError, InvalidValueError, EmptyMaterialError, Col
 from .. import help
 from ..help import isNonStringSequence
 
-from .coring import Tiers
+
 from .coring import (IceMapDom, Matter, Diger, DigDex, Prefixer, Number, Verser,
                      Labeler, Noncer, NonceDex)
 from .counting import CtrDex_2_0, Codens, Counter
-from . import signing
-
+from .signing import Tiers, Salter
 
 #  for the following Seal namedtuples use the ._asdict() method to convert to dict
 #  when using in events
@@ -1079,7 +1078,7 @@ class Blinder(Structor):
             tier (str|None): used to generate salt when not provided
         """
         tier = tier if tier is not None else cls.Tier
-        salter = signing.Salter(raw=raw, qb64=salt, tier=tier)
+        salter = Salter(raw=raw, qb64=salt, tier=tier)
         path = Number(num=sn).huge
         return Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
 

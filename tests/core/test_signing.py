@@ -1354,6 +1354,12 @@ def test_roundtrip():
     """End Test"""
 
 
+def test_streamer():
+    """Test streamer instance"""
+    pass
+
+    """End Test"""
+
 
 if __name__ == "__main__":
     test_signer()
@@ -1364,4 +1370,5 @@ if __name__ == "__main__":
     test_encrypter()
     test_decrypter()
     test_roundtrip()
+    test_streamer()
 

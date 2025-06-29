@@ -18,11 +18,9 @@ from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
                       InvalidValueError)
 
 from ..help import helping
-
-#from .coring import (Tiers, )
 from .coring import (SmallVrzDex, LargeVrzDex, Matter, MtrDex, Verfer, Cigar)
 from .indexing import IdrDex, Indexer, Siger
-from .streaming import Streamer
+
 
 
 DSS_SIG_MODE = "fips-186-3"
@@ -1059,3 +1057,126 @@ class Decrypter(Matter):
                 return klas(stream=plain)
             else:
                 raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}.")
+
+
+
+class Streamer:
+    """
+    Streamer is CESR sniffable stream class
+
+
+    Has the following public properties:
+
+    Properties:
+        stream (bytearray): sniffable CESR stream
+
+
+    Methods:
+
+
+    Hidden:
+        _verify() -> bool
+
+
+
+    """
+
+    def __init__(self, stream, verify=False):
+        """Initialize instance
+        Holds sniffable CESR stream as byte like string
+        either (bytes, bytearray, or memoryview)
+
+
+        Parameters:
+            stream (str | bytes | bytearray | memoryview): sniffable CESR stream
+            verify (bool): When True raise error if .stream is not sniffable.
+
+
+        """
+        if hasattr(stream, "encode"):
+            stream = bytearray(stream.encode())  # convert str to bytearray
+        if not isinstance(stream, (bytes, bytearray, memoryview)):
+            raise kering.InvalidTypeError(f"Invalid stream type, not byteable.")
+
+        self._stream = stream
+
+
+    def _verify(self):
+        """Returns True if .stream is sniffable, False otherwise
+
+        Returns:
+            sniffable (bool): True when .stream is sniffable.
+                                  False otherwise.
+        Only works for ver 2 CESR because need for all count codes to be
+        pipelineable in order to simply parse stream
+
+        """
+        return False
+
+
+    @property
+    def stream(self):
+        """stream property getter
+        """
+        return self._stream
+
+
+    @property
+    def text(self):
+        """expanded stream where all primitives and groups in stream are
+        individually expanded to qb64.
+        Requires parsing full depth to ensure expanded consistently.
+        Returns:
+           stream (bytes): expanded text qb64 version of stream
+
+        Only works for ver 2 CESR because need for all count codes to be
+        pipelineable in order to simply parse and expand stream
+
+        """
+        return self._stream
+
+    @property
+    def binary(self):
+        """compacted stream where all primitives and groups in stream are
+        individually compacted to qb2.
+        Requires parsing full depth to ensure compacted consistently
+        Returns:
+           stream (bytes): compacted binary qb2 version of stream
+
+        Only works for ver 2 CESR because need for all count codes to be
+        pipelineable in order to simply parse and compact stream
+
+        """
+        return self._stream
+
+    @property
+    def texter(self):
+        """stream as Texter instance.
+            Texter(text=self.stream)
+        Returns:
+           texter (Texter): Texter primitive of stream suitable wrapping
+
+        """
+        return self._stream
+
+    @property
+    def bexter(self):
+        """stream as Bexter instance.
+        Bexter of expanded text version of stream.
+        First expand  to text which requires parsing then create bexter
+            Bexter(bext=self.text)
+        Because sniffable stream MUST NOT start with 'A' then there is no
+        length ambiguity. The only tritet collison of 'A' is with '-' but the
+        remaining 5 bits are guaranteed to always be different. So bexter must
+        check not just the starting tritet but the full starting byte to ensure
+        not 'A' as first byte.
+
+        Requires parsing to ensure qb64
+        Returns:
+           bexter (Bexter): Bexter primitive of stream suitable wrapping
+
+        """
+        return self._stream
+
+
+

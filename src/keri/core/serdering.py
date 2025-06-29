@@ -48,10 +48,7 @@ from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
 from .structing import Sealer, SClanDom
 
 
-
 logger = help.ogler.getLogger()
-
-
 
 
 @dataclass
