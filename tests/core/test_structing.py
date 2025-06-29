@@ -1079,7 +1079,13 @@ def test_blinder_class():
     assert blinder is not None
     assert blinder.crew == BlindState(d=said, u=nonce, td='', ts='')
 
+    #test unblind fails when wrong nonce
+    nonce = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
+    blinder = Blinder.unblind(said=said, nonce=nonce, acdc=acdc, states=states)
+    assert blinder is None
+
     """End Test"""
+
 
 def test_blinder():
     """test blinder instance"""
