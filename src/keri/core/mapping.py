@@ -75,6 +75,23 @@ EscapeDex = EscapeCodex()  # Make instance
 # field with designated label like '$id' for schema
 # also recursively computes nested SAID on any nested maps using the ACDC
 # most compact version SAID algorithm if "compactive" is True
+"""
+ACDC .csad and its serialization .craw is the most compact sad and raw
+    respectively. This must be generated in order to compute the SAID of the ACDC,
+    as well the SAIDs of any nested parts of the uncompacted sad regardless of
+    degree of compactness. The most compact SAID is the one that is anchored in
+    its TEL. The most compact said is literally the said of .csad computed via
+    the most compact serialization .craw
+
+    So need to hoist serder SAID calculation code to own method so ACDC can
+    override SAID calculation with most compact variant SAID calculation.
+    For ACDC, its .sad SAID is the most compact SAID at result of most compact
+    calculation. Therefor to generate .sad take given sad and then perform most
+    compact algorithm and then assign to .sad
+
+    so makify and verify for ACDCs is different because of most compact SAID
+
+"""
 
 class Mapper:
     """Mapper class for CESR native serializations of field maps of ordered
@@ -82,9 +99,19 @@ class Mapper:
     form is called a mad (map dict).  Includes the counter map body group as part
     of serialization.
 
+    The most compact map SAID algorithm recursively computes the saids of nested
+    field map that have said, fields (usually 'd'). The SAID serialization of
+    a nested map becomes the field value of the associated field in its enclosing
+    field map. This is used to  compute the serialization of the enclosing
+    field map. The algorithm effectively rolls up the branches of a tree of
+    nested field maps where each branch is rolled up into a node field whose
+    value is the SAID of the rolled up branch. Nested field maps without said
+    fields are not rolled up.
+
     Properties:
-        qb64 (str): mad serialization in qb64
-        qb64b (bytes): mad serialization in qb64b
+        raw (bytes): mad serialization as raw/qb64b bytes alias for .qb64b
+        qb64b (bytes): mad serialization as qb64b bytes alias for .raw
+        qb64 (str): mad serialization as qb64 str
         qb2 (bytes): mad serialization in qb2
         count (int): number of quadlets/triplets in mad serialization
         byteCount (int): number of bytes in .count quadlets/triplets given cold
@@ -97,26 +124,33 @@ class Mapper:
                        False means labels may be any utf-8 text
 
     Hidden Attributes:
-        ._mad (bytes): field map dict
-        ._qb64b (bytes): mad serialization in qb64b text domain
+        ._mad (bytes): field map dict (MAD = MAp Dict)
+        ._raw (bytes): expanded mad serialization in qb64b text bytes domain
+        ._craw (bytes): most compact mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
         ._strict (bool): labels strict format for strict property
 
     """
 
-    def __init__(self, *, mad=None, qb64=None, qb64b=None, qb2=None, strip=False,
-                 verify=True, strict=True):
+    def __init__(self, *, mad=None, raw=None, qb64b=None, qb64=None, qb2=None,
+                 strip=False, verify=True, strict=True, saidive=False):
         """Initialize instance
 
         Parameters:
             mad (Mapping|Iterable|None):  Either dict or iterable of duples
                 of (field, value) pairs or None. Ignored if None
-            qb64 (str|bytes|bytearray|None): mad serialization in qb64 text domain
-                Ignored if None or fields provided. Alias for qb64b
-            qb64b (str|bytes|bytearray|None): mad serialization in qb64b text domain
+            raw (str|bytes|bytearray|None): mad serialization in qb64b text domain
+                bytes domain. Alias for qb64b/qb64a. Compatible interface with
+                Serder
                 Ignored if None or mad provided. Alias for qb64
+            qb64b (str|bytes|bytearray|None): mad serialization in qb64b text
+                domain bytes/str. Compatible interface with Counter
+                Ignored if None or fields provided. Alias for qb64
+            qb64 (str|bytes|bytearray|None): mad serialization in qb64b text
+                domain str/bytes. Compatible interface with Counter
+                Ignored if None or mad provided. Alias for qb64b
             qb2 (bytes|bytearray|None): fields serialization in qb2 binary domain
-                Ignored if None or mad provided
+                Ignored if None or mad provided. Compatible interface with Counter
             strip (bool):  True means strip mapper contents from input stream
                 bytearray after parsing qb64, qb64b or qb2. False means do not strip.
                 default False
@@ -126,6 +160,11 @@ class Mapper:
                             i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                             which usually serialize more compactly
                            False means labels may be any utf-8 text
+            saidive (bool): True means compute said of each nested field map
+                            with a said field ('d') using the most compact SAID
+                            Algorithm
+                            False means do not compute SAIDS
+
 
         Assumes that when qb64 or qb64b or qb2 are provided that they have
             already been extracted from a stream and are self contained
@@ -136,24 +175,26 @@ class Mapper:
         if isNonStringIterable(mad):
             mad = dict(mad)
         self._mad = mad if mad is not None else dict()
-        self._qb64b = b''  # override later
+        self._raw = b''  # override later
         self._count = 0   # override later
 
         qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
-        if mad or not (qb64b or qb2):
+        raw = raw if raw is not None else qb64b # copy qb64b to raw
+
+        if mad or not (raw or qb64b or qb2):
             mad = mad if mad is not None else dict()  # defaults to empty
             self._exhale(mad=mad)  # sets ._mad, ._qb64b, and ._count
 
         else:
-            if qb64b:
-                if hasattr(qb64b, "encode"):
-                    qb64b = qb64b.encode()
+            if raw:
+                if hasattr(raw, "encode"):
+                    raw = raw.encode()
 
-                ctr = Counter(qb64b=qb64b)  # peek at counter
+                ctr = Counter(qb64b=raw)  # peek at counter
                 bs = ctr.byteCount() + ctr.byteSize()
-                buf = qb64b[:bs]
-                if strip and isinstance(qb64b, bytearray):
-                    del qb64b[:bs]
+                buf = raw[:bs]
+                if strip and isinstance(raw, bytearray):
+                    del raw[:bs]
 
 
             elif qb2:
@@ -166,7 +207,7 @@ class Mapper:
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
 
-            self._inhale(buf)  # sets ._mad, ._qb64b, and ._count
+            self._inhale(buf)  # sets ._mad, ._raw, and ._count
 
     @property
     def mad(self):
@@ -179,43 +220,42 @@ class Mapper:
 
 
     @property
-    def qb64(self):
-        """Getter for ._qb64b as text domain str
-
+    def raw(self):
+        """Getter for ._raw as text domain bytes
         Returns:
-              qb64 (str): field map serialization
+            raw (bytes): field map serialization
         """
-        return self._qb64b.decode()
-
-
-    @property
-    def qb64(self):
-        """Getter for ._qb64b as text domain str
-
-        Returns:
-              qb64 (str): field map serialization
-        """
-        return self._qb64b.decode()
-
+        return self._raw
 
     @property
     def qb64b(self):
-        """Getter for ._qb64b as text domain bytes
+        """Getter for ._raw as text domain bytes
         Returns:
             qb64b (bytes): field map serialization
         """
-        return self._qb64b
+        return self._raw
+
+
+    @property
+    def qb64(self):
+        """Getter for ._raw as text domain str
+
+        Returns:
+              qb64 (str): field map serialization
+        """
+        return self._raw.decode()
+
 
 
     @property
     def qb2(self):
-        """Getter for ._qb64b converted to qb2 binary domain
+        """Getter for ._raw converted to qb2 binary domain
 
         Returns:
               qb2 (bytes): field map serialization as binary domain
 
         """
-        return decodeB64(self._qb64b)
+        return decodeB64(self._raw)
 
 
     @property
@@ -278,11 +318,11 @@ class Mapper:
         """Deserializes ser into .mad
 
         Parameters:
-            ser (str|bytes|bytearray|None): mad serialization in qb64b text domain
-                Uses self.qb64b if None
+            ser (str|bytes|bytearray|None): mad serialization in raw/qb64b
+                text domain bytes. Uses self.raw if None
         """
-        ser = ser if ser is not None else self.qb64b
-        self._qb64b = bytes(ser)  # make bytes copy
+        ser = ser if ser is not None else self.raw
+        self._raw = bytes(ser)  # make bytes copy
 
         ser = bytearray(ser)  # make bytearray copy so can consume on the go
         mad = dict()
@@ -390,7 +430,7 @@ class Mapper:
                 raise SerializeError("Invalid value while serializing") from ex
 
         ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericMapGroup))
-        self._qb64b = bytes(ser)  # bytes so can sign, do crypto operations on it
+        self._raw = bytes(ser)  # bytes so can sign, do crypto operations on it
         self._count = len(ser) // 4
 
         return self.qb64b
@@ -449,3 +489,73 @@ class Mapper:
             raise SerializeError(f"Nonserializible {val=}")
 
         return ser
+
+
+class Sapper(Mapper):
+    """Sapper class for CESR native serializations of field maps of ordered
+    (label, value) pairs (aka fields) that supports the most compact SAID
+    algorithm, i.e. a SAIDive Mapper. The said field label default is 'd'.
+
+    The most compact map SAID algorithm recursively computes the saids of nested
+    field map that have said, fields (usually 'd'). The SAID serialization of
+    a nested map becomes the field value of the associated field in its enclosing
+    field map. This is used to  compute the serialization of the enclosing
+    field map. The algorithm effectively rolls up the branches of a tree of
+    nested field maps where each branch is rolled up into a node field whose
+    value is the SAID of the rolled up branch. Nested field maps without said
+    fields are not rolled up.
+
+    As an abbreviation a field map in dict form is called a mad (map dict).
+    Includes the counter map body group as part of serialization.
+
+    Inherited Properties: (see Mapper)
+        raw (bytes): mad serialization as raw/qb64b bytes alias for .qb64b
+        qb64b (bytes): mad serialization as qb64b bytes alias for .raw
+        qb64 (str): mad serialization as qb64 str
+        qb2 (bytes): mad serialization in qb2
+        count (int): number of quadlets/triplets in mad serialization
+        byteCount (int): number of bytes in .count quadlets/triplets given cold
+        size (int):  Number of bytes of field map serialization in text
+                domain (qb64b)
+        strict (bool): True means labels must match strict formal limitations
+                            labels must be valid attribute names,
+                            i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                            which usually serialize more compactly
+                       False means labels may be any utf-8 text
+
+    Hidden Attributes:
+        ._mad (bytes): field map dict (MAD = MAp Dict)
+        ._raw (bytes): expanded mad serialization in qb64b text bytes domain
+        ._craw (bytes): most compact mad serialization in qb64b text bytes domain
+        ._count (int): number of quadlets/triplets in mad serialization
+        ._strict (bool): labels strict format for strict property
+
+    """
+
+    def __init__(self, **kwa):
+        """Initialize instance
+
+        Inherited Parameters:
+            mad (Mapping|Iterable|None):  Either dict or iterable of duples
+                of (field, value) pairs or None. Ignored if None
+            qb64 (str|bytes|bytearray|None): mad serialization in qb64 text domain
+                Ignored if None or fields provided. Alias for qb64b
+            qb64b (str|bytes|bytearray|None): mad serialization in qb64b text domain
+                Ignored if None or mad provided. Alias for qb64
+            qb2 (bytes|bytearray|None): fields serialization in qb2 binary domain
+                Ignored if None or mad provided
+            strip (bool):  True means strip mapper contents from input stream
+                bytearray after parsing qb64, qb64b or qb2. False means do not strip.
+                default False
+            verify (bool): True means verify serialization against mad.
+            strict (bool): True means labels must match strict formal limitations
+                            labels must be valid attribute names,
+                            i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                            which usually serialize more compactly
+                           False means labels may be any utf-8 text
+
+        Assumes that when qb64 or qb64b or qb2 are provided that they have
+            already been extracted from a stream and are self contained
+
+        """
+        super(Sapper, self).__init__(**kwa)

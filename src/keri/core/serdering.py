@@ -344,14 +344,6 @@ class Serder:
             saids (dict):
             strict (bool):
 
-    ToDo:
-        Hoist common functionality out of ._verify and ._makify joint or exclusive
-        so that can override ._verify and ._makify in SerderACDC without huge
-        amounts of duplicated code.
-        ._verifyFields
-        ._makifyFields  ._fieldify
-        ._dummifyFields  ._dummify
-
     """
     Dummy = "#"  # dummy spaceholder char for SAID. Must not be a valid Base64 char
 
@@ -1408,7 +1400,7 @@ class Serder:
                     case "a":  # list of seals or field map of attributes
                         ctr = Counter(qb64b=raw, version=self.gvrsn)  # peek at counter
                         if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
-                            sad[l] = Mapper(qb64b=raw, strip=True).mad
+                            sad[l] = Mapper(raw=raw, strip=True).mad
 
                         elif ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
                             if ilk not in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
@@ -1439,7 +1431,7 @@ class Serder:
                                                    f"got {ctr.name}")
 
                     case "q":  # Query parameters field map
-                        sad[l] = Mapper(qb64b=raw, strip=True).mad
+                        sad[l] = Mapper(raw=raw, strip=True).mad
 
                     case _:  # if extra fields this is where logic would be
                         raise DeserializeError(f"Unsupported protocol field label"

@@ -11,7 +11,7 @@ import pytest
 from dataclasses import dataclass, astuple, asdict
 
 from keri.kering import Colds, SerializeError, DeserializeError
-from keri.core import EscapeDex, Mapper, Diger, Decimer, Labeler
+from keri.core import EscapeDex, Mapper, Sapper, Diger, Decimer, Labeler
 
 
 def test_special_dex():
@@ -62,7 +62,7 @@ def test_mapper_basic():
     mapper = Mapper()  # default empty map
     assert mapper.mad == {}
     assert mapper.qb64 == '-IAA'
-    assert mapper.qb64b == b'-IAA'
+    assert mapper.raw == mapper.qb64b == b'-IAA'
     assert mapper.qb2 == b'\xf8\x80\x00'
     assert mapper.count == 1
     assert mapper.size == 4
@@ -83,7 +83,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -98,10 +98,20 @@ def test_mapper_basic():
     assert len(cser) == 32
 
     # test round trips
+    mapper = Mapper(raw=qb64)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
     mapper = Mapper(qb64=qb64)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -111,7 +121,7 @@ def test_mapper_basic():
     mapper = Mapper(qb64b=qb64b)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -121,7 +131,7 @@ def test_mapper_basic():
     mapper = Mapper(qb2=qb2)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -130,10 +140,22 @@ def test_mapper_basic():
 
     # test strip
     ims = bytearray(qb64b)
+    mapper = Mapper(raw=ims, strip=True)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert ims == bytearray(b'')  # stripped
+
+    ims = bytearray(qb64b)
     mapper = Mapper(qb64b=ims, strip=True)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -145,7 +167,7 @@ def test_mapper_basic():
     mapper = Mapper(qb2=ims, strip=True)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -174,7 +196,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -190,10 +212,20 @@ def test_mapper_basic():
     assert len(cser) == 49
 
     # test round trips
+    mapper = Mapper(raw=qb64)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
     mapper = Mapper(qb64=qb64)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -203,7 +235,7 @@ def test_mapper_basic():
     mapper = Mapper(qb64b=qb64b)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -213,7 +245,7 @@ def test_mapper_basic():
     mapper = Mapper(qb2=qb2)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -232,7 +264,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -247,10 +279,20 @@ def test_mapper_basic():
     assert len(cser) == 19
 
     # test round trips
+    mapper = Mapper(raw=qb64)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
     mapper = Mapper(qb64=qb64)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -260,7 +302,7 @@ def test_mapper_basic():
     mapper = Mapper(qb64b=qb64b)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -270,7 +312,7 @@ def test_mapper_basic():
     mapper = Mapper(qb2=qb2)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -295,17 +337,27 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.count == count
     assert mapper.size ==size
     assert mapper.byteCount() == size
     assert mapper.byteCount(Colds.bny) == bc
 
     # test round trips
+    mapper = Mapper(raw=qb64)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
     mapper = Mapper(qb64=qb64)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -315,7 +367,7 @@ def test_mapper_basic():
     mapper = Mapper(qb64b=qb64b)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -325,13 +377,12 @@ def test_mapper_basic():
     mapper = Mapper(qb2=qb2)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
     assert mapper.byteCount() == size
     assert mapper.byteCount(Colds.bny) == bc
-
 
 
     # test bad label
@@ -352,7 +403,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -379,7 +430,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -400,7 +451,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -421,7 +472,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -442,7 +493,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -464,7 +515,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -486,7 +537,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -508,7 +559,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size ==size
@@ -546,7 +597,7 @@ def test_mapper_basic():
     mapper = Mapper(mad=mad, strict=False)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -562,10 +613,20 @@ def test_mapper_basic():
     assert len(cser) == 45
 
     # test round trips
+    mapper = Mapper(raw=qb64, strict=False)
+    assert mapper.mad == mad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == qb64b
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+
     mapper = Mapper(qb64=qb64, strict=False)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -575,7 +636,7 @@ def test_mapper_basic():
     mapper = Mapper(qb64b=qb64b, strict=False)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
@@ -585,16 +646,30 @@ def test_mapper_basic():
     mapper = Mapper(qb2=qb2, strict=False)
     assert mapper.mad == mad
     assert mapper.qb64 == qb64
-    assert mapper.qb64b == qb64b
+    assert mapper.raw == mapper.qb64b == qb64b
     assert mapper.qb2 == qb2
     assert mapper.count == count
     assert mapper.size == size
     assert mapper.byteCount() == size
     assert mapper.byteCount(Colds.bny) == bc
 
+    """Done Test"""
 
+def test_sapper_basic():
+    """Test Sapper class"""
+
+    sapper = Sapper()  # default empty map
+    assert sapper.mad == {}
+    assert sapper.qb64 == '-IAA'
+    assert sapper.qb64b == b'-IAA'
+    assert sapper.qb2 == b'\xf8\x80\x00'
+    assert sapper.count == 1
+    assert sapper.size == 4
+    assert sapper.byteCount() == 4
+    assert sapper.byteCount(Colds.bny) == 3
     """Done Test"""
 
 if __name__ == "__main__":
     test_special_dex()
     test_mapper_basic()
+    test_sapper_basic()

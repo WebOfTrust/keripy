@@ -203,6 +203,15 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
     # Test data with cast
     structor = Structor(data=data, cast=cast)
@@ -232,8 +241,17 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
-    structor = Structor(cast=cast, qb64=qb64)
+    structor = Structor(cast=cast, qb64b=qb64)
     assert structor.clan == clan
     assert structor.name == name
     assert structor.cast == cast
@@ -244,8 +262,17 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
-    structor = Structor(cast=cast, qb64=qb64.encode())
+    structor = Structor(cast=cast, qb64b=qb64.encode())
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -256,8 +283,17 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
-    structor = Structor(cast=cast, qb64=qb64.encode(), strip=True)
+    structor = Structor(cast=cast, qb64b=qb64.encode(), strip=True)
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -268,9 +304,18 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
     ba = bytearray(qb64.encode())
-    structor = Structor(cast=cast, qb64=ba, strip=True)
+    structor = Structor(cast=cast, qb64b=ba, strip=True)
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -324,7 +369,7 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
-    structor = Structor(clan=clan, cast=cast, qb64=qb64)
+    structor = Structor(clan=clan, cast=cast, qb64b=qb64)
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -334,7 +379,7 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
-    structor = Structor(clan=clan, cast=cast, qb64=qb64.encode())
+    structor = Structor(clan=clan, cast=cast, qb64b=qb64.encode())
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -400,6 +445,15 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
     # pick cast and crew as dict that does not match mark of any in AllClanDom AllCastDom
     dcast = {'e': Castage(kls=Diger, ipn=None)}
@@ -474,6 +528,15 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # does not rountrip with extract since not cast
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew != structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew != structor.crew
+    assert not buf  # stripped
 
     # Test data with cast so not naive
     structor = Structor(data=data, cast=cast)
@@ -493,6 +556,15 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
     # Test cast
     structor = Structor(cast=cast, crew=crew)
@@ -511,8 +583,17 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
-    structor = Structor(cast=cast, qb64=qb64)
+    structor = Structor(cast=cast, qb64b=qb64)
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -522,7 +603,7 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
-    structor = Structor(cast=cast, qb64=qb64.encode())
+    structor = Structor(cast=cast, qb64b=qb64.encode())
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -532,7 +613,7 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
-    structor = Structor(cast=cast, qb64=qb64.encode(), strip=True)
+    structor = Structor(cast=cast, qb64b=qb64.encode(), strip=True)
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -543,7 +624,7 @@ def test_structor():
     assert structor.qb2 == qb2
 
     ba = bytearray(qb64.encode())
-    structor = Structor(cast=cast, qb64=ba, strip=True)
+    structor = Structor(cast=cast, qb64b=ba, strip=True)
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -597,7 +678,7 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
-    structor = Structor(clan=clan, cast=cast, qb64=qb64)
+    structor = Structor(clan=clan, cast=cast, qb64b=qb64)
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -607,7 +688,7 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
 
-    structor = Structor(clan=clan, cast=cast, qb64=qb64.encode())
+    structor = Structor(clan=clan, cast=cast, qb64b=qb64.encode())
     assert structor.clan == clan
     assert structor.cast == cast
     assert structor.crew == crew
@@ -675,6 +756,15 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructor = Structor.extract(qb64b=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructor = Structor.extract(qb2=buf, strip=True)
+    assert estructor.crew == structor.crew
+    assert not buf  # stripped
 
     # Test no clan and cast or crew as dict
     with pytest.raises(kering.EmptyMaterialError):
