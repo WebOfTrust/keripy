@@ -10,6 +10,7 @@ import os
 import lmdb
 
 from keri import kering
+from keri.app import configing
 from keri.core import coring
 from keri.core.coring import Diger, versify, Kinds
 from keri.core.serdering import SerderACDC
@@ -400,6 +401,18 @@ def test_clearEscrows():
         assert db.tpwe.cntAll() == 0
         assert db.tmse.cntAll() == 0
         assert db.tede.cntAll() == 0
+
+def test_reger_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        reger=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    reger = Reger(reopen=True,cf=cf)  # default is to not reopen
+    assert reger.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB
 
 if __name__ == "__main__":
     test_issuer()

@@ -238,6 +238,7 @@ class Reger(dbing.LMDBer):
     TailDirPath = "keri/reg"
     AltTailDirPath = ".keri/reg"
     TempPrefix = "keri_reg_"
+    ConfigKey = "reger"
 
     def __init__(self, headDirPath=None, reopen=True, **kwa):
         """
@@ -254,6 +255,7 @@ class Reger(dbing.LMDBer):
                 If not provided use default .HeadDirpath
             mode (int): numeric os dir permissions for database directory
             reopen (boolean,): IF True then database will be reopened by this init
+            cf (Configer): optional Configer to configure the opened LMDB database via kwa
 
         Notes:
 
@@ -294,6 +296,7 @@ class Reger(dbing.LMDBer):
 
         """
         super(Reger, self).reopen(**kwa)
+        logger.info("[%s] Reger map size set to %s", self.name, self.mapSize)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character

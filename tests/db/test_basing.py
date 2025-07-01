@@ -12,7 +12,7 @@ import pytest
 import lmdb
 from hio.base import doing
 from keri import core
-from keri.app import habbing
+from keri.app import habbing, configing
 from keri.core import coring, eventing, serdering
 from keri.core.coring import Kinds, versify, Seqner
 from keri.core.eventing import incept, rotate, interact, Kever
@@ -1906,6 +1906,19 @@ def test_clear_escrows():
         assert db.udes.cntAll() == 0
         assert db.epsd.cntAll() == 0
         assert db.dpub.cntAll() == 0
+
+def test_baser_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        baser=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    baser = Baser(reopen=True,cf=cf)  # default is to not reopen
+    assert baser.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB
+
 
 if __name__ == "__main__":
     test_baser()
