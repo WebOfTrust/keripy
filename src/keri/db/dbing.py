@@ -421,12 +421,9 @@ class LMDBer(filing.Filer):
 
         cf = cf if cf is not None else self.cf
         config = cf.get() if cf is not None else None
-        lmdberConf = config.get(LMDBer.ConfigKey) if config is not None else None
         dbconf = config.get(self.ConfigKey, None) if config is not None else None
         if dbconf is not None:
             self.mapSize = dbconf.get("mapSize", 104_857_600)  # 10MB default
-        elif config and lmdberConf: # fall back to LMDBer size if present
-            self.mapSize = lmdberConf.get("mapSize", 104_857_600)  # 10MB default
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath

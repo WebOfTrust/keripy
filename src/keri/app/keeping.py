@@ -262,7 +262,7 @@ class Keeper(dbing.LMDBer):
         Open sub databases
         """
         opened = super(Keeper, self).reopen(**kwa)
-        logger.info("[%s] Keeper map size set to %s", self.name, self.mapSize)
+        logger.debug("[%s] Keeper map size set to %s", self.name, self.mapSize)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
