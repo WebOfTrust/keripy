@@ -1059,10 +1059,10 @@ def test_blinder_class():
     salter = Salter(qb64=salt)  # default tier is Tiers.low
     assert salter.qb64 == salt
     sn = 1
-    path = Number(num=sn).huge
-    assert path == '0AAAAAAAAAAAAAAAAAAAAAAB'
+    path = Number(num=sn).snh
+    assert path == '1'
     uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
-    assert uuid == 'aCkrG58J13tR9duKAZ7kw2kz5wsmCw-vx4_7DYpKsDZn'
+    assert uuid == 'aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_'
 
     muuid = Blinder.makeUUID(salt=salt, sn=sn)
     assert muuid == uuid
@@ -1073,18 +1073,19 @@ def test_blinder_class():
     salter = Salter(qb64=salt)  # default tier is Tiers.low
     assert salter.qb64 == salt
     sn = 1
-    path = Number(num=sn).huge
-    assert path == '0AAAAAAAAAAAAAAAAAAAAAAB'
+    path = Number(num=sn).snh
+    assert path == '1'
     uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
-    assert uuid == 'aCkrG58J13tR9duKAZ7kw2kz5wsmCw-vx4_7DYpKsDZn'
+    assert uuid == 'aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_'
     acdc = ''
     state = ''
-    said = 'EOKCz_vBJTpndJf-LBxf_-bPvF0CFK5ndzpBY1xN46eA'
+    said = 'EA0zRTJbGoqTCnbuUO83kEzsJlq_CBH_Zo9poEGNnuqF'
     blinder = Blinder.blind(salt=salt, sn=sn)  # defaults acdc='' sn=1, tier=Tiers.low
-    assert blinder.crew == BlindState(d='EOKCz_vBJTpndJf-LBxf_-bPvF0CFK5ndzpBY1xN46eA',
-                                      u='aCkrG58J13tR9duKAZ7kw2kz5wsmCw-vx4_7DYpKsDZn',
+    assert blinder.crew == BlindState(d='EA0zRTJbGoqTCnbuUO83kEzsJlq_CBH_Zo9poEGNnuqF',
+                                      u='aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_',
                                       td='',
                                       ts='')
+
     assert blinder.said == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
@@ -1099,23 +1100,23 @@ def test_blinder_class():
     assert unblinder
     assert unblinder.crew == blinder.crew
 
-
     salt = '0ABdM7EmNFAlGe05ng6s1ljh'
     salter = Salter(qb64=salt)  # default tier is Tiers.low
     assert salter.qb64 == salt
     sn = 2
-    path = Number(num=sn).huge
-    assert path == '0AAAAAAAAAAAAAAAAAAAAAAC'
+    path = Number(num=sn).snh
+    assert path == '2'
     uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
-    assert uuid == 'aCRMO8VEYG82ChwXeQymArvKrBFJ7126939-X_nEIBxM'
+    assert uuid == 'aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev'
     acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
     state = 'revoked'
-    said = 'EDY1nxc4KkgAkgHylkBYMcW6xXQhG64b20TWFH4xJGtm'
+    said = 'EBNunxe56wpc40cJa-0mOf2WK6TPV9nU1nkZNcvOn7Rr'
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)  # defaults tier=Tiers.low
-    assert blinder.crew == BlindState(d='EDY1nxc4KkgAkgHylkBYMcW6xXQhG64b20TWFH4xJGtm',
-                                      u='aCRMO8VEYG82ChwXeQymArvKrBFJ7126939-X_nEIBxM',
+    assert blinder.crew == BlindState(d='EBNunxe56wpc40cJa-0mOf2WK6TPV9nU1nkZNcvOn7Rr',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
                                       td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
                                       ts='revoked')
+
     assert blinder.said == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc

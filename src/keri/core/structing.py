@@ -1074,12 +1074,12 @@ class Blinder(Structor):
             raw (bytes|None): random crypto material as salt
             salt (str|None): qb64 of 128 bit random salt
             sn (int): sequence number of blindable update message. Converted to
-                      Number.huge which is qb64 (24 char)
+                      Number.snh which is hex str no leading zeros
             tier (str|None): used to generate salt when not provided
         """
         tier = tier if tier is not None else cls.Tier
         salter = Salter(raw=raw, qb64=salt, tier=tier)
-        path = Number(num=sn).huge
+        path = Number(num=sn).snh
         return Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
 
 
