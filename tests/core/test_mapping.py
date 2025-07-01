@@ -68,6 +68,8 @@ def test_mapper_basic():
     assert mapper.size == 4
     assert mapper.byteCount() == 4
     assert mapper.byteCount(Colds.bny) == 3
+    assert mapper.strict == True
+    assert mapper.saidive == False
 
     # Test with all non-nested value types
     mad = dict(a=1, b=True, c="hello", d=15.34, e=False, f=None)

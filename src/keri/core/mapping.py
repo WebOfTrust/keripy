@@ -122,6 +122,10 @@ class Mapper:
                             i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                             which usually serialize more compactly
                        False means labels may be any utf-8 text
+        saidive (bool): True means compute said of each nested field map
+                            with a said field ('d') using the most compact SAID
+                            Algorithm
+                            False means do not compute SAIDS
 
     Hidden Attributes:
         ._mad (bytes): field map dict (MAD = MAp Dict)
@@ -129,6 +133,10 @@ class Mapper:
         ._craw (bytes): most compact mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
         ._strict (bool): labels strict format for strict property
+        ._saidive (bool): True means compute said of each nested field map
+                            with a said field ('d') using the most compact SAID
+                            Algorithm
+                            False means do not compute SAIDS
 
     """
 
@@ -171,6 +179,7 @@ class Mapper:
 
         """
         self._strict = True if strict else False
+        self._saidive = True if saidive else False
 
         if isNonStringIterable(mad):
             mad = dict(mad)
@@ -292,6 +301,18 @@ class Mapper:
                              False means labels may be any utf-8 text
         """
         return self._strict
+
+    @property
+    def saidive(self):
+        """Getter for ._saidive
+
+        Returns:
+              saidive (bool): True means compute said of each nested field map
+                            with a said field ('d') using the most compact SAID
+                            Algorithm
+                            False means do not compute SAIDS
+        """
+        return self._saidive
 
 
     def byteCount(self, cold=Colds.txt):
