@@ -11,7 +11,8 @@ import pytest
 from dataclasses import dataclass, astuple, asdict
 
 from keri.kering import Colds, SerializeError, DeserializeError
-from keri.core import EscapeDex, Mapper, Sapper, Diger, Decimer, Labeler
+from keri.core import (EscapeDex, Labeler, Mapper, Partor, DigDex, Diger,
+                       DecDex, Decimer)
 
 
 def test_special_dex():
@@ -69,6 +70,7 @@ def test_mapper_basic():
     assert mapper.byteCount() == 4
     assert mapper.byteCount(Colds.bny) == 3
     assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
     assert mapper.saidive == False
 
     # Test with all non-nested value types
@@ -657,21 +659,279 @@ def test_mapper_basic():
 
     """Done Test"""
 
-def test_sapper_basic():
-    """Test Sapper class"""
+def test_mapper_saidive():
+    """Test Mapper class with saidive True"""
 
-    sapper = Sapper()  # default empty map
-    assert sapper.mad == {}
-    assert sapper.qb64 == '-IAA'
-    assert sapper.qb64b == b'-IAA'
-    assert sapper.qb2 == b'\xf8\x80\x00'
-    assert sapper.count == 1
-    assert sapper.size == 4
-    assert sapper.byteCount() == 4
-    assert sapper.byteCount(Colds.bny) == 3
+    # test with default empty mad
+    mapper = Mapper(saidive=True)
+    assert mapper.mad == {}
+    assert mapper.qb64 == '-IAA'
+    assert mapper.raw == mapper.qb64b == b'-IAA'
+    assert mapper.qb2 == b'\xf8\x80\x00'
+    assert mapper.count == 1
+    assert mapper.size == 4
+    assert mapper.byteCount() == 4
+    assert mapper.byteCount(Colds.bny) == 3
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == None
+
+    mapper = Mapper(saidive=True, makify=True)
+    assert mapper.mad == {}
+    assert mapper.qb64 == '-IAA'
+    assert mapper.raw == mapper.qb64b == b'-IAA'
+    assert mapper.qb2 == b'\xf8\x80\x00'
+    assert mapper.count == 1
+    assert mapper.size == 4
+    assert mapper.byteCount() == 4
+    assert mapper.byteCount(Colds.bny) == 3
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == None
+
+    # test mad with no said fields actually present
+
+    mad = dict(a=1, b=True, c="hello")
+    qb64 = '-IAI0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    raw = b'-IAI0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    qb2 = (b'\xf8\x80\x08\xd0\x9f\xda\xe8p\x01\x00\x005\xd0\x9f\xdb\xd4\x00\x0c\xd0\x9f'
+           b'\xdc\xd0\xbf\xe1zYh')
+    count = 9
+    size = 36
+    bc = 27
+
+    mapper = Mapper(mad=mad, saidive=True, makify=True)
+    assert mapper.mad == mad == {'a': 1, 'b': True, 'c': 'hello'}
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+
+    # test mad with said field with non-empty but wrong said value and non default code
+    dig = Diger(ser=b'A' * 44, code=DigDex.Blake2b_256).qb64
+    assert dig == 'FOFYruBtiiRMU24vhPFaDHsgTiKuE6XARrAtGAun1Foo'
+    imad = dict(d=dig, a=1, b=True, c="hello")  # input mad
+
+    qb64 = '-IAU0J_dFAT2zGWVcdkf_n6ya8FM_uvDeByq3tD3sNhMAXYXfSPV0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    raw = b'-IAU0J_dFAT2zGWVcdkf_n6ya8FM_uvDeByq3tD3sNhMAXYXfSPV0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    qb2 = (b'\xf8\x80\x14\xd0\x9f\xdd\x14\x04\xf6\xcce\x95q\xd9\x1f\xfe~\xb2k\xc1'
+           b'L\xfe\xeb\xc3x\x1c\xaa\xde\xd0\xf7\xb0\xd8L\x01v\x17}#\xd5\xd0\x9f\xda\xe8p'
+           b'\x01\x00\x005\xd0\x9f\xdb\xd4\x00\x0c\xd0\x9f\xdc\xd0\xbf\xe1zYh')
+    count = 21  # quadlets
+    size = 84  # characters/bytes in Text domain
+    bc = 63  # bytes in Binary domain
+    omad = \
+    {
+        'd': 'FAT2zGWVcdkf_n6ya8FM_uvDeByq3tD3sNhMAXYXfSPV',
+        'a': 1,
+        'b': True,
+        'c': 'hello'
+    }
+    said = 'FAT2zGWVcdkf_n6ya8FM_uvDeByq3tD3sNhMAXYXfSPV'
+    assert said != dig
+
+    mapper = Mapper(mad=imad, saidive=True, makify=True)
+    assert mapper.mad == omad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake2b_256)
+    assert mapper.saidive == True
+    assert mapper.said == said
+
+    # test mad with said field with non-empty but wrong said value
+    dig = Diger(ser=b'A' * 44, code=DigDex.Blake3_256).qb64
+    assert dig == 'EICiqC6XXEjA4lLFqqSigJGIVBtgLyphDiMiaviQ_jYA'
+    imad = dict(d=dig, a=1, b=True, c="hello")  # input mad
+
+    qb64 = '-IAU0J_dELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    raw = b'-IAU0J_dELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    qb2 = (b'\xf8\x80\x14\xd0\x9f\xdd\x10\xba?\xce\x1a\xf0\x9d4\x1a\x8d\xdf\xcb\xd2\xa3'
+           b'\xc0\xe9n\xc0,\xa6\r\xb54#Q\x96\xe0\xe8\x81![\xc1\xce\xd0\x9f\xda\xe8p'
+           b'\x01\x00\x005\xd0\x9f\xdb\xd4\x00\x0c\xd0\x9f\xdc\xd0\xbf\xe1zYh')
+    count = 21  # quadlets
+    size = 84  # characters/bytes in Text domain
+    bc = 63  # bytes in Binary domain
+    omad = \
+    {
+        'd': 'ELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO',
+        'a': 1,
+        'b': True,
+        'c': 'hello'
+    }
+    said = 'ELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO'
+    assert said != dig
+
+    mapper = Mapper(mad=imad, saidive=True, makify=True)
+    assert mapper.mad == omad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == said
+
+    # test mad with said field with empty string as value
+    imad = dict(d='', a=1, b=True, c="hello")  # input mad
+    qb64 = '-IAU0J_dELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    raw = b'-IAU0J_dELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    qb2 = (b'\xf8\x80\x14\xd0\x9f\xdd\x10\xba?\xce\x1a\xf0\x9d4\x1a\x8d\xdf\xcb\xd2\xa3'
+           b'\xc0\xe9n\xc0,\xa6\r\xb54#Q\x96\xe0\xe8\x81![\xc1\xce\xd0\x9f\xda\xe8p'
+           b'\x01\x00\x005\xd0\x9f\xdb\xd4\x00\x0c\xd0\x9f\xdc\xd0\xbf\xe1zYh')
+    count = 21  # quadlets
+    size = 84  # characters/bytes in Text domain
+    bc = 63  # bytes in Binary domain
+    omad = \
+    {
+        'd': 'ELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO',
+        'a': 1,
+        'b': True,
+        'c': 'hello'
+    }
+    said = 'ELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO'
+
+    mapper = Mapper(mad=imad, saidive=True, makify=True)
+    assert mapper.mad == omad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == said
+
+    # test mad with said field with valid said as value so round trips
+    said = 'ELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO'
+    imad = dict(d=said, a=1, b=True, c="hello")  # input mad
+    qb64 = '-IAU0J_dELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    raw = b'-IAU0J_dELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO0J_a6HABAAA10J_b1AAM0J_c0L_hello'
+    qb2 = (b'\xf8\x80\x14\xd0\x9f\xdd\x10\xba?\xce\x1a\xf0\x9d4\x1a\x8d\xdf\xcb\xd2\xa3'
+           b'\xc0\xe9n\xc0,\xa6\r\xb54#Q\x96\xe0\xe8\x81![\xc1\xce\xd0\x9f\xda\xe8p'
+           b'\x01\x00\x005\xd0\x9f\xdb\xd4\x00\x0c\xd0\x9f\xdc\xd0\xbf\xe1zYh')
+    count = 21  # quadlets
+    size = 84  # characters/bytes in Text domain
+    bc = 63  # bytes in Binary domain
+    omad = \
+    {
+        'd': 'ELo_zhrwnTQajd_L0qPA6W7ALKYNtTQjUZbg6IEhW8HO',
+        'a': 1,
+        'b': True,
+        'c': 'hello'
+    }
+
+    mapper = Mapper(mad=imad, saidive=True, makify=True)
+    assert mapper.mad == omad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == said
+
+    # test verify and round trips
+    mapper = Mapper(raw=raw, saidive=True, verify=True)
+    assert mapper.mad == omad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == said
+
+    # test mad multiple said fields
+    saids = dict(d=DigDex.Blake3_256, e=DigDex.Blake2b_256)
+    imad = dict(d='', a=1, b=True, c="hello", e="")  # input mad
+    qb64 = '-IAg0J_dEHWZOvL0Dn3leHAJ24xdSTH2vhVie0NdH-pd9EmPOAGP0J_a6HABAAA10J_b1AAM0J_c0L_hello0J_eFCeR8nWBFeEdoz74Jxz-QnDEx0CIUdK-ehh_8n0v6DEM'
+    raw = b'-IAg0J_dEHWZOvL0Dn3leHAJ24xdSTH2vhVie0NdH-pd9EmPOAGP0J_a6HABAAA10J_b1AAM0J_c0L_hello0J_eFCeR8nWBFeEdoz74Jxz-QnDEx0CIUdK-ehh_8n0v6DEM'
+    qb2 = (b'\xf8\x80 \xd0\x9f\xdd\x10u\x99:\xf2\xf4\x0e}\xe5xp\t\xdb\x8c]I1\xf6'
+            b'\xbe\x15b{C]\x1f\xea]\xf4I\x8f8\x01\x8f\xd0\x9f\xda\xe8p\x01\x00\x005'
+            b"\xd0\x9f\xdb\xd4\x00\x0c\xd0\x9f\xdc\xd0\xbf\xe1zYh\xd0\x9f\xde\x14'"
+            b"\x91\xf2u\x81\x15\xe1\x1d\xa3>\xf8'\x1c\xfeBp\xc4\xc7@\x88Q\xd2\xbez\x18"
+            b'\x7f\xf2}/\xe81\x0c')
+
+    count = 33  # quadlets
+    size = 132  # characters/bytes in Text domain
+    bc = 99  # bytes in Binary domain
+    omad = \
+    {
+        'd': 'EHWZOvL0Dn3leHAJ24xdSTH2vhVie0NdH-pd9EmPOAGP',
+        'a': 1,
+        'b': True,
+        'c': 'hello',
+        'e': 'FCeR8nWBFeEdoz74Jxz-QnDEx0CIUdK-ehh_8n0v6DEM'
+    }
+    said = 'EHWZOvL0Dn3leHAJ24xdSTH2vhVie0NdH-pd9EmPOAGP'
+
+    mapper = Mapper(mad=imad, saidive=True, makify=True, saids=saids)
+    assert mapper.mad == omad
+    assert mapper.qb64 == qb64
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.qb2 == qb2
+    assert mapper.count == count
+    assert mapper.size == size
+    assert mapper.byteCount() == size
+    assert mapper.byteCount(Colds.bny) == bc
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256, e=DigDex.Blake2b_256)
+    assert mapper.saidive == True
+    assert mapper.said == said
+
+    """Done Test"""
+
+
+def test_partor_basic():
+    """Test Partor class"""
+
+    partor = Partor()  # default empty map
+    assert partor.mad == {}
+    assert partor.qb64 == '-IAA'
+    assert partor.qb64b == b'-IAA'
+    assert partor.qb2 == b'\xf8\x80\x00'
+    assert partor.count == 1
+    assert partor.size == 4
+    assert partor.byteCount() == 4
+    assert partor.byteCount(Colds.bny) == 3
+    assert partor.saids == dict(d=DigDex.Blake3_256)
+    assert partor.saidive == True
+    assert partor.said == None
+    assert partor.partials == {}
+
     """Done Test"""
 
 if __name__ == "__main__":
     test_special_dex()
     test_mapper_basic()
-    test_sapper_basic()
+    test_mapper_saidive()
+    test_partor_basic()

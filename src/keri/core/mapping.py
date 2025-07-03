@@ -16,7 +16,8 @@ from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
 from ..help import isNonStringIterable, Reatt
 
 from .counting import  Codens, CtrDex_2_0, UniDex_2_0, Counter
-from .coring import MtrDex, Matter, Labeler, LabelDex, Decimer, DecDex
+from .coring import (MtrDex, Matter, Labeler, LabelDex, DecDex, Decimer,
+                     DigDex, Diger)
 
 
 
@@ -99,14 +100,13 @@ class Mapper:
     form is called a mad (map dict).  Includes the counter map body group as part
     of serialization.
 
-    The most compact map SAID algorithm recursively computes the saids of nested
-    field map that have said, fields (usually 'd'). The SAID serialization of
-    a nested map becomes the field value of the associated field in its enclosing
-    field map. This is used to  compute the serialization of the enclosing
-    field map. The algorithm effectively rolls up the branches of a tree of
-    nested field maps where each branch is rolled up into a node field whose
-    value is the SAID of the rolled up branch. Nested field maps without said
-    fields are not rolled up.
+    Class Attributes:
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+        Dummy (str): dummy character for computing SAIDs
 
     Properties:
         raw (bytes): mad serialization as raw/qb64b bytes alias for .qb64b
@@ -122,26 +122,32 @@ class Mapper:
                             i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                             which usually serialize more compactly
                        False means labels may be any utf-8 text
-        saidive (bool): True means compute said of each nested field map
-                            with a said field ('d') using the most compact SAID
-                            Algorithm
-                            False means do not compute SAIDS
+        said (str|None): primary said field value if any. None otherwise
+                         primary has same label as zeroth item in .saids
+        saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
+
 
     Hidden Attributes:
         ._mad (bytes): field map dict (MAD = MAp Dict)
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
-        ._craw (bytes): most compact mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
         ._strict (bool): labels strict format for strict property
-        ._saidive (bool): True means compute said of each nested field map
-                            with a said field ('d') using the most compact SAID
-                            Algorithm
-                            False means do not compute SAIDS
+        ._saids (dict): default top-level said fields and codes
+        ._saidive (bool): compute saids or not
 
     """
+    Saids = dict(d=DigDex.Blake3_256)  # default said field label with digestive code
+    Dummy = "#"  # dummy spaceholder char for SAID. Must not be a valid Base64 char
 
     def __init__(self, *, mad=None, raw=None, qb64b=None, qb64=None, qb2=None,
-                 strip=False, verify=True, strict=True, saidive=False):
+                 strip=False, makify=False, verify=True, strict=True,
+                 saids=None, saidive=False):
         """Initialize instance
 
         Parameters:
@@ -162,37 +168,56 @@ class Mapper:
             strip (bool):  True means strip mapper contents from input stream
                 bytearray after parsing qb64, qb64b or qb2. False means do not strip.
                 default False
+            makify (bool): True means compute saids when .saidive
+                           False means do not comput saids even when .saidive
             verify (bool): True means verify serialization against mad.
+                           False means do not verify
             strict (bool): True means labels must match strict formal limitations
                             labels must be valid attribute names,
                             i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                             which usually serialize more compactly
                            False means labels may be any utf-8 text
-            saidive (bool): True means compute said of each nested field map
-                            with a said field ('d') using the most compact SAID
-                            Algorithm
-                            False means do not compute SAIDS
+            saids (dict): default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                            False means do not compute SAIDs
 
 
         Assumes that when qb64 or qb64b or qb2 are provided that they have
             already been extracted from a stream and are self contained
 
         """
+        makify = True if makify else False
+        verify = True if verify else False
+
         self._strict = True if strict else False
+        self._saids = dict(saids if saids is not None else self.Saids)  # make copy
         self._saidive = True if saidive else False
 
         if isNonStringIterable(mad):
-            mad = dict(mad)
-        self._mad = mad if mad is not None else dict()
+            mad = dict(mad)  # make copy
+        mad = mad if mad is not None else dict()
+        self._mad = mad  # will populate said fields when saidive and makify
         self._raw = b''  # override later
         self._count = 0   # override later
 
         qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
         raw = raw if raw is not None else qb64b # copy qb64b to raw
 
-        if mad or not (raw or qb64b or qb2):
-            mad = mad if mad is not None else dict()  # defaults to empty
-            self._exhale(mad=mad)  # sets ._mad, ._qb64b, and ._count
+        if self.mad or not (raw or qb64b or qb2):  # mad may be empty if not others
+            if makify and self.saidive:  # compute saids at top level
+                raw, count = self._exhale(mad=mad, dummy=True) # first dummy serialization
+                for label, code in self.saids.items():
+                    if label in mad:  # has saidive field
+                        said = Diger(ser=raw, code=code).qb64
+                        mad[label] = said  # changes self._mad
+
+            raw, count = self._exhale(mad=mad)
+            self._raw = raw
+            self._count = count
 
         else:
             if raw:
@@ -205,7 +230,6 @@ class Mapper:
                 if strip and isinstance(raw, bytearray):
                     del raw[:bs]
 
-
             elif qb2:
                 ctr = Counter(qb2=qb2)  # peek at counter
                 bs = ctr.byteCount(cold=Colds.bny) + ctr.byteSize(Colds.bny)
@@ -217,6 +241,19 @@ class Mapper:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
 
             self._inhale(buf)  # sets ._mad, ._raw, and ._count
+
+        if self.saidive and not makify and verify:  # verify saids
+            mad = dict(self.mad) # make copy
+            raw, count = self._exhale(mad=mad, dummy=True) # make dummy copy
+            for label, code in self.saids.items():
+                if label in mad:  # has saidive field
+                    said = Diger(ser=raw, code=code).qb64
+                    if self.mad[label] != said:
+                        raise InvalidValueError(f"Provided said field at {label=}"
+                                                f" with value={self.mad[label]}"
+                                                f" does not verify with computed"
+                                                f" {said=}")
+
 
     @property
     def mad(self):
@@ -253,7 +290,6 @@ class Mapper:
               qb64 (str): field map serialization
         """
         return self._raw.decode()
-
 
 
     @property
@@ -302,15 +338,42 @@ class Mapper:
         """
         return self._strict
 
+
+    @property
+    def said(self):
+        """primary said field value if any. None otherwise
+
+        Returns:
+              said (str|None): primary said field value if any. None otherwise
+                               primary has same label as zeroth item in .saids
+        """
+        if self.saidive and self.saids:
+            l = list(self.saids.keys())[0]  # primary said is zeroth entry in said
+            return self.mad.get(l, None)
+        return None
+
+
+    @property
+    def saids(self):
+        """Getter for ._saids
+
+        Returns:
+            saids (dict): default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        """
+        return self._saids
+
+
     @property
     def saidive(self):
         """Getter for ._saidive
 
         Returns:
-              saidive (bool): True means compute said of each nested field map
-                            with a said field ('d') using the most compact SAID
-                            Algorithm
-                            False means do not compute SAIDS
+              saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                            False means do not compute SAIDs
         """
         return self._saidive
 
@@ -427,11 +490,13 @@ class Mapper:
         return value
 
 
-    def _exhale(self, mad=None):
+    def _exhale(self, mad=None, dummy=False):
         """Serializes field map dict, mad
 
         Parameters:
             mad (dict|None): serializable field map dict. Uses self.mad if None
+            dummy (bool): True means dummy said fields given by .saids
+                          False means do not dummy said fields given by .saids
 
         Returns:
             ser (bytes): qb64b serialization of mad
@@ -446,15 +511,32 @@ class Mapper:
                     bdy.extend(Labeler(label=l).qb64b)
                 else:
                     bdy.extend(Labeler(text=l).qb64b)
-                bdy.extend(self._serialize(v))
+                if dummy and l in self.saids:
+                    try:  # use code of mad field value if present
+                        code = Matter(qb64=v).code
+                    except Exception:  # use default instead
+                        code = self.saids[l]
+                    # when code is digestive then we know we have to compute said dummy
+                    # this accounts for aid fields that may or may not be saids
+                    if code not in DigDex:  # if digestive then fill with dummy:
+                        raise SerializeError(f"Unexpected non-digestive {code=} "
+                                             f"for value of SAID field label={l}")
+                    if code != self.saids[l]:  # different than default
+                        # remember actual code for field when not default so
+                        # eventually computed said uses this code not default
+                        self.saids[l] = code  # replace default with provided
+
+                    v = self.Dummy * Matter.Sizes[code].fs
+                    bdy.extend(v.encode())
+                else:
+                    bdy.extend(self._serialize(v))
             except InvalidValueError as ex:
                 raise SerializeError("Invalid value while serializing") from ex
 
         ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericMapGroup))
-        self._raw = bytes(ser)  # bytes so can sign, do crypto operations on it
-        self._count = len(ser) // 4
-
-        return self.qb64b
+        raw = bytes(ser)  # bytes so can sign, do crypto operations on it
+        count = len(ser) // 4
+        return (raw, count)
 
 
     def _serialize(self, val):
@@ -512,22 +594,55 @@ class Mapper:
         return ser
 
 
-class Sapper(Mapper):
-    """Sapper class for CESR native serializations of field maps of ordered
-    (label, value) pairs (aka fields) that supports the most compact SAID
-    algorithm, i.e. a SAIDive Mapper. The said field label default is 'd'.
+class Partor(Mapper):
+    """Partor class that supports CESR native serializations of hierarchical
+    partially disclosable nested field maps where each field map is an
+    associative array of ordered (label, value) pairs (aka fields).
+    This hierarchy supports the most compact SAID algorithm.
+    Different degrees of partial disclosure can be used to support a process of
+    graduated disclosure.
+
+    This type of partial disclosure uses a tree of compactable field maps which
+    tree can be partially or completely compacted or uncompacted by compacting
+    or uncompacting the branches of the tree to/from the SAID of the branch.
+    To clarify, a set of nested associative arrays forms a tree that can be
+    partially compacted or uncompacted (contracted or expanded) at each nesting
+    layer of each branch. This supports a process of graduated disclosure by
+    changing the degree of compaction (uncompaction) expressed at a given stage
+    in the graduated disclosure.
+
+    The partial discosure of a hierarchy of associative arrays is different from
+    the partial disclosure of a flat indexed array where one or more elements
+    of the array are disclosed without disclosing other elements of the array.
+    This later is often called 'selective disclosure'. But could be called indexed
+    partial disclosure as opposed to hierarchical partial disclosure.
+    Either could support a process of graduated disclosure.
+
+    The Partor class implements hierarchical graduated partial disclosure.
+    (partor latin for to bear)
+
+    The said field label default is 'd'.
 
     The most compact map SAID algorithm recursively computes the saids of nested
-    field map that have said, fields (usually 'd'). The SAID serialization of
-    a nested map becomes the field value of the associated field in its enclosing
-    field map. This is used to  compute the serialization of the enclosing
-    field map. The algorithm effectively rolls up the branches of a tree of
+    field map that have SAID fields (usually labeled with 'd').
+    The SAID serialization of a nested map becomes the field value of the
+    associated field in its enclosing field map. This is used to  compute the
+    serialization of the enclosing field map.
+    The algorithm effectively rolls up the branches of a tree of
     nested field maps where each branch is rolled up into a node field whose
     value is the SAID of the rolled up branch. Nested field maps without said
     fields are not rolled up.
 
     As an abbreviation a field map in dict form is called a mad (map dict).
     Includes the counter map body group as part of serialization.
+
+    Inherited Class Attributes:
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+        Dummy (str): dummy character for computing SAIDs
 
     Inherited Properties: (see Mapper)
         raw (bytes): mad serialization as raw/qb64b bytes alias for .qb64b
@@ -543,20 +658,30 @@ class Sapper(Mapper):
                             i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                             which usually serialize more compactly
                        False means labels may be any utf-8 text
+        said (str|None): primary said field value if any. None otherwise
+                         primary has same label as zeroth item in .saids
+        saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
 
     Hidden Attributes:
         ._mad (bytes): field map dict (MAD = MAp Dict)
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
-        ._craw (bytes): most compact mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
         ._strict (bool): labels strict format for strict property
+        ._saids (dict): default top-level said fields and codes
+        ._saidive (bool): compute saids or not
 
     """
 
-    def __init__(self, **kwa):
+    def __init__(self, saidive=True, **kwa):
         """Initialize instance
 
-        Inherited Parameters:
+        Inherited Parameters:  (see Mapper)
             mad (Mapping|Iterable|None):  Either dict or iterable of duples
                 of (field, value) pairs or None. Ignored if None
             qb64 (str|bytes|bytearray|None): mad serialization in qb64 text domain
@@ -568,15 +693,40 @@ class Sapper(Mapper):
             strip (bool):  True means strip mapper contents from input stream
                 bytearray after parsing qb64, qb64b or qb2. False means do not strip.
                 default False
+            makify (bool): True means compute saids when .saidive
+                           False means do not comput saids even when .saidive
             verify (bool): True means verify serialization against mad.
+                           False means do not verify
             strict (bool): True means labels must match strict formal limitations
                             labels must be valid attribute names,
                             i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                             which usually serialize more compactly
                            False means labels may be any utf-8 text
+            saids (dict): default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                            False means do not compute SAIDs
 
         Assumes that when qb64 or qb64b or qb2 are provided that they have
             already been extracted from a stream and are self contained
 
         """
-        super(Sapper, self).__init__(**kwa)
+        super(Partor, self).__init__(saidive=True, **kwa)
+
+        self._partials = dict()
+
+
+
+    @property
+    def partials(self):
+        """Getter for ._partials
+
+        Returns:
+              partials (dict): partially disclosable variants of most compact
+                               key is tuple of leaf paths, value is Mapper instance.
+        """
+        return self._partials
+
