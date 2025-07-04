@@ -766,9 +766,10 @@ class Counter:
     @classmethod
     def enclose(cls, *, qb64=None, qb2=None, code=Codens.AttachmentGroup,
                 version=Vrsn_2_0):
-        """Encloses (frames) CESR stream in qb64 or qb2 with prepended counter
-        of type code. Only with counters that count quadlets/triplets in V1 CESR.
-        Works with all counters in V2 CESR (which must count quadlets/triplets)
+        """Encloses (frames) CESR stream in qb64 (as bytes) or qb2 (as bytes)
+        with prepended counter of type code. Assumes counter in quadlets/triplets.
+        In V2 CESR, will work with all counters which must count quadlets/triplets)
+        In V1 CESR, will only work with counters that count quadlets/triplets
 
         Returns:
             enclosure (bytearray): stream in qb64 or qb2 with prepended counter

@@ -457,7 +457,7 @@ class Structor:
 
 
     @classmethod
-    def extract(cls, qb64=None, qb2=None, strip=False):
+    def extract(cls, qb64b=None, qb64=None, qb2=None, strip=False):
         """Structor from  serialization of counted group
 
         Returns:
@@ -466,8 +466,10 @@ class Structor:
                 uses counter.code that maps to clan given by .CodeClans
 
         Parameters:
-            qb64 (str|bytes|bytearray|memoryview|None): text domain CESR
+            qb64b (str|bytes|bytearray|memoryview|None): text domain CESR
                 serializaton of framed counter group (count code inclusive)
+            qb64 (str|bytes|bytearray|memoryview|None): alias of qb64 for
+                matter interface compatability
             qb2 (bytes|bytearray|memoryview|None): binary domain CESR
                 serializaton of framed counter group (count code inclusive)
             strip (bool): when True and qb64 or qb2 is bytearray then strip
@@ -475,16 +477,18 @@ class Structor:
                           Otherwise  do not strip
 
         """
-        if qb64 is not None:
-            if hasattr(qb64, 'encode'):
-                qb64 = qb64.encode()
+        qb64b = qb64b if qb64b is not None else qb64
 
-            ims = qb64   # reference start of stream
-            ctr = Counter(qb64b=qb64)
+        if qb64b is not None:
+            if hasattr(qb64b, 'encode'):
+                qb64b = qb64b.encode()
+
+            ims = qb64b   # reference start of stream
+            ctr = Counter(qb64b=qb64b)
             clan = cls.Clans[cls.CodenClans[ctr.name]]  # get clan from code name
             bs = ctr.byteSize(cold=Colds.txt)
-            qb64 = qb64[bs:]  # skip over counter
-            structor = cls(clan=clan, qb64b=qb64)
+            qb64b = qb64b[bs:]  # skip over counter
+            structor = cls(clan=clan, qb64b=qb64b)
             gs = bs + ctr.byteCount(cold=Colds.txt)  # size of group including ctr
             if strip and isinstance(ims, bytearray):
                 del ims[:gs]  # strip original
@@ -505,11 +509,11 @@ class Structor:
             return structor
 
         else:
-            raise EmptyMaterialError(f"Missing qb64 or qb2")
+            raise EmptyMaterialError(f"Missing qb64b or qb64 or qb2")
 
 
     def __init__(self, data=None, *, clan=None, cast=None, crew=None,
-                 qb64=None, qb64b=None, qb2=None, strip=False):
+                 qb64b=None, qb64=None, qb2=None, strip=False):
         """Initialize instance
 
         Parameters:
@@ -529,9 +533,9 @@ class Structor:
                 of primitive for generating .data with .cast when data missing.
                 Can be used to infer namedtuple type of .data when data and clan
                 missing.
-            qb64 (str|bytes|bytearray|None): concatenation of qb64 data values to
+            qb64b (str|bytes|bytearray|None): concatenation of qb64b data values to
                 generate .data with data and crew missing.
-            qb64b (str|bytes|bytearray|None): alias for qb64 to match Counter
+            qb64 (str|bytes|bytearray|None): alias for qb64b to match Counter
                 interface.
             qb2 (bytes|bytearray|None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
@@ -621,12 +625,12 @@ class Structor:
 
             # have cast now
             for cstg in cast:
-                if not (hasattr(cstg.kls, "qb64") and hasattr(cstg.kls, "qb2")):
+                if not (hasattr(cstg.kls, "qb64b") and hasattr(cstg.kls, "qb2")):
                     raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
                                             " Primitive.")
 
             # have clan and cast but may not have crew but have qb64/qb64b
-            qb64 = qb64 if qb64 is not None else qb64b  # copy qb64b to qb64
+            qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
             if crew:
                 if not isinstance(crew, clan):
                     if isinstance(crew, tuple) and hasattr(crew, "_fields"):
@@ -655,20 +659,20 @@ class Structor:
                               for cstg, val in zip(cast, crew)))
 
 
-            elif qb64:
-                if hasattr(qb64, "encode"):
-                    qb64 = qb64.encode()
+            elif qb64b:
+                if hasattr(qb64b, "encode"):
+                    qb64b = qb64b.encode()
 
                 if strip:
-                    if not isinstance(qb64, bytearray):
-                        qb64 = bytearray(qb64)
+                    if not isinstance(qb64b, bytearray):
+                        qb64b = bytearray(qb64b)
 
-                    data = clan(*(cstg.kls(qb64b=qb64, strip=strip) for cstg in cast))
+                    data = clan(*(cstg.kls(qb64b=qb64b, strip=strip) for cstg in cast))
 
                 else:
                     o = 0  # offset into memoryview of qb64
                     pis = []  # primitive instances
-                    mv = memoryview(qb64)
+                    mv = memoryview(qb64b)
                     for cstg in cast:  # Castage
                         pi = cstg.kls(qb64b=mv[o:])
                         pis.append(pi)

@@ -16,7 +16,7 @@ from .indexing import Indexer, Siger, IdrDex, IdxSigDex
 from .signing import (Tiers, Signer, Salter, Cipher, CiXDex,
                       Encrypter, Decrypter, Streamer)
 from .counting import Counter, Codens, GenDex, CtrDex_1_0, CtrDex_2_0, ProGen
-from .mapping import Mapper, EscapeDex
+from .mapping import Mapper, EscapeDex, Partor
 from .serdering import Serdery, Serder, SerderKERI, SerderACDC
 from .structing import (Structor, Sealer, Blinder,
                         CodenToClans, ClanToCodens,
