@@ -677,6 +677,9 @@ class Partor(Mapper):
         ._strict (bool): labels strict format for strict property
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
+        ._leaves (dict): mad of each leaf indexed by path to leaf
+        ._partials (dict): partially compacted mad with fully computed saids
+                           indexd by tuple of leaf paths in mad
 
     """
 
@@ -716,10 +719,20 @@ class Partor(Mapper):
             already been extracted from a stream and are self contained
 
         """
+        self._leaves = dict()
         self._partials = dict()
         super(Partor, self).__init__(saidive=True, **kwa)
 
 
+    @property
+    def leaves(self):
+        """Getter for ._leaves
+
+        Returns:
+              leaves (dict): mapper at each leaf with computed said for leaf as
+                             keyed by path to leaf, value is Mapper instance
+        """
+        return self._leaves
 
 
     @property
@@ -727,26 +740,28 @@ class Partor(Mapper):
         """Getter for ._partials
 
         Returns:
-              partials (dict): partially disclosable variants of most compact
-                               key is tuple of leaf paths, value is Mapper instance.
+              partials (dict): mapper of partially disclosable variants of with
+                               fully computed saids for its leaves.
+                               keyed by tuple of leaf paths,
+                               value is Mapper instance.
         """
         return self._partials
 
 
-    def _trace(self, mad, leaves=None, path=''):
-        """Recursively trace leaves in mad to be used as key index in .partials
+    def _trace(self, mad, paths=None, path=''):
+        """Recursively trace paths to leaves in mad to be used as key index in .partials
 
         Returns:
-           leaves (list[str]): leaf path str, one per leaf in depth first order
+           paths (list[str]): of leaf path strs, one per leaf in depth first order
 
         Parameters:
             mad (Mapping): nested (MApping Dict)
-            leaves(list|None): path str of leafs in top down order
+            paths(list|None): path strs of leafs in top down order
                                None means start at top
-            path (str): dot '.' separated path into top-level mad
+            path (str): current relative to top-level mad as dot '.' separated
 
         """
-        leaves = leaves if leaves is not None else []
+        paths = paths if paths is not None else []
 
         # leaf has said at top level but none of its nested mappings have a said.
         isleaf = False
@@ -762,20 +777,20 @@ class Partor(Mapper):
                                             f" label={l} value={v}")
                 if self._hassaid(mad=v):
                     isleaf = False
-                    leaves = self._trace(mad=v, leaves=leaves, path=path + "." + l)
+                    paths = self._trace(mad=v, paths=paths, path=path + "." + l)
 
         if isleaf:
-            leaves.append(path)
+            paths.append(path)
 
-        return leaves
-
-
+        return paths
 
 
 
 
 
-        return tuple(leaves)  # make tuple since used as key index in .partials
+
+
+        return tuple(paths)  # make tuple since used as key index in .partials
 
 
     def _hassaid(self, mad):

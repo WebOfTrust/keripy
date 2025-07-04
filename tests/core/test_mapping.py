@@ -927,6 +927,7 @@ def test_partor_basic():
     assert partor.saids == dict(d=DigDex.Blake3_256)
     assert partor.saidive == True
     assert partor.said == None
+    assert partor.leaves == {}
     assert partor.partials == {}
 
     imad = dict(d='',
@@ -1009,13 +1010,15 @@ def test_partor_basic():
     assert partor.saids == dict(d=DigDex.Blake3_256)
     assert partor.saidive == True
     assert partor.said == said
+    assert partor.leaves == {}
     assert partor.partials == {}
 
-    leaves = partor._trace(mad=partor.mad)
-    assert leaves == ['.z.x', '.y.v']
+    paths = partor._trace(mad=partor.mad)
+    assert paths == ['.z.x', '.y.v']
 
-    # recursively compute saids on leaves so that mads with fully computed
-    # saids form the partials
+    # recursively compute saids on leaves so that mads that
+    # the mads of each leaf can be added to .leaves
+    # Whereas mads with fully computed saids form the .partials
 
     """Done Test"""
 
