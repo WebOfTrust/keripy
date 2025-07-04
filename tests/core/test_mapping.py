@@ -15,8 +15,8 @@ from keri.core import (EscapeDex, Labeler, Mapper, Partor, DigDex, Diger,
                        DecDex, Decimer)
 
 
-def test_special_dex():
-    """Test SpecialCodex"""
+def test_escape_dex():
+    """Test EscapeCodex"""
     assert asdict(EscapeDex) == \
     {
         'Escape': '1AAO',
@@ -29,6 +29,7 @@ def test_special_dex():
         'Decimal_Big_L0': '7AAH',
         'Decimal_Big_L1': '8AAH',
         'Decimal_Big_L2': '9AAH',
+        'Empty': '1AAP',
         'Tag1': '0J',
         'Tag2': '0K',
         'Tag3': 'X',
@@ -928,10 +929,98 @@ def test_partor_basic():
     assert partor.said == None
     assert partor.partials == {}
 
+    imad = dict(d='',
+               q='top',
+               z=dict(x=dict(d='',
+                             w='bottom'),
+                      u='under'),
+               y=dict(d="",
+                      v=dict(d="",
+                             t=dict(s='down',
+                                    r='deep'))))
+    assert imad == \
+    {
+        'd': '',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': '',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': '',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+
+    omad = \
+    {
+        'd': 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': '',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': '',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    said = 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'
+    raw = (b'-IAq'
+           b'0J_dEEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'
+           b'0J_qXtop'
+           b'0J_z-IAK0J_x-IAF0J_d1AAP0J_w0Mbottom'
+           b'0J_u0L_under'
+           b'0J_y-IAO0J_d1AAP0J_v-IAK'
+           b'0J_d1AAP0J_t-IAG0J_s1AAFdown0J_r1AAFdeep')
+
+
+    partor = Partor(mad=imad, makify=True)
+    assert partor.mad == omad
+    assert partor.raw == raw
+    assert partor.saids == dict(d=DigDex.Blake3_256)
+    assert partor.saidive == True
+    assert partor.said == said
+    assert partor.partials == {}
+
+    leaves = partor._trace(mad=partor.mad)
+    assert leaves == ['.z.x', '.y.v']
+
+    # recursively compute saids on leaves so that mads with fully computed
+    # saids form the partials
+
     """Done Test"""
 
 if __name__ == "__main__":
-    test_special_dex()
+    test_escape_dex()
     test_mapper_basic()
     test_mapper_saidive()
     test_partor_basic()

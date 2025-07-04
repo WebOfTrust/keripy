@@ -9,6 +9,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from dataclasses import dataclass, astuple, asdict
 
+#from ordered_set import OrderedSet as oset
 
 from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
@@ -40,6 +41,7 @@ class EscapeCodex:
     Decimal_Big_L0: str = '7AAH'  # Decimal B64 string float and int big lead size 0
     Decimal_Big_L1: str = '8AAH'  # Decimal B64 string float and int big lead size 1
     Decimal_Big_L2: str = '9AAH'  # Decimal B64 string float and int big lead size 2
+    Empty: str = '1AAP'  # Empty value for Nonce, UUID, SAID, state or related fields
     Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
     Tag2:  str = '0K'  # 2 B64 char tag
     Tag3:  str = 'X'  # 3 B64 char tag
@@ -714,9 +716,9 @@ class Partor(Mapper):
             already been extracted from a stream and are self contained
 
         """
+        self._partials = dict()
         super(Partor, self).__init__(saidive=True, **kwa)
 
-        self._partials = dict()
 
 
 
@@ -729,4 +731,78 @@ class Partor(Mapper):
                                key is tuple of leaf paths, value is Mapper instance.
         """
         return self._partials
+
+
+    def _trace(self, mad, leaves=None, path=''):
+        """Recursively trace leaves in mad to be used as key index in .partials
+
+        Returns:
+           leaves (list[str]): leaf path str, one per leaf in depth first order
+
+        Parameters:
+            mad (Mapping): nested (MApping Dict)
+            leaves(list|None): path str of leafs in top down order
+                               None means start at top
+            path (str): dot '.' separated path into top-level mad
+
+        """
+        leaves = leaves if leaves is not None else []
+
+        # leaf has said at top level but none of its nested mappings have a said.
+        isleaf = False
+        for l in self.saids:
+            if l in mad:
+                isleaf = True
+                break
+
+        for l, v in mad.items():
+            if isinstance(v, Mapping):
+                if l in self.saids:
+                    raise InvalidValueError(f"Got Mapping not str for said field"
+                                            f" label={l} value={v}")
+                if self._hassaid(mad=v):
+                    isleaf = False
+                    leaves = self._trace(mad=v, leaves=leaves, path=path + "." + l)
+
+        if isleaf:
+            leaves.append(path)
+
+        return leaves
+
+
+
+
+
+
+
+        return tuple(leaves)  # make tuple since used as key index in .partials
+
+
+    def _hassaid(self, mad):
+        """Recursively decends mad to determine if mad or its decendents has a
+        said field. This is used to determine if mad could be a leaf node.
+
+        Returns:
+            hassaid (bool): True means mad is saided,
+                                i.e. has a (nested) SAID field.
+                            False means mad is not saided
+
+        Parameters:
+            mad (Mapping):  MApping Dict that may or may not have a nested said
+
+        """
+        hassaid = False
+        for l, v in mad.items():
+            if l in self.saids:
+                hassaid = True
+                break
+            elif isinstance(v, Mapping):  # field value is a Mapping
+                hassaid = self._hassaid(mad=v)
+                if hassaid:
+                    break
+
+        return hassaid
+
+
+
 
