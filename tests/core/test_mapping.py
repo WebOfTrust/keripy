@@ -932,6 +932,8 @@ def test_partor_basic():
     assert partor.iscompact is None
     assert partor.getSubMad(path='') == partor.mad
     assert partor.getSubMad(path='.x') == None
+    assert partor.getSuperMad(path="") == (None, "")
+    assert partor.getSuperMad(path=".x") == (None, None)
 
     # Test already fully compacted mad
     imad = \
@@ -974,6 +976,11 @@ def test_partor_basic():
         'y': 'bottom',
         'x': 'under',
     }
+    assert partor.getSuperMad(path="") == (None, "")
+    assert partor.getSuperMad(path=".z") == (({'d': 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB',
+                                                'q': 'top',
+                                                'z': {'y': 'bottom', 'x': 'under'}},
+                                               'z'))
 
     paths = ['']
     assert partor._trace(mad=partor.mad) == paths
@@ -1102,6 +1109,8 @@ def test_partor_basic():
     assert partor.getSubMad(path='') == partor.mad
     assert partor.getSubMad(path='.z.x') == {'d': '', 'w': 'bottom'}
     assert partor.getSubMad(path='.y.v') == {'d': '', 't': {'s': 'down', 'r': 'deep'}}
+    assert partor.getSuperMad(path='.z.x') == ({'x': {'d': '', 'w': 'bottom'}, 'u': 'under'}, 'x')
+    assert partor.getSuperMad(path='.y.v') == ({'d': '', 'v': {'d': '', 't': {'s': 'down', 'r': 'deep'}}}, 'v')
 
     paths = ['.z.x', '.y.v']
     assert partor._trace(mad=partor.mad) == paths

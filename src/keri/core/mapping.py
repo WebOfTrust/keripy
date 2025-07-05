@@ -902,7 +902,7 @@ class Partor(Mapper):
 
         """
         mad = mad if mad is not None else self.mad
-        parts = path.split(".")[1:]  # strip off top level empty "" path part
+        parts = path.split(".")[1:]  # split and strip off top level part
         for part in parts:
             if part not in mad:
                 return None
@@ -915,7 +915,9 @@ class Partor(Mapper):
         When mad is not provided uses .mad
 
         Returns:
-           mad (dict|None):  super mad dict of sub mad at path or None if not found
+           tuple(mad, tail): where mad is super mad of map given path and
+                                   tail is label at tail end of path
+
 
         Parameters:
            path (str): dot "." separated path. Top-level is "" so ".x" is one
@@ -925,14 +927,21 @@ class Partor(Mapper):
 
         """
         mad = mad if mad is not None else self.mad
-        # strip off top level empty "" path part and bottom level part
-        parts = path.split(".")[1:-1]
+        # split and then strip off bottom level part
+        parts = path.split(".")  # split
+        tail = parts[-1] if parts else None  # save tail
+        parts = parts[:-1] # strip off tail
+        if not parts:  # tail is top so there is no super mad for mad
+            return (None, tail)
 
-        for part in parts:
-            if part not in mad:
-                return None
+        parts = parts[1:]  # strip off top
+        for part in parts:  # if parts empty then top-level is super mad
+            if part not in mad:  # path part not in mad
+                return (None, tail)
             mad = mad[part]  # descend on level down
-        return mad
+        if tail not in mad:  # tail not in mad so path not compatible with  mad
+            return (None, None)
+        return (mad, tail)
 
 
     def compact(self):
