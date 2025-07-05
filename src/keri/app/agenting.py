@@ -423,28 +423,30 @@ class WitnessReceiptor(doing.DoDoer):
 
 class WitnessInquisitor(doing.DoDoer):
     """
-    Sends messages to all current witnesses of given identifier (from hab) and waits
-    for receipts from each of those witnesses and propagates those receipts to each
-    of the other witnesses after receiving the complete set.
+    Sends KEL and TEL query messages to different types of targets whether witnesses, controllers, or agents
+    based on the locally available endpoint role records for the query target.
+    Queries are performed by sending query messages either to a random witness or to the controller or agent that is the target of the query.
 
-    Removes all Doers and exits as Done once all witnesses have been sent the entire
-    receipt set.  Could be enhanced to have a `once` method that runs once and cleans up
-    and an `all` method that runs and waits for more messages to receipt.
+    Removes all Doers and exits as Done once the query target has been sent the query message
 
+    TODO: possibly rename based on the fact that multiple types of targets are supported (controller, agent, witness)
     """
 
-    def __init__(self, hby, reger=None, msgs=None, klas=None, **kwa):
+    def __init__(self, hby, msgs=None, klas=None, **kwa):
         """
-        For all msgs, select a random witness from Habitat's current set of witnesses
-        send the msg and process all responses (KEL replays, RCTs, etc)
+        Initialize the WitnessInquisitor with the given parameters.
 
         Parameters:
-            hby (Habitat): Habitat of the identifier to use to identify witnesses
-            msgs: is the message buffer to process and send to one random witness.
-
+            hby (Habery): Habery context to use to retrieve the source Hab for reading endpoint role records
+            klas (class): Type of messenger to use to send messages; defaults to HTTPMessenger; currently unused
+            msgs (decking.Deck): query message buffer to be sent to the target or a random witness
+        Attributes:
+            hby (Habery): Habery context to use to retrieve the source Hab for reading endpoint role records
+            klas (class): Type of messenger to use to send messages; defaults to HTTPMessenger; currently unused
+            msgs (decking.Deck): query message buffer to be sent to the target or a random witness
+            sent (decking.Deck): buffer for sent messages to track sent queries
         """
         self.hby = hby
-        self.reger = reger
         self.klas = klas if klas is not None else HTTPMessenger
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = decking.Deck()
@@ -453,7 +455,11 @@ class WitnessInquisitor(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=1.0, **opts):
         """
-        Returns doifiable Doist compatible generator method (doer dog)
+        Signs and sends provided KEL and TEL query messages to query targets using HTTPMessenger or
+        TCPMessenger. Uses  a randomly selected witness if the query target is a witness, or uses
+        the specified controller or agent when a controller or agent is specified.
+
+        Returns a Hio generator function that runs until all messages in .msgs are processed.
 
         Usage:
             add result of doify on this method to doers list
@@ -527,21 +533,20 @@ class WitnessInquisitor(doing.DoDoer):
             yield self.tock
 
     def query(self, pre, r="logs", sn='0', fn='0', src=None, hab=None, anchor=None, wits=None, **kwa):
-        """ Create, sign and return a `qry` message against the attester for the prefix
+        """
+        Create a KEL query (`qry`) message against the attester for the prefix (`pre`) and place on the internal .msgs
+        queue for processing by the .msgDo doer. May also contain an anchor to use to locate a key event.
+        May specify the hab to use for signing and retrieving endpoint role records.
 
         Parameters:
-            src (str): qb64 identifier prefix of source of query
-            hab (Hab): Hab to use instead of src if provided
             pre (str): qb64 identifier prefix being queried for
             r (str): query route
             sn (str): optional specific hex str of sequence number to query for
             fn (str): optional specific hex str of sequence number to start with
-            anchor (Seal): anchored Seal to search for
+            src (str): qb64 identifier prefix of source of query
+            hab (Hab): Hab to use instead of src, if provided, to retrieve endpoint role records from and to perform signing
+            anchor (Seal): anchored Seal to search for in the query target
             wits (list) witnesses to query
-
-        Returns:
-            bytearray: signed query event
-
         """
         qry = dict(s=sn, fn=fn)
         if anchor is not None:
@@ -554,6 +559,20 @@ class WitnessInquisitor(doing.DoDoer):
         self.msgs.append(msg)
 
     def telquery(self, ri, src=None, i=None, r="tels", hab=None, pre=None, wits=None, **kwa):
+        """
+        Create a TEL Query message to search against a given registry, issuer, route, in the target
+        prefixe's (`pre`) records, and add that query message on the internal .msgs queue.
+        May specify the hab to use for signing and retrieving endpoint role records.
+
+        Parameters:
+            ri (str): qb64 identifier prefix of the registry being queried
+            src (str): qb64 identifier prefix of source of query
+            i (str): qb64 identifier prefix of the issuer of the registry being queried
+            r (str): query route
+            hab (Hab): Hab to use instead of src, if provided, to retrieve endpoint role records from and to perform signing
+            pre (str): qb64 identifier prefix of the target being queried
+            wits (list): witnesses to query
+        """
         qry = dict(ri=ri)
         msg = dict(src=src, pre=pre, target=i, r=r, wits=wits, q=qry)
         if hab is not None:
