@@ -202,14 +202,10 @@ class Mapper:
         if isNonStringIterable(mad):
             mad = dict(mad)  # make copy
         mad = mad if mad is not None else dict()
-        self._mad = mad  # will populate said fields when saidive and makify
-        self._raw = b''  # override later
-        self._count = 0   # override later
-
         qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
         raw = raw if raw is not None else qb64b # copy qb64b to raw
 
-        if self.mad or not (raw or qb64b or qb2):  # mad may be empty if not others
+        if mad or not (raw or qb64b or qb2):  # mad may be empty if not others
             if makify and self.saidive:  # compute saids at top level
                 raw, count = self._exhale(mad=mad, dummy=True) # first dummy serialization
                 for label, code in self.saids.items():
@@ -220,6 +216,7 @@ class Mapper:
             raw, count = self._exhale(mad=mad)
             self._raw = raw
             self._count = count
+            self._mad = mad
 
         else:
             if raw:
@@ -670,6 +667,22 @@ class Partor(Mapper):
         saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
 
+    Properties:
+        leaves (dict): mapper at each leaf with computed said for leaf as
+                             keyed by path to leaf, value is Mapper instance
+        partials (dict): mapper of partially disclosable variants of with
+                               fully computed saids for its leaves.
+                               keyed by tuple of leaf paths,
+                               value is Mapper instance.
+        iscompact (bool|None): True means one leaf with path = '' i.e.
+                                        leaf is at top level and has said
+                                        but does not verify said
+                                     False if at least one leaf but path is not
+                                        at top level
+                                     None means no leaves so not compactive
+                                        i.e. either has not been saidified yet
+                                        or cannot be
+
     Hidden Attributes:
         ._mad (bytes): field map dict (MAD = MAp Dict)
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
@@ -747,9 +760,59 @@ class Partor(Mapper):
         """
         return self._partials
 
+    @property
+    def iscompact(self):
+        """iscompact property
 
-    def _trace(self, mad, paths=None, path=''):
-        """Recursively trace paths to leaves in mad to be used as key index in .partials
+        Returns:
+              iscompact (bool|None): True means one leaf with path = '' i.e.
+                                        leaf is at top level and has said
+                                        but does not verify said
+                                     False if at least one leaf but path is not
+                                        at top level
+                                     None means no leaves so not compactive
+                                        i.e. either has not been saidified yet
+                                        or cannot be
+        """
+        if not self.leaves:
+            return None
+
+        if (self.said and len(self.leaves) == 1 and list(self.leaves.keys())[0] == ''):
+            return True
+
+        return False
+
+
+    def trace(self, saidify=False):
+        """Recursively trace paths to leaves in self.mad and populate .leaves.
+        When saidify then compute saids of leaves and update .mad .raw etc
+
+        Returns:
+           paths (list[str]): of leaf path strs, one per leaf in depth first order
+
+
+        Parameters:
+            saidify (bool): True means compute and assign SAID at each leaf
+                            False means do not assign SAID
+
+        """
+        paths = self._trace(mad=self.mad, paths=[], saidify=saidify)
+        if saidify and not self.iscompact:  # top-level said needs to be computed
+            raw, count = self._exhale(dummy=True) # first dummy serialization
+            for label, code in self.saids.items():
+                if label in self.mad:  # has saidive field
+                    said = Diger(ser=raw, code=code).qb64
+                    self.mad[label] = said
+
+            raw, count = self._exhale()  # not dummied
+            self._raw = raw
+            self._count = count
+
+        return paths
+
+
+    def _trace(self, mad, paths=None, path='', *, saidify=False):
+        """Recursively trace paths to leaves in mad and populate .leaves
 
         Returns:
            paths (list[str]): of leaf path strs, one per leaf in depth first order
@@ -759,6 +822,8 @@ class Partor(Mapper):
             paths(list|None): path strs of leafs in top down order
                                None means start at top
             path (str): current relative to top-level mad as dot '.' separated
+            saidify (bool): True means compute and assign SAID at each leaf
+                            False means do not assign SAID
 
         """
         paths = paths if paths is not None else []
@@ -777,20 +842,24 @@ class Partor(Mapper):
                                             f" label={l} value={v}")
                 if self._hassaid(mad=v):
                     isleaf = False
-                    paths = self._trace(mad=v, paths=paths, path=path + "." + l)
+                    paths = self._trace(mad=v, paths=paths, path=path + "." + l,
+                                        saidify=saidify)
 
         if isleaf:
             paths.append(path)
+            leaf = dict(mad)  # make shallow copy
+            if saidify:
+                leafer = Mapper(mad=leaf, makify=True,
+                                saids=self.saids, saidive=True)
+                for l in leafer.saids:  # assign computed saids to original mad
+                    if l in mad:
+                        mad[l] = leafer.mad[l]
+            else:
+                leafer = Mapper(mad=leaf, makify=True)
+
+            self.leaves[path] = leafer
 
         return paths
-
-
-
-
-
-
-
-        return tuple(paths)  # make tuple since used as key index in .partials
 
 
     def _hassaid(self, mad):
@@ -819,5 +888,134 @@ class Partor(Mapper):
         return hassaid
 
 
+    def getSubMad(self, path, mad=None):
+        """Get sub-mad of mad at path. When mad is not provided uses .mad
+
+        Returns:
+           mad (dict|None):  sub mad dict at path or None if not found
+
+        Parameters:
+           path (str): dot "." separated path. Top-level is "" so ".x" is one
+                       level down.
+           mad (dict|None): field map dict (MApping Dict). None uses default of
+                            self.mad
+
+        """
+        mad = mad if mad is not None else self.mad
+        parts = path.split(".")[1:]  # strip off top level empty "" path part
+        for part in parts:
+            if part not in mad:
+                return None
+            mad = mad[part]  # descend on level down
+        return mad
 
 
+    def getSuperMad(self, path, mad=None):
+        """Get super-mad of sub-mad of mad at path.
+        When mad is not provided uses .mad
+
+        Returns:
+           mad (dict|None):  super mad dict of sub mad at path or None if not found
+
+        Parameters:
+           path (str): dot "." separated path. Top-level is "" so ".x" is one
+                       level down.
+           mad (dict|None): field map dict (MApping Dict). None uses default of
+                            self.mad
+
+        """
+        mad = mad if mad is not None else self.mad
+        # strip off top level empty "" path part and bottom level part
+        parts = path.split(".")[1:-1]
+
+        for part in parts:
+            if part not in mad:
+                return None
+            mad = mad[part]  # descend on level down
+        return mad
+
+
+    def compact(self):
+        """Recursively apply most compact said algorithm to mad. Populates
+        .partials and .leaves in the process
+
+        recursively find leaves, saidify them by compute saids on leaves
+        and populated .leaves. then populate .partials with partial given by a
+        set of leaves indexed by paths of that set. Then compact the mad by
+        compacting its leaves.
+
+        Repeat above on newly compacted mad until reach fully compacted mad.
+        Partials will be by level of compaction and not every combination of
+        leaf compaction.
+
+
+        """
+        paths = []
+        path = ''
+        mad = self.mad
+
+        done = False
+        while not done:
+            paths = self._trace(mad=self.mad, paths=[], saidify=True)
+            for path, leafer in self.leaves.items():
+                if path:  # not top level == empty ''  path
+                    leaf = self.getSubMad(path)  # get sub mad at path
+                    if leaf:
+                        for l in leafer.saids:
+                            if l in leaf:  #
+                                leaf[l] = leafer.mad[l]
+
+
+
+            done = self.iscompact  # have to do at least one pass to compute top-level said
+
+
+
+
+    def _compact(self, mad, paths=None, path=''):
+        """Recursively trace and compact leaaves and populate .leaves and .partials
+
+        tuple of paths to leaves in a given partial mad is unique index of partial
+
+        Returns:
+           paths (list[str]): of leaf path strs, one per leaf in depth first order
+
+        Parameters:
+            mad (Mapping): nested (MApping Dict)
+            paths(list|None): path strs of leafs in top down order
+                               None means start at top
+            path (str): current relative to top-level mad as dot '.' separated
+            saidify (bool): True means compute and assign SAID at each leaf
+                            False means do not assign SAID
+
+        """
+        paths = paths if paths is not None else []
+
+        # leaf has said at top level but none of its nested mappings have a said.
+        isleaf = False
+        for l in self.saids:
+            if l in mad:
+                isleaf = True
+                break
+
+        for l, v in mad.items():
+            if isinstance(v, Mapping):
+                if l in self.saids:
+                    raise InvalidValueError(f"Got Mapping not str for said field"
+                                            f" label={l} value={v}")
+                if self._hassaid(mad=v):
+                    isleaf = False
+                    paths = self._trace(mad=v, paths=paths, path=path + "." + l,
+                                        saidify=saidify)
+
+        if isleaf:
+            paths.append(path)
+            leaf = dict(mad)  # make shallow copy
+            leafer = Mapper(mad=leaf, makify=True,
+                            saids=self.saids, saidive=True)
+            for l in leafer.saids:  # assign computed saids to original mad
+                if l in mad:
+                    mad[l] = leafer.mad[l]
+            self.leaves[path] = leafer
+
+        return paths

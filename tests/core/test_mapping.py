@@ -929,7 +929,93 @@ def test_partor_basic():
     assert partor.said == None
     assert partor.leaves == {}
     assert partor.partials == {}
+    assert partor.iscompact is None
+    assert partor.getSubMad(path='') == partor.mad
+    assert partor.getSubMad(path='.x') == None
 
+    # Test already fully compacted mad
+    imad = \
+    {
+        'd': '',
+        'q': 'top',
+        'z':
+        {
+            'y': 'bottom',
+            'x': 'under',
+        }
+    }
+
+    omad = \
+    {
+        'd': 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB',
+        'q': 'top',
+        'z':
+        {
+            'y': 'bottom',
+            'x': 'under',
+        }
+    }
+    said = 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB'
+    raw = (b'-IAW0J_dEK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB0J_qXtop0J_z-IAG0J_y0Mbo'
+           b'ttom0J_x0L_under')
+
+    partor = Partor(mad=imad, makify=True)
+    assert partor.mad == omad
+    assert partor.raw == raw
+    assert partor.saids == dict(d=DigDex.Blake3_256)
+    assert partor.saidive == True
+    assert partor.said == said
+    assert partor.leaves == {}
+    assert partor.partials == {}
+    assert partor.iscompact is None
+    assert partor.getSubMad(path='') == partor.mad
+    assert partor.getSubMad(path='.z') == \
+    {
+        'y': 'bottom',
+        'x': 'under',
+    }
+
+    paths = ['']
+    assert partor._trace(mad=partor.mad) == paths
+    assert partor.iscompact == True
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    for path, leafer in partor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert partor.mad == omad  # no change
+
+    assert partor.trace() == paths
+    assert partor.iscompact == True
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    for path, leafer in partor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert partor.mad == omad  # no change
+
+    # should not change said since already compacted
+    assert partor._trace(mad=partor.mad, saidify=True) == paths
+    assert partor.iscompact == True
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    assert len(paths) == 1
+    path, leafer = list(partor.leaves.items())[0]
+    assert leafer.saidive
+    assert leafer.said == said
+    assert partor.mad == omad  # saidified leaves but no change since already compact
+
+    assert partor.trace(saidify=True) == paths
+    assert partor.iscompact == True
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    assert len(paths) == 1
+    path, leafer = list(partor.leaves.items())[0]
+    assert leafer.saidive
+    assert leafer.said == said
+    assert partor.mad == omad  # saidified leaves but no change since already compact
+
+    # complex nested with skips
     imad = dict(d='',
                q='top',
                z=dict(x=dict(d='',
@@ -1012,15 +1098,109 @@ def test_partor_basic():
     assert partor.said == said
     assert partor.leaves == {}
     assert partor.partials == {}
+    assert partor.iscompact is None
+    assert partor.getSubMad(path='') == partor.mad
+    assert partor.getSubMad(path='.z.x') == {'d': '', 'w': 'bottom'}
+    assert partor.getSubMad(path='.y.v') == {'d': '', 't': {'s': 'down', 'r': 'deep'}}
 
-    paths = partor._trace(mad=partor.mad)
-    assert paths == ['.z.x', '.y.v']
+    paths = ['.z.x', '.y.v']
+    assert partor._trace(mad=partor.mad) == paths
+    assert partor.iscompact == False
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    for path, leafer in partor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert partor.mad == omad  # no change
 
-    # recursively compute saids on leaves so that mads that
-    # the mads of each leaf can be added to .leaves
-    # Whereas mads with fully computed saids form the .partials
+    assert partor.trace() == paths
+    assert partor.iscompact == False
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    for path, leafer in partor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert partor.mad == omad  # no change
 
+    smad = \
+    {
+        'd': 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+
+    assert partor._trace(mad=partor.mad, saidify=True) == paths
+    assert partor.iscompact == False
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    for path, leafer in partor.leaves.items():
+        assert leafer.saidive
+        assert leafer.said  # not empty or None
+    assert partor.mad == smad  # saidified leaves
+
+    tsmad = \
+    {
+        'd': 'EDevj28ZwbYZjEcV3wRhnTFNaHOuQZ4u140PJMXH7Ak4',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    tsaid = 'EDevj28ZwbYZjEcV3wRhnTFNaHOuQZ4u140PJMXH7Ak4'  # top level said is changed
+    assert tsaid != said
+    assert partor.trace(saidify=True) == paths
+    assert partor.iscompact == False
+    assert partor.leaves  # not empty
+    assert list(partor.leaves.keys()) == paths
+    for path, leafer in partor.leaves.items():
+        assert leafer.saidive
+        assert leafer.said  # not empty or None
+    assert partor.mad == tsmad  # saidified leaves
+
+    # now reassign imad to have compacted leaves and then saidify from there
+    # manually repeat until fully compacted
     """Done Test"""
+
 
 if __name__ == "__main__":
     test_escape_dex()
