@@ -29,7 +29,7 @@ parser.add_argument('--passcode', '-p', help='21 character encryption passcode f
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
 parser.add_argument('--force', action="store_true", required=False,
-                    help='True means to send witnesses all receipts even if we have a full compliment of receipts for '
+                    help='True means to send witnesses all receipts even if we have a full complement of receipts for '
                          'the current event')
 parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
                     dest="endpoint", action='store_true')

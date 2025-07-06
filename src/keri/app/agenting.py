@@ -1027,6 +1027,16 @@ class HTTPStreamMessenger(doing.DoDoer):
 
 
 def mailbox(hab, cid):
+    """
+    Finds and returns a mailbox, if any, based on the provided Mab and controller AID (cid).
+
+    Returns:
+        str | None: qb64 identifier prefix of the mailbox to use for the controller, or None if no mailbox found.
+
+    Parameters:
+        hab (Hab): Hab to use to look up witness URLs
+        cid (str): qb64 identifier prefix of controller to find mailbox for
+    """
     for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.mailbox)):
         if end.allowed:
             return eid

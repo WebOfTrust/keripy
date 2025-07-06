@@ -368,7 +368,7 @@ class Reger(dbing.LMDBer):
         self.tmse = subing.CatCesrIoSetSuber(db=self, subkey='tmse.',
                                              klas=(coring.Prefixer, coring.Seqner, coring.Saider))
 
-        # TEL event disemination escrow
+        # TEL event dissemination escrow
         self.tede = subing.CatCesrIoSetSuber(db=self, subkey='tede.',
                                              klas=(coring.Prefixer, coring.Seqner, coring.Saider))
 

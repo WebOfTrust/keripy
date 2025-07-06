@@ -20,8 +20,29 @@ logger = help.ogler.getLogger()
 
 
 class Broker:
+    """
+    Collection of databases for transaction state notices (TSNs) and handling TSN escrows.
+    """
 
     def __init__(self, db, subkey, timeout=3600):
+        """
+        Initialize Broker with databases for transaction state notices and escrows.
+        Parameters:
+            db (Reger): TEL event database to make sub databases under
+            subkey (str): parent LMDB subkey path to use for all sub databases
+            timeout (int): timeout in seconds for escrows, default is 3600 seconds (1 hour)
+
+        Attributes:
+            db (Reger): TEL event database to make sub databases under
+            timeout (int): timeout in seconds for escrows, default is 3600 seconds (1 hour)
+            daterdb (CesrSuber): database for datetime stamps by ksn SAID
+            serderdb (SerderSuber): database for reply messages by ksn SAID
+            tigerdb (CesrIoSetSuber): database for indexed signatures by ksn quadruple
+                Key schema: (said, pre, sn, dig)
+            cigardb (CatCesrIoSetSuber): database for non-indexed signatures by ksn SAID
+            escrowdb (CesrIoSetSuber): database for escrows by route by (typ, pre, aid) tuple
+            saiderdb (CesrSuber): database for transaction state SAIDs by (pre, aid) tuple
+        """
         self.db = db
         self.timeout = timeout
 
@@ -62,6 +83,15 @@ class Broker:
         self.saiderdb = subing.CesrSuber(db=self.db, subkey=subkey + '-nas.', klas=coring.Saider)
 
     def current(self, keys):
+        """
+        Get successfully saved TSNs by keys.
+
+        Parameters:
+            (str, str): keys tuple of (prefix, aid) where prefix is the registry identifier and pre is the issuer
+
+        Returns:
+            data (str | None):  UTF-8 encoded string of the SAid of a TSN or None if not found.
+        """
         return self.saiderdb.get(keys=keys)
 
     def processEscrowState(self, typ, processReply, extype: Type[Exception]):
@@ -194,6 +224,7 @@ class Broker:
         self.saiderdb.pin(keys=(serder.sad["a"]["i"], aid), val=saider)  # overwrite
 
     def removeState(self, saider):
+        """Remove all state associated with the given event TSN identified by SAID."""
         if saider:
             keys = (saider.qb64,)
 
