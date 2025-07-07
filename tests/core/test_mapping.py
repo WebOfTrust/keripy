@@ -3,6 +3,7 @@
 tests.core.test_mapping module
 
 """
+import copy
 import json
 import cbor2 as cbor
 
@@ -930,8 +931,8 @@ def test_compactor_basic():
     assert compactor.leaves == {}
     assert compactor.partials == {}
     assert compactor.iscompact is None
-    assert compactor.getSubMad(path='') == compactor.mad
-    assert compactor.getSubMad(path='.x') == None
+    assert compactor.getTail(path='') == compactor.mad
+    assert compactor.getTail(path='.x') == None
     assert compactor.getSuperMad(path="") == (None, "")
     assert compactor.getSuperMad(path=".x") == (None, None)
 
@@ -970,8 +971,8 @@ def test_compactor_basic():
     assert compactor.leaves == {}
     assert compactor.partials == {}
     assert compactor.iscompact is None
-    assert compactor.getSubMad(path='') == compactor.mad
-    assert compactor.getSubMad(path='.z') == \
+    assert compactor.getTail(path='') == compactor.mad
+    assert compactor.getTail(path='.z') == \
     {
         'y': 'bottom',
         'x': 'under',
@@ -1106,9 +1107,9 @@ def test_compactor_basic():
     assert compactor.leaves == {}
     assert compactor.partials == {}
     assert compactor.iscompact is None
-    assert compactor.getSubMad(path='') == compactor.mad
-    assert compactor.getSubMad(path='.z.x') == {'d': '', 'w': 'bottom'}
-    assert compactor.getSubMad(path='.y.v') == {'d': '', 't': {'s': 'down', 'r': 'deep'}}
+    assert compactor.getTail(path='') == compactor.mad
+    assert compactor.getTail(path='.z.x') == {'d': '', 'w': 'bottom'}
+    assert compactor.getTail(path='.y.v') == {'d': '', 't': {'s': 'down', 'r': 'deep'}}
     assert compactor.getSuperMad(path='.z.x') == ({'x': {'d': '', 'w': 'bottom'}, 'u': 'under'}, 'x')
     assert compactor.getSuperMad(path='.y.v') == ({'d': '', 'v': {'d': '', 't': {'s': 'down', 'r': 'deep'}}}, 'v')
 
@@ -1480,9 +1481,94 @@ def test_compactor_compact_expand():
     assert yleaf.said == ysaid
     assert yleaf.mad == ymad
 
-    # test expand
+    # test expand of compactor
+    paths = ['.z.x', '.y.v', '.y', '']
+    # fully expanded mad but with most compact computed saids of all leaves
+    emad = \
+    {
+        'd': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+           'u': 'under'
+        },
+        'y':
+        {
+            'd': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    assert list(compactor.leaves.keys()) == paths
+    assert not compactor.partials
+    assert compactor.iscompact
+    assert len(compactor.leaves) == 4 == len(paths)
 
+    # test greedy expand
+    # first compact
+    compactor = Compactor(mad=emad, makify=True)
+    compactor.compact()
+    assert list(compactor.leaves.keys()) == paths
+    assert compactor.mad == cmad
+    assert compactor.said == csaid
 
+    # now expand
+    indices = [('.z.x', '.y.v')]
+    index = ('.z.x', '.y.v')  # index of partion is tuple of leaf paths in expansion
+    compactor.expand()  # default greedy==True
+    assert list(compactor.partials.keys()) == indices
+    assert len(compactor.partials) == 1  # greedy on creates the fully expanded partial
+    partial = compactor.partials[index]
+    assert partial.mad == emad
+    assert partial.mad['d'] == csaid
+    assert partial.mad['y']['d'] == ysaid
+    assert partial.mad['y']['v']['d'] == vsaid
+    assert partial.mad['z']['x']['d'] == xsaid
+
+    # test non-greedy expand
+    # first compact
+    compactor = Compactor(mad=emad, makify=True)
+    compactor.compact()
+    assert list(compactor.leaves.keys()) == paths
+    assert compactor.mad == cmad
+    assert compactor.said == csaid
+
+    # now expand
+    indices = [('.z.x', '.y'), ('.z.x', '.y.v')]
+    compactor.expand(greedy=False)
+    assert list(compactor.partials.keys()) == indices
+    assert len(compactor.partials) == 2  # greedy on creates the fully expanded partial
+
+    index0 = ('.z.x', '.y')
+    partial0 = compactor.partials[index0]
+    assert partial0.mad == \
+    {'d': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+     'q': 'top',
+     'z': {'x': {'d': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                 'w': 'bottom'},
+           'u': 'under'},
+     'y': {'d': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4',
+           'v': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX'}}
+
+    index1 = ('.z.x', '.y.v')
+    partial1 = compactor.partials[index1]
+    assert partial1.mad == emad  # fully expanded
+    assert partial1.mad['d'] == csaid
+    assert partial1.mad['y']['d'] == ysaid
+    assert partial1.mad['y']['v']['d'] == vsaid
+    assert partial1.mad['z']['x']['d'] == xsaid
 
     """Done Test"""
 

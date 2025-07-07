@@ -4,12 +4,13 @@ keri.core.mapping module
 
 Creates label value, field map data structures
 """
+from copy import deepcopy
 from collections.abc import Mapping, Iterable
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from dataclasses import dataclass, astuple, asdict
 
-#from ordered_set import OrderedSet as oset
+from ordered_set import OrderedSet as oset
 
 from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
@@ -200,7 +201,7 @@ class Mapper:
         self._saidive = True if saidive else False
 
         if isNonStringIterable(mad):
-            mad = dict(mad)  # make copy
+            mad = deepcopy(mad)  # make deepcopy so does not mutate argument
         mad = mad if mad is not None else dict()
         qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
         raw = raw if raw is not None else qb64b # copy qb64b to raw
@@ -734,7 +735,7 @@ class Compactor(Mapper):
         """
         self._leaves = dict()
         self._partials = dict()
-        super(Compactor, self).__init__(saidive=True, **kwa)
+        super(Compactor, self).__init__(saidive=saidive, **kwa)
 
 
     @property
@@ -847,15 +848,16 @@ class Compactor(Mapper):
 
         if isleaf:
             paths.append(path)
-            leaf = dict(mad)  # make shallow copy
             if saidify:
-                leafer = Mapper(mad=leaf, makify=True,
+                # leafer Mapper makes deepcopy of input mad arg
+                leafer = Mapper(mad=mad, makify=True,
                                 saids=self.saids, saidive=True)
                 for l in leafer.saids:  # assign computed saids to original mad
                     if l in mad:
                         mad[l] = leafer.mad[l]
             else:
-                leafer = Mapper(mad=leaf, makify=True)
+                # leafer Mapper makes deepcopy of input mad arg
+                leafer = Mapper(mad=mad, makify=True)
 
             self.leaves[path] = leafer
 
@@ -888,11 +890,11 @@ class Compactor(Mapper):
         return hassaid
 
 
-    def getSubMad(self, path, mad=None):
-        """Get sub-mad of mad at path. When mad is not provided uses .mad
+    def getTail(self, path, mad=None):
+        """Get tail of path into mad. When mad is not provided uses .mad
 
         Returns:
-           mad (dict|None):  sub mad dict at path or None if not found
+           tail (dict|None):  tail of path into mad or None if not found
 
         Parameters:
            path (str): dot "." separated path. Top-level is "" so ".x" is one
@@ -901,17 +903,17 @@ class Compactor(Mapper):
                             self.mad
 
         """
-        mad = mad if mad is not None else self.mad
+        tail = mad if mad is not None else self.mad
         parts = path.split(".")[1:]  # split and strip off top level part
         for part in parts:
-            if part not in mad:
+            if part not in tail:
                 return None
-            mad = mad[part]  # descend on level down
-        return mad
+            tail = tail[part]  # descend on level down
+        return tail
 
 
     def getSuperMad(self, path, mad=None):
-        """Get super-mad of sub-mad of mad at path.
+        """Get super-mad of tail of mad at path.
         When mad is not provided uses .mad
 
         Returns:
@@ -965,5 +967,43 @@ class Compactor(Mapper):
             if self.iscompact:
                 break
 
+
+
+    def expand(self, greedy=True):
+        """Recursively build .partials from .leaves.
+
+        Parameters:
+            greedy (bool): True means expand partials using greed algorithm
+                           on leaves. Essentially expand as many leaves as
+                           possible on each pass by reversing leaf oder.
+                           False means do not use expand by reversing leaf order
+        """
+        self._partials = {}  # reset partials dict
+        paths = list(self.leaves.keys())
+        if greedy:
+            paths.reverse()
+
+        used = []  # already expanded paths
+        if "" in paths:  # do not create partial of fully compacted leaf
+            used.append("")
+
+        pmad = deepcopy(self.mad)  # partial starts with copy of self.mad
+        while unused := oset(paths) - oset(used):  # preserved ordering
+            created = False
+            for path in unused:
+                lmad, leaf = self.getSuperMad(path=path, mad=pmad)
+                if lmad is not None and leaf is not None:
+                    leafer = self.leaves[path]
+                    lmad[leaf] = deepcopy(leafer.mad)  # expand pmad with copy of leafer
+                    used.append(path)
+                    created = True
+
+            if created:  # create new partial
+                # compactor makes copy pmad so can reuse pmad to start next partial
+                # don't compute top-level saids on partials
+                partial = Compactor(mad=pmad, makify=True, saidive=False)
+                # don't compute saids on leaves of partials
+                index = partial.trace()  # default saidify == False
+                self.partials[tuple(index)] = partial
 
 
