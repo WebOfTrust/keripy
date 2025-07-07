@@ -933,8 +933,8 @@ def test_compactor_basic():
     assert compactor.iscompact is None
     assert compactor.getTail(path='') == compactor.mad
     assert compactor.getTail(path='.x') == None
-    assert compactor.getSuperMad(path="") == (None, "")
-    assert compactor.getSuperMad(path=".x") == (None, None)
+    assert compactor.getMad(path="") == (None, "")
+    assert compactor.getMad(path=".x") == (None, None)
 
     # Test already fully compacted mad
     imad = \
@@ -977,8 +977,8 @@ def test_compactor_basic():
         'y': 'bottom',
         'x': 'under',
     }
-    assert compactor.getSuperMad(path="") == (None, "")
-    assert compactor.getSuperMad(path=".z") == (({'d': 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB',
+    assert compactor.getMad(path="") == (None, "")
+    assert compactor.getMad(path=".z") == (({'d': 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB',
                                                 'q': 'top',
                                                 'z': {'y': 'bottom', 'x': 'under'}},
                                                'z'))
@@ -1110,8 +1110,8 @@ def test_compactor_basic():
     assert compactor.getTail(path='') == compactor.mad
     assert compactor.getTail(path='.z.x') == {'d': '', 'w': 'bottom'}
     assert compactor.getTail(path='.y.v') == {'d': '', 't': {'s': 'down', 'r': 'deep'}}
-    assert compactor.getSuperMad(path='.z.x') == ({'x': {'d': '', 'w': 'bottom'}, 'u': 'under'}, 'x')
-    assert compactor.getSuperMad(path='.y.v') == ({'d': '', 'v': {'d': '', 't': {'s': 'down', 'r': 'deep'}}}, 'v')
+    assert compactor.getMad(path='.z.x') == ({'x': {'d': '', 'w': 'bottom'}, 'u': 'under'}, 'x')
+    assert compactor.getMad(path='.y.v') == ({'d': '', 'v': {'d': '', 't': {'s': 'down', 'r': 'deep'}}}, 'v')
 
     paths = ['.z.x', '.y.v']
     assert compactor._trace(mad=compactor.mad) == paths
@@ -1241,7 +1241,7 @@ def test_compactor_basic():
 
     # compact the leaves
     for path in paths:
-        smad, leaf = compactor.getSuperMad(path=path, mad=mad)
+        smad, leaf = compactor.getMad(path=path, mad=mad)
         smad[leaf] = compactor.leaves[path].said
 
     assert mad == \
@@ -1295,7 +1295,7 @@ def test_compactor_basic():
     # compact the leaves
     mad = dict(compactor.mad)  # make copy
     for path in paths:
-        smad, leaf = compactor.getSuperMad(path=path, mad=mad)
+        smad, leaf = compactor.getMad(path=path, mad=mad)
         smad[leaf] = compactor.leaves[path].said
 
     assert mad == \

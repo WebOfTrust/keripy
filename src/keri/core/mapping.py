@@ -9,10 +9,14 @@ from collections.abc import Mapping, Iterable
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from dataclasses import dataclass, astuple, asdict
+import json
+
+import cbor2 as cbor
+import msgpack
 
 from ordered_set import OrderedSet as oset
 
-from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
+from ..kering import (Colds, sniff, Kinds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
 
 from ..help import isNonStringIterable, Reatt
@@ -143,6 +147,7 @@ class Mapper:
         ._strict (bool): labels strict format for strict property
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
+        ._kind (str): serialization kind from Kinds
 
     """
     Saids = dict(d=DigDex.Blake3_256)  # default said field label with digestive code
@@ -150,7 +155,7 @@ class Mapper:
 
     def __init__(self, *, mad=None, raw=None, qb64b=None, qb64=None, qb2=None,
                  strip=False, makify=False, verify=True, strict=True,
-                 saids=None, saidive=False):
+                 saids=None, saidive=False, kind=Kinds.cesr):
         """Initialize instance
 
         Parameters:
@@ -199,6 +204,7 @@ class Mapper:
         self._strict = True if strict else False
         self._saids = dict(saids if saids is not None else self.Saids)  # make copy
         self._saidive = True if saidive else False
+        self._kind = kind
 
         if isNonStringIterable(mad):
             mad = deepcopy(mad)  # make deepcopy so does not mutate argument
@@ -208,13 +214,13 @@ class Mapper:
 
         if mad or not (raw or qb64b or qb2):  # mad may be empty if not others
             if makify and self.saidive:  # compute saids at top level
-                raw, count = self._exhale(mad=mad, dummy=True) # first dummy serialization
+                raw, count = self._exhale(mad=mad, dummy=True, kind=kind) # first dummy serialization
                 for label, code in self.saids.items():
                     if label in mad:  # has saidive field
                         said = Diger(ser=raw, code=code).qb64
                         mad[label] = said  # changes self._mad
 
-            raw, count = self._exhale(mad=mad)
+            raw, count = self._exhale(mad=mad, kind=kind)
             self._raw = raw
             self._count = count
             self._mad = mad
@@ -240,11 +246,15 @@ class Mapper:
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
 
-            self._inhale(buf)  # sets ._mad, ._raw, and ._count
+            mad, raw, count, kind = self._inhale(buf)
+            self._mad = mad
+            self._raw = raw
+            self._count = count
+            self._kind = kind
 
         if self.saidive and not makify and verify:  # verify saids
-            mad = dict(self.mad) # make copy
-            raw, count = self._exhale(mad=mad, dummy=True) # make dummy copy
+            mad = dict(self.mad) # make shallow copy at top level
+            raw, count = self._exhale(mad=mad, dummy=True, kind=kind) # make dummy copy
             for label, code in self.saids.items():
                 if label in mad:  # has saidive field
                     said = Diger(ser=raw, code=code).qb64
@@ -377,6 +387,15 @@ class Mapper:
         """
         return self._saidive
 
+    @property
+    def kind(self):
+        """Getter for ._kind
+
+        Returns:
+              kind (str): serialization kind from Kinds
+        """
+        return self._kind
+
 
     def byteCount(self, cold=Colds.txt):
         """Computes number of bytes from .count quadlets/triplets given cold
@@ -398,41 +417,78 @@ class Mapper:
         raise ValueError(f"Invalid {cold=} for byte count conversion")
 
 
-    def _inhale(self, ser=None):
+    def _inhale(self, ser=None, kind=Kinds.cesr):
         """Deserializes ser into .mad
+
+        Returns:
+            tuple(mad, raw, count, kind): results of deserialization where:
+                mad is mapping dict deserialized from ser
+                raw is bytes of ser
+                count is number of bytes in raw
+                kind is serialization kind of ser from sniffing
 
         Parameters:
             ser (str|bytes|bytearray|None): mad serialization in raw/qb64b
                 text domain bytes. Uses self.raw if None
+            kind (str): serialization kind from Kinds. Assumes already know what
+                        kind from enclosing message sniff etc.
         """
         ser = ser if ser is not None else self.raw
-        self._raw = bytes(ser)  # make bytes copy
-
-        ser = bytearray(ser)  # make bytearray copy so can consume on the go
+        raw = bytes(ser)  # make bytes copy
         mad = dict()
 
-        # consume map ctr assumes already extracted full map
-        mctr = Counter(qb64b=ser, strip=True)
-        if mctr.name not in ('GenericMapGroup', 'BigGenericMapGroup'):
-            raise DeserializeError(f"Expected GenericMapGroup got counter name="
-                                   f"{mctr.name}")
-        self._count = mctr.count + (mctr.fullSize // 4)  # include counter & contents
-        if len(ser) != mctr.count * 4:
-            raise DeserializeError(f"Invalid map content qb64b for count="
-                                   f"{mctr.count}")
+        if kind == Kinds.cesr:
+            ser = bytearray(ser)  # make bytearray copy so can consume on the go
 
-        while (ser):
+            # consume map ctr assumes already extracted full map
+            mctr = Counter(qb64b=ser, strip=True)
+            if mctr.name not in ('GenericMapGroup', 'BigGenericMapGroup'):
+                raise DeserializeError(f"Expected GenericMapGroup got counter name="
+                                       f"{mctr.name}")
+
+            count = mctr.count + (mctr.fullSize // 4)  # include counter & contents
+            if len(ser) != mctr.count * 4:
+                raise DeserializeError(f"Invalid map content qb64b for count="
+                                       f"{mctr.count}")
+
+            while (ser):
+                try:
+                    if self.strict:
+                        label = Labeler(qb64b=ser, strip=True).label
+                    else:
+                        label = Labeler(qb64b=ser, strip=True).text
+                    mad[label] = self._deserialize(ser)
+                except  InvalidValueError as ex:
+                    raise DeserializeError(f"Invalid value while deserializing") from ex
+
+        elif kind == Kinds.json:
             try:
-                if self.strict:
-                    label = Labeler(qb64b=ser, strip=True).label
-                else:
-                    label = Labeler(qb64b=ser, strip=True).text
-                mad[label] = self._deserialize(ser)
-            except  InvalidValueError as ex:
-                raise DeserializeError(f"Invalid value while deserializing") from ex
+                mad = json.loads(raw.decode())
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing JSON: "
+                                       f"{raw.decode()}") from ex
+            count = len(raw)
 
-        self._mad = mad
-        return self.mad
+        elif kind == Kinds.mgpk:
+            try:
+                mad = msgpack.loads(raw)
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing MGPK: "
+                    f"{raw.decode()}") from ex
+            count = len(raw)
+
+        elif kind == Kinds.cbor:
+            try:
+                mad = cbor.loads(raw)
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing CBOR: "
+                    f"{raw.decode()}") from ex
+            count = len(raw)
+
+        else:
+            raise DeserializeError(f"Invalid deserialization {kind=}")
+
+        return (mad, raw, count, kind)
 
 
     def _deserialize(self, ser):
@@ -490,52 +546,70 @@ class Mapper:
         return value
 
 
-    def _exhale(self, mad=None, dummy=False):
+    def _exhale(self, mad=None, dummy=False, kind=Kinds.cesr):
         """Serializes field map dict, mad
 
         Parameters:
             mad (dict|None): serializable field map dict. Uses self.mad if None
             dummy (bool): True means dummy said fields given by .saids
                           False means do not dummy said fields given by .saids
+            kind (str): serialization kind from Kinds
 
         Returns:
             ser (bytes): qb64b serialization of mad
         """
         mad = mad if mad is not None else self.mad
 
-        ser = bytearray()  # full field map serialization as qb64 with counter
-        bdy = bytearray()
-        for l, v in mad.items():  # assumes valid field order & presence
-            try:
-                if self.strict:
-                    bdy.extend(Labeler(label=l).qb64b)
-                else:
-                    bdy.extend(Labeler(text=l).qb64b)
-                if dummy and l in self.saids:
-                    try:  # use code of mad field value if present
-                        code = Matter(qb64=v).code
-                    except Exception:  # use default instead
-                        code = self.saids[l]
-                    # when code is digestive then we know we have to compute said dummy
-                    # this accounts for aid fields that may or may not be saids
-                    if code not in DigDex:  # if digestive then fill with dummy:
-                        raise SerializeError(f"Unexpected non-digestive {code=} "
-                                             f"for value of SAID field label={l}")
-                    if code != self.saids[l]:  # different than default
-                        # remember actual code for field when not default so
-                        # eventually computed said uses this code not default
-                        self.saids[l] = code  # replace default with provided
+        if kind == Kinds.cesr:
+            ser = bytearray()  # full field map serialization as qb64 with counter
+            bdy = bytearray()
+            for l, v in mad.items():  # assumes valid field order & presence
+                try:
+                    if self.strict:
+                        bdy.extend(Labeler(label=l).qb64b)
+                    else:
+                        bdy.extend(Labeler(text=l).qb64b)
+                    if dummy and l in self.saids:
+                        try:  # use code of mad field value if present
+                            code = Matter(qb64=v).code
+                        except Exception:  # use default instead
+                            code = self.saids[l]
+                        # when code is digestive then we know we have to compute said dummy
+                        # this accounts for aid fields that may or may not be saids
+                        if code not in DigDex:  # if digestive then fill with dummy:
+                            raise SerializeError(f"Unexpected non-digestive {code=} "
+                                                 f"for value of SAID field label={l}")
+                        if code != self.saids[l]:  # different than default
+                            # remember actual code for field when not default so
+                            # eventually computed said uses this code not default
+                            self.saids[l] = code  # replace default with provided
 
-                    v = self.Dummy * Matter.Sizes[code].fs
-                    bdy.extend(v.encode())
-                else:
-                    bdy.extend(self._serialize(v))
-            except InvalidValueError as ex:
-                raise SerializeError("Invalid value while serializing") from ex
+                        v = self.Dummy * Matter.Sizes[code].fs
+                        bdy.extend(v.encode())
+                    else:
+                        bdy.extend(self._serialize(v))
+                except InvalidValueError as ex:
+                    raise SerializeError("Invalid value while serializing") from ex
 
-        ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericMapGroup))
-        raw = bytes(ser)  # bytes so can sign, do crypto operations on it
-        count = len(ser) // 4
+            ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericMapGroup))
+            raw = bytes(ser)  # bytes so can sign, do crypto operations on it
+            count = len(ser) // 4
+
+        elif kind == Kinds.json:   # json.dumps returns str so must encode to bytes
+            raw = json.dumps(sad, separators=(",", ":"),
+                             ensure_ascii=False).encode()
+            count = len(raw)
+
+        elif kind == Kinds.mgpk:  # mgpk.dumps returns bytes
+            raw = msgpack.dumps(sad)
+            count = len(raw)
+
+        elif kind == Kinds.cbor:  # cbor.dumps returns bytes
+            raw = cbor.dumps(sad)
+            count = len(raw)
+        else:
+            raise SerializeError(f"Unsupported serialization {kind=}")
+
         return (raw, count)
 
 
@@ -912,13 +986,13 @@ class Compactor(Mapper):
         return tail
 
 
-    def getSuperMad(self, path, mad=None):
-        """Get super-mad of tail of mad at path.
+    def getMad(self, path, mad=None):
+        """Get enclosing mad of tail of path into mad.
         When mad is not provided uses .mad
 
         Returns:
-           tuple(mad, tail): where mad is super mad of map given path and
-                                   tail is label at tail end of path
+           tuple(emad, tail): where emad is enclosing mad of tail of path and
+                                   tail is label at tail end of path into mad
 
 
         Parameters:
@@ -960,7 +1034,7 @@ class Compactor(Mapper):
             paths = self._trace(mad=self.mad, paths=[], path='', saidify=True)
             for path in paths:  # only check to compact new leaves
                 leafer = self.leaves[path]  # get leafer for new leaf path
-                mad, tail = self.getSuperMad(path)
+                mad, tail = self.getMad(path)
                 if mad is not None and tail is not None:
                     mad[tail] = leafer.said  # assign primary said to compact
 
@@ -991,7 +1065,7 @@ class Compactor(Mapper):
         while unused := oset(paths) - oset(used):  # preserved ordering
             created = False
             for path in unused:
-                lmad, leaf = self.getSuperMad(path=path, mad=pmad)
+                lmad, leaf = self.getMad(path=path, mad=pmad)
                 if lmad is not None and leaf is not None:
                     leafer = self.leaves[path]
                     lmad[leaf] = deepcopy(leafer.mad)  # expand pmad with copy of leafer
