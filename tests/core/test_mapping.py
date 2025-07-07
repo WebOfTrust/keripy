@@ -1520,6 +1520,7 @@ def test_compactor_compact_expand():
     # first compact
     compactor = Compactor(mad=emad, makify=True)
     compactor.compact()
+    assert compactor.iscompact
     assert list(compactor.leaves.keys()) == paths
     assert compactor.mad == cmad
     assert compactor.said == csaid
@@ -1531,6 +1532,7 @@ def test_compactor_compact_expand():
     assert list(compactor.partials.keys()) == indices
     assert len(compactor.partials) == 1  # greedy on creates the fully expanded partial
     partial = compactor.partials[index]
+    assert not partial.iscompact
     assert partial.mad == emad
     assert partial.mad['d'] == csaid
     assert partial.mad['y']['d'] == ysaid
@@ -1541,6 +1543,7 @@ def test_compactor_compact_expand():
     # first compact
     compactor = Compactor(mad=emad, makify=True)
     compactor.compact()
+    assert compactor.iscompact
     assert list(compactor.leaves.keys()) == paths
     assert compactor.mad == cmad
     assert compactor.said == csaid
@@ -1553,6 +1556,7 @@ def test_compactor_compact_expand():
 
     index0 = ('.z.x', '.y')
     partial0 = compactor.partials[index0]
+    assert not partial0.iscompact
     assert partial0.mad == \
     {'d': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
      'q': 'top',
@@ -1564,6 +1568,7 @@ def test_compactor_compact_expand():
 
     index1 = ('.z.x', '.y.v')
     partial1 = compactor.partials[index1]
+    assert not partial1.iscompact
     assert partial1.mad == emad  # fully expanded
     assert partial1.mad['d'] == csaid
     assert partial1.mad['y']['d'] == ysaid
