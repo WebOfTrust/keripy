@@ -6,12 +6,14 @@ tests.core.test_mapping module
 import copy
 import json
 import cbor2 as cbor
+import msgpack
 
 import pytest
 
 from dataclasses import dataclass, astuple, asdict
 
-from keri.kering import Colds, SerializeError, DeserializeError
+from keri.kering import (Colds, Kinds,
+                         SerializeError, DeserializeError, InvalidValueError)
 from keri.core import (EscapeDex, Labeler, Mapper, Compactor, DigDex, Diger,
                        DecDex, Decimer)
 
@@ -661,6 +663,147 @@ def test_mapper_basic():
 
     """Done Test"""
 
+
+def test_mapper_basic_nonnative():
+    """Test Mapper class non-native ser/des"""
+    mapper = Mapper(kind=Kinds.json)  # default empty map
+    assert mapper.mad == {}
+    assert mapper.qb64 == '{}'
+    assert mapper.raw == mapper.qb64b == b'{}'
+    with pytest.raises(ValueError):
+        assert mapper.qb2 == b''
+
+    assert mapper.count == None
+    assert mapper.size == 2
+    with pytest.raises(ValueError):
+        assert mapper.byteCount() == 4
+
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == False
+
+    # test JSON
+    kind = Kinds.json
+    # Test with all non-nested value types
+    mad = dict(a=1, b=True, c="hello", d=15.34, e=False, f=None)
+    raw = b'{"a":1,"b":true,"c":"hello","d":15.34,"e":false,"f":null}'
+    size = 57
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test with nested
+    mad = dict(a="Hi There", nest=dict(a=[True, False, None], b=dict(z=True)),
+               icky=[["z", "y"], dict(d=5), "abc"])
+    raw = (b'{"a":"Hi There","nest":{"a":[true,false,null],"b":{"z":true}},"icky":[["z","'
+           b'y"],{"d":5},"abc"]}')
+    size = 95
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test CBOR
+    kind = Kinds.cbor
+    # Test with all non-nested value types
+    mad = dict(a=1, b=True, c="hello", d=15.34, e=False, f=None)
+    raw = b'\xa6aa\x01ab\xf5acehelload\xfb@.\xae\x14z\xe1G\xaeae\xf4af\xf6'
+    size = 32
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test with nested
+    mad = dict(a="Hi There", nest=dict(a=[True, False, None], b=dict(z=True)),
+               icky=[["z", "y"], dict(d=5), "abc"])
+    raw = (b'\xa3aahHi Therednest\xa2aa\x83\xf5\xf4\xf6ab\xa1az\xf5dicky\x83\x82aza'
+           b'y\xa1ad\x05cabc')
+    size = 49
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test MGPK
+    kind = Kinds.mgpk
+    # Test with all non-nested value types
+    mad = dict(a=1, b=True, c="hello", d=15.34, e=False, f=None)
+    raw = (b'\x86\xa1a\x01\xa1b\xc3\xa1c\xa5hello\xa1d\xcb@.\xae\x14z\xe1G\xae\xa1e'
+           b'\xc2\xa1f\xc0')
+    size = 32
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test with nested
+    mad = dict(a="Hi There", nest=dict(a=[True, False, None], b=dict(z=True)),
+               icky=[["z", "y"], dict(d=5), "abc"])
+    raw = (b'\x83\xa1a\xa8Hi There\xa4nest\x82\xa1a\x93\xc3\xc2\xc0\xa1b\x81\xa1'
+           b'z\xc3\xa4icky\x93\x92\xa1z\xa1y\x81\xa1d\x05\xa3abc')
+    size = 49
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+
 def test_mapper_saidive():
     """Test Mapper class with saidive True"""
 
@@ -911,6 +1054,57 @@ def test_mapper_saidive():
     assert mapper.said == said
 
     """Done Test"""
+
+
+def test_mapper_saidive_nonnative():
+    """Test Mapper class with saidive True but nonnative kind"""
+
+    # test with default empty mad
+    kind = Kinds.json
+    raw = b'{}'
+    size = 2
+
+    mapper = Mapper(saidive=True, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == {}
+    assert mapper.raw == raw
+    assert mapper.size == size
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == None
+
+    # test with makify but no said fields
+    mapper = Mapper(saidive=True, makify=True, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == {}
+    assert mapper.raw == raw
+    assert mapper.size == size
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == None
+
+    imad = dict(d='', a=1, b=True, c="hello")  # input mad
+    omad = \
+    {
+        'd': 'ECwfOLNWraidyr1_10BkMPdTNdiPksHHOfSH9OLpzvog',
+        'a': 1,
+        'b': True,
+        'c': 'hello'
+    }
+    said = 'ECwfOLNWraidyr1_10BkMPdTNdiPksHHOfSH9OLpzvog'
+    raw = (b'{"d":"ECwfOLNWraidyr1_10BkMPdTNdiPksHHOfSH9OLpzvog","a":1,"b":true,"c":"hello"}')
+    size = 79
+
+    # test with makify but no said fields
+    mapper = Mapper(mad=imad, saidive=True, makify=True, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == omad
+    assert mapper.raw == raw
+    assert mapper.size == size
+    assert mapper.saidive == True
+    assert mapper.said == said
 
 
 def test_compactor_basic():
@@ -1581,6 +1775,8 @@ def test_compactor_compact_expand():
 if __name__ == "__main__":
     test_escape_dex()
     test_mapper_basic()
+    test_mapper_basic_nonnative()
     test_mapper_saidive()
+    test_mapper_saidive_nonnative()
     test_compactor_basic()
     test_compactor_compact_expand()
