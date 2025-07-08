@@ -453,7 +453,7 @@ class Mapper:
         raw = bytes(ser)  # make bytes copy
         mad = dict()
 
-        if kind == Kinds.cesr:
+        if kind == Kinds.cesr:  # native CESR
             ser = bytearray(ser)  # make bytearray copy so can consume on the go
 
             # consume map ctr assumes already extracted full map
@@ -477,32 +477,31 @@ class Mapper:
                 except  InvalidValueError as ex:
                     raise DeserializeError(f"Invalid value while deserializing") from ex
 
-        elif kind == Kinds.json:
-            try:
-                mad = json.loads(raw.decode())
-            except Exception as ex:
-                raise DeserializeError(f"Error deserializing JSON: "
-                                       f"{raw.decode()}") from ex
+        else:  # non-native CESR
             count = None
+            if kind == Kinds.json:
+                try:
+                    mad = json.loads(raw.decode())
+                except Exception as ex:
+                    raise DeserializeError(f"Error deserializing JSON: "
+                                           f"{raw.decode()}") from ex
 
-        elif kind == Kinds.mgpk:
-            try:
-                mad = msgpack.loads(raw)
-            except Exception as ex:
-                raise DeserializeError(f"Error deserializing MGPK: "
-                    f"{raw.decode()}") from ex
-            count = None
+            elif kind == Kinds.mgpk:
+                try:
+                    mad = msgpack.loads(raw)
+                except Exception as ex:
+                    raise DeserializeError(f"Error deserializing MGPK: "
+                        f"{raw.decode()}") from ex
 
-        elif kind == Kinds.cbor:
-            try:
-                mad = cbor.loads(raw)
-            except Exception as ex:
-                raise DeserializeError(f"Error deserializing CBOR: "
-                    f"{raw.decode()}") from ex
-            count = None
+            elif kind == Kinds.cbor:
+                try:
+                    mad = cbor.loads(raw)
+                except Exception as ex:
+                    raise DeserializeError(f"Error deserializing CBOR: "
+                        f"{raw.decode()}") from ex
 
-        else:
-            raise DeserializeError(f"Invalid deserialization {kind=}")
+            else:
+                raise DeserializeError(f"Invalid deserialization {kind=}")
 
         return (mad, raw, count, kind)
 
@@ -576,7 +575,7 @@ class Mapper:
         """
         mad = mad if mad is not None else self.mad
 
-        if kind == Kinds.cesr:
+        if kind == Kinds.cesr:  # native CESR
             ser = bytearray()  # full field map serialization as qb64 with counter
             bdy = bytearray()
             for l, v in mad.items():  # assumes valid field order & presence
@@ -612,7 +611,8 @@ class Mapper:
             raw = bytes(ser)  # bytes so can sign, do crypto operations on it
             count = len(ser) // 4
 
-        elif kind == Kinds.json:   # json.dumps returns str so must encode to bytes
+        else:  # non-native CESR
+            count = None
             if dummy:
                 for label in self.saids:
                     if label in mad:
@@ -625,7 +625,7 @@ class Mapper:
                         # this accounts for aid fields that may or may not be saids
                         if code not in DigDex:  # if digestive then fill with dummy:
                             raise SerializeError(f"Unexpected non-digestive {code=} "
-                                                 f"for value of SAID field label={l}")
+                                                         f"for value of SAID field label={l}")
 
                         if code != self.saids[label]:  # different than default
                             # remember actual code for field when not default so
@@ -634,60 +634,18 @@ class Mapper:
 
                         mad[label] = self.Dummy * Matter.Sizes[code].fs
 
-            raw = json.dumps(mad, separators=(",", ":"), ensure_ascii=False).encode()
-            count = None
 
-        elif kind == Kinds.mgpk:  # mgpk.dumps returns bytes
-            if dummy:
-                for label in self.saids:
-                    if label in mad:
-                        try:
-                            code = Matter(qb64=mad[label]).code
-                        except Exception:
-                            code = self.saids[label]
+            if kind == Kinds.json:   # json.dumps returns str so must encode to bytes
+                raw = json.dumps(mad, separators=(",", ":"), ensure_ascii=False).encode()
 
-                        # when code is digestive then we know we have to compute said dummy
-                        # this accounts for aid fields that may or may not be saids
-                        if code not in DigDex:  # if digestive then fill with dummy:
-                            raise SerializeError(f"Unexpected non-digestive {code=} "
-                                                 f"for value of SAID field label={l}")
+            elif kind == Kinds.mgpk:  # mgpk.dumps returns bytes
+                raw = msgpack.dumps(mad)
 
-                        if code != self.saids[label]:  # different than default
-                            # remember actual code for field when not default so
-                            # eventually computed said uses this code not default
-                            self.saids[label] = code  # replace default with provided
+            elif kind == Kinds.cbor:  # cbor.dumps returns bytes
+                raw = cbor.dumps(mad)
 
-                        mad[label] = self.Dummy * Matter.Sizes[code].fs
-
-            raw = msgpack.dumps(mad)
-            count = None
-
-        elif kind == Kinds.cbor:  # cbor.dumps returns bytes
-            if dummy:
-                for label in self.saids:
-                    if label in mad:
-                        try:
-                            code = Matter(qb64=mad[label]).code
-                        except Exception:
-                            code = self.saids[label]
-
-                        # when code is digestive then we know we have to compute said dummy
-                        # this accounts for aid fields that may or may not be saids
-                        if code not in DigDex:  # if digestive then fill with dummy:
-                            raise SerializeError(f"Unexpected non-digestive {code=} "
-                                                 f"for value of SAID field label={l}")
-
-                        if code != self.saids[label]:  # different than default
-                            # remember actual code for field when not default so
-                            # eventually computed said uses this code not default
-                            self.saids[label] = code  # replace default with provided
-
-                        mad[label] = self.Dummy * Matter.Sizes[code].fs
-
-            raw = cbor.dumps(mad)
-            count = None
-        else:
-            raise SerializeError(f"Unsupported serialization {kind=}")
+            else:
+                raise SerializeError(f"Unsupported serialization {kind=}")
 
         return (raw, count)
 
