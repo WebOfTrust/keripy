@@ -4,13 +4,19 @@ keri.core.mapping module
 
 Creates label value, field map data structures
 """
+from copy import deepcopy
 from collections.abc import Mapping, Iterable
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from dataclasses import dataclass, astuple, asdict
+import json
 
+import cbor2 as cbor
+import msgpack
 
-from ..kering import (Colds, EmptyMaterialError, InvalidValueError,
+from ordered_set import OrderedSet as oset
+
+from ..kering import (Colds, sniff, Kinds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
 
 from ..help import isNonStringIterable, Reatt
@@ -40,6 +46,7 @@ class EscapeCodex:
     Decimal_Big_L0: str = '7AAH'  # Decimal B64 string float and int big lead size 0
     Decimal_Big_L1: str = '8AAH'  # Decimal B64 string float and int big lead size 1
     Decimal_Big_L2: str = '9AAH'  # Decimal B64 string float and int big lead size 2
+    Empty: str = '1AAP'  # Empty value for Nonce, UUID, SAID, state or related fields
     Tag1:  str = '0J'  # 1 B64 char tag with 1 pre pad
     Tag2:  str = '0K'  # 2 B64 char tag
     Tag3:  str = 'X'  # 3 B64 char tag
@@ -140,6 +147,7 @@ class Mapper:
         ._strict (bool): labels strict format for strict property
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
+        ._kind (str): serialization kind from Kinds
 
     """
     Saids = dict(d=DigDex.Blake3_256)  # default said field label with digestive code
@@ -147,7 +155,7 @@ class Mapper:
 
     def __init__(self, *, mad=None, raw=None, qb64b=None, qb64=None, qb2=None,
                  strip=False, makify=False, verify=True, strict=True,
-                 saids=None, saidive=False):
+                 saids=None, saidive=False, kind=Kinds.cesr):
         """Initialize instance
 
         Parameters:
@@ -167,7 +175,7 @@ class Mapper:
                 Ignored if None or mad provided. Compatible interface with Counter
             strip (bool):  True means strip mapper contents from input stream
                 bytearray after parsing qb64, qb64b or qb2. False means do not strip.
-                default False
+                default False. Only applicable when native CESR (kind == Kinds.cesr)
             makify (bool): True means compute saids when .saidive
                            False means do not comput saids even when .saidive
             verify (bool): True means verify serialization against mad.
@@ -196,55 +204,63 @@ class Mapper:
         self._strict = True if strict else False
         self._saids = dict(saids if saids is not None else self.Saids)  # make copy
         self._saidive = True if saidive else False
+        self._kind = kind
 
         if isNonStringIterable(mad):
-            mad = dict(mad)  # make copy
+            mad = deepcopy(mad)  # make deepcopy so does not mutate argument
         mad = mad if mad is not None else dict()
-        self._mad = mad  # will populate said fields when saidive and makify
-        self._raw = b''  # override later
-        self._count = 0   # override later
-
         qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
         raw = raw if raw is not None else qb64b # copy qb64b to raw
 
-        if self.mad or not (raw or qb64b or qb2):  # mad may be empty if not others
+        if mad or not (raw or qb64b or qb2):  # mad may be empty if not others
             if makify and self.saidive:  # compute saids at top level
-                raw, count = self._exhale(mad=mad, dummy=True) # first dummy serialization
+                raw, count = self._exhale(mad=mad, dummy=True, kind=kind) # first dummy serialization
                 for label, code in self.saids.items():
                     if label in mad:  # has saidive field
                         said = Diger(ser=raw, code=code).qb64
                         mad[label] = said  # changes self._mad
 
-            raw, count = self._exhale(mad=mad)
+            raw, count = self._exhale(mad=mad, kind=kind)
             self._raw = raw
             self._count = count
+            self._mad = mad
 
         else:
             if raw:
                 if hasattr(raw, "encode"):
                     raw = raw.encode()
 
-                ctr = Counter(qb64b=raw)  # peek at counter
-                bs = ctr.byteCount() + ctr.byteSize()
-                buf = raw[:bs]
-                if strip and isinstance(raw, bytearray):
-                    del raw[:bs]
+                if kind == Kinds.cesr:
+                    ctr = Counter(qb64b=raw)  # peek at counter
+                    bs = ctr.byteCount() + ctr.byteSize()
+                    buf = raw[:bs]
+                    if strip and isinstance(raw, bytearray):
+                        del raw[:bs]
+                else:
+                    buf = raw[:]
 
             elif qb2:
-                ctr = Counter(qb2=qb2)  # peek at counter
-                bs = ctr.byteCount(cold=Colds.bny) + ctr.byteSize(Colds.bny)
-                buf = encodeB64(qb2[:bs])  # deserialize in qb64 text domain
-                if strip and isinstance(qb2, bytearray):
-                    del qb2[:bs]
+                if kind == Kinds.cesr:
+                    ctr = Counter(qb2=qb2)  # peek at counter
+                    bs = ctr.byteCount(cold=Colds.bny) + ctr.byteSize(Colds.bny)
+                    buf = encodeB64(qb2[:bs])  # deserialize in qb64 text domain
+                    if strip and isinstance(qb2, bytearray):
+                        del qb2[:bs]
+                else:
+                    buf = raw[:]
 
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
 
-            self._inhale(buf)  # sets ._mad, ._raw, and ._count
+            mad, raw, count, kind = self._inhale(buf, kind=kind)
+            self._mad = mad
+            self._raw = raw
+            self._count = count
+            self._kind = kind
 
         if self.saidive and not makify and verify:  # verify saids
-            mad = dict(self.mad) # make copy
-            raw, count = self._exhale(mad=mad, dummy=True) # make dummy copy
+            mad = dict(self.mad) # make shallow copy at top level
+            raw, count = self._exhale(mad=mad, dummy=True, kind=kind) # make dummy copy
             for label, code in self.saids.items():
                 if label in mad:  # has saidive field
                     said = Diger(ser=raw, code=code).qb64
@@ -300,6 +316,9 @@ class Mapper:
               qb2 (bytes): field map serialization as binary domain
 
         """
+        if self.kind != Kinds.cesr:
+            raise ValueError(f"Binary domain undefined for non-native "
+                                    f"kind={self.kind}")
         return decodeB64(self._raw)
 
 
@@ -307,8 +326,9 @@ class Mapper:
     def count(self):
         """Getter for ._count. Makes ._count read only
         Returns:
-            count (int):  count value in quadlets/triples chars/bytes  of
-                field map serialization
+            count (int|None):  count value in quadlets/triples chars/bytes  of
+                               field map serialization when native CESR
+                               Otherwise None when non-native
 
         """
         return self._count
@@ -323,7 +343,10 @@ class Mapper:
                 domain (qb64b)
 
         """
-        return self._count * 4  # always text domain
+        if self.kind != Kinds.cesr:
+            return len(self.raw)
+
+        return self._count * 4  # always text domain when native cesr
 
     @property
     def strict(self):
@@ -377,6 +400,15 @@ class Mapper:
         """
         return self._saidive
 
+    @property
+    def kind(self):
+        """Getter for ._kind
+
+        Returns:
+              kind (str): serialization kind from Kinds
+        """
+        return self._kind
+
 
     def byteCount(self, cold=Colds.txt):
         """Computes number of bytes from .count quadlets/triplets given cold
@@ -389,6 +421,9 @@ class Mapper:
                         in order to convert .count quadlets/triplets to byte count
                         if not Colds.txt or Colds.bny raises ValueError
         """
+        if self.kind != Kinds.cesr:
+            raise ValueError(f"Byte count undefined for non-native kind={self.kind}")
+
         if cold == Colds.txt:  # quadlets
             return self.count * 4
 
@@ -398,41 +433,78 @@ class Mapper:
         raise ValueError(f"Invalid {cold=} for byte count conversion")
 
 
-    def _inhale(self, ser=None):
+    def _inhale(self, ser=None, kind=Kinds.cesr):
         """Deserializes ser into .mad
+
+        Returns:
+            tuple(mad, raw, count, kind): results of deserialization where:
+                mad is mapping dict deserialized from ser
+                raw is bytes of ser
+                count is number of bytes in raw
+                kind is serialization kind of ser from sniffing
 
         Parameters:
             ser (str|bytes|bytearray|None): mad serialization in raw/qb64b
                 text domain bytes. Uses self.raw if None
+            kind (str): serialization kind from Kinds. Assumes already know what
+                        kind from enclosing message sniff etc.
         """
         ser = ser if ser is not None else self.raw
-        self._raw = bytes(ser)  # make bytes copy
-
-        ser = bytearray(ser)  # make bytearray copy so can consume on the go
+        raw = bytes(ser)  # make bytes copy
         mad = dict()
 
-        # consume map ctr assumes already extracted full map
-        mctr = Counter(qb64b=ser, strip=True)
-        if mctr.name not in ('GenericMapGroup', 'BigGenericMapGroup'):
-            raise DeserializeError(f"Expected GenericMapGroup got counter name="
-                                   f"{mctr.name}")
-        self._count = mctr.count + (mctr.fullSize // 4)  # include counter & contents
-        if len(ser) != mctr.count * 4:
-            raise DeserializeError(f"Invalid map content qb64b for count="
-                                   f"{mctr.count}")
+        if kind == Kinds.cesr:
+            ser = bytearray(ser)  # make bytearray copy so can consume on the go
 
-        while (ser):
+            # consume map ctr assumes already extracted full map
+            mctr = Counter(qb64b=ser, strip=True)
+            if mctr.name not in ('GenericMapGroup', 'BigGenericMapGroup'):
+                raise DeserializeError(f"Expected GenericMapGroup got counter name="
+                                       f"{mctr.name}")
+
+            count = mctr.count + (mctr.fullSize // 4)  # include counter & contents
+            if len(ser) != mctr.count * 4:
+                raise DeserializeError(f"Invalid map content qb64b for count="
+                                       f"{mctr.count}")
+
+            while (ser):
+                try:
+                    if self.strict:
+                        label = Labeler(qb64b=ser, strip=True).label
+                    else:
+                        label = Labeler(qb64b=ser, strip=True).text
+                    mad[label] = self._deserialize(ser)
+                except  InvalidValueError as ex:
+                    raise DeserializeError(f"Invalid value while deserializing") from ex
+
+        elif kind == Kinds.json:
             try:
-                if self.strict:
-                    label = Labeler(qb64b=ser, strip=True).label
-                else:
-                    label = Labeler(qb64b=ser, strip=True).text
-                mad[label] = self._deserialize(ser)
-            except  InvalidValueError as ex:
-                raise DeserializeError(f"Invalid value while deserializing") from ex
+                mad = json.loads(raw.decode())
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing JSON: "
+                                       f"{raw.decode()}") from ex
+            count = None
 
-        self._mad = mad
-        return self.mad
+        elif kind == Kinds.mgpk:
+            try:
+                mad = msgpack.loads(raw)
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing MGPK: "
+                    f"{raw.decode()}") from ex
+            count = None
+
+        elif kind == Kinds.cbor:
+            try:
+                mad = cbor.loads(raw)
+            except Exception as ex:
+                raise DeserializeError(f"Error deserializing CBOR: "
+                    f"{raw.decode()}") from ex
+            count = None
+
+        else:
+            raise DeserializeError(f"Invalid deserialization {kind=}")
+
+        return (mad, raw, count, kind)
 
 
     def _deserialize(self, ser):
@@ -490,52 +562,133 @@ class Mapper:
         return value
 
 
-    def _exhale(self, mad=None, dummy=False):
+    def _exhale(self, mad=None, dummy=False, kind=Kinds.cesr):
         """Serializes field map dict, mad
 
         Parameters:
             mad (dict|None): serializable field map dict. Uses self.mad if None
             dummy (bool): True means dummy said fields given by .saids
                           False means do not dummy said fields given by .saids
+            kind (str): serialization kind from Kinds
 
         Returns:
             ser (bytes): qb64b serialization of mad
         """
         mad = mad if mad is not None else self.mad
 
-        ser = bytearray()  # full field map serialization as qb64 with counter
-        bdy = bytearray()
-        for l, v in mad.items():  # assumes valid field order & presence
-            try:
-                if self.strict:
-                    bdy.extend(Labeler(label=l).qb64b)
-                else:
-                    bdy.extend(Labeler(text=l).qb64b)
-                if dummy and l in self.saids:
-                    try:  # use code of mad field value if present
-                        code = Matter(qb64=v).code
-                    except Exception:  # use default instead
-                        code = self.saids[l]
-                    # when code is digestive then we know we have to compute said dummy
-                    # this accounts for aid fields that may or may not be saids
-                    if code not in DigDex:  # if digestive then fill with dummy:
-                        raise SerializeError(f"Unexpected non-digestive {code=} "
-                                             f"for value of SAID field label={l}")
-                    if code != self.saids[l]:  # different than default
-                        # remember actual code for field when not default so
-                        # eventually computed said uses this code not default
-                        self.saids[l] = code  # replace default with provided
+        if kind == Kinds.cesr:
+            ser = bytearray()  # full field map serialization as qb64 with counter
+            bdy = bytearray()
+            for l, v in mad.items():  # assumes valid field order & presence
+                try:
+                    if self.strict:
+                        bdy.extend(Labeler(label=l).qb64b)
+                    else:
+                        bdy.extend(Labeler(text=l).qb64b)
 
-                    v = self.Dummy * Matter.Sizes[code].fs
-                    bdy.extend(v.encode())
-                else:
-                    bdy.extend(self._serialize(v))
-            except InvalidValueError as ex:
-                raise SerializeError("Invalid value while serializing") from ex
+                    if dummy and l in self.saids:
+                        try:  # use code of mad field value if present
+                            code = Matter(qb64=v).code
+                        except Exception:  # use default instead
+                            code = self.saids[l]
+                        # when code is digestive then we know we have to compute said dummy
+                        # this accounts for aid fields that may or may not be saids
+                        if code not in DigDex:  # if digestive then fill with dummy:
+                            raise SerializeError(f"Unexpected non-digestive {code=} "
+                                                 f"for value of SAID field label={l}")
+                        if code != self.saids[l]:  # different than default
+                            # remember actual code for field when not default so
+                            # eventually computed said uses this code not default
+                            self.saids[l] = code  # replace default with provided
 
-        ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericMapGroup))
-        raw = bytes(ser)  # bytes so can sign, do crypto operations on it
-        count = len(ser) // 4
+                        v = self.Dummy * Matter.Sizes[code].fs
+                        bdy.extend(v.encode())
+                    else:
+                        bdy.extend(self._serialize(v))
+                except InvalidValueError as ex:
+                    raise SerializeError("Invalid value while serializing") from ex
+
+            ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericMapGroup))
+            raw = bytes(ser)  # bytes so can sign, do crypto operations on it
+            count = len(ser) // 4
+
+        elif kind == Kinds.json:   # json.dumps returns str so must encode to bytes
+            if dummy:
+                for label in self.saids:
+                    if label in mad:
+                        try:
+                            code = Matter(qb64=mad[label]).code
+                        except Exception:
+                            code = self.saids[label]
+
+                        # when code is digestive then we know we have to compute said dummy
+                        # this accounts for aid fields that may or may not be saids
+                        if code not in DigDex:  # if digestive then fill with dummy:
+                            raise SerializeError(f"Unexpected non-digestive {code=} "
+                                                 f"for value of SAID field label={l}")
+
+                        if code != self.saids[label]:  # different than default
+                            # remember actual code for field when not default so
+                            # eventually computed said uses this code not default
+                            self.saids[label] = code  # replace default with provided
+
+                        mad[label] = self.Dummy * Matter.Sizes[code].fs
+
+            raw = json.dumps(mad, separators=(",", ":"), ensure_ascii=False).encode()
+            count = None
+
+        elif kind == Kinds.mgpk:  # mgpk.dumps returns bytes
+            if dummy:
+                for label in self.saids:
+                    if label in mad:
+                        try:
+                            code = Matter(qb64=mad[label]).code
+                        except Exception:
+                            code = self.saids[label]
+
+                        # when code is digestive then we know we have to compute said dummy
+                        # this accounts for aid fields that may or may not be saids
+                        if code not in DigDex:  # if digestive then fill with dummy:
+                            raise SerializeError(f"Unexpected non-digestive {code=} "
+                                                 f"for value of SAID field label={l}")
+
+                        if code != self.saids[label]:  # different than default
+                            # remember actual code for field when not default so
+                            # eventually computed said uses this code not default
+                            self.saids[label] = code  # replace default with provided
+
+                        mad[label] = self.Dummy * Matter.Sizes[code].fs
+
+            raw = msgpack.dumps(mad)
+            count = None
+
+        elif kind == Kinds.cbor:  # cbor.dumps returns bytes
+            if dummy:
+                for label in self.saids:
+                    if label in mad:
+                        try:
+                            code = Matter(qb64=mad[label]).code
+                        except Exception:
+                            code = self.saids[label]
+
+                        # when code is digestive then we know we have to compute said dummy
+                        # this accounts for aid fields that may or may not be saids
+                        if code not in DigDex:  # if digestive then fill with dummy:
+                            raise SerializeError(f"Unexpected non-digestive {code=} "
+                                                 f"for value of SAID field label={l}")
+
+                        if code != self.saids[label]:  # different than default
+                            # remember actual code for field when not default so
+                            # eventually computed said uses this code not default
+                            self.saids[label] = code  # replace default with provided
+
+                        mad[label] = self.Dummy * Matter.Sizes[code].fs
+
+            raw = cbor.dumps(mad)
+            count = None
+        else:
+            raise SerializeError(f"Unsupported serialization {kind=}")
+
         return (raw, count)
 
 
@@ -594,8 +747,8 @@ class Mapper:
         return ser
 
 
-class Partor(Mapper):
-    """Partor class that supports CESR native serializations of hierarchical
+class Compactor(Mapper):
+    """Compactor class that supports CESR native serializations of hierarchical
     partially disclosable nested field maps where each field map is an
     associative array of ordered (label, value) pairs (aka fields).
     This hierarchy supports the most compact SAID algorithm.
@@ -618,7 +771,7 @@ class Partor(Mapper):
     partial disclosure as opposed to hierarchical partial disclosure.
     Either could support a process of graduated disclosure.
 
-    The Partor class implements hierarchical graduated partial disclosure.
+    The Compactor class implements hierarchical graduated partial disclosure.
     (partor latin for to bear)
 
     The said field label default is 'd'.
@@ -668,6 +821,22 @@ class Partor(Mapper):
         saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
 
+    Properties:
+        leaves (dict): mapper at each leaf with computed said for leaf as
+                             keyed by path to leaf, value is Mapper instance
+        partials (dict): mapper of partially disclosable variants of with
+                               fully computed saids for its leaves.
+                               keyed by tuple of leaf paths,
+                               value is Mapper instance.
+        iscompact (bool|None): True means one leaf with path = '' i.e.
+                                        leaf is at top level and has said
+                                        but does not verify said
+                                     False if at least one leaf but path is not
+                                        at top level
+                                     None means no leaves so not compactive
+                                        i.e. either has not been saidified yet
+                                        or cannot be
+
     Hidden Attributes:
         ._mad (bytes): field map dict (MAD = MAp Dict)
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
@@ -675,6 +844,9 @@ class Partor(Mapper):
         ._strict (bool): labels strict format for strict property
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
+        ._leaves (dict): mad of each leaf indexed by path to leaf
+        ._partials (dict): partially compacted mad with fully computed saids
+                           indexd by tuple of leaf paths in mad
 
     """
 
@@ -714,10 +886,20 @@ class Partor(Mapper):
             already been extracted from a stream and are self contained
 
         """
-        super(Partor, self).__init__(saidive=True, **kwa)
-
+        self._leaves = dict()
         self._partials = dict()
+        super(Compactor, self).__init__(saidive=saidive, **kwa)
 
+
+    @property
+    def leaves(self):
+        """Getter for ._leaves
+
+        Returns:
+              leaves (dict): mapper at each leaf with computed said for leaf as
+                             keyed by path to leaf, value is Mapper instance
+        """
+        return self._leaves
 
 
     @property
@@ -725,8 +907,256 @@ class Partor(Mapper):
         """Getter for ._partials
 
         Returns:
-              partials (dict): partially disclosable variants of most compact
-                               key is tuple of leaf paths, value is Mapper instance.
+              partials (dict): mapper of partially disclosable variants of with
+                               fully computed saids for its leaves.
+                               keyed by tuple of leaf paths,
+                               value is Mapper instance.
         """
         return self._partials
+
+    @property
+    def iscompact(self):
+        """iscompact property
+
+        Returns:
+              iscompact (bool|None): True means has leaf with path = '' i.e.
+                                        has leaf at top level and has said
+                                        but does not verify said
+                                     False if at least one leaf but no leaf
+                                        at top level
+                                     None means no leaves so not compactive
+                                        i.e. either has not been saidified yet
+                                        or cannot be
+        """
+        if not self.leaves:
+            return None
+
+        if (self.said and self.leaves and '' in self.leaves):
+            return True
+
+        return False
+
+
+    def trace(self, saidify=False):
+        """Recursively trace paths to leaves in self.mad and populate .leaves.
+        When saidify then compute saids of leaves and update .mad .raw etc
+
+        Returns:
+           paths (list[str]): of leaf path strs, one per leaf in depth first order
+
+
+        Parameters:
+            saidify (bool): True means compute and assign SAID at each leaf
+                            False means do not assign SAID
+
+        """
+        paths = self._trace(mad=self.mad, paths=[], saidify=saidify)
+        if saidify and not self.iscompact:  # top-level said needs to be computed
+            raw, count = self._exhale(dummy=True) # first dummy serialization
+            for label, code in self.saids.items():
+                if label in self.mad:  # has saidive field
+                    said = Diger(ser=raw, code=code).qb64
+                    self.mad[label] = said
+
+            raw, count = self._exhale()  # not dummied
+            self._raw = raw
+            self._count = count
+
+        return paths
+
+
+    def _trace(self, mad, paths=None, path='', *, saidify=False):
+        """Recursively trace paths to leaves in mad and populate .leaves
+
+        Returns:
+           paths (list[str]): of leaf path strs, one per leaf in depth first order
+
+        Parameters:
+            mad (Mapping): nested (MApping Dict)
+            paths(list|None): path strs of leafs in top down order
+                               None means start at top
+            path (str): current relative to top-level mad as dot '.' separated
+            saidify (bool): True means compute and assign SAID at each leaf
+                            False means do not assign SAID
+
+        """
+        paths = paths if paths is not None else []
+
+        # leaf has said at top level but none of its nested mappings have a said.
+        isleaf = False
+        for l in self.saids:
+            if l in mad:
+                isleaf = True
+                break
+
+        for l, v in mad.items():
+            if isinstance(v, Mapping):
+                if l in self.saids:
+                    raise InvalidValueError(f"Got Mapping not str for said field"
+                                            f" label={l} value={v}")
+                if self._hassaid(mad=v):
+                    isleaf = False
+                    paths = self._trace(mad=v, paths=paths, path=path + "." + l,
+                                        saidify=saidify)
+
+        if isleaf:
+            paths.append(path)
+            if saidify:
+                # leafer Mapper makes deepcopy of input mad arg
+                leafer = Mapper(mad=mad, makify=True,
+                                saids=self.saids, saidive=True)
+                for l in leafer.saids:  # assign computed saids to original mad
+                    if l in mad:
+                        mad[l] = leafer.mad[l]
+            else:
+                # leafer Mapper makes deepcopy of input mad arg
+                leafer = Mapper(mad=mad, makify=True)
+
+            self.leaves[path] = leafer
+
+        return paths
+
+
+    def _hassaid(self, mad):
+        """Recursively decends mad to determine if mad or its decendents has a
+        said field. This is used to determine if mad could be a leaf node.
+
+        Returns:
+            hassaid (bool): True means mad is saided,
+                                i.e. has a (nested) SAID field.
+                            False means mad is not saided
+
+        Parameters:
+            mad (Mapping):  MApping Dict that may or may not have a nested said
+
+        """
+        hassaid = False
+        for l, v in mad.items():
+            if l in self.saids:
+                hassaid = True
+                break
+            elif isinstance(v, Mapping):  # field value is a Mapping
+                hassaid = self._hassaid(mad=v)
+                if hassaid:
+                    break
+
+        return hassaid
+
+
+    def getTail(self, path, mad=None):
+        """Get tail of path into mad. When mad is not provided uses .mad
+
+        Returns:
+           tail (dict|None):  tail of path into mad or None if not found
+
+        Parameters:
+           path (str): dot "." separated path. Top-level is "" so ".x" is one
+                       level down.
+           mad (dict|None): field map dict (MApping Dict). None uses default of
+                            self.mad
+
+        """
+        tail = mad if mad is not None else self.mad
+        parts = path.split(".")[1:]  # split and strip off top level part
+        for part in parts:
+            if part not in tail:
+                return None
+            tail = tail[part]  # descend on level down
+        return tail
+
+
+    def getMad(self, path, mad=None):
+        """Get enclosing mad of tail of path into mad.
+        When mad is not provided uses .mad
+
+        Returns:
+           tuple(emad, tail): where emad is enclosing mad of tail of path and
+                                   tail is label at tail end of path into mad
+
+
+        Parameters:
+           path (str): dot "." separated path. Top-level is "" so ".x" is one
+                       level down.
+           mad (dict|None): field map dict (MApping Dict). None uses default of
+                            self.mad
+
+        """
+        mad = mad if mad is not None else self.mad
+        # split and then strip off bottom level part
+        parts = path.split(".")  # split
+        tail = parts[-1] if parts else None  # save tail
+        parts = parts[:-1] # strip off tail
+        if not parts:  # tail is top so there is no super mad for mad
+            return (None, tail)
+
+        parts = parts[1:]  # strip off top
+        for part in parts:  # if parts empty then top-level is super mad
+            if part not in mad:  # path part not in mad
+                return (None, tail)
+            mad = mad[part]  # descend on level down
+        if tail not in mad:  # tail not in mad so path not compatible with  mad
+            return (None, None)
+        return (mad, tail)
+
+
+    def compact(self):
+        """Recursively apply most compact said algorithm to mad. Populates
+        .leaves in the process
+
+        recursively find leaves, saidify them by computing saids on leaves
+        then populate .leaves with saidified leaves then compact the  mad by
+        compacting the leaves.
+
+        Repeat above on newly compacted mad until reach fully compacted mad.
+        """
+        while True:  # at least once so trace computes top-level said
+            paths = self._trace(mad=self.mad, paths=[], path='', saidify=True)
+            for path in paths:  # only check to compact new leaves
+                leafer = self.leaves[path]  # get leafer for new leaf path
+                mad, tail = self.getMad(path)
+                if mad is not None and tail is not None:
+                    mad[tail] = leafer.said  # assign primary said to compact
+
+            if self.iscompact:
+                break
+
+
+
+    def expand(self, greedy=True):
+        """Recursively build .partials from .leaves.
+
+        Parameters:
+            greedy (bool): True means expand partials using greed algorithm
+                           on leaves. Essentially expand as many leaves as
+                           possible on each pass by reversing leaf oder.
+                           False means do not use expand by reversing leaf order
+        """
+        self._partials = {}  # reset partials dict
+        paths = list(self.leaves.keys())
+        if greedy:
+            paths.reverse()
+
+        used = []  # already expanded paths
+        if "" in paths:  # do not create partial of fully compacted leaf
+            used.append("")
+
+        pmad = deepcopy(self.mad)  # partial starts with copy of self.mad
+        while unused := oset(paths) - oset(used):  # preserved ordering
+            created = False
+            for path in unused:
+                lmad, leaf = self.getMad(path=path, mad=pmad)
+                if lmad is not None and leaf is not None:
+                    leafer = self.leaves[path]
+                    lmad[leaf] = deepcopy(leafer.mad)  # expand pmad with copy of leafer
+                    used.append(path)
+                    created = True
+
+            if created:  # create new partial
+                # compactor makes copy pmad so can reuse pmad to start next partial
+                # don't compute top-level saids on partials
+                partial = Compactor(mad=pmad, makify=True, saidive=False)
+                # don't compute saids on leaves of partials
+                index = partial.trace()  # default saidify == False
+                self.partials[tuple(index)] = partial
+
 

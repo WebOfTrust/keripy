@@ -3,20 +3,23 @@
 tests.core.test_mapping module
 
 """
+import copy
 import json
 import cbor2 as cbor
+import msgpack
 
 import pytest
 
 from dataclasses import dataclass, astuple, asdict
 
-from keri.kering import Colds, SerializeError, DeserializeError
-from keri.core import (EscapeDex, Labeler, Mapper, Partor, DigDex, Diger,
+from keri.kering import (Colds, Kinds,
+                         SerializeError, DeserializeError, InvalidValueError)
+from keri.core import (EscapeDex, Labeler, Mapper, Compactor, DigDex, Diger,
                        DecDex, Decimer)
 
 
-def test_special_dex():
-    """Test SpecialCodex"""
+def test_escape_dex():
+    """Test EscapeCodex"""
     assert asdict(EscapeDex) == \
     {
         'Escape': '1AAO',
@@ -29,6 +32,7 @@ def test_special_dex():
         'Decimal_Big_L0': '7AAH',
         'Decimal_Big_L1': '8AAH',
         'Decimal_Big_L2': '9AAH',
+        'Empty': '1AAP',
         'Tag1': '0J',
         'Tag2': '0K',
         'Tag3': 'X',
@@ -659,6 +663,147 @@ def test_mapper_basic():
 
     """Done Test"""
 
+
+def test_mapper_basic_nonnative():
+    """Test Mapper class non-native ser/des"""
+    mapper = Mapper(kind=Kinds.json)  # default empty map
+    assert mapper.mad == {}
+    assert mapper.qb64 == '{}'
+    assert mapper.raw == mapper.qb64b == b'{}'
+    with pytest.raises(ValueError):
+        assert mapper.qb2 == b''
+
+    assert mapper.count == None
+    assert mapper.size == 2
+    with pytest.raises(ValueError):
+        assert mapper.byteCount() == 4
+
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == False
+
+    # test JSON
+    kind = Kinds.json
+    # Test with all non-nested value types
+    mad = dict(a=1, b=True, c="hello", d=15.34, e=False, f=None)
+    raw = b'{"a":1,"b":true,"c":"hello","d":15.34,"e":false,"f":null}'
+    size = 57
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test with nested
+    mad = dict(a="Hi There", nest=dict(a=[True, False, None], b=dict(z=True)),
+               icky=[["z", "y"], dict(d=5), "abc"])
+    raw = (b'{"a":"Hi There","nest":{"a":[true,false,null],"b":{"z":true}},"icky":[["z","'
+           b'y"],{"d":5},"abc"]}')
+    size = 95
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test CBOR
+    kind = Kinds.cbor
+    # Test with all non-nested value types
+    mad = dict(a=1, b=True, c="hello", d=15.34, e=False, f=None)
+    raw = b'\xa6aa\x01ab\xf5acehelload\xfb@.\xae\x14z\xe1G\xaeae\xf4af\xf6'
+    size = 32
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test with nested
+    mad = dict(a="Hi There", nest=dict(a=[True, False, None], b=dict(z=True)),
+               icky=[["z", "y"], dict(d=5), "abc"])
+    raw = (b'\xa3aahHi Therednest\xa2aa\x83\xf5\xf4\xf6ab\xa1az\xf5dicky\x83\x82aza'
+           b'y\xa1ad\x05cabc')
+    size = 49
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test MGPK
+    kind = Kinds.mgpk
+    # Test with all non-nested value types
+    mad = dict(a=1, b=True, c="hello", d=15.34, e=False, f=None)
+    raw = (b'\x86\xa1a\x01\xa1b\xc3\xa1c\xa5hello\xa1d\xcb@.\xae\x14z\xe1G\xae\xa1e'
+           b'\xc2\xa1f\xc0')
+    size = 32
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+    # test with nested
+    mad = dict(a="Hi There", nest=dict(a=[True, False, None], b=dict(z=True)),
+               icky=[["z", "y"], dict(d=5), "abc"])
+    raw = (b'\x83\xa1a\xa8Hi There\xa4nest\x82\xa1a\x93\xc3\xc2\xc0\xa1b\x81\xa1'
+           b'z\xc3\xa4icky\x93\x92\xa1z\xa1y\x81\xa1d\x05\xa3abc')
+    size = 49
+
+    mapper = Mapper(mad=mad, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == mapper.qb64b == raw
+    assert mapper.size == size
+
+    # test round trips
+    mapper = Mapper(raw=raw, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == mad
+    assert mapper.raw == raw
+    assert mapper.size == size
+
+
 def test_mapper_saidive():
     """Test Mapper class with saidive True"""
 
@@ -911,27 +1056,727 @@ def test_mapper_saidive():
     """Done Test"""
 
 
-def test_partor_basic():
-    """Test Partor class"""
+def test_mapper_saidive_nonnative():
+    """Test Mapper class with saidive True but nonnative kind"""
 
-    partor = Partor()  # default empty map
-    assert partor.mad == {}
-    assert partor.qb64 == '-IAA'
-    assert partor.qb64b == b'-IAA'
-    assert partor.qb2 == b'\xf8\x80\x00'
-    assert partor.count == 1
-    assert partor.size == 4
-    assert partor.byteCount() == 4
-    assert partor.byteCount(Colds.bny) == 3
-    assert partor.saids == dict(d=DigDex.Blake3_256)
-    assert partor.saidive == True
-    assert partor.said == None
-    assert partor.partials == {}
+    # test with default empty mad
+    kind = Kinds.json
+    raw = b'{}'
+    size = 2
+
+    mapper = Mapper(saidive=True, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == {}
+    assert mapper.raw == raw
+    assert mapper.size == size
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == None
+
+    # test with makify but no said fields
+    mapper = Mapper(saidive=True, makify=True, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == {}
+    assert mapper.raw == raw
+    assert mapper.size == size
+    assert mapper.strict == True
+    assert mapper.saids == dict(d=DigDex.Blake3_256)
+    assert mapper.saidive == True
+    assert mapper.said == None
+
+    imad = dict(d='', a=1, b=True, c="hello")  # input mad
+    omad = \
+    {
+        'd': 'ECwfOLNWraidyr1_10BkMPdTNdiPksHHOfSH9OLpzvog',
+        'a': 1,
+        'b': True,
+        'c': 'hello'
+    }
+    said = 'ECwfOLNWraidyr1_10BkMPdTNdiPksHHOfSH9OLpzvog'
+    raw = (b'{"d":"ECwfOLNWraidyr1_10BkMPdTNdiPksHHOfSH9OLpzvog","a":1,"b":true,"c":"hello"}')
+    size = 79
+
+    # test with makify but no said fields
+    mapper = Mapper(mad=imad, saidive=True, makify=True, kind=kind)
+    assert mapper.kind == kind
+    assert mapper.mad == omad
+    assert mapper.raw == raw
+    assert mapper.size == size
+    assert mapper.saidive == True
+    assert mapper.said == said
+
+
+def test_compactor_basic():
+    """Test Compactor class"""
+
+    compactor = Compactor()  # default empty map
+    assert compactor.mad == {}
+    assert compactor.qb64 == '-IAA'
+    assert compactor.qb64b == b'-IAA'
+    assert compactor.qb2 == b'\xf8\x80\x00'
+    assert compactor.count == 1
+    assert compactor.size == 4
+    assert compactor.byteCount() == 4
+    assert compactor.byteCount(Colds.bny) == 3
+    assert compactor.saids == dict(d=DigDex.Blake3_256)
+    assert compactor.saidive == True
+    assert compactor.said == None
+    assert compactor.leaves == {}
+    assert compactor.partials == {}
+    assert compactor.iscompact is None
+    assert compactor.getTail(path='') == compactor.mad
+    assert compactor.getTail(path='.x') == None
+    assert compactor.getMad(path="") == (None, "")
+    assert compactor.getMad(path=".x") == (None, None)
+
+    # Test already fully compacted mad
+    imad = \
+    {
+        'd': '',
+        'q': 'top',
+        'z':
+        {
+            'y': 'bottom',
+            'x': 'under',
+        }
+    }
+
+    omad = \
+    {
+        'd': 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB',
+        'q': 'top',
+        'z':
+        {
+            'y': 'bottom',
+            'x': 'under',
+        }
+    }
+    said = 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB'
+    raw = (b'-IAW0J_dEK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB0J_qXtop0J_z-IAG0J_y0Mbo'
+           b'ttom0J_x0L_under')
+
+    compactor = Compactor(mad=imad, makify=True)
+    assert compactor.mad == omad
+    assert compactor.raw == raw
+    assert compactor.saids == dict(d=DigDex.Blake3_256)
+    assert compactor.saidive == True
+    assert compactor.said == said
+    assert compactor.leaves == {}
+    assert compactor.partials == {}
+    assert compactor.iscompact is None
+    assert compactor.getTail(path='') == compactor.mad
+    assert compactor.getTail(path='.z') == \
+    {
+        'y': 'bottom',
+        'x': 'under',
+    }
+    assert compactor.getMad(path="") == (None, "")
+    assert compactor.getMad(path=".z") == (({'d': 'EK3tcDw5SUtzngEbI_rOYL942GRTt9A4aljqjXySagxB',
+                                                'q': 'top',
+                                                'z': {'y': 'bottom', 'x': 'under'}},
+                                               'z'))
+
+    paths = ['']
+    assert compactor._trace(mad=compactor.mad) == paths
+    assert compactor.iscompact == True
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert compactor.mad == omad  # no change
+
+    assert compactor.trace() == paths
+    assert compactor.iscompact == True
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert compactor.mad == omad  # no change
+
+    # should not change said since already compacted
+    assert compactor._trace(mad=compactor.mad, saidify=True) == paths
+    assert compactor.iscompact == True
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    assert len(paths) == 1
+    path, leafer = list(compactor.leaves.items())[0]
+    assert leafer.saidive
+    assert leafer.said == said
+    assert compactor.mad == omad  # saidified leaves but no change since already compact
+
+    assert compactor.trace(saidify=True) == paths
+    assert compactor.iscompact == True
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    assert len(paths) == 1
+    path, leafer = list(compactor.leaves.items())[0]
+    assert leafer.saidive
+    assert leafer.said == said
+    assert compactor.mad == omad  # saidified leaves but no change since already compact
+
+    # complex nested with skips
+    imad = dict(d='',
+               q='top',
+               z=dict(x=dict(d='',
+                             w='bottom'),
+                      u='under'),
+               y=dict(d="",
+                      v=dict(d="",
+                             t=dict(s='down',
+                                    r='deep'))))
+    assert imad == \
+    {
+        'd': '',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': '',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': '',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+
+    omad = \
+    {
+        'd': 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': '',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': '',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    said = 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'
+    raw = (b'-IAq'
+           b'0J_dEEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'
+           b'0J_qXtop'
+           b'0J_z-IAK0J_x-IAF0J_d1AAP0J_w0Mbottom'
+           b'0J_u0L_under'
+           b'0J_y-IAO0J_d1AAP0J_v-IAK'
+           b'0J_d1AAP0J_t-IAG0J_s1AAFdown0J_r1AAFdeep')
+
+
+    compactor = Compactor(mad=imad, makify=True)
+    assert compactor.mad == omad
+    assert compactor.raw == raw
+    assert compactor.saids == dict(d=DigDex.Blake3_256)
+    assert compactor.saidive == True
+    assert compactor.said == said
+    assert compactor.leaves == {}
+    assert compactor.partials == {}
+    assert compactor.iscompact is None
+    assert compactor.getTail(path='') == compactor.mad
+    assert compactor.getTail(path='.z.x') == {'d': '', 'w': 'bottom'}
+    assert compactor.getTail(path='.y.v') == {'d': '', 't': {'s': 'down', 'r': 'deep'}}
+    assert compactor.getMad(path='.z.x') == ({'x': {'d': '', 'w': 'bottom'}, 'u': 'under'}, 'x')
+    assert compactor.getMad(path='.y.v') == ({'d': '', 'v': {'d': '', 't': {'s': 'down', 'r': 'deep'}}}, 'v')
+
+    paths = ['.z.x', '.y.v']
+    assert compactor._trace(mad=compactor.mad) == paths
+    assert compactor.iscompact == False
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert compactor.mad == omad  # no change
+
+    assert compactor.trace() == paths
+    assert compactor.iscompact == False
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert not leafer.saidive
+        assert leafer.said is None
+    assert compactor.mad == omad  # no change
+
+    smad = \
+    {
+        'd': 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+
+    assert compactor._trace(mad=compactor.mad, saidify=True) == paths
+    assert compactor.iscompact == False
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert leafer.saidive
+        assert leafer.said  # not empty or None
+    assert compactor.mad == smad  # saidified leaves
+
+    tsmad = \
+    {
+        'd': 'EDevj28ZwbYZjEcV3wRhnTFNaHOuQZ4u140PJMXH7Ak4',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    tsaid = 'EDevj28ZwbYZjEcV3wRhnTFNaHOuQZ4u140PJMXH7Ak4'  # top level said is changed
+    assert tsaid != said
+    assert compactor.trace(saidify=True) == paths
+    assert compactor.iscompact == False
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert leafer.saidive
+        assert leafer.said  # not empty or None
+    assert compactor.mad == tsmad  # saidified leaves
+
+    # manually compact
+    paths = list(compactor.leaves.keys())
+    assert paths == ['.z.x', '.y.v']
+    mad = dict(compactor.mad)  # make copy
+    assert mad == \
+    {
+        'd': 'EDevj28ZwbYZjEcV3wRhnTFNaHOuQZ4u140PJMXH7Ak4',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+
+    # compact the leaves
+    for path in paths:
+        smad, leaf = compactor.getMad(path=path, mad=mad)
+        smad[leaf] = compactor.leaves[path].said
+
+    assert mad == \
+    {
+        'd': 'EDevj28ZwbYZjEcV3wRhnTFNaHOuQZ4u140PJMXH7Ak4',
+        'q': 'top',
+        'z':
+        {
+            'x': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX'
+        }
+    }
+
+    # now create partial
+    compactor = Compactor(mad=mad, makify=True)
+
+    # compute leaves of partial
+    paths = ['.y']
+    tsaid = 'EDN5vKpl7ekQZs_A9C__Xk0Elfnkg6OL14JQnTO4gcuW'
+    assert compactor.trace(saidify=True) == paths
+    assert compactor.iscompact == False
+    assert compactor.leaves  # not empty
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert leafer.saidive
+        assert leafer.said  # not empty or None
+
+    tmad = \
+    {
+        'd': 'EDN5vKpl7ekQZs_A9C__Xk0Elfnkg6OL14JQnTO4gcuW',
+        'q': 'top',
+        'z':
+        {
+            'x': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4',
+            'v': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX'
+        }
+    }
+    assert compactor.mad == tmad  # saidified leaves
+    assert compactor.said == tsaid
+
+    # compact the leaves
+    mad = dict(compactor.mad)  # make copy
+    for path in paths:
+        smad, leaf = compactor.getMad(path=path, mad=mad)
+        smad[leaf] = compactor.leaves[path].said
+
+    assert mad == \
+    {
+        'd': 'EDN5vKpl7ekQZs_A9C__Xk0Elfnkg6OL14JQnTO4gcuW',
+        'q': 'top',
+        'z':
+        {
+            'x': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+            'u': 'under'
+        },
+       'y': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4'
+    }
+
+    # now create partial
+    compactor = Compactor(mad=mad, makify=True)
+
+    # compute leaves of partial
+    paths = ['']
+    tsaid = 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr'
+    tmad = \
+    {
+        'd': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+        'q': 'top',
+        'z':
+        {
+            'x': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+            'u': 'under'
+        },
+        'y': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4'
+    }
+    assert compactor.trace(saidify=True) == paths
+    assert compactor.iscompact == True
+    assert compactor.leaves  # not empty leave is itself
+    assert list(compactor.leaves.keys()) == paths
+    for path, leafer in compactor.leaves.items():
+        assert leafer.saidive
+        assert leafer.said  # not empty or None
+
+
+    assert compactor.said == tsaid  # fully compact said
+    assert compactor.mad == tmad  # fully compact mad
+    assert compactor.raw == (b'-IAr0J_dEOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr0J_qXtop0J_z-IAP0J_xEKME'
+                            b'6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl0J_u0L_under0J_yEAksZZOoIj34ok-04dUU'
+                            b'YT_Den2-kkP7fH7wGpsV9Jj4')
 
     """Done Test"""
 
+
+def test_compactor_compact_expand():
+    """Test Compactor class compact and expand"""
+
+    imad = \
+    {
+        'd': '',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': '',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': '',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    umad = \
+    {
+        'd': 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': '',
+                'w': 'bottom'
+            },
+            'u': 'under'
+        },
+        'y':
+        {
+            'd': '',
+            'v':
+            {
+                'd': '',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+
+    # compacted  top level mad
+    cmad = \
+    {
+        'd': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+        'q': 'top',
+        'z':
+        {
+            'x': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+            'u': 'under'
+        },
+        'y': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4'
+    }
+
+    usaid = 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'  # initial uncompacted said
+     # leaf saids
+    csaid = 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr'  # compacted top level
+
+    cpath = ''
+    xpath = '.z.x'
+    vpath = '.y.v'
+    ypath = '.y'
+
+    xsaid = 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl'
+    vsaid = 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX'
+    ysaid = 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4'
+
+    xmad = \
+    {
+        'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+        'w': 'bottom'
+    }
+
+    vmad = \
+    {
+        'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+         't':
+         {
+             's': 'down',
+             'r': 'deep'
+         }
+    }
+
+    ymad = \
+    {
+        'd': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4',
+        'v': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX'
+    }
+
+    compactor = Compactor(mad=imad, makify=True)
+    assert compactor.saidive == True
+    assert compactor.said == usaid
+    assert compactor.mad == umad
+    assert not compactor.leaves
+    assert compactor.iscompact is None  # no leaves yet
+    assert not compactor.partials
+
+    compactor.compact()
+    assert compactor.iscompact == True
+    assert compactor.said == csaid
+    assert compactor.mad == cmad
+    assert list(compactor.leaves.keys()) == ['.z.x', '.y.v', '.y', '']
+
+    cleaf = compactor.leaves[cpath]  # top level compacted
+    assert cleaf.said == csaid
+    assert cleaf.mad == cmad
+
+    xleaf = compactor.leaves[xpath]
+    assert xleaf.said == xsaid
+    assert xleaf.mad == xmad
+
+    vleaf = compactor.leaves[vpath]
+    assert vleaf.said == vsaid
+    assert vleaf.mad == vmad
+
+    yleaf = compactor.leaves[ypath]
+    assert yleaf.said == ysaid
+    assert yleaf.mad == ymad
+
+    # test expand of compactor
+    paths = ['.z.x', '.y.v', '.y', '']
+    # fully expanded mad but with most compact computed saids of all leaves
+    emad = \
+    {
+        'd': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+           'u': 'under'
+        },
+        'y':
+        {
+            'd': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    assert list(compactor.leaves.keys()) == paths
+    assert not compactor.partials
+    assert compactor.iscompact
+    assert len(compactor.leaves) == 4 == len(paths)
+
+    # test greedy expand
+    # first compact
+    compactor = Compactor(mad=emad, makify=True)
+    compactor.compact()
+    assert compactor.iscompact
+    assert list(compactor.leaves.keys()) == paths
+    assert compactor.mad == cmad
+    assert compactor.said == csaid
+
+    # now expand
+    indices = [('.z.x', '.y.v')]
+    index = ('.z.x', '.y.v')  # index of partion is tuple of leaf paths in expansion
+    compactor.expand()  # default greedy==True
+    assert list(compactor.partials.keys()) == indices
+    assert len(compactor.partials) == 1  # greedy on creates the fully expanded partial
+    partial = compactor.partials[index]
+    assert not partial.iscompact
+    assert partial.mad == emad
+    assert partial.mad['d'] == csaid
+    assert partial.mad['y']['d'] == ysaid
+    assert partial.mad['y']['v']['d'] == vsaid
+    assert partial.mad['z']['x']['d'] == xsaid
+
+    # test non-greedy expand
+    # first compact
+    compactor = Compactor(mad=emad, makify=True)
+    compactor.compact()
+    assert compactor.iscompact
+    assert list(compactor.leaves.keys()) == paths
+    assert compactor.mad == cmad
+    assert compactor.said == csaid
+
+    # now expand
+    indices = [('.z.x', '.y'), ('.z.x', '.y.v')]
+    compactor.expand(greedy=False)
+    assert list(compactor.partials.keys()) == indices
+    assert len(compactor.partials) == 2  # greedy on creates the fully expanded partial
+
+    index0 = ('.z.x', '.y')
+    partial0 = compactor.partials[index0]
+    assert not partial0.iscompact
+    assert partial0.mad == \
+    {'d': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+     'q': 'top',
+     'z': {'x': {'d': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                 'w': 'bottom'},
+           'u': 'under'},
+     'y': {'d': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4',
+           'v': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX'}}
+
+    index1 = ('.z.x', '.y.v')
+    partial1 = compactor.partials[index1]
+    assert not partial1.iscompact
+    assert partial1.mad == emad  # fully expanded
+    assert partial1.mad['d'] == csaid
+    assert partial1.mad['y']['d'] == ysaid
+    assert partial1.mad['y']['v']['d'] == vsaid
+    assert partial1.mad['z']['x']['d'] == xsaid
+
+    """Done Test"""
+
+
 if __name__ == "__main__":
-    test_special_dex()
+    test_escape_dex()
     test_mapper_basic()
+    test_mapper_basic_nonnative()
     test_mapper_saidive()
-    test_partor_basic()
+    test_mapper_saidive_nonnative()
+    test_compactor_basic()
+    test_compactor_compact_expand()
