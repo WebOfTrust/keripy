@@ -7,7 +7,7 @@ tests.vc.test_messaging module
 import pytest
 
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
-from keri.vc.messaging import regcept, blindate, update, mapACDC
+from keri.vc.messaging import regcept, blindate, update, acmacdc
 from keri.core import GenDex
 from keri.core import SerderACDC, BlindState, Blinder
 
