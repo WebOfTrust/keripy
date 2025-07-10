@@ -124,6 +124,10 @@ def migrate(db):
 
 
 def migrateKeys(db):
+    """
+    Ensures all public keys and next key digests are stored in Baser.pubs and Baser.digs by their
+    respective QB64 public key and next key digest storing a prefix and sequence number tuple value.
+    """
     # public keys mapped to the AID and event seq no they appeared in
     pubs = subing.CatCesrIoSetSuber(db=db, subkey="pubs.",
                                     klas=(coring.Prefixer, coring.Seqner))

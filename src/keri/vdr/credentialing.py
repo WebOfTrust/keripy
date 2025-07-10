@@ -29,8 +29,23 @@ logger = help.ogler.getLogger()
 
 
 class Regery:
+    """
+    ACDC Registry and Tevery manager handling registry construction and loading and TEL event
+    escrow processing.
+    """
 
     def __init__(self, hby, name="test", base="", reger=None, temp=False, cues=None):
+        """
+        Initialize Regery instance and construct a list of registries found in the Reger database.
+
+        Parameters:
+            hby (Habery): instance of local controller's context
+            name (str): name for the local Habery, used in Reger database name
+            base (str): optional base path for Reger database
+            reger (Reger): optional Reger database instance, if None then a new Reger is created
+            temp (bool): True means regery is temporary and not persistent
+            cues (Decking): optional Decking instance for event processing cues
+        """
 
         self.hby = hby
         self.name = name
@@ -165,13 +180,16 @@ class BaseRegistry:
     """
 
     def __init__(self, hab, reger, tvy, psr, name="test", regk=None, cues=None):
-        """ Initialize Instance
+        """Initialize BaseRegistry Instance
 
         Parameters:
             hab (Habitat): instance of local controller's context
             name (str): alias for this issuer
             reger (Reger): database instance for controller's credentials
-
+            tvy (Tevery): injected Tevery instance for processing TEL events
+            psr (Parser): injected Parser instance for parsing TEL events
+            regk (str): registry key qb64 prefix for this registry read from Registry record
+            cues (Decking): optional Decking instance for outbound event processing cues
         """
 
         self.hab = hab
@@ -240,20 +258,14 @@ class BaseRegistry:
             logger.debug("Event=\n%s\n", serder.pretty())
 
     def anchorMsg(self, pre, regd, seqner, saider):
-        """  Create key event with seal to serder anchored as data.
-
-        Performs a rotation or interaction event for single sig or multiple sig identifier
-        to anchor the provide registry event.  Inserts outbound cues for external processing
-        of resulting events or multisig handling.
+        """Adds to the anchor database a seal of a TEL event to a KEL event.
 
         Parameters:
-            pre (str): registry event identifier
-            regd (str): registry event SAID
-            seqner (Seqner): sequence number of anchoring event
-            saider (Saider): SAID of the anchoring event
-
+            pre (str): TEL event SAID whether registry or credential event; "i" prop
+            regd (str): TEL event SAID whether registry or credential event; "d" prop
+            seqner (Seqner): sequence number from KEL of anchoring key event
+            saider (Saider): SAID of the anchoring KEL event
         """
-
         key = dgKey(pre, regd)
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
@@ -261,23 +273,23 @@ class BaseRegistry:
 
 class Registry(BaseRegistry):
     """
-
+    TEL Registry subclass supporting registry delayed instantiation and rotation and credential
+    issuance and revocation.
     """
 
     def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False, vcp=None):
         """ Delayed initialization of Issuer.
 
         Actual initialization of Issuer from properties or loaded from .reger.  Should
-        only be called after .hab is initied.
+        only be called after .hab is inited.
 
         Parameters:
             nonce (str) qb64 random seed for credential registries
             noBackers (boolean): True to allow specification of TEL specific backers
-            baks (list): initial list of backer prefixes qb64 for VCs in the Registry
+            baks (list[str]): initial list of backer prefixes qb64 for VCs in the Registry
             toad (str): hex of witness threshold
             estOnly (boolean): True for forcing rotation events for every TEL event.
-            vcp (Serder): optional vcp event serder if configured outside the Registry
-
+            vcp (SerderKERI): optional vcp event serder if configured outside the Registry
         """
         pre = self.hab.pre
 
@@ -311,14 +323,12 @@ class Registry(BaseRegistry):
 
         Parameters:
             toad (int): or str hex of backer threshold after cuts and adds
-            cuts (list): of qb64 pre of backers to be removed from witness list
-            adds (list): of qb64 pre of backers to be added to witness list
+            cuts (list[str]): of qb64 pre of backers to be removed from witness list
+            adds (list[str]): of qb64 pre of backers to be added to witness list
 
         Returns:
-            boolean: True if rotation is successful
-
+            SerderKERI: The SerderKERI of the registry rotation event
         """
-
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
@@ -341,10 +351,8 @@ class Registry(BaseRegistry):
             dt (str): iso8601 formatted date time string of issuance
 
         Returns:
-            boolean: True if issuance is successful
-
+            SerderKERI: The SerderKERI of the credential issuance event
         """
-
         if self.noBackers:
             serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
         else:
@@ -367,8 +375,7 @@ class Registry(BaseRegistry):
             dt (str): iso8601 formatted date time string of revocation
 
         Returns:
-            boolean: True if revocation is successful.
-
+            SerderKERI: The SerderKERI of the credential revocation event
         """
         vci = said
         vcser = self.reger.getTel(snKey(pre=vci, sn=0))
@@ -392,6 +399,10 @@ class Registry(BaseRegistry):
 
 
 class SignifyRegistry(BaseRegistry):
+    """
+    Subclass supporting registry construction and rotation and credential issuance and revocation
+    for Signify controllers.
+    """
 
     def make(self, *, regser):
         """ Delayed initialization of Issuer.
@@ -400,8 +411,7 @@ class SignifyRegistry(BaseRegistry):
         only be called after .hab is initied.
 
         Parameters:
-            regser (Serder): Regsitry inception event
-
+            regser (SerderKERI): Regsitry inception event
         """
         pre = self.hab.pre
         self.regk = regser.pre
@@ -421,13 +431,11 @@ class SignifyRegistry(BaseRegistry):
         """ Rotate backer list for registry
 
         Parameters:
-            serder (Serder): Regsitry inception event
+            serder (SerderKERI): Regsitry inception event
 
         Returns:
-            boolean: True if rotation is successful
-
+            SerderKERI: The SerderKERI of the registry rotation event
         """
-
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
@@ -445,10 +453,8 @@ class SignifyRegistry(BaseRegistry):
             dt (str): iso8601 formatted date time string of issuance
 
         Returns:
-            boolean: True if issuance is successful
-
+            SerderKERI: The SerderKERI of the credential issuance event
         """
-
         if self.noBackers:
             serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
         else:
@@ -459,7 +465,7 @@ class SignifyRegistry(BaseRegistry):
         return serder
 
     def revoke(self, said, dt=None):
-        """ Perform revocation of credential
+        """Create and process credential revocation event
 
         Create and process rev or brv message event
 
@@ -468,8 +474,7 @@ class SignifyRegistry(BaseRegistry):
             dt (str): iso8601 formatted date time string of revocation
 
         Returns:
-            boolean: True if revocation is successful.
-
+            SerderKERI: The SerderKERI of the credential revocation event
         """
         vci = said
         vcser = self.reger.getTel(snKey(pre=vci, sn=0))
@@ -490,8 +495,27 @@ class SignifyRegistry(BaseRegistry):
 
 
 class Registrar(doing.DoDoer):
+    """
+    Registrar is a DoDoer that manages registry inception, issuance and revocation of credentials,
+    escrow handling for witnessing TEL events, multisig TEL event processing, and TEL event
+    dissemination to witnesses as a fire and forget mechanism. Also supports determining
+    if a registry event is complete.
+
+    Doers:
+        witDoer (WitnessReceiptor): Doer for receiving witness receipts
+        witPub (WitnessPublisher): Doer for publishing witness events
+        escrowDo (doified function): Doer for processing TEL event escrows
+    """
 
     def __init__(self, hby, rgy, counselor):
+        """
+        Initialize Registrar instance.
+
+        Parameters:
+            hby (Habery): instance of local controller's context
+            rgy (Regery): instance of Regery for managing registries and TEL Tevery escrows
+            counselor (Counselor): instance of Counselor for multisig group processing of TEL events
+        """
         self.hby = hby
         self.rgy = rgy
         self.counselor = counselor
@@ -504,14 +528,11 @@ class Registrar(doing.DoDoer):
 
     def incept(self, iserder, anc):
         """
+        Create a registry with a registry inception event. Supports both single sig and multisig groups.
 
         Parameters:
             iserder (SerderKERI): Serder object of TEL iss event
             anc (SerderKERI): Serder object of anchoring event
-
-        Returns:
-            Registry:  created registry
-
         """
         registry = self.rgy.regs[iserder.pre]
         hab = registry.hab
@@ -591,6 +612,9 @@ class Registrar(doing.DoDoer):
             creder (Creder): credential to issue
             rserder (Serder): Serder object of TEL rev event
             anc (Serder): Serder object of anchoring event
+
+        Returns:
+            (str, str): (vcid, rseq.sn) of the registry identifier and TEL event sequence number
         """
 
         regk = creder.regid
@@ -626,6 +650,16 @@ class Registrar(doing.DoDoer):
 
     @staticmethod
     def multisigIxn(hab, rseal):
+        """
+        Create and process an interaction event containing the given registry seal as its data.
+
+        Parameters:
+            hab (Habitat): instance of local controller's context
+            rseal (dict): TEL event seal to include in the interaction event.
+
+        Returns:
+            (bytearray, Prefixer, Seqner, Saider): tuple of ixn event, Hab pre, and seq. no. and SAID of the ixn event.
+        """
         ixn = hab.interact(data=[rseal])
         serder = serdering.SerderKERI(raw=bytes(ixn))
 
@@ -639,7 +673,9 @@ class Registrar(doing.DoDoer):
         return ixn, prefixer, seqner, saider
 
     def complete(self, pre, sn=0):
-        """ Determine if registry event (inception, issuance, revocation, etc.) is finished validation
+        """
+        Determine if registry event (inception, issuance, revocation, etc.) is finished validation.
+        A TEL event is complete when its underlying KEL event has been signed by all participants.
 
         Parameters:
             pre (str): qb64 identifier of registry event
@@ -654,7 +690,8 @@ class Registrar(doing.DoDoer):
         return said is not None and self.witPub.sent(said=pre)
 
     def escrowDo(self, tymth, tock=1.0, **kwa):
-        """ Process escrows of group multisig identifiers waiting to be compeleted.
+        """Process escrows of TEL events and their underlying KEL events waiting to be fully signed
+         and witnessed.
 
         Steps involve:
            1. Sending local event with sig to other participants
@@ -668,7 +705,6 @@ class Registrar(doing.DoDoer):
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value.  Default to 1.0 to slow down processing
-
         """
         # enter context
         self.wind(tymth)
@@ -681,19 +717,17 @@ class Registrar(doing.DoDoer):
 
     def processEscrows(self):
         """
-        Process credential registry anchors:
-
+        Process TEL event escrows for multisig TEL events and their underlying KEL events.
         """
         self.processWitnessEscrow()
         self.processMultisigEscrow()
-        self.processDiseminationEscrow()
+        self.processDisseminationEscrow()
 
     def processWitnessEscrow(self):
         """
-        Process escrow of group multisig events that do not have a full compliment of receipts
+        Process escrow of group multisig events that do not have a full complement of receipts
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
-
         """
         for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
@@ -721,10 +755,9 @@ class Registrar(doing.DoDoer):
 
     def processMultisigEscrow(self):
         """
-        Process escrow of group multisig events that do not have a full compliment of receipts
+        Process escrow of group multisig events that do not have a full complement of receipts
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
-
         """
         for (regk, snq, regd), (prefixer, seqner, saider) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
             try:
@@ -744,7 +777,12 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
             self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
 
-    def processDiseminationEscrow(self):
+    def processDisseminationEscrow(self):
+        """
+        Process escrow of group multisig events that have been completed and are ready to be
+        disseminated to witnesses.  This is a fire and forget mechanism where the WitnessPublisher
+        handles sending events to the witnesses and collecting receipts.
+        """
         for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
             rseq = coring.Seqner(qb64=snq)
             dig = self.rgy.reger.getTel(key=snKey(pre=regk, sn=rseq.sn))
@@ -765,8 +803,25 @@ class Registrar(doing.DoDoer):
 
 
 class Credentialer(doing.DoDoer):
+    """
+    Credentialer is a DoDoer that manages credential creation, validation, issuance, and escrow
+    for credential events. This includes ensuring KEL events underlying TEL events have all needed
+    signatures and then disseminating the credential events to witnesses for receipting.
+
+    Doers:
+        escrowDo (doified function): Doer for processing credential escrows waiting for signatures
+    """
 
     def __init__(self, hby, rgy, registrar, verifier):
+        """
+        Initialize Credentialer instance.
+
+        Parameters:
+            hby (Habery): instance of local controller's context
+            rgy (Regery): instance of Regery for managing registries and TEL Tevery escrows
+            registrar (Registrar): Registrar used for checking TEL event completion (has all signatures)
+            verifier (Verifier): instance of Verifier for validating credentials against schemas
+        """
         self.hby = hby
         self.rgy = rgy
         self.registrar = registrar
@@ -818,6 +873,7 @@ class Credentialer(doing.DoDoer):
 
     def validate(self, creder):
         """
+        Validates a credential against its locally resolved schema.
 
         Args:
             creder (Creder): creder object representing the credential to validate
@@ -861,6 +917,10 @@ class Credentialer(doing.DoDoer):
             pass
 
     def processCredentialMissingSigEscrow(self):
+        """
+        Process credential events that are missing signatures. If the TEL event's underlying KEL
+        event signing is complete then disseminate the event to the witnesses for receipting.
+        """
         for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
             rseq = coring.Seqner(qb64=snq)
             if not self.registrar.complete(pre=said, sn=rseq.sn):
@@ -873,14 +933,17 @@ class Credentialer(doing.DoDoer):
             # Remove from this escrow
             self.rgy.reger.cmse.rem(keys=(said, snq))
 
-            # place in escrow to diseminate to other if witnesser and if there is an issuee
+            # place in escrow to disseminate to other if witnesser and if there is an issuee
             self.rgy.reger.ccrd.put(keys=(said,), val=creder)
 
     def complete(self, said):
+        """
+        A credential event is complete when issued and sent to witnesses for receipting.
+        """
         return self.rgy.reger.ccrd.get(keys=(said,)) is not None
 
     def escrowDo(self, tymth, tock=1.0, **kwa):
-        """ Process escrows of group multisig identifiers waiting to be completed.
+        """ Process escrows of credentials waiting to be completed.
 
         Steps involve:
            1. Sending local event with sig to other participants
@@ -907,25 +970,21 @@ class Credentialer(doing.DoDoer):
 
     def processEscrows(self):
         """
-        Process credential registry anchors:
-
+        Process credential missing signature escrow.
         """
         self.processCredentialMissingSigEscrow()
 
 
 def sendCredential(hby, hab, reger, postman, creder, recp):
-    """ Stream credential and all cryptographic artifacts to recipient using postman
+    """ Stream credential artifacts to recipient using postman
 
     Parameters:
-        hby:
-        hab:
-        reger:
-        postman (StreamPoster): poster to stream credential with
-        creder:
-        recp:
-
-    Returns:
-
+        hby (Habery): instance of local controller's context
+        hab (Habitat): the local controller sending the credential artifacts
+        reger (Reger): the credential database to pull the artifacts from
+        postman (StreamPoster): poster to stream credential artifacts with
+        creder (Creder): the credential to pull artifacts for and send
+        recp (str): qb64 prefix of the recipient to send the artifacts to
     """
     if isinstance(hab, GroupHab):
         sender = hab.mhab.pre
@@ -952,14 +1011,11 @@ def sendArtifacts(hby, reger, postman, creder, recp):
     """ Stream credential artifacts to recipient using postman
 
     Parameters:
-        hby:
-        reger:
-        postman (StreamPoster): poster to stream credential with
-        creder:
-        recp:
-
-    Returns:
-
+        hby (Habery): instance of local controller's context
+        reger (Reger): the credential database to pull the artifacts from
+        postman (StreamPoster): poster to stream credential artifacts with
+        creder (Creder): the credential to pull artifacts for and send
+        recp (str): qb64 prefix of the recipient to send the artifacts to
     """
     issr = creder.issuer
     isse = creder.attrib["i"] if "i" in creder.attrib else None
@@ -1001,6 +1057,16 @@ def sendArtifacts(hby, reger, postman, creder, recp):
 
 
 def sendRegistry(hby, reger, postman, creder, sender, recp):
+    """Stream registry artifacts to recipient using postman
+
+    Parameters:
+        hby (Habery): instance of local controller's context
+        reger (Reger): the registry database to pull the artifacts from
+        postman (StreamPoster): poster to stream registry artifacts with
+        creder (Creder): the registry to pull artifacts for and send
+        sender (str): qb64 prefix of the sender of the registry artifacts
+        recp (str): qb64 prefix of the recipient to send the artifacts to
+    """
     issr = creder.issuer
     regk = creder.regid
 
