@@ -41,7 +41,7 @@ from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
                      Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
                      Noncer, Labeler)
-from .mapping import Mapper
+from .mapping import Mapper, Compactor
 
 from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
 
@@ -1119,7 +1119,9 @@ class Serder:
 
         # compute saidive digestive field values using raw from sized dummied sad
         raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
-        for label, code in saids.items():  # replace dummied fields with computed digests
+
+        # replace dummied fields with computed digests
+        for label, code in saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
@@ -1654,6 +1656,7 @@ class Serder:
             for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                        # ignores sad['vs'] field
                         val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
 
                     case "t":  # message type (ilk), already got ilk
@@ -2532,7 +2535,7 @@ class SerderACDC(Serder):
            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
         """
         try:
-            return self.attrib.get['i']
+            return self.attrib.get('i')
         except:
             return None
 
@@ -2705,27 +2708,70 @@ class SerderACDC(Serder):
 
 
         """
-        # assumes sad['v'] sad said fields are fully dummied at this point
-
-        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
+        # assumes sad['v'] vesion string vield and top-level sad said fields
+        # not including section fields are fully dummied at this point
+        if self.kind != Kinds.cesr:  # non-native so sizify version string
             raw = self.dumps(sad, self.kind)  # get size of sad with fully dummied vs and saids
             size = len(raw)
 
             # generate version string with correct size
-            vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind, size=size, gvrsn=self.gvrsn)
+            vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                                 size=size, gvrsn=self.gvrsn)
             sad["v"] = vs  # update version string in sad
-            # now have correctly sized version string in sad
+            # now have correctly sized version string in sad for non-native
+        # else: vs ignored for native cesr for now
 
-        # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
-        for label, code in saids.items():  # replace dummied fields with computed digests
+
+        if self.pvrsn.major < 2 or self.ilk in (Ilks.rip, Ilks.bup, Ilks.upd):
+            # non-compactable
+            # compute saidive digestive field values using raw from sized dummied sad
+            raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+
+        else:  # compactable so need to fixup
+            # Most compact said fixup
+            csad = copy.deepcopy(sad)  # make copy to compute most compact sad
+            # Most compact size fixup in vs
+            if self.kind != Kinds.cesr:  # not native so fixup vs
+                # use size == 0 so said on most compact is stable
+                vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                                     size=0, gvrsn=self.gvrsn)
+                csad["v"] = vs  # update version string in sad
+
+            for l in ("s", "a", "e", "r"):
+                if v := csad.get(l, None):  # field exists and is not empty
+                    if isinstance(v, Mapping):  # v is non-empty mapping
+                        match l:
+                            case 's':  # schema is only top-level said
+                                compactor = Compactor(mad=v,
+                                                   makify=True,
+                                                   strict=False,
+                                                   saids={"$id": 'E',},
+                                                   kind=self.kind)
+
+
+                            case 'a' | 'e' | 'r':
+                                compactor = Compactor(mad=v,
+                                                      makify=True,
+                                                      kind=self.kind)
+
+                        compactor.compact()
+                        said = compactor.said
+                        if said:
+                            csad[l] = said
+
+            # reserialize using sized, dummied, and fixed up
+            raw = self.dumps(csad, kind=self.kind)
+
+        # replace dummied said fields at top level of sad with computed digests
+        for label, code in saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
-        # Now reserialize raw with undummied field values
+        # Now reserialize raw with undummied said and unfixed up uncompact sections
         raw = self.dumps(sad, kind=self.kind)  # assign final raw
 
-        if self.kind == Kinds.cesr:# cesr kind version string does not set size
+        if self.kind == Kinds.cesr:# cesr native serialization does not use vs
+            # but want vs to have real size so fixup here
             size = len(raw) # size of whole message
             sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn,
                                kind=self.kind, size=size, gvrsn=self.gvrsn)

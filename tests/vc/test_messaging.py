@@ -7,9 +7,9 @@ tests.vc.test_messaging module
 import pytest
 
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
-from keri.vc.messaging import regcept, blindate, update, acmacdc
-from keri.core import GenDex
-from keri.core import SerderACDC, BlindState, Blinder
+from keri.vc.messaging import (regcept, blindate, update, actSchemaDefault,
+                               attribute, classic)
+from keri.core import GenDex, Noncer, SerderACDC, BlindState, Blinder, Compactor
 
 def test_regcept_message():
     """Test regcept message"""
@@ -289,8 +289,287 @@ def test_update_message():
     assert serder.stamp == stamp
     """Done Test"""
 
+def test_schema_defaults():
+    """Test utility functions that generate default schema"""
+    said, sad = actSchemaDefault()
+    assert said == 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK'
+    assert sad == \
+    {
+        '$id': 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'ACT Default Schema',
+        'description': 'Default JSON Schema for act ACDC.',
+        'credentialType': 'ACDC_act_message',
+        'version': '2.0.0',
+        'type': 'object',
+        'required': ['v', 'd', 'u', 'i', 'rd', 's', 'a', 'e', 'r'],
+        'properties': {'v': {'description': 'ACDC version string', 'type': 'string'},
+                       'd': {'description': 'Message SAID', 'type': 'string'},
+                       'u': {'description': 'Message UUID', 'type': 'string'},
+                       'i': {'description': 'Issuer AID', 'type': 'string'},
+                       'rd': {'description': 'Registry SAID', 'type': 'string'},
+                       's': {'description': 'Schema Section',
+                             'oneOf': [{'description': 'Schema Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Schema Section',
+                                        'type': 'object'}]},
+                       'a': {'description': 'Attribute Section',
+                             'oneOf': [{'description': 'Attribute Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Attribute Section',
+                                        'type': 'object'}]},
+                       'e': {'description': 'Edge Section',
+                             'oneOf': [{'description': 'Edge Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Edge Section',
+                                        'type': 'object'}]},
+                       'r': {'description': 'Rule Section',
+                             'oneOf': [{'description': 'Rule Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Rule Section',
+                                        'type': 'object'}]}},
+        'additionalProperties': False
+    }
 
-def test_acdc_messages():
+    """Done Test"""
+
+def test_attribute_message_json():
+    """Test act acdc message with json"""
+
+    # Test with JSON serialization
+    kind = Kinds.json
+    issuer = 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    issuee = "EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C"
+    rawsalt = b'abcdefghijklmmop'
+    uuid = Noncer(raw=rawsalt).qb64
+    assert uuid == '0ABhYmNkZWZnaGlqa2xtbW9w'
+    schemaSaid = 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK'  # default
+
+
+    # Test Defaults  kind=json
+    said = 'EOR-sLOPrmv95_ZfBYrIapqTT-Re85FWTI9nYJZftqT5'
+    serder = attribute(issuer=issuer)  # defaults
+    assert serder.said == said
+    assert serder.issuer == issuer
+    assert serder.uuid == ''
+    assert serder.issuee == None
+    assert serder.sad['s']['$id'] == schemaSaid
+    assert serder.sad['v'] == 'ACDCCAACAAJSONAAWh.'
+    assert serder.size == 1441
+
+    # Test with uuid and issuee and otherwise defaults
+    said = 'ECfABuzokafIpRrE4impKaOJag3SDxLmVffqybwdH_X7'
+    serder = attribute(issuer=issuer, uuid=uuid, issuee=issuee)
+    assert serder.said == said
+    assert serder.issuer == issuer
+    assert serder.uuid == uuid
+    assert serder.issuee == issuee
+    assert serder.sad['s']['$id'] == schemaSaid
+    assert serder.sad['v'] == 'ACDCCAACAAJSONAAXr.'
+    assert serder.size == 1515
+
+    # Test fully populated and expanded
+
+    attrs = dict(d="", i=issuee, name="Zoe")
+    attrPactor = Compactor(mad=attrs, makify=True, kind=kind)
+    attrPactor.compact()
+    attrPactor.expand()
+    attrSaid = attrPactor.said
+    attrs = list(attrPactor.partials.values())[0].mad    # since already compact
+    assert attrs == \
+    {
+        'd': 'ENSz6GWE-3IW5_82aaT0uks8rZTH2etmj_EgyGL4idgo',
+        'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+        'name': 'Zoe'
+    }
+    assert attrs['d'] == attrSaid
+
+    edges = \
+    {
+        "d": "",
+        "u": "0AwjaDAE0qHcgNghkDaG7OY1",
+        "winner": "EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9",
+        "loser": "EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk"
+    }
+    edgePactor = Compactor(mad=edges, makify=True, kind=kind)
+    edgePactor.compact()
+    edgePactor.expand()
+    edgeSaid = edgePactor.said
+    edges = list(edgePactor.partials.values())[0].mad    # since already compact
+    assert edges == \
+    {
+        'd': 'EGaDRO2KMe8Y8JuAiXPuS0kim_MhuOEU17tiCj9Sonf5',
+        'u': '0AwjaDAE0qHcgNghkDaG7OY1',
+        'winner': 'EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9',
+        'loser': 'EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk'
+    }
+    assert edges['d'] == edgeSaid
+
+    rules = \
+    {
+      "d": "",
+      "u": "0ADaG7OaDAE0qHcgY1Nghkwj",
+      "disclaimers":
+      {
+        "d": "",
+        "u": "0AHcgY1NghkwjDaG7OaDAE0q",
+        "l": "Issuer disclaimers:",
+        "warrantyDisclaimer":
+        {
+          "d": "",
+          "u": "0AG7OY1wjaDAE0qHcgNghkDa",
+          "l": "AS IS"
+        },
+        "liabilityDisclaimer":
+        {
+          "d": "",
+          "u": "0AHcgNghkDaG7OY1wjaDAE0q",
+          "l": "No Liability"
+        }
+      },
+      "permittedUse":
+      {
+        "d": "",
+        "u": "0ADaG7OY1wjaDAE0qHcgNghk",
+        "l": "Non-commercial"
+      }
+    }
+
+    rulePactor = Compactor(mad=rules, makify=True, kind=kind)
+    rulePactor.compact()
+    rulePactor.expand()
+    ruleSaid = rulePactor.said
+    rules = list(rulePactor.partials.values())[1].mad
+    assert rules == \
+    {
+        'd': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v',
+        'u': '0ADaG7OaDAE0qHcgY1Nghkwj',
+        'disclaimers':
+        {
+            'd': 'EApRECx41f_BjJlk1cvFqDCT-VM1De5GS9KUrItUARnT',
+            'u': '0AHcgY1NghkwjDaG7OaDAE0q',
+            'l': 'Issuer disclaimers:',
+            'warrantyDisclaimer':
+            {
+                'd': 'ELGxE_uoWQXYi4zm4ooYlSYVVWT_RaYR1oHy_HfrLXkL',
+                'u': '0AG7OY1wjaDAE0qHcgNghkDa',
+                'l': 'AS IS'
+            },
+            'liabilityDisclaimer':
+            {
+                'd': 'EJerMTe6gpOu9nsZDU9ojv1ZMkaDjEPyUI5p-jqCBxyd',
+                'u': '0AHcgNghkDaG7OY1wjaDAE0q',
+                'l': 'No Liability'
+            }
+        },
+        'permittedUse':
+        {
+            'd': 'EPH194D7v-QxNt_p9Xkp_bCuYcmWoWy9cZMPHDfx3gxq',
+            'u': '0ADaG7OY1wjaDAE0qHcgNghk',
+            'l': 'Non-commercial'
+        }
+    }
+    assert rules['d'] == ruleSaid
+
+    said = 'EOilTAfOOWiIzVU9mFmgEeOaLao-H4-1JsYjrbP56_0E'
+    vs = 'ACDCCAACAAJSONAARj.'
+    size = 1123
+
+    serder = attribute(issuer=issuer, uuid=uuid, schema=schemaSaid,
+                       attrs=attrs, edges=edges, rules=rules)
+    assert serder.said == said
+    assert serder.size == size
+    assert serder.sad['v'] == vs
+    assert serder.issuer == issuer
+    assert serder.uuid == uuid
+    assert serder.issuee == issuee
+    assert serder.schema == schemaSaid
+    assert serder.attrib['d'] == attrSaid
+    assert serder.edge['d'] == edgeSaid
+    assert serder.rule['d'] == ruleSaid
+
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAARj.',
+        't': 'act',
+        'd': 'EOilTAfOOWiIzVU9mFmgEeOaLao-H4-1JsYjrbP56_0E',
+        'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': '',
+        's': 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK',
+        'a': {'d': 'ENSz6GWE-3IW5_82aaT0uks8rZTH2etmj_EgyGL4idgo',
+              'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+              'name': 'Zoe'},
+        'e': {'d': 'EGaDRO2KMe8Y8JuAiXPuS0kim_MhuOEU17tiCj9Sonf5',
+              'u': '0AwjaDAE0qHcgNghkDaG7OY1',
+              'winner': 'EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9',
+              'loser': 'EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk'},
+        'r': {'d': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v',
+              'u': '0ADaG7OaDAE0qHcgY1Nghkwj',
+              'disclaimers': {'d': 'EApRECx41f_BjJlk1cvFqDCT-VM1De5GS9KUrItUARnT',
+                              'u': '0AHcgY1NghkwjDaG7OaDAE0q',
+                              'l': 'Issuer disclaimers:',
+                              'warrantyDisclaimer': {'d': 'ELGxE_uoWQXYi4zm4ooYlSYVVWT_RaYR1oHy_HfrLXkL',
+                                                     'u': '0AG7OY1wjaDAE0qHcgNghkDa',
+                                                     'l': 'AS IS'},
+                              'liabilityDisclaimer': {'d': 'EJerMTe6gpOu9nsZDU9ojv1ZMkaDjEPyUI5p-jqCBxyd',
+                                                      'u': '0AHcgNghkDaG7OY1wjaDAE0q',
+                                                      'l': 'No Liability'}},
+              'permittedUse': {'d': 'EPH194D7v-QxNt_p9Xkp_bCuYcmWoWy9cZMPHDfx3gxq',
+                               'u': '0ADaG7OY1wjaDAE0qHcgNghk',
+                               'l': 'Non-commercial'}
+              }
+    }
+
+    # fully compact version to see if saids are stable
+    cvs = 'ACDCCAACAAJSONAAF-.'
+    csize = 382
+
+    serder = attribute(issuer=issuer, uuid=uuid, schema=schemaSaid,
+                       attrs=attrSaid, edges=edgeSaid, rules=ruleSaid)
+
+    assert serder.said == said  # stable said of compact ACDC same as uncompacted
+    assert serder.size == csize != size  # but size not stable not same as uncompacted
+    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.issuer == issuer
+    assert serder.uuid == uuid
+    assert serder.issuee == None
+    assert serder.schema == schemaSaid
+    assert serder.attrib == attrSaid
+    assert serder.edge == edgeSaid
+    assert serder.rule == ruleSaid
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAAF-.',
+        't': 'act',
+        'd': 'EOilTAfOOWiIzVU9mFmgEeOaLao-H4-1JsYjrbP56_0E',
+        'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': '',
+        's': 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK',
+        'a': 'ENSz6GWE-3IW5_82aaT0uks8rZTH2etmj_EgyGL4idgo',
+        'e': 'EGaDRO2KMe8Y8JuAiXPuS0kim_MhuOEU17tiCj9Sonf5',
+        'r': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
+    }
+
+
+    """Done Test"""
+
+def test_attribute_message_cesr():
+    """Test act acdc message with cser"""
+
+    # Test with CESR serialization
+    kind = Kinds.cesr
+    issuer = 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    issuee = "EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C"
+    rawsalt = b'abcdefghijklmmop'
+    uuid = Noncer(raw=rawsalt).qb64
+    assert uuid == '0ABhYmNkZWZnaGlqa2xtbW9w'
+    schemaSaid = 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK'  # default
+
+
+
+def test_classic_message():
     """Test acdc messages v2"""
 
 
@@ -300,4 +579,7 @@ if __name__ == '__main__':
     test_regcept_message()
     test_blindate_message()
     test_update_message()
-    test_acdc_messages()
+    test_schema_defaults()
+    test_attribute_message_json()
+    test_attribute_message_cesr()
+    test_classic_message()
