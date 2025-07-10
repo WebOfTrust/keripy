@@ -2768,6 +2768,7 @@ class SerderACDC(Serder):
             for l in ("s", "a", "e", "r"):
                 if v := csad.get(l, None):  # field exists and is not empty
                     if isinstance(v, Mapping):  # v is non-empty mapping
+                        # compact to its most compact said
                         match l:
                             case 's':  # schema is only top-level said
                                 compactor = Compactor(mad=v,
@@ -2781,8 +2782,8 @@ class SerderACDC(Serder):
                                 compactor = Compactor(mad=v,
                                                               makify=True,
                                                               kind=self.kind)
+                                compactor.compact()
 
-                        compactor.compact()
                         said = compactor.said
                         if said:
                             csad[l] = said
@@ -2798,6 +2799,42 @@ class SerderACDC(Serder):
 
             # reserialize using sized, dummied, and fixed up
             raw = self.dumps(csad, kind=self.kind)
+
+        elif (self.pvrsn.major >= 2 and self.ilk in
+                (Ilks.sch, Ilks.att, Ilks.edg, Ilks.rul)):  # partial sections
+            # verify embedded section saids are most compact
+            csad = copy.deepcopy(sad)  # make copy to compute most compact sad
+
+            for l in ("s", "a", "e", "r"):
+                if v := csad.get(l, None):  # field exists and is not empty
+                    if isinstance(v, Mapping):  # v is non-empty mapping
+                        # verify embedded most compact saids
+                        match l:
+                            case 's':  # schema is only top-level said $id
+                                compactor = Compactor(mad=v,
+                                                      makify=True,
+                                                      strict=False,
+                                                      saids={"$id": 'E',},
+                                                      kind=self.kind)
+                                slabel ='$id'
+
+
+                            case 'a' | 'e' | 'r':
+                                compactor = Compactor(mad=v,
+                                                      makify=True,
+                                                      kind=self.kind)
+                                compactor.compact()
+                                slabel ='d'
+
+                        said = compactor.said
+                        if v.get(slabel) != said:
+                            raise InvalidValueError(f"Invalid section {said=} "
+                                                    f"in section message")
+
+
+        elif self.pvrsn.major >= 2 and self.ilk in (Ilks.agg):  # aggregated section
+            # verify aggregate
+            pass
 
         else:  # non-compactable, no need to fixup
             # compute saidive digestive field values using raw from sized dummied sad
