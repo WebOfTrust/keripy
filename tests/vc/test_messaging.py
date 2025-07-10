@@ -8,7 +8,7 @@ import pytest
 
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
 from keri.vc.messaging import (regcept, blindate, update, actSchemaDefault,
-                               attribute, classic)
+                               acdcatt, schema, attribute, edge, rule, acdcmap)
 from keri.core import GenDex, Noncer, SerderACDC, BlindState, Blinder, Compactor
 
 def test_regcept_message():
@@ -333,7 +333,7 @@ def test_schema_defaults():
 
     """Done Test"""
 
-def test_attribute_message_json():
+def test_acdcatt_message_json():
     """Test act acdc message with json"""
 
     # Test with JSON serialization
@@ -349,7 +349,8 @@ def test_attribute_message_json():
 
     # Test Defaults  kind=json
     said = 'EPNnyM5DyYNX3yA9938XM2o6gvy7QLI76oi0GWg9kpe_'
-    serder = attribute(issuer=issuer)  # defaults
+    serder = acdcatt(issuer=issuer)  # defaults
+    assert serder.kind == kind
     assert serder.said == said
     assert serder.issuer == issuer
     assert serder.uuid == ''
@@ -372,7 +373,8 @@ def test_attribute_message_json():
     vs = 'ACDCCAACAAJSONAAYX.'
     size = 1559
 
-    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee)
+    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee)
+    assert serder.kind == kind
     assert serder.said == said
     assert serder.issuer == issuer
     assert serder.uuid == uuid
@@ -496,8 +498,9 @@ def test_attribute_message_json():
     vs = 'ACDCCAACAAJSONAARj.'
     size = 1123
 
-    serder = attribute(issuer=issuer, uuid=uuid, schema=schemaSaid,
-                       attrs=attrs, edges=edges, rules=rules)
+    serder = acdcatt(issuer=issuer, uuid=uuid, schema=schemaSaid,
+                       attribute=attrs, edge=edges, rule=rules)
+    assert serder.kind == kind
     assert serder.said == said
     assert serder.size == size
     assert serder.sad['v'] == vs
@@ -555,9 +558,9 @@ def test_attribute_message_json():
     cvs = 'ACDCCAACAAJSONAAF-.'
     csize = 382
 
-    serder = attribute(issuer=issuer, uuid=uuid, schema=schemaSaid,
-                       attrs=attrSaid, edges=edgeSaid, rules=ruleSaid)
-
+    serder = acdcatt(issuer=issuer, uuid=uuid, schema=schemaSaid,
+                       attribute=attrSaid, edge=edgeSaid, rule=ruleSaid)
+    assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
@@ -593,7 +596,7 @@ def test_attribute_message_json():
 
     """Done Test"""
 
-def test_attribute_message_cesr():
+def test_acdcatt_message_cesr():
     """Test act acdc message with cser"""
 
     # Test with CESR serialization
@@ -612,7 +615,8 @@ def test_attribute_message_cesr():
     vs = 'ACDCCAACAACESRAAY4.'
     size = 1592
 
-    serder = attribute(issuer=issuer, kind=kind)
+    serder = acdcatt(issuer=issuer, kind=kind)
+    assert serder.kind == kind
     assert serder.said == said
     assert serder.issuer == issuer
     assert serder.uuid == ''
@@ -636,7 +640,8 @@ def test_attribute_message_cesr():
     vs = 'ACDCCAACAACESRAACs.'
     size = 172
 
-    serder = attribute(issuer=issuer, schema=schemaSaid, kind=kind)
+    serder = acdcatt(issuer=issuer, schema=schemaSaid, kind=kind)
+    assert serder.kind == kind
     assert serder.said == said
     assert serder.issuer == issuer
     assert serder.uuid == ''
@@ -659,7 +664,8 @@ def test_attribute_message_cesr():
     vs = 'ACDCCAACAACESRAAak.'
     size = 1700
 
-    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee, kind=kind)
+    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee, kind=kind)
+    assert serder.kind == kind
     assert serder.said == said
     assert serder.issuer == issuer
     assert serder.uuid == uuid
@@ -788,8 +794,9 @@ def test_attribute_message_cesr():
     vs = 'ACDCCAACAACESRAARU.'
     size = 1108
 
-    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
-                       attrs=attrs, edges=edges, rules=rules, kind=kind)
+    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+                       attribute=attrs, edge=edges, rule=rules, kind=kind)
+    assert serder.kind == kind
     assert serder.said == said
     assert serder.size == size
     assert serder.sad['v'] == vs
@@ -847,9 +854,9 @@ def test_attribute_message_cesr():
     cvs = 'ACDCCAACAACESRAAFg.'
     csize = 352
 
-    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
-                       attrs=attrSaid, edges=edgeSaid, rules=ruleSaid, kind=kind)
-
+    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+                       attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
+    assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
@@ -886,7 +893,689 @@ def test_attribute_message_cesr():
     """Done Test"""
 
 
-def test_classic_message():
+def test_schema_section():
+    """Test sch schema section message"""
+
+    # Test with JSON serialization
+    kind = Kinds.json
+    schemaSaid, schemaSad = actSchemaDefault(kind=kind)
+    assert schemaSaid == 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK'
+    assert schemaSad == \
+    {
+        '$id': 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'ACT Default Schema',
+        'description': 'Default JSON Schema for act ACDC.',
+        'credentialType': 'ACDC_act_message',
+        'version': '2.0.0',
+        'type': 'object',
+        'required': ['v', 'd', 'u', 'i', 'rd', 's', 'a', 'e', 'r'],
+        'properties': {'v': {'description': 'ACDC version string', 'type': 'string'},
+                       'd': {'description': 'Message SAID', 'type': 'string'},
+                       'u': {'description': 'Message UUID', 'type': 'string'},
+                       'i': {'description': 'Issuer AID', 'type': 'string'},
+                       'rd': {'description': 'Registry SAID', 'type': 'string'},
+                       's': {'description': 'Schema Section',
+                             'oneOf': [{'description': 'Schema Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Schema Section',
+                                        'type': 'object'}]},
+                       'a': {'description': 'Attribute Section',
+                             'oneOf': [{'description': 'Attribute Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Attribute Section',
+                                        'type': 'object'}]},
+                       'e': {'description': 'Edge Section',
+                             'oneOf': [{'description': 'Edge Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Edge Section',
+                                        'type': 'object'}]},
+                       'r': {'description': 'Rule Section',
+                             'oneOf': [{'description': 'Rule Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Rule Section',
+                                        'type': 'object'}]}},
+        'additionalProperties': False
+    }
+
+    # Test using schema said
+    said = 'EAeKYjcvKi3N-CaLmtnJoFRt_HlX9Wa6BXr4zwoK9q1e'
+    vs = 'ACDCCAACAAJSONAACL.'
+    size = 139
+
+    serder = schema(schema=schemaSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.schema == schemaSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using schema dict
+    said = 'EEj1cNd_T2zpynDeGcf8SvB1eLNWr-G1b0TyHrgIT8s_'
+    vs = 'ACDCCAACAAJSONAAVK.'
+    size = 1354
+
+    serder = schema(schema=schemaSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.schema == schemaSad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test with CESR serialization
+    kind = Kinds.cesr
+    schemaSaid, schemaSad = actSchemaDefault(kind=kind)
+    assert schemaSaid == 'EE2yz4qmmFzbJEj8olTa7P1J8R1-QvYB9cD9g26WzSjN'
+    assert schemaSad == \
+    {
+        '$id': 'EE2yz4qmmFzbJEj8olTa7P1J8R1-QvYB9cD9g26WzSjN',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'ACT Default Schema',
+        'description': 'Default JSON Schema for act ACDC.',
+        'credentialType': 'ACDC_act_message',
+        'version': '2.0.0',
+        'type': 'object',
+        'required': ['v', 'd', 'u', 'i', 'rd', 's', 'a', 'e', 'r'],
+        'properties': {'v': {'description': 'ACDC version string', 'type': 'string'},
+                       'd': {'description': 'Message SAID', 'type': 'string'},
+                       'u': {'description': 'Message UUID', 'type': 'string'},
+                       'i': {'description': 'Issuer AID', 'type': 'string'},
+                       'rd': {'description': 'Registry SAID', 'type': 'string'},
+                       's': {'description': 'Schema Section',
+                             'oneOf': [{'description': 'Schema Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Schema Section',
+                                        'type': 'object'}]},
+                       'a': {'description': 'Attribute Section',
+                             'oneOf': [{'description': 'Attribute Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Attribute Section',
+                                        'type': 'object'}]},
+                       'e': {'description': 'Edge Section',
+                             'oneOf': [{'description': 'Edge Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Edge Section',
+                                        'type': 'object'}]},
+                       'r': {'description': 'Rule Section',
+                             'oneOf': [{'description': 'Rule Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Rule Section',
+                                        'type': 'object'}]}},
+        'additionalProperties': False
+    }
+
+    # Test using schema said
+    said = 'EGL4V_uyBBkNQCEONb8AM2iXClP7N0iiGDg1ZjJ3Oizi'
+    vs = 'ACDCCAACAACESRAABs.'
+    size = 108
+
+    serder = schema(schema=schemaSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.schema == schemaSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using schema dict
+    said = 'EDJkXhl6h_ccAik_g4VLFLKEp0K1y5rrG5g9RRXYKWr9'
+    vs = 'ACDCCAACAACESRAAX4.'
+    size = 1528
+
+    serder = schema(schema=schemaSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.schema == schemaSad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    """Done Test"""
+
+
+def test_attribute_section():
+    """Test att attribute section message"""
+    issuee = 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
+    mad = \
+    {
+        'd': '',
+        'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+        'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+        'role': 'leader',
+        'contact':
+        {
+            'd': '',
+            'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+            'first': 'Cloe',
+            'last': 'Cleveridge',
+        }
+    }
+
+    # Test with JSON serialization
+    kind = Kinds.json
+    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
+    compactor.compact()
+    compactor.expand()
+    attrSaid = compactor.said
+    attrSad = list(compactor.partials.values())[1].mad
+    assert attrSaid == 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL'
+    assert attrSad == \
+    {
+        'd': 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL',
+        'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+        'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+        'role': 'leader',
+        'contact':
+        {
+            'd': 'EIZo47mJ29cuWW_UjgBEtcN2vAx5bzoBa-uVWOBH-2QP',
+            'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+            'first': 'Cloe',
+            'last': 'Cleveridge'
+        }
+    }
+
+    # Test using attr said
+    said = 'EJQvYciWzhTAVwq1Yt1UU8VVA-PD6O9E63Lb84ezqOS8'
+    vs = 'ACDCCAACAAJSONAACL.'
+    size = 139
+
+    serder = attribute(attribute=attrSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['a'] == attrSaid
+    assert serder.issuee == None  # since said not sad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using attribute dict
+    said = 'ELy9CPlrrOwyHPWYw81Y4N_0Ff4B2VYprpXlT4WVgIiA'
+    vs = 'ACDCCAACAAJSONAAF0.'
+    size = 372
+
+    serder = attribute(attribute=attrSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['a'] == attrSad
+    assert serder.issuee == issuee  # since sad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test with CESR serialization
+    kind = Kinds.cesr
+    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
+    compactor.compact()
+    compactor.expand()
+    attrSaid = compactor.said
+    attrSad = list(compactor.partials.values())[1].mad
+    assert attrSaid == 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-'
+    assert attrSad == \
+    {
+        'd': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-',
+        'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+        'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+        'role': 'leader',
+        'contact':
+        {
+            'd': 'EKkFu2dX274cXnfaXh0OWZj1LnaUrjmDKAS_ozGBZ9Pz',
+            'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+            'first': 'Cloe',
+            'last': 'Cleveridge'
+        }
+    }
+
+    # Test using attr said
+    said = 'ENm6VbJ2sHt2DkjPEiwhhY11cugbsDN2EtwhlI6bAj0x'
+    vs = 'ACDCCAACAACESRAABs.'
+    size = 108
+
+    serder = attribute(attribute=attrSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['a'] == attrSaid
+    assert serder.issuee == None  # since said not sad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using attribute dict
+    said = 'EPc8jTHBrPfDm9l8Rj4wbi3R-mYVlBRI8P_D3RO14aoI'
+    vs = 'ACDCCAACAACESRAAFM.'
+    size = 332
+
+    serder = attribute(attribute=attrSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['a'] == attrSad
+    assert serder.issuee == issuee  # since sad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    """Done Test"""
+
+
+def test_edge_section():
+    """Test edg edge section message"""
+
+    mad = \
+    {
+        'd': '',
+        'u': '0AwjaDAE0qHcgNghkDaG7OY1',
+        "work":
+        {
+          "d": "E2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lkFrn9y",
+          "u": "0ANghkDaG7OY1wjaDAE0qHcg",
+          "n": "ECJnFJL5OuQPyM5K0neuniccMBdXt3gIXOf2BBWNHdSX",
+          "s": "ELIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzw"
+        },
+        "play":
+        {
+          "d": "ELxUdYerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOc",
+          "u": "0ADAE0qHcgNghkDaG7OY1wja",
+          "n": "EK0neuniccMBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5",
+          "s": "EHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_N",
+          "o": "NI2I"
+        }
+    }
+
+    # Test with JSON serialization
+    kind = Kinds.json
+    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
+    compactor.compact()
+    compactor.expand()
+    edgeSaid = compactor.said
+    edgeSad = list(compactor.partials.values())[1].mad
+    assert edgeSaid == 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF'
+    assert edgeSad == \
+    {
+        'd': 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF',
+        'u': '0AwjaDAE0qHcgNghkDaG7OY1',
+        'work':
+        {
+            'd': 'EKJGcxOlhz08bQ9IUukIKl19pPmKpZ81RelPncz29xL2',
+            'u': '0ANghkDaG7OY1wjaDAE0qHcg',
+            'n': 'ECJnFJL5OuQPyM5K0neuniccMBdXt3gIXOf2BBWNHdSX',
+            's': 'ELIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzw'
+        },
+        'play':
+        {
+            'd': 'EO6KOA3fmGtIW65F66oHNMmYOh6x4i8tGJJI0XwRAx9w',
+            'u': '0ADAE0qHcgNghkDaG7OY1wja',
+            'n': 'EK0neuniccMBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5',
+            's': 'EHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_N',
+            'o': 'NI2I'
+        }
+    }
+    assert edgeSad['d'] == edgeSaid
+
+    # Test using edge said
+    said = 'EO5mxn9rJue2sXZI7_pC9uYNkDVQ9qA4roeKNGC6maSB'
+    vs = 'ACDCCAACAAJSONAACL.'
+    size = 139
+
+    serder = edge(edge=edgeSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['e'] == edgeSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using edge dict
+    said = 'EOeLqwd8pwwtE3EgVmjjq_OlYM3emWw0i-d73eydPffX'
+    vs = 'ACDCCAACAAJSONAAI9.'
+    size = 573
+
+    serder = edge(edge=edgeSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['e'] == edgeSad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test with CESR serialization
+    kind = Kinds.cesr
+    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
+    compactor.compact()
+    compactor.expand()
+    edgeSaid = compactor.said
+    edgeSad = list(compactor.partials.values())[1].mad
+    assert edgeSaid == 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw'
+    assert edgeSad == \
+    {
+        'd': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
+        'u': '0AwjaDAE0qHcgNghkDaG7OY1',
+        'work':
+        {
+            'd': 'EFYkMnj7wgn4Vn02F6iniWoCJFf-kCzvkM2wZ7RFzWPC',
+            'u': '0ANghkDaG7OY1wjaDAE0qHcg',
+            'n': 'ECJnFJL5OuQPyM5K0neuniccMBdXt3gIXOf2BBWNHdSX',
+            's': 'ELIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzw'
+        },
+        'play':
+        {
+            'd': 'ENCGxUkFQndU5bKtD6o3PRXvl2ZbgmSF-aQU1sVkGudj',
+            'u': '0ADAE0qHcgNghkDaG7OY1wja',
+            'n': 'EK0neuniccMBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5',
+            's': 'EHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_N',
+            'o': 'NI2I'
+        }
+    }
+    assert edgeSad['d'] == edgeSaid
+
+    # Test using edge said
+    said = 'ED0P_BH7w1kDhZys38miqm0c612pjYYvd_EiV9W4-Gyj'
+    vs = 'ACDCCAACAACESRAABs.'
+    size = 108
+
+    serder = edge(edge=edgeSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['e'] == edgeSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using edge dict
+    said = 'ENjBCWeLQk7iYq3J1DFgPkJ-yfDE_7a0gOE1ecNt9bfw'
+    vs = 'ACDCCAACAACESRAAIU.'
+    size = 532
+
+    serder = edge(edge=edgeSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['e'] == edgeSad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    """Done Test"""
+
+
+def test_rule_section():
+    """Test rul rule section message"""
+
+    mad = \
+    {
+        "d": "",
+        "u": "0ADaG7OaDAE0qHcgY1Nghkwj",
+        "disclaimers":
+        {
+            "d": "",
+            "u": "0AHcgY1NghkwjDaG7OaDAE0q",
+            "l": "Issuer disclaimers:",
+            "warrantyDisclaimer":
+            {
+              "d": "",
+              "u": "0AG7OY1wjaDAE0qHcgNghkDa",
+              "l": "AS IS"
+            },
+            "liabilityDisclaimer":
+            {
+              "d": "",
+              "u": "0AHcgNghkDaG7OY1wjaDAE0q",
+              "l": "No Liability"
+            }
+        },
+        "permittedUse":
+        {
+            "d": "",
+            "u": "0ADaG7OY1wjaDAE0qHcgNghk",
+            "l": "Non-commercial"
+        }
+    }
+
+    # Test with JSON serialization
+    kind = Kinds.json
+    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
+    compactor.compact()
+    compactor.expand()
+    ruleSaid = compactor.said
+    ruleSad = list(compactor.partials.values())[1].mad
+    assert ruleSaid == 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
+    assert ruleSad == \
+    {
+        'd': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v',
+        'u': '0ADaG7OaDAE0qHcgY1Nghkwj',
+        'disclaimers':
+        {
+            'd': 'EApRECx41f_BjJlk1cvFqDCT-VM1De5GS9KUrItUARnT',
+            'u': '0AHcgY1NghkwjDaG7OaDAE0q',
+            'l': 'Issuer disclaimers:',
+            'warrantyDisclaimer':
+            {
+                'd': 'ELGxE_uoWQXYi4zm4ooYlSYVVWT_RaYR1oHy_HfrLXkL',
+                'u': '0AG7OY1wjaDAE0qHcgNghkDa',
+                'l': 'AS IS'
+            },
+            'liabilityDisclaimer':
+            {
+                'd': 'EJerMTe6gpOu9nsZDU9ojv1ZMkaDjEPyUI5p-jqCBxyd',
+                'u': '0AHcgNghkDaG7OY1wjaDAE0q',
+                'l': 'No Liability'
+            }
+        },
+        'permittedUse':
+        {
+            'd': 'EPH194D7v-QxNt_p9Xkp_bCuYcmWoWy9cZMPHDfx3gxq',
+            'u': '0ADaG7OY1wjaDAE0qHcgNghk',
+            'l': 'Non-commercial'
+        }
+    }
+    assert ruleSad['d'] == ruleSaid
+
+    # Test using rule said
+    said = 'EE0X6gLmNoZK-Gpcq7o8tq114pf_Kv8oGLXLbIyEedjQ'
+    vs = 'ACDCCAACAAJSONAACL.'
+    size = 139
+
+    serder = rule(rule=ruleSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['r'] == ruleSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using rule dict
+    said = 'EGqdBnWd5r-S6oiT2xQb1zK5DCxQH587bUJRC31jg4RE'
+    vs = 'ACDCCAACAAJSONAAKW.'
+    size = 662
+
+    serder = rule(rule=ruleSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['r'] == ruleSad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test with CESR serialization
+    kind = Kinds.cesr
+    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
+    compactor.compact()
+    compactor.expand()
+    ruleSaid = compactor.said
+    ruleSad = list(compactor.partials.values())[1].mad
+    assert ruleSaid == 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
+    assert ruleSad == \
+    {
+        'd': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-',
+        'u': '0ADaG7OaDAE0qHcgY1Nghkwj',
+        'disclaimers':
+        {
+            'd': 'EGMp181uEcUmi5FXs0ebqEhOyVi27-IDiYdoqe453BRD',
+            'u': '0AHcgY1NghkwjDaG7OaDAE0q',
+            'l': 'Issuer disclaimers:',
+            'warrantyDisclaimer':
+            {
+                'd': 'EO6ekaJYyWfl0Civ2bApVLgCmge43io1KvFCqSPt8Qc5',
+                'u': '0AG7OY1wjaDAE0qHcgNghkDa',
+                'l': 'AS IS'
+            },
+            'liabilityDisclaimer':
+            {
+                'd': 'EDzyrYOaVI3TwLvN-w-pfGyoZfyvV0rslCieRCgXgEF7',
+                'u': '0AHcgNghkDaG7OY1wjaDAE0q',
+                'l': 'No Liability'
+            }
+        },
+        'permittedUse':
+        {
+            'd': 'EBdHlf04DK2w4So61ebgUydOr85YGjP_xkLO-CnEXcsj',
+            'u': '0ADaG7OY1wjaDAE0qHcgNghk',
+            'l': 'Non-commercial'
+        }
+    }
+    assert ruleSad['d'] == ruleSaid
+
+    # Test using rule said
+    said = 'ELNJn_iLJxRDAFbF8b5C7fZVuurGoOJarXhVdx1itYfq'
+    vs = 'ACDCCAACAACESRAABs.'
+    size = 108
+
+    serder = rule(rule=ruleSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['r'] == ruleSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using rule dict
+    said = 'EN21tftFSBYQ9VuEUGMzyVIMPjTmktXGWdO9-mHq8ThM'
+    vs = 'ACDCCAACAACESRAAKM.'
+    size = 652
+
+    serder = rule(rule=ruleSad, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.sad['r'] == ruleSad
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    """Done Test"""
+
+
+def test_acdcmap_message():
     """Test acdc messages v2"""
 
 
@@ -897,6 +1586,10 @@ if __name__ == '__main__':
     test_blindate_message()
     test_update_message()
     test_schema_defaults()
-    test_attribute_message_json()
-    test_attribute_message_cesr()
-    test_classic_message()
+    test_acdcatt_message_json()
+    test_acdcatt_message_cesr()
+    test_schema_section()
+    test_attribute_section()
+    test_edge_section()
+    test_rule_section()
+    test_acdcmap_message()

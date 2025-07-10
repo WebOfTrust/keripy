@@ -236,8 +236,8 @@ def actSchemaDefault(kind=Kinds.json):
     return (mapper.said, mapper.mad)
 
 
-def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
-              issuee=None, edges=None, rules=None,
+def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
+              issuee=None, edge=None, rule=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field ACDC message of type 'act'
     for ACDC protocol v2.
@@ -254,14 +254,15 @@ def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
         schema (str|dict): SAID of schema section or schema section block
                            None means use default schema for value
 
-        attrs (str|dict|None): SAID of attribute section block
+        attribute (str|dict|None): SAID of attribute section or dict of
+                                   attribute section block
                                     None means use empty dict for value
         issuee (str): qb64 of issuee AID if any to insert in attribute section
                       when attributes is a Mapping.
                       None means do not insert issuee
-        edges (str|dict|None): SAID of edge section block.
+        edge (str|dict|None): SAID of edge section or dict of edge section block
                                None means use empty dict for value
-        rules (str|dict|None): SAID of rule section block
+        rule (str|dict|None): SAID of rule section or dict of rule section block
                                None means use empty dict for value
         pvrsn (Versionage): ACDC protocol version number
         gvrsn (Versionage): CESR Genus version number.
@@ -295,18 +296,114 @@ def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
         ssaid, ssad = actSchemaDefault(kind=kind)
         schema = ssad
 
-    attrs = attrs if attrs is not None else {}
-    if issuee is not None and isinstance(attrs, Mapping):
-        attrs['i'] = issuee
-    edges = edges if edges is not None else {}
-    rules = rules if rules is not None else {}
+    attribute = attribute if attribute is not None else {}
+    if issuee is not None and isinstance(attribute, Mapping):
+        attribute['i'] = issuee
+    edge = edge if edge is not None else {}
+    rule = rule if rule is not None else {}
 
     sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
-               s=schema, a=attrs, e=edges, r=rules)
+               s=schema, a=attribute, e=edge, r=rule)
     return SerderACDC(sad=sad, makify=True)
 
 
-def classic(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
+def schema(schema, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field schema section message
+    of type 'sch' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        schema (str|dict): SAID of schema section or schema section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', s='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.sch
+    sad = dict(v=vs, t=ilk, d='', s=schema)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def attribute(attribute, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field attribute section message
+    of type 'att' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        attribute (str|dict): SAID of attribute section or attribute section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', a='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.att
+    sad = dict(v=vs, t=ilk, d='', a=attribute)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def edge(edge, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field edge section message
+    of type 'edg' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        edge (str|dict): SAID of edge section or edge section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', e='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.edg
+    sad = dict(v=vs, t=ilk, d='', e=edge)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def rule(rule, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field edge section message
+    of type 'rul' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        rule (str|dict): SAID of rule section or rule section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', r='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.rul
+    sad = dict(v=vs, t=ilk, d='', r=rule)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def acdcmap(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
             attributes=None, aggregates=None, edges=None, rules=None,
             pvrsn=Vrsn_2_0, gvrsn=None, kind=Kinds.json):  #acedice
     """Utility function to create top-level field map ACDC message of type 'acm'

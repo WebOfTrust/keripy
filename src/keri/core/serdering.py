@@ -33,6 +33,7 @@ from ..kering import Protocols, Kinds, versify, deversify, Ilks
 
 from .. import help
 from ..help import helping
+from ..help import NonStringIterable
 
 
 from . import coring
@@ -823,7 +824,7 @@ class Serder:
         if "v" not in self._sad:
             raise ValidationError(f"Missing version string field in {self._sad}.")
 
-        sad = copy.copy(self._sad)  # make shallow copy so don't clobber original .sad
+        sad = copy.deepcopy(self._sad)  # make copy so don't clobber original .sad
 
         for label in saids:
             try:  # replace default code with code of value from sad
@@ -2790,7 +2791,7 @@ class SerderACDC(Serder):
                                                   kind=self.kind)
                                 sector.compact()
 
-                    elif isinstance(v, Iterable):  # v is non-empty iterable
+                    elif isinstance(v, NonStringIterable):  # v is non-empty iterable
                         match l:
                             case 'A':  # aggregator
                                 pass  # ToDo create Aggregator instance from list
@@ -2832,7 +2833,6 @@ class SerderACDC(Serder):
                                                       kind=self.kind)
                                 slabel ='$id'
 
-
                             case 'a' | 'e' | 'r':
                                 sector = Compactor(mad=v,
                                                       makify=True,
@@ -2844,12 +2844,15 @@ class SerderACDC(Serder):
                         if v.get(slabel) != said:
                             raise InvalidValueError(f"Invalid section {said=} "
                                                     f"in section message")
-                    elif isinstance(v, Iterable):  # v is non-empty iterable
+                    elif isinstance(v, NonStringIterable):  # v is non-empty iterable
                         match l:
                             case 'A':  # aggregator
                                 pass  # ToDo create Aggregator instance from list
 
                         # verify exposed elements in v versus Aggregator
+                        # reserialize using sized, dummied, and fixed up
+
+            raw = self.dumps(csad, kind=self.kind)
 
         else:  # non-compactable, no need to fixup
             # compute saidive digestive field values using raw from sized dummied sad
