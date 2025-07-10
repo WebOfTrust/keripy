@@ -1484,22 +1484,48 @@ class Serder:
                             sad[l] = Labeler(qb64b=raw, strip=True).text
 
                         case "s":  # schema said, or schema block
-                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+                            if raw[0] == b'-':  # counter so should be field map
+                                ctr = Counter(qb64b=raw)  # peek at counter
+                                if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                                    # schema field labels not strict
+                                    sad[l] = Mapper(qb64=raw,
+                                                    strip=True,
+                                                    strict=False).mad
+                                else:
+                                    raise DeserializeError(f"Expected Map group"
+                                                       f"got {ctr.name}")
+                            else:
+                                sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "a"|"e"|"r" :  # attribute SAID or attribute block
-                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+                            if raw[0] == b'-':  # counter so should be field map
+                                ctr = Counter(qb64b=raw)  # peek at counter
+                                if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                                    sad[l] = Mapper(qb64=raw, strip=True).mad
+                                else:
+                                    raise DeserializeError(f"Expected Map group"
+                                                       f"got {ctr.name}")
+                            else:  # may not be empty str
+                                sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "A":  # Aggregate said or Aggregate list of blocks
-                            ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
-                            if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
-                                raise DeserializeError(f"Expected List group got {ctr.name}")
-                            fs = ctr.count * 4  # frame size since qb64 text mode
-                            frame = raw[:fs]  # extract list frame
-                            raw = raw[fs:]
-                            elements = []
-                            while frame:  # not yet empty
-                                elements.append(Matter(qb64b=frame, strip=True).qb64)
-                            sad[l] = elements
+                            if raw[0] == b'-':  # counter so should be field map
+                                ctr = Counter(qb64b=raw)  # peek at counter
+                                if ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
+                                    fs = ctr.fullSize
+                                    del raw[:fs]  # consume counter
+                                    gcs = ctr.byteSize()  # content size
+                                    buf = raw[:gcs]
+                                    del raw[:gcs]  # consume counter content
+                                    blocks = []
+                                    while buf:
+                                        blocks.append(Mapper(raw=buf, strip=True).mad)
+                                    sad[l] = blocks
+                                else:
+                                    raise DeserializeError(f"Expected List group"
+                                                       f"got {ctr.name}")
+                            else:
+                                sad[l] = Noncer(qb64b=raw, strip=True).nonce
 
                         case _:  # if extra fields this is where logic would be
                             raise DeserializeError(f"Unsupported protocol field label"
@@ -1811,7 +1837,6 @@ class Serder:
                         case "d"|"i"|"p"|"u"|"rd"|"b"|"td":  # said or aid
                             val = v.encode()  # already primitive qb64 make qb6b
 
-
                         case "u":  # uuid or nonce
                             val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
@@ -1825,20 +1850,26 @@ class Serder:
                             val = Labeler(text=v).qb64b  # convert text to qb64b
 
                         case "s":  # schema said or block
-                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+                            if isinstance(v, Mapping):  # assumes valid said
+                                val = Mapper(mad=v).qb64b
+                            else:  # said but may be empty
+                                if not v:  # schema must not be empty
+                                    raise SerializeError(f"Empty schema")
+                                val = Noncer(nonce=v).qb64b
 
                         case "a"|"e"|"r" :  # said or block
-                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+                            if isinstance(v, Mapping):  # assumes valid said
+                                val = Mapper(mad=v).qb64b
+                            else:  # said but may be empty
+                                val = Noncer(nonce=v).qb64b
 
                         case "A":  # list of blocks
                             frame = bytearray()
-                            for e in v:  # list
+                            for e in v:  # list of blocks
                                 frame.extend(Mapper(mad=e).qb64b)
 
-                            val = bytearray(Counter(Codens.GenericListGroup,
-                                                    count=len(frame) // 4,
-                                                    version=gvrsn).qb64b)
-                            val.extend(frame)
+                            val = Counter.enclose(qb64=frame,
+                                                  code=Codens.GenericListGroup)
 
                         case _:  # if extra fields this is where logic would be
                             raise SerializeError(f"Unsupported protocol field label"
