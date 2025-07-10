@@ -6,7 +6,7 @@ keri.core.serdering module
 import copy
 import json
 from collections import namedtuple
-from collections.abc import Mapping
+from collections.abc import Mapping, Iterable
 from dataclasses import dataclass, asdict, field
 from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
@@ -1525,7 +1525,8 @@ class Serder:
                                     raise DeserializeError(f"Expected List group"
                                                        f"got {ctr.name}")
                             else:
-                                sad[l] = Noncer(qb64b=raw, strip=True).nonce
+                                sad[l] = Diger(qb64b=raw, strip=True).qb64
+
 
                         case _:  # if extra fields this is where logic would be
                             raise DeserializeError(f"Unsupported protocol field label"
@@ -1853,16 +1854,18 @@ class Serder:
                             if isinstance(v, Mapping):  # assumes valid said
                                 val = Mapper(mad=v).qb64b
                             else:  # said but may not be empty
-                                if not v:  # schema must not be empty
-                                    raise SerializeError(f"Invalid empty said")
+                                if not v:  # schema as said must not be empty
+                                    raise SerializeError(f"Invalid section={l} "
+                                                         f"empty said")
                                 val = Diger(qb64=v).qb64b
 
                         case "a"|"e"|"r" :  # said or block, block may be empty
                             if isinstance(v, Mapping):
                                 val = Mapper(mad=v).qb64b
                             else:  # said but may not be empty
-                                if not v:  # schema must not be empty
-                                    raise SerializeError(f"Invalid empty said")
+                                if not v:  # section as said must not be empty
+                                    raise SerializeError(f"Invalid section={l} "
+                                                         f"empty said")
                                 val = Diger(qb64=v).qb64b
 
                         case "A":  # aggregate or list of blocks list may be empty
@@ -1874,8 +1877,9 @@ class Serder:
                                 val = Counter.enclose(qb64=frame,
                                                       code=Codens.GenericListGroup)
                             else:  # said but may not be empty
-                                if not v:  # schema must not be empty
-                                    raise SerializeError(f"Invalid empty said")
+                                if not v:  # aggregate as said must not be empty
+                                    raise SerializeError(f"Invalid section={l} "
+                                                         f"empty said")
                                 val = val = Diger(qb64=v).qb64b
 
                         case _:  # if extra fields this is where logic would be
@@ -2765,28 +2769,36 @@ class SerderACDC(Serder):
             # compactable so fixup saids and size
             csad = copy.deepcopy(sad)  # make copy to compute most compact sad
 
-            for l in ("s", "a", "e", "r"):
+            for l in ("s", "a", "e", "r", "A"):
                 if v := csad.get(l, None):  # field exists and is not empty
+                    sector = None
                     if isinstance(v, Mapping):  # v is non-empty mapping
                         # compact to its most compact said
                         match l:
                             case 's':  # schema is only top-level said
-                                compactor = Compactor(mad=v,
-                                                              makify=True,
-                                                           strict=False,
-                                                           saids={"$id": 'E',},
-                                                           kind=self.kind)
+                                sector = Compactor(mad=v,
+                                                    makify=True,
+                                                    strict=False,
+                                                    saids={"$id": 'E',},
+                                                    kind=self.kind)
 
 
                             case 'a' | 'e' | 'r':
-                                compactor = Compactor(mad=v,
-                                                              makify=True,
-                                                              kind=self.kind)
-                                compactor.compact()
+                                sector = Compactor(mad=v,
+                                                   makify=True,
+                                                  kind=self.kind)
+                                sector.compact()
 
-                        said = compactor.said
+                    elif isinstance(v, Iterable):  # v is non-empty iterable
+                        match l:
+                            case 'A':  # aggregator
+                                pass  # ToDo create Aggregator instance from list
+
+                    if sector is not None:
+                        said = sector.said
                         if said:
                             csad[l] = said
+
 
             # Most compact size fixup in vs
             if self.kind != Kinds.cesr:  # not native so fixup vs
@@ -2801,17 +2813,18 @@ class SerderACDC(Serder):
             raw = self.dumps(csad, kind=self.kind)
 
         elif (self.pvrsn.major >= 2 and self.ilk in
-                (Ilks.sch, Ilks.att, Ilks.edg, Ilks.rul)):  # partial sections
+                (Ilks.sch, Ilks.att, Ilks.agg, Ilks.edg, Ilks.rul)):  # partial sections
             # verify embedded section saids are most compact
             csad = copy.deepcopy(sad)  # make copy to compute most compact sad
 
-            for l in ("s", "a", "e", "r"):
+            for l in ("s", "a", "e", "r", "A"):
                 if v := csad.get(l, None):  # field exists and is not empty
+                    sector = None
                     if isinstance(v, Mapping):  # v is non-empty mapping
                         # verify embedded most compact saids
                         match l:
                             case 's':  # schema is only top-level said $id
-                                compactor = Compactor(mad=v,
+                                sector = Compactor(mad=v,
                                                       makify=True,
                                                       strict=False,
                                                       saids={"$id": 'E',},
@@ -2820,21 +2833,22 @@ class SerderACDC(Serder):
 
 
                             case 'a' | 'e' | 'r':
-                                compactor = Compactor(mad=v,
+                                sector = Compactor(mad=v,
                                                       makify=True,
                                                       kind=self.kind)
-                                compactor.compact()
+                                sector.compact()
                                 slabel ='d'
 
-                        said = compactor.said
+                        said = sector.said
                         if v.get(slabel) != said:
                             raise InvalidValueError(f"Invalid section {said=} "
                                                     f"in section message")
+                    elif isinstance(v, Iterable):  # v is non-empty iterable
+                        match l:
+                            case 'A':  # aggregator
+                                pass  # ToDo create Aggregator instance from list
 
-
-        elif self.pvrsn.major >= 2 and self.ilk in (Ilks.agg):  # aggregated section
-            # verify aggregate
-            pass
+                        # verify exposed elements in v versus Aggregator
 
         else:  # non-compactable, no need to fixup
             # compute saidive digestive field values using raw from sized dummied sad
