@@ -236,7 +236,7 @@ def actSchemaDefault(kind=Kinds.json):
     return (mapper.said, mapper.mad)
 
 
-def attribute(issuer, uuid=None, registry=None, schema=None, attrs=None,
+def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
               issuee=None, edges=None, rules=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field ACDC message of type 'act'
@@ -249,7 +249,7 @@ def attribute(issuer, uuid=None, registry=None, schema=None, attrs=None,
         issuer  (str): qb64 of issuer AID
         uuid (str|None): qb64 of salty nonce (UUID) if any.
                          None means use empty string for value
-        registry (str|None): qb64 of registry SAID if any.
+        regid (str|None): qb64 of registry SAID if any.
                              None means use empty string for value
         schema (str|dict): SAID of schema section or schema section block
                            None means use default schema for value
@@ -267,13 +267,10 @@ def attribute(issuer, uuid=None, registry=None, schema=None, attrs=None,
         gvrsn (Versionage): CESR Genus version number.
         kind (str): serialization kind from Kinds
 
-
-
     all
     (v='', t='', d='', u='', i='', rd='', s='', a='', e='', r='')
     opts
     ()
-
 
     ACDC .sad and its serialization .raw. Is whatever in input to the serder. Its
     degree of compactification is whatever is input to the Serder. In the case of
@@ -290,14 +287,12 @@ def attribute(issuer, uuid=None, registry=None, schema=None, attrs=None,
     Essentially makify and verify for ACDCs is different because of most compact
     SAID computation.
     """
-
-
     vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
     ilk = Ilks.act
     uuid = uuid if uuid is not None else ""
-    registry = registry if registry is not None else ""
+    regid = regid if regid is not None else ""
     if schema is None:
-        ssaid, ssad = actSchemaDefault()
+        ssaid, ssad = actSchemaDefault(kind=kind)
         schema = ssad
 
     attrs = attrs if attrs is not None else {}
@@ -306,7 +301,7 @@ def attribute(issuer, uuid=None, registry=None, schema=None, attrs=None,
     edges = edges if edges is not None else {}
     rules = rules if rules is not None else {}
 
-    sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=registry,
+    sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
                s=schema, a=attrs, e=edges, r=rules)
     return SerderACDC(sad=sad, makify=True)
 

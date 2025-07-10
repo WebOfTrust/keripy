@@ -1465,26 +1465,32 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             sad[l] = ilk
 
-                        case "d"|"p"|"rd"|"b"|"td":  # SAID
+                        case "d"|"p"|"b":  # SAID must not be empty
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
 
-                        case "u":  # UUID salty Nonce
-                            sad[l] = Noncer(qb64b=raw, strip=True).qb64
+                        case "u":  # UUID salty Nonce or empty
+                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
 
-                        case "i":  # AID
+                        case "i":  # AID must not be empty
                             sad[l] = Prefixer(qb64b=raw, strip=True).qb64
 
                         case "n":  # sequence number
                             sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
 
+                        case "rd":  # said or empty
+                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
+
                         case "dt":  # datetime string
                             sad[l] = Dater(qb64b=raw, strip=True).dts
 
-                        case "ts":  # transaction event state string
+                        case "td":  # transaction event acdc said or empty
+                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
+
+                        case "ts":  # transaction event state string or empty
                             sad[l] = Labeler(qb64b=raw, strip=True).text
 
                         case "s":  # schema said, or schema block
-                            if raw[0] == b'-':  # counter so should be field map
+                            if raw[0] == ord(b'-'):  # counter so should be field map
                                 ctr = Counter(qb64b=raw)  # peek at counter
                                 if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
                                     # schema field labels not strict
@@ -1498,7 +1504,7 @@ class Serder:
                                 sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "a"|"e"|"r" :  # attribute SAID or attribute block
-                            if raw[0] == b'-':  # counter so should be field map
+                            if raw[0] == ord(b'-'):  # counter so should be field map
                                 ctr = Counter(qb64b=raw)  # peek at counter
                                 if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
                                     sad[l] = Mapper(qb64=raw, strip=True).mad
@@ -1509,7 +1515,7 @@ class Serder:
                                 sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "A":  # Aggregate said or Aggregate list of blocks
-                            if raw[0] == b'-':  # counter so should be field map
+                            if raw[0] == ord(b'-'):  # counter so should be field map
                                 ctr = Counter(qb64b=raw)  # peek at counter
                                 if ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
                                     fs = ctr.fullSize
@@ -1658,7 +1664,6 @@ class Serder:
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
 
-
         ilks = self.Fields[proto][pvrsn]  # get fields keyed by ilk
 
         if proto == Protocols.keri:
@@ -1792,10 +1797,7 @@ class Serder:
 
                 bdy.extend(val)
 
-            raw = bytearray(Counter(Codens.FixBodyGroup,
-                                    count=len(bdy) // 4,
-                                    version=gvrsn).qb64b)
-            raw.extend(bdy)
+            raw = Counter.enclose(qb64=bdy, code=Codens.FixBodyGroup, version=gvrsn)
 
         elif proto == Protocols.acdc:
             ilk = sad.get('t')  # returns None if missing message type (ilk)
@@ -1821,10 +1823,7 @@ class Serder:
                 for l, v in sad.items():  # assumes valid field order & presence
                     pass
 
-                raw = bytearray(Counter(Codens.MapBodyGroup,
-                                        count=len(bdy) // 4,
-                                        version=gvrsn).qb64b)
-                raw.extend(bdy)
+                raw = Counter.enclose(qb64=bdy, code=Codens.MapBodyGroup, version=gvrsn)
 
             else: # top-level fixed field
                 for l, v in sad.items():  # assumes valid field order & presence
@@ -1835,10 +1834,13 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             val = Ilker(ilk=v).qb64b  # assumes same
 
-                        case "d"|"i"|"p"|"u"|"rd"|"b"|"td":  # said or aid
+                        case "d"|"i"|"p"|"b":  # said or aid non-empty
                             val = v.encode()  # already primitive qb64 make qb6b
 
-                        case "u":  # uuid or nonce
+                        case "u":  # uuid or nonce or empty
+                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
+
+                        case "rd":  # registry said or empty
                             val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
                         case "n":  # sequence number
@@ -1847,12 +1849,15 @@ class Serder:
                         case "dt":  # iso datetime
                             val = Dater(dts=v).qb64b  # dts to qb64b
 
+                        case "td":  # transaction event acdc said or empty
+                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
+
                         case "ts":  # transaction event state string
                             val = Labeler(text=v).qb64b  # convert text to qb64b
 
                         case "s":  # schema said or block
                             if isinstance(v, Mapping):  # assumes valid said
-                                val = Mapper(mad=v).qb64b
+                                val = Mapper(mad=v, strict=False).qb64b
                             else:  # said but may not be empty
                                 if not v:  # schema as said must not be empty
                                     raise SerializeError(f"Invalid section={l} "
@@ -1889,11 +1894,7 @@ class Serder:
 
                     bdy.extend(val)
 
-                count = len(bdy) // 4
-                raw = bytearray(Counter(Codens.FixBodyGroup,
-                                        count=count,
-                                        version=gvrsn).qb64b)
-                raw.extend(bdy)
+                raw = Counter.enclose(qb64=bdy, code=Codens.FixBodyGroup, version=gvrsn)
 
         else:
             raise SerializeError(f"Unsupported protocol={self.proto}.")

@@ -344,6 +344,7 @@ def test_attribute_message_json():
     uuid = Noncer(raw=rawsalt).qb64
     assert uuid == '0ABhYmNkZWZnaGlqa2xtbW9w'
     schemaSaid = 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK'  # default
+    regid = 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq'
 
 
     # Test Defaults  kind=json
@@ -352,24 +353,44 @@ def test_attribute_message_json():
     assert serder.said == said
     assert serder.issuer == issuer
     assert serder.uuid == ''
+    assert serder.regid == ''
     assert serder.issuee == None
     assert serder.sad['s']['$id'] == schemaSaid
     assert serder.sad['v'] == 'ACDCCAACAAJSONAAWh.'
     assert serder.size == 1441
 
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
     # Test with uuid and issuee and otherwise defaults
-    said = 'EJbCkz3h0cvSQRadPSRj649w8ixrPYM5ejtdwurhrB6U'
-    serder = attribute(issuer=issuer, uuid=uuid, issuee=issuee)
+    said = 'EAi889SlRgc0kaGtLj8NCfpCAY3S13m6peIqfJH8BnCe'
+    vs = 'ACDCCAACAAJSONAAYX.'
+    size = 1559
+
+    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee)
     assert serder.said == said
     assert serder.issuer == issuer
     assert serder.uuid == uuid
+    assert serder.regid == regid
     assert serder.issuee == issuee
     assert serder.sad['s']['$id'] == schemaSaid
-    assert serder.sad['v'] == 'ACDCCAACAAJSONAAXr.'
-    assert serder.size == 1515
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
 
     # Test fully populated and expanded
-
     attrs = dict(d="", i=issuee, name="Zoe")
     attrPactor = Compactor(mad=attrs, makify=True, kind=kind)
     attrPactor.compact()
@@ -482,6 +503,7 @@ def test_attribute_message_json():
     assert serder.sad['v'] == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
+    assert serder.regid == ""
     assert serder.issuee == issuee
     assert serder.schema == schemaSaid
     assert serder.attrib['d'] == attrSaid
@@ -521,6 +543,14 @@ def test_attribute_message_json():
               }
     }
 
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
     # fully compact version to see if saids are stable
     cvs = 'ACDCCAACAAJSONAAF-.'
     csize = 382
@@ -533,6 +563,7 @@ def test_attribute_message_json():
     assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
+    assert serder.regid == ""
     assert serder.issuee == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
@@ -552,6 +583,13 @@ def test_attribute_message_json():
         'r': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
     }
 
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
 
     """Done Test"""
 
@@ -565,8 +603,287 @@ def test_attribute_message_cesr():
     rawsalt = b'abcdefghijklmmop'
     uuid = Noncer(raw=rawsalt).qb64
     assert uuid == '0ABhYmNkZWZnaGlqa2xtbW9w'
-    schemaSaid = 'EJPULhLwM8yQNj3iMSMCi7FdmP9mMCMe1yWO9nATNRzK'  # default
+    schemaSaid = 'EE2yz4qmmFzbJEj8olTa7P1J8R1-QvYB9cD9g26WzSjN'  # default
+    regid = 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq'
 
+
+    # Test Defaults  but with kind=cesr
+    said = 'EFC6LUAuqGp_Mtetf6RXOuTCfD1HCwNdqQfgZ8tWzvIm'
+    vs = 'ACDCCAACAACESRAAY4.'
+    size = 1592
+
+    serder = attribute(issuer=issuer, kind=kind)
+    assert serder.said == said
+    assert serder.issuer == issuer
+    assert serder.uuid == ''
+    assert serder.regid == ''
+    assert serder.issuee == None
+    assert serder.sad['s']['$id'] == schemaSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+
+    # Test Defaults  but with schema set to schema said and kind=cesr
+    said = 'EFC6LUAuqGp_Mtetf6RXOuTCfD1HCwNdqQfgZ8tWzvIm'
+    vs = 'ACDCCAACAACESRAACs.'
+    size = 172
+
+    serder = attribute(issuer=issuer, schema=schemaSaid, kind=kind)
+    assert serder.said == said
+    assert serder.issuer == issuer
+    assert serder.uuid == ''
+    assert serder.regid == ''
+    assert serder.issuee == None
+    assert serder.schema == schemaSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test defaults with uuid and issuee and regid and kind=cesr
+    said = 'EK60Qa1JYz3NWBf-sV5bS2xPGjThAm0GglKICPeJ0Lns'
+    vs = 'ACDCCAACAACESRAAak.'
+    size = 1700
+
+    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee, kind=kind)
+    assert serder.said == said
+    assert serder.issuer == issuer
+    assert serder.uuid == uuid
+    assert serder.regid == regid
+    assert serder.issuee == issuee
+    assert serder.sad['s']['$id'] == schemaSaid
+    assert serder.sad['v'] == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test fully populated and expanded
+    attrs = \
+    {
+        'd': '',
+        'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+        'name': 'Zoe'
+    }
+    attrPactor = Compactor(mad=attrs, makify=True, kind=kind)
+    attrPactor.compact()
+    attrPactor.expand()
+    attrSaid = attrPactor.said
+    attrs = list(attrPactor.partials.values())[0].mad    # since already compact
+    assert attrs == \
+    {
+        'd': 'EHqZ3mypGYGMTe0X0ZB7zYavGCJfCkqEmKj5xzyc7xxQ',
+        'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+        'name': 'Zoe'
+    }
+    assert attrs['d'] == attrSaid
+
+    edges = \
+    {
+        "d": "",
+        "u": "0AwjaDAE0qHcgNghkDaG7OY1",
+        "winner": "EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9",
+        "loser": "EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk"
+    }
+    edgePactor = Compactor(mad=edges, makify=True, kind=kind)
+    edgePactor.compact()
+    edgePactor.expand()
+    edgeSaid = edgePactor.said
+    edges = list(edgePactor.partials.values())[0].mad    # since already compact
+    assert edges == \
+    {
+        'd': 'ECLnO-mApjsPJfY7QWJpKZMRBQcVEXZiyXVa_1QGqFZu',
+        'u': '0AwjaDAE0qHcgNghkDaG7OY1',
+        'winner': 'EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9',
+        'loser': 'EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk'
+    }
+    assert edges['d'] == edgeSaid
+
+    rules = \
+    {
+      "d": "",
+      "u": "0ADaG7OaDAE0qHcgY1Nghkwj",
+      "disclaimers":
+      {
+        "d": "",
+        "u": "0AHcgY1NghkwjDaG7OaDAE0q",
+        "l": "Issuer disclaimers:",
+        "warrantyDisclaimer":
+        {
+          "d": "",
+          "u": "0AG7OY1wjaDAE0qHcgNghkDa",
+          "l": "AS IS"
+        },
+        "liabilityDisclaimer":
+        {
+          "d": "",
+          "u": "0AHcgNghkDaG7OY1wjaDAE0q",
+          "l": "No Liability"
+        }
+      },
+      "permittedUse":
+      {
+        "d": "",
+        "u": "0ADaG7OY1wjaDAE0qHcgNghk",
+        "l": "Non-commercial"
+      }
+    }
+
+    rulePactor = Compactor(mad=rules, makify=True, kind=kind)
+    rulePactor.compact()
+    rulePactor.expand()
+    ruleSaid = rulePactor.said
+    rules = list(rulePactor.partials.values())[1].mad
+    assert rules == \
+    {
+        'd': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-',
+        'u': '0ADaG7OaDAE0qHcgY1Nghkwj',
+        'disclaimers':
+        {
+            'd': 'EGMp181uEcUmi5FXs0ebqEhOyVi27-IDiYdoqe453BRD',
+            'u': '0AHcgY1NghkwjDaG7OaDAE0q',
+            'l': 'Issuer disclaimers:',
+            'warrantyDisclaimer':
+            {
+                'd': 'EO6ekaJYyWfl0Civ2bApVLgCmge43io1KvFCqSPt8Qc5',
+                'u': '0AG7OY1wjaDAE0qHcgNghkDa',
+                'l': 'AS IS'
+            },
+            'liabilityDisclaimer':
+            {
+                'd': 'EDzyrYOaVI3TwLvN-w-pfGyoZfyvV0rslCieRCgXgEF7',
+                'u': '0AHcgNghkDaG7OY1wjaDAE0q',
+                'l': 'No Liability'
+            }
+        },
+        'permittedUse':
+        {
+            'd': 'EBdHlf04DK2w4So61ebgUydOr85YGjP_xkLO-CnEXcsj',
+            'u': '0ADaG7OY1wjaDAE0qHcgNghk',
+            'l': 'Non-commercial'
+        }
+    }
+    assert rules['d'] == ruleSaid
+
+    said = 'EBIdofkjYkm2thryYfwNIrPmNvvhNdnznfo_V68o-QOJ'
+    vs = 'ACDCCAACAACESRAARU.'
+    size = 1108
+
+    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+                       attrs=attrs, edges=edges, rules=rules, kind=kind)
+    assert serder.said == said
+    assert serder.size == size
+    assert serder.sad['v'] == vs
+    assert serder.issuer == issuer
+    assert serder.uuid == uuid
+    assert serder.regid == regid
+    assert serder.issuee == issuee
+    assert serder.schema == schemaSaid
+    assert serder.attrib['d'] == attrSaid
+    assert serder.edge['d'] == edgeSaid
+    assert serder.rule['d'] == ruleSaid
+
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAACESRAARU.',
+        't': 'act',
+        'd': 'EBIdofkjYkm2thryYfwNIrPmNvvhNdnznfo_V68o-QOJ',
+        'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
+        's': 'EE2yz4qmmFzbJEj8olTa7P1J8R1-QvYB9cD9g26WzSjN',
+        'a': {'d': 'EHqZ3mypGYGMTe0X0ZB7zYavGCJfCkqEmKj5xzyc7xxQ',
+              'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
+              'name': 'Zoe'},
+        'e': {'d': 'ECLnO-mApjsPJfY7QWJpKZMRBQcVEXZiyXVa_1QGqFZu',
+              'u': '0AwjaDAE0qHcgNghkDaG7OY1',
+              'winner': 'EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9',
+              'loser': 'EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk'},
+        'r': {'d': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-',
+              'u': '0ADaG7OaDAE0qHcgY1Nghkwj',
+              'disclaimers': {'d': 'EGMp181uEcUmi5FXs0ebqEhOyVi27-IDiYdoqe453BRD',
+                              'u': '0AHcgY1NghkwjDaG7OaDAE0q',
+                              'l': 'Issuer disclaimers:',
+                              'warrantyDisclaimer': {'d': 'EO6ekaJYyWfl0Civ2bApVLgCmge43io1KvFCqSPt8Qc5',
+                                                     'u': '0AG7OY1wjaDAE0qHcgNghkDa',
+                                                     'l': 'AS IS'},
+                              'liabilityDisclaimer': {'d': 'EDzyrYOaVI3TwLvN-w-pfGyoZfyvV0rslCieRCgXgEF7',
+                                                      'u': '0AHcgNghkDaG7OY1wjaDAE0q',
+                                                      'l': 'No Liability'}},
+              'permittedUse': {'d': 'EBdHlf04DK2w4So61ebgUydOr85YGjP_xkLO-CnEXcsj',
+                               'u': '0ADaG7OY1wjaDAE0qHcgNghk',
+                               'l': 'Non-commercial'}
+              }
+    }
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # fully compact version to see if saids are stable
+    cvs = 'ACDCCAACAACESRAAFg.'
+    csize = 352
+
+    serder = attribute(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+                       attrs=attrSaid, edges=edgeSaid, rules=ruleSaid, kind=kind)
+
+    assert serder.said == said  # stable said of compact ACDC same as uncompacted
+    assert serder.size == csize != size  # but size not stable not same as uncompacted
+    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.issuer == issuer
+    assert serder.uuid == uuid
+    assert serder.regid == regid
+    assert serder.issuee == None
+    assert serder.schema == schemaSaid
+    assert serder.attrib == attrSaid
+    assert serder.edge == edgeSaid
+    assert serder.rule == ruleSaid
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAACESRAAFg.',
+        't': 'act',
+        'd': 'EBIdofkjYkm2thryYfwNIrPmNvvhNdnznfo_V68o-QOJ',
+        'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
+        's': 'EE2yz4qmmFzbJEj8olTa7P1J8R1-QvYB9cD9g26WzSjN',
+        'a': 'EHqZ3mypGYGMTe0X0ZB7zYavGCJfCkqEmKj5xzyc7xxQ',
+        'e': 'ECLnO-mApjsPJfY7QWJpKZMRBQcVEXZiyXVa_1QGqFZu',
+        'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
+    }
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    """Done Test"""
 
 
 def test_classic_message():
