@@ -5,9 +5,10 @@ keri.vc.messaging module
 Utility functions for creating ACDC messages of all message types for v2
 
 """
+from collections.abc import Mapping
 
 from ..kering import versify, Protocols, Kinds, Ilks, Vrsn_2_0
-from ..core import Number, Noncer, SerderACDC
+from ..core import Number, Noncer, SerderACDC, Mapper
 from ..help import nowIso8601
 
 def regcept(issuer, *, uuid=None, stamp=None,
@@ -20,7 +21,8 @@ def regcept(issuer, *, uuid=None, stamp=None,
 
     Parameters:
         issuer  (str): qb64 of issuer AID
-        uuid (str|None): qb64 of salty nonce (UUID) if any. None means no UUID
+        uuid (str|None): qb64 of salty nonce (UUID) if any.
+                         None means create random uuid on the fly
         stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                            creation of message. None means use
 
@@ -104,7 +106,207 @@ def update(regid, prior, acdc, state, *, sn=1, stamp=None,
     return SerderACDC(sad=sad, makify=True)
 
 
-def mapACDC(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
+def actSchemaDefault(kind=Kinds.json):
+    """Utility function to create default schema dict for act message
+
+    Returns:
+        tuple(str, dict): of form (said[str], sad[dict]) where,
+            said is computed on default schema with serialization of kind
+            sad is defualt schema with substituted said
+
+
+    Parameters:
+        kind (str): serializaiton kind from Kinds used to compute said
+
+    """
+    mad = \
+    {
+        "$id": "",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ACT Default Schema",
+        "description": "Default JSON Schema for act ACDC.",
+        "credentialType": "ACDC_act_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required":
+        [
+          "v",
+          "d",
+          "u",
+          "i",
+          "rd",
+          "s",
+          "a",
+          "e",
+          "r"
+        ],
+        "properties":
+        {
+            "v":
+            {
+                "description": "ACDC version string",
+                "type": "string"
+            },
+            "d":
+            {
+                "description": "Message SAID",
+                "type": "string"
+            },
+            "u":
+            {
+                "description": "Message UUID",
+                "type": "string"
+            },
+            "i":
+            {
+                "description": "Issuer AID",
+                "type": "string"
+            },
+            "rd":
+            {
+                "description": "Registry SAID",
+                "type": "string"
+            },
+            "s":
+            {
+                "description": "Schema Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Schema Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Schema Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "a":
+            {
+                "description": "Attribute Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Attribute Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Attribute Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "e":
+            {
+                "description": "Edge Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Edge Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Edge Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "r":
+            {
+                "description": "Rule Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Rule Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Rule Section",
+                      "type": "object"
+                    }
+                ]
+            }
+        },
+        "additionalProperties": False
+    }
+
+    mapper = Mapper(mad=mad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    return (mapper.said, mapper.mad)
+
+
+def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
+              issuee=None, edges=None, rules=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field ACDC message of type 'act'
+    for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        issuer  (str): qb64 of issuer AID
+        uuid (str|None): qb64 of salty nonce (UUID) if any.
+                         None means use empty string for value
+        regid (str|None): qb64 of registry SAID if any.
+                             None means use empty string for value
+        schema (str|dict): SAID of schema section or schema section block
+                           None means use default schema for value
+
+        attrs (str|dict|None): SAID of attribute section block
+                                    None means use empty dict for value
+        issuee (str): qb64 of issuee AID if any to insert in attribute section
+                      when attributes is a Mapping.
+                      None means do not insert issuee
+        edges (str|dict|None): SAID of edge section block.
+                               None means use empty dict for value
+        rules (str|dict|None): SAID of rule section block
+                               None means use empty dict for value
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', u='', i='', rd='', s='', a='', e='', r='')
+    opts
+    ()
+
+    ACDC .sad and its serialization .raw. Is whatever in input to the serder. Its
+    degree of compactification is whatever is input to the Serder. In the case of
+    the .raw its the over the wire serialization to be deserialized.
+
+    This is the same semantic as for KERI messages except that for ACDCs the
+    SAIDS and nested SAIDs in ACDCs are calculated using the most compact algorithm.
+    So if the serder gets an uncompacted sad or an uncompated raw, these become
+    .sad and .raw.  These may be a received disclosure or a disclosure
+    to be sent at any stage in a graduated disclosure.  The serialization of
+    the uncompacted sad is special since its said is not literally the said of
+    its  uncompact serialization but is the SAID of its most compact form.
+
+    Essentially makify and verify for ACDCs is different because of most compact
+    SAID computation.
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.act
+    uuid = uuid if uuid is not None else ""
+    regid = regid if regid is not None else ""
+    if schema is None:
+        ssaid, ssad = actSchemaDefault(kind=kind)
+        schema = ssad
+
+    attrs = attrs if attrs is not None else {}
+    if issuee is not None and isinstance(attrs, Mapping):
+        attrs['i'] = issuee
+    edges = edges if edges is not None else {}
+    rules = rules if rules is not None else {}
+
+    sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
+               s=schema, a=attrs, e=edges, r=rules)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def classic(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
             attributes=None, aggregates=None, edges=None, rules=None,
             pvrsn=Vrsn_2_0, gvrsn=None, kind=Kinds.json):  #acedice
     """Utility function to create top-level field map ACDC message of type 'acm'

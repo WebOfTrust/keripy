@@ -782,10 +782,11 @@ class Compactor(Mapper):
     Properties:
         leaves (dict): mapper at each leaf with computed said for leaf as
                              keyed by path to leaf, value is Mapper instance
-        partials (dict): mapper of partially disclosable variants of with
+        partials (dict|None): mapper of partially disclosable variants of with
                                fully computed saids for its leaves.
                                keyed by tuple of leaf paths,
                                value is Mapper instance.
+                             None means have yet to expand
         iscompact (bool|None): True means one leaf with path = '' i.e.
                                         leaf is at top level and has said
                                         but does not verify said
@@ -803,7 +804,7 @@ class Compactor(Mapper):
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
         ._leaves (dict): mad of each leaf indexed by path to leaf
-        ._partials (dict): partially compacted mad with fully computed saids
+        ._partials (dict|None): partially compacted mad with fully computed saids
                            indexd by tuple of leaf paths in mad
 
     """
@@ -844,9 +845,24 @@ class Compactor(Mapper):
             already been extracted from a stream and are self contained
 
         """
-        self._leaves = dict()
-        self._partials = dict()
+        self._leaves = {}
+        self._partials = None
         super(Compactor, self).__init__(saidive=saidive, **kwa)
+
+
+    @property
+    def said(self):
+        """primary said field value if any. None otherwise
+
+        Returns:
+              said (str|None): primary said field value if any. None otherwise
+                               primary has same label as zeroth item in .saids
+        """
+        if self.saids and (self.saidive or self.leaves):
+            l = list(self.saids.keys())[0]  # primary said is zeroth entry in said
+            return self.mad.get(l, None)
+        return None
+
 
 
     @property
@@ -962,13 +978,13 @@ class Compactor(Mapper):
             if saidify:
                 # leafer Mapper makes deepcopy of input mad arg
                 leafer = Mapper(mad=mad, makify=True,
-                                saids=self.saids, saidive=True)
+                                saids=self.saids, saidive=True, kind=self.kind)
                 for l in leafer.saids:  # assign computed saids to original mad
                     if l in mad:
                         mad[l] = leafer.mad[l]
             else:
                 # leafer Mapper makes deepcopy of input mad arg
-                leafer = Mapper(mad=mad, makify=True)
+                leafer = Mapper(mad=mad, makify=True, kind=self.kind)
 
             self.leaves[path] = leafer
 
@@ -1075,9 +1091,8 @@ class Compactor(Mapper):
                 if mad is not None and tail is not None:
                     mad[tail] = leafer.said  # assign primary said to compact
 
-            if self.iscompact:
+            if not paths or self.iscompact:  # either no leaves or compact
                 break
-
 
 
     def expand(self, greedy=True):
@@ -1095,8 +1110,17 @@ class Compactor(Mapper):
             paths.reverse()
 
         used = []  # already expanded paths
-        if "" in paths:  # do not create partial of fully compacted leaf
-            used.append("")
+        if "" in paths:  # create partial of fully compacted leaf
+            path = ""
+            leafer = self.leaves[path]
+            pmad = deepcopy(leafer.mad)  # expand pmad with copy of leafer
+            used.append(path)
+            # don't compute top-level saids on partials
+            partial = Compactor(mad=pmad, makify=True, saidive=False)
+            # don't compute saids on leaves of partials
+            index = partial.trace()  # default saidify == False
+            partial.iscompact
+            self.partials[tuple(index)] = partial
 
         pmad = deepcopy(self.mad)  # partial starts with copy of self.mad
         while unused := oset(paths) - oset(used):  # preserved ordering

@@ -6,7 +6,7 @@ keri.core.serdering module
 import copy
 import json
 from collections import namedtuple
-from collections.abc import Mapping
+from collections.abc import Mapping, Iterable
 from dataclasses import dataclass, asdict, field
 from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
@@ -41,7 +41,7 @@ from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
                      Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
                      Noncer, Labeler)
-from .mapping import Mapper
+from .mapping import Mapper, Compactor
 
 from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
 
@@ -1119,7 +1119,9 @@ class Serder:
 
         # compute saidive digestive field values using raw from sized dummied sad
         raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
-        for label, code in saids.items():  # replace dummied fields with computed digests
+
+        # replace dummied fields with computed digests
+        for label, code in saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
@@ -1463,41 +1465,74 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             sad[l] = ilk
 
-                        case "d"|"p"|"rd"|"b"|"td":  # SAID
+                        case "d"|"p"|"b":  # SAID must not be empty
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
 
-                        case "u":  # UUID salty Nonce
-                            sad[l] = Noncer(qb64b=raw, strip=True).qb64
+                        case "u":  # UUID salty Nonce or empty
+                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
 
-                        case "i":  # AID
+                        case "i":  # AID must not be empty
                             sad[l] = Prefixer(qb64b=raw, strip=True).qb64
 
                         case "n":  # sequence number
                             sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
 
+                        case "rd":  # said or empty
+                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
+
                         case "dt":  # datetime string
                             sad[l] = Dater(qb64b=raw, strip=True).dts
 
-                        case "ts":  # transaction event state string
+                        case "td":  # transaction event acdc said or empty
+                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
+
+                        case "ts":  # transaction event state string or empty
                             sad[l] = Labeler(qb64b=raw, strip=True).text
 
                         case "s":  # schema said, or schema block
-                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+                            if raw[0] == ord(b'-'):  # counter so should be field map
+                                ctr = Counter(qb64b=raw)  # peek at counter
+                                if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                                    # schema field labels not strict
+                                    sad[l] = Mapper(qb64=raw,
+                                                    strip=True,
+                                                    strict=False).mad
+                                else:
+                                    raise DeserializeError(f"Expected Map group"
+                                                       f"got {ctr.name}")
+                            else:
+                                sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "a"|"e"|"r" :  # attribute SAID or attribute block
-                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+                            if raw[0] == ord(b'-'):  # counter so should be field map
+                                ctr = Counter(qb64b=raw)  # peek at counter
+                                if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                                    sad[l] = Mapper(qb64=raw, strip=True).mad
+                                else:
+                                    raise DeserializeError(f"Expected Map group"
+                                                       f"got {ctr.name}")
+                            else:  # may not be empty str
+                                sad[l] = Diger(qb64b=raw, strip=True).qb64
 
                         case "A":  # Aggregate said or Aggregate list of blocks
-                            ctr = Counter(qb64b=raw, strip=True, version=self.gvrsn)
-                            if ctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
-                                raise DeserializeError(f"Expected List group got {ctr.name}")
-                            fs = ctr.count * 4  # frame size since qb64 text mode
-                            frame = raw[:fs]  # extract list frame
-                            raw = raw[fs:]
-                            elements = []
-                            while frame:  # not yet empty
-                                elements.append(Matter(qb64b=frame, strip=True).qb64)
-                            sad[l] = elements
+                            if raw[0] == ord(b'-'):  # counter so should be field map
+                                ctr = Counter(qb64b=raw)  # peek at counter
+                                if ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
+                                    fs = ctr.fullSize
+                                    del raw[:fs]  # consume counter
+                                    gcs = ctr.byteSize()  # content size
+                                    buf = raw[:gcs]
+                                    del raw[:gcs]  # consume counter content
+                                    blocks = []
+                                    while buf:
+                                        blocks.append(Mapper(raw=buf, strip=True).mad)
+                                    sad[l] = blocks
+                                else:
+                                    raise DeserializeError(f"Expected List group"
+                                                       f"got {ctr.name}")
+                            else:
+                                sad[l] = Diger(qb64b=raw, strip=True).qb64
+
 
                         case _:  # if extra fields this is where logic would be
                             raise DeserializeError(f"Unsupported protocol field label"
@@ -1629,7 +1664,6 @@ class Serder:
         raw = bytearray()  # message as qb64
         bdy = bytearray()  # message body as qb64
 
-
         ilks = self.Fields[proto][pvrsn]  # get fields keyed by ilk
 
         if proto == Protocols.keri:
@@ -1654,6 +1688,7 @@ class Serder:
             for l, v in sad.items():  # assumes valid field order & presence
                 match l:  # label
                     case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                        # ignores sad['vs'] field
                         val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
 
                     case "t":  # message type (ilk), already got ilk
@@ -1762,10 +1797,7 @@ class Serder:
 
                 bdy.extend(val)
 
-            raw = bytearray(Counter(Codens.FixBodyGroup,
-                                    count=len(bdy) // 4,
-                                    version=gvrsn).qb64b)
-            raw.extend(bdy)
+            raw = Counter.enclose(qb64=bdy, code=Codens.FixBodyGroup, version=gvrsn)
 
         elif proto == Protocols.acdc:
             ilk = sad.get('t')  # returns None if missing message type (ilk)
@@ -1791,10 +1823,7 @@ class Serder:
                 for l, v in sad.items():  # assumes valid field order & presence
                     pass
 
-                raw = bytearray(Counter(Codens.MapBodyGroup,
-                                        count=len(bdy) // 4,
-                                        version=gvrsn).qb64b)
-                raw.extend(bdy)
+                raw = Counter.enclose(qb64=bdy, code=Codens.MapBodyGroup, version=gvrsn)
 
             else: # top-level fixed field
                 for l, v in sad.items():  # assumes valid field order & presence
@@ -1805,11 +1834,13 @@ class Serder:
                         case "t":  # message type (ilk), already got ilk
                             val = Ilker(ilk=v).qb64b  # assumes same
 
-                        case "d"|"i"|"p"|"u"|"rd"|"b"|"td":  # said or aid
+                        case "d"|"i"|"p"|"b":  # said or aid non-empty
                             val = v.encode()  # already primitive qb64 make qb6b
 
+                        case "u":  # uuid or nonce or empty
+                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
-                        case "u":  # uuid or nonce
+                        case "rd":  # registry said or empty
                             val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
                         case "n":  # sequence number
@@ -1818,24 +1849,43 @@ class Serder:
                         case "dt":  # iso datetime
                             val = Dater(dts=v).qb64b  # dts to qb64b
 
+                        case "td":  # transaction event acdc said or empty
+                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
+
                         case "ts":  # transaction event state string
                             val = Labeler(text=v).qb64b  # convert text to qb64b
 
                         case "s":  # schema said or block
-                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+                            if isinstance(v, Mapping):  # assumes valid said
+                                val = Mapper(mad=v, strict=False).qb64b
+                            else:  # said but may not be empty
+                                if not v:  # schema as said must not be empty
+                                    raise SerializeError(f"Invalid section={l} "
+                                                         f"empty said")
+                                val = Diger(qb64=v).qb64b
 
-                        case "a"|"e"|"r" :  # said or block
-                            val = v.encode("utf-8")  # already primitive qb64 make qb6b
+                        case "a"|"e"|"r" :  # said or block, block may be empty
+                            if isinstance(v, Mapping):
+                                val = Mapper(mad=v).qb64b
+                            else:  # said but may not be empty
+                                if not v:  # section as said must not be empty
+                                    raise SerializeError(f"Invalid section={l} "
+                                                         f"empty said")
+                                val = Diger(qb64=v).qb64b
 
-                        case "A":  # list of blocks
-                            frame = bytearray()
-                            for e in v:  # list
-                                frame.extend(Mapper(mad=e).qb64b)
+                        case "A":  # aggregate or list of blocks list may be empty
+                            if isinstance(v, list):
+                                frame = bytearray()
+                                for e in v:  # list of blocks
+                                    frame.extend(Mapper(mad=e).qb64b)
 
-                            val = bytearray(Counter(Codens.GenericListGroup,
-                                                    count=len(frame) // 4,
-                                                    version=gvrsn).qb64b)
-                            val.extend(frame)
+                                val = Counter.enclose(qb64=frame,
+                                                      code=Codens.GenericListGroup)
+                            else:  # said but may not be empty
+                                if not v:  # aggregate as said must not be empty
+                                    raise SerializeError(f"Invalid section={l} "
+                                                         f"empty said")
+                                val = val = Diger(qb64=v).qb64b
 
                         case _:  # if extra fields this is where logic would be
                             raise SerializeError(f"Unsupported protocol field label"
@@ -1844,10 +1894,7 @@ class Serder:
 
                     bdy.extend(val)
 
-                raw = bytearray(Counter(Codens.FixBodyGroup,
-                                        count=len(bdy) // 4,
-                                        version=gvrsn).qb64b)
-                raw.extend(bdy)
+                raw = Counter.enclose(qb64=bdy, code=Codens.FixBodyGroup, version=gvrsn)
 
         else:
             raise SerializeError(f"Unsupported protocol={self.proto}.")
@@ -2532,7 +2579,7 @@ class SerderACDC(Serder):
            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
         """
         try:
-            return self.attrib.get['i']
+            return self.attrib.get('i')
         except:
             return None
 
@@ -2705,27 +2752,119 @@ class SerderACDC(Serder):
 
 
         """
-        # assumes sad['v'] sad said fields are fully dummied at this point
-
-        if self.kind in (Kinds.json, Kinds.cbor, Kinds.mgpk):  # sizify version string
+        # assumes sad['v'] vesion string vield and top-level sad said fields
+        # not including section fields are fully dummied at this point
+        if self.kind != Kinds.cesr:  # non-native so sizify version string
             raw = self.dumps(sad, self.kind)  # get size of sad with fully dummied vs and saids
             size = len(raw)
 
             # generate version string with correct size
-            vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind, size=size, gvrsn=self.gvrsn)
+            vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                                 size=size, gvrsn=self.gvrsn)
             sad["v"] = vs  # update version string in sad
-            # now have correctly sized version string in sad
+            # now have correctly sized version string in sad for non-native
+        # else: vs ignored for native cesr for now
 
-        # compute saidive digestive field values using raw from sized dummied sad
-        raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
-        for label, code in saids.items():  # replace dummied fields with computed digests
+        if (self.pvrsn.major >= 2 and self.ilk in
+                (Ilks.acm, Ilks.act, Ilks.acg, Ilks.ace, None)):  # compactable
+            # compactable so fixup saids and size
+            csad = copy.deepcopy(sad)  # make copy to compute most compact sad
+
+            for l in ("s", "a", "e", "r", "A"):
+                if v := csad.get(l, None):  # field exists and is not empty
+                    sector = None
+                    if isinstance(v, Mapping):  # v is non-empty mapping
+                        # compact to its most compact said
+                        match l:
+                            case 's':  # schema is only top-level said
+                                sector = Compactor(mad=v,
+                                                    makify=True,
+                                                    strict=False,
+                                                    saids={"$id": 'E',},
+                                                    kind=self.kind)
+
+
+                            case 'a' | 'e' | 'r':
+                                sector = Compactor(mad=v,
+                                                   makify=True,
+                                                  kind=self.kind)
+                                sector.compact()
+
+                    elif isinstance(v, Iterable):  # v is non-empty iterable
+                        match l:
+                            case 'A':  # aggregator
+                                pass  # ToDo create Aggregator instance from list
+
+                    if sector is not None:
+                        said = sector.said
+                        if said:
+                            csad[l] = said
+
+
+            # Most compact size fixup in vs
+            if self.kind != Kinds.cesr:  # not native so fixup vs
+                # use size from most compact raw so stable said as most compact
+                raw = self.dumps(csad, kind=self.kind)
+                csize = len(raw)
+                vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                                     size=csize, gvrsn=self.gvrsn)
+                csad["v"] = vs  # update version string in sad
+
+            # reserialize using sized, dummied, and fixed up
+            raw = self.dumps(csad, kind=self.kind)
+
+        elif (self.pvrsn.major >= 2 and self.ilk in
+                (Ilks.sch, Ilks.att, Ilks.agg, Ilks.edg, Ilks.rul)):  # partial sections
+            # verify embedded section saids are most compact
+            csad = copy.deepcopy(sad)  # make copy to compute most compact sad
+
+            for l in ("s", "a", "e", "r", "A"):
+                if v := csad.get(l, None):  # field exists and is not empty
+                    sector = None
+                    if isinstance(v, Mapping):  # v is non-empty mapping
+                        # verify embedded most compact saids
+                        match l:
+                            case 's':  # schema is only top-level said $id
+                                sector = Compactor(mad=v,
+                                                      makify=True,
+                                                      strict=False,
+                                                      saids={"$id": 'E',},
+                                                      kind=self.kind)
+                                slabel ='$id'
+
+
+                            case 'a' | 'e' | 'r':
+                                sector = Compactor(mad=v,
+                                                      makify=True,
+                                                      kind=self.kind)
+                                sector.compact()
+                                slabel ='d'
+
+                        said = sector.said
+                        if v.get(slabel) != said:
+                            raise InvalidValueError(f"Invalid section {said=} "
+                                                    f"in section message")
+                    elif isinstance(v, Iterable):  # v is non-empty iterable
+                        match l:
+                            case 'A':  # aggregator
+                                pass  # ToDo create Aggregator instance from list
+
+                        # verify exposed elements in v versus Aggregator
+
+        else:  # non-compactable, no need to fixup
+            # compute saidive digestive field values using raw from sized dummied sad
+            raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+
+        # replace dummied said fields at top level of sad with computed digests
+        for label, code in saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 sad[label] = Diger(ser=raw, code=code).qb64
 
-        # Now reserialize raw with undummied field values
+        # Now reserialize raw with undummied said and unfixed up uncompact sections
         raw = self.dumps(sad, kind=self.kind)  # assign final raw
 
-        if self.kind == Kinds.cesr:# cesr kind version string does not set size
+        if self.kind == Kinds.cesr:# cesr native serialization does not use vs
+            # but want vs to have real size so fixup here
             size = len(raw) # size of whole message
             sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn,
                                kind=self.kind, size=size, gvrsn=self.gvrsn)
