@@ -347,7 +347,7 @@ def test_attribute_message_json():
 
 
     # Test Defaults  kind=json
-    said = 'EOR-sLOPrmv95_ZfBYrIapqTT-Re85FWTI9nYJZftqT5'
+    said = 'EPNnyM5DyYNX3yA9938XM2o6gvy7QLI76oi0GWg9kpe_'
     serder = attribute(issuer=issuer)  # defaults
     assert serder.said == said
     assert serder.issuer == issuer
@@ -358,7 +358,7 @@ def test_attribute_message_json():
     assert serder.size == 1441
 
     # Test with uuid and issuee and otherwise defaults
-    said = 'ECfABuzokafIpRrE4impKaOJag3SDxLmVffqybwdH_X7'
+    said = 'EJbCkz3h0cvSQRadPSRj649w8ixrPYM5ejtdwurhrB6U'
     serder = attribute(issuer=issuer, uuid=uuid, issuee=issuee)
     assert serder.said == said
     assert serder.issuer == issuer
@@ -471,7 +471,7 @@ def test_attribute_message_json():
     }
     assert rules['d'] == ruleSaid
 
-    said = 'EOilTAfOOWiIzVU9mFmgEeOaLao-H4-1JsYjrbP56_0E'
+    said = 'EIBWIQW5U13qgm1jJN8Yu7OEanXnV0iwappQ5qk4Z9a0'
     vs = 'ACDCCAACAAJSONAARj.'
     size = 1123
 
@@ -492,7 +492,7 @@ def test_attribute_message_json():
     {
         'v': 'ACDCCAACAAJSONAARj.',
         't': 'act',
-        'd': 'EOilTAfOOWiIzVU9mFmgEeOaLao-H4-1JsYjrbP56_0E',
+        'd': 'EIBWIQW5U13qgm1jJN8Yu7OEanXnV0iwappQ5qk4Z9a0',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': '',
@@ -542,7 +542,7 @@ def test_attribute_message_json():
     {
         'v': 'ACDCCAACAAJSONAAF-.',
         't': 'act',
-        'd': 'EOilTAfOOWiIzVU9mFmgEeOaLao-H4-1JsYjrbP56_0E',
+        'd': 'EIBWIQW5U13qgm1jJN8Yu7OEanXnV0iwappQ5qk4Z9a0',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': '',

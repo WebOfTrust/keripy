@@ -1586,7 +1586,7 @@ class Serder:
 
 
 
-    def dumps(self, sad=None, kind=Kinds.json, zeroify=False):
+    def dumps(self, sad=None, kind=Kinds.json):
         """Method to handle serialization by kind
         Assumes sad fields are properly filled out for serialization kind.
 
@@ -1598,9 +1598,6 @@ class Serder:
                               If None use self.sad
             kind (str): value of Serials (Serialage) serialization kind
                 "JSON", "MGPK", "CBOR", "CESR"
-            zeroify (bool): True means use a zero size of message counter for
-                               compactable ilks so stable top-level said
-                            False otherwise
 
         Notes:
             dumps of json uses str whereas dumps of cbor and msgpack use bytes
@@ -1622,7 +1619,7 @@ class Serder:
             raw = cbor.dumps(sad)
 
         elif kind == Kinds.cesr:  # _dumps returns bytes qb64b
-            raw = self._dumps(sad, zeroify=zeroify)
+            raw = self._dumps(sad)
 
         else:
             raise SerializeError(f"Invalid serialization kind = {kind}")
@@ -1630,7 +1627,7 @@ class Serder:
         return raw
 
 
-    def _dumps(self, sad=None, zeroify=False):
+    def _dumps(self, sad=None):
         """CESR native serialization of sad in qb64b text domain bytes
 
         Returns:
@@ -1639,10 +1636,6 @@ class Serder:
         Parameters:
             sad (dict|None)): serializable dict to serialize
                               If None use self.sad
-            zeroify (bool): True means use a zero size of message counter for
-                               compactable ilks so stable top-level said
-                            False otherwise
-
 
         Versioning:
             CESR native serialization includes in its fixed version field
@@ -1892,11 +1885,7 @@ class Serder:
 
                     bdy.extend(val)
 
-                if zeroify:
-                    count = 0
-                else:
-                    count = len(bdy) // 4
-
+                count = len(bdy) // 4
                 raw = bytearray(Counter(Codens.FixBodyGroup,
                                         count=count,
                                         version=gvrsn).qb64b)
@@ -2780,12 +2769,6 @@ class SerderACDC(Serder):
         else:  # compactable so need to fixup
             # Most compact said fixup
             csad = copy.deepcopy(sad)  # make copy to compute most compact sad
-            # Most compact size fixup in vs
-            if self.kind != Kinds.cesr:  # not native so fixup vs
-                # use size == 0 so said on most compact is stable
-                vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
-                                     size=0, gvrsn=self.gvrsn)
-                csad["v"] = vs  # update version string in sad
 
             for l in ("s", "a", "e", "r"):
                 if v := csad.get(l, None):  # field exists and is not empty
@@ -2809,8 +2792,17 @@ class SerderACDC(Serder):
                         if said:
                             csad[l] = said
 
+            # Most compact size fixup in vs
+            if self.kind != Kinds.cesr:  # not native so fixup vs
+                # use size from most compact raw so stable said as most compact
+                raw = self.dumps(csad, kind=self.kind)
+                csize = len(raw)
+                vs = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                                     size=csize, gvrsn=self.gvrsn)
+                csad["v"] = vs  # update version string in sad
+
             # reserialize using sized, dummied, and fixed up
-            raw = self.dumps(csad, kind=self.kind, zeroify=True)
+            raw = self.dumps(csad, kind=self.kind)
 
         # replace dummied said fields at top level of sad with computed digests
         for label, code in saids.items():
