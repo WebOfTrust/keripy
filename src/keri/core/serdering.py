@@ -1852,24 +1852,31 @@ class Serder:
                         case "s":  # schema said or block
                             if isinstance(v, Mapping):  # assumes valid said
                                 val = Mapper(mad=v).qb64b
-                            else:  # said but may be empty
+                            else:  # said but may not be empty
                                 if not v:  # schema must not be empty
-                                    raise SerializeError(f"Empty schema")
-                                val = Noncer(nonce=v).qb64b
+                                    raise SerializeError(f"Invalid empty said")
+                                val = Diger(qb64=v).qb64b
 
-                        case "a"|"e"|"r" :  # said or block
-                            if isinstance(v, Mapping):  # assumes valid said
+                        case "a"|"e"|"r" :  # said or block, block may be empty
+                            if isinstance(v, Mapping):
                                 val = Mapper(mad=v).qb64b
-                            else:  # said but may be empty
-                                val = Noncer(nonce=v).qb64b
+                            else:  # said but may not be empty
+                                if not v:  # schema must not be empty
+                                    raise SerializeError(f"Invalid empty said")
+                                val = Diger(qb64=v).qb64b
 
-                        case "A":  # list of blocks
-                            frame = bytearray()
-                            for e in v:  # list of blocks
-                                frame.extend(Mapper(mad=e).qb64b)
+                        case "A":  # aggregate or list of blocks list may be empty
+                            if isinstance(v, list):
+                                frame = bytearray()
+                                for e in v:  # list of blocks
+                                    frame.extend(Mapper(mad=e).qb64b)
 
-                            val = Counter.enclose(qb64=frame,
-                                                  code=Codens.GenericListGroup)
+                                val = Counter.enclose(qb64=frame,
+                                                      code=Codens.GenericListGroup)
+                            else:  # said but may not be empty
+                                if not v:  # schema must not be empty
+                                    raise SerializeError(f"Invalid empty said")
+                                val = val = Diger(qb64=v).qb64b
 
                         case _:  # if extra fields this is where logic would be
                             raise SerializeError(f"Unsupported protocol field label"
