@@ -2760,14 +2760,9 @@ class SerderACDC(Serder):
             # now have correctly sized version string in sad for non-native
         # else: vs ignored for native cesr for now
 
-
-        if self.pvrsn.major < 2 or self.ilk in (Ilks.rip, Ilks.bup, Ilks.upd):
-            # non-compactable
-            # compute saidive digestive field values using raw from sized dummied sad
-            raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
-
-        else:  # compactable so need to fixup
-            # Most compact said fixup
+        if (self.pvrsn.major >= 2 and self.ilk in
+                (Ilks.acm, Ilks.act, Ilks.acg, Ilks.ace, None)):  # compactable
+            # compactable so fixup saids and size
             csad = copy.deepcopy(sad)  # make copy to compute most compact sad
 
             for l in ("s", "a", "e", "r"):
@@ -2776,16 +2771,16 @@ class SerderACDC(Serder):
                         match l:
                             case 's':  # schema is only top-level said
                                 compactor = Compactor(mad=v,
-                                                   makify=True,
-                                                   strict=False,
-                                                   saids={"$id": 'E',},
-                                                   kind=self.kind)
+                                                              makify=True,
+                                                           strict=False,
+                                                           saids={"$id": 'E',},
+                                                           kind=self.kind)
 
 
                             case 'a' | 'e' | 'r':
                                 compactor = Compactor(mad=v,
-                                                      makify=True,
-                                                      kind=self.kind)
+                                                              makify=True,
+                                                              kind=self.kind)
 
                         compactor.compact()
                         said = compactor.said
@@ -2803,6 +2798,10 @@ class SerderACDC(Serder):
 
             # reserialize using sized, dummied, and fixed up
             raw = self.dumps(csad, kind=self.kind)
+
+        else:  # non-compactable, no need to fixup
+            # compute saidive digestive field values using raw from sized dummied sad
+            raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
 
         # replace dummied said fields at top level of sad with computed digests
         for label, code in saids.items():
