@@ -20,6 +20,7 @@ import pysodium
 from hio.base import doing
 
 from keri import kering
+from keri.app.keeping import Keeper
 from keri.help import helping
 
 from keri import core
@@ -27,7 +28,7 @@ from keri import core
 from keri.core import coring, indexing
 from keri.core.indexing import IdrDex
 
-from keri.app import keeping
+from keri.app import keeping, configing
 
 
 def test_dataclasses():
@@ -2007,6 +2008,19 @@ def test_manager_sign_dual_indices():
     assert not os.path.exists(manager.ks.path)
     assert not manager.ks.opened
     """End Test"""
+
+
+def test_keeper_config_with_file():
+    cf = configing.Configer()
+    configDict = dict(
+        keeper=dict(
+            mapSize="1_073_741_824"
+        )
+    )
+    cf.put(configDict)
+
+    keeper = Keeper(reopen=True,cf=cf)  # default is to not reopen
+    assert keeper.mapSize == 1_073_741_824, "Map Size should be 1GB"  # 1024*1024*1024 = 1GB
 
 if __name__ == "__main__":
     test_manager_sign_dual_indices()
