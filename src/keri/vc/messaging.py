@@ -131,6 +131,7 @@ def actSchemaDefault(kind=Kinds.json):
         "required":
         [
           "v",
+          "t",
           "d",
           "u",
           "i",
@@ -145,6 +146,11 @@ def actSchemaDefault(kind=Kinds.json):
             "v":
             {
                 "description": "ACDC version string",
+                "type": "string"
+            },
+            "t":
+            {
+                "description": "Message type",
                 "type": "string"
             },
             "d":
@@ -236,8 +242,8 @@ def actSchemaDefault(kind=Kinds.json):
     return (mapper.said, mapper.mad)
 
 
-def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
-              issuee=None, edges=None, rules=None,
+def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
+              issuee=None, edge=None, rule=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field ACDC message of type 'act'
     for ACDC protocol v2.
@@ -254,14 +260,15 @@ def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
         schema (str|dict): SAID of schema section or schema section block
                            None means use default schema for value
 
-        attrs (str|dict|None): SAID of attribute section block
+        attribute (str|dict|None): SAID of attribute section or dict of
+                                   attribute section block
                                     None means use empty dict for value
         issuee (str): qb64 of issuee AID if any to insert in attribute section
                       when attributes is a Mapping.
                       None means do not insert issuee
-        edges (str|dict|None): SAID of edge section block.
+        edge (str|dict|None): SAID of edge section or dict of edge section block
                                None means use empty dict for value
-        rules (str|dict|None): SAID of rule section block
+        rule (str|dict|None): SAID of rule section or dict of rule section block
                                None means use empty dict for value
         pvrsn (Versionage): ACDC protocol version number
         gvrsn (Versionage): CESR Genus version number.
@@ -295,20 +302,264 @@ def attribute(issuer, uuid=None, regid=None, schema=None, attrs=None,
         ssaid, ssad = actSchemaDefault(kind=kind)
         schema = ssad
 
-    attrs = attrs if attrs is not None else {}
-    if issuee is not None and isinstance(attrs, Mapping):
-        attrs['i'] = issuee
-    edges = edges if edges is not None else {}
-    rules = rules if rules is not None else {}
+    attribute = attribute if attribute is not None else {}
+    if issuee is not None and isinstance(attribute, Mapping):
+        attribute['i'] = issuee
+    edge = edge if edge is not None else {}
+    rule = rule if rule is not None else {}
 
     sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
-               s=schema, a=attrs, e=edges, r=rules)
+               s=schema, a=attribute, e=edge, r=rule)
     return SerderACDC(sad=sad, makify=True)
 
 
-def classic(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
-            attributes=None, aggregates=None, edges=None, rules=None,
-            pvrsn=Vrsn_2_0, gvrsn=None, kind=Kinds.json):  #acedice
+def schema(schema, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field schema section message
+    of type 'sch' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        schema (str|dict): SAID of schema section or schema section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', s='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.sch
+    sad = dict(v=vs, t=ilk, d='', s=schema)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def attribute(attribute, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field attribute section message
+    of type 'att' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        attribute (str|dict): SAID of attribute section or attribute section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', a='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.att
+    sad = dict(v=vs, t=ilk, d='', a=attribute)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def edge(edge, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field edge section message
+    of type 'edg' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        edge (str|dict): SAID of edge section or edge section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', e='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.edg
+    sad = dict(v=vs, t=ilk, d='', e=edge)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def rule(rule, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field edge section message
+    of type 'rul' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        rule (str|dict): SAID of rule section or rule section block
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', r='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.rul
+    sad = dict(v=vs, t=ilk, d='', r=rule)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def acmSchemaDefault(kind=Kinds.json):
+    """Utility function to create default schema dict for acm message
+
+    Returns:
+        tuple(str, dict): of form (said[str], sad[dict]) where,
+            said is computed on default schema with serialization of kind
+            sad is default schema with substituted said
+
+
+    Parameters:
+        kind (str): serializaiton kind from Kinds used to compute said
+
+    alls= (v='', t='', d='', u='', i='', rd='', s='', a='', A='', e='', r=''),
+    opts= (t='', u='', rd='', a='', A='', e='', r=''),
+    alts= (a="A", A="a"),
+    """
+    mad = \
+    {
+        "$id": "",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ACM Default Schema",
+        "description": "Default JSON Schema for acm ACDC.",
+        "credentialType": "ACDC_acm_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required":
+        [
+          "v",
+          "d",
+          "i",
+          "s"
+        ],
+        "properties":
+        {
+            "v":
+            {
+                "description": "ACDC version string",
+                "type": "string"
+            },
+            "t":
+            {
+                "description": "Message type",
+                "type": "string"
+            },
+            "d":
+            {
+                "description": "Message SAID",
+                "type": "string"
+            },
+            "u":
+            {
+                "description": "Message UUID",
+                "type": "string"
+            },
+            "i":
+            {
+                "description": "Issuer AID",
+                "type": "string"
+            },
+            "rd":
+            {
+                "description": "Registry SAID",
+                "type": "string"
+            },
+            "s":
+            {
+                "description": "Schema Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Schema Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Schema Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "a":
+            {
+                "description": "Attribute Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Attribute Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Attribute Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "A":
+            {
+                "description": "Attribute Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Aggregate Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Aggregate Section",
+                      "type": "array"
+                    }
+                ]
+            },
+            "e":
+            {
+                "description": "Edge Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Edge Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Edge Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "r":
+            {
+                "description": "Rule Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Rule Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Rule Section",
+                      "type": "object"
+                    }
+                ]
+            }
+        },
+        "additionalProperties": False
+    }
+
+    mapper = Mapper(mad=mad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    return (mapper.said, mapper.mad)
+
+
+def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
+            attribute=None, issuee=None, aggregate=None, edge=None, rule=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level field map ACDC message of type 'acm'
     for ACDC protocol v2.
 
@@ -317,39 +568,41 @@ def classic(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
 
     Parameters:
         issuer  (str): qb64 of issuer AID
+        ilk  (str|None): message type of Ilks. Default include field value 'acm'
+                          None means do not include field
+        uuid (str|None): qb64 of salty nonce (UUID) if any.
+                         None means do not include field
+        regid (str|None): qb64 of registry SAID if any.
+                             None means do not include field
         schema (str|dict): SAID of schema section or schema section block
-        ilk (str|None): message type as 3 char str or None if not present
-        issuee (str): qb64 of issuee AID if any. None means no issuee
-        nonce (str|None): qb64 of salty nonce (UUID) if any. None means no UUID
-        registry (str|None): qb64 of registry SAID if any. None means no registry
-        attributes (str|dict|None): SAID of attribute section block or None if
-                                    not present
-        aggregates (str|dict|None): SAID of aggregate section list or None if
-                                    not present
-        edges (str|dict|None): SAID of edge section block or None if
-                                    not present
-        rules (str|dict|None): SAID of rule section block or None if
-                                    not present
+                           None means use default schema for value
+        attribute (str|dict|None): SAID of attribute section or dict of
+                                   attribute section block
+                                    None means do not include field
+                                    either attribute or aggregate is required
+        issuee (str): qb64 of issuee AID if any to insert in attribute section
+                      when attributes is a Mapping.
+                      None means do not insert issuee
+        aggregate (str|list|None): SAID of aggregate section or list of
+                                   aggregate element blocks
+                                   None means do not include field
+                                   either attribute or aggregate is required
+        edge (str|dict|None): SAID of edge section or dict of edge section block
+                               None means do not include field
+        rule (str|dict|None): SAID of rule section or dict of rule section block
+                               None means do not include field
         pvrsn (Versionage): ACDC protocol version number
-        gvrsn (Versionage|None): CESR Genus version number. None means default
-                                 to pvrsn
+        gvrsn (Versionage): CESR Genus version number.
         kind (str): serialization kind from Kinds
 
-
-
-    all
-    (v='', d='', u='', i='', rd='', s='', a={}, A=[], e={}, r={}),
-    opts
-    (u='', rd='', a='', A='', e='', r='')
-
-    So check that Serder reorders fields so in right order so this function
-    can conditionally add optional fields in other order or either way
-    could follow order but put if conditions on optional fields
-
+    alls= (v='', t='', d='', u='', i='', rd='', s='', a='', A='', e='', r=''),
+    opts= (t='', u='', rd='', a='', A='', e='', r=''),
+    alts= (a="A", A="a"),
 
     ACDC .sad and its serialization .raw. Is whatever in input to the serder. Its
     degree of compactification is whatever is input to the Serder. In the case of
     the .raw its the over the wire serialization to be deserialized.
+
     This is the same semantic as for KERI messages except that for ACDCs the
     SAIDS and nested SAIDs in ACDCs are calculated using the most compact algorithm.
     So if the serder gets an uncompacted sad or an uncompated raw, these become
@@ -358,101 +611,43 @@ def classic(issuer, schema, ilk=None, issuee=None, nonce=None, registry=None,
     the uncompacted sad is special since its said is not literally the said of
     its  uncompact serialization but is the SAID of its most compact form.
 
-    ACDC .csad and its serialization .craw is the most compact sad and raw
-    respectively. This must be generated in order to compute the SAID of the ACDC,
-    as well the SAIDs of any nested parts of the uncompacted sad regardless of
-    degree of compactness. The most compact SAID is the one that is anchored in
-    its TEL. The most compact said is literally the said of .csad computed via
-    the most compact serialization .craw
-
-    So need to hoist serder SAID calculation code to own method so ACDC can
-    override SAID calculation with most compact variant SAID calculation.
-    For ACDC, its .sad SAID is the most compact SAID at result of most compact
-    calculation. Therefor to generate .sad take given sad and then perform most
-    compact algorithm and then assign to .sad
-
-    so makify and verify for ACDCs is different because of most compact SAID
-
-
+    Essentially makify and verify for ACDCs is different because of most compact
+    SAID computation.
     """
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.acm if ilk is not None else None  # must be Ilk.acm or None
+    if schema is None:
+        ssaid, ssad = acmSchemaDefault(kind=kind)
+        schema = ssad
 
-    sad = dict()
+    if issuee is not None and isinstance(attribute, Mapping):
+        attribute['i'] = issuee
 
+    if ((attribute is not None and aggregate is not None) or
+            (attribute is None and aggregate is None)):
+        raise ValueError(f"Either one or the other but not both of attribute "
+                         f"and aggregate is required")
 
-    ilk = Ilks.acm
+    sad = dict(v=vs)
+    if ilk is not None:
+        sad['t'] = ilk
+    sad['d'] = ''
+    if uuid is not None:
+        sad['u'] = uuid
+    sad['i'] = issuer
+    if regid is not None:
+        sad['rd'] = regid
+    sad['s'] = schema
+    if attribute is not None:
+        sad['a'] = attribute
+        if isinstance(attribute, Mapping):
+            if issuee is not None:
+                sad['a']['i'] = issuee
+    if aggregate is not None:
+        sad['A'] = aggregate
+    if edge is not None:
+        sad['e'] = edge
+    if rule is not None:
+        sad['r'] = rule
 
-
-    tholder = Tholder(sith=isith)
-    if tholder.num is not None and tholder.num < 1:
-        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
-    if tholder.size > len(keys):
-        raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
-
-    if ndigs is None:
-        ndigs = []
-
-    if nsith is None:
-        nsith = max(0, ceil(len(ndigs) / 2))
-
-    ntholder = Tholder(sith=nsith)
-    if ntholder.num is not None and ntholder.num < 0:
-        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
-    if ntholder.size > len(ndigs):
-        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {ndigs}")
-
-
-    wits = wits if wits is not None else []
-    if len(oset(wits)) != len(wits):
-        raise ValueError(f"Invalid wits = {wits}, has duplicates.")
-
-    if toad is None:
-        if not wits:
-            toad = 0
-        else:  # compute default f and m for len(wits)
-            toad = ample(len(wits))
-    toader = Number(num=toad)
-
-    if wits:
-        if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
-            raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
-    else:
-        if toader.num != 0:  # invalid toad
-            raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
-
-    cnfg = cnfg if cnfg is not None else []
-
-    data = data if data is not None else []
-    if not isinstance(data, list):
-        raise ValueError(f"Expected list got {data=}")
-
-    ked = dict(v=vs,  # version string
-               t=ilk,
-               d="",   # qb64 SAID
-               i="",  # qb64 prefix
-               s=sner.numh,  # hex string no leading zeros lowercase
-               kt=(tholder.num if intive and tholder.num is not None and
-                   tholder.num <= MaxIntThold else tholder.sith),
-               k=keys,  # list of qb64
-               nt=(ntholder.num if intive and ntholder.num is not None and
-                   ntholder.num <= MaxIntThold else ntholder.sith),
-               n=ndigs,  # list of hashes qb64
-               bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
-               b=wits,  # list of qb64 may be empty
-               c=cnfg,  # list of config ordered mappings may be empty
-               a=data,  # list of seal dicts
-               )
-
-    pre = ""
-    saids = None
-    if delpre is not None:  # delegated inception with ilk = dip
-        ked['di'] = delpre  # SerderKERI .verify will ensure valid prefix
-    else:  # non delegated
-        if (code is None or code not in DigDex) and len(keys) == 1:  # use key[0] as default
-            ked["i"] = keys[0]  # SerderKERI .verify will ensure valid prefix
-
-    if code is not None and code in PreDex:  # use code to override all else
-        saids = {'i': code}
-
-    serder = serdering.SerderKERI(sad=ked, makify=True, saids=saids)
-    return serder
+    return SerderACDC(sad=sad, makify=True)
