@@ -5,7 +5,7 @@ keri.core.serdering module
 """
 import copy
 import json
-from collections import namedtuple
+from collections import namedtuple, deque
 from collections.abc import Mapping, Iterable
 from dataclasses import dataclass, asdict, field
 from base64 import urlsafe_b64decode as decodeB64
@@ -37,7 +37,7 @@ from ..help import NonStringIterable
 
 
 from . import coring
-from .coring import (MtrDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
+from .coring import (MtrDex, LabelDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
                      Saids,  Digestage, NonceDex)
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
                      Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
@@ -1186,10 +1186,10 @@ class Serder:
                 if strip and isinstance(raw, bytearray):
                     del raw[:size]
 
-            else:
+            else:  # CESR so peek at counter to get size, can assume gvrsn >=2
                 if cold == Colds.bny:
-                    counter = Counter(qb2=raw)
-                    ss = counter.byteCount(cold=cold) + counter.byteSize(cold=cold)
+                    ctr = Counter(qb2=raw)
+                    ss = ctr.byteCount(cold=cold) + ctr.byteSize(cold=cold)
                     if len(raw) < ss:
                         raise ShortageError(f"Not enough raw bytes for serder")
                     sraw = raw[:ss]  # only copy enough bytes for serder
@@ -1197,8 +1197,8 @@ class Serder:
                         del raw[:ss]
                     sraw = encodeB64(raw)  # loads expects Base64 text domain
                 elif cold == Colds.txt:
-                    counter = Counter(qb64b=raw)
-                    ss = counter.byteCount(cold=cold) + counter.byteSize(cold=cold)
+                    ctr = Counter(qb64b=raw)
+                    ss = ctr.byteCount(cold=cold) + ctr.byteSize(cold=cold)
                     if len(raw) < ss:
                         raise ShortageError(f"Not enough raw bytes for serder")
                     sraw = raw[:ss]  # only copy enough bytes for serder
@@ -1207,9 +1207,26 @@ class Serder:
                 else:
                     raise ValueError(f"Invalid {cold=} for Serder raw")
 
-                size = len(sraw)
+                size = len(sraw)  # sraw is now in text domain
                 kind = Kinds.cesr
-                proto, pvrsn, gvrsn = Verser(qb64b=sraw[counter.fullSize:]).versage
+
+                # Peek at version field based on fixed field  or field map
+                # Because its CESR we know pvrsn/gvrsn >= 2.0. We can assume
+                # that the FixBodyGroup and MapBodyGroup codes in MUDex_2_0 and
+                # primitive codes for Verser in MtrDex) and Labeler in LabelDex)
+                # will all be stable  for pvrsn/gvrsn >= 2.0
+                if ctr.code in (MUDex_2_0.FixBodyGroup, MUDex_2_0.BigFixBodyGroup):
+                    offset = ctr.fullSize  # offset to verser
+
+                elif ctr.code in (MUDex_2_0.MapBodyGroup, MUDex_2_0.BigMapBodyGroup):
+                    offset = ctr.fullSize
+                    labeler = Labeler(qb64b=sraw[offset:])
+                    offset += labeler.fullSize
+
+                else:
+                    raise ValueError(f"Invalid cesr body group code={ctr.code}")
+
+                proto, pvrsn, gvrsn = Verser(qb64b=sraw[offset:]).versage
 
         self._proto = proto
         self._pvrsn = pvrsn
@@ -1300,14 +1317,16 @@ class Serder:
         # assumes that .proto, .kind, .size, .pvrsn, .gvrsn set above in
         # .inhale with passed in smellage
         sad = {}
-        # make copy so strip here does not collide with .__init__ strip
+
         if size is None:
             size = len(raw)
-        raw = bytearray(raw[:size])  # extract full message from raw as bytearray
+        # make copy of raw so strip here does not collide with .__init__ strip
+        raw = bytearray(raw[:size])  # copy out full message from raw into message raw
 
         # consume body ctr
         bctr = Counter(qb64b=raw, strip=True, version=self.gvrsn) # gvrsn from smellage
-        # assign fixed
+
+        # assign fixed based on code
         if (bctr.code in (self.mucodes.FixBodyGroup,
                           self.mucodes.BigFixBodyGroup)):
             fixed = True
@@ -1318,14 +1337,12 @@ class Serder:
             raise DeserializeError(f"Unexpected CESR message body group "
                                    f"code={bctr.code}")
 
-
         # consume label for version field if field map (not fixed)
         if not fixed:
             labeler = Labeler(qb64b=raw, strip=True)  # offset past ctr
 
         # consume version field assumes compatible versage with prior smellage
         versage = Verser(qb64b=raw, strip=True).versage
-
 
         if self.proto == Protocols.keri:
             # read off ilk so can get rest of fields in order to parse
@@ -1442,119 +1459,134 @@ class Serder:
                                              f" version={pvrsn}.")
 
 
-
         elif self.proto == Protocols.acdc:
-            if fixed:
-                ilk = Ilker(qb64b=raw, strip=True).ilk  # consume message typle field
+            # already consumed version field for top level fixed field or
+            # version label and version field for top level field map
+
+            if fixed:  # top-level fixed field
+                ilk = Ilker(qb64b=raw, strip=True).ilk  # consume message type field
                 if ilk not in (Ilks.rip, Ilks.bup, Ilks.upd, Ilks.act, Ilks.acg,
                               Ilks.sch, Ilks.att, Ilks.agg, Ilks.edg, Ilks.rul):
                     raise DeserializeError(f"Unexpected {ilk=} for fixed field body")
-                # FieldDom for given protocol and ilk
-                fields = self.Fields[self.proto][self.pvrsn][ilk]  # get fields keyed by ilk
 
-                if fields.opts or not fields.strict and fixed:  # optional or extra fields allowed
-                    raise DeserializeError(f"Expected fixed field for {ilk=} got {fields=}")
-
-                # assumes that sad's field ordering and field inclusion is correct
-                # so can deserialize in order
-                for l in fields.alls:  # assumes valid field order & presence
-                    match l:  # label
-                        case "v":  # proto+pvrsn+gvrsn not vs
-                            sad[l] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
-                               size=size, gvrsn=self.gvrsn)
-
-                        case "t":  # message type (ilk), already got ilk
-                            sad[l] = ilk
-
-                        case "d"|"p"|"b":  # SAID must not be empty
-                            sad[l] = Diger(qb64b=raw, strip=True).qb64
-
-                        case "u":  # UUID salty Nonce or empty
-                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
-
-                        case "i":  # AID must not be empty
-                            sad[l] = Prefixer(qb64b=raw, strip=True).qb64
-
-                        case "n":  # sequence number
-                            sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
-
-                        case "rd":  # said or empty
-                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
-
-                        case "dt":  # datetime string
-                            sad[l] = Dater(qb64b=raw, strip=True).dts
-
-                        case "td":  # transaction event acdc said or empty
-                            sad[l] = Noncer(qb64b=raw, strip=True).nonce
-
-                        case "ts":  # transaction event state string or empty
-                            sad[l] = Labeler(qb64b=raw, strip=True).text
-
-                        case "s":  # schema said, or schema block
-                            if raw[0] == ord(b'-'):  # counter so should be field map
-                                ctr = Counter(qb64b=raw)  # peek at counter
-                                if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
-                                    # schema field labels not strict
-                                    sad[l] = Mapper(qb64=raw,
-                                                    strip=True,
-                                                    strict=False).mad
-                                else:
-                                    raise DeserializeError(f"Expected Map group"
-                                                       f"got {ctr.name}")
-                            else:
-                                sad[l] = Diger(qb64b=raw, strip=True).qb64
-
-                        case "a"|"e"|"r" :  # attribute SAID or attribute block
-                            if raw[0] == ord(b'-'):  # counter so should be field map
-                                ctr = Counter(qb64b=raw)  # peek at counter
-                                if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
-                                    sad[l] = Mapper(qb64=raw, strip=True).mad
-                                else:
-                                    raise DeserializeError(f"Expected Map group"
-                                                       f"got {ctr.name}")
-                            else:  # may not be empty str
-                                sad[l] = Diger(qb64b=raw, strip=True).qb64
-
-                        case "A":  # Aggregate said or Aggregate list of blocks
-                            if raw[0] == ord(b'-'):  # counter so should be field map
-                                ctr = Counter(qb64b=raw)  # peek at counter
-                                if ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
-                                    fs = ctr.fullSize
-                                    del raw[:fs]  # consume counter
-                                    gcs = ctr.byteSize()  # content size
-                                    buf = raw[:gcs]
-                                    del raw[:gcs]  # consume counter content
-                                    blocks = []
-                                    while buf:
-                                        blocks.append(Mapper(raw=buf, strip=True).mad)
-                                    sad[l] = blocks
-                                else:
-                                    raise DeserializeError(f"Expected List group"
-                                                       f"got {ctr.name}")
-                            else:
-                                sad[l] = Diger(qb64b=raw, strip=True).qb64
-
-
-                        case _:  # if extra fields this is where logic would be
-                            raise DeserializeError(f"Unsupported protocol field label"
-                                                 f"='{l}' for protocol={proto}"
-                                                 f" version={pvrsn}.")
-
-
-
-            else:  # not fixed
-                labeler = Labeler(qb64b=raw, strip=True)  # consume message type label
-                ilk = Ilker(qb64b=raw, strip=True).ilk  # consume message typle field
-                if ilk not in (Ilks.acm,Ilks.ace):
+            else:  # top-level field map
+                sad['v'] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                           size=size, gvrsn=self.gvrsn)  # insert here
+                labeler = Labeler(qb64b=raw)  # peek at field label
+                if labeler.label == 't':  # message type field provided
+                    del raw[:labeler.fullSize]  # consume label
+                    ilk = Ilker(qb64b=raw, strip=True).ilk  # consume message type field
+                    sad['t'] = ilk  # insert  here
+                else:  # no message type field
+                    ilk = None
+                if ilk not in (None, Ilks.acm, Ilks.ace):
                     raise DeserializeError(f"Unexpected {ilk=} for field map body")
 
-                # FieldDom for given protocol and ilk
-                fields = self.Fields[self.proto][self.pvrsn][ilk]  # get fields keyed by ilk
+            # FieldDom for given protocol and ilk  support ilk == None
+            fields = self.Fields[self.proto][self.pvrsn][ilk]  # get fields keyed by ilk
 
-                # see mapper for how to deserialized field map here
+            if fixed:
+                if fields.opts or not fields.strict:  # optional or extra fields allowed
+                    raise DeserializeError(f"Expected fixed field for {ilk=} got {fields=}")
 
 
-        else:
+            # when fixed field assumes that serialization field order matches
+            # FieldDom.alls ordering so can deserialize in order of alls
+            labels = deque(fields.alls)  # deque iterates keys from dict alls
+
+            while True:
+                if fixed:  #fixed field
+                    if not labels:  # all done
+                        break
+                    l = labels.popleft()  # extract label from labels from fields
+                else:  # field map
+                    if not raw:  # all done
+                        break
+                    l = Labeler(qb64b=raw, strip=True).label  # extract label from raw
+
+                match l:  # label
+                    case "v":  # proto+pvrsn+gvrsn not vs
+                        sad[l] = versify(proto=self.proto, pvrsn=self.pvrsn, kind=self.kind,
+                           size=size, gvrsn=self.gvrsn)  # only fixed field
+
+                    case "t":  # message type (ilk), already got ilk
+                        sad[l] = ilk  # only fixed field
+
+                    case "d"|"p"|"b":  # SAID must not be empty
+                        sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                    case "u":  # UUID salty Nonce or empty
+                        sad[l] = Noncer(qb64b=raw, strip=True).nonce
+
+                    case "i":  # AID must not be empty
+                        sad[l] = Prefixer(qb64b=raw, strip=True).qb64
+
+                    case "n":  # sequence number
+                        sad[l] = Number(qb64b=raw, strip=True).numh  # as hex str
+
+                    case "rd":  # said or empty
+                        sad[l] = Noncer(qb64b=raw, strip=True).nonce
+
+                    case "dt":  # datetime string
+                        sad[l] = Dater(qb64b=raw, strip=True).dts
+
+                    case "td":  # transaction event acdc said or empty
+                        sad[l] = Noncer(qb64b=raw, strip=True).nonce
+
+                    case "ts":  # transaction event state string or empty
+                        sad[l] = Labeler(qb64b=raw, strip=True).text
+
+                    case "s":  # schema said, or schema block
+                        if raw[0] == ord(b'-'):  # counter so should be field map
+                            ctr = Counter(qb64b=raw)  # peek at counter
+                            if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                                # schema field labels not strict
+                                sad[l] = Mapper(qb64=raw,
+                                                strip=True,
+                                                strict=False).mad
+                            else:
+                                raise DeserializeError(f"Expected Map group"
+                                                   f"got {ctr.name}")
+                        else:
+                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                    case "a"|"e"|"r" :  # attribute SAID or attribute block
+                        if raw[0] == ord(b'-'):  # counter so should be field map
+                            ctr = Counter(qb64b=raw)  # peek at counter
+                            if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                                sad[l] = Mapper(qb64=raw, strip=True).mad
+                            else:
+                                raise DeserializeError(f"Expected Map group"
+                                                   f"got {ctr.name}")
+                        else:  # may not be empty str
+                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+                    case "A":  # Aggregate said or Aggregate list of blocks
+                        if raw[0] == ord(b'-'):  # counter so should be field map
+                            ctr = Counter(qb64b=raw)  # peek at counter
+                            if ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
+                                fs = ctr.fullSize
+                                del raw[:fs]  # consume counter
+                                gcs = ctr.byteSize()  # content size
+                                buf = raw[:gcs]
+                                del raw[:gcs]  # consume counter content
+                                blocks = []
+                                while buf:
+                                    blocks.append(Mapper(raw=buf, strip=True).mad)
+                                sad[l] = blocks
+                            else:
+                                raise DeserializeError(f"Expected List group"
+                                                   f"got {ctr.name}")
+                        else:
+                            sad[l] = Diger(qb64b=raw, strip=True).qb64
+
+
+                    case _:  # if extra fields this is where logic would be
+                        raise DeserializeError(f"Unsupported protocol field label"
+                                             f"='{l}' for protocol={proto}"
+                                             f" version={pvrsn}.")
+
+        else:  # unsupported protocol type
             raise DeserializeError(f"Unsupported protocol={self.proto}.")
 
         return sad
@@ -1807,97 +1839,103 @@ class Serder:
                                      f"'t', {ilk=} for protocol={proto} "
                                      f"version={pvrsn} with {sad=}.")
 
-            if ilk not in (Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg,
+            if ilk not in (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg,
                            Ilks.sch, Ilks.att, Ilks.agg, Ilks.edg, Ilks.rul,
                            Ilks.rip, Ilks.bup, Ilks.upd):
                 raise SerializeError(f"Unexpected {ilk=} for protocol={proto}")
 
-            fields = ilks[ilk]  # FieldDom for given protocol and ilk
+            fields = ilks[ilk]  # FieldDom for given protocol and ilk allows None
 
-            if (fields.opts or not fields.strict) and ilk not in (Ilks.acm, Ilks.ace):
+            if ((fields.opts or not fields.strict) and
+                    ilk not in (None, Ilks.acm, Ilks.ace)):
                 raise SerializeError(f"Mismatch field spec to {ilk=}")
 
             # assumes that sad's field ordering and field inclusion is correct
-            # so can serialize in order to compute saidive fields
-
-            if ilk in (Ilks.acm, Ilks.ace):  # top-level field map
-                for l, v in sad.items():  # assumes valid field order & presence
+            # so can serialize in sad appearance order
+            for l, v in sad.items():  # assumes valid field order & presence
+                if ilk in (None, Ilks.acm, Ilks.ace):  # top-level field map
+                    bdy.extend(Labeler(label=l).qb64b)
+                else:  # top-level fixed field
                     pass
 
-                raw = Counter.enclose(qb64=bdy, code=Codens.MapBodyGroup, version=gvrsn)
+                match l:  # label
+                    case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
+                        val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
 
-            else: # top-level fixed field
-                for l, v in sad.items():  # assumes valid field order & presence
-                    match l:  # label
-                        case "v":  # proto+pvrsn+gvrsn when gvrsn not None, not vs
-                            val = Verser(proto=proto, pvrsn=pvrsn, gvrsn=gvrsn).qb64b
+                    case "t":  # message type (ilk), already got ilk
+                        val = Ilker(ilk=v).qb64b  # assumes same
 
-                        case "t":  # message type (ilk), already got ilk
-                            val = Ilker(ilk=v).qb64b  # assumes same
+                    case "d"|"i"|"p"|"b":  # said or aid non-empty
+                        val = v.encode()  # already primitive qb64 make qb6b
 
-                        case "d"|"i"|"p"|"b":  # said or aid non-empty
-                            val = v.encode()  # already primitive qb64 make qb6b
+                    case "u":  # uuid or nonce or empty
+                        val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
-                        case "u":  # uuid or nonce or empty
-                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
+                    case "rd":  # registry said or empty
+                        val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
-                        case "rd":  # registry said or empty
-                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
+                    case "n":  # sequence number
+                        val = Number(numh=v).qb64b  # convert hex str
 
-                        case "n":  # sequence number
-                            val = Number(numh=v).qb64b  # convert hex str
+                    case "dt":  # iso datetime
+                        val = Dater(dts=v).qb64b  # dts to qb64b
 
-                        case "dt":  # iso datetime
-                            val = Dater(dts=v).qb64b  # dts to qb64b
+                    case "td":  # transaction event acdc said or empty
+                        val = Noncer(nonce=v).qb64b  # convert nonce/uuid
 
-                        case "td":  # transaction event acdc said or empty
-                            val = Noncer(nonce=v).qb64b  # convert nonce/uuid
+                    case "ts":  # transaction event state string
+                        val = Labeler(text=v).qb64b  # convert text to qb64b
 
-                        case "ts":  # transaction event state string
-                            val = Labeler(text=v).qb64b  # convert text to qb64b
+                    case "s":  # schema said or block
+                        if isinstance(v, Mapping):  # assumes valid said
+                            val = Mapper(mad=v, strict=False).qb64b
+                        else:  # said but may not be empty
+                            if not v:  # schema as said must not be empty
+                                raise SerializeError(f"Invalid section={l} "
+                                                     f"empty said")
+                            val = Diger(qb64=v).qb64b
 
-                        case "s":  # schema said or block
-                            if isinstance(v, Mapping):  # assumes valid said
-                                val = Mapper(mad=v, strict=False).qb64b
-                            else:  # said but may not be empty
-                                if not v:  # schema as said must not be empty
-                                    raise SerializeError(f"Invalid section={l} "
-                                                         f"empty said")
-                                val = Diger(qb64=v).qb64b
+                    case "a"|"e"|"r" :  # said or block, block may be empty
+                        if isinstance(v, Mapping):
+                            val = Mapper(mad=v).qb64b
+                        else:  # said but may not be empty
+                            if not v:  # section as said must not be empty
+                                raise SerializeError(f"Invalid section={l} "
+                                                     f"empty said")
+                            val = Diger(qb64=v).qb64b
 
-                        case "a"|"e"|"r" :  # said or block, block may be empty
-                            if isinstance(v, Mapping):
-                                val = Mapper(mad=v).qb64b
-                            else:  # said but may not be empty
-                                if not v:  # section as said must not be empty
-                                    raise SerializeError(f"Invalid section={l} "
-                                                         f"empty said")
-                                val = Diger(qb64=v).qb64b
+                    case "A":  # aggregate or list of blocks list may be empty
+                        if isinstance(v, list):
+                            frame = bytearray()
+                            for e in v:  # list of blocks
+                                frame.extend(Mapper(mad=e).qb64b)
 
-                        case "A":  # aggregate or list of blocks list may be empty
-                            if isinstance(v, list):
-                                frame = bytearray()
-                                for e in v:  # list of blocks
-                                    frame.extend(Mapper(mad=e).qb64b)
+                            val = Counter.enclose(qb64=frame,
+                                                  code=Codens.GenericListGroup)
+                        else:  # said but may not be empty
+                            if not v:  # aggregate as said must not be empty
+                                raise SerializeError(f"Invalid section={l} "
+                                                     f"empty said")
+                            val = val = Diger(qb64=v).qb64b
 
-                                val = Counter.enclose(qb64=frame,
-                                                      code=Codens.GenericListGroup)
-                            else:  # said but may not be empty
-                                if not v:  # aggregate as said must not be empty
-                                    raise SerializeError(f"Invalid section={l} "
-                                                         f"empty said")
-                                val = val = Diger(qb64=v).qb64b
+                    case _:  # if extra fields this is where logic would be
+                        raise SerializeError(f"Unsupported protocol field label"
+                                             f"='{l}' for protocol={proto}"
+                                             f" version={pvrsn}.")
 
-                        case _:  # if extra fields this is where logic would be
-                            raise SerializeError(f"Unsupported protocol field label"
-                                                 f"='{l}' for protocol={proto}"
-                                                 f" version={pvrsn}.")
+                bdy.extend(val)
 
-                    bdy.extend(val)
+            if ilk in (None, Ilks.acm, Ilks.ace):  # top-level field map
+                raw = Counter.enclose(qb64=bdy,
+                                      code=Codens.MapBodyGroup,
+                                      version=gvrsn)
 
-                raw = Counter.enclose(qb64=bdy, code=Codens.FixBodyGroup, version=gvrsn)
+            else:  # top-level fixed field
+                raw = Counter.enclose(qb64=bdy,
+                                      code=Codens.FixBodyGroup,
+                                      version=gvrsn)
 
-        else:
+        else:  # unsupported protocol
             raise SerializeError(f"Unsupported protocol={self.proto}.")
 
 
