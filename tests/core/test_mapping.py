@@ -1913,6 +1913,7 @@ def test_aggor_basic():
     assert aggor.ael == ael
     assert aggor.raw == raw
 
+    # setup AEL
     # Test with all non-nested value types
     rawsalt = b'0saltnonceblinded'
     uuid0 = Noncer(raw=rawsalt).qb64
@@ -2038,7 +2039,7 @@ def test_aggor_basic():
     size = 464
     agid = 'EC-6VaGxDRR0icTsHW0ow88abnkvHoNXMyhb4pZD0Wfj'
 
-    aggor = Aggor(ael=iael, makify=True)
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
     assert aggor.kind == kind
     assert aggor.agid == agid
     assert aggor.ael == oael
@@ -2119,6 +2120,129 @@ def test_aggor_basic():
     assert aggor.count == count
     assert aggor.size == size
     assert aggor.byteCount() == size
+    assert aggor.code == DigDex.Blake3_256
+    assert aggor.strict == True
+    assert aggor.saids == dict(d=DigDex.Blake3_256)
+    assert aggor.saidive == True
+
+    # Test with Json
+    kind = Kinds.json
+    oael = \
+    [
+        {
+            'd': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
+            'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
+            'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
+        },
+        {
+            'd': 'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
+            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
+            'name': 'Betty Boop'
+        },
+        {
+            'd': 'EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z',
+            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
+            'role': 'entertainment'
+        },
+        {
+            'd': 'EILHLTqlZPUIukMCyzHLOQKt0btEdopPXZFSHblsF10J',
+            'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
+            'location': 'lake mansion'
+        }
+    ]
+
+    raw = (b'[{"d":"ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb","u":"0AAwc2FsdG5vbmNlYm'
+            b'xpbmRl","issuee":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C"},{"d":"EGtsA'
+            b'umwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au","u":"0AAxc2FsdG5vbmNlYmxpbmRl","nam'
+            b'e":"Betty Boop"},{"d":"EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z","u":"0A'
+            b'Ayc2FsdG5vbmNlYmxpbmRl","role":"entertainment"},{"d":"EILHLTqlZPUIukMCyzHLOQ'
+            b'Kt0btEdopPXZFSHblsF10J","u":"0AAzc2FsdG5vbmNlYmxpbmRl","location":"lake mans'
+            b'ion"}]')
+
+    count = None
+    size = 462
+    agid = 'EMWdLviLg7NqX1SKMI-JhLq_nMCORP7MIRGuSZmXN_od'
+
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
+    assert aggor.kind == kind
+    assert aggor.agid == agid
+    assert aggor.ael == oael
+    assert len(aggor.atoms) == 4
+    assert aggor.raw == aggor.qb64b == raw
+    with pytest.raises(check=ValueError):
+        assert aggor.qb2 == b''
+    assert aggor.count == count
+    assert aggor.size == size
+    with pytest.raises(check=ValueError):
+        assert aggor.byteCount() == 4
+    assert aggor.code == DigDex.Blake3_256
+    assert aggor.strict == True
+    assert aggor.saids == dict(d=DigDex.Blake3_256)
+    assert aggor.saidive == True
+
+    # Test round trip
+    ael = aggor.ael
+    raw = aggor.raw
+    aggor = Aggor(raw=raw, kind=kind)
+    assert aggor.ael == ael
+    assert aggor.raw == raw
+    assert aggor.agid == agid
+
+    #test disclosure
+    dael, kind = aggor.disclose()
+    assert dael == \
+    [
+        'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
+        'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
+        'EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z',
+        'EILHLTqlZPUIukMCyzHLOQKt0btEdopPXZFSHblsF10J'
+    ]
+    assert Aggor.verifyDisclosure(dael, aggor.agid, aggor.kind)
+
+    dael, kind = aggor.disclose([1, 2])
+    assert dael == \
+    [
+        'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
+        {
+            'd': 'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
+            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
+            'name': 'Betty Boop'
+        },
+        {
+            'd': 'EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z',
+            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
+            'role': 'entertainment'
+        },
+        'EILHLTqlZPUIukMCyzHLOQKt0btEdopPXZFSHblsF10J'
+    ]
+    assert Aggor.verifyDisclosure(dael, aggor.agid, aggor.kind)
+
+    # test strip round trip
+    ims = bytearray(raw)
+    aggor = Aggor(raw=ims, strip=True, kind=kind)
+    assert ims  # not stripped when json since don't know size
+    assert aggor.ael == ael
+    assert aggor.raw == raw
+    assert aggor.agid == agid
+
+    ims = bytearray(qb2)
+    with pytest.raises(InvalidValueError):  # qb2 incompatible with json
+        aggor = Aggor(qb2=ims, strip=True, kind=kind)
+
+
+    # test without makify with iael so verify fails
+    with pytest.raises(InvalidValueError):
+        aggor = Aggor(ael=iael, kind=kind)
+
+    # test without makify with oael so verify succeeds
+    aggor = Aggor(ael=oael, kind=kind)
+    assert aggor.kind == kind
+    assert aggor.agid == agid
+    assert aggor.ael == oael
+    assert len(aggor.atoms) == 4
+    assert aggor.raw == aggor.qb64b == raw
+    assert aggor.count == count
+    assert aggor.size == size
     assert aggor.code == DigDex.Blake3_256
     assert aggor.strict == True
     assert aggor.saids == dict(d=DigDex.Blake3_256)

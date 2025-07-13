@@ -248,7 +248,8 @@ class Mapper:
                     if strip and isinstance(qb2, bytearray):
                         del qb2[:bs]
                 else:
-                    buf = raw[:]
+                    raise InvalidValueError(f"Input arg qb2 incompatible with"
+                                            f" {kind=}")
 
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
@@ -1379,7 +1380,8 @@ class Aggor:
                     if strip and isinstance(qb2, bytearray):
                         del qb2[:bs]
                 else:
-                    buf = raw[:]
+                    raise InvalidValueError(f"Input arg qb2 incompatible with"
+                                            f" {kind=}")
 
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
