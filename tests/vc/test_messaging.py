@@ -7,9 +7,9 @@ tests.vc.test_messaging module
 import pytest
 
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
-from keri.vc.messaging import (regcept, blindate, update, actSchemaDefault,
-                               acdcatt, schema, attribute, edge, rule,
-                               acmSchemaDefault, acdcmap)
+from keri.vc.messaging import (regcept, blindate, update, acdcatt, acdcmap,
+                               schema, attribute, edge, rule,
+                        actSchemaDefault, acgSchemaDefault, acmSchemaDefault)
 from keri.core import GenDex, Noncer, SerderACDC, BlindState, Blinder, Compactor
 
 def test_regcept_message():
@@ -376,12 +376,96 @@ def test_schema_defaults():
         'additionalProperties': False
     }
 
-    # Test acmSchemaDefault
-    said, sad = acmSchemaDefault()  # default kind json
-    assert said == 'EGXs5KE9JwTHSyPszBuKaDrVLcX2fb_fJUXTKyle-NV6'
+    # Test acgSchemaDefault
+    said, sad = acgSchemaDefault()  # default kind json
+    assert said == 'EIgmaDpd1IHrG76EEMkrBbmUJ7xeIl7680PKWVtdebyO'
     assert sad == \
     {
-        '$id': 'EGXs5KE9JwTHSyPszBuKaDrVLcX2fb_fJUXTKyle-NV6',
+        '$id': 'EIgmaDpd1IHrG76EEMkrBbmUJ7xeIl7680PKWVtdebyO',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'ACG Default Schema',
+        'description': 'Default JSON Schema for acg ACDC.',
+        'credentialType': 'ACDC_acg_message',
+        'version': '2.0.0',
+        'type': 'object',
+        'required': ['v', 't', 'd', 'u', 'i', 'rd', 's', 'A', 'e', 'r'],
+        'properties': {'v': {'description': 'ACDC version string', 'type': 'string'},
+                       't': {'description': 'Message type', 'type': 'string'},
+                       'd': {'description': 'Message SAID', 'type': 'string'},
+                       'u': {'description': 'Message UUID', 'type': 'string'},
+                       'i': {'description': 'Issuer AID', 'type': 'string'},
+                       'rd': {'description': 'Registry SAID', 'type': 'string'},
+                       's': {'description': 'Schema Section',
+                             'oneOf': [{'description': 'Schema Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Schema Section',
+                                        'type': 'object'}]},
+                       'A': {'description': 'Aggregate Section',
+                             'oneOf': [{'description': 'Aggregate Section AGID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Aggregate Section',
+                                        'type': 'array'}]},
+                       'e': {'description': 'Edge Section',
+                             'oneOf': [{'description': 'Edge Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Edge Section',
+                                        'type': 'object'}]},
+                       'r': {'description': 'Rule Section',
+                             'oneOf': [{'description': 'Rule Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Rule Section',
+                                        'type': 'object'}]}},
+        'additionalProperties': False
+    }
+
+    # CESR serialization kind
+    said, sad = acgSchemaDefault(kind=Kinds.cesr)
+    assert said == 'EB1_MVIk_DSkPNFejlfTEmxf7txIrc9NpUEwV_cLjWnl'
+    assert sad == \
+    {
+        '$id': 'EB1_MVIk_DSkPNFejlfTEmxf7txIrc9NpUEwV_cLjWnl',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'ACG Default Schema',
+        'description': 'Default JSON Schema for acg ACDC.',
+        'credentialType': 'ACDC_acg_message',
+        'version': '2.0.0',
+        'type': 'object',
+        'required': ['v', 't', 'd', 'u', 'i', 'rd', 's', 'A', 'e', 'r'],
+        'properties': {'v': {'description': 'ACDC version string', 'type': 'string'},
+                       't': {'description': 'Message type', 'type': 'string'},
+                       'd': {'description': 'Message SAID', 'type': 'string'},
+                       'u': {'description': 'Message UUID', 'type': 'string'},
+                       'i': {'description': 'Issuer AID', 'type': 'string'},
+                       'rd': {'description': 'Registry SAID', 'type': 'string'},
+                       's': {'description': 'Schema Section',
+                             'oneOf': [{'description': 'Schema Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Schema Section',
+                                        'type': 'object'}]},
+                       'A': {'description': 'Aggregate Section',
+                             'oneOf': [{'description': 'Aggregate Section AGID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Aggregate Section',
+                                        'type': 'array'}]},
+                       'e': {'description': 'Edge Section',
+                             'oneOf': [{'description': 'Edge Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Edge Section',
+                                        'type': 'object'}]},
+                       'r': {'description': 'Rule Section',
+                             'oneOf': [{'description': 'Rule Section SAID',
+                                        'type': 'string'},
+                                       {'description': 'Uncompacted Rule Section',
+                                        'type': 'object'}]}},
+        'additionalProperties': False
+    }
+
+    # Test acmSchemaDefault
+    said, sad = acmSchemaDefault()  # default kind json
+    assert said == 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ'
+    assert sad == \
+    {
+        '$id': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'title': 'ACM Default Schema',
         'description': 'Default JSON Schema for acm ACDC.',
@@ -406,7 +490,7 @@ def test_schema_defaults():
                                        {'description': 'Uncompacted Attribute Section',
                                         'type': 'object'}]},
                        'A': {'description': 'Aggregate Section',
-                             'oneOf': [{'description': 'Aggregate Section SAID',
+                             'oneOf': [{'description': 'Aggregate Section AGID',
                                         'type': 'string'},
                                        {'description': 'Uncompacted Aggregate Section',
                                         'type': 'array'}]},
@@ -425,10 +509,10 @@ def test_schema_defaults():
 
     # CESR serialization kind
     said, sad = acmSchemaDefault(kind=Kinds.cesr)
-    assert said == 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG'
+    assert said == 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK'
     assert sad == \
     {
-        '$id': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        '$id': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'title': 'ACM Default Schema',
         'description': 'Default JSON Schema for acm ACDC.',
@@ -453,7 +537,7 @@ def test_schema_defaults():
                                        {'description': 'Uncompacted Attribute Section',
                                         'type': 'object'}]},
                        'A': {'description': 'Aggregate Section',
-                             'oneOf': [{'description': 'Aggregate Section SAID',
+                             'oneOf': [{'description': 'Aggregate Section AGID',
                                         'type': 'string'},
                                        {'description': 'Uncompacted Aggregate Section',
                                         'type': 'array'}]},
@@ -1736,10 +1820,10 @@ def test_acdcmap_message():
     kind = Kinds.json
 
     # Assign JSON versions of section values
-    schemaSaid = 'EGXs5KE9JwTHSyPszBuKaDrVLcX2fb_fJUXTKyle-NV6' # json
+    schemaSaid = 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ' # json
     schemaSad = \
     {
-        '$id': 'EGXs5KE9JwTHSyPszBuKaDrVLcX2fb_fJUXTKyle-NV6',
+        '$id': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'title': 'ACM Default Schema',
         'description': 'Default JSON Schema for acm ACDC.',
@@ -1764,7 +1848,7 @@ def test_acdcmap_message():
                                        {'description': 'Uncompacted Attribute Section',
                                         'type': 'object'}]},
                        'A': {'description': 'Aggregate Section',
-                             'oneOf': [{'description': 'Aggregate Section SAID',
+                             'oneOf': [{'description': 'Aggregate Section AGID',
                                         'type': 'string'},
                                        {'description': 'Uncompacted Aggregate Section',
                                         'type': 'array'}]},
@@ -1852,7 +1936,7 @@ def test_acdcmap_message():
     }
 
     # test some defaults
-    said = 'EG8TgxZeoetl-S5oXAdiAFJWU0wOVCL_KNlxpwSmNRXB'
+    said = 'EOs1O6nTpQDcNUVj6BIt9asKQJ7IQorstrUIz9Xd4Xm1'
     vs = 'ACDCCAACAAJSONAADx.'
     size = 241
     ilk = Ilks.acm
@@ -1874,9 +1958,9 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAAJSONAADx.',
         't': 'acm',
-        'd': 'EG8TgxZeoetl-S5oXAdiAFJWU0wOVCL_KNlxpwSmNRXB',
+        'd': 'EOs1O6nTpQDcNUVj6BIt9asKQJ7IQorstrUIz9Xd4Xm1',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
-        's': 'EGXs5KE9JwTHSyPszBuKaDrVLcX2fb_fJUXTKyle-NV6',
+        's': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
         'a': 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL'
     }
 
@@ -1889,7 +1973,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test some defaults default schema
-    said = 'ENX9gCl9t2kurvrQxLuRZ3X1FEVrMqe0HNhvjI-1HgJ_'
+    said = 'EF8b9kWJvke80o9DQJDgWCeeUl_XBCn8iffXU5LI7Omv'
     vs = 'ACDCCAACAAJSONAAeV.'
     size = 1941
     ilk = Ilks.acm
@@ -1916,7 +2000,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test that compactified said are stable
-    said = 'EAC9KzsVIevTs8covOLQgKdp4ZNZx5fJCpfE24dpZpad'
+    said = 'ELGpFnh85_q0y-GHsvE_o0othvn42kaUQL7ZfLN4llhK'
     vs = 'ACDCCAACAAJSONAAZQ.'
     size = 1616
     ilk = Ilks.acm
@@ -1941,11 +2025,11 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAAJSONAAZQ.',
         't': 'acm',
-        'd': 'EAC9KzsVIevTs8covOLQgKdp4ZNZx5fJCpfE24dpZpad',
+        'd': 'ELGpFnh85_q0y-GHsvE_o0othvn42kaUQL7ZfLN4llhK',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
-        's': 'EGXs5KE9JwTHSyPszBuKaDrVLcX2fb_fJUXTKyle-NV6',
+        's': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
         'a': {'d': 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL',
               'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
               'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
@@ -2018,11 +2102,11 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAAJSONAAGq.',
         't': 'acm',
-        'd': 'EAC9KzsVIevTs8covOLQgKdp4ZNZx5fJCpfE24dpZpad',
+        'd': 'ELGpFnh85_q0y-GHsvE_o0othvn42kaUQL7ZfLN4llhK',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
-        's': 'EGXs5KE9JwTHSyPszBuKaDrVLcX2fb_fJUXTKyle-NV6',
+        's': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
         'a': 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL',
         'e': 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF',
         'r': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
@@ -2040,10 +2124,10 @@ def test_acdcmap_message():
     kind = Kinds.cesr
 
     # Assign CESR versions of section values
-    schemaSaid = 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG'  # cesr
+    schemaSaid = 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK'  # cesr
     schemaSad = \
     {
-        '$id': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        '$id': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'title': 'ACM Default Schema',
         'description': 'Default JSON Schema for acm ACDC.',
@@ -2068,7 +2152,7 @@ def test_acdcmap_message():
                                        {'description': 'Uncompacted Attribute Section',
                                         'type': 'object'}]},
                        'A': {'description': 'Aggregate Section',
-                             'oneOf': [{'description': 'Aggregate Section SAID',
+                             'oneOf': [{'description': 'Aggregate Section AGID',
                                         'type': 'string'},
                                        {'description': 'Uncompacted Aggregate Section',
                                         'type': 'array'}]},
@@ -2157,7 +2241,7 @@ def test_acdcmap_message():
 
 
     # test some defaults
-    said = 'EEZm_wO1P9mfL7d_VsmWFnp55yLbXRztHRs49bXl0knJ'
+    said = 'EFiwa7kea0Pv5QZ2MwM5C_iH7lLTkZFlvDl5nj_WkGOz'
     vs = 'ACDCCAACAACESRAADc.'
     size = 220
     ilk = Ilks.acm
@@ -2179,9 +2263,9 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAACESRAADc.',
         't': 'acm',
-        'd': 'EEZm_wO1P9mfL7d_VsmWFnp55yLbXRztHRs49bXl0knJ',
+        'd': 'EFiwa7kea0Pv5QZ2MwM5C_iH7lLTkZFlvDl5nj_WkGOz',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
-        's': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         'a': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-'
     }
 
@@ -2194,7 +2278,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test some defaults default schema
-    said = 'EJ9NQuEMpfAoRrVQwmu2ptHeXMz9p3oye6xXN8iJJ0DZ'
+    said = 'ECn7BmaXh5srXOx6PfCTsaWBQ4m_K43Ziboe8FjvQORx'
     vs = 'ACDCCAACAACESRAAho.'
     size = 2152
     ilk = Ilks.acm
@@ -2222,7 +2306,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test that compactified said are stable
-    said = 'EOziWebdflGMrcOnxDBcXHWaYRbUYVfijgO8y9buO-iZ'
+    said = 'EINdarGoQL780jeFl5A71J0ZQgn-zFLSiuPkhIv4piLf'
     vs = 'ACDCCAACAACESRAAYw.'
     size = 1584
     ilk = Ilks.acm
@@ -2247,11 +2331,11 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAACESRAAYw.',
         't': 'acm',
-        'd': 'EOziWebdflGMrcOnxDBcXHWaYRbUYVfijgO8y9buO-iZ',
+        'd': 'EINdarGoQL780jeFl5A71J0ZQgn-zFLSiuPkhIv4piLf',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
-        's': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         'a': {'d': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-',
               'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
               'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
@@ -2323,11 +2407,11 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAACESRAAGI.',
         't': 'acm',
-        'd': 'EOziWebdflGMrcOnxDBcXHWaYRbUYVfijgO8y9buO-iZ',
+        'd': 'EINdarGoQL780jeFl5A71J0ZQgn-zFLSiuPkhIv4piLf',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
-        's': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         'a': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-',
         'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
         'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
@@ -2344,7 +2428,7 @@ def test_acdcmap_message():
 
     # Test implicity acm with ilk=None
     # test some defaults
-    said = 'EAZrzdrvnAlMlg0AwpFdXh0k-nFNqDJL_Wkv_HnwLfV3'
+    said = 'EJO5x17vRMfipCQTdniSk---mLLfslObQIvBS1bj_uIC'
     vs = 'ACDCCAACAACESRAADU.'
     size = 212
     ilk = None
@@ -2365,9 +2449,9 @@ def test_acdcmap_message():
     assert serder.sad == \
     {
         'v': 'ACDCCAACAACESRAADU.',
-        'd': 'EAZrzdrvnAlMlg0AwpFdXh0k-nFNqDJL_Wkv_HnwLfV3',
+        'd': 'EJO5x17vRMfipCQTdniSk---mLLfslObQIvBS1bj_uIC',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
-        's': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         'a': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-'
     }
 
@@ -2380,7 +2464,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test some defaults default schema
-    said = 'EH6Hc5QYULL26mEKpFlsc5vF7BLYceFIbmaZtdnqtZ1r'
+    said = 'EAo7GMv7EoXK5n9WKd8epTYfDBFlrfglaxHKkUl8jZZd'
     vs = 'ACDCCAACAACESRAAhg.'
     size = 2144
     ilk = None
@@ -2408,7 +2492,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test that compactified said are stable
-    said = 'EJ0jillqKfEOQMWSiDJ7RAH-oYR9IQ7TYgTP_vIiiPH6'
+    said = 'ELuZYAjFP9_XZql1k1YLAxg7u8DSLbSv7MqB-Z7BSg2L'
     vs = 'ACDCCAACAACESRAAYo.'
     size = 1576
     ilk = None
@@ -2432,11 +2516,11 @@ def test_acdcmap_message():
     assert serder.sad == \
     {
         'v': 'ACDCCAACAACESRAAYo.',
-        'd': 'EJ0jillqKfEOQMWSiDJ7RAH-oYR9IQ7TYgTP_vIiiPH6',
+        'd': 'ELuZYAjFP9_XZql1k1YLAxg7u8DSLbSv7MqB-Z7BSg2L',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
-        's': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         'a': {'d': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-',
               'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
               'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
@@ -2507,11 +2591,11 @@ def test_acdcmap_message():
     assert serder.sad == \
     {
         'v': 'ACDCCAACAACESRAAGA.',
-        'd': 'EJ0jillqKfEOQMWSiDJ7RAH-oYR9IQ7TYgTP_vIiiPH6',
+        'd': 'ELuZYAjFP9_XZql1k1YLAxg7u8DSLbSv7MqB-Z7BSg2L',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
-        's': 'EMZ2K8bYHOTb3TRJ5Sbk-QZKrQlOT9Zh8UvflGK5v8RG',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
         'a': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-',
         'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
         'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'

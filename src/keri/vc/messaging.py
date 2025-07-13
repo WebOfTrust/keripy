@@ -509,7 +509,7 @@ def acmSchemaDefault(kind=Kinds.json):
                 "oneOf":
                 [
                     {
-                      "description": "Aggregate Section SAID",
+                      "description": "Aggregate Section AGID",
                       "type": "string"
                     },
                     {
@@ -741,7 +741,7 @@ def acgSchemaDefault(kind=Kinds.json):
                 "oneOf":
                 [
                     {
-                      "description": "Aggregate Section SAID",
+                      "description": "Aggregate Section AGID",
                       "type": "string"
                     },
                     {
