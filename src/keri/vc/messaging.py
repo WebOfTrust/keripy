@@ -386,7 +386,7 @@ def edge(edge, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
 
 
 def rule(rule, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
-    """Utility function to create top-level fixed field edge section message
+    """Utility function to create top-level fixed field rule section message
     of type 'rul' for ACDC protocol v2.
 
     Returns:
@@ -505,11 +505,11 @@ def acmSchemaDefault(kind=Kinds.json):
             },
             "A":
             {
-                "description": "Attribute Section",
+                "description": "Aggregate Section",
                 "oneOf":
                 [
                     {
-                      "description": "Aggregate Section SAID",
+                      "description": "Aggregate Section AGID",
                       "type": "string"
                     },
                     {
@@ -650,4 +650,230 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
     if rule is not None:
         sad['r'] = rule
 
+    return SerderACDC(sad=sad, makify=True)
+
+
+def acgSchemaDefault(kind=Kinds.json):
+    """Utility function to create default schema dict for acg message
+
+    Returns:
+        tuple(str, dict): of form (said[str], sad[dict]) where,
+            said is computed on default schema with serialization of kind
+            sad is defualt schema with substituted said
+
+
+    Parameters:
+        kind (str): serializaiton kind from Kinds used to compute said
+
+    """
+    mad = \
+    {
+        "$id": "",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ACG Default Schema",
+        "description": "Default JSON Schema for acg ACDC.",
+        "credentialType": "ACDC_acg_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required":
+        [
+          "v",
+          "t",
+          "d",
+          "u",
+          "i",
+          "rd",
+          "s",
+          "A",
+          "e",
+          "r"
+        ],
+        "properties":
+        {
+            "v":
+            {
+                "description": "ACDC version string",
+                "type": "string"
+            },
+            "t":
+            {
+                "description": "Message type",
+                "type": "string"
+            },
+            "d":
+            {
+                "description": "Message SAID",
+                "type": "string"
+            },
+            "u":
+            {
+                "description": "Message UUID",
+                "type": "string"
+            },
+            "i":
+            {
+                "description": "Issuer AID",
+                "type": "string"
+            },
+            "rd":
+            {
+                "description": "Registry SAID",
+                "type": "string"
+            },
+            "s":
+            {
+                "description": "Schema Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Schema Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Schema Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "A":
+            {
+                "description": "Aggregate Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Aggregate Section AGID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Aggregate Section",
+                      "type": "array"
+                    }
+                ]
+            },
+            "e":
+            {
+                "description": "Edge Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Edge Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Edge Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "r":
+            {
+                "description": "Rule Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Rule Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Rule Section",
+                      "type": "object"
+                    }
+                ]
+            }
+        },
+        "additionalProperties": False
+    }
+
+    mapper = Mapper(mad=mad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    return (mapper.said, mapper.mad)
+
+
+def acdcagg(issuer, uuid=None, regid=None, schema=None, aggregate=None,
+                    edge=None, rule=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field ACDC message of type 'acg'
+    for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        issuer  (str): qb64 of issuer AID
+        uuid (str|None): qb64 of salty nonce (UUID) if any.
+                         None means use empty string for value
+        regid (str|None): qb64 of registry SAID if any.
+                             None means use empty string for value
+        schema (str|dict): SAID of schema section or schema section block
+                           None means use default schema for value
+
+        aggregate (str|list|None): AGID of aggregate section or list of
+                                   aggregate section block
+                                   None means use empty list for value
+        edge (str|dict|None): SAID of edge section or dict of edge section block
+                               None means use empty dict for value
+        rule (str|dict|None): SAID of rule section or dict of rule section block
+                               None means use empty dict for value
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', u='', i='', rd='', s='', A='', e='', r='')
+    opts
+    ()
+
+    ACDC .sad and its serialization .raw. Is whatever in input to the serder. Its
+    degree of compactification is whatever is input to the Serder. In the case of
+    the .raw its the over the wire serialization to be deserialized.
+
+    This is the same semantic as for KERI messages except that for ACDCs the
+    SAIDS and nested SAIDs in ACDCs are calculated using the most compact algorithm.
+    So if the serder gets an uncompacted sad or an uncompated raw, these become
+    .sad and .raw.  These may be a received disclosure or a disclosure
+    to be sent at any stage in a graduated disclosure.  The serialization of
+    the uncompacted sad is special since its said is not literally the said of
+    its  uncompact serialization but is the SAID of its most compact form.
+
+    Essentially makify and verify for ACDCs is different because of most compact
+    SAID computation.
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.acg
+    uuid = uuid if uuid is not None else ""
+    regid = regid if regid is not None else ""
+    if schema is None:
+        ssaid, ssad = actSchemaDefault(kind=kind)
+        schema = ssad
+
+    aggregate = aggregate if aggregate is not None else []
+    edge = edge if edge is not None else {}
+    rule = rule if rule is not None else {}
+
+    sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
+               s=schema, A=aggregate, e=edge, r=rule)
+    return SerderACDC(sad=sad, makify=True)
+
+
+def aggregate(aggregate, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+    """Utility function to create top-level fixed field aggregate section message
+    of type 'agg' for ACDC protocol v2.
+
+    Returns:
+        serder (SerderACDC): instance of ACDC message
+
+    Parameters:
+        aggregate (str|dict): AGID of aggregate section or aggregate section list
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+
+    all
+    (v='', t='', d='', A='')
+    opts
+    ()
+    """
+    vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    ilk = Ilks.agg
+    sad = dict(v=vs, t=ilk, d='', A=aggregate)
     return SerderACDC(sad=sad, makify=True)
