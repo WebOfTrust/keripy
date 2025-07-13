@@ -1198,6 +1198,7 @@ class Aggor:
         ._atoms (list[Mapper|Diger]): Mapper or Diger instances
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
+        ._code (str): qb64 DigDex code for computing agid digest
         ._strict (bool): labels strict format for strict property
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
@@ -1208,7 +1209,7 @@ class Aggor:
 
 
     @classmethod
-    def computeAgid(cls, atoms):
+    def computeAgid(cls, atoms, code=DigDex.Blake3_256):
         """Computes agid from atoms
 
         Returns:
@@ -1217,6 +1218,7 @@ class Aggor:
 
         Parameters:
             atoms (list[Diger|Mapper])
+            code (str): qb64 DigDex code for computing the agid digest
         """
         agid = None
         asaids = [atom.said if isinstance(atom, Mapper) else atom.qb64
@@ -1224,13 +1226,14 @@ class Aggor:
 
         if asaids and all(asaids):
             cat = "".join(asaids)
-            agid = Diger(ser=cat.encode()).qb64
+            agid = Diger(ser=cat.encode(), code=code).qb64
 
         return agid
 
 
     @classmethod
-    def verifyDisclosure(cls, ael, agid, kind=Kinds.cesr, saids=None):
+    def verifyDisclosure(cls, ael, agid, kind=Kinds.cesr,
+                         code=DigDex.Blake3_256, saids=None):
         """Verify disclosure of ael against agid using serialization kind
 
         Returns:
@@ -1244,6 +1247,7 @@ class Aggor:
                                    element dict
             agid (str): qb64 of agid to compare against said computed on elements
             kind (str): serialization kind for digest computation
+            code (str): qb64 DigDex code for computing the agid digest
             saids (dict): default saidive fields each element field map top-level.
                           Each key is label of saidive field.
                           Each value is default primitive code of said digest
@@ -1252,7 +1256,7 @@ class Aggor:
 
         """
         try:  # create aggor from ael with verify True so it computes agid
-            aggor = cls(ael=ael, kind=kind, saids=saids, verify=True)
+            aggor = cls(ael=ael, kind=kind, code=code, saids=saids, verify=True)
         except Exception as ex:
             return False
 
@@ -1263,8 +1267,8 @@ class Aggor:
 
 
     def __init__(self, *, ael=None, raw=None, qb64b=None, qb64=None, qb2=None,
-                 strip=False, makify=False, verify=True, strict=True,
-                 saids=None, saidive=True, kind=Kinds.cesr):
+                 strip=False, code=DigDex.Blake3_256, makify=False, verify=True,
+                 strict=True, saids=None, saidive=True, kind=Kinds.cesr):
         """Initialize instance
 
         Parameters:
@@ -1285,6 +1289,7 @@ class Aggor:
             strip (bool):  True means strip mapper contents from input stream
                 bytearray after parsing qb64, qb64b or qb2. False means do not strip.
                 default False. Only applicable when native CESR (kind == Kinds.cesr)
+            code (str): qb64 DigDex code for computing the agid digest
             makify (bool): True means compute saids when .saidive
                            False means do not comput saids even when .saidive
             verify (bool): True means verify element serialization against element
@@ -1310,7 +1315,7 @@ class Aggor:
         """
         makify = True if makify else False
         verify = True if verify else False
-
+        self._code = code
         self._strict = True if strict else False
         self._saids = dict(saids if saids is not None else self.Saids)  # make copy
         self._saidive = True if saidive else False
@@ -1387,7 +1392,7 @@ class Aggor:
             self._raw = raw
             self._count = count
 
-        self._agid = self.computeAgid(self.atoms)
+        self._agid = self.computeAgid(self.atoms, code=self.code)
 
         if self.saidive and not makify and verify:  # verify saids of elements
             for i, element in enumerate(self.ael):
@@ -1516,6 +1521,17 @@ class Aggor:
             return len(self.raw)
 
         return self._count * 4  # always text domain when native cesr
+
+
+    @property
+    def code(self):
+        """Getter for ._code
+
+        Returns:
+              code (str): qb64 DigDex code for computing the agid digest
+        """
+        return self._code
+
 
     @property
     def strict(self):

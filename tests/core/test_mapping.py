@@ -1873,6 +1873,7 @@ def test_aggor_basic():
     assert aggor.size == 4
     assert aggor.byteCount() == 4
     assert aggor.byteCount(Colds.bny) == 3
+    assert aggor.code == DigDex.Blake3_256
     assert aggor.strict == True
     assert aggor.saids == dict(d=DigDex.Blake3_256)
     assert aggor.saidive == True
@@ -1900,6 +1901,7 @@ def test_aggor_basic():
     assert aggor.size == 2
     with pytest.raises(check=ValueError):
         assert aggor.byteCount() == 4
+    assert aggor.code == DigDex.Blake3_256
     assert aggor.strict == True
     assert aggor.saids == dict(d=DigDex.Blake3_256)
     assert aggor.saidive == True
@@ -2046,6 +2048,10 @@ def test_aggor_basic():
     assert aggor.count == count
     assert aggor.size == size
     assert aggor.byteCount() == size
+    assert aggor.code == DigDex.Blake3_256
+    assert aggor.strict == True
+    assert aggor.saids == dict(d=DigDex.Blake3_256)
+    assert aggor.saidive == True
 
     # Test round trip
     ael = aggor.ael
@@ -2113,6 +2119,10 @@ def test_aggor_basic():
     assert aggor.count == count
     assert aggor.size == size
     assert aggor.byteCount() == size
+    assert aggor.code == DigDex.Blake3_256
+    assert aggor.strict == True
+    assert aggor.saids == dict(d=DigDex.Blake3_256)
+    assert aggor.saidive == True
 
 
     """Done Test"""

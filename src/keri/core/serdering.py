@@ -42,7 +42,7 @@ from .coring import (MtrDex, LabelDex, DigDex, PreDex, NonTransDex, PreNonDigDex
 from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
                      Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
                      Noncer, Labeler)
-from .mapping import Mapper, Compactor
+from .mapping import Mapper, Compactor, Aggor
 
 from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
 
@@ -2800,8 +2800,8 @@ class SerderACDC(Serder):
 
             for l in ("s", "a", "e", "r", "A"):
                 if v := csad.get(l, None):  # field exists and is not empty
-                    sector = None
                     if isinstance(v, Mapping):  # v is non-empty mapping
+                        said = None
                         # compact to its most compact said
                         match l:
                             case 's':  # schema is only top-level said
@@ -2810,24 +2810,32 @@ class SerderACDC(Serder):
                                                     strict=False,
                                                     saids={"$id": 'E',},
                                                     kind=self.kind)
-
+                                said = sector.said
 
                             case 'a' | 'e' | 'r':
                                 sector = Compactor(mad=v,
                                                    makify=True,
-                                                  kind=self.kind)
+                                                   kind=self.kind)
                                 sector.compact()
+                                said = sector.said
+
+                        if said:
+                            csad[l] = said  # assign said as compaction
 
                     elif isinstance(v, NonStringIterable):  # v is non-empty iterable
+                        agid = None
+                        # compact to agid
                         match l:
                             case 'A':  # aggregator
-                                pass  # ToDo create Aggregator instance from list
+                                sector = Aggor(ael=v,
+                                               makify=True,
+                                               kind=self.kind)
 
-                    if sector is not None:
-                        said = sector.said
-                        if said:
-                            csad[l] = said
+                                agid = sector.agid
+                        if agid:
+                            csad[l] = agid  # assign agid as compaction
 
+                    #else: don't change csad[l] its already compact as said/agid
 
             # Most compact size fixup in vs
             if self.kind != Kinds.cesr:  # not native so fixup vs
@@ -2848,36 +2856,49 @@ class SerderACDC(Serder):
 
             for l in ("s", "a", "e", "r", "A"):
                 if v := csad.get(l, None):  # field exists and is not empty
-                    sector = None
                     if isinstance(v, Mapping):  # v is non-empty mapping
-                        # verify embedded most compact saids
-                        match l:
+                        said = None
+                        match l:  # verify embedded Mapper most compact saids
                             case 's':  # schema is only top-level said $id
                                 sector = Compactor(mad=v,
                                                       makify=True,
                                                       strict=False,
                                                       saids={"$id": 'E',},
                                                       kind=self.kind)
+                                said = sector.said
                                 slabel ='$id'
 
-                            case 'a' | 'e' | 'r':
+                            case 'a' | 'e' | 'r':  # fully compactable sections
                                 sector = Compactor(mad=v,
                                                       makify=True,
                                                       kind=self.kind)
                                 sector.compact()
+                                said = sector.said
                                 slabel ='d'
 
-                        said = sector.said
-                        if v.get(slabel) != said:
-                            raise InvalidValueError(f"Invalid section {said=} "
-                                                    f"in section message")
+
+                        if said:  # there is an embedded said field
+                            if v.get(slabel) != said:
+                                raise InvalidValueError(f"Invalid section {said=} "
+                                                        f"in section message")
+
                     elif isinstance(v, NonStringIterable):  # v is non-empty iterable
                         match l:
-                            case 'A':  # aggregator
-                                pass  # ToDo create Aggregator instance from list
+                            case 'A':  # verify agid of embedded Aggor
+                                try:
+                                    sector = Aggor(ael=v,
+                                                   makify=True,
+                                                   kind=self.kind,
+                                                   verify=True)
 
-                        # verify exposed elements in v versus Aggregator
-                        # reserialize using sized, dummied, and fixed up
+                                except Exception as ex:
+                                    raise InvalidValueError(f"Invalid aggregate"
+                                        f"section={l} in section message")
+
+                                agid = sector.agid
+                                if not agid:
+                                    raise InvalidValueError(f"Invalid aggregate"
+                                                f" {agid=} in section message")
 
             raw = self.dumps(csad, kind=self.kind)
 
