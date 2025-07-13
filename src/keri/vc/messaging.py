@@ -505,7 +505,7 @@ def acmSchemaDefault(kind=Kinds.json):
             },
             "A":
             {
-                "description": "Attribute Section",
+                "description": "Aggregate Section",
                 "oneOf":
                 [
                     {
@@ -651,3 +651,139 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
         sad['r'] = rule
 
     return SerderACDC(sad=sad, makify=True)
+
+
+def acgSchemaDefault(kind=Kinds.json):
+    """Utility function to create default schema dict for acg message
+
+    Returns:
+        tuple(str, dict): of form (said[str], sad[dict]) where,
+            said is computed on default schema with serialization of kind
+            sad is defualt schema with substituted said
+
+
+    Parameters:
+        kind (str): serializaiton kind from Kinds used to compute said
+
+    """
+    mad = \
+    {
+        "$id": "",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ACG Default Schema",
+        "description": "Default JSON Schema for acg ACDC.",
+        "credentialType": "ACDC_acg_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required":
+        [
+          "v",
+          "t",
+          "d",
+          "u",
+          "i",
+          "rd",
+          "s",
+          "A",
+          "e",
+          "r"
+        ],
+        "properties":
+        {
+            "v":
+            {
+                "description": "ACDC version string",
+                "type": "string"
+            },
+            "t":
+            {
+                "description": "Message type",
+                "type": "string"
+            },
+            "d":
+            {
+                "description": "Message SAID",
+                "type": "string"
+            },
+            "u":
+            {
+                "description": "Message UUID",
+                "type": "string"
+            },
+            "i":
+            {
+                "description": "Issuer AID",
+                "type": "string"
+            },
+            "rd":
+            {
+                "description": "Registry SAID",
+                "type": "string"
+            },
+            "s":
+            {
+                "description": "Schema Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Schema Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Schema Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "A":
+            {
+                "description": "Aggregate Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Aggregate Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Aggregate Section",
+                      "type": "array"
+                    }
+                ]
+            },
+            "e":
+            {
+                "description": "Edge Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Edge Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Edge Section",
+                      "type": "object"
+                    }
+                ]
+            },
+            "r":
+            {
+                "description": "Rule Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Rule Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Uncompacted Rule Section",
+                      "type": "object"
+                    }
+                ]
+            }
+        },
+        "additionalProperties": False
+    }
+
+    mapper = Mapper(mad=mad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    return (mapper.said, mapper.mad)
