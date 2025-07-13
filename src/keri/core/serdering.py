@@ -1561,19 +1561,12 @@ class Serder:
                         else:  # may not be empty str
                             sad[l] = Diger(qb64b=raw, strip=True).qb64
 
-                    case "A":  # Aggregate said or Aggregate list of blocks
+                    case "A":  # Aggregate agid or Aggregable element list
                         if raw[0] == ord(b'-'):  # counter so should be field map
                             ctr = Counter(qb64b=raw)  # peek at counter
                             if ctr.name in ('GenericListGroup', 'BigGenericListGroup'):
-                                fs = ctr.fullSize
-                                del raw[:fs]  # consume counter
-                                gcs = ctr.byteSize()  # content size
-                                buf = raw[:gcs]
-                                del raw[:gcs]  # consume counter content
-                                blocks = []
-                                while buf:
-                                    blocks.append(Mapper(raw=buf, strip=True).mad)
-                                sad[l] = blocks
+                                sad[l] = Aggor(raw=raw, strip=True).ael
+
                             else:
                                 raise DeserializeError(f"Expected List group"
                                                    f"got {ctr.name}")
@@ -1906,17 +1899,13 @@ class Serder:
 
                     case "A":  # aggregate or list of blocks list may be empty
                         if isinstance(v, list):
-                            frame = bytearray()
-                            for e in v:  # list of blocks
-                                frame.extend(Mapper(mad=e).qb64b)
+                            val = Aggor(ael=v).raw
 
-                            val = Counter.enclose(qb64=frame,
-                                                  code=Codens.GenericListGroup)
                         else:  # said but may not be empty
                             if not v:  # aggregate as said must not be empty
                                 raise SerializeError(f"Invalid section={l} "
                                                      f"empty said")
-                            val = val = Diger(qb64=v).qb64b
+                            val = Diger(qb64=v).qb64b
 
                     case _:  # if extra fields this is where logic would be
                         raise SerializeError(f"Unsupported protocol field label"
