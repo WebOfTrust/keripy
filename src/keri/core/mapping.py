@@ -116,6 +116,7 @@ class Mapper:
         Dummy (str): dummy character for computing SAIDs
 
     Properties:
+        mad (Mapping): MApping Dict of (field, value) pairs or None.
         raw (bytes): mad serialization as raw/qb64b bytes alias for .qb64b
         qb64b (bytes): mad serialization as qb64b bytes alias for .raw
         qb64 (str): mad serialization as qb64 str
@@ -141,7 +142,7 @@ class Mapper:
 
 
     Hidden Attributes:
-        ._mad (bytes): field map dict (MAD = MAp Dict)
+        ._mad (dict): field map dict (MAD = MAp Dict)
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
         ._strict (bool): labels strict format for strict property
@@ -252,11 +253,11 @@ class Mapper:
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
 
-            mad, raw, count, kind = self._inhale(buf, kind=kind)
+            mad, raw, count = self._inhale(buf, kind=kind)
             self._mad = mad
             self._raw = raw
             self._count = count
-            self._kind = kind
+
 
         if self.saidive and not makify and verify:  # verify saids
             mad = dict(self.mad) # make shallow copy at top level
@@ -503,7 +504,7 @@ class Mapper:
             else:
                 raise DeserializeError(f"Invalid deserialization {kind=}")
 
-        return (mad, raw, count, kind)
+        return (mad, raw, count)
 
 
     def _deserialize(self, ser):
@@ -756,6 +757,7 @@ class Compactor(Mapper):
         Dummy (str): dummy character for computing SAIDs
 
     Inherited Properties: (see Mapper)
+        mad (Mapping): MApping Dict of (field, value) pairs or None.
         raw (bytes): mad serialization as raw/qb64b bytes alias for .qb64b
         qb64b (bytes): mad serialization as qb64b bytes alias for .raw
         qb64 (str): mad serialization as qb64 str
@@ -780,13 +782,14 @@ class Compactor(Mapper):
                         False means do not compute SAIDs
 
     Properties:
-        leaves (dict): mapper at each leaf with computed said for leaf as
+        leaves (dict[Mapper]): each a mapper instance with computed said as
                              keyed by path to leaf, value is Mapper instance
-        partials (dict|None): mapper of partially disclosable variants of with
+        partials (dict[Compactor]|None): each compactor instance of partially
+                               disclosable variants of with
                                fully computed saids for its leaves.
                                keyed by tuple of leaf paths,
-                               value is Mapper instance.
-                             None means have yet to expand
+                               value is Compactor instance.
+                               None means have yet to expand
         iscompact (bool|None): True means one leaf with path = '' i.e.
                                         leaf is at top level and has said
                                         but does not verify said
@@ -797,14 +800,15 @@ class Compactor(Mapper):
                                         or cannot be
 
     Hidden Attributes:
-        ._mad (bytes): field map dict (MAD = MAp Dict)
+        ._mad (dict): field map dict (MAD = MAp Dict)
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
         ._strict (bool): labels strict format for strict property
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
-        ._leaves (dict): mad of each leaf indexed by path to leaf
-        ._partials (dict|None): partially compacted mad with fully computed saids
+        ._leaves (dict[Mapper]): mapper of each leaf indexed by path to leaf
+        ._partials (dict[Compactor]|None): partially compacted mad with fully
+                           computed saids
                            indexd by tuple of leaf paths in mad
 
     """
@@ -864,7 +868,6 @@ class Compactor(Mapper):
         return None
 
 
-
     @property
     def leaves(self):
         """Getter for ._leaves
@@ -881,10 +884,10 @@ class Compactor(Mapper):
         """Getter for ._partials
 
         Returns:
-              partials (dict): mapper of partially disclosable variants of with
-                               fully computed saids for its leaves.
+              partials (dict[Compactor]): each compactor of partially disclosable
+                               variant with fully computed saids for its leaves
                                keyed by tuple of leaf paths,
-                               value is Mapper instance.
+                               value is Compactor instance.
         """
         return self._partials
 
@@ -1142,3 +1145,654 @@ class Compactor(Mapper):
                 self.partials[tuple(index)] = partial
 
 
+
+class Aggor:
+    """Aggor class for CESR native serializations of non-string iterables
+    (list) that are aggragable into a single primite value called the aggregate
+    or agid (AGID) for aggregate as identifier.
+    Each element of the list is either nested field map or the SAID of that field
+    map.
+
+    Each instance has an property .agid (aggregate identifier) this is the aggregate
+    of the list elements computed by iteratively digesting (compacting) elements.
+    A cryptographic commitment to the aggregate (agid) can be verfied
+    against its partial re-expansion into an Aggor.
+
+    Class Attributes:
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+
+    Properties:
+        agid (str|None): aggregated digest. None when empty ael.
+        ael (list[dict|str]): aggregate element list (elements)
+        atoms (list[Mapper|Diger]): Mapper or Diger instances
+        raw (bytes): ael serialization as raw/qb64b bytes alias for .qb64b
+        qb64b (bytes): ael serialization as qb64b bytes alias for .raw
+        qb64 (str): ael serialization as qb64 str
+        qb2 (bytes): ael serialization in qb2
+        count (int): number of quadlets/triplets in ael serialization
+        byteCount (int): number of bytes in .count quadlets/triplets given cold
+        size (int):  Number of bytes of field map serialization in text
+                domain (qb64b)
+        strict (bool): True means labels in nested field maps must match strict
+                        formal limitations
+                            labels must be valid attribute names,
+                            i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                            which usually serialize more compactly
+                       False means labels may be any utf-8 text
+        saids (dict):   default saidive fields each element field map top-level.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+                              of element mapper
+        saidive (bool): True means compute SAID(s) of elements using .saids
+                        False means do not compute SAIDs
+
+
+    Hidden Attributes:
+        ._agid (str|None): aggregated digest
+        ._ael (list[dict|str]): aggregable element list
+        ._atoms (list[Mapper|Diger]): Mapper or Diger instances
+        ._raw (bytes): expanded mad serialization in qb64b text bytes domain
+        ._count (int): number of quadlets/triplets in mad serialization
+        ._strict (bool): labels strict format for strict property
+        ._saids (dict): default top-level said fields and codes
+        ._saidive (bool): compute saids or not
+        ._kind (str): serialization kind from Kinds
+
+    """
+    Saids = dict(d=DigDex.Blake3_256)  # default said field label with digestive code
+
+
+    @classmethod
+    def computeAgid(cls, atoms):
+        """Computes agid from atoms
+
+        Returns:
+           agid (str|None): qb64 of agid on atoms. None if empty atoms or
+                            any atom is empty or None
+
+        Parameters:
+            atoms (list[Diger|Mapper])
+        """
+        agid = None
+        asaids = [atom.said if isinstance(atom, Mapper) else atom.qb64
+                                                    for atom in atoms]
+
+        if asaids and all(asaids):
+            cat = "".join(asaids)
+            agid = Diger(ser=cat.encode()).qb64
+
+        return agid
+
+
+    @classmethod
+    def verifyDisclosure(cls, ael, agid, kind=Kinds.cesr, saids=None):
+        """Verify disclosure of ael against agid using serialization kind
+
+        Returns:
+            result (bool): True if elements computed agid == provided agid for
+                                serialization of kind
+                           False otherwise
+
+        Parameters:
+            ael (list[str|dict]): aggrable element list. each element is either:
+                                   said of element or
+                                   element dict
+            agid (str): qb64 of agid to compare against said computed on elements
+            kind (str): serialization kind for digest computation
+            saids (dict): default saidive fields each element field map top-level.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+                              of element mapper
+
+        """
+        try:  # create aggor from ael with verify True so it computes agid
+            aggor = cls(ael=ael, kind=kind, saids=saids, verify=True)
+        except Exception as ex:
+            return False
+
+        if aggor.agid != agid:
+            return False
+
+        return True
+
+
+    def __init__(self, *, ael=None, raw=None, qb64b=None, qb64=None, qb2=None,
+                 strip=False, makify=False, verify=True, strict=True,
+                 saids=None, saidive=True, kind=Kinds.cesr):
+        """Initialize instance
+
+        Parameters:
+            ael (NonStringIterable|None):  aggregable element list (elements)
+                Ignored if None
+            raw (str|bytes|bytearray|None): ael serialization in qb64b text domain
+                bytes domain. Alias for qb64b/qb64a. Compatible interface with
+                Serder
+                Ignored if None or mad provided. Alias for qb64
+            qb64b (str|bytes|bytearray|None): mad serialization in qb64b text
+                domain bytes/str. Compatible interface with Counter
+                Ignored if None or fields provided. Alias for qb64
+            qb64 (str|bytes|bytearray|None): mad serialization in qb64b text
+                domain str/bytes. Compatible interface with Counter
+                Ignored if None or mad provided. Alias for qb64b
+            qb2 (bytes|bytearray|None): fields serialization in qb2 binary domain
+                Ignored if None or mad provided. Compatible interface with Counter
+            strip (bool):  True means strip mapper contents from input stream
+                bytearray after parsing qb64, qb64b or qb2. False means do not strip.
+                default False. Only applicable when native CESR (kind == Kinds.cesr)
+            makify (bool): True means compute saids when .saidive
+                           False means do not comput saids even when .saidive
+            verify (bool): True means verify element serialization against element
+                               mad said if any.
+                           False means do not verify
+            strict (bool): True means labels must match strict formal limitations
+                            labels must be valid attribute names,
+                            i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                            which usually serialize more compactly
+                           False means labels may be any utf-8 text
+            saids (dict): default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                            False means do not compute SAIDs
+
+
+        Assumes that when qb64 or qb64b or qb2 are provided that they have
+            already been extracted from a stream and are self contained
+
+        """
+        makify = True if makify else False
+        verify = True if verify else False
+
+        self._strict = True if strict else False
+        self._saids = dict(saids if saids is not None else self.Saids)  # make copy
+        self._saidive = True if saidive else False
+        self._kind = kind
+        self._agid = None
+
+        if isNonStringIterable(ael):
+            ael = deepcopy(ael)  # make deepcopy so does not mutate argument
+        ael = ael if ael is not None else list()
+        qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
+        raw = raw if raw is not None else qb64b # copy qb64b to raw
+
+        if ael or not (raw or qb64b or qb2):  # mad may be empty if not others
+            atoms = []
+            for i, element in enumerate(ael):
+                if isinstance(element, Mapping):
+                    # will compute  top-level saids of elements if makify and saidive
+                    mapper = Mapper(mad=element, makify=makify, strict=self.strict,
+                                    saids=self.saids, saidive=self.saidive,
+                                    kind=self.kind)
+                    ael[i] = mapper.mad
+                    atoms.append(mapper)
+
+                elif isinstance(element, str):
+                    try: # force check element is valid digest
+                        diger = Diger(qb64=element)
+                    except Exception as ex:
+                        raise InvalidValueError(f"Invalid {element=} of "
+                                                "Aggor") from ex
+                    atoms.append(diger)
+
+                else:
+                    raise InvalidValueError(f"Invalid {element=} in ael")
+
+            self._atoms = atoms
+            self._ael = ael
+
+            raw, count = self._exhale(ael=ael, kind=kind)
+            self._raw = raw
+            self._count = count
+
+        else:
+            if raw:
+                if hasattr(raw, "encode"):  # bytearrays do not have "encode"
+                    raw = raw.encode()  # not apply to bytearrays
+
+                if kind == Kinds.cesr:
+                    ctr = Counter(qb64b=raw)  # peek at counter
+                    bs = ctr.byteCount() + ctr.byteSize()
+                    buf = raw[:bs]
+                    if strip and isinstance(raw, bytearray):
+                        del raw[:bs]
+                else:
+                    buf = raw[:]
+
+            elif qb2:
+                if kind == Kinds.cesr:
+                    ctr = Counter(qb2=qb2)  # peek at counter
+                    bs = ctr.byteCount(cold=Colds.bny) + ctr.byteSize(Colds.bny)
+                    buf = encodeB64(qb2[:bs])  # deserialize in qb64 text domain
+                    if strip and isinstance(qb2, bytearray):
+                        del qb2[:bs]
+                else:
+                    buf = raw[:]
+
+            else:
+                raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
+
+            ael, atoms, raw, count = self._inhale(buf,
+                                                     kind=kind,
+                                                     verify=verify)
+            self._ael = ael
+            self._atoms = atoms
+            self._raw = raw
+            self._count = count
+
+        self._agid = self.computeAgid(self.atoms)
+
+        if self.saidive and not makify and verify:  # verify saids of elements
+            for i, element in enumerate(self.ael):
+                atom = self.atoms[i]
+                asaid = atom.said if isinstance(atom, Mapper) else atom.qb64
+
+                if isinstance(element, Mapping):
+                    try:
+                        mapper = Mapper(mad=element, makify=True, strict=self.strict,
+                                    saids=self.saids, saidive=self.saidive,
+                                    kind=self.kind)
+                    except Exception as ex:
+                        raise InvalidValueError(f"Invalid {element=} of "
+                                                "Aggor") from ex
+                    csaid = mapper.said
+
+                elif isinstance(element, str):
+                    try: # force check element is valid digest
+                        diger = Diger(qb64=element)
+                    except Exception as ex:
+                        raise InvalidValueError(f"Invalid {element=} of "
+                                                "Aggor") from ex
+                    csaid = diger.qb64
+
+                else:
+                    raise InvalidValueError(f"Invalid {element=} of "
+                                                f"Aggor")
+                if asaid != csaid:
+                    raise InvalidValueError(f"Provided said={asaid} of element "
+                                            f"at index={i} does not verify with"
+                                            f" computed said={csaid}")
+
+    @property
+    def agid(self):
+        """agid  aggregated digest
+
+        Returns:
+              agid (str|None): aggregated digest. None when empty ael
+        """
+        return self._agid
+
+
+    @property
+    def ael(self):
+        """Getter for ._ael
+
+        Returns:
+              ael (list): aggregable elements list
+        """
+        return self._ael
+
+    @property
+    def atoms(self):
+        """Getter for ._atoms
+
+        Returns:
+              atoms (list[Mapper|Diger]): atoms as Mapper or Diger instances
+        """
+        return self._atoms
+
+
+    @property
+    def raw(self):
+        """Getter for ._raw as text domain bytes
+        Returns:
+            raw (bytes): field map serialization
+        """
+        return self._raw
+
+
+    @property
+    def qb64b(self):
+        """Getter for ._raw as text domain bytes
+        Returns:
+            qb64b (bytes): field map serialization
+        """
+        return self._raw
+
+
+    @property
+    def qb64(self):
+        """Getter for ._raw as text domain str
+
+        Returns:
+              qb64 (str): field map serialization
+        """
+        return self._raw.decode()
+
+
+    @property
+    def qb2(self):
+        """Getter for ._raw converted to qb2 binary domain
+
+        Returns:
+              qb2 (bytes): field map serialization as binary domain
+
+        """
+        if self.kind != Kinds.cesr:
+            raise ValueError(f"Binary domain undefined for non-native "
+                                    f"kind={self.kind}")
+        return decodeB64(self._raw)
+
+
+    @property
+    def count(self):
+        """Getter for ._count. Makes ._count read only
+        Returns:
+            count (int|None):  count value in quadlets/triples chars/bytes  of
+                               field map serialization when native CESR
+                               Otherwise None when non-native
+
+        """
+        return self._count
+
+
+    @property
+    def size(self):
+        """Number of bytes of field map serialization in text domain (qb64b)
+
+        Returns:
+            size (int):  Number of bytes of field map serialization in text
+                domain (qb64b)
+
+        """
+        if self.kind != Kinds.cesr:
+            return len(self.raw)
+
+        return self._count * 4  # always text domain when native cesr
+
+    @property
+    def strict(self):
+        """Getter for ._strict
+
+        Returns:
+              strict (bool): True means labels must match strict formal limitations
+                               labels must be valid attribute names,
+                               i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
+                               which usually serialize more compactly
+                             False means labels may be any utf-8 text
+        """
+        return self._strict
+
+
+    @property
+    def saids(self):
+        """Getter for ._saids
+
+        Returns:
+            saids (dict): default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        """
+        return self._saids
+
+
+    @property
+    def saidive(self):
+        """Getter for ._saidive
+
+        Returns:
+              saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                            False means do not compute SAIDs
+        """
+        return self._saidive
+
+    @property
+    def kind(self):
+        """Getter for ._kind
+
+        Returns:
+              kind (str): serialization kind from Kinds
+        """
+        return self._kind
+
+
+    def byteCount(self, cold=Colds.txt):
+        """Computes number of bytes from .count quadlets/triplets given cold
+
+        Returns:
+            byteCount (int): number of bytes in .count quadlets/triplets given cold
+
+        Parameters:
+            cold (str): value of Coldage to indicate if text (qb64) or binary (qb2)
+                        in order to convert .count quadlets/triplets to byte count
+                        if not Colds.txt or Colds.bny raises ValueError
+        """
+        if self.kind != Kinds.cesr:
+            raise ValueError(f"Byte count undefined for non-native kind={self.kind}")
+
+        if cold == Colds.txt:  # quadlets
+            return self.count * 4
+
+        if cold == Colds.bny:  # triplets
+            return self.count * 3
+
+        raise ValueError(f"Invalid {cold=} for byte count conversion")
+
+
+    def _inhale(self, ser=None, kind=Kinds.cesr, verify=True):
+        """Deserializes ser into .mad
+
+        Returns:
+            tuple(ael, atoms, raw, count, kind): results of deserialization where:
+                ael (list[dict|str]): field maps or saids deserialized from ser
+                atoms (list[Mapper|diger]): mapper or diger instances deserialized from ser
+                raw is bytes of ser
+                count is number of bytes in raw
+                kind is serialization kind of ser from sniffing
+
+        Parameters:
+            ser (str|bytes|bytearray|None): mad serialization in raw/qb64b
+                text domain bytes. Uses self.raw if None
+            kind (str): serialization kind from Kinds. Assumes already know what
+                        kind from enclosing message sniff etc.
+            verify (bool): True means verify element serialization against element
+                               mad said if any.
+        """
+        ser = ser if ser is not None else self.raw
+        raw = bytes(ser)  # make bytes copy
+        ael = list()
+        atoms = list()
+
+        if kind == Kinds.cesr:  # native CESR
+            ser = bytearray(ser)  # make bytearray copy so can consume on the go
+
+            # consume list ctr assumes already extracted full list
+            lctr = Counter(qb64b=ser, strip=True)
+            if lctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
+                raise DeserializeError(f"Expected GenericListGroup got counter name="
+                                       f"{lctr.name}")
+
+            count = lctr.count + (lctr.fullSize // 4)  # include counter & contents
+            if len(ser) != lctr.count * 4:
+                raise DeserializeError(f"Invalid list content size given count="
+                                       f"{lctr.count}")
+
+            while (ser):
+                # element as attribute map said or as attribute field map
+                if ser[0] == ord(b'-'):  # counter so should be field map
+                    ctr = Counter(qb64b=ser)  # peek at counter
+                    if ctr.name in ('GenericMapGroup', 'BigGenericMapGroup'):
+                        try:
+                            mapper = Mapper(qb64=ser, strip=True,
+                                            strict=self.strict,
+                                            saids=self.saids,
+                                            saidive=self.saidive,
+                                            kind=kind,
+                                            verify=verify)
+                        except Exception as ex:
+                            raise DeserializeError(f"Invalid element while "
+                                                   f"deserializing") from ex
+                    else:
+                        raise DeserializeError(f"Expected Map group"
+                                           f"got {ctr.name}")
+                    ael.append(mapper.mad)
+                    atoms.append(mapper)
+
+                else:  # may not be empty str
+                    try:
+                        diger = Diger(qb64b=ser, strip=True)
+                    except  Exception as ex:
+                        raise DeserializeError(f"Invalid element while "
+                                               f"deserializing") from ex
+
+                    ael.append(diger.qb64)
+                    atoms.append(diger)
+
+        else:  # non-native CESR
+            count = None
+            if kind == Kinds.json:
+                try:
+                    ael = json.loads(raw.decode())
+                except Exception as ex:
+                    raise DeserializeError(f"Error deserializing JSON: "
+                                           f"{raw.decode()}") from ex
+
+            elif kind == Kinds.mgpk:
+                try:
+                    ael = msgpack.loads(raw)
+                except Exception as ex:
+                    raise DeserializeError(f"Error deserializing MGPK: "
+                        f"{raw.decode()}") from ex
+
+            elif kind == Kinds.cbor:
+                try:
+                    ael = cbor.loads(raw)
+                except Exception as ex:
+                    raise DeserializeError(f"Error deserializing CBOR: "
+                        f"{raw.decode()}") from ex
+
+            else:
+                raise DeserializeError(f"Invalid deserialization {kind=}")
+
+            if not isinstance(ael, list):
+                raise DeserializeError(f"Invalid ael expected list got "
+                                       f"type={type(ael)}")
+            for atom in ael:
+                if isinstance(atom, Mapping):
+                    try:
+                        mapper = Mapper(mad=atom,
+                                        strict=self.strict,
+                                        saids=self.saids,
+                                        saidive=self.saidive,
+                                        kind=kind,
+                                        verify=verify)
+                    except Exception as ex:
+                        raise DeserializeError(f"Invalid element while "
+                                               f"deserializing") from ex
+
+                    atoms.append(mapper)
+
+                elif isinstance(atom, str):
+                    try:
+                        diger = Diger(qb64=atom)
+                    except  Exception as ex:
+                        raise DeserializeError(f"Invalid element while "
+                                               f"deserializing") from ex
+
+                    atoms.append(diger)
+
+                else:
+                    raise DeserializeError(f"Invalid element type while "
+                                           f"deserializing")
+
+        return (ael, atoms, raw, count)
+
+
+
+    def _exhale(self, ael=None, kind=Kinds.cesr):
+        """Serializes aggregable element list
+
+        Parameters:
+            ael (list|None): serializable aggregable element list (elements)
+                             Uses self.ael ael is None
+            dummy (bool): True means dummy said fields given by .saids
+                          False means do not dummy said fields given by .saids
+            kind (str): serialization kind from Kinds
+
+        Returns:
+            ser (bytes): qb64b serialization of mad
+        """
+        ael = ael if ael is not None else self.ael
+
+        if kind == Kinds.cesr:  # native CESR
+            ser = bytearray()  # full field map serialization as qb64 with counter
+            bdy = bytearray()
+
+            for element in ael:  # assumes valid element order
+                if isinstance(element, Mapping):
+                    try:
+                        mapper = Mapper(mad=element,
+                                        strict=self.strict,
+                                        kind=kind)
+                    except Exception as ex:
+                        raise SerializeError(f"Invalid atom while "
+                                             f"Serializing") from ex
+                    bdy.extend(mapper.qb64b)
+
+                elif isinstance(element, str):
+                    bdy.extend(element.encode())
+
+            ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericListGroup))
+            raw = bytes(ser)  # bytes so can sign, do crypto operations on it
+            count = len(ser) // 4
+
+        else:  # non-native CESR
+            count = None
+
+            if kind == Kinds.json:   # json.dumps returns str so must encode to bytes
+                raw = json.dumps(ael, separators=(",", ":"), ensure_ascii=False).encode()
+
+            elif kind == Kinds.mgpk:  # mgpk.dumps returns bytes
+                raw = msgpack.dumps(ael)
+
+            elif kind == Kinds.cbor:  # cbor.dumps returns bytes
+                raw = cbor.dumps(ael)
+
+            else:
+                raise SerializeError(f"Unsupported serialization {kind=}")
+
+        return (raw, count)
+
+
+    def disclose(self, indices=None):
+        """Make disclosure of elements given by indices list
+
+        Returns:
+            result (tuple[ael(list[str|dict]), kind(str)]):  tuple of form:
+                    (ael, kind) where each element in ael is either:
+                                                said of undisclosed element or
+                                                dict of disclosed element
+                                    kind is serialization kind for digests
+
+        Parameters:
+            indices (list[int]): each zero based index into disclosable elements
+
+        """
+        indices = indices if indices is not None else []
+        ael = [atom.said if isinstance(atom, Mapper) else atom
+                                                    for atom in self.atoms]
+        last = len(self.atoms) - 1
+        for i in indices:
+            if i >= 0 and i <= last and isinstance(self.atoms[i], Mapper):
+                ael[i] = self.atoms[i].mad
+
+        return (ael, self.kind)
