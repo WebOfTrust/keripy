@@ -1304,6 +1304,11 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
 
+        self.time = subing.IoSetSuber(db=self,
+                                      subkey='kram.',
+                                      schema=OobiRecord,
+                                      sep=">")
+
         self.reload()
 
         return self.env
