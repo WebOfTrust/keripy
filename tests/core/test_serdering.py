@@ -171,6 +171,7 @@ def test_serder():
     assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
+    assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
@@ -193,6 +194,7 @@ def test_serder():
     assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
+    assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
@@ -217,11 +219,10 @@ def test_serder():
     assert serder.ilk == None
     assert serder.compare(said=said)
 
-
-
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == raw
     assert serder.sad == sad
+    assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
@@ -235,6 +236,7 @@ def test_serder():
     serder = Serder(raw=raw, verify=False)  # test not verify
     assert serder.raw == raw
     assert serder.sad == sad
+    assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == kering.Vrsn_1_0
     assert serder.size == size
@@ -244,8 +246,6 @@ def test_serder():
     assert serder.ilk == None
     assert serder.stamp == None
     assert serder.compare(said=said)
-
-
 
     # Test ignores strip if raw is bytes not bytearray
     serder = Serder(raw=raw, strip=True)
@@ -277,7 +277,6 @@ def test_serder():
               b'"i":"","s":""}')
     with pytest.raises(kering.ValidationError):
         serder = Serder(raw=badraw, verify=True)
-
 
 
     #Test makify bootstrap for ACDC with CBOR

@@ -575,7 +575,7 @@ def test_acdcatt_message_json():
 
     # Test Defaults  kind=json
     said = 'EIARJfTtFysKAwUEhep4AwD_arQGOhU0GeAC0GlinYaM'
-    vc = 'ACDCCAACAAJSONAAXY.'
+    vs = 'ACDCCAACAAJSONAAXY.'
     size = 1496
 
     serder = acdcatt(issuer=issuer)  # defaults
@@ -586,7 +586,7 @@ def test_acdcatt_message_json():
     assert serder.regid == ''
     assert serder.issuee == None
     assert serder.sad['s']['$id'] == schemaSaid
-    assert serder.sad['v'] == vc
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -610,7 +610,7 @@ def test_acdcatt_message_json():
     assert serder.regid == regid
     assert serder.issuee == issuee
     assert serder.sad['s']['$id'] == schemaSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -732,7 +732,7 @@ def test_acdcatt_message_json():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == ""
@@ -793,7 +793,7 @@ def test_acdcatt_message_json():
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == ""
@@ -853,7 +853,7 @@ def test_acdcatt_message_cesr():
     assert serder.regid == ''
     assert serder.issuee == None
     assert serder.sad['s']['$id'] == schemaSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -878,7 +878,7 @@ def test_acdcatt_message_cesr():
     assert serder.regid == ''
     assert serder.issuee == None
     assert serder.schema == schemaSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -902,7 +902,7 @@ def test_acdcatt_message_cesr():
     assert serder.regid == regid
     assert serder.issuee == issuee
     assert serder.sad['s']['$id'] == schemaSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1029,7 +1029,7 @@ def test_acdcatt_message_cesr():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -1090,7 +1090,7 @@ def test_acdcatt_message_cesr():
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -1179,7 +1179,7 @@ def test_schema_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.schema == schemaSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1199,7 +1199,7 @@ def test_schema_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.schema == schemaSad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1262,7 +1262,7 @@ def test_schema_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.schema == schemaSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1282,7 +1282,7 @@ def test_schema_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.schema == schemaSad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1347,7 +1347,7 @@ def test_attribute_section():
     assert serder.said == said
     assert serder.sad['a'] == attrSaid
     assert serder.issuee == None  # since said not sad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1368,7 +1368,7 @@ def test_attribute_section():
     assert serder.said == said
     assert serder.sad['a'] == attrSad
     assert serder.issuee == issuee  # since sad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1412,7 +1412,7 @@ def test_attribute_section():
     assert serder.said == said
     assert serder.sad['a'] == attrSaid
     assert serder.issuee == None  # since said not sad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1433,7 +1433,7 @@ def test_attribute_section():
     assert serder.said == said
     assert serder.sad['a'] == attrSad
     assert serder.issuee == issuee  # since sad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1510,7 +1510,7 @@ def test_edge_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['e'] == edgeSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1530,7 +1530,7 @@ def test_edge_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['e'] == edgeSad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1580,7 +1580,7 @@ def test_edge_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['e'] == edgeSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1600,7 +1600,7 @@ def test_edge_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['e'] == edgeSad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1695,7 +1695,7 @@ def test_rule_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['r'] == ruleSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1715,7 +1715,7 @@ def test_rule_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['r'] == ruleSad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1774,7 +1774,7 @@ def test_rule_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['r'] == ruleSaid
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1794,7 +1794,7 @@ def test_rule_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['r'] == ruleSad
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -1956,9 +1956,9 @@ def test_acdcagg_message():
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
     assert serder.issuee == None
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
@@ -2018,9 +2018,9 @@ def test_acdcagg_message():
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
     assert serder.issuee == None
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
@@ -2058,12 +2058,12 @@ def test_acdcagg_message():
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
     assert serder.edge['d'] == edgeSaid
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
@@ -2148,12 +2148,12 @@ def test_acdcagg_message():
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
     assert serder.edge == edgeSaid
     assert serder.rule == ruleSaid
     assert serder.sad == \
@@ -2317,9 +2317,9 @@ def test_acdcagg_message():
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
     assert serder.issuee == None
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
@@ -2379,9 +2379,9 @@ def test_acdcagg_message():
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
     assert serder.issuee == None
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
@@ -2419,12 +2419,12 @@ def test_acdcagg_message():
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
     assert serder.edge['d'] == edgeSaid
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
@@ -2507,12 +2507,12 @@ def test_acdcagg_message():
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
     assert serder.edge == edgeSaid
     assert serder.rule == ruleSaid
     assert serder.sad == \
@@ -2656,9 +2656,9 @@ def test_aggregate_section():
     serder = aggregate(aggregate=aggrAgid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
 
     # test round trip
     raw = serder.raw
@@ -2676,9 +2676,9 @@ def test_aggregate_section():
     serder = aggregate(aggregate=aggrAel, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
 
     # test round trip
     raw = serder.raw
@@ -2727,9 +2727,9 @@ def test_aggregate_section():
     serder = aggregate(aggregate=aggrAgid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
 
     # test round trip
     raw = serder.raw
@@ -2747,9 +2747,9 @@ def test_aggregate_section():
     serder = aggregate(aggregate=aggrAel, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
 
     # test round trip
     raw = serder.raw
@@ -2935,7 +2935,7 @@ def test_acdcmap_message():
     assert serder.schema == schemaSaid
     assert serder.sad['a'] == attrSaid
     assert serder.issuee == None
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
@@ -2971,7 +2971,7 @@ def test_acdcmap_message():
     assert serder.schema == schemaSad
     assert serder.sad['a'] == attrSad
     assert serder.issuee == issuee
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -2995,7 +2995,7 @@ def test_acdcmap_message():
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -3072,7 +3072,7 @@ def test_acdcmap_message():
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -3117,13 +3117,13 @@ def test_acdcmap_message():
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.issuee == None
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
     assert serder.edge['d'] == edgeSaid
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
@@ -3197,13 +3197,13 @@ def test_acdcmap_message():
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.issuee == None
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
     assert serder.edge == edgeSaid
     assert serder.rule == ruleSaid
     assert serder.sad == \
@@ -3390,7 +3390,7 @@ def test_acdcmap_message():
     assert serder.schema == schemaSaid
     assert serder.sad['a'] == attrSaid
     assert serder.issuee == None
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
@@ -3427,7 +3427,7 @@ def test_acdcmap_message():
     assert serder.schema == schemaSad
     assert serder.sad['a'] == attrSad
     assert serder.issuee == issuee
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -3451,7 +3451,7 @@ def test_acdcmap_message():
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -3527,7 +3527,7 @@ def test_acdcmap_message():
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -3577,7 +3577,7 @@ def test_acdcmap_message():
     assert serder.schema == schemaSaid
     assert serder.sad['a'] == attrSaid
     assert serder.issuee == None
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
@@ -3613,7 +3613,7 @@ def test_acdcmap_message():
     assert serder.schema == schemaSad
     assert serder.sad['a'] == attrSad
     assert serder.issuee == issuee
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.size == size
 
     # test round trip
@@ -3637,7 +3637,7 @@ def test_acdcmap_message():
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -3712,7 +3712,7 @@ def test_acdcmap_message():
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
@@ -3756,13 +3756,13 @@ def test_acdcmap_message():
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.size == size
-    assert serder.sad['v'] == vs
+    assert serder.verstr == vs
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.issuee == None
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAel
+    assert serder.aggreg == aggrAel
     assert serder.edge['d'] == edgeSaid
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
@@ -3836,13 +3836,13 @@ def test_acdcmap_message():
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
-    assert serder.sad['v'] == cvs != vs  # but vs not stable not same as uncompacted
+    assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
     assert serder.issuer == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.issuee == None
     assert serder.schema == schemaSaid
-    assert serder.sad['A'] == aggrAgid
+    assert serder.aggreg == aggrAgid
     assert serder.edge == edgeSaid
     assert serder.rule == ruleSaid
     assert serder.sad == \
