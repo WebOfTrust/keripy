@@ -289,7 +289,7 @@ class Serder:
     Properties:
         raw (bytes): of serialized event only
         sad (dict): self addressed data dict
-
+        verstr (str | None): sad["v"] version string 'v' field when present
         proto (str): Protocolage value as protocol identifier such as KERI, ACDC
                      alias of .protocol
         protocol (str): Protocolage value as protocol identifier such as KERI, ACDC
@@ -298,13 +298,13 @@ class Serder:
         genus (str): CESR genus code for supported cesr genus
         gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
                             when version field includes it (future)
+        mucodes (MUDex): selected by .gvrsn latest from (MUDex_1_0, MUDex_2_0)
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
-
         said (str): qb64 said of .raw given by appropriate field
         saidb (bytes): qb64b of .said
         ilk (str | None): packet type for this Serder if any (may be None)
-
+        stamp (str | None): datetie stamp sad["dt"] when present
 
     Hidden Attributes:
         ._raw (bytes): serialized message
@@ -1996,6 +1996,16 @@ class Serder:
 
 
     @property
+    def verstr(self):
+        """verstr (version string 'v' field) property getter
+        Optional fields return None when not present
+        Returns:
+           verstr (str | None): sad["v"] version string 'v' field when present
+        """
+        return self._sad.get('v')
+
+
+    @property
     def genus(self):
         """genus (CESR genu code) property getter
 
@@ -2016,14 +2026,6 @@ class Serder:
 
 
     @property
-    def kind(self):
-        """kind property getter
-        Returns:
-            kind (str): value of Serials (Serialage)"""
-        return self._kind
-
-
-    @property
     def proto(self):
         """proto property getter,
         protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
@@ -2032,6 +2034,7 @@ class Serder:
             proto (str): Protocolage value as protocol type
         """
         return self._proto
+
 
     @property
     def protocol(self):
@@ -2052,6 +2055,25 @@ class Serder:
             vrsn (Versionage): instance of protocol version for this Serder
         """
         return self._pvrsn
+
+
+    @property
+    def mucodes(self):
+        """Selects mucodes from .MUCodes based on .gvrsn
+        Returns:
+            mucodes (MUDex): selected by .gvrsn latest from (MUDex_1_0, MUDex_2_0)
+        """
+        # get latest supported minor version
+        latest = list(self.MUCodes[self.gvrsn.major])[-1]
+        return self.MUCodes[self.gvrsn.major][latest]
+
+
+    @property
+    def kind(self):
+        """kind property getter
+        Returns:
+            kind (str): value of Serials (Serialage)"""
+        return self._kind
 
 
     @property
@@ -2091,6 +2113,7 @@ class Serder:
         """
         return self._sad.get('t')  # returns None if 't' not in sad
 
+
     @property
     def stamp(self):
         """stamp property getter (datetime stamp in iso8601 format)
@@ -2099,16 +2122,6 @@ class Serder:
            stamp (str | None): sad["dt"] when present
         """
         return self._sad.get('dt')
-
-    @property
-    def mucodes(self):
-        """Selects mucodes from .MUCodes based on .gvrsn
-        Returns:
-            mucodes (MUDex): selected by .gvrsn latest from (MUDex_1_0, MUDex_2_0)
-        """
-        # get latest supported minor version
-        latest = list(self.MUCodes[self.gvrsn.major])[-1]
-        return self.MUCodes[self.gvrsn.major][latest]
 
 
 class SerderKERI(Serder):
@@ -2459,17 +2472,6 @@ class SerderKERI(Serder):
         """
         return self.delpre.encode("utf-8") if self.delpre is not None else None
 
-    #Propertives for dated Serders, qry, rpy, pro, bar, exn
-
-    @property
-    def stamp(self):
-        """
-        Returns:
-           stamp (str): date-time-stamp sad["dt"]. RFC-3339 profile of ISO-8601
-                datetime of creation of message or data
-        """
-        return self._sad.get("dt")
-
 
     #Properties for exn  exchange
 
@@ -2503,15 +2505,44 @@ class SerderACDC(Serder):
     """SerderACDC is Serder subclass with Labels for ACDC packet types (ilks) and
        properties for exposing field values of ACDC messages
 
-       See docs for Serder
+        Inherited Properties:  (see Serder)
+            raw (bytes): of serialized event only
+            sad (dict): self addressed data dict
+            verstr (str | None): sad["v"] version string 'v' field when present
+            proto (str): Protocolage value as protocol identifier such as KERI, ACDC
+                         alias of .protocol
+            protocol (str): Protocolage value as protocol identifier such as KERI, ACDC
+                            alias of .proto
+            pvrsn (Versionage): protocol version (Major, Minor)
+            genus (str): CESR genus code for supported cesr genus
+            gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+                                when version field includes it (future)
+            mucodes (MUDex): selected by .gvrsn latest from (MUDex_1_0, MUDex_2_0)
+            kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
+            size (int): number of bytes in serialization
+            said (str): qb64 said of .raw given by appropriate field
+            saidb (bytes): qb64b of .said
+            ilk (str | None): packet type for this Serder if any (may be None)
+            stamp (str | None): datetie stamp sad["dt"] when present
 
-    ToDo:
-        Schemer property getter. Schemer object should change name to Schemar
+        Properties:
+            uuid (str | None): qb64  of .sad["u"] salty nonce
+            uuidb (bytes | None): .uuid as  bytes
+            issuer (str | None): qb64  of .sad["i"] issuer AID
+            issuerb (bytes | None): .issuer AID as bytes
+            regid (str | None): qb64  registry SAID v1 .sad["ri"] v2 .said["rd"]
+            regidb (bytes | None): .regid as bytes
+            schema (dict | str | None): from ._sad["s"]
+            aggreg (dict | str): aggregate from ._sad["A"]
+            attrib (dict | str | None): from ._sad["a"]
+            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID if any
+            issueeb (bytes | None): qb64b  of .issuee AID as bytes if any
+            edge (dict | str): from ._sad["e"]
+            rule (dict | str): from ._sad["r"]
     """
     #override in subclass to enforce specific protocol
     Protocol = Protocols.acdc  # required protocol, None means any in Protocols is ok
     Proto = Protocols.acdc  # default protocol type
-
 
 
     @property
@@ -2549,7 +2580,7 @@ class SerderACDC(Serder):
         """issuerb property getter (issuer AID bytes)
         Optional fields return None when not present
         Returns:
-        issuerb (bytes | None): qb64b  of .issuer AID as bytes
+            issuerb (bytes | None): qb64b  of .issuer AID as bytes
         """
         return self.issuer.encode("utf-8") if self.issuer is not None else None
 
@@ -2559,7 +2590,7 @@ class SerderACDC(Serder):
         """regi property getter (registry SAID)
         Optional fields return None when not present
         Returns:
-           regi (str | None): qb64  registry SAID
+           regid (str | None): qb64  registry SAID
                               v1 .sad["ri"]
                               v2 .said["rd"]
         """
@@ -2570,11 +2601,11 @@ class SerderACDC(Serder):
 
 
     @property
-    def regib(self):
-        """regib property getter (registry identifier SAID bytes)
+    def regidb(self):
+        """regid property getter (registry identifier SAID bytes)
         Optional fields return None when not present
         Returns:
-        regib (bytes | None): qb64b  of .issuer AID as bytes
+            regidb (bytes | None): qb64b registry SAID v1 .sad["ri"] v2 .said["rd"]
         """
         return self.regid.encode() if self.regid is not None else None
 
@@ -2604,7 +2635,7 @@ class SerderACDC(Serder):
         """ise property getter (issuee AID)
         Optional fields return None when not present
         Returns:
-           issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
+            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
         """
         try:
             return self.attrib.get('i')
@@ -2617,17 +2648,17 @@ class SerderACDC(Serder):
         """isrb property getter (issuee AID bytes)
         Optional fields return None when not present
         Returns:
-        issueeb (bytes | None): qb64b  of .issuee AID as bytes
+            issueeb (bytes | None): qb64b  of .issuee AID as bytes if any
         """
         return self.issuee.encode("utf-8") if self.issuee is not None else None
 
 
     @property
-    def attagg(self):
-        """Attagg block property getter (attribute aggregate)
+    def aggreg(self):
+        """aggreg block property getter (attribute aggregate)
         Optional fields return None when not present
         Returns:
-            attagg (dict | str): from ._sad["A"]
+            aggreg (dict | str): aggregate from ._sad["A"]
         """
         return self._sad.get("A")
 
