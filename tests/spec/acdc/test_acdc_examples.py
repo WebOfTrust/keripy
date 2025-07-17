@@ -13,7 +13,7 @@ from keri import Vrsn_2_0, Kinds
 from keri.core import MtrDex, Salter
 from keri.core.eventing import incept
 
-def test_acdc_json_examples_setup():
+def test_acdc_examples_setup():
     """Tests that setup AIDs for working examples in the ACDC specification"""
     # Create controller and witness AIDs for issuer and issuee
 
@@ -144,7 +144,7 @@ def test_acdc_json_examples_setup():
     assert issuerWitSigKey == 'AHZFfaG17Txadhr0qiPYKySWHcAULD7bpq1lprl7tG5b'  # use in example
     assert issuerWitVerKey == 'DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5' # use in example
 
-    # create issuer AID with single sig simple inception event
+    # create issuer AID with single sig simple inception event JSON
     keys = [issuerVerKey]  # initial signing keys
     nkeys = [issuerRotVerKey]  # next (rotation) keys
     wits = [issuerWitVerKey]  # witness aids (same as public verkey)
@@ -168,8 +168,48 @@ def test_acdc_json_examples_setup():
         'c': [],
         'a': []
     }
-    issuerAid = serder.pre
-    assert issuerAid == 'EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T'
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFb.","t":"icp","d":"EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIo'
+                        b'o3QTmbs51T","i":"EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T","s":"0","kt":'
+                        b'"1","k":["DA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW8HobHKV74yi_"],"nt":"1","n":["DLe4'
+                        b'uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeM"],"bt":"1","b":["DLc6u76NIr0VqirQPC'
+                        b'9k4WlOHw2mIG97Q3BV0UM3EjH5"],"c":[],"a":[]}')
+
+    issuerAidJson = serder.pre
+    assert issuerAidJson == 'EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T'
+
+    # create issuer AID with single sig simple inception event CESR
+    keys = [issuerVerKey]  # initial signing keys
+    nkeys = [issuerRotVerKey]  # next (rotation) keys
+    wits = [issuerWitVerKey]  # witness aids (same as public verkey)
+    serder = incept(keys, code=MtrDex.Blake3_256, ndigs=nkeys, wits=wits,
+                    version=Vrsn_2_0, kind=Kinds.cesr)
+    assert serder.pre == 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6'
+    assert serder.said == 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6'
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAEU.',
+        't': 'icp',
+        'd': 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6',
+        'i': 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6',
+        's': '0',
+        'kt': '1',
+        'k': ['DA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW8HobHKV74yi_'],
+        'nt': '1',
+        'n': ['DLe4uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeM'],
+        'bt': '1',
+        'b': ['DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5'],
+        'c': [],
+        'a': []
+    }
+
+    assert serder.raw == (b'-FBE0OKERICAACAAXicpEF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6EF9ksTMfcHgF'
+                        b'jXLV-uiklpuglxGmKh5n15r4Al7-sHq6MAAAMAAB-JALDA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW'
+                        b'8HobHKV74yi_MAAB-JALDLe4uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeMMAAB-JALDLc6'
+                        b'u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5-JAA-JAA')
+
+    issuerAidCesr = serder.pre
+    assert issuerAidCesr == 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6'
 
     # create issuee incepting key state
 
@@ -287,7 +327,7 @@ def test_acdc_json_examples_setup():
     assert issueeWitSigKey == 'ABbQwnT_vJUkWgKA7oFfTXEFqQFqpqUsgJrkjpFmboow'  # use in example
     assert issueeWitVerKey == 'DB7etpbzc9GvqzlM_6X-pT34rguzJ2xBLcyRS6KOIKuD' # use in example
 
-    # create issuee AID with single sig simple inception event
+    # create issuee AID with single sig simple inception event JSON
     keys = [issueeVerKey]  # initial signing keys
     nkeys = [issueeRotVerKey]  # next (rotation) keys
     wits = [issueeWitVerKey]  # witness aids (same as public verkey)
@@ -312,10 +352,49 @@ def test_acdc_json_examples_setup():
         'a': []
     }
 
-    issueeAid = serder.pre
-    assert issueeAid == 'EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH'
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFb.","t":"icp","d":"EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-'
+                        b'dmyBCJ9ytH","i":"EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH","s":"0","kt":'
+                        b'"1","k":["DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ"],"nt":"1","n":["DA18'
+                        b'V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmC"],"bt":"1","b":["DB7etpbzc9GvqzlM_6'
+                        b'X-pT34rguzJ2xBLcyRS6KOIKuD"],"c":[],"a":[]}')
+
+    issueeAidJson = serder.pre
+    assert issueeAidJson == 'EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH'
+
+    # create issuee AID with single sig simple inception event CESR
+    keys = [issueeVerKey]  # initial signing keys
+    nkeys = [issueeRotVerKey]  # next (rotation) keys
+    wits = [issueeWitVerKey]  # witness aids (same as public verkey)
+    serder = incept(keys, code=MtrDex.Blake3_256, ndigs=nkeys, wits=wits,
+                    version=Vrsn_2_0, kind=Kinds.cesr)
+    assert serder.pre == 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P'
+    assert serder.said == 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P'
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAEU.',
+        't': 'icp',
+        'd': 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P',
+        'i': 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P',
+        's': '0',
+        'kt': '1',
+        'k': ['DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ'],
+        'nt': '1',
+        'n': ['DA18V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmC'],
+        'bt': '1',
+        'b': ['DB7etpbzc9GvqzlM_6X-pT34rguzJ2xBLcyRS6KOIKuD'],
+        'c': [],
+        'a': []
+    }
+
+    assert serder.raw == (b'-FBE0OKERICAACAAXicpEGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20PEGfaNGX8SuHp'
+                        b'90RN_W6YCxpVVyt6zezNv9XgSF9AF20PMAAAMAAB-JALDC-QD-olCSce4Sf6qapV0vqP0lvROt5D'
+                        b'WqMcUYxY6mFQMAAB-JALDA18V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmCMAAB-JALDB7e'
+                        b'tpbzc9GvqzlM_6X-pT34rguzJ2xBLcyRS6KOIKuD-JAA-JAA')
+
+    issueeAidCesr = serder.pre
+    assert issueeAidCesr == 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P'
 
     """Done Test"""
 
 if __name__ == "__main__":
-    test_acdc_json_examples_setup()
+    test_acdc_examples_setup()
