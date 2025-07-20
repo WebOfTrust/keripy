@@ -1163,7 +1163,7 @@ def test_compactor_basic():
     assert compactor.saidive == True
     assert compactor.said == said
     assert compactor.leaves == {}
-    assert compactor.partials == None
+    assert compactor.partials is None
     assert compactor.iscompact is None
     assert compactor.getTail(path='') == compactor.mad
     assert compactor.getTail(path='.z') == \
@@ -1282,8 +1282,8 @@ def test_compactor_basic():
             }
         }
     }
-    said = 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'
-    raw = (b'-IAq'
+
+    oraw = (b'-IAq'
            b'0J_dEEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'
            b'0J_qXtop'
            b'0J_z-IAK0J_x-IAF0J_d1AAP0J_w0Mbottom'
@@ -1291,15 +1291,16 @@ def test_compactor_basic():
            b'0J_y-IAO0J_d1AAP0J_v-IAK'
            b'0J_d1AAP0J_t-IAG0J_s1AAFdown0J_r1AAFdeep')
 
+    osaid = 'EEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ'
 
     compactor = Compactor(mad=imad, makify=True)
     assert compactor.mad == omad
-    assert compactor.raw == raw
+    assert compactor.raw == oraw
     assert compactor.saids == dict(d=DigDex.Blake3_256)
     assert compactor.saidive == True
-    assert compactor.said == said
+    assert compactor.said == osaid
     assert compactor.leaves == {}
-    assert compactor.partials == None
+    assert compactor.partials is None
     assert compactor.iscompact is None
     assert compactor.getTail(path='') == compactor.mad
     assert compactor.getTail(path='.z.x') == {'d': '', 'w': 'bottom'}
@@ -1438,6 +1439,7 @@ def test_compactor_basic():
         smad, leaf = compactor.getMad(path=path, mad=mad)
         smad[leaf] = compactor.leaves[path].said
 
+    # smad changes mad
     assert mad == \
     {
         'd': 'EDevj28ZwbYZjEcV3wRhnTFNaHOuQZ4u140PJMXH7Ak4',
@@ -1454,7 +1456,7 @@ def test_compactor_basic():
         }
     }
 
-    # now create partial
+    # now create partials manually
     compactor = Compactor(mad=mad, makify=True)
 
     # compute leaves of partial
@@ -1535,6 +1537,85 @@ def test_compactor_basic():
     assert compactor.raw == (b'-IAr0J_dEOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr0J_qXtop0J_z-IAP0J_xEKME'
                             b'6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl0J_u0L_under0J_yEAksZZOoIj34ok-04dUU'
                             b'YT_Den2-kkP7fH7wGpsV9Jj4')
+
+
+    # compactify upon creation
+    cmad = \
+    {
+        'd': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+        'q': 'top',
+        'z':
+        {
+            'x': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+            'u': 'under'
+        },
+        'y': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4'
+    }
+
+    craw = (b'-IAq0J_dEEqdCQzFQ0Fu6zzxsxTJ71__z8YuTZaWKeA-NjTDWGWJ0J_qXtop0J_z-IAK0J_x-IAF'
+            b'0J_d1AAP0J_w0Mbottom0J_u0L_under0J_y-IAO0J_d1AAP0J_v-IAK0J_d1AAP0J_t-IAG0J_s'
+            b'1AAFdown0J_r1AAFdeep')
+
+    csaid = 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr'
+
+    compactor = Compactor(mad=imad, makify=True, compactify=True)
+    assert compactor.mad == cmad
+    assert compactor.raw == craw
+    assert compactor.saids == dict(d=DigDex.Blake3_256)
+    assert compactor.saidive == True
+    assert compactor.said == csaid
+    assert len(compactor.leaves) == 4
+    assert len(compactor.partials) == 2
+    assert compactor.iscompact
+
+    leafPaths = list(compactor.leaves)
+    assert leafPaths == ['.z.x', '.y.v', '.y', '']
+    assert compactor.getTail(path='') == compactor.mad
+    assert compactor.getTail(path='.z.x') == 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl' # {'d': '', 'w': 'bottom'}
+    assert compactor.getTail(path='.y.v') == None
+    assert compactor.getMad(path='.z.x') == ({'x': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl', 'u': 'under'}, 'x')
+    assert compactor.getMad(path='.y.v') == (None, None)
+
+    leafPaths = list(compactor.leaves)
+    assert leafPaths == ['.z.x', '.y.v', '.y', '']
+
+    partialPaths = list(compactor.partials)
+    assert partialPaths == [('',), ('.z.x', '.y.v')]
+
+    cp = compactor.partials[('.z.x', '.y.v')]
+    assert cp.mad == \
+    {
+        'd': 'EOJ9rDVPYNNvPd1v7aeDbGX7IbOeKiZYTWjrGeddN8cr',
+        'q': 'top',
+        'z':
+        {
+            'x':
+            {
+                'd': 'EKME6zmr_015kduyBLtNgnFYXzfJu4Z8jhbp2gRUiqGl',
+                'w': 'bottom'
+            },
+           'u': 'under'
+        },
+        'y':
+        {
+            'd': 'EAksZZOoIj34ok-04dUUYT_Den2-kkP7fH7wGpsV9Jj4',
+            'v':
+            {
+                'd': 'EJUapYTPqriIaTv2jrQdpBVE6KbgQY35VJyg45-X4jyX',
+                't':
+                {
+                    's': 'down',
+                    'r': 'deep'
+                }
+            }
+        }
+    }
+    assert not cp.iscompact
+
+    cp = compactor.partials[('',)]
+    assert cp.mad == compactor.mad
+    assert cp.iscompact
+
 
     """Done Test"""
 
@@ -1848,6 +1929,14 @@ def test_compactor_compact_expand():
 
     # now expand
     compactor.expand()  # default greedy==True
+    assert compactor.iscompact is None
+    assert not compactor.partials
+    assert compactor.mad == emad
+    assert compactor.said is None
+
+
+    # do compactification at init
+    compactor = Compactor(mad=emad, makify=True, compactify=True)
     assert compactor.iscompact is None
     assert not compactor.partials
     assert compactor.mad == emad

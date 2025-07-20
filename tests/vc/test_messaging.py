@@ -623,9 +623,7 @@ def test_acdcatt_message_json():
 
     # Test fully populated and expanded
     attrs = dict(d="", i=issuee, name="Zoe")
-    attrPactor = Compactor(mad=attrs, makify=True, kind=kind)
-    attrPactor.compact()
-    attrPactor.expand()
+    attrPactor = Compactor(mad=attrs, makify=True, compactify=True, kind=kind)
     attrSaid = attrPactor.said
     attrs = list(attrPactor.partials.values())[0].mad    # since already compact
     assert attrs == \
@@ -643,9 +641,7 @@ def test_acdcatt_message_json():
         "winner": "EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9",
         "loser": "EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk"
     }
-    edgePactor = Compactor(mad=edges, makify=True, kind=kind)
-    edgePactor.compact()
-    edgePactor.expand()
+    edgePactor = Compactor(mad=edges, makify=True, compactify=True, kind=kind)
     edgeSaid = edgePactor.said
     edges = list(edgePactor.partials.values())[0].mad    # since already compact
     assert edges == \
@@ -687,9 +683,7 @@ def test_acdcatt_message_json():
       }
     }
 
-    rulePactor = Compactor(mad=rules, makify=True, kind=kind)
-    rulePactor.compact()
-    rulePactor.expand()
+    rulePactor = Compactor(mad=rules, makify=True, compactify=True, kind=kind)
     ruleSaid = rulePactor.said
     rules = list(rulePactor.partials.values())[1].mad
     assert rules == \
@@ -920,9 +914,7 @@ def test_acdcatt_message_cesr():
         'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
         'name': 'Zoe'
     }
-    attrPactor = Compactor(mad=attrs, makify=True, kind=kind)
-    attrPactor.compact()
-    attrPactor.expand()
+    attrPactor = Compactor(mad=attrs, makify=True, compactify=True, kind=kind)
     attrSaid = attrPactor.said
     attrs = list(attrPactor.partials.values())[0].mad    # since already compact
     assert attrs == \
@@ -940,9 +932,7 @@ def test_acdcatt_message_cesr():
         "winner": "EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9",
         "loser": "EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk"
     }
-    edgePactor = Compactor(mad=edges, makify=True, kind=kind)
-    edgePactor.compact()
-    edgePactor.expand()
+    edgePactor = Compactor(mad=edges, makify=True, compactify=True, kind=kind)
     edgeSaid = edgePactor.said
     edges = list(edgePactor.partials.values())[0].mad    # since already compact
     assert edges == \
@@ -984,9 +974,7 @@ def test_acdcatt_message_cesr():
       }
     }
 
-    rulePactor = Compactor(mad=rules, makify=True, kind=kind)
-    rulePactor.compact()
-    rulePactor.expand()
+    rulePactor = Compactor(mad=rules, makify=True, compactify=True, kind=kind)
     ruleSaid = rulePactor.said
     rules = list(rulePactor.partials.values())[1].mad
     assert rules == \
@@ -1316,9 +1304,8 @@ def test_attribute_section():
 
     # Test with JSON serialization
     kind = Kinds.json
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     attrSaid = compactor.said
     attrSad = list(compactor.partials.values())[1].mad
     assert attrSaid == 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL'
@@ -1381,9 +1368,8 @@ def test_attribute_section():
 
     # Test with CESR serialization
     kind = Kinds.cesr
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     attrSaid = compactor.said
     attrSad = list(compactor.partials.values())[1].mad
     assert attrSaid == 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-'
@@ -1473,9 +1459,8 @@ def test_edge_section():
 
     # Test with JSON serialization
     kind = Kinds.json
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     edgeSaid = compactor.said
     edgeSad = list(compactor.partials.values())[1].mad
     assert edgeSaid == 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF'
@@ -1543,9 +1528,8 @@ def test_edge_section():
 
     # Test with CESR serialization
     kind = Kinds.cesr
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     edgeSaid = compactor.said
     edgeSad = list(compactor.partials.values())[1].mad
     assert edgeSaid == 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw'
@@ -1649,9 +1633,8 @@ def test_rule_section():
 
     # Test with JSON serialization
     kind = Kinds.json
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     ruleSaid = compactor.said
     ruleSad = list(compactor.partials.values())[1].mad
     assert ruleSaid == 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
@@ -1728,9 +1711,8 @@ def test_rule_section():
 
     # Test with CESR serialization
     kind = Kinds.cesr
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     ruleSaid = compactor.said
     ruleSad = list(compactor.partials.values())[1].mad
     assert ruleSaid == 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
@@ -3228,6 +3210,49 @@ def test_acdcmap_message():
     assert serder.raw == raw
     assert serder.sad == sad
 
+    # private metadata variant empty top-level uuid field
+    said = 'EJzD7XSB0EUswRevNRTIypRIsqO_MDrWFvpHeHj6--26'
+    vs = 'ACDCCAACAAJSONAAGI.'
+    size = 392
+    ilk = None
+
+    serder = acdcmap(issuer=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
+                       attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said  # stable said of compact ACDC same as uncompacted
+    assert serder.ilk == ilk
+    assert serder.size == size
+    assert serder.verstr == vs
+    assert serder.issuer == issuer
+    assert serder.uuid == ""
+    assert serder.regid == regid
+    assert serder.issuee == None
+    assert serder.schema == schemaSaid
+    assert serder.attrib == attrSaid
+    assert serder.edge == edgeSaid
+    assert serder.rule == ruleSaid
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAAGI.',
+        'd': 'EJzD7XSB0EUswRevNRTIypRIsqO_MDrWFvpHeHj6--26',
+        'u': '',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
+        's': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
+        'a': 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL',
+        'e': 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF',
+        'r': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
+    }
+
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
     # Test with CESR serialization
     kind = Kinds.cesr
 
@@ -3733,6 +3758,49 @@ def test_acdcmap_message():
         'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
         'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
     }
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # private metadata variant empty top-level uuid field
+    said = 'EP77Cz6zmZ14_uLALBCWbP1dwtwW6S1iQMx9Ceaqwpy_'
+    vs = 'ACDCCAACAACESRAAFs.'
+    size = 364
+    ilk = None
+
+    serder = acdcmap(issuer=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
+                       attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said  # stable said of compact ACDC same as uncompacted
+    assert serder.ilk == ilk
+    assert serder.size == size
+    assert serder.verstr == vs
+    assert serder.issuer == issuer
+    assert serder.uuid == ""
+    assert serder.regid == regid
+    assert serder.issuee == None
+    assert serder.schema == schemaSaid
+    assert serder.attrib == attrSaid
+    assert serder.edge == edgeSaid
+    assert serder.rule == ruleSaid
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAACESRAAFs.',
+        'd': 'EP77Cz6zmZ14_uLALBCWbP1dwtwW6S1iQMx9Ceaqwpy_',
+        'u': '',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
+        'a': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-',
+        'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
+        'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
+    }
+
 
     # test round trip
     raw = serder.raw

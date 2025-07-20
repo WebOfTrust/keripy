@@ -17,11 +17,13 @@ import blake3
 import cbor2 as cbor
 import msgpack
 import pysodium
-import pytest
+
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives import hashes
 from cryptography import exceptions
+
+import pytest
 
 from keri import kering
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
