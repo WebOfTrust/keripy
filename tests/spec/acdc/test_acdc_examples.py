@@ -10,7 +10,7 @@ from base64 import urlsafe_b64decode as decodeB64
 import pytest
 
 from keri import Vrsn_2_0, Kinds
-from keri.core import MtrDex, Salter
+from keri.core import MtrDex, Salter, Noncer, Mapper, Compactor
 from keri.core.eventing import incept
 
 def test_acdc_examples_setup():
@@ -25,7 +25,12 @@ def test_acdc_examples_setup():
     assert salter.qb64 == '0ABhY2Rjc3BlY3dvcmtleGFt'  # CESR encoded for example
 
     # create set of signers each with private signing key and public verification key
-    signers = salter.signers(count=6, transferable=True, temp=True)
+    signers = salter.signers(count=4, transferable=True, temp=True)
+
+    # create witness signers as nontransferable
+    walt = b'acdcspecworkwits'
+    walter = Salter(raw=walt)
+    wigners = walter.signers(count=2,transferable=False, temp=True)
 
     # create issuer incepting key state, incepting signing key pair,
     # rotating key pair, and  witness key pair, (witness aid is its public verification key)
@@ -106,43 +111,20 @@ def test_acdc_examples_setup():
 
 
     # create issuer witness key state
-    """
-    Issuer Witness seed
-    size=32
-    path='2'
-    salt=b'acdcspecworkexam'
-    opslimit=1
-    memlimit=8192
-    seed = pysodium.crypto_pwhash(outlen=size,
-                                      passwd=path,
-                                      salt=self.raw,
-                                      opslimit=opslimit,
-                                      memlimit=memlimit,
-                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
-    seed = (b'vE}\xa1\xb5\xed<Zv\x1a\xf4\xaa#\xd8+$\x96\x1d\xc0\x14,>\xdb\xa6\xade\xa6\xb9{\xb4n[')
 
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
-
-    First 32 bytes of this internal sigkey is seed so we use seed externally as sigkey
-    verkey = b'\xb7:\xbb\xbe\x8d"\xbd\x15\xaa*\xd0</d\xe1iN\x1f\r\xa6 o{CpU\xd1C7\x121\xf9'
-
-    verfer = Verfer(raw=verkey,
-                    code=MtrDex.Ed25519 if transferable
-                    else MtrDex.Ed25519N)
-    """
-    issuerWitSeedRaw = (b'vE}\xa1\xb5\xed<Zv\x1a\xf4\xaa#\xd8+$\x96\x1d\xc0\x14,>\xdb\xa6\xade\xa6\xb9{\xb4n[')
+    issuerWitSeedRaw = (b'\x86\xa0&\x9b"B 5\\v\xe2\x11\xe5*\xc4\x80\x18\x8e\x17\xf9\x0f?\xee\x83\xb4\xe7f\xcaF\xf2\x11>')
     issuerWitSeedB64 = encodeB64(issuerWitSeedRaw)
-    assert issuerWitSeedB64 == b'dkV9obXtPFp2GvSqI9grJJYdwBQsPtumrWWmuXu0bls='
+    assert issuerWitSeedB64 == b'hqAmmyJCIDVcduIR5SrEgBiOF_kPP-6DtOdmykbyET4='
     assert decodeB64(issuerWitSeedB64) == issuerWitSeedRaw
 
-    issuerWitSigner = signers[2]
+    issuerWitSigner = wigners[0]
     issuerWitSigKey = issuerWitSigner.qb64  # issuer's private signing key seed
     issuerWitVerKey = issuerWitSigner.verfer.qb64  # issuer's public verification key
-    assert issuerWitSigner.verfer.raw == b'\xb7:\xbb\xbe\x8d"\xbd\x15\xaa*\xd0</d\xe1iN\x1f\r\xa6 o{CpU\xd1C7\x121\xf9'
-    assert encodeB64(issuerWitSigner.verfer.raw) == b'tzq7vo0ivRWqKtA8L2ThaU4fDaYgb3tDcFXRQzcSMfk='
+    assert issuerWitSigner.verfer.raw ==(b'\xa4Z\x0b\xa5,\x8a5\x18\xd4Tc\x13\x1a\x001\xcf\x168pC!\xf2\nbs\xa5\xc5a\xfcx\xe7\xbc')
+    assert encodeB64(issuerWitSigner.verfer.raw) == b'pFoLpSyKNRjUVGMTGgAxzxY4cEMh8gpic6XFYfx457w='
 
-    assert issuerWitSigKey == 'AHZFfaG17Txadhr0qiPYKySWHcAULD7bpq1lprl7tG5b'  # use in example
-    assert issuerWitVerKey == 'DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5' # use in example
+    assert issuerWitSigKey == 'AIagJpsiQiA1XHbiEeUqxIAYjhf5Dz_ug7TnZspG8hE-'  # use in example
+    assert issuerWitVerKey == 'BKRaC6UsijUY1FRjExoAMc8WOHBDIfIKYnOlxWH8eOe8' # use in example
 
     # create issuer AID with single sig simple inception event JSON
     keys = [issuerVerKey]  # initial signing keys
@@ -150,33 +132,33 @@ def test_acdc_examples_setup():
     wits = [issuerWitVerKey]  # witness aids (same as public verkey)
     serder = incept(keys, code=MtrDex.Blake3_256, ndigs=nkeys, wits=wits,
                     version=Vrsn_2_0, kind=Kinds.json)
-    assert serder.pre == 'EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T'
-    assert serder.said == 'EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T'
+    assert serder.pre == 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz'
+    assert serder.said == 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz'
     assert serder.sad == \
     {
         'v': 'KERICAACAAJSONAAFb.',
         't': 'icp',
-        'd': 'EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T',
-        'i': 'EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T',
+        'd': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
         's': '0',
         'kt': '1',
         'k': ['DA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW8HobHKV74yi_'],
         'nt': '1',
         'n': ['DLe4uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeM'],
         'bt': '1',
-        'b': ['DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5'],
+        'b': ['BKRaC6UsijUY1FRjExoAMc8WOHBDIfIKYnOlxWH8eOe8'],
         'c': [],
         'a': []
     }
 
-    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFb.","t":"icp","d":"EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIo'
-                        b'o3QTmbs51T","i":"EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T","s":"0","kt":'
-                        b'"1","k":["DA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW8HobHKV74yi_"],"nt":"1","n":["DLe4'
-                        b'uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeM"],"bt":"1","b":["DLc6u76NIr0VqirQPC'
-                        b'9k4WlOHw2mIG97Q3BV0UM3EjH5"],"c":[],"a":[]}')
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFb.","t":"icp","d":"ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtz'
+                    b'Dn1meBVLAz","i":"ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz","s":"0","kt":'
+                    b'"1","k":["DA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW8HobHKV74yi_"],"nt":"1","n":["DLe4'
+                    b'uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeM"],"bt":"1","b":["BKRaC6UsijUY1FRjEx'
+                    b'oAMc8WOHBDIfIKYnOlxWH8eOe8"],"c":[],"a":[]}')
 
     issuerAidJson = serder.pre
-    assert issuerAidJson == 'EIveOd-P96dx5KT5oA2hyI52SIG2V7XNIoo3QTmbs51T'
+    assert issuerAidJson == 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz'
 
     # create issuer AID with single sig simple inception event CESR
     keys = [issuerVerKey]  # initial signing keys
@@ -184,148 +166,78 @@ def test_acdc_examples_setup():
     wits = [issuerWitVerKey]  # witness aids (same as public verkey)
     serder = incept(keys, code=MtrDex.Blake3_256, ndigs=nkeys, wits=wits,
                     version=Vrsn_2_0, kind=Kinds.cesr)
-    assert serder.pre == 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6'
-    assert serder.said == 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6'
+    assert serder.pre == 'EJ8IT4pXhO1JgKxxm6kZyNbcUOVLXi95SQ2jDrEIuxhz'
+    assert serder.said == 'EJ8IT4pXhO1JgKxxm6kZyNbcUOVLXi95SQ2jDrEIuxhz'
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAAEU.',
         't': 'icp',
-        'd': 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6',
-        'i': 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6',
+        'd': 'EJ8IT4pXhO1JgKxxm6kZyNbcUOVLXi95SQ2jDrEIuxhz',
+        'i': 'EJ8IT4pXhO1JgKxxm6kZyNbcUOVLXi95SQ2jDrEIuxhz',
         's': '0',
         'kt': '1',
         'k': ['DA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW8HobHKV74yi_'],
         'nt': '1',
         'n': ['DLe4uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeM'],
         'bt': '1',
-        'b': ['DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5'],
+        'b': ['BKRaC6UsijUY1FRjExoAMc8WOHBDIfIKYnOlxWH8eOe8'],
         'c': [],
         'a': []
     }
 
-    assert serder.raw == (b'-FBE0OKERICAACAAXicpEF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6EF9ksTMfcHgF'
-                        b'jXLV-uiklpuglxGmKh5n15r4Al7-sHq6MAAAMAAB-JALDA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW'
-                        b'8HobHKV74yi_MAAB-JALDLe4uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeMMAAB-JALDLc6'
-                        b'u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5-JAA-JAA')
+    assert serder.raw == (b'-FBE0OKERICAACAAXicpEJ8IT4pXhO1JgKxxm6kZyNbcUOVLXi95SQ2jDrEIuxhzEJ8IT4pXhO1J'
+                        b'gKxxm6kZyNbcUOVLXi95SQ2jDrEIuxhzMAAAMAAB-JALDA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW'
+                        b'8HobHKV74yi_MAAB-JALDLe4uewytqfqa4NB4AntNKBZ61I0TYcgMz-FSz1V9qeMMAAB-JALBKRa'
+                        b'C6UsijUY1FRjExoAMc8WOHBDIfIKYnOlxWH8eOe8-JAA-JAA')
 
     issuerAidCesr = serder.pre
-    assert issuerAidCesr == 'EF9ksTMfcHgFjXLV-uiklpuglxGmKh5n15r4Al7-sHq6'
+    assert issuerAidCesr == 'EJ8IT4pXhO1JgKxxm6kZyNbcUOVLXi95SQ2jDrEIuxhz'
 
     # create issuee incepting key state
-
-    """
-    Issuee seed
-    size=32
-    path='3'
-    salt=b'acdcspecworkexam'
-    opslimit=1
-    memlimit=8192
-    seed = pysodium.crypto_pwhash(outlen=size,
-                                      passwd=path,
-                                      salt=self.raw,
-                                      opslimit=opslimit,
-                                      memlimit=memlimit,
-                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
-    seed = (b'\x1b\xd7o*A\xec^\xfb}\xa0 j`\\+\xb6MZ\xe8\xb5\xa31\xb1\xf0a\x1bD6\xcb\x0e_\x00')
-
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
-    verkey = (b"/\x90\x0f\xea%\t'\x1e\xe1'\xfa\xa9\xaaU\xd2\xfa\x8f\xd2[\xd1:\xdeCZ\xa3\x1cQ\x8cX\xeaaP")
-    First 32 bytes of this internal sigkey is seed so we use seed externally as sigkey
-    verfer = Verfer(raw=verkey,
-                    code=MtrDex.Ed25519 if transferable
-                    else MtrDex.Ed25519N)
-    """
-    issueeSeedRaw = (b'\x1b\xd7o*A\xec^\xfb}\xa0 j`\\+\xb6MZ\xe8\xb5\xa31\xb1\xf0a\x1bD6\xcb\x0e_\x00')
+    issueeSeedRaw = (b'vE}\xa1\xb5\xed<Zv\x1a\xf4\xaa#\xd8+$\x96\x1d\xc0\x14,>\xdb\xa6\xade\xa6\xb9{\xb4n[')
     issueeSeedB64 = encodeB64(issueeSeedRaw)
-    assert issueeSeedB64 == b'G9dvKkHsXvt9oCBqYFwrtk1a6LWjMbHwYRtENssOXwA='
+    assert issueeSeedB64 ==b'dkV9obXtPFp2GvSqI9grJJYdwBQsPtumrWWmuXu0bls='
     assert decodeB64(issueeSeedB64) == issueeSeedRaw
 
-    issueeSigner = signers[3]
+    issueeSigner = signers[2]
     issueeSigKey = issueeSigner.qb64  # issuee's private signing key
     issueeVerKey = issueeSigner.verfer.qb64  # issuee's public verification key
-    assert issueeSigner.verfer.raw ==(b"/\x90\x0f\xea%\t'\x1e\xe1'\xfa\xa9\xaaU\xd2\xfa\x8f\xd2[\xd1:\xdeCZ\xa3\x1cQ\x8cX\xeaaP")
-    assert encodeB64(issueeSigner.verfer.raw) == b'L5AP6iUJJx7hJ_qpqlXS-o_SW9E63kNaoxxRjFjqYVA='
+    assert issueeSigner.verfer.raw == b'\xb7:\xbb\xbe\x8d"\xbd\x15\xaa*\xd0</d\xe1iN\x1f\r\xa6 o{CpU\xd1C7\x121\xf9'
+    assert encodeB64(issueeSigner.verfer.raw) == b'tzq7vo0ivRWqKtA8L2ThaU4fDaYgb3tDcFXRQzcSMfk='
 
-    assert issueeSigKey == 'ABvXbypB7F77faAgamBcK7ZNWui1ozGx8GEbRDbLDl8A'  # use in example
-    assert issueeVerKey == 'DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ' # use in example
+    assert issueeSigKey == 'AHZFfaG17Txadhr0qiPYKySWHcAULD7bpq1lprl7tG5b'  # use in example
+    assert issueeVerKey == 'DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5' # use in example
 
     # create issuee rotation key state
-    """
-    Issuee rotating seed
-    size=32
-    path='4'
-    salt=b'acdcspecworkexam'
-    opslimit=1
-    memlimit=8192
-    seed = pysodium.crypto_pwhash(outlen=size,
-                                      passwd=path,
-                                      salt=self.raw,
-                                      opslimit=opslimit,
-                                      memlimit=memlimit,
-                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
-    seed = (b'm*\xc5\x9ej\xb15gc\x94?\x89E\x86\xa3\x97Rx\x10\xe6\x8ez\xb7\x8a\x86\xa4ic\x80\x1bU\xd5')
 
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
-    verkey = (b'\r|W\xe7\xa3\x9b-tG6\xd0&\xc96\x12\t\x96\xdd\xa9I\xfch\x06\xea\xd1\xb4\xa4\xeb;\x08\xf9\x82')
-
-    First 32 bytes of this internal sigkey is seed so we use seed externally as sigkey
-    verfer = Verfer(raw=verkey,
-                    code=MtrDex.Ed25519 if transferable
-                    else MtrDex.Ed25519N)
-    """
-    issueeRotSeedRaw = (b'm*\xc5\x9ej\xb15gc\x94?\x89E\x86\xa3\x97Rx\x10\xe6\x8ez\xb7\x8a\x86\xa4ic\x80\x1bU\xd5')
+    issueeRotSeedRaw = (b'\x1b\xd7o*A\xec^\xfb}\xa0 j`\\+\xb6MZ\xe8\xb5\xa31\xb1\xf0a\x1bD6\xcb\x0e_\x00')
     issueeRotSeedB64 = encodeB64(issueeRotSeedRaw)
-    assert issueeRotSeedB64 == b'bSrFnmqxNWdjlD-JRYajl1J4EOaOereKhqRpY4AbVdU='
+    assert issueeRotSeedB64 ==b'G9dvKkHsXvt9oCBqYFwrtk1a6LWjMbHwYRtENssOXwA='
     assert decodeB64(issueeRotSeedB64) == issueeRotSeedRaw
 
-    issueeRotSigner = signers[4]
+    issueeRotSigner = signers[3]
     issueeRotSigKey = issueeRotSigner.qb64  # issuer's private signing key seed
     issueeRotVerKey = issueeRotSigner.verfer.qb64  # issuer's public verification key
-    assert issueeRotSigner.verfer.raw == (b'\r|W\xe7\xa3\x9b-tG6\xd0&\xc96\x12\t\x96\xdd\xa9I\xfch\x06\xea\xd1\xb4\xa4\xeb;\x08\xf9\x82')
-    assert encodeB64(issueeRotSigner.verfer.raw) == b'DXxX56ObLXRHNtAmyTYSCZbdqUn8aAbq0bSk6zsI-YI='
+    assert issueeRotSigner.verfer.raw == (b"/\x90\x0f\xea%\t'\x1e\xe1'\xfa\xa9\xaaU\xd2\xfa\x8f\xd2[\xd1:\xdeCZ\xa3\x1cQ\x8cX\xeaaP")
+    assert encodeB64(issueeRotSigner.verfer.raw) == b'L5AP6iUJJx7hJ_qpqlXS-o_SW9E63kNaoxxRjFjqYVA='
 
-    assert issueeRotSigKey == 'AG0qxZ5qsTVnY5Q_iUWGo5dSeBDmjnq3ioakaWOAG1XV' # use in example
-    assert issueeRotVerKey == 'DA18V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmC' # use in example
-
+    assert issueeRotSigKey == 'ABvXbypB7F77faAgamBcK7ZNWui1ozGx8GEbRDbLDl8A' # use in example
+    assert issueeRotVerKey == 'DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ' # use in example
 
     # create issuee witness key state
-    """
-    Issuee Witness seed
-    size=32
-    path='5'
-    salt=b'acdcspecworkexam'
-    opslimit=1
-    memlimit=8192
-    seed = pysodium.crypto_pwhash(outlen=size,
-                                      passwd=path,
-                                      salt=self.raw,
-                                      opslimit=opslimit,
-                                      memlimit=memlimit,
-                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
-    seed = (b'\x16\xd0\xc2t\xff\xbc\x95$Z\x02\x80\xee\x81_Mq\x05\xa9\x01j\xa6\xa5,\x80\x9a\xe4\x8e\x91fn\x8a0')
-
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
-
-    First 32 bytes of this internal sigkey is seed so we use seed externally as sigkey
-    verkey = (b"\x1e\xde\xb6\x96\xf3s\xd1\xaf\xab9L\xff\xa5\xfe\xa5=\xf8\xae\x0b\xb3'lA-\xcc\x91K\xa2\x8e \xab\x83")
-
-    verfer = Verfer(raw=verkey,
-                    code=MtrDex.Ed25519 if transferable
-                    else MtrDex.Ed25519N)
-    """
-    issueeWitSeedRaw = (b'\x16\xd0\xc2t\xff\xbc\x95$Z\x02\x80\xee\x81_Mq\x05\xa9\x01j\xa6\xa5,\x80\x9a\xe4\x8e\x91fn\x8a0')
+    issueeWitSeedRaw = (b"\xee\xf2%'\x0c\x83FnF\x83\x07I<g\x18h\xa9\xa0V`@r0\x86\xd2\x1c\xc7\x9d$\xd8%\xde")
     issueeWitSeedB64 = encodeB64(issueeWitSeedRaw)
-    assert issueeWitSeedB64 ==b'FtDCdP-8lSRaAoDugV9NcQWpAWqmpSyAmuSOkWZuijA='
+    assert issueeWitSeedB64 == b'7vIlJwyDRm5GgwdJPGcYaKmgVmBAcjCG0hzHnSTYJd4='
     assert decodeB64(issueeWitSeedB64) == issueeWitSeedRaw
 
-    issueeWitSigner = signers[5]
+    issueeWitSigner = wigners[1]
     issueeWitSigKey = issueeWitSigner.qb64  # issuer's private signing key seed
     issueeWitVerKey = issueeWitSigner.verfer.qb64  # issuer's public verification key
-    assert issueeWitSigner.verfer.raw == (b"\x1e\xde\xb6\x96\xf3s\xd1\xaf\xab9L\xff\xa5\xfe\xa5=\xf8\xae\x0b\xb3'lA-\xcc\x91K\xa2\x8e \xab\x83")
-    assert encodeB64(issueeWitSigner.verfer.raw) == b'Ht62lvNz0a-rOUz_pf6lPfiuC7MnbEEtzJFLoo4gq4M='
+    assert issueeWitSigner.verfer.raw == (b"\xe7\xd5\xa5hnNV\xf9K`\x899R\xd2yI\xbd\x03E\xea\xee\x1d'\xe9\xefP\x9e\r\xe0\xe0}\xa9")
+    assert encodeB64(issueeWitSigner.verfer.raw) == b'59WlaG5OVvlLYIk5UtJ5Sb0DReruHSfp71CeDeDgfak='
 
-    assert issueeWitSigKey == 'ABbQwnT_vJUkWgKA7oFfTXEFqQFqpqUsgJrkjpFmboow'  # use in example
-    assert issueeWitVerKey == 'DB7etpbzc9GvqzlM_6X-pT34rguzJ2xBLcyRS6KOIKuD' # use in example
+    assert issueeWitSigKey == 'AO7yJScMg0ZuRoMHSTxnGGipoFZgQHIwhtIcx50k2CXe'  # use in example
+    assert issueeWitVerKey == 'BOfVpWhuTlb5S2CJOVLSeUm9A0Xq7h0n6e9Qng3g4H2p' # use in example
 
     # create issuee AID with single sig simple inception event JSON
     keys = [issueeVerKey]  # initial signing keys
@@ -333,33 +245,33 @@ def test_acdc_examples_setup():
     wits = [issueeWitVerKey]  # witness aids (same as public verkey)
     serder = incept(keys, code=MtrDex.Blake3_256, ndigs=nkeys, wits=wits,
                     version=Vrsn_2_0, kind=Kinds.json)
-    assert serder.pre == 'EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH'
-    assert serder.said == 'EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH'
+    assert serder.pre == 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
+    assert serder.said == 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
     assert serder.sad == \
     {
         'v': 'KERICAACAAJSONAAFb.',
         't': 'icp',
-        'd': 'EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH',
-        'i': 'EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH',
+        'd': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
         's': '0',
         'kt': '1',
-        'k': ['DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ'],
+        'k': ['DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5'],
         'nt': '1',
-        'n': ['DA18V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmC'],
+        'n': ['DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ'],
         'bt': '1',
-        'b': ['DB7etpbzc9GvqzlM_6X-pT34rguzJ2xBLcyRS6KOIKuD'],
+        'b': ['BOfVpWhuTlb5S2CJOVLSeUm9A0Xq7h0n6e9Qng3g4H2p'],
         'c': [],
         'a': []
     }
 
-    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFb.","t":"icp","d":"EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-'
-                        b'dmyBCJ9ytH","i":"EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH","s":"0","kt":'
-                        b'"1","k":["DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ"],"nt":"1","n":["DA18'
-                        b'V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmC"],"bt":"1","b":["DB7etpbzc9GvqzlM_6'
-                        b'X-pT34rguzJ2xBLcyRS6KOIKuD"],"c":[],"a":[]}')
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFb.","t":"icp","d":"ECWJZFBtllh99fESUOrBvT3EtBujWtDKCm'
+                        b'yzDAXWhYmf","i":"ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf","s":"0","kt":'
+                        b'"1","k":["DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5"],"nt":"1","n":["DC-Q'
+                        b'D-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ"],"bt":"1","b":["BOfVpWhuTlb5S2CJOV'
+                        b'LSeUm9A0Xq7h0n6e9Qng3g4H2p"],"c":[],"a":[]}')
 
     issueeAidJson = serder.pre
-    assert issueeAidJson == 'EALsBaF8k7ww-B1KwQcQ6581Z0PpKBPJa-dmyBCJ9ytH'
+    assert issueeAidJson == 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
 
     # create issuee AID with single sig simple inception event CESR
     keys = [issueeVerKey]  # initial signing keys
@@ -367,34 +279,180 @@ def test_acdc_examples_setup():
     wits = [issueeWitVerKey]  # witness aids (same as public verkey)
     serder = incept(keys, code=MtrDex.Blake3_256, ndigs=nkeys, wits=wits,
                     version=Vrsn_2_0, kind=Kinds.cesr)
-    assert serder.pre == 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P'
-    assert serder.said == 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P'
+    assert serder.pre == 'EFUJ7F5fnQYCCbAnyLxrpgeBmkmUCFOIm0I3reQj8ro-'
+    assert serder.said == 'EFUJ7F5fnQYCCbAnyLxrpgeBmkmUCFOIm0I3reQj8ro-'
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAAEU.',
         't': 'icp',
-        'd': 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P',
-        'i': 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P',
+        'd': 'EFUJ7F5fnQYCCbAnyLxrpgeBmkmUCFOIm0I3reQj8ro-',
+        'i': 'EFUJ7F5fnQYCCbAnyLxrpgeBmkmUCFOIm0I3reQj8ro-',
         's': '0',
         'kt': '1',
-        'k': ['DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ'],
+        'k': ['DLc6u76NIr0VqirQPC9k4WlOHw2mIG97Q3BV0UM3EjH5'],
         'nt': '1',
-        'n': ['DA18V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmC'],
+        'n': ['DC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQ'],
         'bt': '1',
-        'b': ['DB7etpbzc9GvqzlM_6X-pT34rguzJ2xBLcyRS6KOIKuD'],
+        'b': ['BOfVpWhuTlb5S2CJOVLSeUm9A0Xq7h0n6e9Qng3g4H2p'],
         'c': [],
         'a': []
     }
 
-    assert serder.raw == (b'-FBE0OKERICAACAAXicpEGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20PEGfaNGX8SuHp'
-                        b'90RN_W6YCxpVVyt6zezNv9XgSF9AF20PMAAAMAAB-JALDC-QD-olCSce4Sf6qapV0vqP0lvROt5D'
-                        b'WqMcUYxY6mFQMAAB-JALDA18V-ejmy10RzbQJsk2EgmW3alJ_GgG6tG0pOs7CPmCMAAB-JALDB7e'
-                        b'tpbzc9GvqzlM_6X-pT34rguzJ2xBLcyRS6KOIKuD-JAA-JAA')
+    assert serder.raw == (b'-FBE0OKERICAACAAXicpEFUJ7F5fnQYCCbAnyLxrpgeBmkmUCFOIm0I3reQj8ro-EFUJ7F5fnQYC'
+                        b'CbAnyLxrpgeBmkmUCFOIm0I3reQj8ro-MAAAMAAB-JALDLc6u76NIr0VqirQPC9k4WlOHw2mIG97'
+                        b'Q3BV0UM3EjH5MAAB-JALDC-QD-olCSce4Sf6qapV0vqP0lvROt5DWqMcUYxY6mFQMAAB-JALBOfV'
+                        b'pWhuTlb5S2CJOVLSeUm9A0Xq7h0n6e9Qng3g4H2p-JAA-JAA')
 
     issueeAidCesr = serder.pre
-    assert issueeAidCesr == 'EGfaNGX8SuHp90RN_W6YCxpVVyt6zezNv9XgSF9AF20P'
+    assert issueeAidCesr == 'EFUJ7F5fnQYCCbAnyLxrpgeBmkmUCFOIm0I3reQj8ro-'
+
+
+    # UUIDs for the examples
+
+    raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
+    assert raws == \
+    [
+        b'acdcspecworkraw0',
+        b'acdcspecworkraw1',
+        b'acdcspecworkraw2',
+        b'acdcspecworkraw3',
+        b'acdcspecworkraw4',
+        b'acdcspecworkraw5',
+        b'acdcspecworkraw6',
+        b'acdcspecworkraw7',
+        b'acdcspecworkraw8',
+        b'acdcspecworkraw9',
+        b'acdcspecworkrawa',
+        b'acdcspecworkrawb',
+        b'acdcspecworkrawc',
+        b'acdcspecworkrawd',
+        b'acdcspecworkrawe',
+        b'acdcspecworkrawf'
+    ]
+
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+    assert uuids == \
+    [
+     '0ABhY2Rjc3BlY3dvcmtyYXcw',
+     '0ABhY2Rjc3BlY3dvcmtyYXcx',
+     '0ABhY2Rjc3BlY3dvcmtyYXcy',
+     '0ABhY2Rjc3BlY3dvcmtyYXcz',
+     '0ABhY2Rjc3BlY3dvcmtyYXc0',
+     '0ABhY2Rjc3BlY3dvcmtyYXc1',
+     '0ABhY2Rjc3BlY3dvcmtyYXc2',
+     '0ABhY2Rjc3BlY3dvcmtyYXc3',
+     '0ABhY2Rjc3BlY3dvcmtyYXc4',
+     '0ABhY2Rjc3BlY3dvcmtyYXc5',
+     '0ABhY2Rjc3BlY3dvcmtyYXdh',
+     '0ABhY2Rjc3BlY3dvcmtyYXdi',
+     '0ABhY2Rjc3BlY3dvcmtyYXdj',
+     '0ABhY2Rjc3BlY3dvcmtyYXdk',
+     '0ABhY2Rjc3BlY3dvcmtyYXdl',
+     '0ABhY2Rjc3BlY3dvcmtyYXdm'
+    ]
 
     """Done Test"""
 
+
+def test_acdc_examples_JSON():
+    """Basic Examples using JSON serializaton"""
+    issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+    uuid0 = '0ABhY2Rjc3BlY3dvcmtyYXcw'
+    uuid1 = '0ABhY2Rjc3BlY3dvcmtyYXcx'
+
+    #Basic attribute section example
+    # private targeted attribute section
+    mad = \
+    {
+    "d": "",
+    "u": uuid0,
+    "i": issuee,
+    "score": 96,
+    "name": "Zoe Doe"
+    }
+
+    mapper = Mapper(mad=mad, saidive=True, makify=True, kind=Kinds.json)
+    assert mapper.mad == \
+    {
+        "d": "EIMMcLl1w2KW2J3AD3twaESJO4u_fDFCdlMHjouojU8C",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "score": 96,
+        "name": "Zoe Doe"
+    }
+
+    # public targeted attribute section
+    mad = \
+    {
+    "d": "",
+    "i": issuee,
+    "score": 96,
+    "name": "Zoe Doe"
+    }
+
+    mapper = Mapper(mad=mad, saidive=True, makify=True, kind=Kinds.json)
+    assert mapper.mad == \
+    {
+        "d": "ELNJxIInWN4WAih9MQ4vVDrMRYnmhToS9a0gqjLfctOO",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "score": 96,
+        "name": "Zoe Doe"
+    }
+
+
+    # partially disclosable attribute section
+    mad = \
+    {
+        "d": "",
+        "u": uuid0,
+        "i": issuee,
+        "name": "Zoe Doe",
+        "gpa": 3.5,
+        "grades":
+        {
+          "d": "",
+          "u": uuid1,
+          "history": 3.5,
+          "english": 4.0,
+          "math": 3.0
+        }
+    }
+
+    compactor = Compactor(mad=mad, makify=True, kind=Kinds.json)
+    compactor.compact()
+    compactor.expand()
+    assert compactor.partials[('.grades',)].mad == \
+    {
+        "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "name": "Zoe Doe",
+        "gpa": 3.5,
+        "grades":
+        {
+            "d": "EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+            "history": 3.5,
+            "english": 4.0,
+            "math": 3.0
+        }
+    }
+
+    assert compactor.partials[('',)].mad == \
+    {
+        "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "name": "Zoe Doe",
+        "gpa": 3.5,
+        "grades": "EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy"
+    }
+
+
+
+
+
 if __name__ == "__main__":
     test_acdc_examples_setup()
+    test_acdc_examples_JSON()

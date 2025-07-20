@@ -3228,6 +3228,49 @@ def test_acdcmap_message():
     assert serder.raw == raw
     assert serder.sad == sad
 
+    # private metadata variant empty top-level uuid field
+    said = 'EJzD7XSB0EUswRevNRTIypRIsqO_MDrWFvpHeHj6--26'
+    vs = 'ACDCCAACAAJSONAAGI.'
+    size = 392
+    ilk = None
+
+    serder = acdcmap(issuer=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
+                       attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said  # stable said of compact ACDC same as uncompacted
+    assert serder.ilk == ilk
+    assert serder.size == size
+    assert serder.verstr == vs
+    assert serder.issuer == issuer
+    assert serder.uuid == ""
+    assert serder.regid == regid
+    assert serder.issuee == None
+    assert serder.schema == schemaSaid
+    assert serder.attrib == attrSaid
+    assert serder.edge == edgeSaid
+    assert serder.rule == ruleSaid
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAAGI.',
+        'd': 'EJzD7XSB0EUswRevNRTIypRIsqO_MDrWFvpHeHj6--26',
+        'u': '',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
+        's': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
+        'a': 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL',
+        'e': 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF',
+        'r': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
+    }
+
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
     # Test with CESR serialization
     kind = Kinds.cesr
 
@@ -3733,6 +3776,49 @@ def test_acdcmap_message():
         'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
         'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
     }
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # private metadata variant empty top-level uuid field
+    said = 'EP77Cz6zmZ14_uLALBCWbP1dwtwW6S1iQMx9Ceaqwpy_'
+    vs = 'ACDCCAACAACESRAAFs.'
+    size = 364
+    ilk = None
+
+    serder = acdcmap(issuer=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
+                       attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said  # stable said of compact ACDC same as uncompacted
+    assert serder.ilk == ilk
+    assert serder.size == size
+    assert serder.verstr == vs
+    assert serder.issuer == issuer
+    assert serder.uuid == ""
+    assert serder.regid == regid
+    assert serder.issuee == None
+    assert serder.schema == schemaSaid
+    assert serder.attrib == attrSaid
+    assert serder.edge == edgeSaid
+    assert serder.rule == ruleSaid
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAACESRAAFs.',
+        'd': 'EP77Cz6zmZ14_uLALBCWbP1dwtwW6S1iQMx9Ceaqwpy_',
+        'u': '',
+        'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
+        'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
+        's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
+        'a': 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-',
+        'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
+        'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
+    }
+
 
     # test round trip
     raw = serder.raw
