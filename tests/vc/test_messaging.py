@@ -623,9 +623,7 @@ def test_acdcatt_message_json():
 
     # Test fully populated and expanded
     attrs = dict(d="", i=issuee, name="Zoe")
-    attrPactor = Compactor(mad=attrs, makify=True, kind=kind)
-    attrPactor.compact()
-    attrPactor.expand()
+    attrPactor = Compactor(mad=attrs, makify=True, compactify=True, kind=kind)
     attrSaid = attrPactor.said
     attrs = list(attrPactor.partials.values())[0].mad    # since already compact
     assert attrs == \
@@ -643,9 +641,7 @@ def test_acdcatt_message_json():
         "winner": "EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9",
         "loser": "EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk"
     }
-    edgePactor = Compactor(mad=edges, makify=True, kind=kind)
-    edgePactor.compact()
-    edgePactor.expand()
+    edgePactor = Compactor(mad=edges, makify=True, compactify=True, kind=kind)
     edgeSaid = edgePactor.said
     edges = list(edgePactor.partials.values())[0].mad    # since already compact
     assert edges == \
@@ -687,9 +683,7 @@ def test_acdcatt_message_json():
       }
     }
 
-    rulePactor = Compactor(mad=rules, makify=True, kind=kind)
-    rulePactor.compact()
-    rulePactor.expand()
+    rulePactor = Compactor(mad=rules, makify=True, compactify=True, kind=kind)
     ruleSaid = rulePactor.said
     rules = list(rulePactor.partials.values())[1].mad
     assert rules == \
@@ -920,9 +914,7 @@ def test_acdcatt_message_cesr():
         'i': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C',
         'name': 'Zoe'
     }
-    attrPactor = Compactor(mad=attrs, makify=True, kind=kind)
-    attrPactor.compact()
-    attrPactor.expand()
+    attrPactor = Compactor(mad=attrs, makify=True, compactify=True, kind=kind)
     attrSaid = attrPactor.said
     attrs = list(attrPactor.partials.values())[0].mad    # since already compact
     assert attrs == \
@@ -940,9 +932,7 @@ def test_acdcatt_message_cesr():
         "winner": "EBf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9",
         "loser": "EFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lk"
     }
-    edgePactor = Compactor(mad=edges, makify=True, kind=kind)
-    edgePactor.compact()
-    edgePactor.expand()
+    edgePactor = Compactor(mad=edges, makify=True, compactify=True, kind=kind)
     edgeSaid = edgePactor.said
     edges = list(edgePactor.partials.values())[0].mad    # since already compact
     assert edges == \
@@ -984,9 +974,7 @@ def test_acdcatt_message_cesr():
       }
     }
 
-    rulePactor = Compactor(mad=rules, makify=True, kind=kind)
-    rulePactor.compact()
-    rulePactor.expand()
+    rulePactor = Compactor(mad=rules, makify=True, compactify=True, kind=kind)
     ruleSaid = rulePactor.said
     rules = list(rulePactor.partials.values())[1].mad
     assert rules == \
@@ -1316,9 +1304,8 @@ def test_attribute_section():
 
     # Test with JSON serialization
     kind = Kinds.json
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     attrSaid = compactor.said
     attrSad = list(compactor.partials.values())[1].mad
     assert attrSaid == 'ENd9eAjJpBQmCmixtzw8V9OI7_1FjrfHiFiYXDzoakRL'
@@ -1381,9 +1368,8 @@ def test_attribute_section():
 
     # Test with CESR serialization
     kind = Kinds.cesr
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     attrSaid = compactor.said
     attrSad = list(compactor.partials.values())[1].mad
     assert attrSaid == 'EEsqwWsxvtDaiADWKruivw6bKvZz8P6N4fdhtjAeYLO-'
@@ -1473,9 +1459,8 @@ def test_edge_section():
 
     # Test with JSON serialization
     kind = Kinds.json
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     edgeSaid = compactor.said
     edgeSad = list(compactor.partials.values())[1].mad
     assert edgeSaid == 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF'
@@ -1543,9 +1528,8 @@ def test_edge_section():
 
     # Test with CESR serialization
     kind = Kinds.cesr
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     edgeSaid = compactor.said
     edgeSad = list(compactor.partials.values())[1].mad
     assert edgeSaid == 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw'
@@ -1649,9 +1633,8 @@ def test_rule_section():
 
     # Test with JSON serialization
     kind = Kinds.json
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     ruleSaid = compactor.said
     ruleSad = list(compactor.partials.values())[1].mad
     assert ruleSaid == 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
@@ -1728,9 +1711,8 @@ def test_rule_section():
 
     # Test with CESR serialization
     kind = Kinds.cesr
-    compactor = Compactor(mad=mad, makify=True, saidive=True, kind=kind)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=kind)
+
     ruleSaid = compactor.said
     ruleSad = list(compactor.partials.values())[1].mad
     assert ruleSaid == 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'

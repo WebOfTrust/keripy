@@ -358,6 +358,10 @@ def test_acdc_examples_JSON():
     """Basic Examples using JSON serializaton"""
     issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
     issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+
+    raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+
     uuid0 = '0ABhY2Rjc3BlY3dvcmtyYXcw'
     uuid1 = '0ABhY2Rjc3BlY3dvcmtyYXcx'
 
@@ -366,7 +370,7 @@ def test_acdc_examples_JSON():
     mad = \
     {
     "d": "",
-    "u": uuid0,
+    "u": uuids[0],
     "i": issuee,
     "score": 96,
     "name": "Zoe Doe"
@@ -405,51 +409,61 @@ def test_acdc_examples_JSON():
     mad = \
     {
         "d": "",
-        "u": uuid0,
+        "u": uuids[0],
         "i": issuee,
         "name": "Zoe Doe",
         "gpa": 3.5,
         "grades":
         {
           "d": "",
-          "u": uuid1,
+          "u": uuids[1],
           "history": 3.5,
           "english": 4.0,
           "math": 3.0
         }
     }
 
-    compactor = Compactor(mad=mad, makify=True, kind=Kinds.json)
-    compactor.compact()
-    compactor.expand()
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=Kinds.json)
+    assert compactor.said == 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U'
+    assert compactor.iscompact
+    assert compactor.mad == \
+    {
+        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'name': 'Zoe Doe',
+        'gpa': 3.5,
+        'grades': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy'
+    }
+
     assert compactor.partials[('.grades',)].mad == \
     {
-        "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
-        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
-        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
-        "name": "Zoe Doe",
-        "gpa": 3.5,
-        "grades":
+        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'name': 'Zoe Doe',
+        'gpa': 3.5,
+        'grades':
         {
-            "d": "EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy",
-            "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
-            "history": 3.5,
-            "english": 4.0,
-            "math": 3.0
+            'd': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+            'history': 3.5,
+            'english': 4.0,
+            'math': 3.0
         }
     }
 
     assert compactor.partials[('',)].mad == \
     {
-        "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
-        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
-        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
-        "name": "Zoe Doe",
-        "gpa": 3.5,
-        "grades": "EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy"
+        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'name': 'Zoe Doe',
+        'gpa': 3.5,
+        'grades': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy'
     }
 
-
+    assert compactor.partials[('',)].mad == compactor.mad
 
 
 

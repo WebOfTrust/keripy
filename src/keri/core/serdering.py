@@ -2847,7 +2847,7 @@ class SerderACDC(Serder):
                                 sector = Compactor(mad=v,
                                                    makify=True,
                                                    kind=self.kind)
-                                sector.compact()
+                                sector.compact()  # only compact do not expand
                                 said = sector.said
 
                         if said:
@@ -2903,7 +2903,7 @@ class SerderACDC(Serder):
                                 sector = Compactor(mad=v,
                                                       makify=True,
                                                       kind=self.kind)
-                                sector.compact()
+                                sector.compact() # only compact do not expand
                                 said = sector.said
                                 slabel ='d'
 

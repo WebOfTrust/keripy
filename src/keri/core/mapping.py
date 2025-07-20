@@ -814,7 +814,7 @@ class Compactor(Mapper):
 
     """
 
-    def __init__(self, saidive=True, **kwa):
+    def __init__(self, saidive=True, makify=False, compactify=False, **kwa):
         """Initialize instance
 
         Inherited Parameters:  (see Mapper)
@@ -846,13 +846,21 @@ class Compactor(Mapper):
             saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                             False means do not compute SAIDs
 
+        Parameters:
+            compactify (bool): True means .compact() and .expand() when .saidive
+                               and makify
+                              False means do not .compact or .expand
+
         Assumes that when qb64 or qb64b or qb2 are provided that they have
             already been extracted from a stream and are self contained
 
         """
         self._leaves = {}
         self._partials = None
-        super(Compactor, self).__init__(saidive=saidive, **kwa)
+        super(Compactor, self).__init__(saidive=saidive, makify=makify, **kwa)
+        if makify and self.saidive and compactify:
+            self.compact()
+            self.expand()
 
 
     @property
@@ -1120,10 +1128,10 @@ class Compactor(Mapper):
             pmad = deepcopy(leafer.mad)  # expand pmad with copy of leafer
             used.append(path)
             # don't compute top-level saids on partials
-            partial = Compactor(mad=pmad, makify=True, saidive=False)
+            partial = Compactor(mad=pmad, makify=True, saidive=False,
+                                kind=self.kind)
             # don't compute saids on leaves of partials
             index = partial.trace()  # default saidify == False
-            partial.iscompact
             self.partials[tuple(index)] = partial
 
         pmad = deepcopy(self.mad)  # partial starts with copy of self.mad
@@ -1140,7 +1148,8 @@ class Compactor(Mapper):
             if created:  # create new partial
                 # compactor makes copy pmad so can reuse pmad to start next partial
                 # don't compute top-level saids on partials
-                partial = Compactor(mad=pmad, makify=True, saidive=False)
+                partial = Compactor(mad=pmad, makify=True, saidive=False,
+                                    kind=self.kind)
                 # don't compute saids on leaves of partials
                 index = partial.trace()  # default saidify == False
                 self.partials[tuple(index)] = partial
