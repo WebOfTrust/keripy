@@ -1127,9 +1127,8 @@ class Compactor(Mapper):
             leafer = self.leaves[path]
             pmad = deepcopy(leafer.mad)  # expand pmad with copy of leafer
             used.append(path)
-            # don't compute top-level saids on partials
-            partial = Compactor(mad=pmad, makify=True, saidive=False,
-                                kind=self.kind)
+            # don't compute or verify top-level saids on partials makify=Fase verify=False
+            partial = Compactor(mad=pmad, verify=False, kind=self.kind)
             # don't compute saids on leaves of partials
             index = partial.trace()  # default saidify == False
             self.partials[tuple(index)] = partial
@@ -1147,9 +1146,8 @@ class Compactor(Mapper):
 
             if created:  # create new partial
                 # compactor makes copy pmad so can reuse pmad to start next partial
-                # don't compute top-level saids on partials
-                partial = Compactor(mad=pmad, makify=True, saidive=False,
-                                    kind=self.kind)
+                # don't compute or verify top-level saids on partials makify=Fase verify=False
+                partial = Compactor(mad=pmad, verify=False, kind=self.kind)
                 # don't compute saids on leaves of partials
                 index = partial.trace()  # default saidify == False
                 self.partials[tuple(index)] = partial
