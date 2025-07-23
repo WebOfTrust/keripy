@@ -108,7 +108,7 @@ def update(regid, prior, acdc, state, *, sn=1, stamp=None,
 
 def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
             attribute=None, issuee=None, aggregate=None, edge=None, rule=None,
-            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
     """Utility function to create top-level field map ACDC message of type 'acm'
     for ACDC protocol v2.
 
@@ -143,6 +143,9 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
         pvrsn (Versionage): ACDC protocol version number
         gvrsn (Versionage): CESR Genus version number.
         kind (str): serialization kind from Kinds
+        compactify (bool): True means make the most compact sad variant if any
+                               False means do not make the most compact variant
+                               Default is False
 
     alls= (v='', t='', d='', u='', i='', rd='', s='', a='', A='', e='', r=''),
     opts= (t='', u='', rd='', a='', A='', e='', r=''),
@@ -199,12 +202,12 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
     if rule is not None:
         sad['r'] = rule
 
-    return SerderACDC(sad=sad, makify=True)
+    return SerderACDC(sad=sad, makify=True, compactify=compactify)
 
 
 def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
               issuee=None, edge=None, rule=None,
-            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
     """Utility function to create top-level fixed field ACDC message of type 'act'
     for ACDC protocol v2.
 
@@ -233,6 +236,9 @@ def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
         pvrsn (Versionage): ACDC protocol version number
         gvrsn (Versionage): CESR Genus version number.
         kind (str): serialization kind from Kinds
+        compactify (bool): True means make the most compact sad variant if any
+                               False means do not make the most compact variant
+                               Default is False
 
     all
     (v='', t='', d='', u='', i='', rd='', s='', a='', e='', r='')
@@ -270,12 +276,12 @@ def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
 
     sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
                s=schema, a=attribute, e=edge, r=rule)
-    return SerderACDC(sad=sad, makify=True)
+    return SerderACDC(sad=sad, makify=True, compactify=compactify)
 
 
 def acdcagg(issuer, uuid=None, regid=None, schema=None, aggregate=None,
                     edge=None, rule=None,
-            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
     """Utility function to create top-level fixed field ACDC message of type 'acg'
     for ACDC protocol v2.
 
@@ -301,6 +307,9 @@ def acdcagg(issuer, uuid=None, regid=None, schema=None, aggregate=None,
         pvrsn (Versionage): ACDC protocol version number
         gvrsn (Versionage): CESR Genus version number.
         kind (str): serialization kind from Kinds
+        compactify (bool): True means make the most compact sad variant if any
+                               False means do not make the most compact variant
+                               Default is False
 
     all
     (v='', t='', d='', u='', i='', rd='', s='', A='', e='', r='')
@@ -336,10 +345,10 @@ def acdcagg(issuer, uuid=None, regid=None, schema=None, aggregate=None,
 
     sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
                s=schema, A=aggregate, e=edge, r=rule)
-    return SerderACDC(sad=sad, makify=True)
+    return SerderACDC(sad=sad, makify=True, compactify=compactify)
 
 
-def schema(schema, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+def sectschema(schema, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field schema section message
     of type 'sch' for ACDC protocol v2.
 
@@ -363,7 +372,7 @@ def schema(schema, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     return SerderACDC(sad=sad, makify=True)
 
 
-def attribute(attribute, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+def sectattr(attribute, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field attribute section message
     of type 'att' for ACDC protocol v2.
 
@@ -387,7 +396,7 @@ def attribute(attribute, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     return SerderACDC(sad=sad, makify=True)
 
 
-def aggregate(aggregate, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+def sectaggr(aggregate, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field aggregate section message
     of type 'agg' for ACDC protocol v2.
 
@@ -411,7 +420,7 @@ def aggregate(aggregate, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     return SerderACDC(sad=sad, makify=True)
 
 
-def edge(edge, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+def sectedge(edge, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field edge section message
     of type 'edg' for ACDC protocol v2.
 
@@ -435,7 +444,7 @@ def edge(edge, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     return SerderACDC(sad=sad, makify=True)
 
 
-def rule(rule, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
+def sectrule(rule, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create top-level fixed field rule section message
     of type 'rul' for ACDC protocol v2.
 
