@@ -1895,7 +1895,7 @@ class AggorNew:
 
 
     @classmethod
-    def verifyDisclosure(cls, ael, agid, kind=Kinds.cesr,
+    def verifyDisclosure(cls, ael, kind=Kinds.cesr,
                          code=DigDex.Blake3_256, saids=None):
         """Verify disclosure of ael against agid using serialization kind
 
@@ -1906,9 +1906,8 @@ class AggorNew:
 
         Parameters:
             ael (list[str|dict]): aggrable element list. each element is either:
-                                   said of element or
-                                   element dict
-            agid (str): qb64 of agid to compare against said computed on elements
+                                   said of element or element dict
+                                   zeroth element is special the agid of the ael
             kind (str): serialization kind for digest computation
             code (str): qb64 DigDex code for computing the agid digest
             saids (dict): default saidive fields each element field map top-level.
@@ -1918,12 +1917,14 @@ class AggorNew:
                               of element mapper
 
         """
+        saids = saids if saids is not None else cls.Saids
+
         try:  # create aggor from ael with verify True so it computes agid
             aggor = cls(ael=ael, kind=kind, code=code, saids=saids, verify=True)
         except Exception as ex:
             return False
 
-        if aggor.agid != agid:
+        if aggor.agid != ael[0]:
             return False
 
         return True
@@ -1996,7 +1997,8 @@ class AggorNew:
                             raise InvalidValueError(f"Invalid zeroth {element=} in ael")
                         # dummy the agid
                         agid = self.Dummy * Matter.Sizes[self.code].fs
-                        cael.append(agid.encode())
+                        cael.append(agid)
+                        ael[i] = agid
 
                     else:
                         if isinstance(element, Mapping):  # makify handled by mapper
@@ -2009,7 +2011,8 @@ class AggorNew:
                             except Exception as ex:
                                 raise InvalidValueError(f"Invalid {element=} of "
                                                         "Aggor") from ex
-                            cael.append(mapper.said.encode())
+                            cael.append(mapper.said)
+                            ael[i] = mapper.mad  # now has computed said
 
                         elif isinstance(element, str):
                             try: # force check element is valid digest
@@ -2017,7 +2020,8 @@ class AggorNew:
                             except Exception as ex:
                                 raise InvalidValueError(f"Invalid {element=} of "
                                                         "Aggor") from ex
-                            cael.append.diger.qb64b
+                            cael.append(diger.qb64)
+                            ael[i] = diger.qb64
 
                         else:
                             raise InvalidValueError(f"Invalid {element=} in ael")
@@ -2029,6 +2033,7 @@ class AggorNew:
                 ael[0] = agid
 
             self._ael = ael
+
             raw, count = self._exhale(ael=ael, kind=kind)
             self._raw = raw
             self._count = count
@@ -2062,7 +2067,7 @@ class AggorNew:
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
 
-            ael, raw, count = self._inhale(buf, kind=kind, verify=False)
+            ael, raw, count = self._inhale(buf, kind=kind)
             self._ael = ael
             self._raw = raw
             self._count = count
@@ -2077,7 +2082,7 @@ class AggorNew:
                         raise InvalidValueError(f"Invalid zeroth {element=} in ael")
                     # dummy the agid
                     agid = self.Dummy * Matter.Sizes[self.code].fs
-                    cael.append(agid.encode())
+                    cael.append(agid)
 
                 else:
                     if isinstance(element, Mapping):  # makify handled by mapper
@@ -2089,7 +2094,7 @@ class AggorNew:
                         except Exception as ex:
                             raise InvalidValueError(f"Invalid Aggor {element=}."
                                                     " Does not verify") from ex
-                        cael.append(mapper.said.encode())
+                        cael.append(mapper.said)
 
                     elif isinstance(element, str):
                         try: # force check element is valid digest
@@ -2097,7 +2102,7 @@ class AggorNew:
                         except Exception as ex:
                             raise InvalidValueError(f"Invalid {element=} of "
                                                     "Aggor") from ex
-                        cael.append.diger.qb64b
+                        cael.append(diger.qb64)
 
                     else:
                         raise InvalidValueError(f"Invalid {element=} in ael")
@@ -2435,11 +2440,27 @@ class AggorNew:
 
         """
         indices = indices if indices is not None else []
-        ael = [atom.said if isinstance(atom, Mapper) else atom
-                                                    for atom in self.atoms]
-        last = len(self.atoms) - 1
-        for i in indices:
-            if i >= 0 and i <= last and isinstance(self.atoms[i], Mapper):
-                ael[i] = self.atoms[i].mad
+        atoms = []
+        for i, e in enumerate(self.ael):
+            if isinstance(e, Mapping):
+                try:
+                    atom = Mapper(mad=e, strict=self.strict, saids=self.saids,
+                              saidive=True, kind=self.kind)
+                except Exception as ex:
+                    raise ValueError("Invalid elment={e} in Aggor") from ex
 
-        return (ael, self.kind)
+            else:
+                try:
+                    atom = Diger(qb64=e)
+                except Exception as ex:
+                    raise ValueError("Invalid elment={e} in Aggor") from ex
+
+            atoms.append(atom)
+
+        dael = [atom.said if isinstance(atom, Mapper) else atom.qb64 for atom in atoms]
+        last = len(self.ael) - 1
+        for i in indices:
+            if i >= 0 and i <= last and isinstance(atoms[i], Mapper):
+                dael[i] = atoms[i].mad
+
+        return (dael, self.kind)
