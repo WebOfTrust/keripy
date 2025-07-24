@@ -1911,36 +1911,45 @@ def test_compactor_compact_expand():
 
     # test empty dict for mad for compact and expand
     paths = []
-    emad = {}
-    raw = b'-IAA'
+    zmad = {}
+    zraw = b'-IAA'
 
     # first create
-    compactor = Compactor(mad=emad, makify=True)
-    assert compactor.mad == emad
-    assert compactor.raw == raw
+    compactor = Compactor(mad=zmad, makify=True)
+    assert compactor.mad == zmad
+    assert compactor.raw == zraw
     assert compactor.said is None
 
     # now compact
     compactor.compact()
     assert compactor.iscompact is None
     assert not compactor.leaves
-    assert compactor.mad == emad
+    assert compactor.mad == zmad
     assert compactor.said is None
 
     # now expand
     compactor.expand()  # default greedy==True
     assert compactor.iscompact is None
     assert not compactor.partials
-    assert compactor.mad == emad
+    assert compactor.mad == zmad
     assert compactor.said is None
 
 
-    # do compactification at init
-    compactor = Compactor(mad=emad, makify=True, compactify=True)
-    assert compactor.iscompact is None
+    # do compactification at init with empty mad
+    compactor = Compactor(mad=zmad, makify=True, compactify=True)
+    assert compactor.iscompact is None  # since empty nothing to compact
     assert not compactor.partials
-    assert compactor.mad == emad
+    assert compactor.mad == zmad
     assert compactor.said is None
+
+
+    # do compactification at init with expanded mad with empty saids
+    compactor = Compactor(mad=imad, makify=True, compactify=True)
+    assert compactor.iscompact
+    assert len(compactor.leaves) == 4
+    assert len(compactor.partials) == 2
+    assert compactor.mad == cmad
+    assert compactor.said == csaid
 
     """Done Test"""
 

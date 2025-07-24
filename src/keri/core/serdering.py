@@ -553,7 +553,8 @@ class Serder:
 
     def __init__(self, *, raw=b'', sad=None, strip=False, verify=True,
                  makify=False, smellage=None, proto=None, pvrsn=None,
-                 genus=GenDex.KERI, gvrsn=None, kind=None, ilk=None, saids=None):
+                 genus=GenDex.KERI, gvrsn=None, kind=None, ilk=None, saids=None,
+                 compactify=False):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -602,6 +603,9 @@ class Serder:
                    - the code provided in saids when not None
                    - the code extracted from sad[said label] when valid CESR
                    - the code provided in .Fields...saids
+            compactify (bool): True means make the most compact sad variant if any
+                               False means do not make the most compact variant
+                               Default is False
 
 
         """
@@ -644,7 +648,8 @@ class Serder:
                 # sad, raw, size, proto, pvrsn, genus, gvrsn, kind, and ilk
                 self.makify(sad, proto=proto, pvrsn=pvrsn,
                             genus=genus, gvrsn=gvrsn,
-                            kind=kind, ilk=ilk, saids=saids)
+                            kind=kind, ilk=ilk, saids=saids,
+                            compactify=compactify)
 
             else:
                 # .exhale potentially updates properties:
@@ -841,7 +846,7 @@ class Serder:
 
 
     def makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
-                   kind=None, ilk=None, saids=None):
+                   kind=None, ilk=None, saids=None, compactify=eval):
         """makify builds serder with valid properties and attributes. Computes
         saids and sizes. and assigns hidden attributes for properties:
         sad, raw, size, proto, pvrsn, genus, gvrsn, kind
@@ -874,13 +879,16 @@ class Serder:
                    - the code provided in saids when not None
                    - the code extracted from sad[said label] when valid CESR
                    - the code provided in .Fields...saids
+            compactify (bool): True means make the most compact sad variant if any
+                               False means do not make the most compact variant
+                               Default is False
 
         """
         # sets ._proto, ._pvrsn, ._genus, ._gvrsn, ._kind
         sad, saids = self._makify(sad, proto=proto, pvrsn=pvrsn, genus=genus,
                                 gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
 
-        sad, raw, size = self._compute(sad=sad, saids=saids)
+        sad, raw, size = self._compute(sad=sad, saids=saids, compactify=compactify)
 
         self._raw = raw
         self._size = size
@@ -1088,7 +1096,7 @@ class Serder:
         return (sad, _saids)
 
 
-    def _compute(self, sad, saids):
+    def _compute(self, sad, saids, compactify=False):
         """Computes computed fields. These include size and said fields that have
         dummy characters. Replaces dummied fields with computed values.
         In the case of version strings replaces dummy size characters with
@@ -1104,7 +1112,9 @@ class Serder:
         Parameters:
             sad (dict): dummied serder sad (self addressed data dict)
             saids (dict): said field labels and cesr code that identifies how
-
+            compactify (bool): True means make the most compact sad variant if any
+                               False means do not make the most compact variant
+                               Default is False
 
         """
         # assumes sad['v'] sad said fields are fully dummied at this point
@@ -2746,7 +2756,7 @@ class SerderACDC(Serder):
 
 
     def makify(self, sad, *, proto=None, pvrsn=None, genus=None, gvrsn=None,
-                   kind=None, ilk=None, saids=None):
+                   kind=None, ilk=None, saids=None, compactify=False):
         """makify builds serder with valid properties and attributes. Computes
         saids and sizes. and assigns hidden attributes for properties:
         sad, raw, size, proto, pvrsn, genus, gvrsn, kind
@@ -2779,20 +2789,23 @@ class SerderACDC(Serder):
                    - the code provided in saids when not None
                    - the code extracted from sad[said label] when valid CESR
                    - the code provided in .Fields...saids
+            compactify (bool): True means make the most compact sad variant
+                               False means do not make the most compact variant
+                               Default is False
 
         """
         # sets ._proto, ._pvrsn, ._genus, ._gvrsn, ._kind
         sad, saids = self._makify(sad, proto=proto, pvrsn=pvrsn, genus=genus,
-                                gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
+                                  gvrsn=gvrsn, kind=kind, ilk=ilk, saids=saids)
 
-        sad, raw, size = self._compute(sad=sad, saids=saids)
+        sad, raw, size = self._compute(sad=sad, saids=saids, compactify=compactify)
 
         self._raw = raw
         self._size = size
         self._sad = sad
 
 
-    def _compute(self, sad, saids):
+    def _compute(self, sad, saids, compactify=False):
         """Computes computed fields. These include size and said fields that have
         dummy characters. Replaces dummied fields with computed values.
         In the case of version strings replaces dummy size characters with
@@ -2808,6 +2821,9 @@ class SerderACDC(Serder):
         Parameters:
             sad (dict): dummied serder sad (self addressed data dict)
             saids (dict): said field labels and cesr code that identifies how
+            compactify (bool): True means return the most compact sad variant
+                               False means return given sad but with saids computed
+                               Default is False
 
 
         """
@@ -2824,11 +2840,10 @@ class SerderACDC(Serder):
             # now have correctly sized version string in sad for non-native
         # else: vs ignored for native cesr for now
 
+        csad = copy.deepcopy(sad)  # make copy to compute most compact sad
         if (self.pvrsn.major >= 2 and self.ilk in
                 (Ilks.acm, Ilks.act, Ilks.acg, Ilks.ace, None)):  # compactable
             # compactable so fixup saids and size
-            csad = copy.deepcopy(sad)  # make copy to compute most compact sad
-
             for l in ("s", "a", "e", "r", "A"):
                 if v := csad.get(l, None):  # field exists and is not empty
                     if isinstance(v, Mapping):  # v is non-empty mapping
@@ -2883,8 +2898,6 @@ class SerderACDC(Serder):
         elif (self.pvrsn.major >= 2 and self.ilk in
                 (Ilks.sch, Ilks.att, Ilks.agg, Ilks.edg, Ilks.rul)):  # partial sections
             # verify embedded section saids are most compact
-            csad = copy.deepcopy(sad)  # make copy to compute most compact sad
-
             for l in ("s", "a", "e", "r", "A"):
                 if v := csad.get(l, None):  # field exists and is not empty
                     if isinstance(v, Mapping):  # v is non-empty mapping
@@ -2933,9 +2946,13 @@ class SerderACDC(Serder):
 
             raw = self.dumps(csad, kind=self.kind)
 
-        else:  # non-compactable, no need to fixup
+        else:  # non-compactable, no need to fixup, already most compact form
             # compute saidive digestive field values using raw from sized dummied sad
-            raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+            raw = self.dumps(csad, kind=self.kind)  # serialize sized dummied sad
+
+        if compactify:
+            sad = csad
+            size = len(raw)  # changed size by compatification
 
         # replace dummied said fields at top level of sad with computed digests
         for label, code in saids.items():
