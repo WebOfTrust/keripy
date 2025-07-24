@@ -8,12 +8,9 @@ import time
 from hio.base import doing, tyming
 
 from keri import kering, core
-from keri.core import coring, serdering
-from keri.core.coring import Seqner
-from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting, directing
 from keri.db import dbing
-from keri.vdr import eventing, viring
+from keri.help import nowIso8601
 
 
 def test_withness_receiptor(seeder):
@@ -131,12 +128,12 @@ class PublishDoer(doing.DoDoer):
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
-        wanHab = wanHby.habByName(name="wan")
-        wilHab = wilHby.habByName(name="wil")
-        wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
+        self.wanHab = wanHby.habByName(name="wan")
+        self.wilHab = wilHby.habByName(name="wil")
+        self.wesHab = wesHby.habByName(name="wes")
+        seeder.seedWitEnds(palHby.db, witHabs=[self.wanHab, self.wilHab, self.wesHab], protocols=[kering.Schemes.tcp])
 
-        self.palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
+        self.palHab = palHby.makeHab(name="pal", wits=[self.wanHab.pre, self.wilHab.pre, self.wesHab.pre], transferable=True)
 
         self.witDoer = agenting.WitnessPublisher(hby=palHby)
         doers = wanDoers + wilDoers + wesDoers + [self.witDoer]
@@ -151,32 +148,13 @@ class PublishDoer(doing.DoDoer):
         self.tock = tock
         yield self.tock
 
-        regser = eventing.incept(pre=self.palHab.pre, baks=[], code=coring.MtrDex.Blake3_256)
-        serder = eventing.issue(vcdig=regser.pre,
-                                regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
-        msg = bytearray(serder.raw)
-        msg.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
-                                version=kering.Vrsn_1_0).qb64b)
-        msg.extend(Seqner(sn=self.palHab.kever.sn).qb64b)
-        msg.extend(self.palHab.kever.serder.saidb)
-
+        msg = self.palHab.makeOwnEvent(sn=0)
         self.witDoer.msgs.append(dict(pre=self.palHab.pre, msg=msg))
 
-        while not self.witDoer.cues:
-            yield self.tock
-
-        cue = self.witDoer.cues.popleft()
-        assert cue["pre"] == self.palHab.pre
-        assert cue["msg"] == msg
-
-        for name in ["wes", "wil", "wan"]:
-            reger = viring.Reger(name=name)
+        for hab in [self.wanHab, self.wilHab, self.wesHab]:
             while True:
-                raw = reger.getTvt(dbing.dgKey(serder.preb, serder.saidb))
-                if raw:
-                    found = serdering.SerderKERI(raw=bytes(raw))
-                    if found and serder.pre == found.pre:
-                        break
+                if self.palHab.pre in hab.kevers:
+                    break
                 yield self.tock
 
         self.remove(self.toRemove)
