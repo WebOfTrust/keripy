@@ -468,6 +468,130 @@ def sectrule(rule, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     return SerderACDC(sad=sad, makify=True)
 
 
+def sectionate(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
+            attribute=None, issuee=None, aggregate=None, edge=None, rule=None,
+            pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
+    """Utility function to create top-level acdc message in most compact form and
+    the associated section messages.
+
+    Returns:
+        msgs (tuple): of form (acdc, schema, attr, aggr, edge, rule) where:
+            acdc (SerderACDC): instance of ilk of either 'acm', 'act', or 'acg'
+            sch (SerderACDC): instance of ilk 'sch'
+            att (SerderACDC|None): instance of ilk 'att' or None
+            agg (SerderACDC|None): instance of ilk 'agg' or None
+            edg (SerderACDC): instance of ilk 'edg'
+            rul (SerderACDC): instance of ilk 'rul'
+
+    Parameters:
+        issuer  (str): qb64 of issuer AID
+        ilk  (str|None): message type from Ilks for acdc in most compact form.
+                        may be one of (None, 'acm','act','acg')
+                        default is 'acm'
+                        None means do not include ilk field so implicit 'acm'.
+        uuid (str|None): qb64 of salty nonce (UUID) if any.
+                         None means do not include field
+        regid (str|None): qb64 of registry SAID if any.
+                             None means do not include field
+        schema (str|dict): SAID of schema section or schema section block
+                           None means use default schema for value
+        attribute (str|dict|None): SAID of attribute section or dict of
+                                   attribute section block
+                                    None means do not include field
+                                    either attribute or aggregate is required
+        issuee (str): qb64 of issuee AID if any to insert in attribute section
+                      when attributes is a Mapping.
+                      None means do not insert issuee
+        aggregate (str|list|None): SAID of aggregate section or list of
+                                   aggregate element blocks
+                                   None means do not include field
+                                   either attribute or aggregate is required
+        edge (str|dict|None): SAID of edge section or dict of edge section block
+                               None means do not include field
+        rule (str|dict|None): SAID of rule section or dict of rule section block
+                               None means do not include field
+        pvrsn (Versionage): ACDC protocol version number
+        gvrsn (Versionage): CESR Genus version number.
+        kind (str): serialization kind from Kinds
+        compactify (bool): True means make the most compact sad variant if any
+                               False means do not make the most compact variant
+                               Default is False
+
+
+    """
+    if ilk not in (None, Ilks.acm, Ilks.act, Ilks.acg):
+        raise ValueError(f"Invalid {ilk=} must be one of ({None}, {Ilks.acm}, "
+                         f"{Ilks.act}, {Ilks.acg})")
+
+    if ((attribute is not None and aggregate is not None) or
+            (attribute is None and aggregate is None)):
+        raise ValueError(f"Either one or the other but not both of attribute "
+                         f"and aggregate is required")
+
+    if ilk == Ilks.act and attribute is None:
+        raise ValueError(f"Invalid attribute=None for {ilk=}")
+
+    if ilk == Ilks.acg and aggregate is None:
+        raise ValueError(f"Invalid aggregate=None for {ilk=}")
+
+    if issuee is not None and isinstance(attribute, Mapping):
+        attribute['i'] = issuee
+
+    if schema is None:
+        if ilk == Ilks.act:
+            ssaid, ssad = actSchemaDefault(kind=kind)
+
+        elif ilk == Ilks.acg:
+            ssaid, ssad = acgSchemaDefault(kind=kind)
+
+        else:
+            ssaid, ssad = acmSchemaDefault(kind=kind)
+    elif isinstance(schema, str):
+        ssaid = ssad = schema
+
+    else:
+        smapper = Mapper(mad=schema, makify=True, strict=False,
+                         saids={'$id': 'E',}, saidive=True, kind=kind)
+        ssaid = smapper.said
+        ssad = smapper.mad
+
+    sch = sectschema(schema=ssad, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
+
+    if ilk == Ilks.act:
+
+        acdc = acdcatt(issuer, uuid=uuid, regid=regid, schema=ssaid,
+                       attribute=attribute, issuee=issuee,
+                       edge=edge, rule=rule,
+                       pvrsn=pvrsn, gvrsn=gvrsn, kind=kind, compactify=True)
+        att = sectattr(attribute, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
+        agg = None
+
+    elif ilk == Ilks.acg:
+        acdc = acdcagg(issuer, uuid=uuid, regid=regid, schema=ssaid,
+                       aggregate=aggregate, edge=edge, rule=rule,
+                       pvrsn=pvrsn, gvrsn=gvrsn, kind=kind, compactify=True)
+        att = None
+        agg = sectaggr(aggregate, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
+
+
+    else:
+        acdc = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+                       schema=ssaid, attribute=attribute, issuee=issuee,
+                       aggregate=aggregate, edge=edge, rule=rule,
+                       pvrsn=pvrsn, gvrsn=gvrsn, kind=kind, compactify=True)
+        att = agg = None
+        if attribute is not None:
+            att = sectattr(attribute, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
+        elif aggregate is not None:
+            agg = sectaggr(aggregate, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
+
+
+    edg = sectedge(edge, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
+    rul = sectrule(rule, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
+
+    return (acdc, sch, att, agg, edg, rul)
+
+
 def acmSchemaDefault(kind=Kinds.json):
     """Utility function to create default schema dict for acm message
 
