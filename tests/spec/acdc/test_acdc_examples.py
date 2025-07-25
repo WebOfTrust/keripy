@@ -963,6 +963,154 @@ def test_acdc_aggregate_section_CESR():
 
     """Done Test"""
 
+def test_acdc_rule_section_JSON():
+    """Rule section using JSON"""
+
+    amy = issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    bob = issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+    cal = "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT"
+    deb = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"
+
+    raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+
+    rd0 = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
+    rd1 = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+    rd2 = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
+    rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+
+    schema = \
+    {
+        "description": "Rule Section",
+        "oneOf":
+        [
+            {
+                "description": "Rule Section SAID",
+                "type": "string"
+            },
+            {
+                "description": "Rule Detail",
+                "type": "object",
+                "required":
+                [
+                    "d",
+                    "u",
+                    "warrantyDisclaimer",
+                    "liabilityDisclaimer"
+                ],
+                "properties":
+                {
+                    "d":
+                    {
+                        "description": "Rule Section SAID",
+                        "type": "string"
+                    },
+                    "u":
+                    {
+                        "description": "Rule Section UUID",
+                        "type": "string"
+                    },
+                    "warrantyDisclaimer":
+                    {
+                        "description": "Warranty Disclaimer Clause",
+                        "type": "object",
+                        "required":
+                        [
+                            "d",
+                            "u",
+                            "l"
+                        ],
+                        "properties":
+                        {
+                            "d":
+                            {
+                                "description": "Clause SAID",
+                                "type": "string"
+                            },
+                            "u":
+                            {
+                                "description": "Clause UUID",
+                                "type": "string"
+                            },
+                            "l":
+                            {
+                                "description": "Legal Language",
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": False
+                    },
+                    "liabilityDisclaimer":
+                    {
+                        "description": "Liability Disclaimer Clause",
+                        "type": "object",
+                        "required":
+                        [
+                            "d",
+                            "u",
+                            "l"
+                        ],
+                        "properties":
+                        {
+                            "d":
+                            {
+                                "description": "Clause SAID",
+                                "type": "string"
+                            },
+                            "u":
+                            {
+                                "description": "Clause UUID",
+                                "type": "string"
+                            },
+                            "l":
+                            {
+                                "description": "Legal Language",
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": False
+                    }
+                },
+                "additionalProperties": False
+            }
+        ]
+    }
+
+    rimad = \
+    {
+      "d": "",
+      "u": uuids[0],
+      "disclaimers":
+      {
+        "d": "",
+        "u": uuids[1],
+        "l": "The person or legal entity identified by this ACDC's Issuer AID (Issuer) makes the following disclaimers:",
+        "warrantyDisclaimer":
+        {
+          "d": "",
+          "u": uuids[2],
+          "l": "Issuer provides this ACDC on an AS IS basis."
+        },
+        "liabilityDisclaimer":
+        {
+          "d": "",
+          "u": uuids[3],
+          "l": "The Issuer SHALL NOT be liable for ANY damages arising as a result of this credential."
+        }
+      },
+      "permittedUse":
+      {
+        "d": "",
+        "u": uuids[4],
+        "l": "The Issuee (controller of the Issuee AID) MAY only use this ACDC for non-commercial purposes."
+      }
+    }
+
+
+
+    """Done Test"""
+
+
 
 
 def test_acdc_examples_JSON():
@@ -1857,6 +2005,7 @@ if __name__ == "__main__":
     test_acdc_attribute_section_JSON()
     test_acdc_aggregate_section_JSON()
     test_acdc_aggregate_section_CESR()
+    test_acdc_rule_section_JSON()
     test_acdc_examples_JSON()
 
 
