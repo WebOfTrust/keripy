@@ -75,28 +75,7 @@ def test_acdc_examples_setup():
     assert issuerVerKey == 'DA8-J0EW88RMYqtUHQDqT4q2YH2iBFlW8HobHKV74yi_' # use in example
 
     # create issuer rotation key state Amy
-    """
-    Issuer rotating seed
-    size=32
-    path='1'
-    salt=b'acdcspecworkexam'
-    opslimit=1
-    memlimit=8192
-    seed = pysodium.crypto_pwhash(outlen=size,
-                                      passwd=path,
-                                      salt=self.raw,
-                                      opslimit=opslimit,
-                                      memlimit=memlimit,
-                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
-    seed = (b'\x82\xd7%\xd0\x9d\x95"u\x1d\x9c\x9d\x885ic\x86\x88\x84\xc7=Ps\x97\x88e\xf2\xab\xcc\x1e\xe2Q~')
 
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
-    verkey = (b'\xb7\xb8\xb9\xec2\xb6\xa7\xeak\x83A\xe0\t\xed4\xa0Y\xebR4M\x87 3?\x85K=U\xf6\xa7\x8c')
-    First 32 bytes of this internal sigkey is seed so we use seed externally as sigkey
-    verfer = Verfer(raw=verkey,
-                    code=MtrDex.Ed25519 if transferable
-                    else MtrDex.Ed25519N)
-    """
     issuerRotSeedRaw = (b'\x82\xd7%\xd0\x9d\x95"u\x1d\x9c\x9d\x885ic\x86\x88\x84\xc7=Ps\x97\x88e\xf2\xab\xcc\x1e\xe2Q~')
     issuerRotSeedB64 = encodeB64(issuerRotSeedRaw)
     assert issuerRotSeedB64 == b'gtcl0J2VInUdnJ2INWljhoiExz1Qc5eIZfKrzB7iUX4='
@@ -448,7 +427,7 @@ def test_acdc_examples_setup():
 
 
 def test_acdc_registry_examples_JSON():
-    """Basic Examples using JSON serializaton"""
+    """Basic Examples using JSON serializaton to create Registries"""
 
     amy = issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
     bob = issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
@@ -458,42 +437,69 @@ def test_acdc_registry_examples_JSON():
     raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
     uuids = [Noncer(raw=raw).qb64 for raw in raws]
 
-
-    stamp0 = '2025-07-04T17:50:09.988921+00:00'
-
-    # test default kind JSON uuid0 stamp0 Registry0
-    serder = regcept(issuer=issuer, uuid=uuids[0], stamp=stamp0)
-    assert serder.sad == \
-    {
-        "v": "ACDCCAACAAJSONAADa.",
-        "t": "rip",
-        "d": "EOkQ6kVnZUvAzIv5R-7A1oqloqi3URKnqJM613Z0NUe3",
-        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
-        "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
-        "n": "0",
-        "dt": "2025-07-04T17:50:09.988921+00:00"
-    }
-    rd0 = serder.said
-    assert rd0 == "EOkQ6kVnZUvAzIv5R-7A1oqloqi3URKnqJM613Z0NUe3"
-
-
-    stamp1 = '2025-07-04T17:51:00.000000+00:00'
-
-    # test default kind JSON uuid1 Stamp1 Registry1
-    serder = regcept(issuer=issuer, uuid=uuids[1], stamp=stamp1)
+    # Registry0  test default kind JSON uuid0 stamp0
+    stamp0 = '2025-07-04T17:50:00.000000+00:00'
+    serder = regcept(issuer=amy, uuid=uuids[0], stamp=stamp0)
     assert serder.sad == \
     {
         'v': 'ACDCCAACAAJSONAADa.',
         't': 'rip',
-        'd': 'EOBbWtekw_2Xzdu5DHNVjeEWo1l2CMl2pBsdsgZtGTEn',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+        'd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
         'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+        'n': '0',
+        'dt': '2025-07-04T17:50:00.000000+00:00'
+    }
+    rd0 = serder.said
+    assert rd0 == "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
+
+    # Registry1 test default kind JSON uuid1 Stamp1
+    stamp1 = '2025-07-04T17:51:00.000000+00:00'
+    serder = regcept(issuer=bob, uuid=uuids[1], stamp=stamp1)
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAADa.',
+        't': 'rip',
+        'd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
         'n': '0',
         'dt': '2025-07-04T17:51:00.000000+00:00'
     }
-
     rd1 = serder.said
-    assert rd1 == "EOBbWtekw_2Xzdu5DHNVjeEWo1l2CMl2pBsdsgZtGTEn"
+    assert rd1 == "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+
+    # Registry2 test default kind JSON uuid2 Stamp2
+    stamp2 = '2025-07-04T17:52:00.000000+00:00'
+    serder = regcept(issuer=cal, uuid=uuids[2], stamp=stamp2)
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAADa.',
+        't': 'rip',
+        'd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
+        'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
+        'n': '0',
+        'dt': '2025-07-04T17:52:00.000000+00:00'
+    }
+    rd2 = serder.said
+    assert rd2 == "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
+
+    # Registry3 test default kind JSON uuid3 Stamp3
+    stamp3 = '2025-07-04T17:53:00.000000+00:00'
+    serder = regcept(issuer=deb, uuid=uuids[3], stamp=stamp3)
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAADa.',
+        't': 'rip',
+        'd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcz',
+        'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
+        'n': '0',
+        'dt': '2025-07-04T17:53:00.000000+00:00'
+    }
+    rd3 = serder.said
+    assert rd3 == "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
 
 
 
@@ -510,9 +516,10 @@ def test_acdc_examples_JSON():
     raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
     uuids = [Noncer(raw=raw).qb64 for raw in raws]
 
-    rd0 = "EOkQ6kVnZUvAzIv5R-7A1oqloqi3URKnqJM613Z0NUe3"
-    rd1 = "EOBbWtekw_2Xzdu5DHNVjeEWo1l2CMl2pBsdsgZtGTEn"
-
+    rd0 = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
+    rd1 = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+    rd2 = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
+    rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
 
     #Basic attribute section example
     # private targeted attribute section
@@ -552,7 +559,6 @@ def test_acdc_examples_JSON():
         "score": 96,
         "name": "Zoe Doe"
     }
-
 
     # partially disclosable attribute section
     mad = \

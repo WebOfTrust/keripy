@@ -588,6 +588,9 @@ def test_acdcatt_message_json():
     assert serder.regid == ''
     assert serder.issuee == None
     assert serder.sad['s']['$id'] == schemaSaid
+    assert serder.attrib == {}
+    assert serder.edge == {}
+    assert serder.rule == {}
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -915,6 +918,9 @@ def test_acdcatt_message_cesr():
     assert serder.regid == ''
     assert serder.issuee == None
     assert serder.sad['s']['$id'] == schemaSaid
+    assert serder.attrib == {}
+    assert serder.edge == {}
+    assert serder.rule == {}
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -2284,6 +2290,33 @@ def test_acdcagg_message():
 
     # Test with JSON serialization
 
+    # test with empty sections
+    said = 'EA14m3AVPhBe1VbLwLW_djyEMb9J_XVJzfQEl1fB71Vu'
+    vs = 'ACDCCAACAAJSONAADi.'
+    size = 226
+    ilk = Ilks.acg
+
+    serder = acdcagg(issuer=issuer, schema=schemaSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.ilk == ilk
+    assert serder.issuer == issuer
+    assert serder.uuid == ''
+    assert serder.regid == ''
+    assert serder.schema == schemaSaid
+    assert serder.aggreg == []
+    assert serder.issuee == None
+    assert serder.verstr == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
     # test some defaults
     said = 'EPpxxXt92XLnOTo31r0g9fyKCfH6Sq79x5SaqKD08JxD'
     vs = 'ACDCCAACAAJSONAALd.'
@@ -2702,6 +2735,33 @@ def test_acdcagg_message():
     }
 
     # Test with CESR serialization
+
+    # test with empty sections
+    said = 'EMgpI_NgNMgylLAq3AtVKCccjIx0_U0CPl3Oy0LgP_O4'
+    vs = 'ACDCCAACAACESRAACs.'
+    size = 172
+    ilk = Ilks.acg
+
+    serder = acdcagg(issuer=issuer, schema=schemaSaid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.ilk == ilk
+    assert serder.issuer == issuer
+    assert serder.uuid == ''
+    assert serder.regid == ''
+    assert serder.schema == schemaSaid
+    assert serder.aggreg == []
+    assert serder.issuee == None
+    assert serder.verstr == vs
+    assert serder.size == size
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
 
     # test some defaults
     said = 'ECKNXaJDHZt7a0yUm5VWcAijH9gvliyfU29ILvcmWKhQ'

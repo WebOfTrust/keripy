@@ -1728,15 +1728,18 @@ class Aggor:
                                         strict=self.strict,
                                         kind=kind)
                     except Exception as ex:
-                        raise SerializeError(f"Invalid atom while "
-                                             f"Serializing") from ex
+                        raise SerializeError(f"Invalid field map while "
+                                             f"serializing") from ex
                     bdy.extend(mapper.qb64b)
 
                 elif isinstance(element, str):
                     bdy.extend(element.encode())
 
+                else:
+                    raise SerializeError(f"Invalid element while serializing")
+
             ser.extend(Counter.enclose(qb64=bdy, code=Codens.GenericListGroup))
-            raw = bytes(ser)  # bytes so can sign, do crypto operations on it
+            raw = bytes(ser)  # make bytes so can do crypto operations on it
             count = len(ser) // 4
 
         else:  # non-native CESR
