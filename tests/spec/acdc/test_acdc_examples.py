@@ -10,7 +10,7 @@ from base64 import urlsafe_b64decode as decodeB64
 import pytest
 
 from keri import Vrsn_2_0, Kinds
-from keri.core import MtrDex, Salter, Noncer, Mapper, Compactor
+from keri.core import MtrDex, Salter, Noncer, Mapper, Compactor, Aggor
 from keri.core.eventing import incept
 from keri.vc.messaging import regcept, blindate, update
 
@@ -500,6 +500,467 @@ def test_acdc_registry_examples_JSON():
     }
     rd3 = serder.said
     assert rd3 == "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+
+
+def test_acdc_attribute_section_JSON():
+    """Attribute section examples using JSON"""
+
+    issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+
+    amy = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    bob = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+    cal = "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT"
+    deb = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"
+
+    raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+
+    rd0 = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
+    rd1 = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+    rd2 = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
+    rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+
+    #Basic attribute section example
+    # private targeted attribute section
+    mad = \
+    {
+    "d": "",
+    "u": uuids[0],
+    "i": issuee,
+    "score": 96,
+    "name": "Zoe Doe"
+    }
+
+    mapper = Mapper(mad=mad, saidive=True, makify=True, kind=Kinds.json)
+    assert mapper.mad == \
+    {
+        "d": "EIMMcLl1w2KW2J3AD3twaESJO4u_fDFCdlMHjouojU8C",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "score": 96,
+        "name": "Zoe Doe"
+    }
+
+    # public targeted attribute section
+    mad = \
+    {
+    "d": "",
+    "i": issuee,
+    "score": 96,
+    "name": "Zoe Doe"
+    }
+
+    mapper = Mapper(mad=mad, saidive=True, makify=True, kind=Kinds.json)
+    assert mapper.mad == \
+    {
+        "d": "ELNJxIInWN4WAih9MQ4vVDrMRYnmhToS9a0gqjLfctOO",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "score": 96,
+        "name": "Zoe Doe"
+    }
+
+    # partially disclosable attribute section
+    mad = \
+    {
+        "d": "",
+        "u": uuids[0],
+        "i": issuee,
+        "name": "Zoe Doe",
+        "gpa": 3.5,
+        "grades":
+        {
+          "d": "",
+          "u": uuids[1],
+          "history": 3.5,
+          "english": 4.0,
+          "math": 3.0
+        }
+    }
+
+    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=Kinds.json)
+    assert compactor.said == 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U'
+    assert compactor.iscompact
+    assert compactor.mad == \
+    {
+        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'name': 'Zoe Doe',
+        'gpa': 3.5,
+        'grades': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy'
+    }
+
+    assert compactor.partials[('.grades',)].mad == \
+    {
+        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'name': 'Zoe Doe',
+        'gpa': 3.5,
+        'grades':
+        {
+            'd': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+            'history': 3.5,
+            'english': 4.0,
+            'math': 3.0
+        }
+    }
+
+    assert compactor.partials[('',)].mad == \
+    {
+        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'name': 'Zoe Doe',
+        'gpa': 3.5,
+        'grades': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy'
+    }
+
+
+def test_acdc_aggregate_section_JSON():
+    """Aggregate section using JSON"""
+
+    amy = issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    bob = issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+    cal = "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT"
+    deb = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"
+
+    raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+
+    rd0 = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
+    rd1 = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+    rd2 = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
+    rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+
+
+    schema = \
+    {
+      "A":
+      {
+        "description": "Selectively disclosable attribute aggregate section",
+        "oneOf":
+        [
+          {
+            "description": "Aggregate Section AGID",
+            "type": "string"
+          },
+          {
+            "description": "Selectively disclosable attribute details",
+            "type": "array",
+            "uniqueItems": True,
+            "items":
+            {
+              "anyOf":
+              [
+                {
+                    "description": "Issue Block",
+                    "oneOf":
+                    [
+                        {
+                            "description": "Issuee Block SAID",
+                            "type": "string"
+                        },
+                        {
+                          "description": "Issuee Block Detail",
+                          "type": "object",
+                          "required":
+                          [
+                            "d",
+                            "u",
+                            "i"
+                          ],
+                          "properties":
+                          {
+                            "d":
+                            {
+                              "description": "Block SAID",
+                              "type": "string"
+                            },
+                            "u":
+                            {
+                              "description": "Block UUID",
+                              "type": "string"
+                            },
+                            "i":
+                            {
+                              "description": "Issuee SAID",
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": False
+                        }
+                    ]
+                },
+                {
+                    "description": "Score Block",
+                    "oneOf":
+                    [
+                        {
+                            "description": "Score Block SAID",
+                            "type": "string"
+                        },
+                        {
+                          "description": "Score Block Detail",
+                          "type": "object",
+                          "required":
+                          [
+                            "d",
+                            "u",
+                            "score"
+                          ],
+                          "properties":
+                          {
+                            "d":
+                            {
+                              "description": "Block SAID",
+                              "type": "string"
+                            },
+                            "u":
+                            {
+                              "description": "Block UUID",
+                              "type": "string"
+                            },
+                            "score":
+                            {
+                              "description": "Score Value",
+                              "type": "integer"
+                            }
+                          },
+                          "additionalProperties": False
+                        }
+                    ]
+                },
+                {
+                    "description": "Name Block",
+                    "oneOf":
+                    [
+                        {
+                            "description": "Name Block SAID",
+                            "type": "string"
+                        },
+                        {
+                          "description": "Name Block Detail",
+                          "type": "object",
+                          "required":
+                          [
+                            "d",
+                            "u",
+                            "name"
+                          ],
+                          "properties":
+                          {
+                            "d":
+                            {
+                              "description": "Block SAID",
+                              "type": "string"
+                            },
+                            "u":
+                            {
+                              "description": "Block UUID",
+                              "type": "string"
+                            },
+                            "name":
+                            {
+                              "description": "Name Value",
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": False
+                        }
+                    ]
+                }
+              ]
+            }
+          }
+        ],
+        "additionalProperties": False
+      }
+    }
+
+
+    iael = \
+    [
+      "",
+      {
+        "d": "",
+        "u": uuids[0],
+        "i": issuee
+      },
+      {
+        "d": "",
+        "u": uuids[1],
+        "score": 96
+      },
+      {
+        "d": "",
+        "u": uuids[2],
+        "name": "Zoe Doe"
+      }
+    ]
+
+    kind = Kinds.json
+
+    oael = \
+    [
+        'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx',
+        {
+            'd': 'EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'},
+        {
+            'd': 'EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+            'score': 96
+        },
+        {
+            'd': 'EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
+            'name': 'Zoe Doe'
+        }
+    ]
+    agid = 'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx'
+
+    cael = \
+    [
+        'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx',
+        'EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4',
+        'EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR',
+        'EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C'
+    ]
+
+    craw = (b'["############################################","EI2lwi1ZKrs-bDwgEreOhEh-W2O'
+            b'5xrOm5T-QCyMuX5V4","EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR","EKYLUIpDX'
+            b'NT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C"]')
+
+    dael = \
+    [
+        'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx',
+        {
+            'd': 'EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
+        },
+        {
+            'd': 'EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+            'score': 96
+        },
+        'EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C'
+    ]
+
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
+    assert aggor.agid == agid
+    assert aggor.ael == oael
+    assert aggor.disclose() == (cael, kind)
+    assert aggor.disclose([1, 2]) == (dael, kind)
+
+    """Done Test"""
+
+
+def test_acdc_aggregate_section_CESR():
+    """Aggregate section using CESR
+
+    Note:  The aids and rds here were derived using json serializations of
+    the assocted kel and rip messages. Its fine to have ACDC issuer's kel use a
+    different serialization from an ACDC issued by that issuer
+    """
+
+    amy = issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    bob = issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+    cal = "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT"
+    deb = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"
+
+    raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+
+    rd0 = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
+    rd1 = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+    rd2 = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
+    rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+
+    iael = \
+    [
+      "",
+      {
+        "d": "",
+        "u": uuids[0],
+        "i": issuee
+      },
+      {
+        "d": "",
+        "u": uuids[1],
+        "score": 96
+      },
+      {
+        "d": "",
+        "u": uuids[2],
+        "name": "Zoe Doe"
+      }
+    ]
+
+    kind = Kinds.cesr
+
+    oael = \
+    [
+        'EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW',
+        {
+            'd': 'EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
+        },
+        {
+            'd': 'EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+            'score': 96
+        },
+        {
+            'd': 'ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
+            'name': 'Zoe Doe'
+        }
+    ]
+
+    agid = 'EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW'
+
+    cael = \
+    [
+        'EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW',
+        'EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E',
+        'EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs',
+        'ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6'
+    ]
+
+    craw = (b'-JAs############################################EPss9hsx7P5iYjWXNYJM5NiEu5Et'
+            b'PQHdGZ5K-qXK2p5EEGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGsED50KTrvT5n20JFT'
+            b'syZFvBJfH-bOAVP9xHFhtbI5nCN6')
+
+    dael = \
+    [
+        'EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW',
+        {
+            'd': 'EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
+            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
+        },
+        {
+            'd': 'EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
+            'score': 96
+        },
+        'ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6'
+    ]
+
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
+    assert aggor.agid == agid
+    assert aggor.ael == oael
+    assert aggor.disclose() == (cael, kind)
+    assert aggor.disclose([1, 2]) == (dael, kind)
+
+
+    """Done Test"""
 
 
 
@@ -1391,6 +1852,10 @@ def test_acdc_examples_JSON():
 
 if __name__ == "__main__":
     test_acdc_examples_setup()
-    test_acdc_examples_JSON()
     test_acdc_registry_examples_JSON()
+    test_acdc_attribute_section_JSON()
+    test_acdc_aggregate_section_JSON()
+    test_acdc_aggregate_section_CESR()
+    test_acdc_examples_JSON()
+
 
