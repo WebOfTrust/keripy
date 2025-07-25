@@ -1153,18 +1153,28 @@ class Compactor(Mapper):
                 self.partials[tuple(index)] = partial
 
 
-
 class Aggor:
     """Aggor class for CESR native serializations of non-string iterables
     (list) that are aggragable into a single primite value called the aggregate
-    or agid (AGID) for aggregate as identifier.
-    Each element of the list is either nested field map or the SAID of that field
-    map.
-
-    Each instance has an property .agid (aggregate identifier) this is the aggregate
-    of the list elements computed by iteratively digesting (compacting) elements.
+    or agid (AGID) for aggregate as identifier. Each instance has an .agid
+    property (aggregate identifier). Its value is the aggregate of the list
+    elements computed by iteratively digesting (compacting) elements.
     A cryptographic commitment to the aggregate (agid) can be verfied
     against its partial re-expansion into an Aggor.
+
+    The agid itself appears as the first element in the list.
+    All other elements in the list each appear as either a saidified nested
+    field map or the SAID of that field map.
+    The AGID serves the same role as a SAID of a field map but for a compactifiable
+    list.
+
+    The AGID is calculated by filling the AGID string with dummy characters and
+    then computing the digest of the dummied compact data stucture where each
+    element besides the agid (which itself is dummied) is the said of
+    associated filed map for that element. When the serialization kind is CESR,
+    this digest includes the list group field. Other serlialization kinds, namely
+    (JSON, CBOR, MGPK) include the list delimeters or framing. I.e. the agid
+    is computed on the full dummied serialization of the list.
 
     Class Attributes:
         Saids (dict):  default saidive fields at top-level. Assumes .mad already
@@ -1172,11 +1182,12 @@ class Aggor:
             Each key is label of saidive field.
             Each value is default primitive code of said digest value to be
                 computed from serialized dummied .mad
+        Dummy (str): spaceholder char for AGID as SAID. Must not be a valid Base64 char
+        Code (str): default digest code for agid computation
 
     Properties:
         agid (str|None): aggregated digest. None when empty ael.
         ael (list[dict|str]): aggregate element list (elements)
-        atoms (list[Mapper|Diger]): Mapper or Diger instances
         raw (bytes): ael serialization as raw/qb64b bytes alias for .qb64b
         qb64b (bytes): ael serialization as qb64b bytes alias for .raw
         qb64 (str): ael serialization as qb64 str
@@ -1196,51 +1207,25 @@ class Aggor:
                           Each value is default primitive code of said digest
                               value to be computed from serialized dummied .mad
                               of element mapper
-        saidive (bool): True means compute SAID(s) of elements using .saids
-                        False means do not compute SAIDs
 
 
     Hidden Attributes:
-        ._agid (str|None): aggregated digest
         ._ael (list[dict|str]): aggregable element list
-        ._atoms (list[Mapper|Diger]): Mapper or Diger instances
         ._raw (bytes): expanded mad serialization in qb64b text bytes domain
         ._count (int): number of quadlets/triplets in mad serialization
         ._code (str): qb64 DigDex code for computing agid digest
         ._strict (bool): labels strict format for strict property
         ._saids (dict): default top-level said fields and codes
-        ._saidive (bool): compute saids or not
         ._kind (str): serialization kind from Kinds
 
     """
     Saids = dict(d=DigDex.Blake3_256)  # default said field label with digestive code
+    Dummy = "#"  # dummy spaceholder char for AGID as SAID. Must not be a valid Base64 char
+    Code = DigDex.Blake3_256  # default digest code for agid
 
 
     @classmethod
-    def computeAgid(cls, atoms, code=DigDex.Blake3_256):
-        """Computes agid from atoms
-
-        Returns:
-           agid (str|None): qb64 of agid on atoms. None if empty atoms or
-                            any atom is empty or None
-
-        Parameters:
-            atoms (list[Diger|Mapper])
-            code (str): qb64 DigDex code for computing the agid digest
-        """
-        agid = None
-        asaids = [atom.said if isinstance(atom, Mapper) else atom.qb64
-                                                    for atom in atoms]
-
-        if asaids and all(asaids):
-            cat = "".join(asaids)
-            agid = Diger(ser=cat.encode(), code=code).qb64
-
-        return agid
-
-
-    @classmethod
-    def verifyDisclosure(cls, ael, agid, kind=Kinds.cesr,
+    def verifyDisclosure(cls, ael, kind=Kinds.cesr,
                          code=DigDex.Blake3_256, saids=None):
         """Verify disclosure of ael against agid using serialization kind
 
@@ -1251,9 +1236,8 @@ class Aggor:
 
         Parameters:
             ael (list[str|dict]): aggrable element list. each element is either:
-                                   said of element or
-                                   element dict
-            agid (str): qb64 of agid to compare against said computed on elements
+                                   said of element or element dict
+                                   zeroth element is special the agid of the ael
             kind (str): serialization kind for digest computation
             code (str): qb64 DigDex code for computing the agid digest
             saids (dict): default saidive fields each element field map top-level.
@@ -1263,12 +1247,14 @@ class Aggor:
                               of element mapper
 
         """
+        saids = saids if saids is not None else cls.Saids
+
         try:  # create aggor from ael with verify True so it computes agid
             aggor = cls(ael=ael, kind=kind, code=code, saids=saids, verify=True)
         except Exception as ex:
             return False
 
-        if aggor.agid != agid:
+        if aggor.agid != ael[0]:
             return False
 
         return True
@@ -1276,7 +1262,7 @@ class Aggor:
 
     def __init__(self, *, ael=None, raw=None, qb64b=None, qb64=None, qb2=None,
                  strip=False, code=DigDex.Blake3_256, makify=False, verify=True,
-                 strict=True, saids=None, saidive=True, kind=Kinds.cesr):
+                 strict=True, saids=None, kind=Kinds.cesr):
         """Initialize instance
 
         Parameters:
@@ -1313,8 +1299,6 @@ class Aggor:
                           Each key is label of saidive field.
                           Each value is default primitive code of said digest
                               value to be computed from serialized dummied .mad
-            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
-                            False means do not compute SAIDs
 
 
         Assumes that when qb64 or qb64b or qb2 are provided that they have
@@ -1323,12 +1307,10 @@ class Aggor:
         """
         makify = True if makify else False
         verify = True if verify else False
-        self._code = code
+        self._code = code if code is not None else self.Code
         self._strict = True if strict else False
         self._saids = dict(saids if saids is not None else self.Saids)  # make copy
-        self._saidive = True if saidive else False
         self._kind = kind
-        self._agid = None
 
         if isNonStringIterable(ael):
             ael = deepcopy(ael)  # make deepcopy so does not mutate argument
@@ -1336,34 +1318,57 @@ class Aggor:
         qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
         raw = raw if raw is not None else qb64b # copy qb64b to raw
 
-        if ael or not (raw or qb64b or qb2):  # mad may be empty if not others
-            atoms = []
-            for i, element in enumerate(ael):
-                if isinstance(element, Mapping):
-                    # will compute  top-level saids of elements if makify and saidive
-                    mapper = Mapper(mad=element, makify=makify, strict=self.strict,
-                                    saids=self.saids, saidive=self.saidive,
-                                    kind=self.kind)
-                    ael[i] = mapper.mad
-                    atoms.append(mapper)
+        if ael or not (raw or qb64b or qb2):  # ael may be empty
+            if makify:
+                cael = []
+                for i, element in enumerate(ael):
+                    if i == 0:
+                        if not isinstance(element, str):  # maybe empty str when makify
+                            raise InvalidValueError(f"Invalid zeroth {element=} in ael")
+                        # dummy the agid
+                        agid = self.Dummy * Matter.Sizes[self.code].fs
+                        cael.append(agid)
+                        ael[i] = agid
 
-                elif isinstance(element, str):
-                    try: # force check element is valid digest
-                        diger = Diger(qb64=element)
-                    except Exception as ex:
-                        raise InvalidValueError(f"Invalid {element=} of "
-                                                "Aggor") from ex
-                    atoms.append(diger)
+                    else:
+                        if isinstance(element, Mapping):  # makify handled by mapper
+                            # will compute  top-level saids of elements if makify and saidive
+                            try:
+                                mapper = Mapper(mad=element, makify=True,
+                                                strict=self.strict,
+                                                saids=self.saids, saidive=True,
+                                                kind=self.kind)
+                            except Exception as ex:
+                                raise InvalidValueError(f"Invalid {element=} of "
+                                                        "Aggor") from ex
+                            cael.append(mapper.said)
+                            ael[i] = mapper.mad  # now has computed said
 
-                else:
-                    raise InvalidValueError(f"Invalid {element=} in ael")
+                        elif isinstance(element, str):
+                            try: # force check element is valid digest
+                                diger = Diger(qb64=element)
+                            except Exception as ex:
+                                raise InvalidValueError(f"Invalid {element=} of "
+                                                        "Aggor") from ex
+                            cael.append(diger.qb64)
+                            ael[i] = diger.qb64
 
-            self._atoms = atoms
+                        else:
+                            raise InvalidValueError(f"Invalid {element=} in ael")
+
+
+                raw, count = self._exhale(ael=cael, kind=kind)
+                if cael:  # only has agid if ael is not empty
+                    diger = Diger(ser=raw, code=self.code)
+                    agid = diger.qb64
+                    ael[0] = agid
+
             self._ael = ael
 
             raw, count = self._exhale(ael=ael, kind=kind)
             self._raw = raw
             self._count = count
+
 
         else:
             if raw:
@@ -1393,46 +1398,54 @@ class Aggor:
             else:
                 raise EmptyMaterialError(f"Need mad or qb64 or qb64b or qb2.")
 
-            ael, atoms, raw, count = self._inhale(buf,
-                                                     kind=kind,
-                                                     verify=verify)
+            ael, raw, count = self._inhale(buf, kind=kind)
             self._ael = ael
-            self._atoms = atoms
             self._raw = raw
             self._count = count
 
-        self._agid = self.computeAgid(self.atoms, code=self.code)
 
-        if self.saidive and not makify and verify:  # verify saids of elements
+
+        if not makify and verify:  # verify agid
+            cael = []
             for i, element in enumerate(self.ael):
-                atom = self.atoms[i]
-                asaid = atom.said if isinstance(atom, Mapper) else atom.qb64
-
-                if isinstance(element, Mapping):
-                    try:
-                        mapper = Mapper(mad=element, makify=True, strict=self.strict,
-                                    saids=self.saids, saidive=self.saidive,
-                                    kind=self.kind)
-                    except Exception as ex:
-                        raise InvalidValueError(f"Invalid {element=} of "
-                                                "Aggor") from ex
-                    csaid = mapper.said
-
-                elif isinstance(element, str):
-                    try: # force check element is valid digest
-                        diger = Diger(qb64=element)
-                    except Exception as ex:
-                        raise InvalidValueError(f"Invalid {element=} of "
-                                                "Aggor") from ex
-                    csaid = diger.qb64
+                if i == 0:
+                    if not isinstance(element, str):  # maybe empty str when makify
+                        raise InvalidValueError(f"Invalid zeroth {element=} in ael")
+                    # dummy the agid
+                    agid = self.Dummy * Matter.Sizes[self.code].fs
+                    cael.append(agid)
 
                 else:
-                    raise InvalidValueError(f"Invalid {element=} of "
-                                                f"Aggor")
-                if asaid != csaid:
-                    raise InvalidValueError(f"Provided said={asaid} of element "
-                                            f"at index={i} does not verify with"
-                                            f" computed said={csaid}")
+                    if isinstance(element, Mapping):  # makify handled by mapper
+                        # will compute  top-level saids of elements if makify and saidive
+                        try:
+                            mapper = Mapper(mad=element, strict=self.strict,
+                                            saids=self.saids, saidive=True,
+                                            kind=self.kind, verify=True)
+                        except Exception as ex:
+                            raise InvalidValueError(f"Invalid Aggor {element=}."
+                                                    " Does not verify") from ex
+                        cael.append(mapper.said)
+
+                    elif isinstance(element, str):
+                        try: # force check element is valid digest
+                            diger = Diger(qb64=element)
+                        except Exception as ex:
+                            raise InvalidValueError(f"Invalid {element=} of "
+                                                    "Aggor") from ex
+                        cael.append(diger.qb64)
+
+                    else:
+                        raise InvalidValueError(f"Invalid {element=} in ael")
+
+
+            raw, count = self._exhale(ael=cael, kind=kind)
+            if self.ael: # only has agid if ael not empty
+                diger = Diger(ser=raw, code=self.code)
+                agid = diger.qb64
+                if self.agid != agid:
+                    raise InvalidValueError(f"Invalid Aggor {agid=}")
+
 
     @property
     def agid(self):
@@ -1441,7 +1454,7 @@ class Aggor:
         Returns:
               agid (str|None): aggregated digest. None when empty ael
         """
-        return self._agid
+        return self.ael[0] if self.ael else None
 
 
     @property
@@ -1452,15 +1465,6 @@ class Aggor:
               ael (list): aggregable elements list
         """
         return self._ael
-
-    @property
-    def atoms(self):
-        """Getter for ._atoms
-
-        Returns:
-              atoms (list[Mapper|Diger]): atoms as Mapper or Diger instances
-        """
-        return self._atoms
 
 
     @property
@@ -1569,17 +1573,6 @@ class Aggor:
         """
         return self._saids
 
-
-    @property
-    def saidive(self):
-        """Getter for ._saidive
-
-        Returns:
-              saidive (bool): True means compute SAID(s) for toplevel fields in .saids
-                            False means do not compute SAIDs
-        """
-        return self._saidive
-
     @property
     def kind(self):
         """Getter for ._kind
@@ -1613,29 +1606,24 @@ class Aggor:
         raise ValueError(f"Invalid {cold=} for byte count conversion")
 
 
-    def _inhale(self, ser=None, kind=Kinds.cesr, verify=True):
-        """Deserializes ser into .mad
+    def _inhale(self, ser=None, kind=Kinds.cesr):
+        """Deserializes ser into .ael
 
         Returns:
-            tuple(ael, atoms, raw, count, kind): results of deserialization where:
+            tuple(ael, raw, count): results of deserialization where:
                 ael (list[dict|str]): field maps or saids deserialized from ser
-                atoms (list[Mapper|diger]): mapper or diger instances deserialized from ser
                 raw is bytes of ser
                 count is number of bytes in raw
-                kind is serialization kind of ser from sniffing
 
         Parameters:
             ser (str|bytes|bytearray|None): mad serialization in raw/qb64b
                 text domain bytes. Uses self.raw if None
             kind (str): serialization kind from Kinds. Assumes already know what
                         kind from enclosing message sniff etc.
-            verify (bool): True means verify element serialization against element
-                               mad said if any.
         """
         ser = ser if ser is not None else self.raw
         raw = bytes(ser)  # make bytes copy
         ael = list()
-        atoms = list()
 
         if kind == Kinds.cesr:  # native CESR
             ser = bytearray(ser)  # make bytearray copy so can consume on the go
@@ -1643,8 +1631,8 @@ class Aggor:
             # consume list ctr assumes already extracted full list
             lctr = Counter(qb64b=ser, strip=True)
             if lctr.name not in ('GenericListGroup', 'BigGenericListGroup'):
-                raise DeserializeError(f"Expected GenericListGroup got counter name="
-                                       f"{lctr.name}")
+                raise DeserializeError(f"Expected List group for Aggor got "
+                                       f"counter name={lctr.name}")
 
             count = lctr.count + (lctr.fullSize // 4)  # include counter & contents
             if len(ser) != lctr.count * 4:
@@ -1660,19 +1648,18 @@ class Aggor:
                             mapper = Mapper(qb64=ser, strip=True,
                                             strict=self.strict,
                                             saids=self.saids,
-                                            saidive=self.saidive,
+                                            saidive=True,
                                             kind=kind,
-                                            verify=verify)
+                                            verify=False)  # verifies later
                         except Exception as ex:
                             raise DeserializeError(f"Invalid element while "
                                                    f"deserializing") from ex
                     else:
-                        raise DeserializeError(f"Expected Map group"
+                        raise DeserializeError(f"Expected Map group for element"
                                            f"got {ctr.name}")
                     ael.append(mapper.mad)
-                    atoms.append(mapper)
 
-                else:  # may not be empty str
+                else:
                     try:
                         diger = Diger(qb64b=ser, strip=True)
                     except  Exception as ex:
@@ -1680,7 +1667,6 @@ class Aggor:
                                                f"deserializing") from ex
 
                     ael.append(diger.qb64)
-                    atoms.append(diger)
 
         else:  # non-native CESR
             count = None
@@ -1711,35 +1697,8 @@ class Aggor:
             if not isinstance(ael, list):
                 raise DeserializeError(f"Invalid ael expected list got "
                                        f"type={type(ael)}")
-            for atom in ael:
-                if isinstance(atom, Mapping):
-                    try:
-                        mapper = Mapper(mad=atom,
-                                        strict=self.strict,
-                                        saids=self.saids,
-                                        saidive=self.saidive,
-                                        kind=kind,
-                                        verify=verify)
-                    except Exception as ex:
-                        raise DeserializeError(f"Invalid element while "
-                                               f"deserializing") from ex
 
-                    atoms.append(mapper)
-
-                elif isinstance(atom, str):
-                    try:
-                        diger = Diger(qb64=atom)
-                    except  Exception as ex:
-                        raise DeserializeError(f"Invalid element while "
-                                               f"deserializing") from ex
-
-                    atoms.append(diger)
-
-                else:
-                    raise DeserializeError(f"Invalid element type while "
-                                           f"deserializing")
-
-        return (ael, atoms, raw, count)
+        return (ael, raw, count)
 
 
 
@@ -1748,21 +1707,21 @@ class Aggor:
 
         Parameters:
             ael (list|None): serializable aggregable element list (elements)
-                             Uses self.ael ael is None
-            dummy (bool): True means dummy said fields given by .saids
-                          False means do not dummy said fields given by .saids
+                             when None then self._ael
             kind (str): serialization kind from Kinds
 
         Returns:
-            ser (bytes): qb64b serialization of mad
+            result(tuple[str, int|None]: of form (raw, count) wherea;
+                raw (bytes): qb64b serialization of ael
+                count(int|None): number of quadlets in raw when CESR else None
         """
-        ael = ael if ael is not None else self.ael
+        ael = ael if ael is not None else self._ael
 
         if kind == Kinds.cesr:  # native CESR
             ser = bytearray()  # full field map serialization as qb64 with counter
             bdy = bytearray()
 
-            for element in ael:  # assumes valid element order
+            for i, element in enumerate(ael):  # assumes valid element order
                 if isinstance(element, Mapping):
                     try:
                         mapper = Mapper(mad=element,
@@ -1813,11 +1772,27 @@ class Aggor:
 
         """
         indices = indices if indices is not None else []
-        ael = [atom.said if isinstance(atom, Mapper) else atom
-                                                    for atom in self.atoms]
-        last = len(self.atoms) - 1
-        for i in indices:
-            if i >= 0 and i <= last and isinstance(self.atoms[i], Mapper):
-                ael[i] = self.atoms[i].mad
+        atoms = []
+        for i, e in enumerate(self.ael):
+            if isinstance(e, Mapping):
+                try:
+                    atom = Mapper(mad=e, strict=self.strict, saids=self.saids,
+                              saidive=True, kind=self.kind)
+                except Exception as ex:
+                    raise ValueError("Invalid elment={e} in Aggor") from ex
 
-        return (ael, self.kind)
+            else:
+                try:
+                    atom = Diger(qb64=e)
+                except Exception as ex:
+                    raise ValueError("Invalid elment={e} in Aggor") from ex
+
+            atoms.append(atom)
+
+        dael = [atom.said if isinstance(atom, Mapper) else atom.qb64 for atom in atoms]
+        last = len(self.ael) - 1
+        for i in indices:
+            if i >= 0 and i <= last and isinstance(atoms[i], Mapper):
+                dael[i] = atoms[i].mad
+
+        return (dael, self.kind)

@@ -1925,6 +1925,231 @@ def test_rule_section():
     """Done Test"""
 
 
+def test_aggregate_section():
+    """Test aggregate agg section message"""
+
+    # setup AEL
+    # Test with all non-nested value types
+    rawsalt = b'0saltnonceblinded'
+    uuid0 = Noncer(raw=rawsalt).qb64
+    assert uuid0 == '0AAwc2FsdG5vbmNlYmxpbmRl'
+
+    rawsalt = b'1saltnonceblinded'
+    uuid1 = Noncer(raw=rawsalt).qb64
+    assert uuid1 == '0AAxc2FsdG5vbmNlYmxpbmRl'
+
+    rawsalt = b'2saltnonceblinded'
+    uuid2 = Noncer(raw=rawsalt).qb64
+    assert uuid2 == '0AAyc2FsdG5vbmNlYmxpbmRl'
+
+    rawsalt = b'3saltnonceblinded'
+    uuid3 = Noncer(raw=rawsalt).qb64
+    assert uuid3 == '0AAzc2FsdG5vbmNlYmxpbmRl'
+
+    issuee = "EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C"
+
+    att0 = \
+    {
+        'd': '',
+        'u': uuid0,
+        'issuee': issuee,
+    }
+
+    att1 = \
+    {
+        'd': '',
+        'u': uuid1,
+        'name': "Betty Boop",
+    }
+
+    att2 = \
+    {
+        'd': '',
+        'u': uuid2,
+        'role': "entertainment",
+    }
+
+    att3 = \
+    {
+        'd': '',
+        'u': uuid3,
+        'location': "lake mansion",
+    }
+
+    iael = ['', att0, att1, att2, att3]  # agid is empty
+
+    assert iael == \
+    [
+        '',
+        {
+            'd': '',
+            'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
+            'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
+        },
+        {
+            'd': '',
+            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
+            'name': 'Betty Boop'
+        },
+        {
+            'd': '',
+            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
+            'role': 'entertainment'
+        },
+        {
+            'd': '',
+            'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
+            'location': 'lake mansion'
+        }
+    ]
+
+    # Test with JSON serialization
+    kind = Kinds.json
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
+
+    aggrAgid = aggor.agid
+    aggrAel = aggor.ael
+    assert aggrAgid == 'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH'  # json
+    assert aggrAel == \
+    [
+        'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
+        {
+            'd': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
+            'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
+            'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
+        },
+        {
+            'd': 'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
+            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
+            'name': 'Betty Boop'
+        },
+        {
+            'd': 'EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z',
+            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
+            'role': 'entertainment'
+        },
+        {
+            'd': 'EILHLTqlZPUIukMCyzHLOQKt0btEdopPXZFSHblsF10J',
+            'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
+            'location': 'lake mansion'
+        }
+    ]
+
+    # Test using agid
+    said = 'EAA24lJAsvpdvcJdqj5oWVTB0ElRyQFyBxvV8_5ZL8K3'
+    vs = 'ACDCCAACAAJSONAACL.'
+    size = 139
+
+    serder = sectaggr(aggregate=aggrAgid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.verstr == vs
+    assert serder.size == size
+    assert serder.aggreg == aggrAgid
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using Aggor Ael list
+    said = 'EIq6Nl0Cn-mgkmfn0p8ZhXlhEssftHMHNptf522XLk8d'
+    vs = 'ACDCCAACAAJSONAAJa.'
+    size = 602
+
+    serder = sectaggr(aggregate=aggrAel, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.verstr == vs
+    assert serder.size == size
+    assert serder.aggreg == aggrAel
+    assert serder.aggreg[0] == aggrAgid
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test with CESR serialization
+    kind = Kinds.cesr
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
+
+    aggrAgid = aggor.agid
+    aggrAel = aggor.ael
+    assert aggrAgid == 'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu'  #CESR
+    assert aggrAel == \
+    [
+        'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
+        {
+            'd': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
+            'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
+            'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
+        },
+        {
+            'd': 'EOgusuandj-y762uf5rRWYiZ7LFtzAy8_GURuFtm4jJu',
+            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
+            'name': 'Betty Boop'
+        },
+        {
+            'd': 'EJ0jcxT7rGFwj4R39M619BptbmtjqvCsokXu0MLLkek3',
+            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
+            'role': 'entertainment'
+        },
+        {
+            'd': 'EPa2SKE8LlZz9jLDyBd04vKZ17is0taTD5RXPA5svYet',
+            'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
+            'location': 'lake mansion'
+        }
+    ]
+
+    # Test using agid
+    said = 'EFE-J9fxo-L_VDrTGubv5I8B9tX6QgHHxDt_IEfKcMlr'
+    vs = 'ACDCCAACAACESRAABs.'
+    size = 108
+
+    serder = sectaggr(aggregate=aggrAgid, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.verstr == vs
+    assert serder.size == size
+    assert serder.aggreg == aggrAgid
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    # Test using Aggor Ael list
+    said = 'ED1XsqGtEawsyoVdDL2Y2Yh3qYBL3jdzllTLVmH8PG6l'
+    vs = 'ACDCCAACAACESRAAI8.'
+    size = 572
+
+    serder = sectaggr(aggregate=aggrAel, kind=kind)
+    assert serder.kind == kind
+    assert serder.said == said
+    assert serder.verstr == vs
+    assert serder.size == size
+    assert serder.aggreg == aggrAel
+
+    # test round trip
+    raw = serder.raw
+    sad = serder.sad
+    serder = SerderACDC(raw=raw)
+    assert serder.said == said
+    assert serder.raw == raw
+    assert serder.sad == sad
+
+    """Done Test"""
+
 
 def test_acdcagg_message():
     """Test acg acdc message"""
@@ -1978,9 +2203,10 @@ def test_acdcagg_message():
         'additionalProperties': False
     }
 
-    aggrAgid = 'EMWdLviLg7NqX1SKMI-JhLq_nMCORP7MIRGuSZmXN_od'  # json
+    aggrAgid = 'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH'  # json
     aggrAel = \
     [
+        'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
         {
             'd': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
             'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
@@ -2059,9 +2285,9 @@ def test_acdcagg_message():
     # Test with JSON serialization
 
     # test some defaults
-    said = 'ECDA1soqlK9qkvZWY_G1Y7aPVe_O5hez71EUsB7Typok'
-    vs = 'ACDCCAACAAJSONAAKu.'
-    size = 686
+    said = 'EPpxxXt92XLnOTo31r0g9fyKCfH6Sq79x5SaqKD08JxD'
+    vs = 'ACDCCAACAAJSONAALd.'
+    size = 733
     ilk = Ilks.acg
 
     serder = acdcagg(issuer=issuer, schema=schemaSaid,
@@ -2074,20 +2300,22 @@ def test_acdcagg_message():
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
+    assert serder.aggreg[0] == aggrAgid
     assert serder.issuee == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAKu.',
+        'v': 'ACDCCAACAAJSONAALd.',
         't': 'acg',
-        'd': 'ECDA1soqlK9qkvZWY_G1Y7aPVe_O5hez71EUsB7Typok',
+        'd': 'EPpxxXt92XLnOTo31r0g9fyKCfH6Sq79x5SaqKD08JxD',
         'u': '',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': '',
         's': 'EIgmaDpd1IHrG76EEMkrBbmUJ7xeIl7680PKWVtdebyO',
         'A':
         [
+            'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
             {
                 'd': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
                 'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
@@ -2143,12 +2371,12 @@ def test_acdcagg_message():
     {
         'v': 'ACDCCAACAAJSONAAEO.',
         't': 'acg',
-        'd': 'ECDA1soqlK9qkvZWY_G1Y7aPVe_O5hez71EUsB7Typok',
+        'd': 'EPpxxXt92XLnOTo31r0g9fyKCfH6Sq79x5SaqKD08JxD',
         'u': '',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': '',
         's': 'EIgmaDpd1IHrG76EEMkrBbmUJ7xeIl7680PKWVtdebyO',
-        'A': 'EMWdLviLg7NqX1SKMI-JhLq_nMCORP7MIRGuSZmXN_od',
+        'A': 'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
         'e': {},
         'r': {}
     }
@@ -2163,9 +2391,9 @@ def test_acdcagg_message():
 
 
     # test that compactified said are stable
-    said = 'EByqvdnx-hK5-tuUYgh0b68sgEDk2DIBPttt6MfdDI_0'
-    vs = 'ACDCCAACAAJSONAAcH.'
-    size = 1799
+    said = 'ECtrN424rXGIEwbqcKp61lF7LDZBhpVL5xCUo4mA1JAp'
+    vs = 'ACDCCAACAAJSONAAc2.'
+    size = 1846
     ilk = Ilks.acg
 
     serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid,
@@ -2185,36 +2413,27 @@ def test_acdcagg_message():
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAcH.',
+        'v': 'ACDCCAACAAJSONAAc2.',
         't': 'acg',
-        'd': 'EByqvdnx-hK5-tuUYgh0b68sgEDk2DIBPttt6MfdDI_0',
+        'd': 'ECtrN424rXGIEwbqcKp61lF7LDZBhpVL5xCUo4mA1JAp',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EIgmaDpd1IHrG76EEMkrBbmUJ7xeIl7680PKWVtdebyO',
-        'A':
-        [
-            {
-                'd': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
-                'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
-                'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
-            },
-            {
-                'd': 'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
-                'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
-                'name': 'Betty Boop'
-            },
-            {
-                'd': 'EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z',
-                'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
-                'role': 'entertainment'
-            },
-            {
-                'd': 'EILHLTqlZPUIukMCyzHLOQKt0btEdopPXZFSHblsF10J',
-                'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
-                'location': 'lake mansion'
-            }
-        ],
+        'A': ['EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
+              {'d': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
+               'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
+               'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'},
+              {'d': 'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
+               'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
+               'name': 'Betty Boop'},
+              {'d': 'EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z',
+               'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
+               'role': 'entertainment'},
+              {'d': 'EILHLTqlZPUIukMCyzHLOQKt0btEdopPXZFSHblsF10J',
+               'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
+               'location': 'lake mansion'}
+              ],
         'e': {'d': 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF',
               'u': '0AwjaDAE0qHcgNghkDaG7OY1',
               'work': {'d': 'EKJGcxOlhz08bQ9IUukIKl19pPmKpZ81RelPncz29xL2',
@@ -2241,8 +2460,7 @@ def test_acdcagg_message():
                               },
               'permittedUse': {'d': 'EPH194D7v-QxNt_p9Xkp_bCuYcmWoWy9cZMPHDfx3gxq',
                                'u': '0ADaG7OY1wjaDAE0qHcgNghk',
-                               'l': 'Non-commercial'
-                               }
+                               'l': 'Non-commercial'}
               }
     }
 
@@ -2277,12 +2495,12 @@ def test_acdcagg_message():
     {
         'v': 'ACDCCAACAAJSONAAGq.',
         't': 'acg',
-        'd': 'EByqvdnx-hK5-tuUYgh0b68sgEDk2DIBPttt6MfdDI_0',
+        'd': 'ECtrN424rXGIEwbqcKp61lF7LDZBhpVL5xCUo4mA1JAp',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EIgmaDpd1IHrG76EEMkrBbmUJ7xeIl7680PKWVtdebyO',
-        'A': 'EMWdLviLg7NqX1SKMI-JhLq_nMCORP7MIRGuSZmXN_od',
+        'A': 'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
         'e': 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF',
         'r': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
     }
@@ -2348,8 +2566,9 @@ def test_acdcagg_message():
 
     assert att == None
 
-    assert agg.said == 'EABouGJJ10LzN038rP4hUlc_d0UAyB0a-YxvNWWglkkX'
+    assert agg.said == 'EIq6Nl0Cn-mgkmfn0p8ZhXlhEssftHMHNptf522XLk8d'
     assert agg.sad['A'] == aggrAel
+    assert agg.sad['A'][0] == aggrAgid
 
     assert edg.said == 'EOeLqwd8pwwtE3EgVmjjq_OlYM3emWw0i-d73eydPffX'
     assert edg.sad['e'] == edgeSad
@@ -2403,9 +2622,10 @@ def test_acdcagg_message():
         'additionalProperties': False
     }
 
-    aggrAgid = 'EC-6VaGxDRR0icTsHW0ow88abnkvHoNXMyhb4pZD0Wfj' # cesr
+    aggrAgid = 'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu' # cesr
     aggrAel = \
     [
+        'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
         {
             'd': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
             'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
@@ -2484,9 +2704,9 @@ def test_acdcagg_message():
     # Test with CESR serialization
 
     # test some defaults
-    said = 'EJopTAVnb6AuID7Z6TZrINlART8AhoCo-2e3TSqNFMm2'
-    vs = 'ACDCCAACAACESRAAJ4.'
-    size = 632
+    said = 'ECKNXaJDHZt7a0yUm5VWcAijH9gvliyfU29ILvcmWKhQ'
+    vs = 'ACDCCAACAACESRAAKk.'
+    size = 676
     ilk = Ilks.acg
 
     serder = acdcagg(issuer=issuer, schema=schemaSaid,
@@ -2499,20 +2719,22 @@ def test_acdcagg_message():
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
+    assert serder.aggreg[0] == aggrAgid
     assert serder.issuee == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAACESRAAJ4.',
+        'v': 'ACDCCAACAACESRAAKk.',
         't': 'acg',
-        'd': 'EJopTAVnb6AuID7Z6TZrINlART8AhoCo-2e3TSqNFMm2',
+        'd': 'ECKNXaJDHZt7a0yUm5VWcAijH9gvliyfU29ILvcmWKhQ',
         'u': '',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': '',
         's': 'EB1_MVIk_DSkPNFejlfTEmxf7txIrc9NpUEwV_cLjWnl',
         'A':
         [
+            'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
             {
                 'd': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
                 'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
@@ -2568,12 +2790,12 @@ def test_acdcagg_message():
     {
         'v': 'ACDCCAACAACESRAADU.',
         't': 'acg',
-        'd': 'EJopTAVnb6AuID7Z6TZrINlART8AhoCo-2e3TSqNFMm2',
+        'd': 'ECKNXaJDHZt7a0yUm5VWcAijH9gvliyfU29ILvcmWKhQ',
         'u': '',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': '',
         's': 'EB1_MVIk_DSkPNFejlfTEmxf7txIrc9NpUEwV_cLjWnl',
-        'A': 'EC-6VaGxDRR0icTsHW0ow88abnkvHoNXMyhb4pZD0Wfj',
+        'A': 'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
         'e': {},
         'r': {}
     }
@@ -2588,9 +2810,9 @@ def test_acdcagg_message():
 
 
     # test that compactified said are stable
-    said = 'ENGemZOvaMPau6VmZ3y9tgiJzCb7gIo5l9gctcQ7A06Y'
-    vs = 'ACDCCAACAACESRAAbM.'
-    size = 1740
+    said = 'EB96-m8JpjzlXFS2f-ewWdvi8XSleMtpV65OvM03B4e0'
+    vs = 'ACDCCAACAACESRAAb4.'
+    size = 1784
     ilk = Ilks.acg
 
     serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid,
@@ -2606,40 +2828,32 @@ def test_acdcagg_message():
     assert serder.regid == regid
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
+    assert serder.aggreg[0] == aggrAgid
     assert serder.edge['d'] == edgeSaid
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAACESRAAbM.',
+        'v': 'ACDCCAACAACESRAAb4.',
         't': 'acg',
-        'd': 'ENGemZOvaMPau6VmZ3y9tgiJzCb7gIo5l9gctcQ7A06Y',
+        'd': 'EB96-m8JpjzlXFS2f-ewWdvi8XSleMtpV65OvM03B4e0',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EB1_MVIk_DSkPNFejlfTEmxf7txIrc9NpUEwV_cLjWnl',
-        'A':
-        [
-            {
-                'd': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
-                'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
-                'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
-            },
-            {
-                'd': 'EOgusuandj-y762uf5rRWYiZ7LFtzAy8_GURuFtm4jJu',
-                'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
-                'name': 'Betty Boop'
-            },
-            {
-                'd': 'EJ0jcxT7rGFwj4R39M619BptbmtjqvCsokXu0MLLkek3',
-                'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
-                'role': 'entertainment'
-            },
-            {
-                'd': 'EPa2SKE8LlZz9jLDyBd04vKZ17is0taTD5RXPA5svYet',
-                'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
-                'location': 'lake mansion'
-            }
-        ],
+        'A': ['EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
+              {'d': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
+               'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
+               'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'},
+              {'d': 'EOgusuandj-y762uf5rRWYiZ7LFtzAy8_GURuFtm4jJu',
+               'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
+               'name': 'Betty Boop'},
+              {'d': 'EJ0jcxT7rGFwj4R39M619BptbmtjqvCsokXu0MLLkek3',
+               'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
+               'role': 'entertainment'},
+              {'d': 'EPa2SKE8LlZz9jLDyBd04vKZ17is0taTD5RXPA5svYet',
+               'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
+               'location': 'lake mansion'}
+              ],
         'e': {'d': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
               'u': '0AwjaDAE0qHcgNghkDaG7OY1',
               'work': {'d': 'EFYkMnj7wgn4Vn02F6iniWoCJFf-kCzvkM2wZ7RFzWPC',
@@ -2650,7 +2864,8 @@ def test_acdcagg_message():
                        'u': '0ADAE0qHcgNghkDaG7OY1wja',
                        'n': 'EK0neuniccMBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5',
                        's': 'EHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_N',
-                       'o': 'NI2I'}},
+                       'o': 'NI2I'}
+              },
         'r': {'d': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-',
               'u': '0ADaG7OaDAE0qHcgY1Nghkwj',
               'disclaimers': {'d': 'EGMp181uEcUmi5FXs0ebqEhOyVi27-IDiYdoqe453BRD',
@@ -2661,11 +2876,11 @@ def test_acdcagg_message():
                                                      'l': 'AS IS'},
                               'liabilityDisclaimer': {'d': 'EDzyrYOaVI3TwLvN-w-pfGyoZfyvV0rslCieRCgXgEF7',
                                                       'u': '0AHcgNghkDaG7OY1wjaDAE0q',
-                                                      'l': 'No Liability'}},
+                                                      'l': 'No Liability'}
+                              },
               'permittedUse': {'d': 'EBdHlf04DK2w4So61ebgUydOr85YGjP_xkLO-CnEXcsj',
                                'u': '0ADaG7OY1wjaDAE0qHcgNghk',
-                               'l': 'Non-commercial'
-                               }
+                               'l': 'Non-commercial'}
               }
     }
 
@@ -2700,12 +2915,12 @@ def test_acdcagg_message():
     {
         'v': 'ACDCCAACAACESRAAFg.',
         't': 'acg',
-        'd': 'ENGemZOvaMPau6VmZ3y9tgiJzCb7gIo5l9gctcQ7A06Y',
+        'd': 'EB96-m8JpjzlXFS2f-ewWdvi8XSleMtpV65OvM03B4e0',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EB1_MVIk_DSkPNFejlfTEmxf7txIrc9NpUEwV_cLjWnl',
-        'A': 'EC-6VaGxDRR0icTsHW0ow88abnkvHoNXMyhb4pZD0Wfj',
+        'A': 'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
         'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
         'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
     }
@@ -2771,8 +2986,9 @@ def test_acdcagg_message():
 
     assert att == None
 
-    assert agg.said == 'EJu44VEgj3Z9dtLM1Pe-F1S1A5nv1EgFuvHntr8fc2_a'
+    assert agg.said == 'ED1XsqGtEawsyoVdDL2Y2Yh3qYBL3jdzllTLVmH8PG6l'
     assert agg.sad['A'] == aggrAel
+    assert agg.sad['A'][0] == aggrAgid
 
     assert edg.said == 'ENjBCWeLQk7iYq3J1DFgPkJ-yfDE_7a0gOE1ecNt9bfw'
     assert edg.sad['e'] == edgeSad
@@ -2781,228 +2997,6 @@ def test_acdcagg_message():
     assert rul.said == 'EN21tftFSBYQ9VuEUGMzyVIMPjTmktXGWdO9-mHq8ThM'
     assert rul.sad['r'] == ruleSad
     assert rul.sad['r']['d'] == ruleSaid
-
-    """Done Test"""
-
-
-def test_aggregate_section():
-    """Test aggregate agg section message"""
-
-    # setup AEL
-    # Test with all non-nested value types
-    rawsalt = b'0saltnonceblinded'
-    uuid0 = Noncer(raw=rawsalt).qb64
-    assert uuid0 == '0AAwc2FsdG5vbmNlYmxpbmRl'
-
-    rawsalt = b'1saltnonceblinded'
-    uuid1 = Noncer(raw=rawsalt).qb64
-    assert uuid1 == '0AAxc2FsdG5vbmNlYmxpbmRl'
-
-    rawsalt = b'2saltnonceblinded'
-    uuid2 = Noncer(raw=rawsalt).qb64
-    assert uuid2 == '0AAyc2FsdG5vbmNlYmxpbmRl'
-
-    rawsalt = b'3saltnonceblinded'
-    uuid3 = Noncer(raw=rawsalt).qb64
-    assert uuid3 == '0AAzc2FsdG5vbmNlYmxpbmRl'
-
-    issuee = "EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C"
-
-    att0 = \
-    {
-        'd': '',
-        'u': uuid0,
-        'issuee': issuee,
-    }
-
-    att1 = \
-    {
-        'd': '',
-        'u': uuid1,
-        'name': "Betty Boop",
-    }
-
-    att2 = \
-    {
-        'd': '',
-        'u': uuid2,
-        'role': "entertainment",
-    }
-
-    att3 = \
-    {
-        'd': '',
-        'u': uuid3,
-        'location': "lake mansion",
-    }
-
-    iael = [att0, att1, att2, att3]
-
-    assert iael == \
-    [
-        {
-            'd': '',
-            'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
-            'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
-        },
-        {
-            'd': '',
-            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
-            'name': 'Betty Boop'
-        },
-        {
-            'd': '',
-            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
-            'role': 'entertainment'
-        },
-        {
-            'd': '',
-            'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
-            'location': 'lake mansion'
-        }
-    ]
-
-    # Test with JSON serialization
-    kind = Kinds.json
-    aggor = Aggor(ael=iael, makify=True, kind=kind)
-
-    aggrAgid = aggor.agid
-    aggrAel = aggor.ael
-    assert aggrAgid == 'EMWdLviLg7NqX1SKMI-JhLq_nMCORP7MIRGuSZmXN_od'
-    assert aggrAel == \
-    [
-        {
-            'd': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
-            'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
-            'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
-        },
-        {
-            'd': 'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
-            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
-            'name': 'Betty Boop'
-        },
-        {
-            'd': 'EFlxdkl8ki1iwURkviyjKRDfyam7wZZ4HyVq1tv6N_4z',
-            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
-            'role': 'entertainment'
-        },
-        {
-            'd': 'EILHLTqlZPUIukMCyzHLOQKt0btEdopPXZFSHblsF10J',
-            'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
-            'location': 'lake mansion'
-        }
-    ]
-
-    # Test using agid
-    said = 'EE9YZXHzy_55ZBeYADlhLca5TiQfIf3WOr_7FVaYDJU2'
-    vs = 'ACDCCAACAAJSONAACL.'
-    size = 139
-
-    serder = sectaggr(aggregate=aggrAgid, kind=kind)
-    assert serder.kind == kind
-    assert serder.said == said
-    assert serder.verstr == vs
-    assert serder.size == size
-    assert serder.aggreg == aggrAgid
-
-    # test round trip
-    raw = serder.raw
-    sad = serder.sad
-    serder = SerderACDC(raw=raw)
-    assert serder.said == said
-    assert serder.raw == raw
-    assert serder.sad == sad
-
-    # Test using Aggor Ael list
-    said = 'EABouGJJ10LzN038rP4hUlc_d0UAyB0a-YxvNWWglkkX'
-    vs = 'ACDCCAACAAJSONAAIr.'
-    size = 555
-
-    serder = sectaggr(aggregate=aggrAel, kind=kind)
-    assert serder.kind == kind
-    assert serder.said == said
-    assert serder.verstr == vs
-    assert serder.size == size
-    assert serder.aggreg == aggrAel
-
-    # test round trip
-    raw = serder.raw
-    sad = serder.sad
-    serder = SerderACDC(raw=raw)
-    assert serder.said == said
-    assert serder.raw == raw
-    assert serder.sad == sad
-
-    # Test with CESR serialization
-    kind = Kinds.cesr
-    aggor = Aggor(ael=iael, makify=True, kind=kind)
-
-    aggrAgid = aggor.agid
-    aggrAel = aggor.ael
-    assert aggrAgid == 'EC-6VaGxDRR0icTsHW0ow88abnkvHoNXMyhb4pZD0Wfj'
-    assert aggrAel == \
-    [
-        {
-            'd': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
-            'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
-            'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
-        },
-        {
-            'd': 'EOgusuandj-y762uf5rRWYiZ7LFtzAy8_GURuFtm4jJu',
-            'u': '0AAxc2FsdG5vbmNlYmxpbmRl',
-            'name': 'Betty Boop'
-        },
-        {
-            'd': 'EJ0jcxT7rGFwj4R39M619BptbmtjqvCsokXu0MLLkek3',
-            'u': '0AAyc2FsdG5vbmNlYmxpbmRl',
-            'role': 'entertainment'
-        },
-        {
-            'd': 'EPa2SKE8LlZz9jLDyBd04vKZ17is0taTD5RXPA5svYet',
-            'u': '0AAzc2FsdG5vbmNlYmxpbmRl',
-            'location': 'lake mansion'
-        }
-    ]
-
-    # Test using agid
-    said = 'EJgQHD5kTeiXU1HSL00Z12hg0Jr_gb6_KyDZtm2dFPdK'
-    vs = 'ACDCCAACAACESRAABs.'
-    size = 108
-
-    serder = sectaggr(aggregate=aggrAgid, kind=kind)
-    assert serder.kind == kind
-    assert serder.said == said
-    assert serder.verstr == vs
-    assert serder.size == size
-    assert serder.aggreg == aggrAgid
-
-    # test round trip
-    raw = serder.raw
-    sad = serder.sad
-    serder = SerderACDC(raw=raw)
-    assert serder.said == said
-    assert serder.raw == raw
-    assert serder.sad == sad
-
-    # Test using Aggor Ael list
-    said = 'EJu44VEgj3Z9dtLM1Pe-F1S1A5nv1EgFuvHntr8fc2_a'
-    vs = 'ACDCCAACAACESRAAIQ.'
-    size = 528
-
-    serder = sectaggr(aggregate=aggrAel, kind=kind)
-    assert serder.kind == kind
-    assert serder.said == said
-    assert serder.verstr == vs
-    assert serder.size == size
-    assert serder.aggreg == aggrAel
-
-    # test round trip
-    raw = serder.raw
-    sad = serder.sad
-    serder = SerderACDC(raw=raw)
-    assert serder.said == said
-    assert serder.raw == raw
-    assert serder.sad == sad
 
     """Done Test"""
 
@@ -3083,9 +3077,10 @@ def test_acdcmap_message():
         }
     }
 
-    aggrAgid = 'EMWdLviLg7NqX1SKMI-JhLq_nMCORP7MIRGuSZmXN_od'
+    aggrAgid = 'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH'
     aggrAel = \
     [
+        'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
         {
             'd': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
             'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
@@ -3415,9 +3410,9 @@ def test_acdcmap_message():
 
     # Test with aggregate instead of attribute section
     # test that compactified said are stable
-    said = 'EEIDr4zg0IoxnIDONsnSMbHBVY6Vu3Y63lvZT6uPVMqj'
-    vs = 'ACDCCAACAAJSONAAcH.'
-    size = 1799
+    said = 'EB7pb8VGGWC_2wz5wyFZnGeopbW09yAuj3jmgjAJ27jm'
+    vs = 'ACDCCAACAAJSONAAc2.'
+    size = 1846
     ilk = Ilks.acm
 
     serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
@@ -3434,18 +3429,20 @@ def test_acdcmap_message():
     assert serder.issuee == None
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
+    assert serder.aggreg[0] == aggrAgid
     assert serder.edge['d'] == edgeSaid
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAcH.',
+        'v': 'ACDCCAACAAJSONAAc2.',
         't': 'acm',
-        'd': 'EEIDr4zg0IoxnIDONsnSMbHBVY6Vu3Y63lvZT6uPVMqj',
+        'd': 'EB7pb8VGGWC_2wz5wyFZnGeopbW09yAuj3jmgjAJ27jm',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
-        'A': [{'d': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
+        'A': ['EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
+              {'d': 'ECg0K_g24tK919rqMBrs2T14hPKSbXMwPRwjX8OFh4Fb',
                'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
                'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'},
               {'d': 'EGtsAumwa3EcDezzX8UDaoBnUQbHVX_C9jdP0hu309au',
@@ -3520,12 +3517,12 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAAJSONAAGq.',
         't': 'acm',
-        'd': 'EEIDr4zg0IoxnIDONsnSMbHBVY6Vu3Y63lvZT6uPVMqj',
+        'd': 'EB7pb8VGGWC_2wz5wyFZnGeopbW09yAuj3jmgjAJ27jm',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EPrsJF2BXyDUgDCVbGURsGNwCZjyrxD5M2qnBmhvoZYQ',
-        'A': 'EMWdLviLg7NqX1SKMI-JhLq_nMCORP7MIRGuSZmXN_od',
+        'A': 'EKfcTG2FZN7sCSeL248w6wqOwl2l_0velioJLjk2a5mH',
         'e': 'EIA0GPeLyc6RhpPRs0dJpuYxBlb4wo0WkylcYjeygCZF',
         'r': 'EBZrih6_lQczs-QP6HieUGnFrnTftwdnz4DnMVhTOE7v'
     }
@@ -3594,8 +3591,9 @@ def test_acdcmap_message():
 
     assert att == None
 
-    assert agg.said == 'EABouGJJ10LzN038rP4hUlc_d0UAyB0a-YxvNWWglkkX'
+    assert agg.said == 'EIq6Nl0Cn-mgkmfn0p8ZhXlhEssftHMHNptf522XLk8d'
     assert agg.sad['A'] == aggrAel
+    assert agg.sad['A'][0] == aggrAgid
 
     assert edg.said == 'EOeLqwd8pwwtE3EgVmjjq_OlYM3emWw0i-d73eydPffX'
     assert edg.sad['e'] == edgeSad
@@ -3714,9 +3712,10 @@ def test_acdcmap_message():
         }
     }
 
-    aggrAgid = 'EC-6VaGxDRR0icTsHW0ow88abnkvHoNXMyhb4pZD0Wfj'
+    aggrAgid = 'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu'
     aggrAel = \
     [
+        'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
         {
             'd': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
             'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
@@ -4275,9 +4274,9 @@ def test_acdcmap_message():
 
     # Test with aggregate instead of attribute section
     # test that compactified said are stable
-    said = 'EMecmqHdLSvxDWgW54o6RbwP_QPjZtbUPSW9ly_xC-5B'
-    vs = 'ACDCCAACAACESRAAb0.'
-    size = 1780
+    said = 'EAZQ6sQ2eusq9fa0MpvfZ6WKr8Tcz1WUA8rRGEPoZMLb'
+    vs = 'ACDCCAACAACESRAAcg.'
+    size = 1824
     ilk = Ilks.acm
 
     serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
@@ -4294,18 +4293,20 @@ def test_acdcmap_message():
     assert serder.issuee == None
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
+    assert serder.aggreg[0] == aggrAgid
     assert serder.edge['d'] == edgeSaid
     assert serder.rule['d'] == ruleSaid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAACESRAAb0.',
+        'v': 'ACDCCAACAACESRAAcg.',
         't': 'acm',
-        'd': 'EMecmqHdLSvxDWgW54o6RbwP_QPjZtbUPSW9ly_xC-5B',
+        'd': 'EAZQ6sQ2eusq9fa0MpvfZ6WKr8Tcz1WUA8rRGEPoZMLb',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
-        'A': [{'d': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
+        'A': ['EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
+              {'d': 'EMb2KtEJrRYUxOUyw4TvACeH1767lne0V27ssCQociku',
                'u': '0AAwc2FsdG5vbmNlYmxpbmRl',
                'issuee': 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'},
               {'d': 'EOgusuandj-y762uf5rRWYiZ7LFtzAy8_GURuFtm4jJu',
@@ -4380,12 +4381,12 @@ def test_acdcmap_message():
     {
         'v': 'ACDCCAACAACESRAAGI.',
         't': 'acm',
-        'd': 'EMecmqHdLSvxDWgW54o6RbwP_QPjZtbUPSW9ly_xC-5B',
+        'd': 'EAZQ6sQ2eusq9fa0MpvfZ6WKr8Tcz1WUA8rRGEPoZMLb',
         'u': '0ABhYmNkZWZnaGlqa2xtbW9w',
         'i': 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ',
         'rd': 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq',
         's': 'EEVFmM1Q_obsLcCCeY0G2wAAGJZUNAzPAwNT5N13bIeK',
-        'A': 'EC-6VaGxDRR0icTsHW0ow88abnkvHoNXMyhb4pZD0Wfj',
+        'A': 'EFpyX-_z29QOgeoCgGx-cWFL4fZD3HftBkHDuZIIAbcu',
         'e': 'EFqscUD0BBVdNbciVYzKIfWu5S7pzJr_O3tUufEQjDTw',
         'r': 'EK0trDLAjntXMNHOxMm62D-3QvKJvhOFLHIN3XbakYl-'
     }
@@ -4440,6 +4441,6 @@ if __name__ == '__main__':
     test_attribute_section()
     test_edge_section()
     test_rule_section()
-    test_acdcagg_message()
     test_aggregate_section()
+    test_acdcagg_message()
     test_acdcmap_message()
