@@ -185,36 +185,52 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         qinWitDoer = agenting.WitnessReceiptor(hby=qinHby)
         qinWitDoer.msgs.append(dict(pre=qinHab.pre))
 
+        doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
+        doist = doing.Doist(doers=doers)
+        doist.enter()
+        doist.recur()
+
+        while True:
+            wigs = []
+            for hab in [palHab, qinHab]:
+                kev = hab.kever
+                ser = kev.serder
+                dgkey = dbing.dgKey(ser.preb, ser.saidb)
+                wigs.extend(wanHab.db.getWigs(dgkey))
+                wigs.extend(wilHab.db.getWigs(dgkey))
+                wigs.extend(wesHab.db.getWigs(dgkey))
+
+            if len(wigs) == 18:
+                break
+
+            doist.recur()
+
+        kev = qinHab.kever
+        ser = kev.serder
+        dgkey = dbing.dgKey(ser.preb, ser.saidb)
+
+        wigs = wanHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigs = wilHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigs = wesHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+
+
         qinWitq = agenting.WitnessInquisitor(hby=qinHby)
-        # query up a few to make sure it still works
-        stamp = nowIso8601()  # need same time stamp or not duplicate
+        stamp = nowIso8601()
         qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
-        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
-        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
+
         palWitq = agenting.WitnessInquisitor(hby=palHby)
         palWitq.query(src=palHab.pre, pre=qinHab.pre, stamp=stamp, wits=qinHab.kever.wits)
 
-        limit = 5.0
-        tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
-        doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
-        doist.do(doers=doers)
-
-        for hab in [palHab, qinHab]:
-            kev = hab.kever
-            ser = kev.serder
-            dgkey = dbing.dgKey(ser.preb, ser.saidb)
-
-            wigs = wanHab.db.getWigs(dgkey)
-            assert len(wigs) == 3
-            wigs = wilHab.db.getWigs(dgkey)
-            assert len(wigs) == 3
-            wigs = wesHab.db.getWigs(dgkey)
-            assert len(wigs) == 3
-
-        doist = doing.Doist(limit=limit, tock=tock)
-        doers = wanDoers + wilDoers + wesDoers + [qinWitq, palWitq]
-        doist.do(doers=doers)
+        doist.extend([qinWitq, palWitq])
+        while True:
+            if palHab.pre in qinHab.kevers and qinHab.pre in palHab.kevers:
+                break
+            doist.recur()
 
         assert palHab.pre in qinHab.kevers
         assert qinHab.pre in palHab.kevers
+
+        doist.exit()
