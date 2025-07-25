@@ -805,30 +805,31 @@ def test_acdc_aggregate_section_JSON():
 
     oael = \
     [
-        'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx',
+        "EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx",
         {
-            'd': 'EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'},
-        {
-            'd': 'EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-            'score': 96
+            "d": "EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+            "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
         },
         {
-            'd': 'EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-            'name': 'Zoe Doe'
+            "d": "EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+            "score": 96
+        },
+        {
+            "d": "EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
+            "name": "Zoe Doe"
         }
     ]
-    agid = 'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx'
+    agid = "EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx"
 
     cael = \
     [
-        'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx',
-        'EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4',
-        'EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR',
-        'EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C'
+        "EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx",
+        "EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4",
+        "EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR",
+        "EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C"
     ]
 
     craw = (b'["############################################","EI2lwi1ZKrs-bDwgEreOhEh-W2O'
@@ -837,18 +838,18 @@ def test_acdc_aggregate_section_JSON():
 
     dael = \
     [
-        'EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx',
+        "EN5d44fTNM0M4kmMMVrsH0HwMLRLyb6SoJEV0ogkLdXx",
         {
-            'd': 'EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
+            "d": "EI2lwi1ZKrs-bDwgEreOhEh-W2O5xrOm5T-QCyMuX5V4",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+            "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
         },
         {
-            'd': 'EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-            'score': 96
+            "d": "EC-vU19URXX8ztfWdp_j2HHr1lJsqtGa1YHtZrg6-GMR",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+            "score": 96
         },
-        'EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C'
+        "EKYLUIpDXNT0ujSdoNOT5pLp0okOKW3mAbg-M7K5OO_C"
     ]
 
     aggor = Aggor(ael=iael, makify=True, kind=kind)
@@ -905,21 +906,21 @@ def test_acdc_aggregate_section_CESR():
 
     oael = \
     [
-        'EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW',
+        "EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW",
         {
-            'd': 'EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
+            "d": "EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+            "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
         },
         {
-            'd': 'EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-            'score': 96
+            "d": "EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+            "score": 96
         },
         {
-            'd': 'ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-            'name': 'Zoe Doe'
+            "d": "ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
+            "name": "Zoe Doe"
         }
     ]
 
@@ -927,10 +928,10 @@ def test_acdc_aggregate_section_CESR():
 
     cael = \
     [
-        'EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW',
-        'EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E',
-        'EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs',
-        'ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6'
+        "EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW",
+        "EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E",
+        "EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs",
+        "ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6"
     ]
 
     craw = (b'-JAs############################################EPss9hsx7P5iYjWXNYJM5NiEu5Et'
@@ -939,18 +940,18 @@ def test_acdc_aggregate_section_CESR():
 
     dael = \
     [
-        'EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW',
+        "EEL7OTDzXjYoaDE8g8064thOpKdxsJWaG8DhRyOB58qW",
         {
-            'd': 'EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf'
+            "d": "EPss9hsx7P5iYjWXNYJM5NiEu5EtPQHdGZ5K-qXK2p5E",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+            "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
         },
         {
-            'd': 'EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-            'score': 96
+            "d": "EGoIcPap1swfLGRQzTaxf38HsLFuHehBCY5kUSDK8XGs",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+            "score": 96
         },
-        'ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6'
+        "ED50KTrvT5n20JFTsyZFvBJfH-bOAVP9xHFhtbI5nCN6"
     ]
 
     aggor = Aggor(ael=iael, makify=True, kind=kind)
