@@ -2902,7 +2902,7 @@ class SerderACDC(Serder):
                 if v := csad.get(l, None):  # field exists and is not empty
                     if isinstance(v, Mapping):  # v is non-empty mapping
                         said = None
-                        match l:  # verify embedded Mapper most compact saids
+                        match l:  # compute embedded Mapper most compact saids
                             case 's':  # schema is only top-level said $id
                                 sector = Compactor(mad=v,
                                                       makify=True,
@@ -2928,12 +2928,11 @@ class SerderACDC(Serder):
 
                     elif isinstance(v, NonStringIterable):  # v is non-empty iterable
                         match l:
-                            case 'A':  # verify agid of embedded Aggor
+                            case 'A':  # compute agid of embedded Aggor
                                 try:
                                     sector = Aggor(ael=v,
                                                    makify=True,
-                                                   kind=self.kind,
-                                                   verify=True)
+                                                   kind=self.kind)
 
                                 except Exception as ex:
                                     raise InvalidValueError(f"Invalid aggregate"
