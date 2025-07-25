@@ -14,10 +14,10 @@ from keri.help import nowIso8601
 
 
 def test_withness_receiptor(seeder):
-    with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
-            habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
-            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
+    with habbing.openHby(name="wan1", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            habbing.openHby(name="wil1", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
+            habbing.openHby(name="wes1", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHby(name="pal1", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
@@ -110,10 +110,10 @@ class ReceiptDoer(doing.DoDoer):
 
 
 def test_witness_sender(seeder):
-    with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
-            habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
-            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
+    with habbing.openHby(name="wan2", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            habbing.openHby(name="wil2", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
+            habbing.openHby(name="wes2", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHby(name="pal2", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
         # looks like bad magic value in seeder is causing this to fail
         pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby, seeder)
@@ -162,11 +162,11 @@ class PublishDoer(doing.DoDoer):
 
 
 def test_witness_inquisitor(mockHelpingNowUTC, seeder):
-    with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
-            habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
-            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
-            habbing.openHby(name="qin", salt=core.Salter(raw=b'abcdef0123456789').qb64) as qinHby:
+    with habbing.openHby(name="wan3", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            habbing.openHby(name="wil3", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
+            habbing.openHby(name="wes3", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHby(name="pal3", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
+            habbing.openHby(name="qin3", salt=core.Salter(raw=b'abcdef0123456789').qb64) as qinHby:
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
@@ -185,36 +185,52 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         qinWitDoer = agenting.WitnessReceiptor(hby=qinHby)
         qinWitDoer.msgs.append(dict(pre=qinHab.pre))
 
+        doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
+        doist = doing.Doist(doers=doers)
+        doist.enter()
+        doist.recur()
+
+        while True:
+            wigs = []
+            for hab in [palHab, qinHab]:
+                kev = hab.kever
+                ser = kev.serder
+                dgkey = dbing.dgKey(ser.preb, ser.saidb)
+                wigs.extend(wanHab.db.getWigs(dgkey))
+                wigs.extend(wilHab.db.getWigs(dgkey))
+                wigs.extend(wesHab.db.getWigs(dgkey))
+
+            if len(wigs) == 18:
+                break
+
+            doist.recur()
+
+        kev = qinHab.kever
+        ser = kev.serder
+        dgkey = dbing.dgKey(ser.preb, ser.saidb)
+
+        wigs = wanHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigs = wilHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigs = wesHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+
+
         qinWitq = agenting.WitnessInquisitor(hby=qinHby)
-        # query up a few to make sure it still works
-        stamp = nowIso8601()  # need same time stamp or not duplicate
+        stamp = nowIso8601()
         qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
-        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
-        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
+
         palWitq = agenting.WitnessInquisitor(hby=palHby)
         palWitq.query(src=palHab.pre, pre=qinHab.pre, stamp=stamp, wits=qinHab.kever.wits)
 
-        limit = 5.0
-        tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
-        doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
-        doist.do(doers=doers)
-
-        for hab in [palHab, qinHab]:
-            kev = hab.kever
-            ser = kev.serder
-            dgkey = dbing.dgKey(ser.preb, ser.saidb)
-
-            wigs = wanHab.db.getWigs(dgkey)
-            assert len(wigs) == 3
-            wigs = wilHab.db.getWigs(dgkey)
-            assert len(wigs) == 3
-            wigs = wesHab.db.getWigs(dgkey)
-            assert len(wigs) == 3
-
-        doist = doing.Doist(limit=limit, tock=tock)
-        doers = wanDoers + wilDoers + wesDoers + [qinWitq, palWitq]
-        doist.do(doers=doers)
+        doist.extend([qinWitq, palWitq])
+        while True:
+            if palHab.pre in qinHab.kevers and qinHab.pre in palHab.kevers:
+                break
+            doist.recur()
 
         assert palHab.pre in qinHab.kevers
         assert qinHab.pre in palHab.kevers
+
+        doist.exit()

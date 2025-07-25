@@ -1199,7 +1199,7 @@ class QueryEnd:
 
     def __init__(self, hab):
         self.hab = hab
-        self.reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
+        self.reger = viring.Reger(name=hab.name, db=hab.db, temp=hab.temp)
 
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.
