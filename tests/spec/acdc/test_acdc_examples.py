@@ -989,14 +989,14 @@ def test_acdc_rule_section_JSON():
                 "type": "string"
             },
             {
-                "description": "Rule Detail",
+                "description": "Rule Section Detail",
                 "type": "object",
                 "required":
                 [
                     "d",
                     "u",
-                    "warrantyDisclaimer",
-                    "liabilityDisclaimer"
+                    "disclaimers",
+                    "permittedUse"
                 ],
                 "properties":
                 {
@@ -1010,65 +1010,148 @@ def test_acdc_rule_section_JSON():
                         "description": "Rule Section UUID",
                         "type": "string"
                     },
-                    "warrantyDisclaimer":
+                    "disclaimers":
                     {
-                        "description": "Warranty Disclaimer Clause",
-                        "type": "object",
-                        "required":
+                        "description": "Rule Group",
+                        "oneOf":
                         [
-                            "d",
-                            "u",
-                            "l"
-                        ],
-                        "properties":
-                        {
-                            "d":
                             {
-                                "description": "Clause SAID",
+                                "description": "Rule Group SAID",
                                 "type": "string"
                             },
-                            "u":
                             {
-                                "description": "Clause UUID",
-                                "type": "string"
-                            },
-                            "l":
-                            {
-                                "description": "Legal Language",
-                                "type": "string"
+                                "description": "Rule Group Detail",
+                                "type": "object",
+                                "required":
+                                [
+                                    "d",
+                                    "u",
+                                    "l",
+                                    "warrantyDisclaimer",
+                                    "liabilityDisclaimer"
+                                ],
+                                "properties":
+                                {
+                                    "warrantyDisclaimer":
+                                    {
+                                        "oneOf":
+                                        [
+                                            {
+                                                "description": "Rule SAID",
+                                                "type": "string"
+                                            },
+                                            {
+                                                "description": "Rule Detail",
+                                                "type": "object",
+                                                "required":
+                                                [
+                                                    "d",
+                                                    "u",
+                                                    "l"
+                                                ],
+                                                "properties":
+                                                {
+                                                    "d":
+                                                    {
+                                                        "description": "Rule SAID",
+                                                        "type": "string"
+                                                    },
+                                                    "u":
+                                                    {
+                                                        "description": "Rule UUID",
+                                                        "type": "string"
+                                                    },
+                                                    "l":
+                                                    {
+                                                        "description": "Legal Language",
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "additionalProperties": False
+                                            }
+                                        ],
+                                    },
+                                    "liabilityDisclaimer":
+                                    {
+                                        "oneOf":
+                                        [
+                                            {
+                                                "description": "Rule SAID",
+                                                "type": "string"
+                                            },
+                                            {
+                                                "description": "Rule Detail",
+                                                "type": "object",
+                                                "required":
+                                                [
+                                                    "d",
+                                                    "u",
+                                                    "l"
+                                                ],
+                                                "properties":
+                                                {
+                                                    "d":
+                                                    {
+                                                        "description": "Rule SAID",
+                                                        "type": "string"
+                                                    },
+                                                    "u":
+                                                    {
+                                                        "description": "Rule UUID",
+                                                        "type": "string"
+                                                    },
+                                                    "l":
+                                                    {
+                                                        "description": "Legal Language",
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "additionalProperties": False
+                                            }
+                                        ]
+                                    }
+                                }
                             }
-                        },
-                        "additionalProperties": False
+                        ],
                     },
-                    "liabilityDisclaimer":
+                    "permittedUse":
                     {
-                        "description": "Liability Disclaimer Clause",
-                        "type": "object",
-                        "required":
+                        "oneOf":
                         [
-                            "d",
-                            "u",
-                            "l"
-                        ],
-                        "properties":
-                        {
-                            "d":
                             {
-                                "description": "Clause SAID",
+                                "description": "Rule SAID",
                                 "type": "string"
                             },
-                            "u":
                             {
-                                "description": "Clause UUID",
-                                "type": "string"
-                            },
-                            "l":
-                            {
-                                "description": "Legal Language",
-                                "type": "string"
+                                "description": "Rule Detail",
+                                "type": "object",
+                                "required":
+                                [
+                                    "d",
+                                    "u",
+                                    "l"
+                                ],
+                                "properties":
+                                {
+                                    "d":
+                                    {
+                                        "description": "Clause SAID",
+                                        "type": "string"
+                                    },
+                                    "u":
+                                    {
+                                        "description": "Clause UUID",
+                                        "type": "string"
+                                    },
+                                    "l":
+                                    {
+                                        "description": "Legal Language",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": False
                             }
-                        },
-                        "additionalProperties": False
+                        ]
                     }
                 },
                 "additionalProperties": False
@@ -1106,7 +1189,154 @@ def test_acdc_rule_section_JSON():
       }
     }
 
+    # JSON
+    kind = Kinds.json
+    said = 'EL7oXtsH1t7YqOOCS0fMhWfUKx1fHwiQ2u47fVba4lAA'
+    rcmad = \
+    {
+        "d": "EL7oXtsH1t7YqOOCS0fMhWfUKx1fHwiQ2u47fVba4lAA",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+        "disclaimers": "EIRP8ZLuMNb1I_Uk1GgnD3qZ_MAh6GaXV1JmzFKLebb3",
+        "permittedUse": "EIn94r7ax0PmalGUddjP3ElnU2Lzz92UFE1uIinoVeVs"
+    }
 
+    compactor = Compactor(mad=rimad, makify=True, kind=kind, compactify=True)
+    assert compactor.said == said
+    assert compactor.mad == rcmad
+    assert compactor.kind == kind
+
+    epath = ('.disclaimers.warrantyDisclaimer', '.disclaimers.liabilityDisclaimer', '.permittedUse')
+    assert compactor.partials[epath].mad == \
+    {
+        "d": "EL7oXtsH1t7YqOOCS0fMhWfUKx1fHwiQ2u47fVba4lAA",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+        "disclaimers":
+        {
+            "d": "EIRP8ZLuMNb1I_Uk1GgnD3qZ_MAh6GaXV1JmzFKLebb3",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+            "l": "The person or legal entity identified by this ACDC's Issuer AID (Issuer) makes the following disclaimers:",
+            "warrantyDisclaimer":
+            {
+                "d": "EA84ClmyIMrSl5XaAWENAxTVZH25_YZGmu0WQm_VBBeV",
+                "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
+                "l": "Issuer provides this ACDC on an AS IS basis."
+            },
+            "liabilityDisclaimer":
+            {
+                "d": "ECENp0nXYDm_bLgr7TlJ8ns8I1QI2qzyqxoXnYG8B-ac",
+                "u": "0ABhY2Rjc3BlY3dvcmtyYXcz",
+                "l": "The Issuer SHALL NOT be liable for ANY damages arising as a result of this credential."
+            }
+        },
+        "permittedUse":
+        {
+            "d": "EIn94r7ax0PmalGUddjP3ElnU2Lzz92UFE1uIinoVeVs",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXc0",
+            "l": "The Issuee (controller of the Issuee AID) MAY only use this ACDC for non-commercial purposes."
+        }
+    }
+
+    # Non partially disclosable rule section
+
+    schema = \
+    {
+      "description": "Rule Section",
+      "oneOf":
+      [
+        {
+          "description": "Rule Section SAID",
+          "type": "string"
+        },
+        {
+          "description": "Rule Section Detail",
+          "type": "object",
+          "required":
+          [
+            "d",
+            "disclaimers",
+            "permittedUse"
+          ],
+          "properties":
+          {
+            "d":
+            {
+              "description": "Rule Section SAID",
+              "type": "string"
+            },
+            "disclaimers":
+            {
+              "description": "Rule Group",
+              "type": "object",
+              "required":
+              [
+                "l",
+                "warrantyDisclaimer",
+                "liabilityDisclaimer"
+              ],
+              "properties":
+              {
+                "l":
+                {
+                    "description": "Legal Language",
+                    "type": "string"
+                },
+                "warrantyDisclaimer":
+                {
+                    "description": "Rule in Simple Compact Form",
+                    "type": "string"
+                },
+                "liabilityDisclaimer":
+                {
+                    "description": "Rule in Simple Compact Form",
+                    "type": "string"
+                }
+              },
+              "additionalProperties": False
+            },
+            "permittedUse":
+            {
+              "description": "Rule in Simple Compact Form",
+              "type": "string"
+            },
+          },
+          "additionalProperties": False
+        }
+      ]
+    }
+
+
+    rimad = \
+    {
+      "d": "",
+      "disclaimers":
+      {
+        "l": "The person or legal entity identified by this ACDC's Issuer AID (Issuer) makes the following disclaimers:",
+        "warrantyDisclaimer": "Issuer provides this ACDC on an AS IS basis.",
+        "liabilityDisclaimer": "The Issuer SHALL NOT be liable for ANY damages arising as a result of this credential."
+      },
+      "permittedUse":  "The Issuee (controller of the Issuee AID) MAY only use this ACDC for non-commercial purposes."
+    }
+
+    said = "EF9f-pCPJcgQclUu1OzzAfgyURW7iLPF2nwhuKYHFBlV"
+    rcmad = \
+    {
+        "d": "EF9f-pCPJcgQclUu1OzzAfgyURW7iLPF2nwhuKYHFBlV",
+        "disclaimers":
+        {
+            "l": "The person or legal entity identified by this ACDC's Issuer AID (Issuer) makes the following disclaimers:",
+            "warrantyDisclaimer": "Issuer provides this ACDC on an AS IS basis.",
+            "liabilityDisclaimer": "The Issuer SHALL NOT be liable for ANY damages arising as a result of this credential."
+        },
+        "permittedUse": "The Issuee (controller of the Issuee AID) MAY only use this ACDC for non-commercial purposes."
+    }
+
+    compactor = Compactor(mad=rimad, makify=True, kind=kind, compactify=True)
+    assert compactor.said == said
+    assert compactor.mad == rcmad
+    assert compactor.kind == kind
+
+    epath = ('',)
+    assert compactor.partials[epath].mad == rcmad
 
     """Done Test"""
 
