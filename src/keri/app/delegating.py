@@ -30,15 +30,12 @@ class Anchorer(doing.DoDoer):
 
     def __init__(self, hby, proxy=None, auths=None, **kwa):
         """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
+        Initialize Anchorer.
 
         Parameters:
-            hab (Hab): Habitat of the identifier to populate witnesses
-            msg (bytes): is the message to send to all witnesses.
-                 Defaults to sending the latest KEL event if msg is None
-            scheme (str): Scheme to favor if available
-
+            hby (Habery): local controller database for this Anchorer
+            proxy (Hab): optional proxy Habitat to use for sending messages
+            auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
         """
         self.hby = hby
         self.postman = forwarding.Poster(hby=hby)
@@ -51,6 +48,16 @@ class Anchorer(doing.DoDoer):
         super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)], **kwa)
 
     def delegation(self, pre, sn=None, proxy=None, auths=None):
+        """
+        Add witness publishers by prefix and send delegation event to witnesses and place event on 
+        the delegation partial witness escrow.
+        
+        Parameters:
+            pre (str): qb64 identifier prefix of delegated identifier
+            sn (int): optional sequence number of event to anchor, defaults to latest event
+            proxy (Hab): optional proxy Habitat to use for sending messages
+            auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
+        """
         if pre not in self.hby.habs:
             raise kering.ValidationError(f"{pre} is not a valid local AID for delegation")
 
@@ -76,7 +83,7 @@ class Anchorer(doing.DoDoer):
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def complete(self, prefixer, seqner, saider=None):
-        """ Check for completed delegation protocol for the specific event
+        """ Check for completed delegation for the specific delegation event
 
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
@@ -84,7 +91,7 @@ class Anchorer(doing.DoDoer):
             saider (Saider): optional digest of event to verify
 
         Returns:
-
+            bool: True if delegation protocol is complete, False otherwise
         """
         csaider = self.hby.db.cdel.get(keys=(prefixer.qb64, seqner.qb64))
         if not csaider:
@@ -96,7 +103,7 @@ class Anchorer(doing.DoDoer):
         return True
 
     def escrowDo(self, tymth, tock=1.0, **kwa):
-        """ Process escrows of group multisig identifiers waiting to be compeleted.
+        """ Process escrows of delegation events waiting to be completed.
 
         Steps involve:
            1. Sending local event with sig to other participants
@@ -110,7 +117,6 @@ class Anchorer(doing.DoDoer):
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value.  Default to 1.0 to slow down processing
-
         """
         # enter context
         self.wind(tymth)
@@ -122,18 +128,17 @@ class Anchorer(doing.DoDoer):
             yield 0.5
 
     def processEscrows(self):
+        """Process delegation escrows"""
         self.processPartialWitnessEscrow()
         self.processUnanchoredEscrow()
         self.processWitnessPublication()
 
     def processUnanchoredEscrow(self):
         """
-        Process escrow of partially signed multisig group KEL events.  Message
-        processing will send this local controllers signature to all other participants
-        then this escrow waits for signatures from all other participants
-
+        Process escrow of unanchored delegation events.  Message processing will send this local
+        controller's event to witnesses.
         """
-        for (pre, said), serder in self.hby.db.dune.getItemIter():  # group partial witness escrow
+        for (pre, said), serder in self.hby.db.dune.getItemIter():  # delegated unanchored escrow
             kever = self.hby.kevers[pre]
             dkever = self.hby.kevers[kever.delpre]
 
@@ -152,7 +157,7 @@ class Anchorer(doing.DoDoer):
 
     def processPartialWitnessEscrow(self):
         """
-        Process escrow of delegated events that do not have a full compliment of receipts
+        Process escrow of delegated events that do not have a full complement of receipts
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
 
@@ -211,10 +216,8 @@ class Anchorer(doing.DoDoer):
 
     def processWitnessPublication(self):
         """
-        Process escrow of partially signed multisig group KEL events.  Message
-        processing will send this local controllers signature to all other participants
-        then this escrow waits for signatures from all other participants
-
+        Process escrow of partially signed delegation events.  Message processing waits for
+        publication to the witnesses to complete then completes the delegation.
         """
         for (pre, said), serder in self.hby.db.dpub.getItemIter():  # group partial witness escrow
             if pre not in self.publishers:
@@ -232,6 +235,7 @@ class Anchorer(doing.DoDoer):
             self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
 
     def publishDelegator(self, pre):
+        """Publish the delegation event to my witnesses."""
         if pre not in self.publishers:
             return
 
