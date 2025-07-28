@@ -12,7 +12,7 @@ import pytest
 from keri import Vrsn_2_0, Kinds
 from keri.core import MtrDex, Salter, Noncer, Mapper, Compactor, Aggor
 from keri.core.eventing import incept
-from keri.vc.messaging import regcept, blindate, update
+from keri.vc.messaging import regcept, blindate, update, acdcmap
 
 
 def test_acdc_examples_setup():
@@ -522,6 +522,107 @@ def test_acdc_attribute_section_JSON():
     rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
 
     #Basic attribute section example
+
+    privateSchema = \
+    {
+        "description": "Attribute Section",
+        "oneOf":
+        [
+            {
+                "description": "Attribute Section SAID",
+                "type": "string"
+              },
+              {
+                "description": "Attribute Section Detail",
+                "type": "object",
+                "required":
+                [
+                  "d",
+                  "u",
+                  "i",
+                  "score",
+                  "name"
+                ],
+                "properties":
+                {
+                  "d":
+                  {
+                    "description": "Attribute Section SAID",
+                    "type": "string"
+                  },
+                  "u":
+                  {
+                    "description": "Attribute Section UUID",
+                    "type": "string"
+                  },
+                  "i":
+                  {
+                    "description": "Issuee AID",
+                    "type": "string"
+                  },
+                  "score":
+                  {
+                    "description": "Test Score",
+                    "type": "integer"
+                  },
+                  "name":
+                  {
+                    "description": "Test Taker Full Name",
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": False
+              }
+        ]
+    }
+
+    publicSchema = \
+    {
+      "description": "Attribute Section",
+      "oneOf":
+      [
+        {
+          "description": "Sttribute Section SAID",
+          "type": "string"
+        },
+        {
+          "description": "Attribute Section Detail",
+          "type": "object",
+          "required":
+          [
+            "d",
+            "i",
+            "score",
+            "name"
+          ],
+          "properties":
+          {
+            "d":
+            {
+              "description": "Attribute Section SAID",
+              "type": "string"
+            },
+            "i":
+            {
+              "description": "Issuee AID",
+              "type": "string"
+            },
+            "score":
+            {
+              "description": "Test Score",
+              "type": "integer"
+            },
+            "name":
+            {
+              "description": "Test Taker Full Name",
+              "type": "string"
+            }
+          },
+          "additionalProperties": False
+        }
+      ]
+    }
+
     # private targeted attribute section
     mad = \
     {
@@ -561,6 +662,109 @@ def test_acdc_attribute_section_JSON():
     }
 
     # partially disclosable attribute section
+
+    partialSchema = \
+    {
+        "description": "Attribute Section",
+        "oneOf":
+        [
+          {
+            "description": "Attribute Section SAID",
+            "type": "string"
+          },
+          {
+            "description": "Attribute Section Detail",
+            "type": "object",
+            "required":
+            [
+              "d",
+              "u",
+              "i",
+              "name"
+              "gpa",
+              "grades"
+            ],
+            "properties":
+            {
+              "d":
+              {
+                "description": "Attribute Section SAID",
+                "type": "string"
+              },
+              "i":
+              {
+                "description": "Issuee AID",
+                "type": "string"
+              },
+              "name":
+              {
+                "description": "Student Full Name",
+                "type": "string"
+              },
+              "gpa":
+              {
+                "description": "Grade Point Average",
+                "type": "number"
+              },
+              "grades":
+              {
+                "description": "Grades Block",
+                "oneOf":
+                [
+                  {
+                    "description": "Block SAID",
+                    "type": "string"
+                  },
+                  {
+                    "description": "Block detail",
+                    "type": "object",
+                    "required":
+                    [
+                      "d",
+                      "u",
+                      "history"
+                      "english",
+                      "math"
+                    ],
+                    "properties":
+                    {
+                      "d":
+                      {
+                        "description": "Block SAID",
+                        "type": "string"
+                      },
+                      "u":
+                      {
+                        "description": "Block UUID",
+                        "type": "string"
+                      },
+                      "history":
+                      {
+                        "description": "History Grade",
+                        "type": "number"
+                      },
+                      "english":
+                      {
+                        "description": "English Grade",
+                        "type": "number"
+                      },
+                      "math":
+                      {
+                        "description": "Math Grade",
+                        "type": "number"
+                      }
+                    },
+                    "additionalProperties": False
+                  }
+                ]
+              },
+              "additionalProperties": False
+            }
+          }
+        ]
+    }
+
+
     mad = \
     {
         "d": "",
@@ -638,146 +842,143 @@ def test_acdc_aggregate_section_JSON():
 
     schema = \
     {
-      "A":
-      {
-        "description": "Selectively disclosable attribute aggregate section",
-        "oneOf":
-        [
+      "description": "Selectively disclosable attribute aggregate section",
+      "oneOf":
+      [
+        {
+          "description": "Aggregate Section AGID",
+          "type": "string"
+        },
+        {
+          "description": "Selectively disclosable attribute details",
+          "type": "array",
+          "uniqueItems": True,
+          "items":
           {
-            "description": "Aggregate Section AGID",
-            "type": "string"
-          },
-          {
-            "description": "Selectively disclosable attribute details",
-            "type": "array",
-            "uniqueItems": True,
-            "items":
-            {
-              "anyOf":
-              [
-                {
-                    "description": "Issue Block",
-                    "oneOf":
-                    [
+            "anyOf":
+            [
+              {
+                  "description": "Issue Block",
+                  "oneOf":
+                  [
+                      {
+                          "description": "Issuee Block SAID",
+                          "type": "string"
+                      },
+                      {
+                        "description": "Issuee Block Detail",
+                        "type": "object",
+                        "required":
+                        [
+                          "d",
+                          "u",
+                          "i"
+                        ],
+                        "properties":
                         {
-                            "description": "Issuee Block SAID",
-                            "type": "string"
-                        },
-                        {
-                          "description": "Issuee Block Detail",
-                          "type": "object",
-                          "required":
-                          [
-                            "d",
-                            "u",
-                            "i"
-                          ],
-                          "properties":
+                          "d":
                           {
-                            "d":
-                            {
-                              "description": "Block SAID",
-                              "type": "string"
-                            },
-                            "u":
-                            {
-                              "description": "Block UUID",
-                              "type": "string"
-                            },
-                            "i":
-                            {
-                              "description": "Issuee SAID",
-                              "type": "string"
-                            }
-                          },
-                          "additionalProperties": False
-                        }
-                    ]
-                },
-                {
-                    "description": "Score Block",
-                    "oneOf":
-                    [
-                        {
-                            "description": "Score Block SAID",
+                            "description": "Block SAID",
                             "type": "string"
-                        },
-                        {
-                          "description": "Score Block Detail",
-                          "type": "object",
-                          "required":
-                          [
-                            "d",
-                            "u",
-                            "score"
-                          ],
-                          "properties":
-                          {
-                            "d":
-                            {
-                              "description": "Block SAID",
-                              "type": "string"
-                            },
-                            "u":
-                            {
-                              "description": "Block UUID",
-                              "type": "string"
-                            },
-                            "score":
-                            {
-                              "description": "Score Value",
-                              "type": "integer"
-                            }
                           },
-                          "additionalProperties": False
-                        }
-                    ]
-                },
-                {
-                    "description": "Name Block",
-                    "oneOf":
-                    [
-                        {
-                            "description": "Name Block SAID",
+                          "u":
+                          {
+                            "description": "Block UUID",
                             "type": "string"
-                        },
-                        {
-                          "description": "Name Block Detail",
-                          "type": "object",
-                          "required":
-                          [
-                            "d",
-                            "u",
-                            "name"
-                          ],
-                          "properties":
-                          {
-                            "d":
-                            {
-                              "description": "Block SAID",
-                              "type": "string"
-                            },
-                            "u":
-                            {
-                              "description": "Block UUID",
-                              "type": "string"
-                            },
-                            "name":
-                            {
-                              "description": "Name Value",
-                              "type": "string"
-                            }
                           },
-                          "additionalProperties": False
-                        }
-                    ]
-                }
-              ]
-            }
+                          "i":
+                          {
+                            "description": "Issuee SAID",
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": False
+                      }
+                  ]
+              },
+              {
+                  "description": "Score Block",
+                  "oneOf":
+                  [
+                      {
+                          "description": "Score Block SAID",
+                          "type": "string"
+                      },
+                      {
+                        "description": "Score Block Detail",
+                        "type": "object",
+                        "required":
+                        [
+                          "d",
+                          "u",
+                          "score"
+                        ],
+                        "properties":
+                        {
+                          "d":
+                          {
+                            "description": "Block SAID",
+                            "type": "string"
+                          },
+                          "u":
+                          {
+                            "description": "Block UUID",
+                            "type": "string"
+                          },
+                          "score":
+                          {
+                            "description": "Score Value",
+                            "type": "integer"
+                          }
+                        },
+                        "additionalProperties": False
+                      }
+                  ]
+              },
+              {
+                  "description": "Name Block",
+                  "oneOf":
+                  [
+                      {
+                          "description": "Name Block SAID",
+                          "type": "string"
+                      },
+                      {
+                        "description": "Name Block Detail",
+                        "type": "object",
+                        "required":
+                        [
+                          "d",
+                          "u",
+                          "name"
+                        ],
+                        "properties":
+                        {
+                          "d":
+                          {
+                            "description": "Block SAID",
+                            "type": "string"
+                          },
+                          "u":
+                          {
+                            "description": "Block UUID",
+                            "type": "string"
+                          },
+                          "name":
+                          {
+                            "description": "Name Value",
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": False
+                      }
+                  ]
+              }
+            ]
           }
-        ],
-        "additionalProperties": False
-      }
+        }
+      ],
+      "additionalProperties": False
     }
 
 
@@ -1345,11 +1546,8 @@ def test_acdc_rule_section_JSON():
 
 def test_acdc_examples_JSON():
     """Basic Examples using JSON serializaton"""
-    issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
-    issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
-
-    amy = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
-    bob = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+    amy = issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    bob = issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
     cal = "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT"
     deb = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"
 
@@ -1361,47 +1559,746 @@ def test_acdc_examples_JSON():
     rd2 = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
     rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
 
-    #Basic attribute section example
-    # private targeted attribute section
-    mad = \
+    kind = Kinds.json
+
+    # Example
+    # Amy as school issues transcript credential to Bob as student
+    # cal as accredidation agency issues auth credential to Amy as school
+    # Amy prooves accredidation by linking via edge I2I with amy as issuee
+    # Deb as department issues research report skill sample that names Bob as co-author
+    # Amy endorses research paper by linking via edge NI2I
+    # Bob as student issues poject report skill sample to whom it may concern
+    # Amy endorses project report with Bob as issuer by linking via edge NI2I
+
+    # Rule for the ACDCs
+    ruleSchema = \
     {
-    "d": "",
-    "u": uuids[0],
-    "i": issuee,
-    "score": 96,
-    "name": "Zoe Doe"
+      "description": "Rule Section",
+      "oneOf":
+      [
+        {
+          "description": "Rule Section SAID",
+          "type": "string"
+        },
+        {
+          "description": "Rule Section Detail",
+          "type": "object",
+          "required":
+          [
+            "d",
+            "l"
+          ],
+          "properties":
+          {
+            "d":
+            {
+              "description": "Rule Section SAID",
+              "type": "string"
+            },
+            "l":
+            {
+              "description": "Legal Language",
+              "type": "string",
+            },
+          },
+          "additionalProperties": False
+        }
+      ]
     }
 
-    mapper = Mapper(mad=mad, saidive=True, makify=True, kind=Kinds.json)
-    assert mapper.mad == \
+
+    iRuleMad = \
     {
-        "d": "EIMMcLl1w2KW2J3AD3twaESJO4u_fDFCdlMHjouojU8C",
-        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
-        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
-        "score": 96,
-        "name": "Zoe Doe"
+      "d": "",
+      "l": "Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient."
     }
 
-    # public targeted attribute section
-    mad = \
+    ruleSaid = "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
+    ruleMad = \
     {
-    "d": "",
-    "i": issuee,
-    "score": 96,
-    "name": "Zoe Doe"
+        "d": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU",
+        "l": "Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient."
     }
 
-    mapper = Mapper(mad=mad, saidive=True, makify=True, kind=Kinds.json)
-    assert mapper.mad == \
+    compactor = Compactor(mad=iRuleMad, makify=True, compactify=True, kind=kind)
+    assert compactor.said == ruleSaid
+    assert compactor.mad == ruleMad
+
+    # Edge ACDCs
+    # Accredidation ACDC
+    # Accred attr section
+    accrAttrSchema = \
     {
-        "d": "ELNJxIInWN4WAih9MQ4vVDrMRYnmhToS9a0gqjLfctOO",
-        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
-        "score": 96,
-        "name": "Zoe Doe"
+        "description": "Attribute Section",
+        "oneOf":
+        [
+            {
+                "description": "Attribute Section SAID",
+                "type": "string"
+              },
+              {
+                "description": "Attribute Section Detail",
+                "type": "object",
+                "required":
+                [
+                  "d",
+                  "u",
+                  "i",
+                  "score",
+                  "name"
+                ],
+                "properties":
+                {
+                  "d":
+                  {
+                    "description": "Attribute Section SAID",
+                    "type": "string"
+                  },
+                  "u":
+                  {
+                    "description": "Attribute Section UUID",
+                    "type": "string"
+                  },
+                  "i":
+                  {
+                    "description": "Issuee AID",
+                    "type": "string"
+                  },
+                  "name":
+                  {
+                    "description": "Institution Name",
+                    "type": "string"
+                  },
+                  "level":
+                  {
+                    "description": "Accreditation Level",
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": False
+              }
+        ]
     }
 
-    # partially disclosable attribute section
-    mad = \
+    iAccrAttrMad = \
+    {
+        "d": "",
+        "u": uuids[7],
+        "i": amy,
+        "name": "Sunspot College",
+        "level": "gold"
+    }
+
+    accrAttrSaid = 'EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL'
+    accrAttrMad = \
+    {
+        'd': 'EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXc3',
+        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+        'name': 'Sunspot College',
+        'level': 'gold'
+    }
+
+    compactor = Compactor(mad=iAccrAttrMad, makify=True, compactify=True, kind=kind)
+    assert compactor.said == accrAttrSaid
+    assert compactor.mad ==accrAttrMad
+
+    #accreditation acdc schema
+    iAccredSMad = \
+    {
+        "$id": "",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Accreditation Schema",
+        "description": "Accreditation JSON Schema for acm ACDC.",
+        "credentialType": "Accreditation_ACDC_acm_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required": [ "v", "d", "i", "s", "a", "r"],
+        "properties":
+        {
+            "v": { "description": "ACDC version string", "type": "string"},
+            "t": { "description": "Message type", "type": "string"},
+            "d": { "description": "Message SAID", "type": "string"},
+            "u": { "description": "Message UUID", "type": "string"},
+            "i": { "description": "Issuer AID", "type": "string"},
+            "rd": { "description": "Registry SAID", "type": "string"},
+            "s":
+            {
+                "description": "Schema Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Schema Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Schema Section Detail",
+                      "type": "object"
+                    }
+                ]
+            },
+            "a":accrAttrSchema,
+            "e":
+            {
+                "description": "Edge Section",
+                "oneOf":
+                [
+                    {
+                      "description": "Edge Section SAID",
+                      "type": "string"
+                    },
+                    {
+                      "description": "Edge Section Detail",
+                      "type": "object"
+                    }
+                ]
+            },
+            "r": ruleSchema
+        },
+        "additionalProperties": False
+    }
+
+    accredSchemaSaid = 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG'
+    accredSchemaMad = \
+    {
+        '$id': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'Accreditation Schema',
+        'description': 'Accreditation JSON Schema for acm ACDC.',
+        'credentialType': 'Accreditation_ACDC_acm_message',
+        'version': '2.0.0',
+        'type': 'object',
+        'required': ['v', 'd', 'i', 's', 'a', 'r'],
+        'properties':
+        {
+            'v': {'description': 'ACDC version string', 'type': 'string'},
+            't': {'description': 'Message type', 'type': 'string'},
+            'd': {'description': 'Message SAID', 'type': 'string'},
+            'u': {'description': 'Message UUID', 'type': 'string'},
+            'i': {'description': 'Issuer AID', 'type': 'string'},
+            'rd': {'description': 'Registry SAID', 'type': 'string'},
+            's':
+            {
+                'description': 'Schema Section',
+                'oneOf':
+                [
+                    {'description': 'Schema Section SAID', 'type': 'string'},
+                    {'description': 'Schema Section Detail', 'type': 'object'}
+                ]
+            },
+            'a':
+            {
+                'description': 'Attribute Section',
+                'oneOf':
+                [
+                    {'description': 'Attribute Section SAID', 'type': 'string'},
+                    {
+                        'description': 'Attribute Section Detail',
+                        'type': 'object',
+                        'required': ['d', 'u', 'i', 'score', 'name'],
+                        'properties':
+                        {
+                            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                            'u': {'description': 'Attribute Section UUID', 'type': 'string'},
+                            'i': {'description': 'Issuee AID', 'type': 'string'},
+                            'name': {'description': 'Institution Name', 'type': 'string'},
+                            'level': {'description': 'Accreditation Level', 'type': 'string'}
+                        },
+                        'additionalProperties': False
+                    }
+                ]
+            },
+            'e':
+            {
+                'description': 'Edge Section',
+                'oneOf':
+                [
+                    {'description': 'Edge Section SAID', 'type': 'string'},
+                    {'description': 'Edge Section Detail', 'type': 'object'}
+                ]
+            },
+            'r':
+            {
+                'description': 'Rule Section',
+                'oneOf':
+                [
+                    {'description': 'Rule Section SAID', 'type': 'string'},
+                    {
+                        'description': 'Rule Section Detail',
+                        'type': 'object',
+                        'required': ['d', 'l'],
+                        'properties':
+                        {
+                            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                            'l': {'description': 'Legal Language', 'type': 'string'}
+                        },
+                        'additionalProperties': False
+                    }
+                ]
+            }
+        },
+        'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=iAccredSMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    assert mapper.said == accredSchemaSaid
+    assert mapper.mad == accredSchemaMad
+
+    accredSaid = 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp'
+    accredSad = \
+    {
+        'v': 'ACDCCAACAAJSONAAKX.',
+        't': 'acm',
+        'd': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXdh',
+        'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
+        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
+        's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
+        'a':
+        {
+            'd': 'EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXc3',
+            'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+            'name': 'Sunspot College',
+            'level': 'gold'
+        },
+        'r':
+        {
+            'd': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU',
+            'l': 'Issuer provides this ACDC on an AS IS basis. This ACDC in whole '
+                 'or in part MUST NOT be shared with any other entity besides the '
+                 'intended recipient.'
+        }
+    }
+
+    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=rd0, schema=accredSchemaSaid,
+                     attribute=accrAttrMad, issuee=amy, rule=ruleMad)
+    assert serder.said == accredSaid
+    assert serder.sad == accredSad
+
+    accredCSad = \
+    {
+        'v': 'ACDCCAACAAJSONAAF3.',
+        't': 'acm',
+        'd': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXdh',
+        'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
+        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
+        's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
+        'a': 'EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL',
+        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+    }
+
+    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=rd0, schema=accredSchemaSaid,
+                     attribute=accrAttrMad, issuee=amy, rule=ruleMad, compactify=True)
+    assert serder.said == accredSaid
+    assert serder.sad == accredCSad
+
+
+    # Reports
+    reportAttrSchema = \
+    {
+        "description": "Attribute Section",
+        "oneOf":
+        [
+            { "description": "Attribute Section SAID", "type": "string"},
+            {
+                "description": "Attribute Section Detail",
+                "type": "object",
+                "required": [ "d", "u", "i", "title", "author", "report"],
+                "properties":
+                {
+                  "d": {"description": "Attribute Section SAID", "type": "string"},
+                  "u": {"description": "Attribute Section UUID", "type": "string"},
+                  "title": {"description": "Report Title", "type": "string"},
+                  "author": {"description": "Author Full Name", "type": "string"},
+                  "report": { "description": "Report Body", "type": "string"}
+                },
+                "additionalProperties": False
+              }
+        ]
+    }
+
+    iReportSMad = \
+    {
+        "$id": "",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Report Schema",
+        "description": "Report JSON Schema for acm ACDC.",
+        "credentialType": "Report_ACDC_acm_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required": [ "v", "d", "i", "s", "a", "r"],
+        "properties":
+        {
+            "v": { "description": "ACDC version string", "type": "string"},
+            "t": { "description": "Message type", "type": "string"},
+            "d": { "description": "Message SAID", "type": "string"},
+            "u": { "description": "Message UUID", "type": "string"},
+            "i": { "description": "Issuer AID", "type": "string"},
+            "rd": { "description": "Registry SAID", "type": "string"},
+            "s":
+            {
+                "description": "Schema Section",
+                "oneOf":
+                [
+                    { "description": "Schema Section SAID", "type": "string"},
+                    { "description": "Schema Section Detail", "type": "object"}
+                ]
+            },
+            "a":reportAttrSchema,
+            "e":
+            {
+                "description": "Edge Section",
+                "oneOf":
+                [
+                    { "description": "Edge Section SAID", "type": "string"},
+                    { "description": "Edge Section Detail", "type": "object"}
+                ]
+            },
+            "r": ruleSchema
+        },
+        "additionalProperties": False
+    }
+
+    reportSchemaSaid = 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-'
+    reportSchemaMad = \
+    {
+        '$id': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'Report Schema',
+        'description': 'Report JSON Schema for acm ACDC.',
+        'credentialType': 'Report_ACDC_acm_message',
+        'version': '2.0.0',
+        'type': 'object',
+        'required': ['v', 'd', 'i', 's', 'a', 'r'],
+        'properties':
+        {
+            'v': {'description': 'ACDC version string', 'type': 'string'},
+            't': {'description': 'Message type', 'type': 'string'},
+            'd': {'description': 'Message SAID', 'type': 'string'},
+            'u': {'description': 'Message UUID', 'type': 'string'},
+            'i': {'description': 'Issuer AID', 'type': 'string'},
+            'rd': {'description': 'Registry SAID', 'type': 'string'},
+            's':
+            {
+                'description': 'Schema Section',
+                'oneOf':
+                [
+                    {'description': 'Schema Section SAID', 'type': 'string'},
+                    {'description': 'Schema Section Detail', 'type': 'object'}
+                ]
+            },
+            'a':
+             {
+                "description": "Attribute Section",
+                "oneOf":
+                [
+                    { "description": "Attribute Section SAID", "type": "string"},
+                    {
+                        "description": "Attribute Section Detail",
+                        "type": "object",
+                        "required": [ "d", "u", "i", "title", "author", "report"],
+                        "properties":
+                        {
+                          "d": {"description": "Attribute Section SAID", "type": "string"},
+                          "u": {"description": "Attribute Section UUID", "type": "string"},
+                          "title": {"description": "Report Title", "type": "string"},
+                          "author": {"description": "Author Full Name", "type": "string"},
+                          "report": { "description": "Report Body", "type": "string"}
+                        },
+                        "additionalProperties": False
+                      }
+                ]
+            },
+            'e':
+            {
+                'description': 'Edge Section',
+                'oneOf':
+                [
+                    {'description': 'Edge Section SAID', 'type': 'string'},
+                    {'description': 'Edge Section Detail', 'type': 'object'}
+                ]
+            },
+            'r':
+            {
+                'description': 'Rule Section',
+                'oneOf':
+                [
+                    {'description': 'Rule Section SAID', 'type': 'string'},
+                    {
+                        'description': 'Rule Section Detail',
+                        'type': 'object',
+                        'required': ['d', 'l'],
+                        'properties':
+                        {
+                            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                            'l': {'description': 'Legal Language', 'type': 'string'}
+                        },
+                        'additionalProperties': False
+                    }
+                ]
+            }
+        },
+        'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=iReportSMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    assert mapper.said == reportSchemaSaid
+    assert mapper.mad == reportSchemaMad
+
+    # Research Report
+    iRrptMad = \
+    {
+        "d": "",
+        "u": uuids[8],
+        "title": "Post Quantum Security",
+        "name": "Zoe Doe",
+        "report": "Imprementation should prioritize cryptographic agility over PQ.",
+    }
+
+    rrptSaid = 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-'
+    rrptMad = \
+    {
+        'd': 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXc4',
+        'title': 'Post Quantum Security',
+        'name': 'Zoe Doe',
+        'report': 'Imprementation should prioritize cryptographic agility over PQ.'
+    }
+
+    compactor = Compactor(mad=iRrptMad, makify=True, compactify=True, kind=kind)
+    assert compactor.said == rrptSaid
+    assert compactor.mad == rrptMad
+
+    rReportSaid = 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU'
+    rReportSad = \
+    {
+        'v': 'ACDCCAACAAJSONAAK4.',
+        't': 'acm',
+        'd': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXdi',
+        'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
+        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
+        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
+        'a':
+        {
+            'd': 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXc4',
+            'title': 'Post Quantum Security',
+            'name': 'Zoe Doe',
+            'report': 'Imprementation should prioritize cryptographic agility over PQ.'
+        },
+        'r':
+        {
+            'd': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU',
+            'l': 'Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient.'
+        }
+    }
+
+    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=rd1, schema=reportSchemaSaid,
+                     attribute=rrptMad, rule=ruleMad)
+    assert serder.said == rReportSaid
+    assert serder.sad == rReportSad
+
+    rReportCSad = \
+    {
+        'v': 'ACDCCAACAAJSONAAF3.',
+        't': 'acm',
+        'd': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXdi',
+        'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
+        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
+        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
+        'a': 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-',
+        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+    }
+
+    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=rd1, schema=reportSchemaSaid,
+                     attribute=rrptMad, rule=ruleMad, compactify=True)
+    assert serder.said == rReportSaid
+    assert serder.sad == rReportCSad
+
+
+    # Project Report
+    iPrptMad = \
+    {
+        "d": "",
+        "u": uuids[9],
+        "title": "PQ Proof of Concept",
+        "name": "Zoe Doe",
+        "report": "Demonstration of recovery from surprise quantum attack",
+    }
+
+    prptSaid = 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_'
+    prptMad = \
+    {
+        'd': 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXc5',
+        'title': 'PQ Proof of Concept',
+        'name': 'Zoe Doe',
+        'report': 'Demonstration of recovery from surprise quantum attack'
+    }
+
+    compactor = Compactor(mad=iPrptMad, makify=True, compactify=True, kind=kind)
+    assert compactor.said == prptSaid
+    assert compactor.mad == prptMad
+
+    pReportSaid = 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53'
+    pReportSad = \
+    {
+        'v': 'ACDCCAACAAJSONAAKt.',
+        't': 'acm',
+        'd': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXdj',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
+        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
+        'a':
+        {
+            'd': 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_',
+            'u': '0ABhY2Rjc3BlY3dvcmtyYXc5',
+            'title': 'PQ Proof of Concept',
+            'name': 'Zoe Doe',
+            'report': 'Demonstration of recovery from surprise quantum attack'
+        },
+        'r':
+        {
+            'd': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU',
+            'l': 'Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient.'
+        }
+    }
+
+    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=rd2, schema=reportSchemaSaid,
+                     attribute=prptMad, rule=ruleMad)
+    assert serder.said == pReportSaid
+    assert serder.sad == pReportSad
+
+    pReportCSad = \
+    {
+        'v': 'ACDCCAACAAJSONAAF3.',
+        't': 'acm',
+        'd': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
+        'u': '0ABhY2Rjc3BlY3dvcmtyYXdj',
+        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
+        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
+        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
+        'a': 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_',
+        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+    }
+
+    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=rd2, schema=reportSchemaSaid,
+                     attribute=prptMad, rule=ruleMad, compactify=True)
+    assert serder.said == pReportSaid
+    assert serder.sad == pReportCSad
+
+
+    # main ACDC
+
+    mainSchema = \
+    {
+        "description": "Attribute Section",
+        "oneOf":
+        [
+          {
+            "description": "Attribute Section SAID",
+            "type": "string"
+          },
+          {
+            "description": "Attribute Section Detail",
+            "type": "object",
+            "required":
+            [
+              "d",
+              "u",
+              "i",
+              "name"
+              "gpa",
+              "grades"
+            ],
+            "properties":
+            {
+              "d":
+              {
+                "description": "Attribute Section SAID",
+                "type": "string"
+              },
+              "i":
+              {
+                "description": "Issuee AID",
+                "type": "string"
+              },
+              "name":
+              {
+                "description": "Student Full Name",
+                "type": "string"
+              },
+              "gpa":
+              {
+                "description": "Grade Point Average",
+                "type": "number"
+              },
+              "grades":
+              {
+                "description": "Grades Block",
+                "oneOf":
+                [
+                  {
+                    "description": "Block SAID",
+                    "type": "string"
+                  },
+                  {
+                    "description": "Block detail",
+                    "type": "object",
+                    "required":
+                    [
+                      "d",
+                      "u",
+                      "history"
+                      "english",
+                      "math"
+                    ],
+                    "properties":
+                    {
+                      "d":
+                      {
+                        "description": "Block SAID",
+                        "type": "string"
+                      },
+                      "u":
+                      {
+                        "description": "Block UUID",
+                        "type": "string"
+                      },
+                      "history":
+                      {
+                        "description": "History Grade",
+                        "type": "number"
+                      },
+                      "english":
+                      {
+                        "description": "English Grade",
+                        "type": "number"
+                      },
+                      "math":
+                      {
+                        "description": "Math Grade",
+                        "type": "number"
+                      }
+                    },
+                    "additionalProperties": False
+                  }
+                ]
+              },
+              "additionalProperties": False
+            }
+          }
+        ]
+    }
+
+    iAttrMad = \
     {
         "d": "",
         "u": uuids[0],
@@ -1418,812 +2315,39 @@ def test_acdc_examples_JSON():
         }
     }
 
-    compactor = Compactor(mad=mad, makify=True, compactify=True, kind=Kinds.json)
-    assert compactor.said == 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U'
-    assert compactor.iscompact
-    assert compactor.mad == \
+    iEdgeMad = \
     {
-        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'name': 'Zoe Doe',
-        'gpa': 3.5,
-        'grades': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy'
-    }
-
-    assert compactor.partials[('.grades',)].mad == \
-    {
-        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'name': 'Zoe Doe',
-        'gpa': 3.5,
-        'grades':
+        'd': '',
+        'u': uuids[2],
+        "accreditation":
         {
-            'd': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-            'history': 3.5,
-            'english': 4.0,
-            'math': 3.0
-        }
-    }
-
-    assert compactor.partials[('',)].mad == \
-    {
-        'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'name': 'Zoe Doe',
-        'gpa': 3.5,
-        'grades': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy'
-    }
-
-    assert compactor.partials[('',)].mad == compactor.mad
-
-    # Edge Section
-
-    {
-      "e":
-      {
-        "d": "EFOLe71iheqcywJcnjtJtQIYPvAu6DZIl3MOARH3dCdo",
-        "u": "0AwjaDAE0qHcgNghkDaG7OY1",
-        "work":
-        {
-          "d": "E2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lkFrn9y",
-          "u": "0ANghkDaG7OY1wjaDAE0qHcg",
+          "d": "",
+          "u": uuids[3],
           "n": "ECJnFJL5OuQPyM5K0neuniccMBdXt3gIXOf2BBWNHdSX",
           "s": "ELIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzw"
         },
-        "play":
+        "reports":
         {
-          "d": "ELxUdYerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOc",
-          "u": "0ADAE0qHcgNghkDaG7OY1wja",
-          "n": "EK0neuniccMBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5",
-          "s": "EHwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_N",
-          "o": "NI2I"
+            "d": "",
+            "u": uuids[4],
+            "o": "OR",
+            "project":
+            {
+              "d": "",
+              "u": uuids[5],
+              "n": "EK0neuniccMBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5",
+              "o": "NI2I"
+            },
+            "research":
+            {
+              "d": "",
+              "u": uuids[6],
+              "n": "EK0neuniccMBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5",
+              "o": "NI2I"
+            }
         }
-      }
     }
 
-    # compased schema for student credential with no edge
-    smad = \
-    {
-      "$id": "",
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "title": "Example ACDC Schema Student",
-      "description": "Example JSON Schema ACDC",
-      "credentialType": "ACDCExampleStudent",
-      "type": "object",
-       "required":
-      [
-        "v",
-        "d",
-        "u",
-        "i",
-        "rd",
-        "s",
-        "a"
-      ],
-      "properties":
-      {
-        "v":
-        {
-          "description": "ACDC version string",
-          "type": "string"
-        },
-        "d":
-        {
-         "description": "ACDC SAID",
-          "type": "string"
-        },
-        "u":
-        {
-         "description": "ACDC UUID",
-          "type": "string"
-        },
-        "i":
-        {
-          "description": "Issuer AID",
-          "type": "string"
-        },
-        "rd":
-        {
-          "description": "Registry SAID",
-          "type": "string"
-        },
-        "s":
-        {
-          "description": "Schema Section",
-          "oneOf":
-          [
-            {
-              "description": "Schema Section SAID",
-              "type": "string"
-            },
-            {
-              "description": "Schema Detail",
-              "type": "object"
-            }
-          ]
-        },
-        "a":
-        {
-          "description": "Attribute Section",
-          "oneOf":
-          [
-            {
-              "description": "Attribute Section SAID",
-              "type": "string"
-            },
-            {
-              "description": "Attribute Detail",
-              "type": "object",
-              "required":
-              [
-                "d",
-                "u",
-                "i",
-                "student",
-                "name"
-              ],
-              "properties":
-              {
-                "d":
-                {
-                  "description": "Attribute Section SAID",
-                  "type": "string"
-                },
-                "u":
-                {
-                 "description": "Attribute Section UUID",
-                  "type": "string"
-                },
-                "i":
-                {
-                  "description": "Issuee AID",
-                  "type": "string"
-                },
-                "student":
-                {
-                  "description": "Student Name",
-                  "type": "string"
-                },
-              },
-              "additionalProperties": False
-            }
-          ]
-        },
-      },
-      "additionalProperties": False
-    }
-    mapper = Mapper(mad=smad, strict=False, saidive=True, saids={'$id': 'E'},
-                    makify=True, kind=Kinds.json)
-    assert mapper.said == 'ECy2Ede0ZGKWv-blgLBZy5dBtZfHXsRjrPACNpJtwpK8'
-    assert mapper.mad == \
-    {
-        '$id': 'ECy2Ede0ZGKWv-blgLBZy5dBtZfHXsRjrPACNpJtwpK8',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'title': 'Example ACDC Schema Student',
-        'description': 'Example JSON Schema ACDC',
-        'credentialType': 'ACDCExampleStudent',
-        'type': 'object',
-        'required': ['v', 'd', 'u', 'i', 'rd', 's', 'a'],
-        'properties':
-        {
-            'v': { 'description': 'ACDC version string', 'type': 'string'},
-            'd': {'description': 'ACDC SAID', 'type': 'string'},
-            'u': {'description': 'ACDC UUID', 'type': 'string'},
-            'i': {'description': 'Issuer AID', 'type': 'string'},
-            'rd': {'description': 'Registry SAID', 'type': 'string'},
-            's':
-            {
-                'description': 'Schema Section',
-                'oneOf':
-                [
-                    {
-                        'description': 'Schema Section SAID',
-                        'type': 'string'
-                    },
-                    {
-                        'description': 'Schema Detail',
-                        'type': 'object'
-                    }
-                ]
-            },
-            'a': {'description': 'Attribute Section',
-                  'oneOf': [{'description': 'Attribute Section SAID',
-                             'type': 'string'},
-                            {'description': 'Attribute Detail',
-                             'type': 'object',
-                             'required': ['d', 'u', 'i', 'student', 'name'],
-                             'properties': {'d': {'description': 'Attribute '
-                                                                 'Section '
-                                                                 'SAID',
-                                                  'type': 'string'},
-                                            'u': {'description': 'Attribute '
-                                                                 'Section '
-                                                                 'UUID',
-                                                  'type': 'string'},
-                                            'i': {'description': 'Issuee '
-                                                                 'AID',
-                                                  'type': 'string'},
-                                            'student': {'description': 'Student '
-                                                                       'Name',
-                                                        'type': 'string'}},
-                             'additionalProperties': False
-                         }
-                     ]}},
-        'additionalProperties': False
-    }
-
-
-    # composed schema for score credential with edge
-    smad = \
-    {
-      "$id": "",
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "title": "Example ACDC Schema",
-      "description": "Example JSON Schema ACDC.",
-      "credentialType": "ACDCExample",
-      "type": "object",
-       "required":
-      [
-        "v",
-        "d",
-        "u",
-        "i",
-        "rd",
-        "s",
-        "a",
-        "e",
-        "r"
-      ],
-      "properties":
-      {
-        "v":
-        {
-          "description": "ACDC version string",
-          "type": "string"
-        },
-        "d":
-        {
-         "description": "ACDC SAID",
-          "type": "string"
-        },
-        "u":
-        {
-         "description": "ACDC UUID",
-          "type": "string"
-        },
-        "i":
-        {
-          "description": "Issuer AID",
-          "type": "string"
-        },
-        "rd":
-        {
-          "description": "Registry SAID",
-          "type": "string"
-        },
-        "s":
-        {
-          "description": "Schema Section",
-          "oneOf":
-          [
-            {
-              "description": "Schema Section SAID",
-              "type": "string"
-            },
-            {
-              "description": "Schema Detail",
-              "type": "object"
-            }
-          ]
-        },
-        "a":
-        {
-          "description": "Attribute Section",
-          "oneOf":
-          [
-            {
-              "description": "Attribute Section SAID",
-              "type": "string"
-            },
-            {
-              "description": "Attribute Detail",
-              "type": "object",
-              "required":
-              [
-                "d",
-                "u",
-                "i",
-                "score",
-                "name"
-              ],
-              "properties":
-              {
-                "d":
-                {
-                  "description": "Attribute Section SAID",
-                  "type": "string"
-                },
-                "u":
-                {
-                 "description": "Attribute Section UUID",
-                  "type": "string"
-                },
-                "i":
-                {
-                  "description": "Issuee AID",
-                  "type": "string"
-                },
-                "score":
-                {
-                  "description": "Test Score",
-                  "type": "integer"
-                },
-                "name":
-                {
-                  "description": "Test Taker Full Name",
-                  "type": "string"
-                }
-              },
-              "additionalProperties": False
-            }
-          ]
-        },
-        "e":
-        {
-          "description": "Edge Section",
-          "oneOf":
-          [
-            {
-              "description": "Edge Section SAID",
-              "type": "string"
-            },
-            {
-              "description": "Edge Detail",
-              "type": "object",
-              "required":
-              [
-                "d",
-                "u",
-                "boss"
-              ],
-              "properties":
-              {
-                "d":
-                {
-                  "description": "Edge Section SAID",
-                  "type": "string"
-                },
-                "u":
-                {
-                 "description": "Edge Section UUID",
-                  "type": "string"
-                },
-                "boss":
-                {
-                  "description": "Boss Edge",
-                  "type": "object",
-                  "required":
-                  [
-                    "d",
-                    "u",
-                    "n",
-                    "s",
-                    "w"
-                  ],
-                  "properties":
-                  {
-                    "d":
-                    {
-                      "description": "Edge SAID",
-                      "type": "string"
-                    },
-                    "u":
-                    {
-                      "description": "Edge UUID",
-                      "type": "string"
-                    },
-                    "n":
-                    {
-                      "description": "Far Node SAID",
-                      "type": "string"
-                    },
-                    "s":
-                    {
-                      "description": "Far Node Schema SAID",
-                      "type": "string"
-                    },
-                    "w":
-                    {
-                      "description": "Edge Weight",
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": False
-                }
-              },
-              "additionalProperties": False
-            }
-          ]
-        },
-        "r":
-        {
-          "description": "Rule Section",
-          "oneOf":
-          [
-            {
-              "description": "Rule Section SAID",
-              "type": "string"
-            },
-            {
-              "description": "Rule Detail",
-              "type": "object",
-              "required":
-              [
-                "d",
-                "u",
-                "warrantyDisclaimer",
-                "liabilityDisclaimer"
-              ],
-              "properties":
-              {
-                "d":
-                {
-                  "description": "edge section SAID",
-                  "type": "string"
-                },
-                "u":
-                {
-                  "description": "Rule Section UUID",
-                  "type": "string"
-                },
-                "warrantyDisclaimer":
-                {
-                  "description": "Warranty Disclaimer Clause",
-                  "type": "object",
-                  "required":
-                  [
-                    "d",
-                    "u",
-                    "l"
-                  ],
-                  "properties":
-                  {
-                    "d":
-                    {
-                      "description": "Clause SAID",
-                      "type": "string"
-                    },
-                    "u":
-                    {
-                      "description": "Clause UUID",
-                      "type": "string"
-                    },
-                    "l":
-                    {
-                      "description": "Legal Language",
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": False
-                },
-                "liabilityDisclaimer":
-                {
-                  "description": "Liability Disclaimer Clause",
-                  "type": "object",
-                  "required":
-                  [
-                    "d",
-                    "u",
-                    "l"
-                  ],
-                  "properties":
-                  {
-                    "d":
-                    {
-                      "description": "Clause SAID",
-                      "type": "string"
-                    },
-                    "u":
-                    {
-                      "description": "Clause UUID",
-                      "type": "string"
-                    },
-                    "l":
-                    {
-                      "description": "Legal Language",
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": False
-                }
-              },
-              "additionalProperties": False
-            }
-          ]
-        }
-      },
-      "additionalProperties": False
-    }
-
-    mapper = Mapper(mad=smad, strict=False, saidive=True, saids={'$id': 'E'},
-                    makify=True, kind=Kinds.json)
-    assert mapper.said == 'EEo78LUBW5PsNY6OE3wegQuzUITPSc-8E9fJAOBfBHiC'
-    assert mapper.raw.decode() == \
-    ('{"$id":"EEo78LUBW5PsNY6OE3wegQuzUITPSc-8E9fJAOBfBHiC","$schema":"https://json-schema.org/draft/2020-12/schema","title":"Example '
-    'ACDC Schema","description":"Example JSON Schema '
-    'ACDC.","credentialType":"ACDCExample","type":"object","required":["v","d","u","i","rd","s","a","e","r"],"properties":{"v":{"description":"ACDC '
-    'version string","type":"string"},"d":{"description":"ACDC '
-    'SAID","type":"string"},"u":{"description":"ACDC '
-    'UUID","type":"string"},"i":{"description":"Issuer '
-    'AID","type":"string"},"rd":{"description":"Registry '
-    'SAID","type":"string"},"s":{"description":"Schema '
-    'Section","oneOf":[{"description":"Schema Section '
-    'SAID","type":"string"},{"description":"Schema '
-    'Detail","type":"object"}]},"a":{"description":"Attribute '
-    'Section","oneOf":[{"description":"Attribute Section '
-    'SAID","type":"string"},{"description":"Attribute '
-    'Detail","type":"object","required":["d","u","i","score","name"],"properties":{"d":{"description":"Attribute '
-    'Section SAID","type":"string"},"u":{"description":"Attribute Section '
-    'UUID","type":"string"},"i":{"description":"Issuee '
-    'AID","type":"string"},"score":{"description":"Test '
-    'Score","type":"integer"},"name":{"description":"Test Taker Full '
-    'Name","type":"string"}},"additionalProperties":false}]},"e":{"description":"Edge '
-    'Section","oneOf":[{"description":"Edge Section '
-    'SAID","type":"string"},{"description":"Edge '
-    'Detail","type":"object","required":["d","u","boss"],"properties":{"d":{"description":"Edge '
-    'Section SAID","type":"string"},"u":{"description":"Edge Section '
-    'UUID","type":"string"},"boss":{"description":"Boss '
-    'Edge","type":"object","required":["d","u","n","s","w"],"properties":{"d":{"description":"Edge '
-    'SAID","type":"string"},"u":{"description":"Edge '
-    'UUID","type":"string"},"n":{"description":"Far Node '
-    'SAID","type":"string"},"s":{"description":"Far Node Schema '
-    'SAID","type":"string"},"w":{"description":"Edge '
-    'Weight","type":"string"}},"additionalProperties":false}},"additionalProperties":false}]},"r":{"description":"Rule '
-    'Section","oneOf":[{"description":"Rule Section '
-    'SAID","type":"string"},{"description":"Rule '
-    'Detail","type":"object","required":["d","u","warrantyDisclaimer","liabilityDisclaimer"],"properties":{"d":{"description":"edge '
-    'section SAID","type":"string"},"u":{"description":"Rule Section '
-    'UUID","type":"string"},"warrantyDisclaimer":{"description":"Warranty '
-    'Disclaimer '
-    'Clause","type":"object","required":["d","u","l"],"properties":{"d":{"description":"Clause '
-    'SAID","type":"string"},"u":{"description":"Clause '
-    'UUID","type":"string"},"l":{"description":"Legal '
-    'Language","type":"string"}},"additionalProperties":false},"liabilityDisclaimer":{"description":"Liability '
-    'Disclaimer '
-    'Clause","type":"object","required":["d","u","l"],"properties":{"d":{"description":"Clause '
-    'SAID","type":"string"},"u":{"description":"Clause '
-    'UUID","type":"string"},"l":{"description":"Legal '
-    'Language","type":"string"}},"additionalProperties":false}},"additionalProperties":false}]}},"additionalProperties":false}')
-
-    assert mapper.mad == \
-    {
-        '$id': 'EEo78LUBW5PsNY6OE3wegQuzUITPSc-8E9fJAOBfBHiC',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'title': 'Example ACDC Schema',
-        'description': 'Example JSON Schema ACDC.',
-        'credentialType': 'ACDCExample',
-        'type': 'object',
-        'required': ['v', 'd', 'u', 'i', 'rd', 's', 'a', 'e', 'r'],
-        'properties':
-        {
-            'v': {'description': 'ACDC version string', 'type': 'string'},
-            'd': {'description': 'ACDC SAID', 'type': 'string'},
-            'u': {'description': 'ACDC UUID', 'type': 'string'},
-            'i': {'description': 'Issuer AID', 'type': 'string'},
-            'rd': {'description': 'Registry SAID', 'type': 'string'},
-            's':
-            {
-                'description': 'Schema Section',
-                'oneOf':
-                [
-                    {
-                        'description': 'Schema Section SAID',
-                        'type': 'string'
-                    },
-                    {
-                        'description': 'Schema Detail',
-                        'type': 'object'
-                    }
-                ]
-            },
-            'a':
-            {
-                'description': 'Attribute Section',
-                'oneOf':
-                [
-                    {
-                        'description': 'Attribute Section SAID',
-                        'type': 'string'
-                    },
-                    {
-                        'description': 'Attribute Detail',
-                        'type': 'object',
-                        'required': ['d', 'u', 'i', 'score', 'name'],
-                        'properties':
-                        {
-                            'd':
-                            {
-                                'description': 'Attribute ''Section SAID',
-                                'type': 'string'
-                            },
-                            'u':
-                            {
-                                'description': 'Attribute Section UUID',
-                                'type': 'string'
-                            },
-                            'i':
-                            {
-                                'description': 'Issuee AID',
-                                'type': 'string'
-                            },
-                            'score':
-                            {
-                                'description': 'Test Score',
-                                'type': 'integer'
-                            },
-                            'name':
-                            {
-                                'description': 'Test ''Taker Full Name',
-                                'type': 'string'
-                            }
-                        },
-                        'additionalProperties': False
-                    }
-                ]
-            },
-            'e':
-            {
-                'description': 'Edge Section',
-                'oneOf':
-                [
-                    {
-                        'description': 'Edge Section SAID',
-                        'type': 'string'
-                    },
-                    {
-                        'description': 'Edge Detail',
-                        'type': 'object',
-                        'required': ['d', 'u', 'boss'],
-                        'properties':
-                        {
-                            'd':
-                            {
-                                'description': 'Edge Section SAID',
-                                'type': 'string'
-                            },
-                            'u':
-                            {
-                                'description': 'Edge Section UUID',
-                                'type': 'string'
-                            },
-                            'boss':
-                            {
-                                'description': 'Boss Edge',
-                                'type': 'object',
-                                'required': ['d', 'u', 'n', 's', 'w'],
-                                'properties':
-                                {
-                                    'd':
-                                    {
-                                        'description': 'Edge SAID',
-                                        'type': 'string'
-                                    },
-                                    'u':
-                                    {'description': 'Edge UUID',
-                                        'type': 'string'
-                                    },
-                                    'n':
-                                    {
-                                        'description': 'Far Node SAID',
-                                        'type': 'string'
-                                    },
-                                    's':
-                                    {
-                                        'description': 'Far Node Schema SAID',
-                                        'type': 'string'
-                                    },
-                                    'w':
-                                    {
-                                        'description': 'Edge Weight',
-                                        'type': 'string'
-                                    }
-                                },
-                                'additionalProperties': False
-                            }
-                        },
-                        'additionalProperties': False
-                    }
-                ]
-            },
-            'r':
-            {
-                'description': 'Rule Section',
-                'oneOf':
-                [
-                    {
-                        'description': 'Rule Section SAID',
-                        'type': 'string'
-                    },
-                    {
-                        'description': 'Rule Detail',
-                        'type': 'object',
-                        'required': ['d', 'u', 'warrantyDisclaimer', 'liabilityDisclaimer'],
-                        'properties':
-                        {
-                            'd':
-                            {
-                                'description': 'edge section SAID',
-                                'type': 'string'
-                            },
-                            'u':
-                            {
-                                'description': 'Rule Section UUID',
-                                'type': 'string'
-                            },
-                            'warrantyDisclaimer':
-                            {
-                                'description': 'Warranty Disclaimer Clause',
-                                'type': 'object',
-                                'required': ['d', 'u', 'l'],
-                                'properties':
-                                {
-                                    'd':
-                                    {
-                                        'description': 'Clause SAID',
-                                        'type': 'string'
-                                    },
-                                    'u':
-                                    {
-                                        'description': 'Clause UUID',
-                                        'type': 'string'
-                                    },
-                                    'l':
-                                    {
-                                        'description': 'Legal Language',
-                                        'type': 'string'
-                                    }
-                                },
-                                'additionalProperties': False
-                            },
-                            'liabilityDisclaimer':
-                            {
-                                'description': 'Liability Disclaimer Clause',
-                                'type': 'object',
-                                'required': ['d', 'u', 'l'],
-                                'properties':
-                                {
-                                    'd':
-                                    {
-                                        'description': 'Clause SAID',
-                                        'type': 'string'
-                                    },
-                                    'u':
-                                    {
-                                        'description': 'Clause UUID',
-                                        'type': 'string'
-                                    },
-                                    'l':
-                                    {
-                                        'description': 'Legal Language',
-                                        'type': 'string'
-                                    }
-                                },
-                                'additionalProperties': False
-                            }
-                        },
-                        'additionalProperties': False
-                    }
-                ]
-            }
-        },
-        'additionalProperties': False
-    }
-
-    # Linked ACDC via edge
 
 
 
