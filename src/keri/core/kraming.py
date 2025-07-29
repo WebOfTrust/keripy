@@ -1,4 +1,3 @@
-
 from keri import kering
 from keri.help import helping
 
@@ -6,12 +5,10 @@ from typing import NamedTuple
 from keri import help
 from hio.base import Doer
 import json
-from hio.help import decking
-from keri.core.serdering import Serder
-from keri.kering import Ilks
 
 logger = help.ogler.getLogger()
 
+# TODO: Implement message type as part of TimelinessCache module for more granular control
 class MessageType(NamedTuple):
     """Named tuple for KERI message types, not yet used."""
     QRY: str = "qry"
@@ -31,14 +28,14 @@ class TimelinessCache:
     1. A Lagging Window Size Table - to determine validity windows for different message types
     2. A Replay Cache Table - to store timestamps of previously validated messages
     """
-    #change to float time, 3 seconds, 1 second
-    def __init__(self, db, defaultWindowSize=300_000_000, defaultDriftSkew=60_000_000, cues=None, msgs=None):
+
+    def __init__(self, db, defaultWindowSize=3.0, defaultDriftSkew=1.0):
         """Initialize the TimelinessCache.
 
         Parameters:
             db: Database instance that contains the IoSetSuber at db.time
-            defaultWindowSize (int): Default window size in microseconds
-            defaultDriftSkew (int): Default drift skew in microseconds
+            defaultWindowSize (float): Default window size in seconds
+            defaultDriftSkew (float): Default drift skew in seconds
         """
         self.defaultWindowSize = defaultWindowSize
         self.defaultDriftSkew = defaultDriftSkew
@@ -48,6 +45,7 @@ class TimelinessCache:
     def setWindowParameters(self, aid, windowSize=None, driftSkew=None, messageType=None):
         """Set window parameters for given autonomic identifier and message type.
         """
+        # TODO: Implement message type as part of the window parameters
         windowSize = windowSize or self.defaultWindowSize
         driftSkew = driftSkew or self.defaultDriftSkew
 
@@ -68,8 +66,9 @@ class TimelinessCache:
                 be used to determine the window size for a given message type
 
         Returns:
-            tuple: (windowSize, driftSkew) as integers in microseconds
+            tuple: (windowSize, driftSkew) as floats in seconds
         """
+        # TODO: Implement message type as part of the window parameters
         try:
             # Try to get the stored parameters
             storedData = self.db.kram.getLast(aid)
@@ -93,11 +92,10 @@ class TimelinessCache:
         Returns:
             str: The key for the Replay Cache Table
         """
+        # TODO: Implement message type as part of the key (serder.ilk)
         sad = serder.sad
-        sourceAid = sad.get("i", "")  # 'i' for identifier in KERI messages
-        # messageType = serder.ilk  # Use serder.ilk for message type
+        sourceAid = sad.get("i", "")
 
-        # return (sourceAid, messageType)
         return sourceAid
 
     def _getCachedTimestamp(self, key):
@@ -107,12 +105,12 @@ class TimelinessCache:
             key (str): The cache key
 
         Returns:
-            int | None: The cached timestamp in microseconds or None if not found
+            float | None: The cached timestamp in seconds or None if not found
         """
         try:
             storedTimestamp = self.db.time.getLast(key)
             if storedTimestamp is not None:
-                return int(storedTimestamp)
+                return float(storedTimestamp)
         except Exception as e:
             print(e)
             pass
@@ -123,7 +121,7 @@ class TimelinessCache:
 
         Parameters:
             key (str): The cache key
-            timestamp (int): The timestamp to store in microseconds
+            timestamp (float): The timestamp to store in seconds
         """
         timestampStr = str(timestamp)
 
@@ -154,15 +152,13 @@ class TimelinessCache:
 
         windowSize, driftSkew = self.getWindowParameters(sourceAid, messageType)
 
-        # Convert both timestamps to microseconds since epoch for comparison
-        currentTime = helping.fromIso8601(helping.nowIso8601())
-        currentTimeMicros = int(currentTime.timestamp() * 1_000_000)
+        # Convert both timestamps to seconds since epoch for comparison
+        currentTime = helping.fromIso8601(helping.nowIso8601()).timestamp()
 
-        messageTime = helping.fromIso8601(timestamp)
-        messageTimeMicros = int(messageTime.timestamp() * 1_000_000)
+        messageTime = helping.fromIso8601(timestamp).timestamp()
 
-        if (messageTimeMicros < currentTimeMicros - driftSkew - windowSize or
-                messageTimeMicros > currentTimeMicros + driftSkew):
+        if (messageTime < currentTime - driftSkew - windowSize or
+                messageTime > currentTime + driftSkew):
             raise kering.ValidationError(f"Message is out of time window {serder.pretty()}")
 
         cacheKey = self._constructCacheKey(serder)
@@ -170,18 +166,17 @@ class TimelinessCache:
         cachedTimestamp = self._getCachedTimestamp(cacheKey)
 
         if cachedTimestamp is None:
-            self._storeTimestamp(cacheKey, messageTimeMicros)
+            self._storeTimestamp(cacheKey, messageTime)
             # Message accepted, new entry
             return True
 
-        if messageTimeMicros > cachedTimestamp:
-            self._storeTimestamp(cacheKey, messageTimeMicros)
+        if messageTime > cachedTimestamp:
+            self._storeTimestamp(cacheKey, messageTime)
             # Message accepted, updated cached entry
             return True
 
-        if messageTimeMicros == cachedTimestamp:
-            # QUESTION: Should we be accepting messages here?
-            return False, ""
+        if messageTime == cachedTimestamp:
+            raise kering.ValidationError(f"Message replay detected {serder.pretty()}")
 
         raise kering.ValidationError(f"Message is out of order {serder.pretty()}")
 
@@ -192,12 +187,12 @@ class TimelinessCache:
             int: The number of pruned entries
         """
         prunedCount = 0
-        currentTime = int(helping.fromIso8601(helping.nowIso8601()).timestamp()) * 1_000_000
+        currentTime = helping.fromIso8601(helping.nowIso8601()).timestamp()
 
         for key, timestampStr in self.db.time.getItemIter():
             try:
 
-                timestamp = int(timestampStr)
+                timestamp = float(timestampStr)
 
                 windowSize, driftSkew = self.getWindowParameters(key)
 
@@ -213,10 +208,11 @@ class TimelinessCache:
     def processKrms(self):
         for said, serder in self.db.krms.getFullItemIter():
             try:
-                # assumes serder is a SerderKERI, more processing may be needed or addition of klas to db.krms
+                # assumes serder is a SerderKERI, more processing may be needed
                 if self.checkMessageTimeliness(serder):
-                    self.db.exns.pin(said, serder)
+                    # TODO: Implement escrowing functionality
                     self.db.krms.rem(said)
+                    logger.info(f"Message accepted: {serder.pretty()}")
             except kering.ValidationError as e:
                 logger.error(f"Invalid message: {e}")
             self.pruneCache()
@@ -231,7 +227,5 @@ class KramDoer(Doer):
         super(KramDoer, self).__init__()
 
     def recur(self, tyme):
+        # TODO: Implement KRAM escrowing functionality
         self.tc.processKrms()
-
-
-

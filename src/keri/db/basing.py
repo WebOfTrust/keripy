@@ -1304,10 +1304,19 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
 
+        # timeliness cache of identifiers (soon to also include message types)
         self.time = subing.IoSetSuber(db=self,
-                                      subkey='kram.',
-                                      schema=OobiRecord,
+                                      subkey='time.',
                                       sep=">")
+
+        # Window sizes and drift skews for specific identifiers (soon to also include message types)
+        self.kram = subing.IoSetSuber(db=self,
+                                      subkey='kram.',
+                                      sep=">",
+                                      )
+
+        # Timeliness cache of identifiers (soon to also include message types)
+        self.krms = subing.IoSetSuber(db=self, subkey='krms.', sep=">")
 
         self.reload()
 

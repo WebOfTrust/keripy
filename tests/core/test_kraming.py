@@ -1,6 +1,8 @@
+import pytest
 from keri.app import habbing
 from keri.core import kraming, serdering
 from keri.help import helping
+from keri import kering
 
 
 def test_timeliness(monkeypatch):
@@ -12,13 +14,15 @@ def test_timeliness(monkeypatch):
 
     with habbing.openHab(name="kramTest", base="test", salt=b'0123456789abcdeg') as (hby, hab):
 
-        tc = kraming.TimelinessCache(db=hby.db, defaultDriftSkew=1_000_000, defaultWindowSize=1_000_000)
+        tc = kraming.TimelinessCache(db=hby.db, defaultDriftSkew=1.0, defaultWindowSize=1.0)
 
-        assert tc.defaultWindowSize == 1_000_000
-        assert tc.defaultDriftSkew == 1_000_000
+        assert tc.defaultWindowSize == 1.0
+        assert tc.defaultDriftSkew == 1.0
 
-        def create_test_serder(ilk, timestamp=None, route=None, sourceAid=hab.pre,
-                               message_id="EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA", qBlock=None, routeParams=None):
+        # Set window parameters for the test AIDs
+        tc.setWindowParameters(hab.pre, windowSize=1.0, driftSkew=1.0)
+
+        def create_test_serder(ilk, timestamp=None, route=None, sourceAid=hab.pre, qBlock=None, routeParams=None):
             """Helper to create a test serder with specified parameters"""
             if timestamp is None:
                 timestamp = helping.nowIso8601()
@@ -42,43 +46,31 @@ def test_timeliness(monkeypatch):
 
         current_time = helping.nowIso8601()
 
-        routeParams = {"transaction_type": "credential"}
-
-        offerQBlock = {
-            "issuer": f"did:keri:{hab.pre}",
-            "output_descriptors": ["EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"],
-            "format": {"cesr": {"proof_type": ["Ed25519Signature2018"]}}
-        }
-
         offerSerder = create_test_serder(
             ilk="exn",
             timestamp=current_time,
             route="/credential/offer",
-            routeParams=routeParams,
-            qBlock=offerQBlock
         )
 
         # Cache first entry
-        isValid, reason = tc.checkMessageTimeliness(offerSerder)
-        assert isValid, f"Credential offer message should be valid, got: {reason}"
-        assert reason == "Message accepted, new entry"
+        isValid = tc.checkMessageTimeliness(offerSerder)
+        assert isValid
 
         def mockNowIso8601Later():
-            return "2021-06-27T21:26:24.233257+00:00"
+            return "2021-06-27T21:26:23.233258+00:00"
 
         monkeypatch.setattr(helping, "nowIso8601", mockNowIso8601Later)
 
         offerSerder2 = create_test_serder(ilk="exn", timestamp=mockNowIso8601Later(), route="/credential/offer",
-                           sourceAid="BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo")
+                                          sourceAid="BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo")
 
         # Cache new entry
-        isValid, reason = tc.checkMessageTimeliness(offerSerder2)
-        assert isValid, f"Credential offer message should be valid, got: {reason}"
-        assert reason == "Message accepted, new entry"
+        isValid = tc.checkMessageTimeliness(offerSerder2)
+        assert isValid
 
-        # Attempt to cache first entry again
-        isValid, reason = tc.checkMessageTimeliness(offerSerder)
-        assert not isValid, f"Credential offer message should be invalid, got: {reason}"
+        # Attempt to cache first entry again - this should now raise ValidationError
+        with pytest.raises(kering.ValidationError):
+            tc.checkMessageTimeliness(offerSerder)
 
         # Prune only the entry with a time outside the window
         assert tc.pruneCache() == 1
