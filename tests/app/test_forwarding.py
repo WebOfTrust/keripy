@@ -12,11 +12,12 @@ from hio.core import http
 
 from keri import core, kering, help
 from keri.core import coring, eventing, parsing, serdering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0
 
 from keri.app import forwarding, habbing, indirecting, storing
 
 from keri.peer import exchanging
+from keri.spac.essr import tsping
 
 
 def test_postman(seeder):
@@ -161,8 +162,8 @@ def test_essr_stream(seeder):
         texter = recpHby.db.essrs.get(essrSaidA)[0]
         ims = bytearray(recpHab.decrypt(texter.raw))
 
-        tag = recpHby.psr.extract(ims, coring.Tsper)
-        assert tag.tsp == coring.Tsps.SCS
+        tag = recpHby.psr.extract(ims, tsping.Tsper)
+        assert tag.tsp == tsping.Tsps.SCS
         pre = recpHby.psr.extract(ims, coring.Prefixer)
         assert pre.qb64 == hab.pre  # encrypt sender
         pad = recpHby.psr.extract(ims, coring.Bexter)
@@ -172,7 +173,7 @@ def test_essr_stream(seeder):
         texter = recpHby.db.essrs.get(essrSaidB)[0]
         ims = bytearray(recpHab.decrypt(texter.raw))
 
-        _tag = recpHby.psr.extract(ims, coring.Tsper)
+        _tag = recpHby.psr.extract(ims, tsping.Tsper)
         _pre = recpHby.psr.extract(ims, coring.Prefixer)
         _pad = recpHby.psr.extract(ims, coring.Bexter)
         recpHby.psr.parseOne(ims=ims)
@@ -264,8 +265,8 @@ def test_essr_mbx(seeder):
         texter = wesHby.db.essrs.get(essrSaidA)[0]
         ims = bytearray(wesHab.decrypt(texter.raw))
 
-        tag = wesHby.psr.extract(ims, coring.Tsper)
-        assert tag.tsp == coring.Tsps.SCS
+        tag = wesHby.psr.extract(ims, tsping.Tsper)
+        assert tag.tsp == tsping.Tsps.SCS
         pre = wesHby.psr.extract(ims, coring.Prefixer)
         assert pre.qb64 == hab.pre  # encrypt sender
         pad = wesHby.psr.extract(ims, coring.Bexter)
@@ -282,7 +283,7 @@ def test_essr_mbx(seeder):
         texter = wesHby.db.essrs.get(essrSaidB)[0]
         ims = bytearray(wesHab.decrypt(texter.raw))
 
-        _tag = wesHby.psr.extract(ims, coring.Tsper)
+        _tag = wesHby.psr.extract(ims, tsping.Tsper)
         _pre = wesHby.psr.extract(ims, coring.Prefixer)
         _pad = wesHby.psr.extract(ims, coring.Bexter)
         parser.parse(ims=ims)
