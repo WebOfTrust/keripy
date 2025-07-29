@@ -293,8 +293,8 @@ class Habery:
                 raise ValueError(f"Bran (passcode seed material) too short.")
             bran = coring.MtrDex.Salt_128 + 'A' + bran[:21]  # qb64 salt for seed
             signer = core.Salter(qb64=bran).signer(transferable=False,
-                                                     tier=tier,
-                                                     temp=temp)
+                                                   tier=tier,
+                                                   temp=temp)
             seed = signer.qb64
             if not aeid:  # aeid must not be empty event on initial creation
                 aeid = signer.verfer.qb64  # lest it remove encryption
@@ -912,10 +912,68 @@ class HaberyDoer(doing.Doer):
 
 
 class BaseHab:
+    """
+    Hab class provides a given idetnifier controller's local resource environment
+    i.e. hab or habitat. Includes dependency injection of database, keystore,
+    configuration file as well as Kevery and key store Manager..
+
+    Attributes: (Injected)
+        ks (keeping.Keeper): lmdb key store
+        db (basing.Baser): lmdb data base for KEL etc
+        cf (configing.Configer): config file instance
+        mgr (keeping.Manager): creates and rotates keys in key store
+        rtr (routing.Router): routes reply 'rpy' messages
+        rvy (routing.Revery): factory that processes reply 'rpy' messages
+        kvy (eventing.Kevery): factory for local processing of local event msgs
+        psr (parsing.Parser):  parses local messages for .kvy .rvy
+
+
+     Attributes:
+        name (str): alias of controller
+        pre (str): qb64 prefix of own local controller or None if new
+        temp (bool): True means testing:
+                     use weak level when salty algo for stretching in key creation
+                     for incept and rotate of keys for this hab.pre
+        inited (bool): True means fully initialized wrt databases.
+                          False means not yet fully initialized
+        delpre (str | None): delegator prefix if any else None
+
+    Properties:
+        kever (Kever): instance of key state of local controller
+        kevers (dict): of eventing.Kever instances from KELs in local db
+            keyed by qb64 prefix. Read through cache of of kevers of states for
+            KELs in db.states
+        iserder (serdering.SerderKERI): own inception event
+        prefixes (OrderedSet): local prefixes for .db
+        accepted (bool): True means accepted into local KEL.
+                          False otherwise
+
+    """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
                  name='test', ns=None, pre=None, temp=False):
+        """
+        Initialize instance.
 
+        Injected Parameters:  (injected dependencies)
+            ks (keeping.Keeper): lmdb key store
+            db (basing.Baser): lmdb data base for KEL etc
+            cf (configing.Configer): config file instance
+            mgr (keeping.Manager): creates and rotates keys in key store
+            rtr (routing.Router): routes reply 'rpy' messages
+            rvy (routing.Revery): factory that processes reply 'rpy' messages
+            kvy (eventing.Kevery): factory for local processing of local event msgs
+            psr (parsing.Parser):  parses local messages for .kvy .rvy
+
+
+        Parameters:
+            name (str): alias name for local controller of habitat
+            pre (str | None): qb64 identifier prefix of own local controller else None
+            temp (bool): True means testing:
+                use weak level when salty algo for stretching in key creation
+                for incept and rotate of keys for this hab.pre
+
+        """
         self.db = db  # injected
         self.ks = ks  # injected
         self.cf = cf  # injected
@@ -934,7 +992,34 @@ class BaseHab:
         self.delpre = None  # assigned laster if delegated
 
     def make(self, DnD, code, data, delpre, estOnly, isith, verfers, nsith, digers, toad, wits):
+        """
+        Creates Serder of inception event for provided parameters.
+        Assumes injected dependencies were already setup.
 
+        Parameters:
+            isith (int | str | list | None): incepting signing threshold as
+                    int, str hex, or list weighted if any, otherwise compute
+                    default from verfers
+            code (str): prefix derivation code default Blake3
+            nsith (int, str, list | None ): next signing threshold as int,
+                str hex or list weighted if any, otherwise compute default from
+                digers
+            verfers (list[Verfer]): Verfer instances for initial signing keys
+            digers  (list[Diger] | None) Diger instances for next key digests
+            toad (int |str| None): int or str hex of witness threshold if
+                specified else compute default based on number of wits (backers)
+            wits (list | None): qb64 prefixes of witnesses if any
+            delpre (str | None): qb64 of delegator identifier prefix if any
+            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
+                which means only establishment events allowed in KEL for this Hab
+                False (default) means allows non-est events and no trait is added.
+            DnD (bool): True means add trait of eventing.TraitDex.DnD which
+                    means do not allow delegated identifiers from this identifier
+                    False (default) means do allow and no trait is added.
+
+            data (list | None): seal dicts
+
+        """
         icount = len(verfers)
         ncount = len(digers) if digers is not None else 0
         if isith is None:  # compute default
@@ -983,6 +1068,45 @@ class BaseHab:
                           val=self.pre)
 
     def reconfigure(self):
+        """Apply configuration from config file managed by .cf. to this Hab.
+        Assumes that .pre and signing keys have been setup in order to create
+        own endpoint auth when provided in .cf.
+
+        config file  json or hjon
+
+        {
+          "dt": "2021-01-01T00:00:00.000000+00:00",
+          "nel":
+          {
+            "dt": "2021-01-01T00:00:00.000000+00:00",
+            "curls":
+            [
+              "tcp://localhost:5621/"
+            ]
+          },
+          "iurls":
+          [
+            "tcp://localhost:5620/?role=peer&name=tam"
+          ],
+          "durls":
+          [
+            "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
+            "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi",
+          ],
+          "wurls":
+          [
+            "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
+          ]
+        }
+
+
+
+        Config file is meant to be read only at init not changed by app at
+        run time. Any dynamic app changes must go in database not config file
+        that way we don't have to worry about multiple writers of cf.
+        Use config file to preload database not as a database. Config file may
+        have named sections for Habery or individual Habs as needed.
+        """
 
         conf = self.cf.get()
         if self.name not in conf:
@@ -1008,6 +1132,9 @@ class BaseHab:
 
     @property
     def iserder(self):
+        """
+        Return serder of inception event
+        """
         if (dig := self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))) is None:
             raise kering.ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
@@ -1018,6 +1145,9 @@ class BaseHab:
 
     @property
     def kevers(self):
+        """
+        Returns .db.kevers
+        """
         return self.db.kevers
 
     @property
@@ -1026,17 +1156,44 @@ class BaseHab:
 
     @property
     def kever(self):
+        """
+        Returns kever for its .pre
+        """
         return self.kevers[self.pre] if self.accepted else None
 
     @property
     def prefixes(self):
+        """
+        Returns .db.prefixes
+        """
         return self.db.prefixes
 
     def incept(self, **kwa):
+        """Alias for .make """
         self.make(**kwa)
 
     def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None, toad=None, cuts=None, adds=None,
                data=None):
+        """
+        Perform rotation operation. Register rotation in database.
+        Returns: bytearrayrotation message with attached signatures.
+
+        Parameters:
+            verfers (list | None): Verfer instances of public keys qb64
+            digers (list | None): Diger instances of public next key digests qb64
+            isith (int |str | None): current signing threshold as int or str hex
+                                     or list of str weights
+                                     default is prior next sith
+            nsith (int |str | None): next, next signing threshold as int
+                                     or str hex or list of str weights
+                                     default is based on isith when None
+            toad (int | str | None): hex of witness threshold after cuts and adds
+            cuts (list | None): of qb64 pre of witnesses to be removed from witness list
+            adds (list | None): of qb64 pre of witnesses to be added to witness list
+            data (list | None): of dicts of committed data such as seals
+
+
+        """
         # recall that kever.pre == self.pre
         kever = self.kever  # before rotation kever is prior next
 
@@ -1108,6 +1265,10 @@ class BaseHab:
         return msg
 
     def interact(self, *, data=None):
+        """
+        Perform interaction operation. Register interaction in database.
+        Returns: bytearray interaction message with attached signatures.
+        """
         kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
@@ -1130,6 +1291,26 @@ class BaseHab:
 
 
     def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
+        """Sign given serialization ser using appropriate keys.
+        Use provided verfers or .kever.verfers to lookup keys to sign.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            verfers (list[Verfer] | None): Verfer instances to get pub verifier
+                keys to lookup private siging keys.
+                verfers None means use .kever.verfers. Assumes that when group
+                and verfers is not None then provided verfers must be .kever.verfers
+            indexed (bool): When not mhab then
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+            indices (list[int] | None): indices (offsets)
+                when indexed == True. See Manager.sign
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True. See Manager.sign
+
+        """
         if verfers is None:
             verfers = self.kever.verfers  # when group these provide group signing keys
 
@@ -1141,6 +1322,18 @@ class BaseHab:
 
 
     def decrypt(self, ser, verfers=None, **kwa):
+        """Decrypt given serialization ser using appropriate keys.
+        Use provided verfers or .kever.verfers to lookup keys to sign.
+
+        Parameters:
+            ser (str | bytes | bytearray | memoryview): serialization to decrypt
+
+            verfers (list[Verfer] | None): Verfer instances to get pub verifier
+                keys to lookup and convert to private decryption keys.
+                verfers None means use .kever.verfers. Assumes that when group
+                and verfers is not None then provided verfers must be .kever.verfers
+
+        """
         if verfers is None:
             verfers = self.kever.verfers  # when group these provide group signing keys
 
@@ -1150,6 +1343,18 @@ class BaseHab:
 
 
     def query(self, pre, src, query=None, **kwa):
+        """ Create, sign and return a `qry` message against the attester for the prefix
+
+        Parameters:
+            pre (str): qb64 identifier prefix being queried for
+            src (str): qb64 identifier prefix of attester being queried
+            query (dict): addition query modifiers to include in `q`
+            **kwa (dict): keyword arguments passed to eventing.query
+
+        Returns:
+            bytearray: signed query event
+
+        """
 
         query = query if query is not None else dict()
         query['i'] = pre
@@ -1158,7 +1363,19 @@ class BaseHab:
         return self.endorse(serder, last=True)
 
     def endorse(self, serder, last=False, pipelined=True):
+        """
+        Returns msg with own endorsement of msg from serder with attached signature
+        groups based on own pre transferable or non-transferable.
 
+        Parameters:
+            serder (Serder): instance of msg
+            last (bool): True means use SealLast. False means use SealEvent
+                         query messages use SealLast
+            pipelined (bool): True means use pipelining attachment code
+
+        Useful for endorsing message when provided via serder such as state,
+        reply, query or similar.
+        """
         if self.kever.prefixer.transferable:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign
@@ -1197,6 +1414,12 @@ class BaseHab:
                  modifiers=None,
                  embeds=None,
                  save=False):
+        """
+        Returns signed exn, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
+        # sign serder event
 
         serder, end = exchanging.exchange(route=route,
                                           payload=payload,
@@ -1222,6 +1445,11 @@ class BaseHab:
         return msg
 
     def receipt(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
         ked = serder.ked
         reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
@@ -1245,6 +1473,17 @@ class BaseHab:
 
 
     def witness(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and witness
+        indexed receipt signatures if key state of serder.pre shows that own pre
+        is a current witness of event in serder
+
+        ToDo XXXX add parameter to force check that serder as been accepted
+        as valid. Otherwise must assume that before calling this that serder
+        being witnessed has been accepted as valid event into this hab
+        controller's KEL
+
+        """
         if self.kever.prefixer.transferable:  # not non-transferable prefix
             raise ValueError("Attempt to create witness receipt with"
                              " transferable pre={}.".format(self.pre))
@@ -1276,6 +1515,16 @@ class BaseHab:
 
 
     def replay(self, pre=None, fn=0):
+        """
+        Returns replay of FEL first seen event log for pre starting from fn
+        Default pre is own .pre
+
+        Parameters:
+            pre is qb64 str or bytes of identifier prefix.
+                default is own .pre
+            fn is int first seen ordering number
+
+        """
         if not pre:
             pre = self.pre
 
@@ -1290,12 +1539,27 @@ class BaseHab:
         return msgs
 
     def replayAll(self):
+        """
+        Returns replay of FEL first seen event log for all pre starting at key
+
+        Parameters:
+            key (bytes): fnKey(pre, fn)
+
+        """
         msgs = bytearray()
         for msg in self.db.cloneAllPreIter():
             msgs.extend(msg)
         return msgs
 
     def makeOtherEvent(self, pre, sn):
+        """
+        Returns: messagized bytearray message with attached signatures of
+                 own event at sequence number sn from retrieving event at sn
+                 and associated signatures from database.
+
+        Parameters:
+            sn is int sequence number of event
+        """
         if pre not in self.kevers:
             return None
 
@@ -1314,33 +1578,103 @@ class BaseHab:
         return msg
 
     def fetchEnd(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            endpoint (basing.EndpointRecord): instance or None
+        """
         return self.db.ends.get(keys=(cid, role, eid))
 
     def fetchLoc(self, eid: str, scheme: str = kering.Schemes.http):
+        """
+        Returns:
+            location (basing.LocationRecord): instance or None
+        """
         return self.db.locs.get(keys=(eid, scheme))
 
     def fetchEndAllowed(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            allowed (bool): True if eid is allowed as endpoint provider for cid
+                          in role. False otherwise.
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+            eid (str): identifier prefix qb64 of endpoint provider in role
+        """
         end = self.db.ends.get(keys=(cid, role, eid))
         return end.allowed if end else None
 
     def fetchEndEnabled(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            allowed (bool): True if eid is allowed as endpoint provider for cid
+                          in role. False otherwise.
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+            eid (str): identifier prefix qb64 of endpoint provider in role
+        """
         end = self.db.ends.get(keys=(cid, role, eid))
         return end.enabled if end else None
 
     def fetchEndAuthzed(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            allowed (bool): True if eid is allowed as endpoint provider for cid
+                          in role. False otherwise.
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+            eid (str): identifier prefix qb64 of endpoint provider in role
+        """
         end = self.db.ends.get(keys=(cid, role, eid))
         return (end.enabled or end.allowed) if end else None
 
     def fetchUrl(self, eid: str, scheme: str = kering.Schemes.http):
+        """
+        Returns:
+            url (str): for endpoint provider given by eid
+                       empty string when url is nullified
+                       None when no location record
+        """
         loc = self.db.locs.get(keys=(eid, scheme))
         return loc.url if loc else loc
 
     def fetchUrls(self, eid: str, scheme: str = ""):
+        """
+        Returns:
+           surls (hicting.Mict): urls keyed by scheme for given eid. Assumes that
+                user independently verifies that the eid is allowed for a
+                given cid and role. If url is empty then does not return
+
+        Parameters:
+            eid (str): identifier prefix qb64 of endpoint provider
+            scheme (str): url scheme
+        """
         return hicting.Mict([(keys[1], loc.url) for keys, loc in
                              self.db.locs.getItemIter(keys=(eid, scheme)) if loc.url])
 
     def fetchRoleUrls(self, cid: str, *, role: str = "", scheme: str = "",
                       eids=None, enabled: bool = True, allowed: bool = True):
+        """
+        Returns:
+           rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
+                        role for a given cid. Each value in rurls is eurls dict
+                        keyed by the eid of authorized endpoint provider and
+                        each value in eurls is a surls dict keyed by scheme
+
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+            scheme (str): url scheme
+            eids (list): when provided restrict returns to only eids in eids
+            enabled (bool): True means fetch any allowed witnesses as well
+            allowed (bool): True means fetech any enabled witnesses as well
+        """
         if eids is None:
             eids = []
 
@@ -1366,6 +1700,24 @@ class BaseHab:
 
     def fetchWitnessUrls(self, cid: str, scheme: str = "", eids=None,
                          enabled: bool = True, allowed: bool = True):
+        """
+        Fetch witness urls for witnesses of cid at latest key state or enabled or
+        allowed witnesses if not a witness at latest key state.
+
+        Returns:
+           rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
+                        role for a given cid. Each value in rurls is eurls dict
+                        dict keyed by the eid of authorized endpoint provider and
+                        each value in eurls is a surls dict keyed by scheme
+
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid is witness
+            scheme (str): url scheme
+            eids (list): when provided restrict returns to only eids in eids
+            enabled (bool): True means fetch any allowed witnesses as well
+            allowed (bool): True means fetech any enabled witnesses as well
+        """
         return (self.fetchRoleUrls(cid=cid,
                                    role=kering.Roles.witness,
                                    scheme=scheme,
@@ -1374,6 +1726,15 @@ class BaseHab:
                                    allowed=allowed))
 
     def endsFor(self, pre):
+        """ Load Authroized endpoints for provided AID
+
+        Args:
+            pre (str): qb64 aid for which to load ends
+
+        Returns:
+            dict: nest dict of Roles -> eid -> Schemes -> endpoints
+
+        """
         ends = dict()
 
         for (_, erole, eid), end in self.db.ends.getItemIter(keys=(pre,)):
@@ -1403,9 +1764,34 @@ class BaseHab:
         return ends
 
     def reply(self, **kwa):
+        """
+        Returns:
+            msg (bytearray): reply message
+
+        Parameters:
+            route is route path string that indicates data flow handler (behavior)
+                to processs the reply
+            data is list of dicts of comitted data such as seals
+            dts is date-time-stamp of message at time or creation
+            version is Version instance
+            kind is serialization kind
+        """
         return self.endorse(eventing.reply(**kwa))
 
     def makeEndRole(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
+        """
+        Returns:
+            msg (bytearray): reply message allowing/disallowing endpoint provider
+               eid in role
+
+        Parameters:
+            eid (str): qb64 of endpoint provider to be authorized
+            role (str): authorized role for eid
+            allow (bool): True means add eid at role as authorized
+                          False means cut eid at role as unauthorized
+            stamp (str): date-time-stamp RFC-3339 profile of iso8601 datetime.
+                          None means use now.
+        """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
         return self.reply(route=route, data=data, stamp=stamp)
@@ -1442,11 +1828,43 @@ class BaseHab:
         return msgs
 
     def makeLocScheme(self, url, eid=None, scheme="http", stamp=None):
+        """
+        Returns:
+           msg (bytearray): reply message of own url service endpoint at scheme
+
+        Parameters:
+            url (str): url of endpoint, may have scheme missing or not
+                       If url is empty then nullifies location
+            eid (str): qb64 of endpoint provider to be authorized
+            scheme (str): url scheme must matche scheme in url if any
+            stamp (str): date-time-stamp RFC-3339 profile of iso8601 datetime.
+                          None means use now.
+
+        """
         eid = eid if eid is not None else self.pre
         data = dict(eid=eid, scheme=scheme, url=url)
         return self.reply(route="/loc/scheme", data=data, stamp=stamp)
 
     def replyLocScheme(self, eid, scheme=""):
+        """
+        Returns a reply message stream composed of entries authed by the given
+        eid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
+
+        eid and not scheme then:
+            loc url for all schemes at eid
+
+        eid and scheme then:
+            loc url for scheme at eid
+
+        Parameters:
+            eid (str): endpoint provider id
+            scheme (str): url scheme
+        """
         msgs = bytearray()
 
         urls = self.fetchUrls(eid=eid, scheme=scheme)
@@ -1486,6 +1904,40 @@ class BaseHab:
         return msgs
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=""):
+
+        """
+        Returns a reply message stream composed of entries authed by the given
+        cid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
+
+        cid and not role and not scheme then:
+            end authz for all eids in all roles and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
+
+        cid and not role and scheme then:
+            end authz for all eid in all roles and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
+
+        cid and role and not scheme then:
+            end authz for all eid in role and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
+
+        cid and role and scheme then:
+            end authz for all eid in role and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
+
+
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid is witness
+            role (str): authorized role for eid
+            eids (list): when provided restrict returns to only eids in eids
+            scheme (str): url scheme
+        """
         msgs = bytearray()
 
         if eids is None:
@@ -1518,9 +1970,39 @@ class BaseHab:
         return msgs
 
     def replyToOobi(self, aid, role, eids=None):
+        """
+        Returns a reply message stream composed of entries authed by the given
+        aid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting oobi initiated endpoint
+        discovery. Future is to use identity constraint graph to constrain
+        discovery of whom by whom.
+
+        This method is entry point for initiating replies generated by
+        .replyEndRole and/or .replyLocScheme
+
+        Parameters:
+            aid (str): qb64 of identifier in oobi, may be cid or eid
+            role (str): authorized role for eid
+            eids (list): when provided restrict returns to only eids in eids
+
+        """
+        # default logic is that if self.pre is witness of aid and has a loc url
+        # for self then reply with loc scheme for all witnesses even if self
+        # not permiteed in .habs.oobis
         return self.replyEndRole(cid=aid, role=role, eids=eids)
 
     def getOwnEvent(self, sn, allowPartiallySigned=False):
+        """
+        Returns: message Serder and controller signatures of
+                 own event at sequence number sn from retrieving event at sn
+                 and associated signatures from database.
+
+        Parameters:
+            sn (int): is int sequence number of event
+            allowPartiallySigned(bool): True means attempt to load from partial signed escrow
+        """
         key = dbing.snKey(self.pre, sn)
         dig = self.db.getKeLast(key)
         if dig is None and allowPartiallySigned:
@@ -1543,6 +2025,16 @@ class BaseHab:
         return serder, sigs, couple
 
     def makeOwnEvent(self, sn, allowPartiallySigned=False):
+        """
+        Returns: messagized bytearray message with attached signatures of
+                 own event at sequence number sn from retrieving event at sn
+                 and associated signatures from database.
+
+        Parameters:
+            sn(int): is int sequence number of event
+            allowPartiallySigned(bool): True means attempt to load from partial signed escrow
+
+        """
         msg = bytearray()
         serder, sigs, couple = self.getOwnEvent(sn=sn,
                                                 allowPartiallySigned=allowPartiallySigned)
@@ -1560,15 +2052,33 @@ class BaseHab:
         return msg
 
     def makeOwnInception(self, allowPartiallySigned=False):
+        """
+        Returns: messagized bytearray message with attached signatures of
+                 own inception event by retrieving event and signatures
+                 from database.
+        """
         return self.makeOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned)
 
     def processCues(self, cues):
+        """
+        Returns bytearray of messages as a result of processing all cues
+
+        Parameters:
+           cues is deque of cues
+        """
         msgs = bytearray()  # outgoing messages
         for msg in self.processCuesIter(cues):
             msgs.extend(msg)
         return msgs
 
     def processCuesIter(self, cues):
+        """
+        Iterate through cues and yields one or more msgs for each cue.
+
+        Parameters:
+            cues is deque of cues
+
+        """
         while cues:  # iteratively process each cue in cues
             msgs = bytearray()
             cue = cues.pull()  # cues.popleft()
@@ -1610,6 +2120,20 @@ class BaseHab:
                 route = cue["route"]
                 msg = self.reply(data=data, route=route)
                 yield msg
+
+            # ToDo XXXX cue for kin = "query" various types of queries
+            #     (query witness, query delegation etc)
+            # ToDo XXXX cue for kin = "notice" new event
+            # ToDo XXXX cue for kin = "witness" to create witness receipt own is witness
+            # ToDo XXXX cue for kin = "noticeBadCloneFN"
+            # ToDo XXXX cue for kin = "approveDelegation" own is delegator
+
+            # ToDo XXXX cue for kin = "keyStateSaved"
+            # ToDo XXXX cue for kin = "psUnescrow"
+            # ToDo XXXX cue for kin = "stream"
+            # ToDo XXXX cue for kin = "invalid"
+            # ToDo XXXX cue for kin=""remoteMemberedSig""
+
 
     def witnesser(self):
         return True
