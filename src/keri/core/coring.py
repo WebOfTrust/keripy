@@ -2763,9 +2763,9 @@ class Verser(Tagger):
 
 
 # Trust Spanning Protocol protocol packet (message) types
-Tspage = namedtuple("Tspage", 'HOP REL SCS')
+Tspage = namedtuple("Tspage", 'HOP RFI RFA RFD SCS')
 
-Tsps = Tspage(HOP='HOP', REL='REL', SCS='SCS')
+Tsps = Tspage(HOP='HOP', RFI='RFI', RFA='RFA', RFD='RFD', SCS='SCS')
 
 
 class Tsper(Tagger):
