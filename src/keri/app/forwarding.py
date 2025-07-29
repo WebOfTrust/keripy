@@ -18,6 +18,7 @@ from keri.core import coring, eventing, serdering, MtrDex, Counter, Codens
 from keri.db import dbing
 from keri.kering import Roles
 from keri.peer import exchanging
+from keri.spac.essr import tsping
 
 logger = ogler.getLogger()
 
@@ -280,7 +281,7 @@ class StreamPoster:
         msg = bytearray()
 
         if self.essr:
-            msg.extend(coring.Tsper(tsp=coring.Tsps.SCS).qb64b)
+            msg.extend(tsping.Tsper(tsp=tsping.Tsps.SCS).qb64b)
             msg.extend(self.hab.kever.prefixer.qb64b)
 
             # bext field can be randomized to reduce correlation based on packet size, empty for now
@@ -414,7 +415,7 @@ class StreamPoster:
         if self.mbx and owits.intersection(hab.prefixes):
             # Remove again if ESSR mode
             if self.essr:
-                _tag = self.hby.psr.extract(msg, coring.Tsper)
+                _tag = self.hby.psr.extract(msg, tsping.Tsper)
                 _pre = self.hby.psr.extract(msg, coring.Prefixer)
                 _pad = self.hby.psr.extract(msg, coring.Bexter)
             self.mbx.storeMsg(topic=f"{self.recp}/{topic}".encode("utf-8"), msg=msg)
