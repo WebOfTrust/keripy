@@ -2852,52 +2852,8 @@ def test_acdc_examples_JSON():
                             "s": {"description": "Far Node Schema SAID", "type": "string"},
                             "o": {"description": "Edge Group M-ary Operator", "type": "string"},
                             "w": {"description": "Edge Group Weight", "type": "number"},
-                            "research":
-                            {
-                                "description": "Research Edge",
-                                "oneOf":
-                                [
-                                  {"description": "Edge SAID", "type": "string"},
-                                  {
-                                    "description": "Edge Detail",
-                                    "type": "object",
-                                    "required": ["d", "n"],
-                                    "properties":
-                                    {
-                                      "d": {"description": "Edge SAID", "type": "string"},
-                                      "u": {"description": "Edge UUID", "type": "string"},
-                                      "n": {"description": "Far Node SAID", "type": "string"},
-                                      "s": {"description": "Far Node Schema SAID", "type": "string"},
-                                      "o": {"description": "Edge Unary Operator", "type": "string"},
-                                      "w": {"description": "Edge Weight", "type": "number"},
-                                    },
-                                    "additionalProperties": False
-                                  }
-                                ]
-                              },
-                              "project":
-                              {
-                                "description": "Project Edge",
-                                "oneOf":
-                                [
-                                  {"description": "Edge SAID", "type": "string"},
-                                  {
-                                    "description": "Edge Detail",
-                                    "type": "object",
-                                    "required": ["d", "n"],
-                                    "properties":
-                                    {
-                                      "d": {"description": "Edge SAID", "type": "string"},
-                                      "u": {"description": "Edge UUID", "type": "string"},
-                                      "n": {"description": "Far Node SAID", "type": "string"},
-                                      "s": {"description": "Far Node Schema SAID", "type": "string"},
-                                      "o": {"description": "Edge Unary Operator", "type": "string"},
-                                      "w": {"description": "Edge Weight", "type": "number"},
-                                    },
-                                    "additionalProperties": False
-                                  }
-                                ]
-                              }
+                            "research": {"description": "Far Node SAID", "type": "string"},
+                            "project": {"description": "Far Node SAID", "type": "string"},
                         },
                         "additionalProperties": False
                     }
@@ -2941,10 +2897,10 @@ def test_acdc_examples_JSON():
         "additionalProperties": False
     }
 
-    simpleMainSchemaSaid = 'EFo-IGT1E0yYQZXf0DT2MpqVYJc4UyZO168rljZfuAtL'
+    simpleMainSchemaSaid = 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk'
     simpleMainSchemaMad = \
     {
-        '$id': 'EFo-IGT1E0yYQZXf0DT2MpqVYJc4UyZO168rljZfuAtL',
+        '$id': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'title': 'Transcript Schema',
         'description': 'Transcript JSON Schema for acm ACDC.',
@@ -3041,52 +2997,8 @@ def test_acdc_examples_JSON():
                                     "s": {"description": "Far Node Schema SAID", "type": "string"},
                                     "o": {"description": "Edge Group M-ary Operator", "type": "string"},
                                     "w": {"description": "Edge Group Weight", "type": "number"},
-                                    "research":
-                                    {
-                                        "description": "Research Edge",
-                                        "oneOf":
-                                        [
-                                          {"description": "Edge SAID", "type": "string"},
-                                          {
-                                            "description": "Edge Detail",
-                                            "type": "object",
-                                            "required": ["d", "n"],
-                                            "properties":
-                                            {
-                                              "d": {"description": "Edge SAID", "type": "string"},
-                                              "u": {"description": "Edge UUID", "type": "string"},
-                                              "n": {"description": "Far Node SAID", "type": "string"},
-                                              "s": {"description": "Far Node Schema SAID", "type": "string"},
-                                              "o": {"description": "Edge Unary Operator", "type": "string"},
-                                              "w": {"description": "Edge Weight", "type": "number"},
-                                            },
-                                            "additionalProperties": False
-                                          }
-                                        ]
-                                      },
-                                      "project":
-                                      {
-                                        "description": "Project Edge",
-                                        "oneOf":
-                                        [
-                                          {"description": "Edge SAID", "type": "string"},
-                                          {
-                                            "description": "Edge Detail",
-                                            "type": "object",
-                                            "required": ["d", "n"],
-                                            "properties":
-                                            {
-                                              "d": {"description": "Edge SAID", "type": "string"},
-                                              "u": {"description": "Edge UUID", "type": "string"},
-                                              "n": {"description": "Far Node SAID", "type": "string"},
-                                              "s": {"description": "Far Node Schema SAID", "type": "string"},
-                                              "o": {"description": "Edge Unary Operator", "type": "string"},
-                                              "w": {"description": "Edge Weight", "type": "number"},
-                                            },
-                                            "additionalProperties": False
-                                          }
-                                        ]
-                                      }
+                                    "research": {"description": "Far Node SAID", "type": "string"},
+                                    "project": {"description": "Far Node SAID", "type": "string"},
                                 },
                                 "additionalProperties": False
                             }
@@ -3123,8 +3035,6 @@ def test_acdc_examples_JSON():
     assert mapper.said == simpleMainSchemaSaid
     assert mapper.mad == simpleMainSchemaMad
 
-
-
     iSimpleEdgeMad = \
     {
         'd': '',
@@ -3133,38 +3043,22 @@ def test_acdc_examples_JSON():
         "reports":
         {
             "o": "OR",
-            "research":
-            {
-              "n": rReportSaid,
-              "o": "NI2I"
-            },
-            "project":
-            {
-              "n": pReportSaid,
-              "o": "NI2I"
-            }
+            "research": rReportSaid,
+            "project": pReportSaid
         }
     }
 
-    simpleEdgeSaid = 'EBh76xs_3LPrFAO4vr6HQ8nloUNmTxokF794t4k0zXoL'
+    simpleEdgeSaid = 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3'
     simpleEdgeCMad = \
     {
-        'd': 'EBh76xs_3LPrFAO4vr6HQ8nloUNmTxokF794t4k0zXoL',
+        'd': 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
         'accreditation': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
         'reports':
         {
             'o': 'OR',
-            'research':
-            {
-                'n': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
-                'o': 'NI2I'
-            },
-            'project':
-            {
-                'n': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
-                'o': 'NI2I'
-            }
+             'research': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+             'project': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53'
         }
     }
 
@@ -3173,15 +3067,15 @@ def test_acdc_examples_JSON():
     assert compactor.mad == simpleEdgeCMad
 
 
-    simpleMainSaid = 'EIEMzzjPBDAPDVfstoeIz6pE4UUS8E3jqpNP_F-vjZlw'
+    simpleMainSaid = 'EOL_04odE3nFubkoZMWPWlrSkJYofXTWh0qH3MicXC7C'
     simpleMainSad = \
     {
-        'v': 'ACDCCAACAAJSONAAOl.',
-        'd': 'EIEMzzjPBDAPDVfstoeIz6pE4UUS8E3jqpNP_F-vjZlw',
+        'v': 'ACDCCAACAAJSONAAOD.',
+        'd': 'EOL_04odE3nFubkoZMWPWlrSkJYofXTWh0qH3MicXC7C',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdl',
         'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
         'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
-        's': 'EFo-IGT1E0yYQZXf0DT2MpqVYJc4UyZO168rljZfuAtL',
+        's': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
         'a':
         {
             'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
@@ -3200,26 +3094,18 @@ def test_acdc_examples_JSON():
         },
         'e':
         {
-            'd': 'EBh76xs_3LPrFAO4vr6HQ8nloUNmTxokF794t4k0zXoL',
+            'd': 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3',
             'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
             'accreditation': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
             'reports':
             {
                 'o': 'OR',
-                'research':
-                {
-                    'n': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
-                    'o': 'NI2I'
-                },
-                'project':
-                {
-                    'n': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
-                    'o': 'NI2I'
-                }
+                'research': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+                'project': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53'
             }
         },
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
-    }
+        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'}
+
 
     serder = acdcmap(issuer=bob, ilk=None, uuid=uuids[14], regid=rd3,
                      schema=simpleMainSchemaSaid, attribute=mainAttrMad,
@@ -3230,16 +3116,15 @@ def test_acdc_examples_JSON():
     simpleMainCSad = \
     {
         'v': 'ACDCCAACAAJSONAAGg.',
-        'd': 'EIEMzzjPBDAPDVfstoeIz6pE4UUS8E3jqpNP_F-vjZlw',
+        'd': 'EOL_04odE3nFubkoZMWPWlrSkJYofXTWh0qH3MicXC7C',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdl',
         'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
         'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
-        's': 'EFo-IGT1E0yYQZXf0DT2MpqVYJc4UyZO168rljZfuAtL',
+        's': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
         'a': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'e': 'EBh76xs_3LPrFAO4vr6HQ8nloUNmTxokF794t4k0zXoL',
+        'e': 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3',
         'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
     }
-
 
     serder = acdcmap(issuer=bob, ilk=None, uuid=uuids[14], regid=rd3,
                      schema=simpleMainSchemaSaid, attribute=mainAttrMad,
