@@ -450,7 +450,7 @@ def test_acdc_registry_examples_JSON():
         'n': '0',
         'dt': '2025-07-04T17:50:00.000000+00:00'
     }
-    rd0 = serder.said
+    regAmy = rd0 = serder.said
     assert rd0 == "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
 
     # Registry1 test default kind JSON uuid1 Stamp1
@@ -466,7 +466,7 @@ def test_acdc_registry_examples_JSON():
         'n': '0',
         'dt': '2025-07-04T17:51:00.000000+00:00'
     }
-    rd1 = serder.said
+    regBob = rd1 = serder.said
     assert rd1 == "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
 
     # Registry2 test default kind JSON uuid2 Stamp2
@@ -482,7 +482,7 @@ def test_acdc_registry_examples_JSON():
         'n': '0',
         'dt': '2025-07-04T17:52:00.000000+00:00'
     }
-    rd2 = serder.said
+    regCal = rd2 = serder.said
     assert rd2 == "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
 
     # Registry3 test default kind JSON uuid3 Stamp3
@@ -498,7 +498,7 @@ def test_acdc_registry_examples_JSON():
         'n': '0',
         'dt': '2025-07-04T17:53:00.000000+00:00'
     }
-    rd3 = serder.said
+    regDeb = rd3 = serder.said
     assert rd3 == "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
 
 
@@ -1554,10 +1554,10 @@ def test_acdc_examples_JSON():
     raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
     uuids = [Noncer(raw=raw).qb64 for raw in raws]
 
-    rd0 = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
-    rd1 = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
-    rd2 = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
-    rd3 = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+    regAmy = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
+    regBob = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+    regCal = "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
+    regDeb = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
 
     kind = Kinds.json
 
@@ -1845,15 +1845,15 @@ def test_acdc_examples_JSON():
     assert mapper.said == accredSchemaSaid
     assert mapper.mad == accredSchemaMad
 
-    accredSaid = 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp'
+    accredSaid = 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi'
     accredSad = \
     {
         'v': 'ACDCCAACAAJSONAAKX.',
         't': 'acm',
-        'd': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+        'd': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdh',
         'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
-        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
+        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
         's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
         'a':
         {
@@ -1872,7 +1872,7 @@ def test_acdc_examples_JSON():
         }
     }
 
-    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=rd0, schema=accredSchemaSaid,
+    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=regCal, schema=accredSchemaSaid,
                      attribute=accrAttrMad, issuee=amy, rule=ruleMad)
     assert serder.said == accredSaid
     assert serder.sad == accredSad
@@ -1881,16 +1881,16 @@ def test_acdc_examples_JSON():
     {
         'v': 'ACDCCAACAAJSONAAF3.',
         't': 'acm',
-        'd': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+        'd': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdh',
         'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
-        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
+        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
         's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
         'a': 'EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL',
         'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
     }
 
-    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=rd0, schema=accredSchemaSaid,
+    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=regCal, schema=accredSchemaSaid,
                      attribute=accrAttrMad, issuee=amy, rule=ruleMad, compactify=True)
     assert serder.said == accredSaid
     assert serder.sad == accredCSad
@@ -2073,15 +2073,15 @@ def test_acdc_examples_JSON():
     assert compactor.said == rrptSaid
     assert compactor.mad == rrptMad
 
-    rReportSaid = 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU'
+    rReportSaid = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'
     rReportSad = \
     {
         'v': 'ACDCCAACAAJSONAAK4.',
         't': 'acm',
-        'd': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+        'd': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdi',
         'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
+        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
         's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
         'a':
         {
@@ -2098,7 +2098,7 @@ def test_acdc_examples_JSON():
         }
     }
 
-    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=rd1, schema=reportSchemaSaid,
+    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=regDeb, schema=reportSchemaSaid,
                      attribute=rrptMad, rule=ruleMad)
     assert serder.said == rReportSaid
     assert serder.sad == rReportSad
@@ -2107,16 +2107,16 @@ def test_acdc_examples_JSON():
     {
         'v': 'ACDCCAACAAJSONAAF3.',
         't': 'acm',
-        'd': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+        'd': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdi',
         'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
+        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
         's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
         'a': 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-',
         'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
     }
 
-    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=rd1, schema=reportSchemaSaid,
+    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=regDeb, schema=reportSchemaSaid,
                      attribute=rrptMad, rule=ruleMad, compactify=True)
     assert serder.said == rReportSaid
     assert serder.sad == rReportCSad
@@ -2146,15 +2146,15 @@ def test_acdc_examples_JSON():
     assert compactor.said == prptSaid
     assert compactor.mad == prptMad
 
-    pReportSaid = 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53'
+    pReportSaid = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
     pReportSad = \
     {
         'v': 'ACDCCAACAAJSONAAKt.',
         't': 'acm',
-        'd': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
+        'd': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdj',
         'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
+        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
         's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
         'a':
         {
@@ -2171,7 +2171,7 @@ def test_acdc_examples_JSON():
         }
     }
 
-    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=rd2, schema=reportSchemaSaid,
+    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=regBob, schema=reportSchemaSaid,
                      attribute=prptMad, rule=ruleMad)
     assert serder.said == pReportSaid
     assert serder.sad == pReportSad
@@ -2180,16 +2180,16 @@ def test_acdc_examples_JSON():
     {
         'v': 'ACDCCAACAAJSONAAF3.',
         't': 'acm',
-        'd': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
+        'd': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdj',
         'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
+        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
         's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
         'a': 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_',
         'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
     }
 
-    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=rd2, schema=reportSchemaSaid,
+    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=regBob, schema=reportSchemaSaid,
                      attribute=prptMad, rule=ruleMad, compactify=True)
     assert serder.said == pReportSaid
     assert serder.sad == pReportCSad
@@ -2439,42 +2439,42 @@ def test_acdc_examples_JSON():
         }
     }
 
-    mainEdgeSaid = 'EFAU7yl73bdxe8g-2k87z7_mGHVqfu-Ibu0neVajWFe1'
+    mainEdgeSaid = 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0'
     mainEdgeCMad = \
     {
-        'd': 'EFAU7yl73bdxe8g-2k87z7_mGHVqfu-Ibu0neVajWFe1',
+        'd': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-        'accreditation': 'EJS9my7QInY9lQcyvlT8VCfxSpAoJeIhnCswvOyWGpdT',
-        'reports': 'EK9Ah7jqynkCxo5nw_M5i4AEnszxpmutn8nevJlkm0RS'
+        'accreditation': 'EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ',
+        'reports': 'EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz'
     }
     mainEdgeMad = \
     {
-        'd': 'EFAU7yl73bdxe8g-2k87z7_mGHVqfu-Ibu0neVajWFe1',
+        'd': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
         'accreditation':
         {
-            'd': 'EJS9my7QInY9lQcyvlT8VCfxSpAoJeIhnCswvOyWGpdT',
+            'd': 'EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ',
             'u': '0ABhY2Rjc3BlY3dvcmtyYXcz',
-            'n': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+            'n': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
             's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG'
         },
         'reports':
         {
-            'd': 'EK9Ah7jqynkCxo5nw_M5i4AEnszxpmutn8nevJlkm0RS',
+            'd': 'EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz',
             'u': '0ABhY2Rjc3BlY3dvcmtyYXc0',
             'o': 'OR',
             'research':
             {
-                'd': 'EMZPH7gSvV_NJ4ib_xH2XgdA6y1EAC_54V8p5NUDFBEW',
+                'd': 'EN9ngstOcFHqsjqf75JZFKtCRmW76NkeRrUSxTLoqqkI',
                 'u': '0ABhY2Rjc3BlY3dvcmtyYXc2',
-                'n': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+                'n': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
                 'o': 'NI2I'
             },
             'project':
             {
-                'd': 'EB_v_VXu2qCyrRrk9F_DAChK7yzhVERN8tOYnrOY_DMB',
+                'd': 'EFwHz5qJ4_8c7IefP7_zugX2eIgtoyY8Up_WZ3osXwkI',
                 'u': '0ABhY2Rjc3BlY3dvcmtyYXc1',
-                'n': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
+                'n': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
                 'o': 'NI2I'
             }
         }
@@ -2485,7 +2485,6 @@ def test_acdc_examples_JSON():
     assert compactor.mad == mainEdgeCMad
     path = ('.accreditation', '.reports.research', '.reports.project')
     assert compactor.partials[path].mad == mainEdgeMad
-
 
     iMainSMad = \
     {
@@ -2732,14 +2731,14 @@ def test_acdc_examples_JSON():
     assert mapper.said == mainSchemaSaid
     assert mapper.mad == mainSchemaMad
 
-    mainSaid = 'EKuV6HK6_9pq6pH8ztcTqtVJFxU6LvLzeoaNybFh-bFc'
+    mainSaid = 'ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H'
     mainSad = \
     {
         'v': 'ACDCCAACAAJSONAAXG.',
-        'd': 'EKuV6HK6_9pq6pH8ztcTqtVJFxU6LvLzeoaNybFh-bFc',
+        'd': 'ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdk',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
+        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
         's': 'EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh',
         'a':
         {
@@ -2759,32 +2758,32 @@ def test_acdc_examples_JSON():
         },
         'e':
         {
-            'd': 'EFAU7yl73bdxe8g-2k87z7_mGHVqfu-Ibu0neVajWFe1',
+            'd': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
             'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
             'accreditation':
             {
-                'd': 'EJS9my7QInY9lQcyvlT8VCfxSpAoJeIhnCswvOyWGpdT',
+                'd': 'EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ',
                 'u': '0ABhY2Rjc3BlY3dvcmtyYXcz',
-                'n': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+                'n': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
                 's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG'
             },
             'reports':
             {
-                'd': 'EK9Ah7jqynkCxo5nw_M5i4AEnszxpmutn8nevJlkm0RS',
+                'd': 'EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz',
                 'u': '0ABhY2Rjc3BlY3dvcmtyYXc0',
                 'o': 'OR',
                 'research':
                 {
-                    'd': 'EMZPH7gSvV_NJ4ib_xH2XgdA6y1EAC_54V8p5NUDFBEW',
+                    'd': 'EN9ngstOcFHqsjqf75JZFKtCRmW76NkeRrUSxTLoqqkI',
                     'u': '0ABhY2Rjc3BlY3dvcmtyYXc2',
-                    'n': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
+                    'n': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
                     'o': 'NI2I'
                 },
                 'project':
                 {
-                    'd': 'EB_v_VXu2qCyrRrk9F_DAChK7yzhVERN8tOYnrOY_DMB',
+                    'd': 'EFwHz5qJ4_8c7IefP7_zugX2eIgtoyY8Up_WZ3osXwkI',
                     'u': '0ABhY2Rjc3BlY3dvcmtyYXc1',
-                    'n': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53',
+                    'n': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
                     'o': 'NI2I'
                 }
             }
@@ -2796,9 +2795,7 @@ def test_acdc_examples_JSON():
         }
     }
 
-
-
-    serder = acdcmap(issuer=bob, ilk=None, uuid=uuids[13], regid=rd3, schema=mainSchemaSaid,
+    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[13], regid=regAmy, schema=mainSchemaSaid,
                      attribute=mainAttrMad, edge=mainEdgeMad, rule=ruleMad)
     assert serder.said == mainSaid
     assert serder.sad == mainSad
@@ -2806,17 +2803,17 @@ def test_acdc_examples_JSON():
     mainCSad = \
     {
         'v': 'ACDCCAACAAJSONAAGg.',
-        'd': 'EKuV6HK6_9pq6pH8ztcTqtVJFxU6LvLzeoaNybFh-bFc',
+        'd': 'ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdk',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
+        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
         's': 'EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh',
         'a': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'e': 'EFAU7yl73bdxe8g-2k87z7_mGHVqfu-Ibu0neVajWFe1',
+        'e': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
         'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
     }
 
-    serder = acdcmap(issuer=bob, ilk=None, uuid=uuids[13], regid=rd3, schema=mainSchemaSaid,
+    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[13], regid=regAmy, schema=mainSchemaSaid,
                      attribute=mainAttrMad, edge=mainEdgeMad, rule=ruleMad, compactify=True)
     assert serder.said == mainSaid
     assert serder.sad == mainCSad
@@ -3048,17 +3045,17 @@ def test_acdc_examples_JSON():
         }
     }
 
-    simpleEdgeSaid = 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3'
+    simpleEdgeSaid = 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh'
     simpleEdgeCMad = \
     {
-        'd': 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3',
+        'd': 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-        'accreditation': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+        'accreditation': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
         'reports':
         {
             'o': 'OR',
-             'research': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
-             'project': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53'
+            'research': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
+            'project': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
         }
     }
 
@@ -3067,14 +3064,14 @@ def test_acdc_examples_JSON():
     assert compactor.mad == simpleEdgeCMad
 
 
-    simpleMainSaid = 'EOL_04odE3nFubkoZMWPWlrSkJYofXTWh0qH3MicXC7C'
+    simpleMainSaid = 'EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN'
     simpleMainSad = \
     {
         'v': 'ACDCCAACAAJSONAAOD.',
-        'd': 'EOL_04odE3nFubkoZMWPWlrSkJYofXTWh0qH3MicXC7C',
+        'd': 'EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdl',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
+        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
         's': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
         'a':
         {
@@ -3094,20 +3091,20 @@ def test_acdc_examples_JSON():
         },
         'e':
         {
-            'd': 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3',
+            'd': 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh',
             'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-            'accreditation': 'EBxt9i6p1fkP0K8xmz-Wb39eA6Df66jXO5Pr0qxpDQwp',
+            'accreditation': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
             'reports':
             {
                 'o': 'OR',
-                'research': 'EF7ZDJQypTK7LAPPKrjItfZcvL-D2jrLSyS3lHU8n4sU',
-                'project': 'EPmfn6Jd1ZomzWDIPijCIxF36uYFJnDyePgWNhfgZm53'
+                'research': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
+                'project': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
             }
         },
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'}
+        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+    }
 
-
-    serder = acdcmap(issuer=bob, ilk=None, uuid=uuids[14], regid=rd3,
+    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[14], regid=regAmy,
                      schema=simpleMainSchemaSaid, attribute=mainAttrMad,
                      edge=simpleEdgeCMad, rule=ruleSaid)
     assert serder.said == simpleMainSaid
@@ -3116,17 +3113,17 @@ def test_acdc_examples_JSON():
     simpleMainCSad = \
     {
         'v': 'ACDCCAACAAJSONAAGg.',
-        'd': 'EOL_04odE3nFubkoZMWPWlrSkJYofXTWh0qH3MicXC7C',
+        'd': 'EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXdl',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
+        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
+        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
         's': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
         'a': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'e': 'ECEeM2Pgkf6zV_l7VjiFmghHe6tj62oKrK8fetZjHpZ3',
+        'e': 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh',
         'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
     }
 
-    serder = acdcmap(issuer=bob, ilk=None, uuid=uuids[14], regid=rd3,
+    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[14], regid=regAmy,
                      schema=simpleMainSchemaSaid, attribute=mainAttrMad,
                      edge=simpleEdgeCMad, rule=ruleSaid, compactify=True)
     assert serder.said == simpleMainSaid
