@@ -3989,7 +3989,7 @@ def test_tsps():
     """
     Test Tsps namedtuple instance Tsps
     """
-    Tsps = Tspage(HOP='HOP', REL='REL', SCS='SCS')
+    Tsps = Tspage(HOP='HOP', RFI='RFI', RFA='RFA', RFD='RFD', SCS='SCS')
 
     assert isinstance(Tsps, Tspage)
 
@@ -3998,8 +3998,12 @@ def test_tsps():
 
     assert 'HOP' in Tsps
     assert Tsps.HOP == 'HOP'
-    assert 'REL' in Tsps
-    assert Tsps.REL == 'REL'
+    assert 'RFI' in Tsps
+    assert Tsps.RFI == 'RFI'
+    assert 'RFA' in Tsps
+    assert Tsps.RFA == 'RFA'
+    assert 'RFD' in Tsps
+    assert Tsps.RFD == 'RFD'
     assert 'SCS' in Tsps
     assert Tsps.SCS == 'SCS'
 

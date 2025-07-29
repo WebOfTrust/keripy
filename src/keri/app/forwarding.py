@@ -270,17 +270,31 @@ class StreamPoster:
         Usage:
             add result of doify on this method to doers list
         """
+        doers = []
+        while self.evts:
+            doers += self._chunk()
+
+        return doers
+
+    def _chunk(self):
         msg = bytearray()
 
         if self.essr:
             msg.extend(coring.Tsper(tsp=coring.Tsps.SCS).qb64b)
             msg.extend(self.hab.kever.prefixer.qb64b)
 
+            # bext field can be randomized to reduce correlation based on packet size, empty for now
+            msg.extend(coring.Bexter(bext="").qb64b)
+
         while self.evts:
             evt = self.evts.popleft()
 
             serder = evt["serder"]
             atc = evt["attachment"] if "attachment" in evt else b''
+
+            if self.essr and len(msg) + len(serder.raw) + len(atc) > 4096:
+                self.evts.push(evt)
+                break
 
             msg.extend(serder.raw)
             msg.extend(atc)
@@ -356,8 +370,14 @@ class StreamPoster:
         return self.messagers
 
     def _essrWrapper(self, hab, msg, ctrl):
-        rkever = self.hby.kevers[ctrl]
-        pubkey = pysodium.crypto_sign_pk_to_box_pk(rkever.verfers[0].raw)
+        prefixer = coring.Prefixer(qb64=ctrl)
+        if prefixer.code in coring.NonTransDex:  # e.g. witness mbx
+            verfer = coring.Verfer(qb64=ctrl)
+        else:
+            rkever = self.hby.kevers[ctrl]
+            verfer = rkever.verfers[0]
+
+        pubkey = pysodium.crypto_sign_pk_to_box_pk(verfer.raw)
         raw = pysodium.crypto_box_seal(bytes(msg), pubkey)
 
         texter = coring.Texter(raw=raw)
@@ -392,11 +412,20 @@ class StreamPoster:
         # If we are one of the mailboxes, just store locally in mailbox
         owits = oset(ends.keys())
         if self.mbx and owits.intersection(hab.prefixes):
+            # Remove again if ESSR mode
+            if self.essr:
+                _tag = self.hby.psr.extract(msg, coring.Tsper)
+                _pre = self.hby.psr.extract(msg, coring.Prefixer)
+                _pad = self.hby.psr.extract(msg, coring.Bexter)
             self.mbx.storeMsg(topic=f"{self.recp}/{topic}".encode("utf-8"), msg=msg)
             return []
 
         # Its not us, randomly select a mailbox and forward it on
         mbx, mailbox = random.choice(list(ends.items()))
+
+        if self.essr:
+            msg = self._essrWrapper(hab, msg, mbx)
+
         ims = bytearray()
         ims.extend(introduce(hab, mbx))
         ims.extend(msg)
