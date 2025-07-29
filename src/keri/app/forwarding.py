@@ -293,8 +293,8 @@ class StreamPoster:
             serder = evt["serder"]
             atc = evt["attachment"] if "attachment" in evt else b''
 
-            if self.essr and len(msg) + len(serder.raw) + len(atc) > 4096:
-                self.evts.push(evt)
+            if self.essr and len(msg) + len(serder.raw) + len(atc) > 16384:
+                self.evts.appendleft(evt)
                 break
 
             msg.extend(serder.raw)
