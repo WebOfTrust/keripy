@@ -124,7 +124,7 @@ def test_essr_stream(seeder):
 
         # Test chunking
         saids = []
-        for i in range(0, 10):
+        for i in range(0, 40):
             exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test", i=i), sender=hab.pre)
             atc = hab.endorse(exn, last=False)
             del atc[:exn.size]
@@ -168,7 +168,7 @@ def test_essr_stream(seeder):
         assert pre.qb64 == hab.pre  # encrypt sender
         pad = recpHby.psr.extract(ims, coring.Bexter)
         assert pad.bext == ""
-        recpHby.psr.parseOne(ims=ims)
+        recpHby.psr.parse(ims=ims)
 
         texter = recpHby.db.essrs.get(essrSaidB)[0]
         ims = bytearray(recpHab.decrypt(texter.raw))
@@ -176,7 +176,7 @@ def test_essr_stream(seeder):
         _tag = recpHby.psr.extract(ims, tsping.Tsper)
         _pre = recpHby.psr.extract(ims, coring.Prefixer)
         _pad = recpHby.psr.extract(ims, coring.Bexter)
-        recpHby.psr.parseOne(ims=ims)
+        recpHby.psr.parse(ims=ims)
 
         # Both chunks present
         # Can come out of order, so need to parse both ESSR packets first for test to be reliable
@@ -185,10 +185,10 @@ def test_essr_stream(seeder):
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test", i=0)
 
-        serder = recpHby.db.exns.get(saids[9])
+        serder = recpHby.db.exns.get(saids[39])
         assert serder.ked["t"] == coring.Ilks.exn
         assert serder.ked["r"] == "/echo"
-        assert serder.ked["a"] == dict(msg="test", i=9)
+        assert serder.ked["a"] == dict(msg="test", i=39)
 
 
 def test_essr_mbx(seeder):
@@ -229,7 +229,7 @@ def test_essr_mbx(seeder):
 
         # Test chunking
         saids = []
-        for i in range(0, 3):
+        for i in range(0, 15):
             exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test", i=i), sender=hab.pre)
             atc = hab.endorse(exn, last=False)
             del atc[:exn.size]
@@ -295,7 +295,7 @@ def test_essr_mbx(seeder):
             assert serder.ked["r"] == "/echo"
             mbxSaids.append(serder.said)
 
-        assert len(mbxSaids) == 3
+        assert len(mbxSaids) == 15
 
         # Chunks can come out of order, so check for difference of SAIDs
         assert set(saids) == set(mbxSaids)
