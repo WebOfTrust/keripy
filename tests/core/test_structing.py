@@ -217,6 +217,56 @@ def test_structor():
     assert estructor.crew == structor.crew
     assert not buf  # stripped
 
+    # roundtrip with eqb64b parameter
+    buf = bytearray(enclqb64)
+    structor = Structor(eqb64b=buf, strip=True)
+    #assert structor.data == data
+    assert structor.clan == clan
+    assert structor.name == name
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew == {'d': dig} # data._asdict()
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
+
+    # roundtrip with eqb64 parameter
+    buf = bytearray(enclqb64)
+    structor = Structor(eqb64=buf, strip=True)
+    #assert structor.data == data
+    assert structor.clan == clan
+    assert structor.name == name
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew == {'d': dig} # data._asdict()
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
+    assert not buf
+
+    # roundtrip with eqb2 parameter
+    buf = bytearray(enclqb2)
+    structor = Structor(eqb2=buf, strip=True)
+    #assert structor.data == data
+    assert structor.clan == clan
+    assert structor.name == name
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew == {'d': dig} # data._asdict()
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
+    assert not buf
+
     # Test data with cast
     structor = Structor(data=data, cast=cast)
     assert structor.data == data
@@ -233,6 +283,7 @@ def test_structor():
     assert structor.eqb64 == bytes(enclqb64).decode()
     assert structor.eqb64b == bytes(enclqb64)
     assert structor.eqb2 == bytes(enclqb2)
+    assert not buf
 
 
     # Test cast
@@ -626,6 +677,57 @@ def test_structor():
     estructor = Structor.extract(qb2=buf, strip=True)
     assert estructor.crew == structor.crew
     assert not buf  # stripped
+
+    # roundtrip with eqb64b parameter
+    buf = bytearray(enclqb64)
+    structor = Structor(eqb64b=buf, strip=True)
+    #assert structor.data == data
+    assert structor.clan == clan
+    assert structor.name == name
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
+    assert not buf
+
+    # roundtrip with eqb64 parameter
+    buf = bytearray(enclqb64)
+    structor = Structor(eqb64=buf, strip=True)
+    #assert structor.data == data
+    assert structor.clan == clan
+    assert structor.name == name
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
+    assert not buf
+
+    # roundtrip with eqb2 parameter
+    buf = bytearray(enclqb2)
+    structor = Structor(eqb2=buf, strip=True)
+    #assert structor.data == data
+    assert structor.clan == clan
+    assert structor.name == name
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
+    assert not buf
 
     # Test cast
     structor = Structor(cast=cast, crew=crew)
@@ -1180,6 +1282,54 @@ def test_sealer():
     assert esealer.qb2 == qb2
     assert not ims  # stripped
 
+    # roundtrip with eqb64b parameter
+    buf = bytearray(enclqb64)
+    sealer = Sealer(eqb64b=buf, strip=True)
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.asdict == dcrew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+    assert sealer.eqb64 == bytes(enclqb64).decode()
+    assert sealer.eqb64b == bytes(enclqb64)
+    assert sealer.eqb2 == bytes(enclqb2)
+    assert not buf
+
+    # roundtrip with eqb64 parameter
+    buf = bytearray(enclqb64)
+    sealer = Sealer(eqb64=buf, strip=True)
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.asdict == dcrew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+    assert sealer.eqb64 == bytes(enclqb64).decode()
+    assert sealer.eqb64b == bytes(enclqb64)
+    assert sealer.eqb2 == bytes(enclqb2)
+    assert not buf
+
+    # roundtrip with eqb2 parameter
+    buf = bytearray(enclqb2)
+    sealer = Sealer(eqb2=buf, strip=True)
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.asdict == dcrew
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+    assert sealer.eqb64 == bytes(enclqb64).decode()
+    assert sealer.eqb64b == bytes(enclqb64)
+    assert sealer.eqb2 == bytes(enclqb2)
+    assert not buf
+
     # test round trip using naive cast
     sealer = Sealer(cast=ncast, qb64=qb64)
     assert isinstance(sealer.data, SealEvent)
@@ -1524,6 +1674,54 @@ def test_blinder():
     assert eblinder.said == sdig
     assert eblinder.saidb == sdig.encode()
     assert not ims  # stripped
+
+    # roundtrip with eqb64b parameter
+    buf = bytearray(enclqb64)
+    blinder = Blinder(eqb64b=buf, strip=True)
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+    assert blinder.eqb64 == bytes(enclqb64).decode()
+    assert blinder.eqb64b == bytes(enclqb64)
+    assert blinder.eqb2 == bytes(enclqb2)
+    assert not buf
+
+    # roundtrip with eqb64 parameter
+    buf = bytearray(enclqb64)
+    blinder = Blinder(eqb64=buf, strip=True)
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+    assert blinder.eqb64 == bytes(enclqb64).decode()
+    assert blinder.eqb64b == bytes(enclqb64)
+    assert blinder.eqb2 == bytes(enclqb2)
+    assert not buf
+
+    # roundtrip with eqb2 parameter
+    buf = bytearray(enclqb2)
+    blinder = Blinder(eqb2=buf, strip=True)
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64.encode()
+    assert blinder.qb2 == qb2
+    assert blinder.eqb64 == bytes(enclqb64).decode()
+    assert blinder.eqb64b == bytes(enclqb64)
+    assert blinder.eqb2 == bytes(enclqb2)
+    assert not buf
 
     # test round trip using naive cast
     blinder = Blinder(cast=ncast, qb64=qb64)
