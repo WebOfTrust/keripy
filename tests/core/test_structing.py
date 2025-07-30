@@ -821,6 +821,41 @@ def test_structor():
         structor = Structor(crew=dcrew)  # missing cast for custom clan from crew
 
 
+
+    # test multiple structors in  enclose and extract
+    assert aid == 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
+    assert dig == 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    cast = ACastDom.SealEvent  # defined dom cast with non-None ipns
+    snh = '0'
+    crew0 = SealEvent(i=aid, s=snh, d=dig)
+    structor0 = Structor(cast=cast, crew=crew0)
+    assert structor0.crew == crew0
+
+    snh = '1'
+    crew1 = SealEvent(i=aid, s=snh, d=dig)
+    structor1 = Structor(cast=cast, crew=crew1)
+    assert structor1.crew == crew1
+
+    snh = '2'
+    crew2 = SealEvent(i=aid, s=snh, d=dig)
+    structor2 = Structor(cast=cast, crew=crew2)
+    assert structor2.crew == crew2
+
+    crews = [crew0, crew1, crew2]
+    structors = [structor0, structor1, structor2]
+
+    enclosure = Structor.enclose(structors)
+    assert enclosure == bytearray(b'-SBFBN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAAAELC5L3iBVD77'
+          b'd_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxBN5Lu0RqptmJC-iXEldMMrlEew7Q01te'
+          b'2fLgqlbqW9zRMAABELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxBN5L'
+          b'u0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAACELC5L3iBVD77d_MYbYGG'
+          b'CUQgqQBju1o4x1Ud-z2sL-ux')
+
+    # round trip
+    extracts = Structor.extract(qb64b=enclosure)
+    ecrews = [extract.crew for extract in extracts]
+    assert ecrews == crews
+
     """End Test"""
 
 
