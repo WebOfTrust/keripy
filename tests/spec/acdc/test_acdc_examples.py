@@ -539,8 +539,10 @@ def test_blindable_state_tel_examples_JSON():
     eqb64 = "-aAYECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP"
     blid = 'ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J'
     uuid = 'aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8'
-
-    blinder = Blinder.blind(acdc='', state='', salt=salt, sn=1)
+    state = ''
+    acdc = ''
+    sn = 1
+    blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
     assert blinder.crew ==  BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
                                        u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
                                        td='',
@@ -548,6 +550,8 @@ def test_blindable_state_tel_examples_JSON():
     assert blinder.qb64 == qb64
     assert blinder.said == blid
     assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
 
     regid = regBob
     prior = regBob
@@ -588,9 +592,12 @@ def test_blindable_state_tel_examples_JSON():
     qb64 = 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
     eqb64 = '-aAjEOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
+    assert blinder.qb64 == qb64
     assert blinder.said == blid
     assert blinder.uuid == uuid
-    assert blinder.qb64 == qb64
+    assert blinder.acdc == acdc
+    assert blinder.state == state
+
 
     stamp = '2020-08-02T12:00:20.000000+00:00'
     said = 'EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW'
