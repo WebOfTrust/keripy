@@ -203,6 +203,10 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
+
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -226,6 +230,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
 
     # Test cast
@@ -241,6 +248,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -262,6 +272,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -283,6 +296,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -304,6 +320,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -325,6 +344,9 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
     assert not ba  # stripped so empty
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=cast, qb2=qb2)
     assert structor.clan == clan
@@ -335,6 +357,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=cast, qb2=qb2, strip=True)
     assert structor.clan == clan
@@ -345,6 +370,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     ba = bytearray(qb2)
     structor = Structor(cast=cast, qb2=ba, strip=True)
@@ -357,6 +385,9 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
     assert not ba  # stripped so empty
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     # Test clan and cast
     structor = Structor(clan=clan, cast=cast, crew=crew)
@@ -368,6 +399,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(clan=clan, cast=cast, qb64b=qb64)
     assert structor.clan == clan
@@ -378,6 +412,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(clan=clan, cast=cast, qb64b=qb64.encode())
     assert structor.clan == clan
@@ -388,6 +425,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(clan=clan, cast=cast, qb2=qb2)
     assert structor.clan == clan
@@ -398,6 +438,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     # Test clan with cast and crew as dicts
     structor = Structor(clan=clan, cast=dcast, crew=dcrew)
@@ -409,6 +452,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     # Test no clan but with one or the other of cast and crew as dict or namedtuple
     structor = Structor(cast=cast, crew=dcrew)
@@ -420,6 +466,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=dcast, crew=crew)
     assert structor.clan == clan
@@ -430,6 +479,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     # Although both cast and crew are dicts the mark matches existing clan
     structor = Structor(cast=dcast, crew=dcrew)
@@ -445,6 +497,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -528,6 +583,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # does not rountrip with extract since not cast
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -556,6 +614,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -583,6 +644,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -602,6 +666,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=cast, qb64b=qb64.encode())
     assert structor.clan == clan
@@ -612,6 +679,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=cast, qb64b=qb64.encode(), strip=True)
     assert structor.clan == clan
@@ -622,6 +692,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     ba = bytearray(qb64.encode())
     structor = Structor(cast=cast, qb64b=ba, strip=True)
@@ -634,6 +707,9 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
     assert not ba  # stripped so empty
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=cast, qb2=qb2)
     assert structor.clan == clan
@@ -644,6 +720,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=cast, qb2=qb2, strip=True)
     assert structor.clan == clan
@@ -654,6 +733,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     ba = bytearray(qb2)
     structor = Structor(cast=cast, qb2=ba, strip=True)
@@ -666,6 +748,9 @@ def test_structor():
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
     assert not ba  # stripped so empty
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     # Test clan and cast
     structor = Structor(clan=clan, cast=cast, crew=crew)
@@ -677,6 +762,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(clan=clan, cast=cast, qb64b=qb64)
     assert structor.clan == clan
@@ -687,6 +775,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(clan=clan, cast=cast, qb64b=qb64.encode())
     assert structor.clan == clan
@@ -697,6 +788,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(clan=clan, cast=cast, qb2=qb2)
     assert structor.clan == clan
@@ -707,6 +801,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
 
     # Test clan with cast and crew as dicts
@@ -719,6 +816,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
 
     # Test no clan but with one or the other of cast and crew as dict or namedtuple
@@ -731,6 +831,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     structor = Structor(cast=dcast, crew=crew)
     assert structor.clan == clan
@@ -741,6 +844,9 @@ def test_structor():
     assert structor.qb64 == qb64
     assert structor.qb64b == qb64.encode()
     assert structor.qb2 == qb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
 
     # both cast and crew are dicts but finds matching mark for clan
     structor = Structor(cast=dcast, crew=dcrew)
@@ -756,6 +862,9 @@ def test_structor():
     assert structor.qb2 == qb2
     assert structor.enclose() == enclqb64
     assert structor.enclose(cold=Colds.bny) == enclqb2
+    assert structor.eqb64 == bytes(enclqb64).decode()
+    assert structor.eqb64b == bytes(enclqb64)
+    assert structor.eqb2 == bytes(enclqb2)
     # rountrip with extract
     buf = bytearray(enclqb64)
     estructor = Structor.extract(qb64b=buf, strip=True)
@@ -1026,6 +1135,9 @@ def test_sealer():
     assert esealer.qb2 == qb2
     assert esealer.enclose() == enclqb64
     assert esealer.enclose(cold=Colds.bny) == enclqb2
+    assert esealer.eqb64 == bytes(enclqb64).decode()
+    assert esealer.eqb64b == bytes(enclqb64)
+    assert esealer.eqb2 == bytes(enclqb2)
     assert ims  # not stripped
     esealer = Sealer.extract(qb64=ims, strip=True)
     assert isinstance(esealer, Sealer)
@@ -1052,6 +1164,9 @@ def test_sealer():
     assert esealer.qb2 == qb2
     assert esealer.enclose() == enclqb64
     assert esealer.enclose(cold=Colds.bny) == enclqb2
+    assert esealer.eqb64 == bytes(enclqb64).decode()
+    assert esealer.eqb64b == bytes(enclqb64)
+    assert esealer.eqb2 == bytes(enclqb2)
     assert ims  # not stripped
     esealer = Sealer.extract(qb2=ims, strip=True)
     assert isinstance(esealer, Sealer)
@@ -1102,6 +1217,9 @@ def test_sealer():
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
+    assert sealer.eqb64 == bytes(enclqb64).decode()
+    assert sealer.eqb64b == bytes(enclqb64)
+    assert sealer.eqb2 == bytes(enclqb2)
 
     sealer = Sealer(crew=dcrew)  # uses known cast i.e. not naive
     assert sealer.clan == clan
@@ -1112,6 +1230,9 @@ def test_sealer():
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
+    assert sealer.eqb64 == bytes(enclqb64).decode()
+    assert sealer.eqb64b == bytes(enclqb64)
+    assert sealer.eqb2 == bytes(enclqb2)
 
     # uses naive cast as dict which uses known cast (i.e. not-naive cast)
     sealer = Sealer(cast=dncast, crew=dcrew)
@@ -1123,6 +1244,9 @@ def test_sealer():
     assert sealer.qb64 == qb64
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
+    assert sealer.eqb64 == bytes(enclqb64).decode()
+    assert sealer.eqb64b == bytes(enclqb64)
+    assert sealer.eqb2 == bytes(enclqb2)
 
     """Done Test"""
 
@@ -1344,6 +1468,9 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert eblinder.said == sdig
     assert eblinder.saidb == sdig.encode()
     assert ims  # not stripped
@@ -1357,6 +1484,9 @@ def test_blinder():
     assert eblinder.qb64 == qb64
     assert eblinder.qb64b == qb64b
     assert eblinder.qb2 == qb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert not ims  # stripped
     # test round trip with extract qb2
     ims = bytearray(enclqb2)
@@ -1372,6 +1502,9 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert eblinder.said == sdig
     assert eblinder.saidb == sdig.encode()
     assert ims  # not stripped
@@ -1385,6 +1518,9 @@ def test_blinder():
     assert eblinder.qb64 == qb64
     assert eblinder.qb64b == qb64b
     assert eblinder.qb2 == qb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert eblinder.said == sdig
     assert eblinder.saidb == sdig.encode()
     assert not ims  # stripped
@@ -1445,6 +1581,9 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert ims  # not stripped
     eblinder = Blinder.extract(qb64=ims, strip=True)
     assert isinstance(eblinder, Blinder)
@@ -1456,6 +1595,9 @@ def test_blinder():
     assert eblinder.qb64 == qb64
     assert eblinder.qb64b == qb64b
     assert eblinder.qb2 == qb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert not ims  # stripped
     # test round trip with extract qb2
     ims = bytearray(enclqb2)
@@ -1471,6 +1613,9 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert ims  # not stripped
     eblinder = Blinder.extract(qb2=ims, strip=True)
     assert isinstance(eblinder, Blinder)
@@ -1482,6 +1627,9 @@ def test_blinder():
     assert eblinder.qb64 == qb64
     assert eblinder.qb64b == qb64b
     assert eblinder.qb2 == qb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert not ims  # stripped
 
     # test round trip using known cast (not naive)
@@ -1520,6 +1668,9 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert ims  # not stripped
     eblinder = Blinder.extract(qb64=ims, strip=True)
     assert isinstance(eblinder, Blinder)
@@ -1531,6 +1682,9 @@ def test_blinder():
     assert eblinder.qb64 == qb64
     assert eblinder.qb64b == qb64b
     assert eblinder.qb2 == qb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert not ims  # stripped
     # test round trip with extract qb2
     ims = bytearray(enclqb2)
@@ -1546,6 +1700,9 @@ def test_blinder():
     assert eblinder.qb2 == qb2
     assert eblinder.enclose() == enclqb64
     assert eblinder.enclose(cold=Colds.bny) == enclqb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert ims  # not stripped
     eblinder = Blinder.extract(qb2=ims, strip=True)
     assert isinstance(eblinder, Blinder)
@@ -1557,6 +1714,9 @@ def test_blinder():
     assert eblinder.qb64 == qb64
     assert eblinder.qb64b == qb64b
     assert eblinder.qb2 == qb2
+    assert eblinder.eqb64 == bytes(enclqb64).decode()
+    assert eblinder.eqb64b == bytes(enclqb64)
+    assert eblinder.eqb2 == bytes(enclqb2)
     assert not ims  # stripped
 
     # test round trip using known cast (not naive)

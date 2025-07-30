@@ -9,8 +9,9 @@ from base64 import urlsafe_b64decode as decodeB64
 
 import pytest
 
-from keri import Vrsn_2_0, Kinds
-from keri.core import MtrDex, Salter, Noncer, Mapper, Compactor, Aggor
+from keri import Vrsn_2_0, Kinds, Protocols, Ilks
+from keri.core import (MtrDex, Salter, Noncer, Mapper, Compactor, Aggor,
+                       Blinder, BlindState, GenDex)
 from keri.core.eventing import incept
 from keri.vc.messaging import regcept, blindate, update, acdcmap
 
@@ -442,13 +443,13 @@ def test_acdc_registry_examples_JSON():
     serder = regcept(issuer=amy, uuid=uuids[0], stamp=stamp0)
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAADa.',
-        't': 'rip',
-        'd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
-        'n': '0',
-        'dt': '2025-07-04T17:50:00.000000+00:00'
+        "v": "ACDCCAACAAJSONAADa.",
+        "t": "rip",
+        "d": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+        "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
+        "n": "0",
+        "dt": "2025-07-04T17:50:00.000000+00:00"
     }
     regAmy = rd0 = serder.said
     assert rd0 == "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"
@@ -458,13 +459,13 @@ def test_acdc_registry_examples_JSON():
     serder = regcept(issuer=bob, uuid=uuids[1], stamp=stamp1)
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAADa.',
-        't': 'rip',
-        'd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'n': '0',
-        'dt': '2025-07-04T17:51:00.000000+00:00'
+        "v": "ACDCCAACAAJSONAADa.",
+        "t": "rip",
+        "d": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "n": "0",
+        "dt": "2025-07-04T17:51:00.000000+00:00"
     }
     regBob = rd1 = serder.said
     assert rd1 == "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
@@ -474,13 +475,13 @@ def test_acdc_registry_examples_JSON():
     serder = regcept(issuer=cal, uuid=uuids[2], stamp=stamp2)
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAADa.',
-        't': 'rip',
-        'd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-        'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
-        'n': '0',
-        'dt': '2025-07-04T17:52:00.000000+00:00'
+        "v": "ACDCCAACAAJSONAADa.",
+        "t": "rip",
+        "d": "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
+        "i": "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT",
+        "n": "0",
+        "dt": "2025-07-04T17:52:00.000000+00:00"
     }
     regCal = rd2 = serder.said
     assert rd2 == "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw"
@@ -490,16 +491,94 @@ def test_acdc_registry_examples_JSON():
     serder = regcept(issuer=deb, uuid=uuids[3], stamp=stamp3)
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAADa.',
-        't': 'rip',
-        'd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXcz',
-        'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
-        'n': '0',
-        'dt': '2025-07-04T17:53:00.000000+00:00'
+        "v": "ACDCCAACAAJSONAADa.",
+        "t": "rip",
+        "d": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcz",
+        "i": "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW",
+        "n": "0",
+        "dt": "2025-07-04T17:53:00.000000+00:00"
     }
     regDeb = rd3 = serder.said
     assert rd3 == "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+
+
+def test_blindable_state_tel_examples_JSON():
+    """Basic Examples using JSON serializaton to create Registries"""
+
+    amy = issuer = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
+    bob = issuee = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
+    cal = "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT"
+    deb = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"
+
+    raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+
+
+    # Registry1 test default kind JSON uuid1 Stamp1
+    stamp1 = '2025-07-04T17:51:00.000000+00:00'
+    serder = regcept(issuer=bob, uuid=uuids[1], stamp=stamp1)
+    assert serder.sad == \
+    {
+        "v": "ACDCCAACAAJSONAADa.",
+        "t": "rip",
+        "d": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "n": "0",
+        "dt": "2025-07-04T17:51:00.000000+00:00"
+    }
+    regBob = serder.said
+    assert regBob == "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"
+
+    # create placeholder blind from 128 bit salt
+    salt = uuids[15]
+    assert salt == '0ABhY2Rjc3BlY3dvcmtyYXdm'
+
+    blinder = Blinder.blind(acdc='', state='', salt=salt, sn=1)
+    assert blinder.crew ==  BlindState(d='EEGKmH5d9hTgtiILc6qLD0IMOFPIn9sDzWJHqw8MBebm',
+                                       u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
+                                       td='',
+                                       ts='')
+    assert blinder.qb64 == 'EEGKmH5d9hTgtiILc6qLD0IMOFPIn9sDzWJHqw8MBebmaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP'
+
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    tsaid = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    tstate = 'issued'
+    crew = BlindState(d='', u=uuid, td=tsaid, ts=tstate)
+    blinder = Blinder(crew=crew, makify=True)  # computes said
+    blid = blinder.said
+    assert blid == 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
+
+    regid = 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8'
+    prior = 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8'
+    stamp = '2020-08-23T18:06:10.988921+00:00'
+    said = 'EFCUN22vSYr-O4XfM2TR6DysATSL7vco3JMm_VrWULmH'
+
+    # test default kind JSON and default sn=1
+    serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp)
+    assert serder.proto == Protocols.acdc
+    assert serder.pvrsn == Vrsn_2_0
+    assert serder.genus == GenDex.KERI
+    assert serder.gvrsn == Vrsn_2_0
+    assert serder.kind == Kinds.json
+
+    assert serder.ilk == Ilks.bup
+    assert serder.said == said
+    assert serder.stamp == stamp
+
+
+    assert serder.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAAEi.',
+        't': 'bup',
+        'd': 'EFCUN22vSYr-O4XfM2TR6DysATSL7vco3JMm_VrWULmH',
+        'rd': 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8',
+        'n': '1',
+        'p': 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8',
+        'dt': '2020-08-23T18:06:10.988921+00:00',
+        'b': 'EJCsEj8N56mvvUm4gtoq6RuiehOk0hn2CmdMeR5tHRL5'
+    }
 
 
 def test_acdc_attribute_section_JSON():
@@ -1761,83 +1840,83 @@ def test_acdc_examples_JSON():
     accredSchemaSaid = 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG'
     accredSchemaMad = \
     {
-        '$id': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'title': 'Accreditation Schema',
-        'description': 'Accreditation JSON Schema for acm ACDC.',
-        'credentialType': 'Accreditation_ACDC_acm_message',
-        'version': '2.0.0',
-        'type': 'object',
-        'required': ['v', 'd', 'i', 's', 'a', 'r'],
-        'properties':
+        "$id": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Accreditation Schema",
+        "description": "Accreditation JSON Schema for acm ACDC.",
+        "credentialType": "Accreditation_ACDC_acm_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required": ["v", "d", "i", "s", "a", "r"],
+        "properties":
         {
-            'v': {'description': 'ACDC version string', 'type': 'string'},
-            't': {'description': 'Message type', 'type': 'string'},
-            'd': {'description': 'Message SAID', 'type': 'string'},
-            'u': {'description': 'Message UUID', 'type': 'string'},
-            'i': {'description': 'Issuer AID', 'type': 'string'},
-            'rd': {'description': 'Registry SAID', 'type': 'string'},
-            's':
+            "v": {"description": "ACDC version string", "type": "string"},
+            "t": {"description": "Message type", "type": "string"},
+            "d": {"description": "Message SAID", "type": "string"},
+            "u": {"description": "Message UUID", "type": "string"},
+            "i": {"description": "Issuer AID", "type": "string"},
+            "rd": {"description": "Registry SAID", "type": "string"},
+            "s":
             {
-                'description': 'Schema Section',
-                'oneOf':
+                "description": "Schema Section",
+                "oneOf":
                 [
-                    {'description': 'Schema Section SAID', 'type': 'string'},
-                    {'description': 'Schema Section Detail', 'type': 'object'}
+                    {"description": "Schema Section SAID", "type": "string"},
+                    {"description": "Schema Section Detail", "type": "object"}
                 ]
             },
-            'a':
+            "a":
             {
-                'description': 'Attribute Section',
-                'oneOf':
+                "description": "Attribute Section",
+                "oneOf":
                 [
-                    {'description': 'Attribute Section SAID', 'type': 'string'},
+                    {"description": "Attribute Section SAID", "type": "string"},
                     {
-                        'description': 'Attribute Section Detail',
-                        'type': 'object',
-                        'required': ['d', 'u', 'i', 'score', 'name'],
-                        'properties':
+                        "description": "Attribute Section Detail",
+                        "type": "object",
+                        "required": ["d", "u", "i", "score", "name"],
+                        "properties":
                         {
-                            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
-                            'u': {'description': 'Attribute Section UUID', 'type': 'string'},
-                            'i': {'description': 'Issuee AID', 'type': 'string'},
-                            'name': {'description': 'Institution Name', 'type': 'string'},
-                            'level': {'description': 'Accreditation Level', 'type': 'string'}
+                            "d": {"description": "Attribute Section SAID", "type": "string"},
+                            "u": {"description": "Attribute Section UUID", "type": "string"},
+                            "i": {"description": "Issuee AID", "type": "string"},
+                            "name": {"description": "Institution Name", "type": "string"},
+                            "level": {"description": "Accreditation Level", "type": "string"}
                         },
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 ]
             },
-            'e':
+            "e":
             {
-                'description': 'Edge Section',
-                'oneOf':
+                "description": "Edge Section",
+                "oneOf":
                 [
-                    {'description': 'Edge Section SAID', 'type': 'string'},
-                    {'description': 'Edge Section Detail', 'type': 'object'}
+                    {"description": "Edge Section SAID", "type": "string"},
+                    {"description": "Edge Section Detail", "type": "object"}
                 ]
             },
-            'r':
+            "r":
             {
-                'description': 'Rule Section',
-                'oneOf':
+                "description": "Rule Section",
+                "oneOf":
                 [
-                    {'description': 'Rule Section SAID', 'type': 'string'},
+                    {"description": "Rule Section SAID", "type": "string"},
                     {
-                        'description': 'Rule Section Detail',
-                        'type': 'object',
-                        'required': ['d', 'l'],
-                        'properties':
+                        "description": "Rule Section Detail",
+                        "type": "object",
+                        "required": ["d", "l"],
+                        "properties":
                         {
-                            'd': {'description': 'Rule Section SAID', 'type': 'string'},
-                            'l': {'description': 'Legal Language', 'type': 'string'}
+                            "d": {"description": "Rule Section SAID", "type": "string"},
+                            "l": {"description": "Legal Language", "type": "string"}
                         },
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 ]
             }
         },
-        'additionalProperties': False
+        "additionalProperties": False
     }
 
     mapper = Mapper(mad=iAccredSMad, makify=True, strict=False, saids={"$id": 'E',},
@@ -1848,27 +1927,25 @@ def test_acdc_examples_JSON():
     accredSaid = 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi'
     accredSad = \
     {
-        'v': 'ACDCCAACAAJSONAAKX.',
-        't': 'acm',
-        'd': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdh',
-        'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
-        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
-        's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
-        'a':
+        "v": "ACDCCAACAAJSONAAKX.",
+        "t": "acm",
+        "d": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdh",
+        "i": "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT",
+        "rd": "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw",
+        "s": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG",
+        "a":
         {
-            'd': 'EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXc3',
-            'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
-            'name': 'Sunspot College',
-            'level': 'gold'
+            "d": "EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXc3",
+            "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
+            "name": "Sunspot College",
+            "level": "gold"
         },
-        'r':
+        "r":
         {
-            'd': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU',
-            'l': 'Issuer provides this ACDC on an AS IS basis. This ACDC in whole '
-                 'or in part MUST NOT be shared with any other entity besides the '
-                 'intended recipient.'
+            "d": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU",
+            "l": "Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient."
         }
     }
 
@@ -1879,15 +1956,15 @@ def test_acdc_examples_JSON():
 
     accredCSad = \
     {
-        'v': 'ACDCCAACAAJSONAAF3.',
-        't': 'acm',
-        'd': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdh',
-        'i': 'ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT',
-        'rd': 'EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw',
-        's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG',
-        'a': 'EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL',
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+        "v": "ACDCCAACAAJSONAAF3.",
+        "t": "acm",
+        "d": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdh",
+        "i": "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT",
+        "rd": "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw",
+        "s": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG",
+        "a": "EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL",
+        "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
     serder = acdcmap(issuer=cal, uuid=uuids[10], regid=regCal, schema=accredSchemaSaid,
@@ -1965,32 +2042,32 @@ def test_acdc_examples_JSON():
     reportSchemaSaid = 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-'
     reportSchemaMad = \
     {
-        '$id': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'title': 'Report Schema',
-        'description': 'Report JSON Schema for acm ACDC.',
-        'credentialType': 'Report_ACDC_acm_message',
-        'version': '2.0.0',
-        'type': 'object',
-        'required': ['v', 'd', 'i', 's', 'a', 'r'],
-        'properties':
+        "$id": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Report Schema",
+        "description": "Report JSON Schema for acm ACDC.",
+        "credentialType": "Report_ACDC_acm_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required": ["v", "d", "i", "s", "a", "r"],
+        "properties":
         {
-            'v': {'description': 'ACDC version string', 'type': 'string'},
-            't': {'description': 'Message type', 'type': 'string'},
-            'd': {'description': 'Message SAID', 'type': 'string'},
-            'u': {'description': 'Message UUID', 'type': 'string'},
-            'i': {'description': 'Issuer AID', 'type': 'string'},
-            'rd': {'description': 'Registry SAID', 'type': 'string'},
-            's':
+            "v": {"description": "ACDC version string", "type": "string"},
+            "t": {"description": "Message type", "type": "string"},
+            "d": {"description": "Message SAID", "type": "string"},
+            "u": {"description": "Message UUID", "type": "string"},
+            "i": {"description": "Issuer AID", "type": "string"},
+            "rd": {"description": "Registry SAID", "type": "string"},
+            "s":
             {
-                'description': 'Schema Section',
-                'oneOf':
+                "description": "Schema Section",
+                "oneOf":
                 [
-                    {'description': 'Schema Section SAID', 'type': 'string'},
-                    {'description': 'Schema Section Detail', 'type': 'object'}
+                    {"description": "Schema Section SAID", "type": "string"},
+                    {"description": "Schema Section Detail", "type": "object"}
                 ]
             },
-            'a':
+            "a":
              {
                 "description": "Attribute Section",
                 "oneOf":
@@ -2012,36 +2089,36 @@ def test_acdc_examples_JSON():
                       }
                 ]
             },
-            'e':
+            "e":
             {
-                'description': 'Edge Section',
-                'oneOf':
+                "description": "Edge Section",
+                "oneOf":
                 [
-                    {'description': 'Edge Section SAID', 'type': 'string'},
-                    {'description': 'Edge Section Detail', 'type': 'object'}
+                    {"description": "Edge Section SAID", "type": "string"},
+                    {"description": "Edge Section Detail", "type": "object"}
                 ]
             },
-            'r':
+            "r":
             {
-                'description': 'Rule Section',
-                'oneOf':
+                "description": "Rule Section",
+                "oneOf":
                 [
-                    {'description': 'Rule Section SAID', 'type': 'string'},
+                    {"description": "Rule Section SAID", "type": "string"},
                     {
-                        'description': 'Rule Section Detail',
-                        'type': 'object',
-                        'required': ['d', 'l'],
-                        'properties':
+                        "description": "Rule Section Detail",
+                        "type": "object",
+                        "required": ["d", "l"],
+                        "properties":
                         {
-                            'd': {'description': 'Rule Section SAID', 'type': 'string'},
-                            'l': {'description': 'Legal Language', 'type': 'string'}
+                            "d": {"description": "Rule Section SAID", "type": "string"},
+                            "l": {"description": "Legal Language", "type": "string"}
                         },
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 ]
             }
         },
-        'additionalProperties': False
+        "additionalProperties": False
     }
 
     mapper = Mapper(mad=iReportSMad, makify=True, strict=False, saids={"$id": 'E',},
@@ -2076,25 +2153,25 @@ def test_acdc_examples_JSON():
     rReportSaid = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'
     rReportSad = \
     {
-        'v': 'ACDCCAACAAJSONAAK4.',
-        't': 'acm',
-        'd': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdi',
-        'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
-        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
-        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
-        'a':
+        "v": "ACDCCAACAAJSONAAK4.",
+        "t": "acm",
+        "d": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdi",
+        "i": "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW",
+        "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
+        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "a":
         {
-            'd': 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXc4',
-            'title': 'Post Quantum Security',
-            'name': 'Zoe Doe',
-            'report': 'Imprementation should prioritize cryptographic agility over PQ.'
+            "d": "EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXc4",
+            "title": "Post Quantum Security",
+            "name": "Zoe Doe",
+            "report": "Imprementation should prioritize cryptographic agility over PQ."
         },
-        'r':
+        "r":
         {
-            'd': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU',
-            'l': 'Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient.'
+            "d": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU",
+            "l": "Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient."
         }
     }
 
@@ -2105,15 +2182,15 @@ def test_acdc_examples_JSON():
 
     rReportCSad = \
     {
-        'v': 'ACDCCAACAAJSONAAF3.',
-        't': 'acm',
-        'd': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdi',
-        'i': 'EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW',
-        'rd': 'EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU',
-        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
-        'a': 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-',
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+        "v": "ACDCCAACAAJSONAAF3.",
+        "t": "acm",
+        "d": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdi",
+        "i": "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW",
+        "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
+        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "a": "EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-",
+        "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
     serder = acdcmap(issuer=deb, uuid=uuids[11], regid=regDeb, schema=reportSchemaSaid,
@@ -2149,25 +2226,25 @@ def test_acdc_examples_JSON():
     pReportSaid = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
     pReportSad = \
     {
-        'v': 'ACDCCAACAAJSONAAKt.',
-        't': 'acm',
-        'd': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdj',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
-        'a':
+        "v": "ACDCCAACAAJSONAAKt.",
+        "t": "acm",
+        "d": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdj",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "a":
         {
-            'd': 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXc5',
-            'title': 'PQ Proof of Concept',
-            'name': 'Zoe Doe',
-            'report': 'Demonstration of recovery from surprise quantum attack'
+            "d": "EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXc5",
+            "title": "PQ Proof of Concept",
+            "name": "Zoe Doe",
+            "report": "Demonstration of recovery from surprise quantum attack"
         },
-        'r':
+        "r":
         {
-            'd': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU',
-            'l': 'Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient.'
+            "d": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU",
+            "l": "Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient."
         }
     }
 
@@ -2178,15 +2255,15 @@ def test_acdc_examples_JSON():
 
     pReportCSad = \
     {
-        'v': 'ACDCCAACAAJSONAAF3.',
-        't': 'acm',
-        'd': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdj',
-        'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        's': 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-',
-        'a': 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_',
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+        "v": "ACDCCAACAAJSONAAF3.",
+        "t": "acm",
+        "d": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdj",
+        "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+        "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "a": "EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_",
+        "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
     serder = acdcmap(issuer=bob, uuid=uuids[12], regid=regBob, schema=reportSchemaSaid,
@@ -2523,32 +2600,32 @@ def test_acdc_examples_JSON():
     mainSchemaSaid = 'EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh'
     mainSchemaMad = \
     {
-        '$id': 'EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'title': 'Transcript Schema',
-        'description': 'Transcript JSON Schema for acm ACDC.',
-        'credentialType': 'Transcript_ACDC_acm_message',
-        'version': '2.0.0',
-        'type': 'object',
-        'required': ['v', 'd', 'i', 's', 'a', 'r'],
-        'properties':
+        "$id": "EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Transcript Schema",
+        "description": "Transcript JSON Schema for acm ACDC.",
+        "credentialType": "Transcript_ACDC_acm_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required": ["v", "d", "i", "s", "a", "r"],
+        "properties":
         {
-            'v': {'description': 'ACDC version string', 'type': 'string'},
-            't': {'description': 'Message type', 'type': 'string'},
-            'd': {'description': 'Message SAID', 'type': 'string'},
-            'u': {'description': 'Message UUID', 'type': 'string'},
-            'i': {'description': 'Issuer AID', 'type': 'string'},
-            'rd': {'description': 'Registry SAID', 'type': 'string'},
-            's':
+            "v": {"description": "ACDC version string", "type": "string"},
+            "t": {"description": "Message type", "type": "string"},
+            "d": {"description": "Message SAID", "type": "string"},
+            "u": {"description": "Message UUID", "type": "string"},
+            "i": {"description": "Issuer AID", "type": "string"},
+            "rd": {"description": "Registry SAID", "type": "string"},
+            "s":
             {
-                'description': 'Schema Section',
-                'oneOf':
+                "description": "Schema Section",
+                "oneOf":
                 [
-                    {'description': 'Schema Section SAID', 'type': 'string'},
-                    {'description': 'Schema Section Detail', 'type': 'object'}
+                    {"description": "Schema Section SAID", "type": "string"},
+                    {"description": "Schema Section Detail", "type": "object"}
                 ]
             },
-            'a':
+            "a":
              {
                 "description": "Attribute Section",
                 "oneOf":
@@ -2591,7 +2668,7 @@ def test_acdc_examples_JSON():
                     }
                 ]
             },
-            'e':
+            "e":
             {
                 "description": "Edge Section",
                 "oneOf":
@@ -2703,27 +2780,27 @@ def test_acdc_examples_JSON():
                   }
                 ]
             },
-            'r':
+            "r":
             {
-                'description': 'Rule Section',
-                'oneOf':
+                "description": "Rule Section",
+                "oneOf":
                 [
-                    {'description': 'Rule Section SAID', 'type': 'string'},
+                    {"description": "Rule Section SAID", "type": "string"},
                     {
-                        'description': 'Rule Section Detail',
-                        'type': 'object',
-                        'required': ['d', 'l'],
-                        'properties':
+                        "description": "Rule Section Detail",
+                        "type": "object",
+                        "required": ["d", "l"],
+                        "properties":
                         {
-                            'd': {'description': 'Rule Section SAID', 'type': 'string'},
-                            'l': {'description': 'Legal Language', 'type': 'string'}
+                            "d": {"description": "Rule Section SAID", "type": "string"},
+                            "l": {"description": "Legal Language", "type": "string"}
                         },
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 ]
             }
         },
-        'additionalProperties': False
+        "additionalProperties": False
     }
 
     mapper = Mapper(mad=iMainSMad, makify=True, strict=False, saids={"$id": 'E',},
@@ -2734,64 +2811,64 @@ def test_acdc_examples_JSON():
     mainSaid = 'ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H'
     mainSad = \
     {
-        'v': 'ACDCCAACAAJSONAAXG.',
-        'd': 'ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdk',
-        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
-        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
-        's': 'EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh',
-        'a':
+        "v": "ACDCCAACAAJSONAAXG.",
+        "d": "ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdk",
+        "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
+        "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
+        "s": "EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh",
+        "a":
         {
-            'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-            'name': 'Zoe Doe',
-            'gpa': 3.5,
-            'grades':
+            "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+            "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+            "name": "Zoe Doe",
+            "gpa": 3.5,
+            "grades":
             {
-                'd': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy',
-                'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-                'history': 3.5,
-                'english': 4.0,
-                'math': 3.0
+                "d": "EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy",
+                "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+                "history": 3.5,
+                "english": 4.0,
+                "math": 3.0
             }
         },
-        'e':
+        "e":
         {
-            'd': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-            'accreditation':
+            "d": "ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
+            "accreditation":
             {
-                'd': 'EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ',
-                'u': '0ABhY2Rjc3BlY3dvcmtyYXcz',
-                'n': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
-                's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG'
+                "d": "EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ",
+                "u": "0ABhY2Rjc3BlY3dvcmtyYXcz",
+                "n": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
+                "s": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG"
             },
-            'reports':
+            "reports":
             {
-                'd': 'EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz',
-                'u': '0ABhY2Rjc3BlY3dvcmtyYXc0',
-                'o': 'OR',
-                'research':
+                "d": "EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz",
+                "u": "0ABhY2Rjc3BlY3dvcmtyYXc0",
+                "o": "OR",
+                "research":
                 {
-                    'd': 'EN9ngstOcFHqsjqf75JZFKtCRmW76NkeRrUSxTLoqqkI',
-                    'u': '0ABhY2Rjc3BlY3dvcmtyYXc2',
-                    'n': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
-                    'o': 'NI2I'
+                    "d": "EN9ngstOcFHqsjqf75JZFKtCRmW76NkeRrUSxTLoqqkI",
+                    "u": "0ABhY2Rjc3BlY3dvcmtyYXc2",
+                    "n": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+                    "o": "NI2I"
                 },
-                'project':
+                "project":
                 {
-                    'd': 'EFwHz5qJ4_8c7IefP7_zugX2eIgtoyY8Up_WZ3osXwkI',
-                    'u': '0ABhY2Rjc3BlY3dvcmtyYXc1',
-                    'n': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
-                    'o': 'NI2I'
+                    "d": "EFwHz5qJ4_8c7IefP7_zugX2eIgtoyY8Up_WZ3osXwkI",
+                    "u": "0ABhY2Rjc3BlY3dvcmtyYXc1",
+                    "n": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+                    "o": "NI2I"
                 }
             }
         },
-        'r':
+        "r":
         {
-            'd': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU',
-            'l': 'Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient.'
+            "d": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU",
+            "l": "Issuer provides this ACDC on an AS IS basis. This ACDC in whole or in part MUST NOT be shared with any other entity besides the intended recipient."
         }
     }
 
@@ -2802,15 +2879,15 @@ def test_acdc_examples_JSON():
 
     mainCSad = \
     {
-        'v': 'ACDCCAACAAJSONAAGg.',
-        'd': 'ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdk',
-        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
-        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
-        's': 'EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh',
-        'a': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'e': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+        "v": "ACDCCAACAAJSONAAGg.",
+        "d": "ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdk",
+        "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
+        "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
+        "s": "EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh",
+        "a": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
+        "e": "ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0",
+        "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
     serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[13], regid=regAmy, schema=mainSchemaSaid,
@@ -2897,32 +2974,32 @@ def test_acdc_examples_JSON():
     simpleMainSchemaSaid = 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk'
     simpleMainSchemaMad = \
     {
-        '$id': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        'title': 'Transcript Schema',
-        'description': 'Transcript JSON Schema for acm ACDC.',
-        'credentialType': 'Transcript_ACDC_acm_message',
-        'version': '2.0.0',
-        'type': 'object',
-        'required': ['v', 'd', 'i', 's', 'a', 'r'],
-        'properties':
+        "$id": "ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Transcript Schema",
+        "description": "Transcript JSON Schema for acm ACDC.",
+        "credentialType": "Transcript_ACDC_acm_message",
+        "version": "2.0.0",
+        "type": "object",
+        "required": ["v", "d", "i", "s", "a", "r"],
+        "properties":
         {
-            'v': {'description': 'ACDC version string', 'type': 'string'},
-            't': {'description': 'Message type', 'type': 'string'},
-            'd': {'description': 'Message SAID', 'type': 'string'},
-            'u': {'description': 'Message UUID', 'type': 'string'},
-            'i': {'description': 'Issuer AID', 'type': 'string'},
-            'rd': {'description': 'Registry SAID', 'type': 'string'},
-            's':
+            "v": {"description": "ACDC version string", "type": "string"},
+            "t": {"description": "Message type", "type": "string"},
+            "d": {"description": "Message SAID", "type": "string"},
+            "u": {"description": "Message UUID", "type": "string"},
+            "i": {"description": "Issuer AID", "type": "string"},
+            "rd": {"description": "Registry SAID", "type": "string"},
+            "s":
             {
-                'description': 'Schema Section',
-                'oneOf':
+                "description": "Schema Section",
+                "oneOf":
                 [
-                    {'description': 'Schema Section SAID', 'type': 'string'},
-                    {'description': 'Schema Section Detail', 'type': 'object'}
+                    {"description": "Schema Section SAID", "type": "string"},
+                    {"description": "Schema Section Detail", "type": "object"}
                 ]
             },
-            'a':
+            "a":
              {
                 "description": "Attribute Section",
                 "oneOf":
@@ -2965,7 +3042,7 @@ def test_acdc_examples_JSON():
                     }
                 ]
             },
-            'e':
+            "e":
             {
                 "description": "Edge Section",
                 "oneOf":
@@ -3004,27 +3081,27 @@ def test_acdc_examples_JSON():
                     }
                 ]
             },
-            'r':
+            "r":
             {
-                'description': 'Rule Section',
-                'oneOf':
+                "description": "Rule Section",
+                "oneOf":
                 [
-                    {'description': 'Rule Section SAID', 'type': 'string'},
+                    {"description": "Rule Section SAID", "type": "string"},
                     {
-                        'description': 'Rule Section Detail',
-                        'type': 'object',
-                        'required': ['d', 'l'],
-                        'properties':
+                        "description": "Rule Section Detail",
+                        "type": "object",
+                        "required": ["d", "l"],
+                        "properties":
                         {
-                            'd': {'description': 'Rule Section SAID', 'type': 'string'},
-                            'l': {'description': 'Legal Language', 'type': 'string'}
+                            "d": {"description": "Rule Section SAID", "type": "string"},
+                            "l": {"description": "Legal Language", "type": "string"}
                         },
-                        'additionalProperties': False
+                        "additionalProperties": False
                     }
                 ]
             }
         },
-        'additionalProperties': False
+        "additionalProperties": False
     }
 
     mapper = Mapper(mad=iSimpleEdgeMainSMad, makify=True, strict=False, saids={"$id": 'E',},
@@ -3067,41 +3144,41 @@ def test_acdc_examples_JSON():
     simpleMainSaid = 'EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN'
     simpleMainSad = \
     {
-        'v': 'ACDCCAACAAJSONAAOD.',
-        'd': 'EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdl',
-        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
-        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
-        's': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
-        'a':
+        "v": "ACDCCAACAAJSONAAOD.",
+        "d": "EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdl",
+        "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
+        "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
+        "s": "ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk",
+        "a":
         {
-            'd': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcw',
-            'i': 'ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf',
-            'name': 'Zoe Doe',
-            'gpa': 3.5,
-            'grades':
+            "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcw",
+            "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
+            "name": "Zoe Doe",
+            "gpa": 3.5,
+            "grades":
             {
-                'd': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy',
-                'u': '0ABhY2Rjc3BlY3dvcmtyYXcx',
-                'history': 3.5,
-                'english': 4.0,
-                'math': 3.0
+                "d": "EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy",
+                "u": "0ABhY2Rjc3BlY3dvcmtyYXcx",
+                "history": 3.5,
+                "english": 4.0,
+                "math": 3.0
             }
         },
-        'e':
+        "e":
         {
-            'd': 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh',
-            'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-            'accreditation': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
-            'reports':
+            "d": "EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh",
+            "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
+            "accreditation": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
+            "reports":
             {
-                'o': 'OR',
-                'research': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
-                'project': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
+                "o": "OR",
+                "research": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+                "project": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M"
             }
         },
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+        "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
     serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[14], regid=regAmy,
@@ -3112,15 +3189,15 @@ def test_acdc_examples_JSON():
 
     simpleMainCSad = \
     {
-        'v': 'ACDCCAACAAJSONAAGg.',
-        'd': 'EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN',
-        'u': '0ABhY2Rjc3BlY3dvcmtyYXdl',
-        'i': 'ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz',
-        'rd': 'EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX',
-        's': 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk',
-        'a': 'ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U',
-        'e': 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh',
-        'r': 'EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU'
+        "v": "ACDCCAACAAJSONAAGg.",
+        "d": "EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXdl",
+        "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
+        "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
+        "s": "ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk",
+        "a": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
+        "e": "EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh",
+        "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
     serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[14], regid=regAmy,
@@ -3133,6 +3210,7 @@ def test_acdc_examples_JSON():
 if __name__ == "__main__":
     test_acdc_examples_setup()
     test_acdc_registry_examples_JSON()
+    test_blindable_state_tel_examples_JSON()
     test_acdc_attribute_section_JSON()
     test_acdc_aggregate_section_JSON()
     test_acdc_aggregate_section_CESR()

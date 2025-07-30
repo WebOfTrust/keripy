@@ -409,13 +409,16 @@ class Structor:
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
-
+        eqb64 (str): qb64 (text) serialization enclosed with leading counter
+        eqb64b (bytes): qb64b (text) serialization enclosed with leading counter
+        eqb2 (bytes): qb2 (binary) serialization enclosed with leading counter
 
     Methods:
 
 
     Hidden:
-        _data (NamedTuple): named CESR primitive instances
+        _data (namedtuple): named CESR primitive instances
+        _cast (namedtuple): named Castage instances
 
 
     Requires that any Castage where castage.ipn is not None must have a
@@ -513,7 +516,9 @@ class Structor:
 
 
     def __init__(self, data=None, *, clan=None, cast=None, crew=None,
-                 qb64b=None, qb64=None, qb2=None, strip=False):
+                                     qb64b=None, qb64=None, qb2=None,
+                                     eqb64b=None, eqb64=None, eqb2=None,
+                                     strip=False):
         """Initialize instance
 
         Parameters:
@@ -535,8 +540,7 @@ class Structor:
                 missing.
             qb64b (str|bytes|bytearray|None): concatenation of qb64b data values to
                 generate .data with data and crew missing.
-            qb64 (str|bytes|bytearray|None): alias for qb64b to match Counter
-                interface.
+            qb64 (str|bytes|bytearray|None): alias for qb64b
             qb2 (bytes|bytearray|None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
             strip (bool): False means do not strip each value from qb64 or qb2.
@@ -547,6 +551,8 @@ class Structor:
 
 
         """
+        eqb64b = eqb64b if eqb64b is not None else eqb64  # copy eqb64 to eqb64b
+
         if data:
             if not (isinstance(data, tuple) and hasattr(data, "_fields")):
                 raise InvalidValueError(f"Not namedtuple subclass {data=}.")
@@ -558,8 +564,60 @@ class Structor:
             # when cast is not None then will be used instead of generating
             # custom cast below
 
+        elif eqb64b:  # has counter enclosure which gives clan, cast, and data
+            if hasattr(eqb64b, "encode"):
+                eqb64b = eqb64b.encode()
 
-        else:
+            ims = eqb64b   # reference start of stream
+            ctr = Counter(qb64b=eqb64b)
+            clan = self.Clans[self.CodenClans[ctr.name]]  # get clan from code name
+
+            if (cname := self.Names.get(clan._fields)):  # fields is mark
+                cast = self.Casts[cname]  # get known cast
+            else:  # cast missing or unobtainable
+                raise InvalidValueError(f"Missing or unobtainable cast.")
+
+            # have cast now
+            for cstg in cast:
+                if not (hasattr(cstg.kls, "qb64b") and hasattr(cstg.kls, "qb2")):
+                    raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
+                                            f" Primitive.")
+
+            bs = ctr.byteSize(cold=Colds.txt)
+            eqb64b = eqb64b[bs:]  # skip over counter
+
+            data = clan(*(cstg.kls(qb64b=eqb64b, strip=strip) for cstg in cast))
+
+            gs = bs + ctr.byteCount(cold=Colds.txt)  # size of group including ctr
+            if strip and isinstance(ims, bytearray):
+                del ims[:gs]  # strip original
+
+        elif eqb2:  # has counter enclosure which gives clan, cast, and data
+            ims = eqb2   # reference start of stream
+            ctr = Counter(qb2=eqb2)
+            clan = self.Clans[self.CodenClans[ctr.name]]  # get clan from code name
+
+            if (cname := self.Names.get(clan._fields)):  # fields is mark
+                cast = self.Casts[cname]  # get known cast
+            else:  # cast missing or unobtainable
+                raise InvalidValueError(f"Missing or unobtainable cast.")
+
+            # have cast now
+            for cstg in cast:
+                if not (hasattr(cstg.kls, "qb64b") and hasattr(cstg.kls, "qb2")):
+                    raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
+                                            f" Primitive.")
+
+            bs = ctr.byteSize(cold=Colds.bny)
+            eqb2 = eqb2[bs:]  # skip over counter
+
+            data = clan(*(cstg.kls(qb2=eqb2, strip=strip) for cstg in cast))
+
+            gs = bs + ctr.byteCount(cold=Colds.bny)  # size of group including ctr
+            if strip and isinstance(ims, bytearray):
+                del ims[:gs]  # strip original
+
+        else:  # no data and not counter so see if can infer clan and cast
             if not clan:  # attempt to get from cast and/or crew
                 if cast and isinstance(cast, tuple) and hasattr(cast, "_fields"):
                     clan = cast.__class__
@@ -629,9 +687,8 @@ class Structor:
                     raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
                                             " Primitive.")
 
-            # have clan and cast but may not have crew but have qb64/qb64b
             qb64b = qb64b if qb64b is not None else qb64  # copy qb64 to qb64b
-            if crew:
+            if crew:  # have clan and cast and crew
                 if not isinstance(crew, clan):
                     if isinstance(crew, tuple) and hasattr(crew, "_fields"):
                         if crew._fields != clan._fields:  # fields is mark
@@ -658,47 +715,40 @@ class Structor:
                 data = clan(*(cstg.kls(**{cstg.ipn if cstg.ipn is not None else 'qb64': val})
                               for cstg, val in zip(cast, crew)))
 
-
-            elif qb64b:
+            elif qb64b:  # have clan and cast but not crew
                 if hasattr(qb64b, "encode"):
                     qb64b = qb64b.encode()
 
-                if strip:
-                    if not isinstance(qb64b, bytearray):
-                        qb64b = bytearray(qb64b)
+                o = 0  # offset into memoryview of qb64
+                pis = []  # primitive instances
+                mv = memoryview(qb64b)
+                for cstg in cast:  # Castage
+                    pi = cstg.kls(qb64b=mv[o:])
+                    pis.append(pi)
+                    o += len(pi.qb64b)
+                data = clan(*pis)
 
-                    data = clan(*(cstg.kls(qb64b=qb64b, strip=strip) for cstg in cast))
+                if strip and isinstance(qb64b, bytearray):
+                    del mv  # release memoryview ref count so can resize buffer
+                    del qb64b[:o]  # strip original  to final offset
 
-                else:
-                    o = 0  # offset into memoryview of qb64
-                    pis = []  # primitive instances
-                    mv = memoryview(qb64b)
-                    for cstg in cast:  # Castage
-                        pi = cstg.kls(qb64b=mv[o:])
-                        pis.append(pi)
-                        o += len(pi.qb64b)
-                    data = clan(*pis)
+            elif qb2:  # have clan and cast but not crew
+                o = 0  # offset into memoryview of qb2
+                pis = []  # primitive instances
+                mv = memoryview(qb2)
+                for cstg in cast:  # Castage
+                    pi = cstg.kls(qb2=mv[o:])
+                    pis.append(pi)
+                    o += len(pi.qb2)
+                data = clan(*pis)
 
-            elif qb2:
-                if strip:
-                    if not isinstance(qb2, bytearray):
-                        qb2 = bytearray(qb2)
-
-                    data = clan(*(cstg.kls(qb2=qb2, strip=strip) for cstg in cast))
-
-                else:
-                    o = 0  # offset into memoryview of qb2
-                    pis = []  # primitive instances
-                    mv = memoryview(qb2)
-                    for cstg in cast:  # Castage
-                        pi = cstg.kls(qb2=mv[o:])
-                        pis.append(pi)
-                        o += len(pi.qb2)
-                    data = clan(*pis)
+                if strip and isinstance(qb2, bytearray):
+                    del mv  # release memoryview ref count so can resize buffer
+                    del qb2[:o]  # strip original  to final offset
 
             else:
-                raise EmptyMaterialError("Need crew or qb64 or qb2.")
-
+                raise EmptyMaterialError(f"Need crew or qb64(b) or qb2 or "
+                                         f"eqb64(b) or eqb2.")
 
         self._data = data
         self._cast = (cast if cast is not None else
@@ -707,7 +757,8 @@ class Structor:
 
     @property
     def data(self):
-        """Returns:
+        """Property data
+        Returns:
             data (NamedTuple): ._data namedtuple of primitive instances
 
         Getter for ._data makes it read only
@@ -717,32 +768,39 @@ class Structor:
 
     @property
     def clan(self):
-        """Returns:
-              clan (type[NamedTuple]): class of .data
+        """Property clan
+        Returns:
+            clan (type[NamedTuple]): class of .data
 
         """
         return self.data.__class__
 
+
     @property
     def name(self):
-        """Returns:
-              name (str): name of class of .data
+        """Property name
+        Returns:
+            name (str): name of class of .data
 
         """
         return self.data.__class__.__name__
 
+
     @property
     def cast(self):
-        """Return:
+        """Property cast
+        Returns:
             cast (NamedTuple): named primitive classes in .data
 
         Getter for ._cast makes it read only when not None
         """
         return self._cast
 
+
     @property
     def crew(self):
-        """Return:
+        """Property crew
+        Returns:
             crew (NamedTuple): named qb64 field values from .data
 
         Requires that any Castage where castage.ipn is not None must have a
@@ -776,43 +834,72 @@ class Structor:
 
     @property
     def asdict(self):
-        """Shorthand for .crew._asdict() for round trip conversion for sad dict
-        representation in Serder instances.
+        """Property asdict shorthand for .crew._asdict() for round trip
+        conversion for sad dict representation in Serder instances.
+
         .crew is namedtuple whose fields values are serializations of the data
         values that respect .cast Castage.ipn formats.
 
         Returns:
             dcrew (dict): .crew._asdict() as a field value map (dict) with
-            serialized values of the data value Matter instances whose
-            serializations respect the .cast Castage.ipn serialization formats.
-
+                serialized values of the data value Matter instances whose
+                serializations respect the .cast Castage.ipn serialization formats.
         """
         return self.crew._asdict()
 
 
     @property
     def qb64(self):
-        """Returns:
-              qb64 (str): concatenated qb64 of each primitive in .data
+        """Property qb64
+        Returns:
+            qb64 (str): concatenated qb64 of each primitive in .data
         """
         return (''.join(val.qb64 for val in self.data))
 
 
     @property
     def qb64b(self):
-        """Returns:
-              qb64b (bytes): concatenated qb64b of each primitive in .data
+        """Property qb64b
+        Returns:
+            qb64b (bytes): concatenated qb64b of each primitive in .data
         """
         return (b''.join(val.qb64b for val in self.data))
 
 
     @property
     def qb2(self):
-        """Returns:
-              qb2 (bytes): concatenated qb2 of each primitive in .data
-
+        """Property qb2
+        Returns:
+            qb2 (bytes): concatenated qb2 of each primitive in .data
         """
         return (b''.join(val.qb2 for val in self.data))
+
+
+    @property
+    def eqb64(self):
+        """Property eqb64 (enclosed qb64)
+        Returns:
+            eqb64 (str): qb64 (text) serialization enclosed with leading counter
+        """
+        return self.eqb64b.decode()
+
+
+    @property
+    def eqb64b(self):
+        """Property eqb64b (enclosed qb64b)
+        Returns:
+            eqb64b (bytes): qb64b (text) serialization enclosed with leading counter
+        """
+        return bytes(self.enclose())
+
+
+    @property
+    def eqb2(self):
+        """Returns:
+              eqb2 (bytes): qb2 (binary) serialization enclosed with leading counter
+
+        """
+        return bytes(self.enclose(cold=Colds.bny))
 
 
     def enclose(self, cold=Colds.txt):
@@ -821,8 +908,8 @@ class Structor:
         Uses .clan to determine counter.code from .ClanCodes
 
         Returns:
-            enclosure (bytes): encloses own fields in Counter using .clan that
-                maps to Counter code given by .ClanCodes
+            enclosure (bytearray): enclosure of own fields with leading Counter
+                using .clan that maps to Counter code given by .ClanCodes
                 When cold==Colds.txt then enclosure is in qb64 text domain
                 When cold==Colds.bny then enclosure is in qb2 binary domain
 
@@ -1045,8 +1132,6 @@ class Blinder(Structor):
                                          td=adig,
                                          ts=labeler.text)
         assert blinder.asdict == data._asdict() == sealer.crew._asdict()
-
-    ToDo:  CodeClans and ClanCodes to map to/from Counter codes to Structor Clan
 
     """
     Clans = BClanDom  # known namedtuple clans. Override in subclass with non-empty
