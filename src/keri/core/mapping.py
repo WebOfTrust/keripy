@@ -142,13 +142,13 @@ class Mapper:
 
 
     Hidden Attributes:
-        ._mad (dict): field map dict (MAD = MAp Dict)
-        ._raw (bytes): expanded mad serialization in qb64b text bytes domain
-        ._count (int): number of quadlets/triplets in mad serialization
-        ._strict (bool): labels strict format for strict property
-        ._saids (dict): default top-level said fields and codes
-        ._saidive (bool): compute saids or not
-        ._kind (str): serialization kind from Kinds
+        _mad (dict): field map dict (MAD = MAp Dict)
+        _raw (bytes): expanded mad serialization in qb64b text bytes domain
+        _count (int): number of quadlets/triplets in mad serialization
+        _strict (bool): labels strict format for strict property
+        _saids (dict): default top-level said fields and codes
+        _saidive (bool): compute saids or not
+        _kind (str): serialization kind from Kinds
 
     """
     Saids = dict(d=DigDex.Blake3_256)  # default said field label with digestive code
@@ -401,6 +401,7 @@ class Mapper:
                             False means do not compute SAIDs
         """
         return self._saidive
+
 
     @property
     def kind(self):

@@ -824,6 +824,54 @@ def test_structor():
     """End Test"""
 
 
+def test_structor_saidive():
+    """Test Structor with saids"""
+
+    nonceq = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    noncer = Noncer(nonce=nonceq)
+    anonceq = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    anoncer = Noncer(nonce=anonceq)
+    labeler = Labeler(text="issued")
+    text = labeler.text
+    textq = labeler.qb64
+
+    # manually compute said
+    tail = ''.join([nonceq, anonceq, textq])
+    code = DigDex.Blake3_256
+    size = Noncer._fullSize(code=code)
+    ser = '#' * size + tail  # prepend dummy to tail end
+    assert ser == '############################################aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPdEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued'
+    snoncer = Noncer(ser=ser.encode(), code=code)  # said nonce
+    snonceq = snoncer.qb64
+    said = snonceq
+    assert said == 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    qb64 = 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPdEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0Missued'
+    crew = BlindState(d='EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769',
+                                       u='aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+                                       td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                       ts='issued')
+    cast = ACastDom.BlindState  # defined dom cast with non-None ipns
+
+    # create said using makify  said nonce
+    mnoncer = Noncer(nonce='')
+    data = BlindState(d=mnoncer, u=noncer, td=anoncer, ts=labeler)  # data with empty mnoncer
+
+    structor = Structor(data=data, cast=cast, makify=True, saidive=True)
+    assert structor.said == said
+    assert structor.saidb == said.encode()
+    assert structor.crew == crew
+    assert structor.qb64 == qb64
+
+
+    # test round trip with verify
+    structor = Structor(qb64=qb64, cast=cast, saidive=True)
+    assert structor.said == said
+    assert structor.crew == crew
+
+
+    """Done Test"""
+
+
 def test_sealer_class():
     """test Sealer class variables etc"""
     assert Sealer.Clans == SClanDom
@@ -1178,15 +1226,15 @@ def test_blinder_class():
     state = ''
     said = 'EGwVS-ldAC1LTERsS34nsZITPqb4xc0CCzVTKgLST5NV'
     blinder = Blinder.blind(salt=salt, sn=sn)  # defaults acdc='' sn=1, tier=Tiers.low
+    assert blinder.said == said
+    assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
     assert blinder.crew == BlindState(d='EGwVS-ldAC1LTERsS34nsZITPqb4xc0CCzVTKgLST5NV',
                                       u='aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_',
                                       td='',
                                       ts='')
 
-    assert blinder.said == said
-    assert blinder.uuid == uuid
-    assert blinder.acdc == acdc
-    assert blinder.state == state
 
     states = ['issued', 'revoked']
     # test if unblinded is acdc or placeholder, generate uuid from salt and sn
@@ -1955,6 +2003,7 @@ if __name__ == "__main__":
     test_structor_doms()
     test_structor_class()
     test_structor()
+    test_structor_saidive()
     test_sealer_class()
     test_sealer()
     test_blinder_class()

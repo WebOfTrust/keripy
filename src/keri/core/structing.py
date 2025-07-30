@@ -11,7 +11,8 @@ from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, astuple, asdict
 
-from ..kering import ValidationError, InvalidValueError, EmptyMaterialError, Colds
+from ..kering import (Colds, ValidationError, InvalidValueError,
+                      EmptyMaterialError, DeserializeError, SerializeError)
 
 from .. import help
 from ..help import isNonStringSequence
@@ -389,6 +390,12 @@ class Structor:
                            ser/des as group
         CodenClans (dict): map of counter code name to clan named tuple for
                            ser/des as group
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+        Dummy (str): dummy character for computing SAIDs
 
 
     When known casts or provided in .Clans/.Casts then more flexible creation
@@ -409,6 +416,16 @@ class Structor:
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
+        said (str|None): primary said field value if any. None otherwise
+                         primary has same label as zeroth item in .saids
+        saidb (bytes|None): .said as bytes
+        saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
 
     Methods:
 
@@ -416,6 +433,8 @@ class Structor:
     Hidden:
         _data (namedtuple): named CESR primitive instances
         _cast (namedtuple): named Castage instances
+        _saids (dict): default top-level said fields and codes
+        _saidive (bool): compute saids or not
 
 
     Requires that any Castage where castage.ipn is not None must have a
@@ -454,6 +473,8 @@ class Structor:
 
     ClanCodens = ClanToCodens  # map of clan namedtuple to counter code name
     CodenClans = CodenToClans  # map of counter code name to clan namedtuple
+    Saids = dict(d=DigDex.Blake3_256)  # default said field label with digestive code
+    Dummy = '#'  # default dummy for computing SAIDS
 
     @classmethod
     def enclose(cls, structors, cold=Colds.txt):
@@ -481,8 +502,8 @@ class Structor:
                 clan = structor.clan
             else:
                 if structor.clan != clan:
-                    raise ValueError(f"Invalid  as clan={structor.clan.__name__}"
-                                     f" not sames as clan={clan.__name__}")
+                    raise InvalidValueError(f"Invalid  as clan={structor.clan.__name__}"
+                                            f" not sames as clan={clan.__name__}")
             if cold == Colds.txt:
                 buf.extend(structor.qb64b)
             elif cold == Colds.bny:
@@ -568,7 +589,8 @@ class Structor:
 
     def __init__(self, data=None, *, clan=None, cast=None, crew=None,
                                      qb64b=None, qb64=None, qb2=None,
-                                     strip=False):
+                                     strip=False, makify=False, verify=True,
+                                     saids=None, saidive=False):
         """Initialize instance
 
         Parameters:
@@ -598,9 +620,26 @@ class Structor:
                 strip contained concatenated data values. Else convert qb64 or
                 qb2 to bytearray so can strip inplace. Enables parser to extract
                 data fields from front of CESR stream when stream is bytearray.
+            makify (bool): True means compute saids when .saidive
+                           False means do not comput saids even when .saidive
+            verify (bool): True means verify serialization against mad.
+                           False means do not verify
+            saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
 
 
         """
+        makify = True if makify else False
+        verify = True if verify else False
+
+        self._saids = dict(saids if saids is not None else self.Saids)  # make copy
+        self._saidive = True if saidive else False
+
         if data:
             if not (isinstance(data, tuple) and hasattr(data, "_fields")):
                 raise InvalidValueError(f"Not namedtuple subclass {data=}.")
@@ -745,9 +784,73 @@ class Structor:
                 raise EmptyMaterialError(f"Need crew or qb64(b) or qb2 or "
                                          f"eqb64(b) or eqb2.")
 
+        if makify and self.saidive:  # compute saids at top level
+                # dummy serialization of data
+            said = None
+            dqb64 = {l: v.qb64 for l, v in data._asdict().items()}
+            for l in self.saids:
+                if l in data._fields:
+                    v = getattr(data, l)
+                    if isinstance(v, Noncer) and v.code in DigDex:
+                        code = v.code
+                    else:
+                        code = self.saids[l]
+
+                    if code != self.saids[l]:  # different than default
+                        # remember actual code for field when not default so
+                        # eventually computed said uses this code not default
+                        self.saids[l] = code  # replace default with provided
+
+                    size = Noncer._fullSize(code)
+                    dqb64[l] = self.Dummy * size
+
+            ser = ''.join(dqb64.values())  # dummied ser
+            said = Diger(ser=ser.encode(), code=code).qb64
+
+            if said:
+                replace = {}
+                for l, code in self.saids.items():
+                    if l in data._fields:  # has saidive field
+                        noncer = Noncer(qb64=said)
+                        replace[l] = noncer
+                if replace:  # replace saidive field values with saided noncers
+                    data = data._replace(**replace)  # data with saided noncers
+
+
         self._data = data
         self._cast = (cast if cast is not None else
                       self.clan(*(Castage(val.__class__) for val in self.data)))
+
+        if self.saidive and not makify and verify:  # verify saids
+            # dummy serialization of .data
+            said = None
+            dqb64 = {l: v.qb64 for l, v in self.data._asdict().items()}
+            for l in self.saids:
+                if l in data._fields:
+                    v = getattr(data, l)
+                    if isinstance(v, Noncer) and v.code in DigDex:
+                        code = v.code
+                    else:
+                        code = self.saids[l]
+
+                    if code != self.saids[l]:  # different than default
+                        # remember actual code for field when not default so
+                        # eventually computed said uses this code not default
+                        self.saids[l] = code  # replace default with provided
+
+                    size = Noncer._fullSize(code)
+                    dqb64[l] = self.Dummy * size
+
+                    ser = ''.join(dqb64.values())  # dummied ser
+                    said = Diger(ser=ser.encode(), code=code).qb64
+
+            if said:
+                for l, code in self.saids.items():
+                    if l in self.data._fields:  # has saidive field
+                        if getattr(self.data, l).qb64 != said:
+                            raise ValidationError(f"Invalid SAID for structor"
+                                                  f"={self.crew}")
+
 
 
     @property
@@ -868,6 +971,58 @@ class Structor:
             qb2 (bytes): concatenated qb2 of each primitive in .data
         """
         return (b''.join(val.qb2 for val in self.data))
+
+    @property
+    def said(self):
+        """primary said field value if any. None otherwise
+
+        Returns:
+              said (str|None): primary said field value if any. None otherwise
+                               primary has same label as zeroth item in .saids
+        """
+        if self.saidive and self.saids:
+            l = list(self.saids.keys())[0]  # primary said is zeroth entry in said
+            v = getattr(self.data, l, None)
+            return v.qb64 if v is not None else None
+
+        return None
+
+
+    @property
+    def saidb(self):
+        """primary said field value if any. None otherwise
+
+        Returns:
+              said (bytes|None): primary said field value if any. None otherwise
+                               primary has same label as zeroth item in .saids
+        """
+        return self.said.encode() if self.said is not None else None
+
+
+
+    @property
+    def saids(self):
+        """Getter for ._saids
+
+        Returns:
+            saids (dict): default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        """
+        return self._saids
+
+
+    @property
+    def saidive(self):
+        """Getter for ._saidive
+
+        Returns:
+              saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                            False means do not compute SAIDs
+        """
+        return self._saidive
 
 
 class Sealer(Structor):
@@ -992,7 +1147,6 @@ class Sealer(Structor):
             raise InvalidValueError("Unrecognized clan={self.clan}")
 
 
-
 class Blinder(Structor):
     """Blinder is Structor subclass each instance holds a namedtuple .data of
     named values belonging to ACDC blinded state attribute for blindable state
@@ -1017,12 +1171,14 @@ class Blinder(Structor):
                            ser/des as group
         CodenClans (dict): map of counter code name to clan named tuple for
                            ser/des as group
-
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+        Dummy (str): dummy character for computing SAIDs
 
     Class Attributes:
-        Dummy (bytes): dummy byte for computing said = b'#'
-        SaidCode (str): default cesr code for computing said = DigDex.Blake3_256
-
 
     When known casts are provided in .Clans/.Casts then more flexible creation
     is supported for different types of provided cast and crew.
@@ -1041,13 +1197,36 @@ class Blinder(Structor):
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
+        saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
+        said (str): qb64 said given .saids given .saids as saidive
+        saidb (bytes): qb64b said given .saids as saidive fields
 
+    Properties:
+        uuid (str): uuid of BlindState CESR .data.u 'u' field
+        uuidb (bytes): qb64b uuid of BlindState CESR .data.u 'u' field
+        acdc (str): transaction acdc said or empty of
+                       BlindState CESR .data.td 'td' field
+        acdcb (bytes): qb64b transaction acdc said of
+                           BlindState CESR .data.td 'td' field
+        state (str):  transaction state string of
+                        BlindState CESR .data.ts 'ts' field
+        stateb (bytes): transaction state string of
+                            BlindState CESR .data.ts 'ts' field
 
     Methods:
 
 
     Hidden:
-        _data (NamedTuple): named CESR primitive instances
+        _data (namedtuple): named CESR primitive instances
+        _cast (namedtuple): named Castage instances
+        _saids (dict): default top-level said fields and codes
+        _saidive (bool): compute saids or not
 
     Example:
         sdig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
@@ -1088,8 +1267,6 @@ class Blinder(Structor):
     # mapcounter code to clan name for ser/des as counted group
     CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict
 
-    Dummy = b'#'
-    SaidCode = DigDex.Blake3_256
     Tier = Tiers.low  # since used as blinding factor not authenticator
 
     @classmethod
@@ -1138,7 +1315,7 @@ class Blinder(Structor):
         uuid = cls.makeUUID(raw=raw, salt=salt, sn=sn, tier=tier)
 
         crew = BlindState(d="", u=uuid, td=acdc, ts=state)
-        return cls(crew=crew, makify=True)
+        return cls(crew=crew, makify=True, saidive=True)
 
 
     @classmethod
@@ -1187,15 +1364,14 @@ class Blinder(Structor):
         for td in acdcs:
             for ts in states:
                 crew = BlindState(d="", u=uuid, td=td, ts=ts)
-                blinder = cls(crew=crew, makify=True)
+                blinder = cls(crew=crew, makify=True, saidive=True)
                 if blinder.crew.d == said:
                     return blinder
         return None
 
 
-    def __init__(self, data=None, makify=False, verify=True, saidCode=None, **kwa):
+    def __init__(self, saidive=True, **kwa):
         """Initialize instance
-
 
         Inherited Parameters:  (see Structor)
             data (NamedTuple): fields are named primitive instances for .data
@@ -1210,77 +1386,36 @@ class Blinder(Structor):
                 of primitive for generating .data with .cast when data missing.
                 Can be used to infer namedtuple type of .data when data and clan
                 missing.
-            qb64 (str | bytes | bytearray): concatenation of qb64 data values to
+            qb64b (str|bytes|bytearray|None): concatenation of qb64b data values to
                 generate .data with data and crew missing.
-            qb2 (bytes | bytearray): concatenation of qb2 data values to generate
+            qb64 (str|bytes|bytearray|None): alias for qb64b
+            qb2 (bytes|bytearray|None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
             strip (bool): False means do not strip each value from qb64 or qb2.
-                            Default is False.
-                          True means if qb64 or qb2 are bytearray then strip
-                            contained concatenated data values. Enables parser
-                            to extract data fields from front of CESR stream.
+                Default is False. True means if qb64 or qb2 are bytearray then
+                strip contained concatenated data values. Else convert qb64 or
+                qb2 to bytearray so can strip inplace. Enables parser to extract
+                data fields from front of CESR stream when stream is bytearray.
+            makify (bool): True means compute saids when .saidive
+                           False means do not comput saids even when .saidive
+            verify (bool): True means verify serialization against mad.
+                           False means do not verify
+            saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
 
         Parameters:
-            makify (bool): True means compute SAID value of 'd' field
-                           False means do not compute SAID value of 'd' field
-            verify (bool): True means verify SAID provided by 'd' field
-                           False means do not verify SAID provided by 'd' field
-            saidCode(str|None): When not None then use to replace digest type
-                                in provided data.
+
 
         """
-        super(Blinder, self).__init__(data=data, **kwa)
+        super(Blinder, self).__init__(saidive=saidive, **kwa)
+
         if self.clan not in self.Clans:
             raise InvalidValueError("Unrecognized clan={self.clan}")
-
-        if makify:
-            # serialize all but leading 'd' field
-            tail = (b''.join(val.qb64b for key, val in self.data._asdict().items()
-                                                             if key != 'd'))
-            if saidCode is not None:
-                code = saidCode
-            elif isinstance(self.data.d, Noncer):
-                code = self.data.d.code
-            else:
-                code = self.SaidCode
-
-            if code not in DigDex:  # ensures valid digest code
-                code = self.SaidCode
-
-            size = Noncer._fullSize(code)
-            ser = self.Dummy * size + tail  # prepend dummy to tail end
-            # create diger of said by digesting dummied serialization
-            noncer = Noncer(ser=ser, code=code)  # ensures creates digest
-            # and replace .data.d with noncer of said
-            self._data = self.data._replace(d=noncer)
-
-        elif verify:
-            size = self.data.d.fullSize
-            code = self.data.d.code
-            if code not in DigDex:
-                raise ValidationError(f"Invalid {code =} for blinder said={self.crew}")
-            ser = self.Dummy * size + self.qb64b[size:]
-            diger = Diger(ser=ser, code=code)
-            if diger.qb64b != self.data.d.qb64b:
-                raise ValidationError(f"Invalid SAID for blinder={self.crew}")
-
-
-    @property
-    def said(self):
-        """said property getter
-        Returns:
-           said (str): qb64 said of BlindState CESR .data.d 'd' field
-        """
-        return self.data.d.qb64
-
-
-    @property
-    def saidb(self):
-        """saidb property getter
-        Returns:
-            saidb (bytes): qb64b said of BlindState CESR .data.d 'd' field
-        """
-        return self.data.d.qb64b
 
 
     @property
@@ -1299,7 +1434,6 @@ class Blinder(Structor):
             uuidb (bytes): qb64b uuid of BlindState CESR .data.u 'u' field
         """
         return self.data.u.nonceb
-
 
 
     @property
