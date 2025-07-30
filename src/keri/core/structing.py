@@ -409,9 +409,6 @@ class Structor:
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
-        eqb64 (str): qb64 (text) serialization enclosed with leading counter
-        eqb64b (bytes): qb64b (text) serialization enclosed with leading counter
-        eqb2 (bytes): qb2 (binary) serialization enclosed with leading counter
 
     Methods:
 
@@ -458,15 +455,66 @@ class Structor:
     ClanCodens = ClanToCodens  # map of clan namedtuple to counter code name
     CodenClans = CodenToClans  # map of counter code name to clan namedtuple
 
+    @classmethod
+    def enclose(cls, structors, cold=Colds.txt):
+        """Serializes structors with prepended counter code in either text or binary
+        domain as bytes determined by cold where text='txt' or binary='bny'
+        Uses .clan to determine counter.code from .ClanCodes
+
+        Returns:
+            enclosure (bytearray): enclosure serialized structors with
+                leading Counter using .clan of zeroth structor that maps to
+                Counter code given by .ClanCodes.
+                When cold==Colds.txt then enclosure is in qb64 text domain
+                When cold==Colds.bny then enclosure is in qb2 binary domain
+
+        Parameters:
+            structors (list[Structor]): instances of Structure.
+                                        Must all share the same clan
+            cold (str): Colds value, 'txt' means qb64b text domain
+                        Colds value, 'bny' means qb2 binary domain
+        """
+        buf = bytearray()
+        clan = None
+        for structor in structors:
+            if clan is None:
+                clan = structor.clan
+            else:
+                if structor.clan != clan:
+                    raise ValueError(f"Invalid  as clan={structor.clan.__name__}"
+                                     f" not sames as clan={clan.__name__}")
+            if cold == Colds.txt:
+                buf.extend(structor.qb64b)
+            elif cold == Colds.bny:
+                buf.extend(structor.qb2)
+            else:
+                raise InvalidValueError(f"Invalid {cold=}, not {Cold.txt} or {Colds.bny}")
+
+        if clan is None:  # empty structors
+            clan = list(cls.ClanCodens.keys())[0]  # use default as zeroth clan
+
+        try:
+            coden = cls.ClanCodens[clan.__name__]
+        except KeyError as ex:
+            raise InvalidValueError(f"Invalid on-the-fly "
+                                    f"clan={clan.__name__}") from ex
+
+        if cold == Colds.txt:
+            return Counter.enclose(qb64=buf, code=coden)
+        elif cold == Colds.bny:
+            return Counter.enclose(qb2=buf, code=coden)
+        else:
+            raise InvalidValueError(f"Invalid {cold=}, not {Cold.txt} or {Colds.bny}")
+
 
     @classmethod
     def extract(cls, qb64b=None, qb64=None, qb2=None, strip=False):
-        """Structor from  serialization of counted group
+        """List of Structor instances from  serialization of counted group
 
         Returns:
-            structor (Structor): extracts structor instance of type cls from
-                qb64 or qb2 of encoded Counter and framed group that is structor
-                uses counter.code that maps to clan given by .CodeClans
+            structors (list[Structor]): extracts structor instances of type cls
+                from qb64 or qb2 of encoded Counter and framed group that is
+                structor uses counter.code that maps to clan given by .CodeClans
 
         Parameters:
             qb64b (str|bytes|bytearray|memoryview|None): text domain CESR
@@ -481,43 +529,45 @@ class Structor:
 
         """
         qb64b = qb64b if qb64b is not None else qb64
+        structors = []
 
         if qb64b is not None:
             if hasattr(qb64b, 'encode'):
                 qb64b = qb64b.encode()
 
             ims = qb64b   # reference start of stream
-            ctr = Counter(qb64b=qb64b)
+            ctr = Counter(qb64b=qb64b)  # peek at counter
             clan = cls.Clans[cls.CodenClans[ctr.name]]  # get clan from code name
-            bs = ctr.byteSize(cold=Colds.txt)
-            qb64b = qb64b[bs:]  # skip over counter
-            structor = cls(clan=clan, qb64b=qb64b)
-            gs = bs + ctr.byteCount(cold=Colds.txt)  # size of group including ctr
+            cs = ctr.byteSize(cold=Colds.txt)  # counter byte size
+            es = ctr.byteCount(cold=Colds.txt)  # enclosed content byte size
+            gs = cs + es  # total group size including counter
+            qb64b = bytearray(qb64b[cs:gs])  # copy contents as bytearray so can strip
+            while qb64b:
+                structors.append(cls(clan=clan, qb64b=qb64b, strip=True))
             if strip and isinstance(ims, bytearray):
                 del ims[:gs]  # strip original
-
-            return structor
 
         elif qb2 is not None:
             ims = qb2   # reference start of stream
-            ctr = Counter(qb2=qb2)
+            ctr = Counter(qb2=qb2)  # peek at counter
             clan = cls.Clans[cls.CodenClans[ctr.name]]  # get clan from code name
-            bs = ctr.byteSize(cold=Colds.bny)
-            qb2 = qb2[bs:]  # skip over counter
-            structor = cls(clan=clan, qb2=qb2)
-            gs = bs + ctr.byteCount(cold=Colds.bny)  # size of group including ctr
+            cs = ctr.byteSize(cold=Colds.bny)  # counter byte size
+            es = ctr.byteCount(cold=Colds.bny)  # enclosed content byte size
+            gs = cs + es  # total group size including counter
+            qb2 = bytearray(qb2[cs:gs])  # copy contents as bytearray so can strip
+            while qb2:
+                structors.append(cls(clan=clan, qb2=qb2, strip=True))
             if strip and isinstance(ims, bytearray):
                 del ims[:gs]  # strip original
-
-            return structor
 
         else:
             raise EmptyMaterialError(f"Missing qb64b or qb64 or qb2")
 
+        return structors
+
 
     def __init__(self, data=None, *, clan=None, cast=None, crew=None,
                                      qb64b=None, qb64=None, qb2=None,
-                                     eqb64b=None, eqb64=None, eqb2=None,
                                      strip=False):
         """Initialize instance
 
@@ -551,8 +601,6 @@ class Structor:
 
 
         """
-        eqb64b = eqb64b if eqb64b is not None else eqb64  # copy eqb64 to eqb64b
-
         if data:
             if not (isinstance(data, tuple) and hasattr(data, "_fields")):
                 raise InvalidValueError(f"Not namedtuple subclass {data=}.")
@@ -563,59 +611,6 @@ class Structor:
 
             # when cast is not None then will be used instead of generating
             # custom cast below
-
-        elif eqb64b:  # has counter enclosure which gives clan, cast, and data
-            if hasattr(eqb64b, "encode"):
-                eqb64b = eqb64b.encode()
-
-            ims = eqb64b   # reference start of stream
-            ctr = Counter(qb64b=eqb64b)
-            clan = self.Clans[self.CodenClans[ctr.name]]  # get clan from code name
-
-            if (cname := self.Names.get(clan._fields)):  # fields is mark
-                cast = self.Casts[cname]  # get known cast
-            else:  # cast missing or unobtainable
-                raise InvalidValueError(f"Missing or unobtainable cast.")
-
-            # have cast now
-            for cstg in cast:
-                if not (hasattr(cstg.kls, "qb64b") and hasattr(cstg.kls, "qb2")):
-                    raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
-                                            f" Primitive.")
-
-            bs = ctr.byteSize(cold=Colds.txt)
-            eqb64b = eqb64b[bs:]  # skip over counter
-
-            data = clan(*(cstg.kls(qb64b=eqb64b, strip=strip) for cstg in cast))
-
-            gs = bs + ctr.byteCount(cold=Colds.txt)  # size of group including ctr
-            if strip and isinstance(ims, bytearray):
-                del ims[:gs]  # strip original
-
-        elif eqb2:  # has counter enclosure which gives clan, cast, and data
-            ims = eqb2   # reference start of stream
-            ctr = Counter(qb2=eqb2)
-            clan = self.Clans[self.CodenClans[ctr.name]]  # get clan from code name
-
-            if (cname := self.Names.get(clan._fields)):  # fields is mark
-                cast = self.Casts[cname]  # get known cast
-            else:  # cast missing or unobtainable
-                raise InvalidValueError(f"Missing or unobtainable cast.")
-
-            # have cast now
-            for cstg in cast:
-                if not (hasattr(cstg.kls, "qb64b") and hasattr(cstg.kls, "qb2")):
-                    raise InvalidValueError(f"Cast member {cstg.kls=} not CESR"
-                                            f" Primitive.")
-
-            bs = ctr.byteSize(cold=Colds.bny)
-            eqb2 = eqb2[bs:]  # skip over counter
-
-            data = clan(*(cstg.kls(qb2=eqb2, strip=strip) for cstg in cast))
-
-            gs = bs + ctr.byteCount(cold=Colds.bny)  # size of group including ctr
-            if strip and isinstance(ims, bytearray):
-                del ims[:gs]  # strip original
 
         else:  # no data and not counter so see if can infer clan and cast
             if not clan:  # attempt to get from cast and/or crew
@@ -873,61 +868,6 @@ class Structor:
             qb2 (bytes): concatenated qb2 of each primitive in .data
         """
         return (b''.join(val.qb2 for val in self.data))
-
-
-    @property
-    def eqb64(self):
-        """Property eqb64 (enclosed qb64)
-        Returns:
-            eqb64 (str): qb64 (text) serialization enclosed with leading counter
-        """
-        return self.eqb64b.decode()
-
-
-    @property
-    def eqb64b(self):
-        """Property eqb64b (enclosed qb64b)
-        Returns:
-            eqb64b (bytes): qb64b (text) serialization enclosed with leading counter
-        """
-        return bytes(self.enclose())
-
-
-    @property
-    def eqb2(self):
-        """Returns:
-              eqb2 (bytes): qb2 (binary) serialization enclosed with leading counter
-
-        """
-        return bytes(self.enclose(cold=Colds.bny))
-
-
-    def enclose(self, cold=Colds.txt):
-        """Serializes self with prepended counter code in either text or binary
-        domain as bytes determined by kind where text='txt' or binary='bny'
-        Uses .clan to determine counter.code from .ClanCodes
-
-        Returns:
-            enclosure (bytearray): enclosure of own fields with leading Counter
-                using .clan that maps to Counter code given by .ClanCodes
-                When cold==Colds.txt then enclosure is in qb64 text domain
-                When cold==Colds.bny then enclosure is in qb2 binary domain
-
-        Parameters:
-            cold (str): Colds value, 'txt' means qb64b text domain
-                        Colds value, 'bny' means qb2 binary domain
-        """
-        try:
-            coden = self.ClanCodens[self.clan.__name__]
-        except KeyError as ex:
-            raise InvalidValueError(f"Invalid on-the-fly clan={self.clan.__name__}") from ex
-
-        if cold == Colds.txt:
-            return Counter.enclose(qb64=self.qb64, code=coden)
-        elif cold == Colds.bny:
-            return Counter.enclose(qb2=self.qb2, code=coden)
-        else:
-            raise InvalidValueError(f"Invalid {cold=}, not {Cold.txt} or {Colds.bny}")
 
 
 class Sealer(Structor):
@@ -1308,15 +1248,7 @@ class Blinder(Structor):
                 code = self.SaidCode
 
             size = Noncer._fullSize(code)
-            dser = self.Dummy * size + tail  # prepend dummy to tail end
-
-            # now enclose
-            try:
-                coden = self.ClanCodens[self.clan.__name__]
-            except KeyError as ex:
-                raise InvalidValueError(f"Invalid on-the-fly clan={self.clan.__name__}") from ex
-            ser = Counter.enclose(qb64=dser, code=coden)
-
+            ser = self.Dummy * size + tail  # prepend dummy to tail end
             # create diger of said by digesting dummied serialization
             noncer = Noncer(ser=ser, code=code)  # ensures creates digest
             # and replace .data.d with noncer of said
@@ -1327,19 +1259,10 @@ class Blinder(Structor):
             code = self.data.d.code
             if code not in DigDex:
                 raise ValidationError(f"Invalid {code =} for blinder said={self.crew}")
-            dser = self.Dummy * size + self.qb64b[size:]
-
-            # now enclose
-            try:
-                coden = self.ClanCodens[self.clan.__name__]
-            except KeyError as ex:
-                raise InvalidValueError(f"Invalid on-the-fly clan={self.clan.__name__}") from ex
-            ser = Counter.enclose(qb64=dser, code=coden)
-
+            ser = self.Dummy * size + self.qb64b[size:]
             diger = Diger(ser=ser, code=code)
             if diger.qb64b != self.data.d.qb64b:
                 raise ValidationError(f"Invalid SAID for blinder={self.crew}")
-
 
 
     @property

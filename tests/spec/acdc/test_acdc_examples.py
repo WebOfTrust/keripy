@@ -535,18 +535,17 @@ def test_blindable_state_tel_examples_JSON():
     salt = uuids[15]
     assert salt == '0ABhY2Rjc3BlY3dvcmtyYXdm'
 
-    qb64 = "EEGKmH5d9hTgtiILc6qLD0IMOFPIn9sDzWJHqw8MBebmaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP"
-    eqb64 = "-aAYEEGKmH5d9hTgtiILc6qLD0IMOFPIn9sDzWJHqw8MBebmaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP"
-    blid = 'EEGKmH5d9hTgtiILc6qLD0IMOFPIn9sDzWJHqw8MBebm'
+    qb64 = "ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP"
+    eqb64 = "-aAYECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP"
+    blid = 'ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J'
     uuid = 'aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8'
 
     blinder = Blinder.blind(acdc='', state='', salt=salt, sn=1)
-    assert blinder.crew ==  BlindState(d='EEGKmH5d9hTgtiILc6qLD0IMOFPIn9sDzWJHqw8MBebm',
+    assert blinder.crew ==  BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
                                        u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
                                        td='',
                                        ts='')
     assert blinder.qb64 == qb64
-    assert blinder.eqb64 == eqb64
     assert blinder.said == blid
     assert blinder.uuid == uuid
 
@@ -554,7 +553,7 @@ def test_blindable_state_tel_examples_JSON():
     prior = regBob
     stamp = '2025-08-01T18:06:10.988921+00:00'
 
-    said = 'EF4jQh4Mzd0JanHdQzKhUT3keosET1jK38wW87PtOThd'
+    said = 'EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg'
 
     # test  use default sn=1  default kind=JSON
     serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp)
@@ -572,30 +571,29 @@ def test_blindable_state_tel_examples_JSON():
     {
         'v': 'ACDCCAACAAJSONAAEi.',
         't': 'bup',
-        'd': 'EF4jQh4Mzd0JanHdQzKhUT3keosET1jK38wW87PtOThd',
+        'd': 'EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg',
         'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
         'n': '1',
         'p': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
         'dt': '2025-08-01T18:06:10.988921+00:00',
-        'b': 'EEGKmH5d9hTgtiILc6qLD0IMOFPIn9sDzWJHqw8MBebm'
+        'b': 'ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J'
     }
     prior = serder.said
 
     acdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob project report ACDC
     state = 'issued'
     sn = 2
-    blid = 'ELPBXkIMcPuPjEDBfPfa0KcrIr1xGRYyYEOqikauWiFr'
+    blid = 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t'
     uuid = 'aLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzB'
-    qb64 = 'ELPBXkIMcPuPjEDBfPfa0KcrIr1xGRYyYEOqikauWiFraLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
-    eqb64 = '-aAjELPBXkIMcPuPjEDBfPfa0KcrIr1xGRYyYEOqikauWiFraLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
+    qb64 = 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
+    eqb64 = '-aAjEOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
     assert blinder.said == blid
     assert blinder.uuid == uuid
     assert blinder.qb64 == qb64
-    assert blinder.eqb64 == eqb64
 
     stamp = '2020-08-02T12:00:20.000000+00:00'
-    said = 'EMyJe9sWWHV4_sCpJyjFhOrGvnRl0uGrbRxfKWin5vj2'
+    said = 'EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW'
 
     serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp, sn=sn)
     assert serder.proto == Protocols.acdc
@@ -612,12 +610,12 @@ def test_blindable_state_tel_examples_JSON():
     {
         'v': 'ACDCCAACAAJSONAAEi.',
         't': 'bup',
-        'd': 'EMyJe9sWWHV4_sCpJyjFhOrGvnRl0uGrbRxfKWin5vj2',
+        'd': 'EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW',
         'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
         'n': '2',
-        'p': 'EF4jQh4Mzd0JanHdQzKhUT3keosET1jK38wW87PtOThd',
+        'p': 'EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg',
         'dt': '2020-08-02T12:00:20.000000+00:00',
-        'b': 'ELPBXkIMcPuPjEDBfPfa0KcrIr1xGRYyYEOqikauWiFr'
+        'b': 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t'
     }
 
 
