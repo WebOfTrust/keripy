@@ -10,7 +10,7 @@ from base64 import urlsafe_b64decode as decodeB64
 import pytest
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
-from keri.core import (MtrDex, Salter, Noncer, Mapper, Compactor, Aggor,
+from keri.core import (MtrDex, Salter, Labeler, Noncer, Mapper, Compactor, Aggor,
                        Blinder, BlindState, GenDex)
 from keri.core.eventing import incept
 from keri.vc.messaging import regcept, blindate, update, acdcmap
@@ -514,6 +514,17 @@ def test_blindable_state_tel_examples_JSON():
     raws = [b'acdcspecworkraw' + b'%0x'%(i, ) for i in range(16)]
     uuids = [Noncer(raw=raw).qb64 for raw in raws]
 
+    labeler = Labeler(label="revoked")
+    assert labeler.label == 'revoked'
+    assert labeler.qb64 == 'Yrevoked'
+
+    labeler = Labeler(label="issued")
+    assert labeler.label == 'issued'
+    assert labeler.qb64 == '0Missued'
+
+    labeler = Labeler(text="")
+    assert labeler.text == ''
+    assert labeler.qb64 == '1AAP'
 
     # Registry1 test default kind JSON uuid1 Stamp1
     stamp1 = '2025-07-04T17:51:00.000000+00:00'
@@ -542,6 +553,8 @@ def test_blindable_state_tel_examples_JSON():
     state = ''
     acdc = ''
     sn = 1
+    dummied = '############################################aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP'
+    assert len(dummied) == 96
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
     assert blinder.crew ==  BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
                                        u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
@@ -552,6 +565,7 @@ def test_blindable_state_tel_examples_JSON():
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
+    assert Blinder.enclose([blinder]).decode() == eqb64
 
     regid = regBob
     prior = regBob
@@ -573,14 +587,14 @@ def test_blindable_state_tel_examples_JSON():
     assert serder.sad['b'] == blid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAEi.',
-        't': 'bup',
-        'd': 'EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        'n': '1',
-        'p': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        'dt': '2025-08-01T18:06:10.988921+00:00',
-        'b': 'ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J'
+        "v": "ACDCCAACAAJSONAAEi.",
+        "t": "bup",
+        "d": "EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg",
+        "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "n": "1",
+        "p": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "dt": "2025-08-01T18:06:10.988921+00:00",
+        "b": "ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J"
     }
     prior = serder.said
 
@@ -591,12 +605,15 @@ def test_blindable_state_tel_examples_JSON():
     uuid = 'aLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzB'
     qb64 = 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
     eqb64 = '-aAjEOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
+    dummied = '############################################aLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
+    assert len(dummied) == 140
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
     assert blinder.qb64 == qb64
     assert blinder.said == blid
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
+    assert Blinder.enclose([blinder]).decode() == eqb64
 
 
     stamp = '2020-08-02T12:00:20.000000+00:00'
@@ -615,16 +632,107 @@ def test_blindable_state_tel_examples_JSON():
     assert serder.sad['b'] == blid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAEi.',
-        't': 'bup',
-        'd': 'EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        'n': '2',
-        'p': 'EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg',
-        'dt': '2020-08-02T12:00:20.000000+00:00',
-        'b': 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t'
+        "v": "ACDCCAACAAJSONAAEi.",
+        "t": "bup",
+        "d": "EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW",
+        "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "n": "2",
+        "p": "EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg",
+        "dt": "2020-08-02T12:00:20.000000+00:00",
+        "b": "EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t"
     }
+    prior = serder.said
 
+    stamp = '2020-08-03T12:00:20.000000+00:00'
+    state = 'revoked'
+    sn = 3
+    said = 'ENR6tbkJCJXQTiu5TP-RBxkS2_ZSZBgbJmpjKucDe07h'
+    serder = update(regid=regid, prior=prior, acdc=acdc, state=state, stamp=stamp, sn=sn)
+    assert serder.proto == Protocols.acdc
+    assert serder.pvrsn == Vrsn_2_0
+    assert serder.genus == GenDex.KERI
+    assert serder.gvrsn == Vrsn_2_0
+    assert serder.kind == Kinds.json
+    assert serder.ilk == Ilks.upd
+    assert serder.said == said
+    assert serder.stamp == stamp
+    assert serder.sad['rd'] == regid
+    assert serder.sad == \
+    {
+        "v": "ACDCCAACAAJSONAAEy.",
+        "t": "upd",
+        "d": "ENR6tbkJCJXQTiu5TP-RBxkS2_ZSZBgbJmpjKucDe07h",
+        "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "n": "3",
+        "p": "EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW",
+        "dt": "2020-08-03T12:00:20.000000+00:00",
+        "td": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+        "ts": "revoked"
+    }
+    prior = serder.said
+
+    # NonBlindable example
+    # Registry3 RegDeb test default kind JSON uuid3 Stamp3
+    stamp3 = '2025-07-04T17:53:00.000000+00:00'
+    serder = regcept(issuer=deb, uuid=uuids[3], stamp=stamp3)
+    assert serder.sad == \
+    {
+        "v": "ACDCCAACAAJSONAADa.",
+        "t": "rip",
+        "d": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
+        "u": "0ABhY2Rjc3BlY3dvcmtyYXcz",
+        "i": "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW",
+        "n": "0",
+        "dt": "2025-07-04T17:53:00.000000+00:00"
+    }
+    regDeb = rd3 = serder.said
+    assert rd3 == "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+    prior = serder.said
+
+    regid = regDeb
+    acdc = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'  # deb research report
+    stamp = '2020-08-03T12:00:20.000000+00:00'
+    state = 'issued'
+    sn = 1
+    said = 'EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-'
+    serder = update(regid=regid, prior=prior, acdc=acdc, state=state, stamp=stamp, sn=sn)
+    assert serder.said == said
+    assert serder.sad == \
+    {
+        "v": "ACDCCAACAAJSONAAEx.",
+        "t": "upd",
+        "d": "EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-",
+        "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
+        "n": "1",
+        "p": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
+        "dt": "2020-08-03T12:00:20.000000+00:00",
+        "td": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "ts": "issued"
+    }
+    prior = serder.said
+
+    stamp = '2020-08-04T12:00:20.000000+00:00'
+    state = 'revoked'
+    sn = 2
+    said = 'EJQ-ezS6h0Oa0BIN_w4KjstdapfOfrwmVluxn1DR5Gja'
+    serder = update(regid=regid, prior=prior, acdc=acdc, state=state, stamp=stamp, sn=sn)
+    assert serder.said == said
+    assert serder.sad == \
+    {
+        "v": "ACDCCAACAAJSONAAEy.",
+        "t": "upd",
+        "d": "EJQ-ezS6h0Oa0BIN_w4KjstdapfOfrwmVluxn1DR5Gja",
+        "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
+        "n": "2",
+        "p": "EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-",
+        "dt": "2020-08-04T12:00:20.000000+00:00",
+        "td": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "ts": "revoked"
+    }
+    prior = serder.said
+
+
+    """Done Test"""
 
 def test_acdc_attribute_section_JSON():
     """Attribute section examples using JSON"""
