@@ -293,8 +293,8 @@ class Habery:
                 raise ValueError(f"Bran (passcode seed material) too short.")
             bran = coring.MtrDex.Salt_128 + 'A' + bran[:21]  # qb64 salt for seed
             signer = core.Salter(qb64=bran).signer(transferable=False,
-                                                     tier=tier,
-                                                     temp=temp)
+                                                   tier=tier,
+                                                   temp=temp)
             seed = signer.qb64
             if not aeid:  # aeid must not be empty event on initial creation
                 aeid = signer.verfer.qb64  # lest it remove encryption

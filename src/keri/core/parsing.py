@@ -11,6 +11,7 @@ from collections import deque
 from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
 
+from .kraming import TimelinessCache
 from .. import kering
 from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
                       ShortageError, ColdStartError)
@@ -132,7 +133,7 @@ class Parser:
 
     def __init__(self, ims=None, framed=True, piped=False, kvy=None,
                  tvy=None, exc=None, rvy=None, vry=None, local=False,
-                 version=Vrsn_2_0):
+                 krm=None, version=Vrsn_2_0):
         """
         Initialize instance:
 
@@ -165,6 +166,12 @@ class Parser:
         self._genus = GenDex.KERI  # only supports KERI
         self.version = version  # provided version may be earlier than supported version
         # version sets  .methods, .codes, .sucodes, and .mucodes
+
+        # default timeliness cache / KRAM behavior
+        self.krm = krm
+        if not krm and self.kvy and self.kvy.db:
+            self.krm = TimelinessCache(self.kvy.db)
+
 
 
     @property
@@ -1196,6 +1203,7 @@ class Parser:
 
             elif ilk in (Ilks.qry,):  # query message
                 # ToDo neigher kvy.processQuery nor tvy.processQuery actually verify
+                self.krm.checkMessageTimeliness(serder)
                 if exts['ssgs']:
                     # use last one if more than one
                     pre, sigers = exts['ssgs'][-1] if exts['ssgs'] else (None, None)
