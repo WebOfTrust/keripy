@@ -21,8 +21,26 @@ logger = help.ogler.getLogger()
 
 
 class Counselor(doing.DoDoer):
+    """
+    Multisig event handling coordinator for group multisig events including delegation events.
+    Handles escrows for partially signed multisig events, delegation events, and witness receipts.
+
+    Doers:
+        - swain (delegating.Anchorer): handles delegation anchoring
+        - witq (agenting.WitnessInquisitor): queries witnesses for receipts
+        - witDoer (agenting.Receiptor): sends witness receipts
+        - escrowDo: processes escrows of group multisig identifiers waiting to be completed.
+    """
 
     def __init__(self, hby, swain=None, proxy=None, **kwa):
+        """
+        Initialize Counselor.
+
+        Parameters:
+            hby (Habery): database environment for local Habs
+            swain (delegating.Anchorer): optional Anchorer for delegation anchoring
+            proxy (Hab): optional proxy Hab to use for delegation anchoring if not using local Hab
+        """
 
         self.hby = hby
         self.swain = swain if swain is not None else delegating.Anchorer(hby=self.hby)
@@ -73,7 +91,7 @@ class Counselor(doing.DoDoer):
         return True
 
     def escrowDo(self, tymth, tock=1.0, **kwa):
-        """ Process escrows of group multisig identifiers waiting to be compeleted.
+        """ Process escrows of group multisig identifiers waiting to be completed.
 
         Steps involve:
            1. Sending local event with sig to other participants
@@ -99,6 +117,7 @@ class Counselor(doing.DoDoer):
             yield 0.5
 
     def processEscrows(self):
+        """Process group multisig event escrows."""
         self.processPartialSignedEscrow()
         self.processDelegateEscrow()
         self.processPartialWitnessEscrow()
@@ -192,7 +211,7 @@ class Counselor(doing.DoDoer):
 
     def processPartialWitnessEscrow(self):
         """
-        Process escrow of group multisig events that do not have a full compliment of receipts
+        Process escrow of group multisig events that do not have a full complement of receipts
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
 
