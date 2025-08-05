@@ -122,7 +122,9 @@ class RegistryInceptor(doing.DoDoer):
             raise ValueError(f"{self.alias} is not a valid AID alias")
 
         estOnly = "estOnly" in kwa and kwa["estOnly"]
-        registry = self.rgy.makeRegistry(name=self.registryName, prefix=hab.pre, **kwa)
+
+        registry_kwa = {k: v for k, v in kwa.items() if k in ['nonce', 'noBackers', 'baks', 'toad', 'estOnly', 'vcp']}
+        registry = self.rgy.makeRegistry(name=self.registryName, prefix=hab.pre, **registry_kwa)
 
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
