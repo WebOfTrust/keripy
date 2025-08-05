@@ -20,5 +20,5 @@ from .mapping import Mapper, EscapeDex, Compactor, Aggor
 from .serdering import Serdery, Serder, SerderKERI, SerderACDC
 from .structing import (Structor, Sealer, Blinder,
                         CodenToClans, ClanToCodens,
-                        SealDigest, SealRoot, SealBack, SealLast, SealTrans,
+                        SealDigest, SealRoot, SealBack, SealLast, SealSource,
                         SealEvent, SealKind, BlindState)

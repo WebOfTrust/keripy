@@ -24,7 +24,7 @@ from keri.help import helping
 
 from keri import core
 
-from keri.core import Sealer, SealEvent, SealTrans
+from keri.core import Sealer, SealEvent, SealSource
 
 from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
@@ -81,7 +81,7 @@ def test_serder_class():
         'SealDigest': '-Q',
         'SealRoot': '-R',
         'SealEvent': '-S',
-        'SealTrans': '-T',
+        'SealSource': '-T',
         'SealLast': '-U',
         'SealBack': '-V',
         'SealKind': '-W'
@@ -93,7 +93,7 @@ def test_serder_class():
         '-Q': 'SealDigest',
         '-R': 'SealRoot',
         '-S': 'SealEvent',
-        '-T': 'SealTrans',
+        '-T': 'SealSource',
         '-U': 'SealLast',
         '-V': 'SealBack',
         '-W': 'SealKind'

@@ -35,7 +35,7 @@ from .coring import (versify, Kinds, Ilks, PreDex, DigDex,
                      Verfer, Diger, Prefixer, Tholder, Saider)
 
 from .counting import Counter, Codens
-from .structing import (SealDigest, SealRoot, SealEvent, SealTrans, SealLast,
+from .structing import (SealDigest, SealRoot, SealEvent, SealSource, SealLast,
                         SealBack, SealKind, StateEstEvent, StateEvent)
 
 from . import indexing

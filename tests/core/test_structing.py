@@ -22,7 +22,7 @@ from keri.core import (Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
 
 from keri.core import (Structor, Sealer, Blinder,
                        SealDigest, SealRoot, SealBack, SealEvent,
-                                 SealLast, SealTrans, SealKind, BlindState)
+                                 SealLast, SealSource, SealKind, BlindState)
 from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
                                  EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
                                  AClanDom, ACastDom,
@@ -46,7 +46,7 @@ def test_structor_doms():
         'SealDigest': SealDigest,
         'SealRoot': SealRoot,
         'SealEvent': SealEvent,
-        'SealTrans': SealTrans,
+        'SealSource': SealSource,
         'SealLast': SealLast,
         'SealBack': SealBack,
         'SealKind': SealKind,
@@ -59,7 +59,7 @@ def test_structor_doms():
         'SealEvent': SealEvent(i=Castage(kls=Prefixer, ipn=None),
                                s=Castage(kls=Number, ipn='numh'),
                                d=Castage(kls=Diger, ipn=None)),
-        'SealTrans': SealTrans(s=Castage(kls=Number, ipn='numh'),
+        'SealSource': SealSource(s=Castage(kls=Number, ipn='numh'),
                                d=Castage(kls=Diger, ipn=None)),
         'SealLast': SealLast(i=Castage(kls=Prefixer, ipn=None)),
         'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
@@ -87,7 +87,7 @@ def test_structor_doms():
         'SealDigest': 'DigestSealSingles',
         'SealRoot': 'MerkleRootSealSingles',
         'SealEvent': 'SealSourceTriples',
-        'SealTrans': 'SealSourceCouples',
+        'SealSource': 'SealSourceCouples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
@@ -98,7 +98,7 @@ def test_structor_doms():
         'DigestSealSingles': 'SealDigest',
         'MerkleRootSealSingles': 'SealRoot',
         'SealSourceTriples': 'SealEvent',
-        'SealSourceCouples': 'SealTrans',
+        'SealSourceCouples': 'SealSource',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
@@ -118,7 +118,7 @@ def test_structor_class():
         ('d',): 'SealDigest',
         ('rd',): 'SealRoot',
         ('i', 's', 'd'): 'SealEvent',
-        ('s', 'd'): 'SealTrans',
+        ('s', 'd'): 'SealSource',
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
@@ -130,7 +130,7 @@ def test_structor_class():
         'SealDigest': 'DigestSealSingles',
         'SealRoot': 'MerkleRootSealSingles',
         'SealEvent': 'SealSourceTriples',
-        'SealTrans': 'SealSourceCouples',
+        'SealSource': 'SealSourceCouples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
@@ -142,7 +142,7 @@ def test_structor_class():
         'DigestSealSingles': 'SealDigest',
         'MerkleRootSealSingles': 'SealRoot',
         'SealSourceTriples': 'SealEvent',
-        'SealSourceCouples': 'SealTrans',
+        'SealSourceCouples': 'SealSource',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
@@ -821,7 +821,6 @@ def test_structor():
         structor = Structor(crew=dcrew)  # missing cast for custom clan from crew
 
 
-
     # test multiple structors in  enclose and extract
     assert aid == 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
     assert dig == 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
@@ -916,7 +915,7 @@ def test_sealer_class():
         ('d',): 'SealDigest',
         ('rd',): 'SealRoot',
         ('i', 's', 'd'): 'SealEvent',
-        ('s', 'd'): 'SealTrans',
+        ('s', 'd'): 'SealSource',
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
@@ -926,7 +925,7 @@ def test_sealer_class():
         'SealDigest': 'DigestSealSingles',
         'SealRoot': 'MerkleRootSealSingles',
         'SealEvent': 'SealSourceTriples',
-        'SealTrans': 'SealSourceCouples',
+        'SealSource': 'SealSourceCouples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples'
@@ -937,7 +936,7 @@ def test_sealer_class():
         'DigestSealSingles': 'SealDigest',
         'MerkleRootSealSingles': 'SealRoot',
         'SealSourceTriples': 'SealEvent',
-        'SealSourceCouples': 'SealTrans',
+        'SealSourceCouples': 'SealSource',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind'
