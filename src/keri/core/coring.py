@@ -1801,7 +1801,7 @@ class Number(Matter):
         Parameters:
             num (int | str | None): non-negative int number or hex str of int
                 number or 0 if None
-            numh (str):  string equivalent of non-negative int number
+            numh (str): hex string equivalent of non-negative int number
 
         Note: int("0xab", 16) is also valid since int recognizes 0x hex prefix
 
@@ -1811,6 +1811,8 @@ class Number(Matter):
                 if num is None:
                     if numh is None or numh == '':
                         num = 0
+                    elif isinstance(numh, int):
+                        num = numh
                     else:
                         num = int(numh, 16)
 
@@ -1820,8 +1822,12 @@ class Number(Matter):
                             num = 0
                         else:
                             num = int(num, 16)
+
+                if num < 0:
+                    raise InvalidValueError(f"Not whole number={num}")
+
             except ValueError as ex:
-                raise InvalidValueError(f"Not whole number={num} .") from ex
+                raise InvalidValueError(f"Not whole number={num}") from ex
 
             if code is None:  # dynamically size code
                 if not isinstance(num, int) or num < 0:

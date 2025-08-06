@@ -2136,9 +2136,14 @@ class Serder:
 
 class SerderKERI(Serder):
     """SerderKERI is Serder subclass with Labels for KERI packet types (ilks) and
-       properties for exposing field values of KERI messages
+    properties for exposing field values of KERI messages
 
-       See docs for Serder
+    See docs for Serder
+
+    Inherited Properties:
+
+    Properties:
+
     """
     #override in subclass to enforce specific protocol
     Protocol = Protocols.keri  # required protocol, None means any in Protocols is ok

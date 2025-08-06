@@ -683,6 +683,8 @@ def incept(keys,
             raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
 
     cnfg = cnfg if cnfg is not None else []
+    if not isinstance(cnfg, list):
+        raise ValueError(f"Expected list got {cnfg=}")
 
     data = data if data is not None else []
     if not isinstance(data, list):
@@ -761,6 +763,7 @@ def rotate(pre,
            wits=None,  # prior existing wits
            cuts=None,
            adds=None,
+           cnfg=None,
            data=None,
            version=Version,
            pvrsn=None,
@@ -785,6 +788,7 @@ def rotate(pre,
         wits (list | None): prior witness identifier prefixes qb64
         cuts (list | None): witness prefixes to cut qb64
         adds (list | None): witness prefixes to add qb64
+        cnfg (list | None): configuration traits from TraitDex
         data (list | None): seal dicts
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
@@ -869,8 +873,9 @@ def rotate(pre,
         if toader.num != 0:  # invalid toad
             raise ValueError(f"Invalid toad = {toader.num} for wits = {newitset}")
 
-    if not (isinstance(data, list) or data is None):
-        raise ValueError(f"Expected list got {data=}")
+    cnfg = cnfg if cnfg is not None else []
+    if not isinstance(cnfg, list):
+        raise ValueError(f"Expected list got {cnfg=}")
 
     data = data if data is not None else []
     if not isinstance(data, list):
@@ -891,8 +896,12 @@ def rotate(pre,
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
-               a=data,  # list of seals
                )
+    if pvrsn.major >= 2:
+        ked['c'] = cnfg  # list of config traits
+        ked['a'] = data  # list of seals
+    else:
+        ked['a'] = data  # list of seals
 
     serder = serdering.SerderKERI(sad=ked, makify=True)
     return serder
@@ -910,7 +919,7 @@ def deltate(pre,
     Syntactic suger that calls rotate but with ilk set to drt.
 
 
-    Parameters:
+    Inherited Parameters:
         pre (str): identifier prefix qb64
         keys  (list): current signing keys qb64
         dig (str): said of previous event qb64
@@ -923,6 +932,7 @@ def deltate(pre,
         wits (list): prior witness identifier prefixes qb64
         cuts (list): witness prefixes to cut qb64
         adds (list): witness prefixes to add qb64
+        cnfg (list | None): configuration traits from TraitDex
         data (list): seal dicts
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version

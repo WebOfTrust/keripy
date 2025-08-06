@@ -685,8 +685,8 @@ def test_blindable_state_tel_examples_JSON():
         "n": "0",
         "dt": "2025-07-04T17:53:00.000000+00:00"
     }
-    regDeb = rd3 = serder.said
-    assert rd3 == "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
+    regDeb = serder.said
+    assert regDeb == "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"
     prior = serder.said
 
     regid = regDeb
