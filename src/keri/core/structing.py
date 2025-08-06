@@ -34,41 +34,45 @@ from .signing import Tiers, Salter
 
 # Digest Seal: uniple (d,)
 # d = digest qb64 of data  (usually SAID)
+# use DigestSealSingles as count code for CESR native
 SealDigest = namedtuple("SealDigest", 'd')
 
 # Root Seal: uniple (rd,)
 # rd = Merkle tree root digest qb64 digest of anchored (sealed) data in Merkle tree
+# use MerkleRootSealSingles as count code for CESR native
 SealRoot = namedtuple("SealRoot", 'rd')
+
+# Source Seal: duple (s, d)  for Issuance, Delegation, or Transaction Event
+# where the AID pre of the issuer is implied by the context wherein the seal appears.
+# s = sn of event as lowercase hex string  no leading zeros,
+# d = SAID digest qb64 of event (issuance, delegation, or transaction)
+# the pre is provided in the 'i' field  qb64 of identifier prefix of KEL
+# use SealSourceCouples as count code for CESR native
+SealSource = namedtuple("SealSource", 's d')
 
 # Event Seal: triple (i, s, d)
 # i = pre is qb64 of identifier prefix of KEL for event,
 # s = sn of event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64 of event
+# d = SAID digest qb64 of key event
+# use SealSourceTriples as count code for CESR native
 SealEvent = namedtuple("SealEvent", 'i s d')
-
-# Transaction Event Seal for Transaction Event: duple (s, d) or other issuing
-# event such as delegation
-# s = sn of transaction event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64 of transaction event
-# the pre is provided in the 'i' field  qb64 of identifier prefix of KEL
-# key event that this seal appears.
-# use SealSourceCouples count code for attachment
-SealSource = namedtuple("SealSource", 's d')
 
 # Last Establishment Event Seal: uniple (i,)
 # i = pre is qb64 of identifier prefix of KEL from which to get last est, event
 # used to indicate to get the latest keys available from KEL for 'i'
+# use SealSourceLastSingles as count code for CESR native
 SealLast = namedtuple("SealLast", 'i')
 
 # Backer Seal: couple (bi, d)
 # bi = pre qb64 backer nontrans identifier prefix
 # d = digest qb64 of backer metadata anchored to event usually SAID of data
+# use BackerRegistrarSealCouples as count code for CESR native
 SealBack = namedtuple("SealBack", 'bi d')
 
 # Kind Digest Seal for typed versioned digests : duple (t, d)
 # t = type of digest as Verser qb64,
 # d = SAID digest qb64 of transaction event
-# use TypedDigestSealCouples count code for attachment
+# use TypedDigestSealCouples count code for CESR Native
 SealKind = namedtuple("SealKind", 't d')
 
 # Following is Blinded State Attribute Block for 'bup' Transaction Event
@@ -78,7 +82,7 @@ SealKind = namedtuple("SealKind", 't d')
 # u = UUID blind as deterministically derived from update sn and salty nonce
 # tc = SAID of ACDC top-level 'd' field value
 # ts = state as string of Labler.label type
-# use BlindStateGroup count code for attachment
+# use BlindStateGroup count code for CESR native
 BlindState = namedtuple("BlindState", 'd u td ts')
 
 
@@ -165,8 +169,8 @@ class SealClanDom(IceMapDom):
     """
     SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference (d,)
     SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference (rd,)
-    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple (i,s,d)
     SealSource: type[NamedTuple] = SealSource  # SealSource class reference couple (s,d)
+    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple (i,s,d)
     SealLast: type[NamedTuple] = SealLast  # SealLast class reference single (i,)
     SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
     SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
@@ -197,11 +201,11 @@ class SealCastDom(IceMapDom):
     """
     SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
     SealRoot: NamedTuple = SealRoot(rd=Castage(Diger))  # SealRoot class reference
+    SealSource: NamedTuple = SealSource(s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealSource class reference couple
     SealEvent: NamedTuple = SealEvent(i=Castage(Prefixer),
                                       s=Castage(Number, 'numh'),
                                       d=Castage(Diger))  # SealEvent class reference triple
-    SealSource: NamedTuple = SealSource(s=Castage(Number, 'numh'),
-                                      d=Castage(Diger))  # SealSource class reference couple
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
     SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
                                         d=Castage(Diger))  # SealBack class reference
@@ -278,8 +282,8 @@ class AllClanDom(IceMapDom):
     """
     SealDigest: type[NamedTuple] = SealDigest  # SealDigest class reference (d,)
     SealRoot: type[NamedTuple] = SealRoot  # SealRoot class reference (rd,)
-    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple (i,s,d)
     SealSource: type[NamedTuple] = SealSource  # SealSource class reference couple (s,d)
+    SealEvent: type[NamedTuple] = SealEvent  # SealEvent class reference triple (i,s,d)
     SealLast: type[NamedTuple] = SealLast  # SealLast class reference single (i,)
     SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
     SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
@@ -309,11 +313,11 @@ class AllCastDom(IceMapDom):
     """
     SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
     SealRoot: NamedTuple = SealRoot(rd=Castage(Diger))  # SealRoot class reference
+    SealSource: NamedTuple = SealSource(s=Castage(Number, 'numh'),
+                                      d=Castage(Diger))  # SealSource class reference couple
     SealEvent: NamedTuple = SealEvent(i=Castage(Prefixer),
                                       s=Castage(Number, 'numh'),
                                       d=Castage(Diger))  # SealEvent class reference triple
-    SealSource: NamedTuple = SealSource(s=Castage(Number, 'numh'),
-                                      d=Castage(Diger))  # SealSource class reference couple
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
     SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
                                         d=Castage(Diger))  # SealBack class reference
@@ -334,8 +338,8 @@ ACastDom = AllCastDom()  # create instance
 ClanToCodens = dict()
 ClanToCodens[SClanDom.SealDigest.__name__] = Codens.DigestSealSingles
 ClanToCodens[SClanDom.SealRoot.__name__] = Codens.MerkleRootSealSingles
-ClanToCodens[SClanDom.SealEvent.__name__] = Codens.SealSourceTriples
 ClanToCodens[SClanDom.SealSource.__name__] = Codens.SealSourceCouples
+ClanToCodens[SClanDom.SealEvent.__name__] = Codens.SealSourceTriples
 ClanToCodens[SClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
 ClanToCodens[SClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
 ClanToCodens[SClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
