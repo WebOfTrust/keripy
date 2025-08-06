@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.spac.essr.tsping module
+keri.spac.payloading module
 
 """
 
@@ -10,18 +10,18 @@ from keri.core import coring, MtrDex
 from keri.kering import InvalidSoftError, InvalidCodeError
 
 
-Tspage = namedtuple("Tspage", 'HOP RFI RFA RFD SCS')
+PayloadTypage = namedtuple("PayloadTypage", 'HOP RFI RFA RFD SCS')
 
-Tsps = Tspage(HOP='HOP', RFI='RFI', RFA='RFA', RFD='RFD', SCS='SCS')
+PayloadTypes = PayloadTypage(HOP='HOP', RFI='RFI', RFA='RFA', RFD='RFD', SCS='SCS')
 
 
-class Tsper(coring.Tagger):
+class PayloadTyper(coring.Tagger):
     """
-    Tsper is subclass of Tagger, cryptographic material, for formatted
-    message types (tsps) in Base64. Leverages Tagger support compact special
+    PayloadTyper is subclass of Tagger, cryptographic material, for formatted
+    message types (PayloadTypes) in Base64. Leverages Tagger support compact special
     fixed size primitives with non-empty soft part and empty raw part.
 
-    Tsper provides a more compact representation than would be obtained by
+    PayloadTyper provides a more compact representation than would be obtained by
     converting the raw ASCII representation to Base64.
 
     Attributes:
@@ -51,7 +51,7 @@ class Tsper(coring.Tagger):
 
 
     Properties:
-        tsp (str):  message type from Tsps of Tspage
+        type (str):  message type from PayloadTypes of PayloadTypage
 
     Inherited Hidden:  (See Tagger)
         _code (str): value for .code property
@@ -72,7 +72,7 @@ class Tsper(coring.Tagger):
 
     """
 
-    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', tsp='', **kwa):
+    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', type='', **kwa):
         """
         Inherited Parameters:  (see Tagger)
             raw (bytes | bytearray | None): unqualified crypto material usable
@@ -94,19 +94,19 @@ class Tsper(coring.Tagger):
 
         """
         if not (qb64b or qb64 or qb2):
-            if tsp:
-                tag = tsp
+            if type:
+                tag = type
 
-        super(Tsper, self).__init__(qb64b=qb64b, qb64=qb64, qb2=qb2, tag=tag, **kwa)
+        super(PayloadTyper, self).__init__(qb64b=qb64b, qb64=qb64, qb2=qb2, tag=tag, **kwa)
 
         if self.code not in (MtrDex.Tag3, ):
             raise InvalidCodeError(f"Invalid code={self.code} for Tsper "
-                                   f"{self.tsp=}.")
-        if self.tsp not in Tsps:
-            raise InvalidSoftError(f"Invalid tsp={self.tsp} for Tsper.")
+                                   f"{self.type=}.")
+        if self.type not in PayloadTypes:
+            raise InvalidSoftError(f"Invalid tsp={self.type} for Tsper.")
 
     @property
-    def tsp(self):
+    def type(self):
         """Returns:
                 tag (str): B64 primitive without prepad (strips prepad from soft)
 
