@@ -57,6 +57,25 @@ def test_keri_examples():
     # UUIDs
     raws = [b'kerispecworkraw' + b'%0x'%(i, ) for i in range(16)]
     uuids = [Noncer(raw=raw).qb64 for raw in raws]
+    assert uuids == \
+    [
+        '0ABrZXJpc3BlY3dvcmtyYXcw',
+        '0ABrZXJpc3BlY3dvcmtyYXcx',
+        '0ABrZXJpc3BlY3dvcmtyYXcy',
+        '0ABrZXJpc3BlY3dvcmtyYXcz',
+        '0ABrZXJpc3BlY3dvcmtyYXc0',
+        '0ABrZXJpc3BlY3dvcmtyYXc1',
+        '0ABrZXJpc3BlY3dvcmtyYXc2',
+        '0ABrZXJpc3BlY3dvcmtyYXc3',
+        '0ABrZXJpc3BlY3dvcmtyYXc4',
+        '0ABrZXJpc3BlY3dvcmtyYXc5',
+        '0ABrZXJpc3BlY3dvcmtyYXdh',
+        '0ABrZXJpc3BlY3dvcmtyYXdi',
+        '0ABrZXJpc3BlY3dvcmtyYXdj',
+        '0ABrZXJpc3BlY3dvcmtyYXdk',
+        '0ABrZXJpc3BlY3dvcmtyYXdl',
+        '0ABrZXJpc3BlY3dvcmtyYXdm'
+    ]
 
 
     # multi-sig inception for Ean
