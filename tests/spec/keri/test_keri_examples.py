@@ -13,7 +13,7 @@ from ordered_set import OrderedSet as oset
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks, TraitDex
 from keri.core import (MtrDex, Salter, Signer, Diger, Noncer, Number, Structor,
                        SealEvent, SealSource)
-from keri.core import (incept, interact, rotate, delcept, deltate)
+from keri.core import (incept, interact, rotate, delcept, deltate, receipt)
 
 
 def test_keri_examples_json():
@@ -582,6 +582,33 @@ def test_keri_examples_json():
                         b':[{"i":"EHqSsH1Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur","s":"1","d":"ENl9GdcDY'
                         b'-4hlg5GtVwOg2E9X7JHw-7Dr5Zq5KNirISF"}]}')
 
+    # Test receipt
+    rctpre = eanaid
+    rctsaid = eanprior
+    rctsn = eansn
+    serder = receipt(pre=rctpre,
+                      sn=rctsn,
+                      said=rctsaid,
+                      pvrsn=Vrsn_2_0,
+                      gvrsn=Vrsn_2_0,
+                      kind=kind)
+
+    assert serder.said == rctsaid  # note said of receipt is not computed but refernced
+    assert serder.pre == rctpre
+    assert serder.sn == rctsn
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAACT.",
+        "t": "rct",
+        "d": "EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "s": "2"
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAACT.","t":"rct","d":"EJOnAKXGaSyJ_43kit0V806NNeGWS07lfj'
+                          b'ybB1UcfWsv","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","s":"2"}')
+
     """Done Test"""
 
 
@@ -1144,6 +1171,36 @@ def test_keri_examples_cesr():
                         b'lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB-JAWBO3cCAfQiqndZBBxwNk6RGkyA-OA1XbZhBj3s4-V'
                         b'IsCoBPowpltoeF14nMbU1ng89JSoYf3AmWhZ50KaCaVO6SIW-JAA-JAY-TAXEF-jViYoBr8p3vkp'
                         b'ZuHlkvxAAY5GZkmQ0QaaHfiE0kg3MAABEFzRkEIXetj-ojZaj0U6P9OqroqZzV0kYwoHGqnlUOwv')
+
+    # Test receipt
+    rctpre = eanaid
+    rctsaid = eanprior
+    rctsn = eansn
+    serder = receipt(pre=rctpre,
+                     sn=rctsn,
+                      said=rctsaid,
+                      pvrsn=Vrsn_2_0,
+                      gvrsn=Vrsn_2_0,
+                      kind=kind)
+
+    assert serder.said == rctsaid  # note said of receipt is not computed but refernced
+    assert serder.pre == rctpre
+    assert serder.sn == rctsn
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAABw.',
+        't': 'rct',
+        'd': 'EADBM_Gjzv1_mImlJPPD0bzYmUXmXmCiFIncRYfZMaFc',
+        'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+        's': '2'
+    }
+
+
+    assert serder.raw == (b'-FAb0OKERICAACAAXrctEADBM_Gjzv1_mImlJPPD0bzYmUXmXmCiFIncRYfZMaFcEDZOA3y_b_0L'
+                          b'G4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsMAAC')
+
+
 
     """Done Test"""
 

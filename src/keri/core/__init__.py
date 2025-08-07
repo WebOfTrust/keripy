@@ -22,4 +22,4 @@ from .structing import (Structor, Sealer, Blinder,
                         CodenToClans, ClanToCodens,
                         SealDigest, SealRoot, SealBack, SealLast, SealSource,
                         SealEvent, SealKind, BlindState)
-from .eventing import (incept, interact, rotate, delcept, deltate)
+from .eventing import (incept, interact, rotate, delcept, deltate, receipt)
