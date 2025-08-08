@@ -13,7 +13,8 @@ from ordered_set import OrderedSet as oset
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks, TraitDex
 from keri.core import (MtrDex, Salter, Signer, Diger, Noncer, Number, Structor,
                        SealEvent, SealSource)
-from keri.core import (incept, interact, rotate, delcept, deltate, receipt)
+from keri.core import (incept, interact, rotate, delcept, deltate, receipt,
+                       query, reply, prod, bare)
 
 
 def test_keri_examples_json():
@@ -608,6 +609,168 @@ def test_keri_examples_json():
 
     assert serder.raw == (b'{"v":"KERICAACAAJSONAACT.","t":"rct","d":"EJOnAKXGaSyJ_43kit0V806NNeGWS07lfj'
                           b'ybB1UcfWsv","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","s":"2"}')
+
+
+    # Routed Messages
+    # Query Message Body
+    # Test query
+    pre = fayaid
+    route = "/oobi"
+    replyRoute = "/oobi/process"
+    q = dict(i=eanaid, role="witness")
+    dts = '2025-08-21T17:50:00.000000+00:00'
+
+    serder = query(pre=pre,
+                   route=route,
+                   replyRoute=replyRoute,
+                   query=q,
+                   stamp=dts,
+                   pvrsn=Vrsn_2_0,
+                   gvrsn=Vrsn_2_0,
+                   kind=kind)
+
+    said = serder.said
+    assert said == 'EEiUK4cVgcyA1Dk6g2jFzqc5JerkaSnJi3IosutVCyYO'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAEe.",
+        "t": "qry",
+        "d": "EEiUK4cVgcyA1Dk6g2jFzqc5JerkaSnJi3IosutVCyYO",
+        "i": "EHqSsH1Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur",
+        "dt": "2025-08-21T17:50:00.000000+00:00",
+        "r": "/oobi",
+        "rr": "/oobi/process",
+        "q":
+        {
+            "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+            "role": "witness"
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAEe.","t":"qry","d":"EEiUK4cVgcyA1Dk6g2jFzqc5JerkaSnJi3'
+                        b'IosutVCyYO","i":"EHqSsH1Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur","dt":"2025-08'
+                        b'-21T17:50:00.000000+00:00","r":"/oobi","rr":"/oobi/process","q":{"i":"EPR7FW'
+                        b'sN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","role":"witness"}}')
+
+    # Reply states
+    pre = eanaid
+    raid = eanaid
+    route = '/oobi/process'
+    url = "https://example.com/witness/BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B"
+    data = dict(i=raid, url=url)
+    dts = '2020-08-21T17:52:00.000000+00:00'
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EPdgmUkvx5o_KRg3elBqj_vSZOFgWI9hCVWO-FfGZz8U'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAFR.",
+        "t": "rpy",
+        "d": "EPdgmUkvx5o_KRg3elBqj_vSZOFgWI9hCVWO-FfGZz8U",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-21T17:52:00.000000+00:00",
+        "r": "/oobi/process",
+        "a":
+        {
+            "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+            "url": "https://example.com/witness/BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B"
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFR.","t":"rpy","d":"EPdgmUkvx5o_KRg3elBqj_vSZOFgWI9hCV'
+                        b'WO-FfGZz8U","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                        b'-21T17:52:00.000000+00:00","r":"/oobi/process","a":{"i":"EPR7FWsN3tOM8PqfMap'
+                        b'2FRfF4MFQ4v3ZXjBUcMVtvhmB","url":"https://example.com/witness/BGKV6v93ue5L5w'
+                        b'sgk75t6j8TcdgABMN9x-eIyPi96J3B"}}')
+
+    # Test prod
+    pre = fayaid
+    route = "/confidential"
+    replyRoute = "/confidential/process"
+    q = dict(i=eanaid, name=True)
+    dts = '2025-08-21T17:50:00.000000+00:00'
+
+    serder = prod(pre=pre,
+                   route=route,
+                   replyRoute=replyRoute,
+                   query=q,
+                   stamp=dts,
+                   pvrsn=Vrsn_2_0,
+                   gvrsn=Vrsn_2_0,
+                   kind=kind)
+
+    said = serder.said
+    assert said == 'EHNqhJXgUdYHFzNiuO7Ue06QWRnOMjhTrVt_QGOfZjH_'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAEp.",
+        "t": "pro",
+        "d": "EHNqhJXgUdYHFzNiuO7Ue06QWRnOMjhTrVt_QGOfZjH_",
+        "i": "EHqSsH1Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur",
+        "dt": "2025-08-21T17:50:00.000000+00:00",
+        "r": "/confidential",
+        "rr": "/confidential/process",
+        "q":
+        {
+            "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+            "name": True
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAEp.","t":"pro","d":"EHNqhJXgUdYHFzNiuO7Ue06QWRnOMjhTrV'
+                        b't_QGOfZjH_","i":"EHqSsH1Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur","dt":"2025-08'
+                        b'-21T17:50:00.000000+00:00","r":"/confidential","rr":"/confidential/process",'
+                        b'"q":{"i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","name":true}}')
+
+
+    # Test bare
+    pre = eanaid
+    raid = eanaid
+    route = "/confidential/process"
+    data = dict(i=raid, name="Ean")
+    dts = '2020-08-22T17:52:00.000000+00:00'
+
+    serder = bare(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EMSlSHIe04CuAqhz55nAnBpE_0T65Sqs2fmaPpsNIbnn'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAEV.",
+        "t": "bar",
+        "d": "EMSlSHIe04CuAqhz55nAnBpE_0T65Sqs2fmaPpsNIbnn",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-22T17:52:00.000000+00:00",
+        "r": "/confidential/process",
+        "a":
+        {
+            "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+            "name": "Ean"
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAEV.","t":"bar","d":"EMSlSHIe04CuAqhz55nAnBpE_0T65Sqs2f'
+                        b'maPpsNIbnn","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                        b'-22T17:52:00.000000+00:00","r":"/confidential/process","a":{"i":"EPR7FWsN3tO'
+                        b'M8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","name":"Ean"}}')
 
     """Done Test"""
 
