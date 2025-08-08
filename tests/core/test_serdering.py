@@ -3796,7 +3796,7 @@ def test_keri_native_dumps_loads():
     assert serder.sad == sad
 
 
-    # Test xincept xip from eventing
+    # Test exchept xip from eventing
     sender = 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U'
     receiver = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
     modifiers = dict(role="boss", motto="You got this!")

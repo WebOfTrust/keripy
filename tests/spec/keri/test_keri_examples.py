@@ -14,7 +14,7 @@ from keri import Vrsn_2_0, Kinds, Protocols, Ilks, TraitDex
 from keri.core import (MtrDex, Salter, Signer, Diger, Noncer, Number, Structor,
                        SealEvent, SealSource)
 from keri.core import (incept, interact, rotate, delcept, deltate, receipt,
-                       query, reply, prod, bare)
+                       query, reply, prod, bare, exchept, exchange)
 
 
 def test_keri_examples_json():
@@ -772,6 +772,380 @@ def test_keri_examples_json():
                         b'-22T17:52:00.000000+00:00","r":"/confidential/process","a":{"i":"EPR7FWsN3tO'
                         b'M8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","name":"Ean"}}')
 
+    # Test exchange
+    # Test exchept xip from eventing
+    sender = fayaid
+    receiver = eanaid
+    route = "/offer"
+    modifiers = dict(timing="immediate")
+    attributes = dict(action="sell", item="Rembrant", price=300000.00)
+    nonce = uuids[0]
+    dts = '2020-08-30T13:30:10.123456+00:00'
+
+    serder = exchept(sender=sender,
+                     receiver=receiver,
+                     route=route,
+                     modifiers=modifiers,
+                     attributes=attributes,
+                     nonce=nonce,
+                     stamp=dts,
+                     pvrsn=Vrsn_2_0,
+                     gvrsn=Vrsn_2_0,
+                     kind=kind)
+
+    said = serder.said
+    assert said == 'EJbE2agA3239Iusld1lNvFAxRuhv1SX0mAxxUm67gWOU'
+    xid = said  # exchange ID
+    prior = said
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAFn.",
+        "t": "xip",
+        "d": "EJbE2agA3239Iusld1lNvFAxRuhv1SX0mAxxUm67gWOU",
+        "u": "0ABrZXJpc3BlY3dvcmtyYXcw",
+        "i": "EHqSsH1Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur",
+        "ri": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-30T13:30:10.123456+00:00",
+        "r": "/offer",
+        "q":
+        {
+            "timing": "immediate"
+        },
+        "a":
+        {
+            "action": "sell",
+            "item": "Rembrant",
+            "price": 300000.0
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFn.","t":"xip","d":"EJbE2agA3239Iusld1lNvFAxRuhv1SX0mA'
+                        b'xxUm67gWOU","u":"0ABrZXJpc3BlY3dvcmtyYXcw","i":"EHqSsH1Imc2MEcgzEordBUFqJKWT'
+                        b'cRyTz2GRc2SG3aur","ri":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"'
+                        b'2020-08-30T13:30:10.123456+00:00","r":"/offer","q":{"timing":"immediate"},"a'
+                        b'":{"action":"sell","item":"Rembrant","price":300000.0}}')
+
+
+    # Test exchange exn from eventing
+    sender = eanaid
+    receiver =  fayaid
+    route = "/agree"
+    modifiers = dict(timing="immediate")
+    attributes = dict(action="buy", item="Rembrant", price=300000.0)
+    dts = '2020-08-30T13:42:11.123456+00:00'
+
+    serder = exchange(sender=sender,
+                      receiver=receiver,
+                     xid=xid,
+                     prior=prior,
+                     route=route,
+                     modifiers=modifiers,
+                     attributes=attributes,
+                     stamp=dts,
+                     pvrsn=Vrsn_2_0,
+                     gvrsn=Vrsn_2_0,
+                     kind=kind)
+
+    said = serder.said
+    assert said == 'EEIp1e5v4L6rt7cp1nRsn4mN6bJVUDyIQEATIzxR8UnE'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAGt.",
+        "t": "exn",
+        "d": "EEIp1e5v4L6rt7cp1nRsn4mN6bJVUDyIQEATIzxR8UnE",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "ri": "EHqSsH1Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur",
+        "x": "EJbE2agA3239Iusld1lNvFAxRuhv1SX0mAxxUm67gWOU",
+        "p": "EJbE2agA3239Iusld1lNvFAxRuhv1SX0mAxxUm67gWOU",
+        "dt": "2020-08-30T13:42:11.123456+00:00",
+        "r": "/agree",
+        "q":
+        {
+            "timing": "immediate"
+        },
+        "a":
+        {
+            "action": "buy",
+            "item": "Rembrant",
+            "price": 300000.0
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAGt.","t":"exn","d":"EEIp1e5v4L6rt7cp1nRsn4mN6bJVUDyIQE'
+                    b'ATIzxR8UnE","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","ri":"EHqSsH1'
+                    b'Imc2MEcgzEordBUFqJKWTcRyTz2GRc2SG3aur","x":"EJbE2agA3239Iusld1lNvFAxRuhv1SX0'
+                    b'mAxxUm67gWOU","p":"EJbE2agA3239Iusld1lNvFAxRuhv1SX0mAxxUm67gWOU","dt":"2020-'
+                    b'08-30T13:42:11.123456+00:00","r":"/agree","q":{"timing":"immediate"},"a":{"a'
+                    b'ction":"buy","item":"Rembrant","price":300000.0}}')
+
+    # OOBI section Reply examples
+    # MOOBI
+    wilma = "BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B"
+    watson = "BAPv2MnoiCsgOnklmFyfU07QDK_93NeH9iKfOy8V22aH"
+    winona = "BA4PSatfQMw1lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB"
+    pre = eanaid
+    route = '/oobi/witness'
+    url0 = "https://example.com/witness/wilma/" + wilma
+    url1 = "https://example.com/witness/watson/" + watson
+    url2 = "https://example.com/witness/winona/" + winona
+    dts = '2020-08-21T17:52:00.000000+00:00'
+    data = dict(cid=eanaid, urls=[url0, url1, url2])
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'ELtIQ71PMr9m5a8eYiC39hikuU8yTWoFw1vWjtqbVUX4'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAIA.",
+        "t": "rpy",
+        "d": "ELtIQ71PMr9m5a8eYiC39hikuU8yTWoFw1vWjtqbVUX4",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-21T17:52:00.000000+00:00",
+        "r": "/oobi/witness",
+        "a":
+        {
+            "cid": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+            "urls":
+            [
+                "https://example.com/witness/wilma/BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B",
+                "https://example.com/witness/watson/BAPv2MnoiCsgOnklmFyfU07QDK_93NeH9iKfOy8V22aH",
+                "https://example.com/witness/winona/BA4PSatfQMw1lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB"
+            ]
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAIA.","t":"rpy","d":"ELtIQ71PMr9m5a8eYiC39hikuU8yTWoFw1'
+                    b'vWjtqbVUX4","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                    b'-21T17:52:00.000000+00:00","r":"/oobi/witness","a":{"cid":"EPR7FWsN3tOM8PqfM'
+                    b'ap2FRfF4MFQ4v3ZXjBUcMVtvhmB","urls":["https://example.com/witness/wilma/BGKV'
+                    b'6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B","https://example.com/witness/watso'
+                    b'n/BAPv2MnoiCsgOnklmFyfU07QDK_93NeH9iKfOy8V22aH","https://example.com/witness'
+                    b'/winona/BA4PSatfQMw1lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB"]}}')
+
+    # service endpoint OOBI example
+    pre = eanaid
+    route = '/oobi/' + eanaid + '/witness'
+    eid = wilma
+    scheme = 'https'
+    url = "https://example.com/witness/wilma"
+
+    dts = '2020-08-21T17:52:00.000000+00:00'
+    data = dict(eid=eid, scheme=scheme, url=url)
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EFMQh0w5-AHw-H01DtqEFhAIC6KXbjYvUSOEX6kSPY4j'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAFq.",
+        "t": "rpy",
+        "d": "EFMQh0w5-AHw-H01DtqEFhAIC6KXbjYvUSOEX6kSPY4j",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-21T17:52:00.000000+00:00",
+        "r": "/oobi/EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB/witness",
+        "a":
+        {
+            "eid": "BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B",
+            "scheme": "https",
+            "url": "https://example.com/witness/wilma"
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFq.","t":"rpy","d":"EFMQh0w5-AHw-H01DtqEFhAIC6KXbjYvUS'
+                        b'OEX6kSPY4j","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                        b'-21T17:52:00.000000+00:00","r":"/oobi/EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcM'
+                        b'VtvhmB/witness","a":{"eid":"BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B","s'
+                        b'cheme":"https","url":"https://example.com/witness/wilma"}}')
+
+
+    # BADA Run Examples
+    pre = eanaid
+    route = '/end/role/add'
+    cid = eanaid
+    role = 'witness'
+    eid = wilma
+    scheme = 'https'
+
+    dts = '2020-08-21T17:52:00.000000+00:00'
+    data = dict(cid=cid, role=role, eid=eid)
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EBcL5FQ2cHPcLmGb7AKk-ORtq0_A-m-mQTygGxTrqTBb'
+
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAFI.",
+        "t": "rpy",
+        "d": "EBcL5FQ2cHPcLmGb7AKk-ORtq0_A-m-mQTygGxTrqTBb",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-21T17:52:00.000000+00:00",
+        "r": "/end/role/add",
+        "a":
+        {
+            "cid": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+            "role": "witness",
+            "eid": "BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B"
+        }
+    }
+
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFI.","t":"rpy","d":"EBcL5FQ2cHPcLmGb7AKk-ORtq0_A-m-mQT'
+                    b'ygGxTrqTBb","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                    b'-21T17:52:00.000000+00:00","r":"/end/role/add","a":{"cid":"EPR7FWsN3tOM8PqfM'
+                    b'ap2FRfF4MFQ4v3ZXjBUcMVtvhmB","role":"witness","eid":"BGKV6v93ue5L5wsgk75t6j8'
+                    b'TcdgABMN9x-eIyPi96J3B"}}')
+
+    pre = eanaid
+    route = '/end/role/cut'
+    cid = eanaid
+    role = 'witness'
+    eid = wilma
+    scheme = 'https'
+
+    dts = '2020-08-21T17:52:10.000000+00:00'
+    data = dict(cid=cid, role=role, eid=eid)
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EH4uEDQHtCxoJ-RXbvmIjl-NE3JoPJ26fN7sZm9dsqPv'
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAFI.",
+        "t": "rpy",
+        "d": "EH4uEDQHtCxoJ-RXbvmIjl-NE3JoPJ26fN7sZm9dsqPv",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-21T17:52:10.000000+00:00",
+        "r": "/end/role/cut",
+        "a":
+        {
+            "cid": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+            "role": "witness",
+            "eid": "BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B"
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAFI.","t":"rpy","d":"EH4uEDQHtCxoJ-RXbvmIjl-NE3JoPJ26fN'
+                        b'7sZm9dsqPv","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                        b'-21T17:52:10.000000+00:00","r":"/end/role/cut","a":{"cid":"EPR7FWsN3tOM8PqfM'
+                        b'ap2FRfF4MFQ4v3ZXjBUcMVtvhmB","role":"witness","eid":"BGKV6v93ue5L5wsgk75t6j8'
+                        b'TcdgABMN9x-eIyPi96J3B"}}')
+
+    pre = eanaid
+    route = '/loc/scheme'
+    eid = wilma
+    scheme = 'https'
+    url = "https//example.com/witness/wilma"
+
+    dts = '2020-08-21T17:52:11.000000+00:00'
+    data = dict(eid=eid, scheme=scheme, url=url)
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'ELH2kZK9QXgV9utSqRE-jf2Xwk4rgca6xk35Mpo4EeZP'
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAE6.",
+        "t": "rpy",
+        "d": "ELH2kZK9QXgV9utSqRE-jf2Xwk4rgca6xk35Mpo4EeZP",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-21T17:52:11.000000+00:00",
+        "r": "/loc/scheme",
+        "a":
+        {
+            "eid": "BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B",
+            "scheme": "https",
+            "url": "https//example.com/witness/wilma"
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAE6.","t":"rpy","d":"ELH2kZK9QXgV9utSqRE-jf2Xwk4rgca6xk'
+                    b'35Mpo4EeZP","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                    b'-21T17:52:11.000000+00:00","r":"/loc/scheme","a":{"eid":"BGKV6v93ue5L5wsgk75'
+                    b't6j8TcdgABMN9x-eIyPi96J3B","scheme":"https","url":"https//example.com/witnes'
+                    b's/wilma"}}')
+
+    pre = eanaid
+    route = '/loc/scheme'
+    eid = wilma
+    scheme = 'https'
+    url = ""
+
+    dts = '2020-08-21T17:52:12.000000+00:00'
+    data = dict(eid=eid, scheme=scheme, url=url)
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EGWrf4ve6Nlec3iC7ba0-f6YBIHXKRzrGG-bWE-gcHY_'
+    assert serder.sad == \
+    {
+        "v": "KERICAACAAJSONAAEa.",
+        "t": "rpy",
+        "d": "EGWrf4ve6Nlec3iC7ba0-f6YBIHXKRzrGG-bWE-gcHY_",
+        "i": "EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB",
+        "dt": "2020-08-21T17:52:12.000000+00:00",
+        "r": "/loc/scheme",
+        "a":
+        {
+            "eid": "BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B",
+            "scheme": "https",
+            "url": ""
+        }
+    }
+
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAEa.","t":"rpy","d":"EGWrf4ve6Nlec3iC7ba0-f6YBIHXKRzrGG'
+                        b'-bWE-gcHY_","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","dt":"2020-08'
+                        b'-21T17:52:12.000000+00:00","r":"/loc/scheme","a":{"eid":"BGKV6v93ue5L5wsgk75'
+                        b't6j8TcdgABMN9x-eIyPi96J3B","scheme":"https","url":""}}')
+
+
+
     """Done Test"""
 
 
@@ -1362,6 +1736,276 @@ def test_keri_examples_cesr():
 
     assert serder.raw == (b'-FAb0OKERICAACAAXrctEADBM_Gjzv1_mImlJPPD0bzYmUXmXmCiFIncRYfZMaFcEDZOA3y_b_0L'
                           b'G4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsMAAC')
+
+
+    # Routed Messages
+    # Query Message Body
+    # Test query
+    pre = fayaid
+    route = "/oobi"
+    replyRoute = "/oobi/process"
+    q = dict(i=eanaid, role="witness")
+    dts = '2025-08-21T17:50:00.000000+00:00'
+
+    serder = query(pre=pre,
+                   route=route,
+                   replyRoute=replyRoute,
+                   query=q,
+                   stamp=dts,
+                   pvrsn=Vrsn_2_0,
+                   gvrsn=Vrsn_2_0,
+                   kind=kind)
+
+    said = serder.said
+    assert said == 'EF6usM5fNtZWF33E_EQTo9cgU-5f2DH7iBK2V0RPexSe'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAD0.',
+        't': 'qry',
+        'd': 'EF6usM5fNtZWF33E_EQTo9cgU-5f2DH7iBK2V0RPexSe',
+        'i': 'EF-jViYoBr8p3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg3',
+        'dt': '2025-08-21T17:50:00.000000+00:00',
+        'r': '/oobi',
+        'rr': '/oobi/process',
+        'q':
+        {
+            'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+            'role': 'witness'
+        }
+    }
+
+    assert serder.raw == (b'-FA80OKERICAACAAXqryEF6usM5fNtZWF33E_EQTo9cgU-5f2DH7iBK2V0RPexSeEF-jViYoBr8p'
+                            b'3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg31AAG2025-08-21T17c50c00d000000p00c006AACAAA-'
+                            b'oobi6AAEAAA-oobi-process-IAQ0J_iEDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs'
+                            b'1AAFroleYwitness')
+
+    # Reply states
+    pre = eanaid
+    raid = eanaid
+    route = '/oobi/process'
+    url = "https://example.com/witness/BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B"
+    data = dict(i=raid, url=url)
+    dts = '2020-08-21T17:52:00.000000+00:00'
+
+    serder = reply(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EPvuKFb4DpBKOA-HPJHKXf3mHFokUcYnBE3tjBougM9S'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAFA.',
+        't': 'rpy',
+        'd': 'EPvuKFb4DpBKOA-HPJHKXf3mHFokUcYnBE3tjBougM9S',
+        'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+        'dt': '2020-08-21T17:52:00.000000+00:00',
+        'r': '/oobi/process',
+        'a':
+        {
+            'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+            'url': 'https://example.com/witness/BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B'
+        }
+    }
+
+    assert serder.raw == (b'-FBP0OKERICAACAAXrpyEPvuKFb4DpBKOA-HPJHKXf3mHFokUcYnBE3tjBougM9SEDZOA3y_b_0L'
+                        b'G4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs1AAG2020-08-21T17c52c00d000000p00c006AAEAAA-'
+                        b'oobi-process-IAm0J_iEDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsXurl4BAYaHR0'
+                        b'cHM6Ly9leGFtcGxlLmNvbS93aXRuZXNzL0JHS1Y2djkzdWU1TDV3c2drNzV0Nmo4VGNkZ0FCTU45'
+                        b'eC1lSXlQaTk2SjNC')
+
+
+    # Test prod
+    pre = fayaid
+    route = "/confidential"
+    replyRoute = "/confidential/process"
+    q = dict(i=eanaid, name=True)
+    dts = '2025-08-21T17:50:00.000000+00:00'
+
+    serder = prod(pre=pre,
+                   route=route,
+                   replyRoute=replyRoute,
+                   query=q,
+                   stamp=dts,
+                   pvrsn=Vrsn_2_0,
+                   gvrsn=Vrsn_2_0,
+                   kind=kind)
+
+    said = serder.said
+    assert said == 'EJRa0zYQjeupTLGMJxdLBkxZP175elZFCI_Ddg0IjKI1'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAEA.',
+        't': 'pro',
+        'd': 'EJRa0zYQjeupTLGMJxdLBkxZP175elZFCI_Ddg0IjKI1',
+        'i': 'EF-jViYoBr8p3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg3',
+        'dt': '2025-08-21T17:50:00.000000+00:00',
+        'r': '/confidential',
+        'rr': '/confidential/process',
+        'q':
+        {
+            'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+            'name': True
+        }
+    }
+
+    assert serder.raw == (b'-FA_0OKERICAACAAXproEJRa0zYQjeupTLGMJxdLBkxZP175elZFCI_Ddg0IjKI1EF-jViYoBr8p'
+                        b'3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg31AAG2025-08-21T17c50c00d000000p00c006AAEAAA-'
+                        b'confidential6AAGAAA-confidential-process-IAP0J_iEDZOA3y_b_0LG4_cfpKTbWU-_3ee'
+                        b'YNM0w9iTkT7frTYs1AAFname1AAM')
+
+
+    # Test bare
+    pre = eanaid
+    raid = eanaid
+    route = "/confidential/process"
+    data = dict(i=raid, name="Ean")
+    dts = '2020-08-22T17:52:00.000000+00:00'
+
+    serder = bare(pre=pre,
+                   route=route,
+                    data=data,
+                    stamp=dts,
+                    pvrsn=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                    kind=kind)
+
+    said = serder.said
+    assert said == 'EMaAeoTKrRTGIhJeSp-WhwIMSQMvdf13fChMWV6IL6fa'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAADs.',
+        't': 'bar',
+        'd': 'EMaAeoTKrRTGIhJeSp-WhwIMSQMvdf13fChMWV6IL6fa',
+        'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+        'dt': '2020-08-22T17:52:00.000000+00:00',
+        'r': '/confidential/process',
+        'a':
+        {
+            'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+            'name': 'Ean'
+        }
+    }
+
+    assert serder.raw == (b'-FA60OKERICAACAAXbarEMaAeoTKrRTGIhJeSp-WhwIMSQMvdf13fChMWV6IL6faEDZOA3y_b_0L'
+                        b'G4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs1AAG2020-08-22T17c52c00d000000p00c006AAGAAA-'
+                        b'confidential-process-IAP0J_iEDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs1AAF'
+                        b'nameXEan')
+
+    # Test exchange
+    # Test exchept xip from eventing
+    sender = fayaid
+    receiver = eanaid
+    route = "/offer"
+    modifiers = dict(timing="immediate")
+    attributes = dict(action="sell", item="Rembrant", price=300000.00)
+    nonce = uuids[0]
+    dts = '2020-08-30T13:30:10.123456+00:00'
+
+    serder = exchept(sender=sender,
+                     receiver=receiver,
+                     route=route,
+                     modifiers=modifiers,
+                     attributes=attributes,
+                     nonce=nonce,
+                     stamp=dts,
+                     pvrsn=Vrsn_2_0,
+                     gvrsn=Vrsn_2_0,
+                     kind=kind)
+
+    said = serder.said
+    assert said == 'EISX00jpyZ1_XZBubJghQ2MSxAEgbuBPSoNIKT-4EdwU'
+    xid = said  # exchange ID
+    prior = said
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAE0.',
+        't': 'xip',
+        'd': 'EISX00jpyZ1_XZBubJghQ2MSxAEgbuBPSoNIKT-4EdwU',
+        'u': '0ABrZXJpc3BlY3dvcmtyYXcw',
+        'i': 'EF-jViYoBr8p3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg3',
+        'ri': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+        'dt': '2020-08-30T13:30:10.123456+00:00',
+        'r': '/offer',
+        'q':
+        {
+            'timing': 'immediate'
+        },
+        'a':
+        {
+            'action': 'sell',
+            'item': 'Rembrant',
+            'price': 300000.0
+        }
+    }
+
+    assert serder.raw == (b'-FBM0OKERICAACAAXxipEISX00jpyZ1_XZBubJghQ2MSxAEgbuBPSoNIKT-4EdwU0ABrZXJpc3Bl'
+                        b'Y3dvcmtyYXcwEF-jViYoBr8p3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg3EDZOA3y_b_0LG4_cfpKT'
+                        b'bWU-_3eeYNM0w9iTkT7frTYs1AAG2020-08-30T13c30c10d123456p00c005AACAA-offer-IAF'
+                        b'0Mtiming0N_immediate-IAO0Maction1AAFsell1AAFitem1AANRembrant0L_price4HAC3000'
+                        b'00p0')
+
+
+    # Test exchange exn from eventing
+    sender = eanaid
+    receiver =  fayaid
+    route = "/agree"
+    modifiers = dict(timing="immediate")
+    attributes = dict(action="buy", item="Rembrant", price=300000.0)
+    dts = '2020-08-30T13:42:11.123456+00:00'
+
+    serder = exchange(sender=sender,
+                      receiver=receiver,
+                     xid=xid,
+                     prior=prior,
+                     route=route,
+                     modifiers=modifiers,
+                     attributes=attributes,
+                     stamp=dts,
+                     pvrsn=Vrsn_2_0,
+                     gvrsn=Vrsn_2_0,
+                     kind=kind)
+
+    said = serder.said
+    assert said == 'ELG8gjElCt6Q53u0m6QuvVRle32EJz0quZkWITml8BMb'
+
+    assert serder.sad == \
+    {
+        'v': 'KERICAACAACESRAAFw.',
+        't': 'exn',
+        'd': 'ELG8gjElCt6Q53u0m6QuvVRle32EJz0quZkWITml8BMb',
+        'i': 'EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs',
+        'ri': 'EF-jViYoBr8p3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg3',
+        'x': 'EISX00jpyZ1_XZBubJghQ2MSxAEgbuBPSoNIKT-4EdwU',
+        'p': 'EISX00jpyZ1_XZBubJghQ2MSxAEgbuBPSoNIKT-4EdwU',
+        'dt': '2020-08-30T13:42:11.123456+00:00',
+        'r': '/agree',
+        'q':
+        {
+            'timing': 'immediate'
+        },
+        'a':
+        {
+            'action': 'buy',
+            'item': 'Rembrant',
+            'price': 300000.0
+        }
+    }
+
+    assert serder.raw == (b'-FBb0OKERICAACAAXexnELG8gjElCt6Q53u0m6QuvVRle32EJz0quZkWITml8BMbEDZOA3y_b_0L'
+                    b'G4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsEF-jViYoBr8p3vkpZuHlkvxAAY5GZkmQ0QaaHfiE0kg3'
+                    b'EISX00jpyZ1_XZBubJghQ2MSxAEgbuBPSoNIKT-4EdwUEISX00jpyZ1_XZBubJghQ2MSxAEgbuBP'
+                    b'SoNIKT-4EdwU1AAG2020-08-30T13c42c11d123456p00c005AACAA-agree-IAF0Mtiming0N_i'
+                    b'mmediate-IAN0MactionXbuy1AAFitem1AANRembrant0L_price4HAC300000p0')
 
 
 
