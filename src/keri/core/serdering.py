@@ -357,7 +357,7 @@ class Serder:
     ClanCodes[SClanDom.SealDigest.__name__] = SealDex_2_0.DigestSealSingles
     ClanCodes[SClanDom.SealRoot.__name__] = SealDex_2_0.MerkleRootSealSingles
     ClanCodes[SClanDom.SealEvent.__name__] = SealDex_2_0.SealSourceTriples
-    ClanCodes[SClanDom.SealTrans.__name__] = SealDex_2_0.SealSourceCouples
+    ClanCodes[SClanDom.SealSource.__name__] = SealDex_2_0.SealSourceCouples
     ClanCodes[SClanDom.SealLast.__name__] = SealDex_2_0.SealSourceLastSingles
     ClanCodes[SClanDom.SealBack.__name__] = SealDex_2_0.BackerRegistrarSealCouples
     ClanCodes[SClanDom.SealKind.__name__] = SealDex_2_0.TypedDigestSealCouples
@@ -2136,9 +2136,14 @@ class Serder:
 
 class SerderKERI(Serder):
     """SerderKERI is Serder subclass with Labels for KERI packet types (ilks) and
-       properties for exposing field values of KERI messages
+    properties for exposing field values of KERI messages
 
-       See docs for Serder
+    See docs for Serder
+
+    Inherited Properties:
+
+    Properties:
+
     """
     #override in subclass to enforce specific protocol
     Protocol = Protocols.keri  # required protocol, None means any in Protocols is ok

@@ -24,7 +24,7 @@ from keri.help import helping
 
 from keri import core
 
-from keri.core import Sealer, SealEvent, SealTrans
+from keri.core import Sealer, SealEvent, SealSource
 
 from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
@@ -80,8 +80,8 @@ def test_serder_class():
     {
         'SealDigest': '-Q',
         'SealRoot': '-R',
-        'SealEvent': '-S',
-        'SealTrans': '-T',
+        'SealSource': '-S',
+        'SealEvent': '-T',
         'SealLast': '-U',
         'SealBack': '-V',
         'SealKind': '-W'
@@ -92,8 +92,8 @@ def test_serder_class():
     {
         '-Q': 'SealDigest',
         '-R': 'SealRoot',
-        '-S': 'SealEvent',
-        '-T': 'SealTrans',
+        '-S': 'SealSource',
+        '-T': 'SealEvent',
         '-U': 'SealLast',
         '-V': 'SealBack',
         '-W': 'SealKind'
@@ -2807,7 +2807,7 @@ def test_keri_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     pre = serder.pre
-    assert pre == 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie'
+    assert pre == 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71'
     said = serder.said
     assert said == pre
 
@@ -2815,8 +2815,8 @@ def test_keri_native_dumps_loads():
     {
         'v': 'KERICAACAACESRAAMQ.',
         't': 'icp',
-        'd': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
-        'i': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
+        'd': 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71',
+        'i': 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71',
         's': '0',
         'kt': '2',
         'k': ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ',
@@ -2851,16 +2851,16 @@ def test_keri_native_dumps_loads():
     }
 
 
-    assert serder.raw == (b'-FDD0OKERICAACAAXicpEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_IeEPGk8hNbEwMV'
-                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAAAMAAC-JAhDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+    assert serder.raw == (b'-FDD0OKERICAACAAXicpEOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71EOB71mX8FTP7'
+                        b'bqJzbODmicKqK491WfIDopCCHjdHSU71MAAAMAAC-JAhDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
                         b'4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnDMOmBoddcrRHShSajb4d'
                         b'60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAhEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
                         b'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22C'
                         b'ZJGJqQZpZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521o6nw'
                         b'gcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-                        b'-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAEB9O4V-zUteZ'
+                        b'-JABXDND-JA8-TAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAEB9O4V-zUteZ'
                         b'JJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn'
-                        b'MAABEMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISO'
+                        b'MAABEMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-SAMMAAPEEbufBpvagqe9kijKISO'
                         b'oQPYFEOpy22CZJGJqQZpZEyP')
 
 
@@ -2871,17 +2871,18 @@ def test_keri_native_dumps_loads():
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
-    assert rawqb64 == (b'-FDD0OKERICAACAAXicpEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_IeEPGk8hNbEwMV'
-                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAAAMAAC-JAhDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
+    assert rawqb64 == (b'-FDD0OKERICAACAAXicpEOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71EOB71mX8FTP7'
+                        b'bqJzbODmicKqK491WfIDopCCHjdHSU71MAAAMAAC-JAhDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi'
                         b'4fBJre3NGwTQDK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnDMOmBoddcrRHShSajb4d'
                         b'60S6RK34gXZ2WYbr3AiPY1M0MAAC-JAhEB9O4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_'
                         b'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUGEEbufBpvagqe9kijKISOoQPYFEOpy22C'
                         b'ZJGJqQZpZEyPMAAD-JAhBG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQBK58m521o6nw'
                         b'gcluK8Mu2ULvScXM9kB1bSORrxNSS9cnBMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0'
-                        b'-JABXDND-JA8-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAEB9O4V-zUteZ'
+                        b'-JABXDND-JA8-TAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAAAEB9O4V-zUteZ'
                         b'JJFubu1h0xMtzt0wuGpLMVj1sKVsElA_DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cn'
-                        b'MAABEMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-TAMMAAPEEbufBpvagqe9kijKISO'
+                        b'MAABEMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-SAMMAAPEEbufBpvagqe9kijKISO'
                         b'oQPYFEOpy22CZJGJqQZpZEyP')
+
 
 
     assert len(rawqb64) == 784 == serder.size
@@ -2966,16 +2967,16 @@ def test_keri_native_dumps_loads():
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaL'
+    assert said == 'EHSEI2ByWoUtCw9VHEGRelNBkHaMq_XsCl1TjQ4RhitF'
 
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAAHw.',
         't': 'ixn',
-        'd': 'EBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaL',
-        'i': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
+        'd': 'EHSEI2ByWoUtCw9VHEGRelNBkHaMq_XsCl1TjQ4RhitF',
+        'i': 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71',
         's': '1',
-        'p': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
+        'p': 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71',
         'a':
         [
             {
@@ -3000,12 +3001,12 @@ def test_keri_native_dumps_loads():
         ]
     }
 
-    assert serder.raw == (b'-FB70OKERICAACAAXixnEBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaLEPGk8hNbEwMV'
-                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAABEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5'
-                        b'J_Ie-JBU-SAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAACEB9O4V-zUteZJJFu'
+    assert serder.raw == (b'-FB70OKERICAACAAXixnEHSEI2ByWoUtCw9VHEGRelNBkHaMq_XsCl1TjQ4RhitFEOB71mX8FTP7'
+                        b'bqJzbODmicKqK491WfIDopCCHjdHSU71MAABEOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdH'
+                        b'SU71-JBU-TAuDG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQMAACEB9O4V-zUteZJJFu'
                         b'bu1h0xMtzt0wuGpLMVj1sKVsElA_DK58m521o6nwgcluK8Mu2ULvScXM9kB1bSORrxNSS9cnMAAi'
-                        b'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-TAMMABDEEbufBpvagqe9kijKISOoQPY'
-                        b'FEOpy22CZJGJqQZpZEyP-SAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACAEB9O'
+                        b'EMrowWRk6u1imR32ZNHnTPUtc7uSAvrchIPN3I8S6vUG-SAMMABDEEbufBpvagqe9kijKISOoQPY'
+                        b'FEOpy22CZJGJqQZpZEyP-TAXDMOmBoddcrRHShSajb4d60S6RK34gXZ2WYbr3AiPY1M0MACAEB9O'
                         b'4V-zUteZJJFubu1h0xMtzt0wuGpLMVj1sKVsElA_')
 
     assert len(serder.raw) == serder.size == 496
@@ -3077,16 +3078,16 @@ def test_keri_native_dumps_loads():
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EAXN-CyfOKnz9qygXtfF-IE0HpM4jdSHWyrJSI1PWT8H'
+    assert said == 'EFQSJ-Z4yDa8uRNy1UiDdo7ONH4jB0a5AEgvPYsswn5O'
 
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAAIg.',
         't': 'rot',
-        'd': 'EAXN-CyfOKnz9qygXtfF-IE0HpM4jdSHWyrJSI1PWT8H',
-        'i': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie',
+        'd': 'EFQSJ-Z4yDa8uRNy1UiDdo7ONH4jB0a5AEgvPYsswn5O',
+        'i': 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71',
         's': '2',
-        'p': 'EBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtFxUaL',
+        'p': 'EHSEI2ByWoUtCw9VHEGRelNBkHaMq_XsCl1TjQ4RhitF',
         'kt': '2',
         'k': ['DH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68',
               'DIAdqJzLWEwQbhXEMOFjvFVZ7oMCJP4XXDP_ILaTEBAQ',
@@ -3103,14 +3104,15 @@ def test_keri_native_dumps_loads():
     }
 
 
-    assert serder.raw == (b'-FCH0OKERICAACAAXrotEAXN-CyfOKnz9qygXtfF-IE0HpM4jdSHWyrJSI1PWT8HEPGk8hNbEwMV'
-                        b'RkbG5-0u2OfykJYo_RmOx_44cYe5J_IeMAACEBaFrL1ohztiGEpq3uIra6IdVRNogDhETs81iCtF'
-                        b'xUaLMAAC-JAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68DIAdqJzLWEwQbhXEMOFj'
-                        b'vFVZ7oMCJP4XXDP_ILaTEBAQDKhYdMBeP6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-JAh'
-                        b'EBvDSpcj3y0y9W2-1GzYJ85KEkDIPxu4y_TxAK49k7ciEEb97lh2oOd_yM3meBaRX5xSs8mIeBoP'
-                        b'dhOTgVkd31jbECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStgaMAAD-JALBG9XhvcVryHj'
-                        b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ-JALBH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C'
-                        b'1A68-JAA-JAA')
+    assert serder.raw == (b'-FCH0OKERICAACAAXrotEFQSJ-Z4yDa8uRNy1UiDdo7ONH4jB0a5AEgvPYsswn5OEOB71mX8FTP7'
+                            b'bqJzbODmicKqK491WfIDopCCHjdHSU71MAACEHSEI2ByWoUtCw9VHEGRelNBkHaMq_XsCl1TjQ4R'
+                            b'hitFMAAC-JAhDH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C1A68DIAdqJzLWEwQbhXEMOFj'
+                            b'vFVZ7oMCJP4XXDP_ILaTEBAQDKhYdMBeP6FoH3ajGJTf_4fH229rm_lTZXfYkfwGTMERMAAC-JAh'
+                            b'EBvDSpcj3y0y9W2-1GzYJ85KEkDIPxu4y_TxAK49k7ciEEb97lh2oOd_yM3meBaRX5xSs8mIeBoP'
+                            b'dhOTgVkd31jbECQTrhKHgrOXJS4kdvifvOqoJ7RjfJSsN3nshclYStgaMAAD-JALBG9XhvcVryHj'
+                            b'oIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ-JALBH7p14xo09rob5cEupmo8jSDi35ZOGt1k4t2nm1C'
+                            b'1A68-JAA-JAA')
+
 
     assert len(serder.raw) == serder.size == 544
     sizeh = serder.raw[2:4]
@@ -3203,7 +3205,7 @@ def test_keri_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     pre = serder.pre
-    assert pre == 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U'
+    assert pre == 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE'
     said = serder.said
     assert said == pre
 
@@ -3211,8 +3213,8 @@ def test_keri_native_dumps_loads():
     {
         'v': 'KERICAACAACESRAAOA.',
         't': 'dip',
-        'd': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'd': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
+        'i': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         's': '0',
         'kt': ['1/2', '1/2', '1/2'],
         'k': ['DIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobRb8uV',
@@ -3240,29 +3242,29 @@ def test_keri_native_dumps_loads():
                 'd': 'EC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ'
             },
             {
-                's': '15', 'd': 'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCD'
+                's': '15',
+                'd': 'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCD'
             },
             {
                 's': '3e12',
                 'd': 'EKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ44DS'
             }
         ],
-        'di': 'EPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie'
-    }
+        'di': 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71'}
 
 
-    assert serder.raw == (b'-FDf0OKERICAACAAXdipEJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UEJJkRAwNy0yH'
-                        b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UMAAA4AADA1s2c1s2c1s2-JAhDIR8GACw4z2GC5_XoReU'
+    assert serder.raw == (b'-FDf0OKERICAACAAXdipEFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaEEFGt_YP4f5yS'
+                        b'3xBGMWxa-GO1QGcmpIvqZykClz03oKaEMAAA4AADA1s2c1s2c1s2-JAhDIR8GACw4z2GC5_XoReU'
                         b'4DMKbqi6-EdbgDZUAobRb8uVDN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiDOE5jmI9'
                         b'ktNSAddEke1rH2cGMDq4uYmyagDkAzHl5nfY4AADA1s2c1s2c1s2-JAhEKFoJ9Conb37zSn8zHLK'
                         b'P3YwHbeQiD1D9Qx0MagJ44DSEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZEHgewy_y'
                         b'mPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCDMAAD-JAhBIR8GACw4z2GC5_XoReU4DMKbqi6-Edb'
                         b'gDZUAobRb8uVBN7WiKyjLLBTK92xayCuddZsBuwPmD2BKrl83h1xEUtiBOE5jmI9ktNSAddEke1r'
-                        b'H2cGMDq4uYmyagDkAzHl5nfY-JAA-JBI-SAuDIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobR'
+                        b'H2cGMDq4uYmyagDkAzHl5nfY-JAA-JBI-TAuDIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZUAobR'
                         b'b8uVMAADEKFoJ9Conb37zSn8zHLKP3YwHbeQiD1D9Qx0MagJ44DSDN7WiKyjLLBTK92xayCuddZs'
-                        b'BuwPmD2BKrl83h1xEUtiMAAEEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-TAYMAAV'
+                        b'BuwPmD2BKrl83h1xEUtiMAAEEC7sCVf_rYJ_khIj7UdlzrtemP31TuHTPUsGjvWni8GZ-SAYMAAV'
                         b'EHgewy_ymPxtSFwuX2KaI_mPmoIUkxClviX3f-M38kCDMD4SEKFoJ9Conb37zSn8zHLKP3YwHbeQ'
-                        b'iD1D9Qx0MagJ44DSEPGk8hNbEwMVRkbG5-0u2OfykJYo_RmOx_44cYe5J_Ie')
+                        b'iD1D9Qx0MagJ44DSEOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71')
 
     assert len(serder.raw) == serder.size == 896
     sizeh = serder.raw[2:4]
@@ -3334,16 +3336,16 @@ def test_keri_native_dumps_loads():
                       kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKl'
+    assert said == 'EOTktOZADw2Ll3zwGdAIfSIByyKOhpET-wQPN6BBozfv'
 
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAAFw.',
         't': 'drt',
-        'd': 'EExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKl',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'd': 'EOTktOZADw2Ll3zwGdAIfSIByyKOhpET-wQPN6BBozfv',
+        'i': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         's': '1',
-        'p': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'p': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         'kt': '1',
         'k': ['DJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f'],
         'nt': '1',
@@ -3355,11 +3357,11 @@ def test_keri_native_dumps_loads():
         'a': []
     }
 
-    assert serder.raw == (b'-FBb0OKERICAACAAXdrtEExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKlEJJkRAwNy0yH'
-                    b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UMAABEJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQl'
-                    b'MM4UMAAB-JALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4fMAAB-JALENX_LTL97uOS'
-                    b'OkA1PEzam9vtmCLPprnbcpi71wXpmhFFMAAD-JALBIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZU'
-                    b'AobRb8uV-JALBJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f-JAA-JAA')
+    assert serder.raw == (b'-FBb0OKERICAACAAXdrtEOTktOZADw2Ll3zwGdAIfSIByyKOhpET-wQPN6BBozfvEFGt_YP4f5yS'
+                        b'3xBGMWxa-GO1QGcmpIvqZykClz03oKaEMAABEFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03'
+                        b'oKaEMAAB-JALDJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4fMAAB-JALENX_LTL97uOS'
+                        b'OkA1PEzam9vtmCLPprnbcpi71wXpmhFFMAAD-JALBIR8GACw4z2GC5_XoReU4DMKbqi6-EdbgDZU'
+                        b'AobRb8uV-JALBJ0pLe3f2zGus0Va1dqWAnukWdZHGNWlK9NciJop9N4f-JAA-JAA')
 
 
     assert len(serder.raw) == serder.size == 368
@@ -3422,13 +3424,14 @@ def test_keri_native_dumps_loads():
     {
         'v': 'KERICAACAACESRAABw.',
         't': 'rct',
-        'd': 'EExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKl',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'd': 'EOTktOZADw2Ll3zwGdAIfSIByyKOhpET-wQPN6BBozfv',
+        'i': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         's': '1'
     }
 
-    assert serder.raw == (b'-FAb0OKERICAACAAXrctEExRSLqul9owYBWZEyLT4QfoZD6vr87SHFsgcwd-MWKlEJJkRAwNy0yH'
-                         b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4UMAAB')
+    assert serder.raw == (b'-FAb0OKERICAACAAXrctEOTktOZADw2Ll3zwGdAIfSIByyKOhpET-wQPN6BBozfvEFGt_YP4f5yS'
+                          b'3xBGMWxa-GO1QGcmpIvqZykClz03oKaEMAAB')
+
 
     assert len(serder.raw) == serder.size == 112
     sizeh = serder.raw[2:4]
@@ -3489,23 +3492,24 @@ def test_keri_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EB0BOf57OnZnX9Ax6T-5Jf6hQtBlMsGdjBIMIgxNyaIa'
+    assert said == 'EKTUu1mdTc0mLxjomuM1O8Xdva81-0MpleC-YXmtWZ9Y'
 
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAAC4.',
         't': 'qry',
-        'd': 'EB0BOf57OnZnX9Ax6T-5Jf6hQtBlMsGdjBIMIgxNyaIa',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'd': 'EKTUu1mdTc0mLxjomuM1O8Xdva81-0MpleC-YXmtWZ9Y',
+        'i': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/fun',
         'rr': '/home',
         'q': {'stuff': 'hello'}
     }
 
-    assert serder.raw == (b'-FAt0OKERICAACAAXqryEB0BOf57OnZnX9Ax6T-5Jf6hQtBlMsGdjBIMIgxNyaIaEJJkRAwNy0yH'
-                          b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U1AAG2020-08-22T17c50c09d988921p00c004AAB-fun'
-                          b'6AACAAA-home-IAE0L_stuff0L_hello')
+    assert serder.raw == (b'-FAt0OKERICAACAAXqryEKTUu1mdTc0mLxjomuM1O8Xdva81-0MpleC-YXmtWZ9YEFGt_YP4f5yS'
+                            b'3xBGMWxa-GO1QGcmpIvqZykClz03oKaE1AAG2020-08-22T17c50c09d988921p00c004AAB-fun'
+                            b'6AACAAA-home-IAE0L_stuff0L_hello')
+
 
     assert len(serder.raw) == serder.size == 184
     sizeh = serder.raw[2:4]
@@ -3565,14 +3569,14 @@ def test_keri_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EL76gEjbu4KIFuzPJY4dB4QPdCjsUIlt-J_b49bZC--R'
+    assert said == 'EEMUaOQuS65JzAC3ruaGCBL8h1Z8gVlBOwjTyrDOWkgZ'
 
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAADg.',
         't': 'rpy',
-        'd': 'EL76gEjbu4KIFuzPJY4dB4QPdCjsUIlt-J_b49bZC--R',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'd': 'EEMUaOQuS65JzAC3ruaGCBL8h1Z8gVlBOwjTyrDOWkgZ',
+        'i': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/home',
         'a':
@@ -3582,8 +3586,8 @@ def test_keri_native_dumps_loads():
         }
     }
 
-    assert serder.raw == (b'-FA30OKERICAACAAXrpyEL76gEjbu4KIFuzPJY4dB4QPdCjsUIlt-J_b49bZC--REJJkRAwNy0yH'
-                          b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U1AAG2020-08-22T17c50c09d988921p00c006AACAAA-'
+    assert serder.raw == (b'-FA30OKERICAACAAXrpyEEMUaOQuS65JzAC3ruaGCBL8h1Z8gVlBOwjTyrDOWkgZEFGt_YP4f5yS'
+                          b'3xBGMWxa-GO1QGcmpIvqZykClz03oKaE1AAG2020-08-22T17c50c09d988921p00c006AACAAA-'
                           b'home-IAQ0J_dEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
 
     assert len(serder.raw) == serder.size == 224
@@ -3644,23 +3648,27 @@ def test_keri_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EAd6CnF_OLDraJnDjJejhN9IrkHW4h_IVIqzukIosHVZ'
+    assert said == 'EOhe8oGdG32KnX4xl--LmiTQFPoNG8YtFHhVppuM13-0'
 
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAAC4.',
         't': 'pro',
-        'd': 'EAd6CnF_OLDraJnDjJejhN9IrkHW4h_IVIqzukIosHVZ',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'd': 'EOhe8oGdG32KnX4xl--LmiTQFPoNG8YtFHhVppuM13-0',
+        'i': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/run',
         'rr': '/away',
-        'q': {'stuff': 'hello'}
+        'q':
+        {
+            'stuff': 'hello'
+        }
     }
 
-    assert serder.raw == (b'-FAt0OKERICAACAAXproEAd6CnF_OLDraJnDjJejhN9IrkHW4h_IVIqzukIosHVZEJJkRAwNy0yH'
-                          b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U1AAG2020-08-22T17c50c09d988921p00c004AAB-run'
+    assert serder.raw == (b'-FAt0OKERICAACAAXproEOhe8oGdG32KnX4xl--LmiTQFPoNG8YtFHhVppuM13-0EFGt_YP4f5yS'
+                          b'3xBGMWxa-GO1QGcmpIvqZykClz03oKaE1AAG2020-08-22T17c50c09d988921p00c004AAB-run'
                           b'6AACAAA-away-IAE0L_stuff0L_hello')
+
 
     assert len(serder.raw) == serder.size == 184
     sizeh = serder.raw[2:4]
@@ -3720,14 +3728,14 @@ def test_keri_native_dumps_loads():
                     kind=kering.Kinds.cesr)
 
     said = serder.said
-    assert said == 'EMQzaOIDL2UknJTXwOVDSazRySUh3uQ9jdNMin-wI597'
+    assert said == 'EATsu1apFygD9IYqg3orQZWOqYZflZk4oeF4ZkkPvhnp'
 
     assert serder.sad == \
     {
         'v': 'KERICAACAACESRAADg.',
         't': 'bar',
-        'd': 'EMQzaOIDL2UknJTXwOVDSazRySUh3uQ9jdNMin-wI597',
-        'i': 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U',
+        'd': 'EATsu1apFygD9IYqg3orQZWOqYZflZk4oeF4ZkkPvhnp',
+        'i': 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE',
         'dt': '2020-08-22T17:50:09.988921+00:00',
         'r': '/home',
         'a':
@@ -3737,8 +3745,8 @@ def test_keri_native_dumps_loads():
         }
     }
 
-    assert serder.raw == (b'-FA30OKERICAACAAXbarEMQzaOIDL2UknJTXwOVDSazRySUh3uQ9jdNMin-wI597EJJkRAwNy0yH'
-                          b'ZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U1AAG2020-08-22T17c50c09d988921p00c006AACAAA-'
+    assert serder.raw == (b'-FA30OKERICAACAAXbarEATsu1apFygD9IYqg3orQZWOqYZflZk4oeF4ZkkPvhnpEFGt_YP4f5yS'
+                          b'3xBGMWxa-GO1QGcmpIvqZykClz03oKaE1AAG2020-08-22T17c50c09d988921p00c006AACAAA-'
                           b'home-IAQ0J_dEMFNZfsBmXvA-pkmetvMjTux9bIHnvaaXCsH6uqN1_aN1AAFname1AAFJohn')
 
 
@@ -3788,7 +3796,7 @@ def test_keri_native_dumps_loads():
     assert serder.sad == sad
 
 
-    # Test xincept xip from eventing
+    # Test exchept xip from eventing
     sender = 'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U'
     receiver = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
     modifiers = dict(role="boss", motto="You got this!")

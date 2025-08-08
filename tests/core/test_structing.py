@@ -22,7 +22,7 @@ from keri.core import (Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
 
 from keri.core import (Structor, Sealer, Blinder,
                        SealDigest, SealRoot, SealBack, SealEvent,
-                                 SealLast, SealTrans, SealKind, BlindState)
+                                 SealLast, SealSource, SealKind, BlindState)
 from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
                                  EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
                                  AClanDom, ACastDom,
@@ -46,7 +46,7 @@ def test_structor_doms():
         'SealDigest': SealDigest,
         'SealRoot': SealRoot,
         'SealEvent': SealEvent,
-        'SealTrans': SealTrans,
+        'SealSource': SealSource,
         'SealLast': SealLast,
         'SealBack': SealBack,
         'SealKind': SealKind,
@@ -59,7 +59,7 @@ def test_structor_doms():
         'SealEvent': SealEvent(i=Castage(kls=Prefixer, ipn=None),
                                s=Castage(kls=Number, ipn='numh'),
                                d=Castage(kls=Diger, ipn=None)),
-        'SealTrans': SealTrans(s=Castage(kls=Number, ipn='numh'),
+        'SealSource': SealSource(s=Castage(kls=Number, ipn='numh'),
                                d=Castage(kls=Diger, ipn=None)),
         'SealLast': SealLast(i=Castage(kls=Prefixer, ipn=None)),
         'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
@@ -87,7 +87,7 @@ def test_structor_doms():
         'SealDigest': 'DigestSealSingles',
         'SealRoot': 'MerkleRootSealSingles',
         'SealEvent': 'SealSourceTriples',
-        'SealTrans': 'SealSourceCouples',
+        'SealSource': 'SealSourceCouples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
@@ -98,7 +98,7 @@ def test_structor_doms():
         'DigestSealSingles': 'SealDigest',
         'MerkleRootSealSingles': 'SealRoot',
         'SealSourceTriples': 'SealEvent',
-        'SealSourceCouples': 'SealTrans',
+        'SealSourceCouples': 'SealSource',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
@@ -118,7 +118,7 @@ def test_structor_class():
         ('d',): 'SealDigest',
         ('rd',): 'SealRoot',
         ('i', 's', 'd'): 'SealEvent',
-        ('s', 'd'): 'SealTrans',
+        ('s', 'd'): 'SealSource',
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
@@ -130,7 +130,7 @@ def test_structor_class():
         'SealDigest': 'DigestSealSingles',
         'SealRoot': 'MerkleRootSealSingles',
         'SealEvent': 'SealSourceTriples',
-        'SealTrans': 'SealSourceCouples',
+        'SealSource': 'SealSourceCouples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
@@ -142,7 +142,7 @@ def test_structor_class():
         'DigestSealSingles': 'SealDigest',
         'MerkleRootSealSingles': 'SealRoot',
         'SealSourceTriples': 'SealEvent',
-        'SealSourceCouples': 'SealTrans',
+        'SealSourceCouples': 'SealSource',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
@@ -508,9 +508,9 @@ def test_structor():
 
     qb64 = prefixer.qb64 + number.qb64 + diger.qb64  # ''.join(crew)
     qb2 = prefixer.qb2 + number.qb2 + diger.qb2
-    enclqb64 = bytearray(b'-SAXBN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAAOELC5L3iBVD77'
+    enclqb64 = bytearray(b'-TAXBN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAAOELC5L3iBVD77'
                          b'd_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux')
-    enclqb2 = bytearray(b'\xf9 \x17\x04\xdeK\xbbDj\xa6\xd9\x89\x0b\xe8\x97\x12WL2\xb9'
+    enclqb2 = bytearray(b'\xf90\x17\x04\xdeK\xbbDj\xa6\xd9\x89\x0b\xe8\x97\x12WL2\xb9'
                         b'D{\x0e\xd0\xd3[^\xd9\xf2\xe0\xaaV\xea[\xdc\xd10\x00\x0e\x10'
                         b'\xb0\xb9/x\x81T>\xfbw\xf3\x18m\x81\x86\tD \xa9\x00c\xbbZ8\xc7'
                         b'U\x1d\xfb=\xac/\xeb\xb1')
@@ -821,7 +821,6 @@ def test_structor():
         structor = Structor(crew=dcrew)  # missing cast for custom clan from crew
 
 
-
     # test multiple structors in  enclose and extract
     assert aid == 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
     assert dig == 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
@@ -845,7 +844,7 @@ def test_structor():
     structors = [structor0, structor1, structor2]
 
     enclosure = Structor.enclose(structors)
-    assert enclosure == bytearray(b'-SBFBN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAAAELC5L3iBVD77'
+    assert enclosure == bytearray(b'-TBFBN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAAAELC5L3iBVD77'
           b'd_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxBN5Lu0RqptmJC-iXEldMMrlEew7Q01te'
           b'2fLgqlbqW9zRMAABELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxBN5L'
           b'u0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAACELC5L3iBVD77d_MYbYGG'
@@ -916,7 +915,7 @@ def test_sealer_class():
         ('d',): 'SealDigest',
         ('rd',): 'SealRoot',
         ('i', 's', 'd'): 'SealEvent',
-        ('s', 'd'): 'SealTrans',
+        ('s', 'd'): 'SealSource',
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
@@ -926,7 +925,7 @@ def test_sealer_class():
         'SealDigest': 'DigestSealSingles',
         'SealRoot': 'MerkleRootSealSingles',
         'SealEvent': 'SealSourceTriples',
-        'SealTrans': 'SealSourceCouples',
+        'SealSource': 'SealSourceCouples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples'
@@ -937,7 +936,7 @@ def test_sealer_class():
         'DigestSealSingles': 'SealDigest',
         'MerkleRootSealSingles': 'SealRoot',
         'SealSourceTriples': 'SealEvent',
-        'SealSourceCouples': 'SealTrans',
+        'SealSourceCouples': 'SealSource',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind'
@@ -1077,12 +1076,12 @@ def test_sealer():
     qb64 = prefixer.qb64 + number.qb64 + diger.qb64  # ''.join(crew)
     qb64b = qb64.encode()
     qb2 = prefixer.qb2 + number.qb2 + diger.qb2
-    enclqb64 = bytearray(b'-SAXBN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAAOELC5L3iBVD77'
+    enclqb64 = bytearray(b'-TAXBN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zRMAAOELC5L3iBVD77'
                          b'd_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux')
-    enclqb2 = bytearray(b'\xf9 \x17\x04\xdeK\xbbDj\xa6\xd9\x89\x0b\xe8\x97\x12WL2\xb9'
-                        b'D{\x0e\xd0\xd3[^\xd9\xf2\xe0\xaaV\xea[\xdc\xd10\x00\x0e\x10'
-                        b'\xb0\xb9/x\x81T>\xfbw\xf3\x18m\x81\x86\tD \xa9\x00c\xbbZ8\xc7'
-                        b'U\x1d\xfb=\xac/\xeb\xb1')
+    enclqb2 = bytearray(b'\xf90\x17\x04\xdeK\xbbDj\xa6\xd9\x89\x0b\xe8\x97\x12WL2\xb9'
+                    b'D{\x0e\xd0\xd3[^\xd9\xf2\xe0\xaaV\xea[\xdc\xd10\x00\x0e\x10'
+                    b'\xb0\xb9/x\x81T>\xfbw\xf3\x18m\x81\x86\tD \xa9\x00c\xbbZ8\xc7'
+                    b'U\x1d\xfb=\xac/\xeb\xb1')
 
     # Test data
     sealer = Sealer(data=data)  # bare data so uses naive cast
