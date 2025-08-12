@@ -194,6 +194,8 @@ def test_codexes_tags():
         'BigESSRPayloadGroup': '--Z',
         'BlindedStateQuadruples': '-a',
         'BigBlindedStateQuadruples': '--a',
+        'BlindedMediaQuadruples': '-b',
+        'BigBlindedMediaQuadruples': '--b',
         'KERIACDCGenusVersion': '-_AAA'
     }
 
@@ -304,6 +306,8 @@ def test_codexes_tags():
         'BigESSRPayloadGroup',
         'BlindedStateQuadruples',
         'BigBlindedStateQuadruples',
+        'BlindedMediaQuadruples',
+        'BigBlindedMediaQuadruples',
         'KERIACDCGenusVersion',
     )
 
@@ -520,6 +524,8 @@ def test_counter_class():
                     '--Z': 'BigESSRPayloadGroup',
                     '-a': 'BlindedStateQuadruples',
                     '--a': 'BigBlindedStateQuadruples',
+                    '-b': 'BlindedMediaQuadruples',
+                    '--b': 'BigBlindedMediaQuadruples',
                     '-_AAA': 'KERIACDCGenusVersion'
                 }
             }
@@ -615,6 +621,8 @@ def test_counter_class():
                     '--Z': Cizage(hs=3, ss=5, fs=8),
                     '-a': Cizage(hs=2, ss=2, fs=4),
                     '--a': Cizage(hs=3, ss=5, fs=8),
+                    '-b': Cizage(hs=2, ss=2, fs=4),
+                    '--b': Cizage(hs=3, ss=5, fs=8),
                     '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             }
