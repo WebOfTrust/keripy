@@ -243,8 +243,10 @@ class CounterCodex_2_0(IceMapDom):
     BigTransLastIdxSigGroups: str = '--Y'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
-    BlindedStateQuadruples: str = '-a'  # Blinded transaction event state quadruples dig+uuid+said+state.
-    BigBlindedStateQuadruples: str = '--a'  # Big Blinded transaction event state quadruples dig+uuid+said+state.
+    BlindedStateQuadruples: str = '-a'  # Blinded transaction event state quadruples blid+uuid+said+state.
+    BigBlindedStateQuadruples: str = '--a'  # Big Blinded transaction event state quadruples blid+uuid+said+state.
+    BlindedMediaQuadruples: str = '-b'  # Blinded IANA media type quadruples blid+uuid+type+media
+    BigBlindedMediaQuadruples: str = '--b'  # Big Blinded IANA media type  quadruples blid+uuid+type+media
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -648,6 +650,8 @@ class Counter:
                 '--Z': Cizage(hs=3, ss=5, fs=8),
                 '-a': Cizage(hs=2, ss=2, fs=4),
                 '--a': Cizage(hs=3, ss=5, fs=8),
+                '-b': Cizage(hs=2, ss=2, fs=4),
+                '--b': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
