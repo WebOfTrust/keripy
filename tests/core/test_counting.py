@@ -194,8 +194,8 @@ def test_codexes_tags():
         'BigESSRPayloadGroup': '--Z',
         'BlindedStateQuadruples': '-a',
         'BigBlindedStateQuadruples': '--a',
-        'BlindedMediaQuadruples': '-b',
-        'BigBlindedMediaQuadruples': '--b',
+        'TypedMediaQuadruples': '-b',
+        'BigTypedMediaQuadruples': '--b',
         'KERIACDCGenusVersion': '-_AAA'
     }
 
@@ -306,8 +306,8 @@ def test_codexes_tags():
         'BigESSRPayloadGroup',
         'BlindedStateQuadruples',
         'BigBlindedStateQuadruples',
-        'BlindedMediaQuadruples',
-        'BigBlindedMediaQuadruples',
+        'TypedMediaQuadruples',
+        'BigTypedMediaQuadruples',
         'KERIACDCGenusVersion',
     )
 
@@ -524,8 +524,8 @@ def test_counter_class():
                     '--Z': 'BigESSRPayloadGroup',
                     '-a': 'BlindedStateQuadruples',
                     '--a': 'BigBlindedStateQuadruples',
-                    '-b': 'BlindedMediaQuadruples',
-                    '--b': 'BigBlindedMediaQuadruples',
+                    '-b': 'TypedMediaQuadruples',
+                    '--b': 'BigTypedMediaQuadruples',
                     '-_AAA': 'KERIACDCGenusVersion'
                 }
             }

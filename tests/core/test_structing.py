@@ -27,7 +27,7 @@ from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
                                  EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
                                  AClanDom, ACastDom,
                                  SClanDom, SCastDom, SealClanDom, SealCastDom,
-                                 BClanDom, BCastDom)
+                                 BSClanDom, BSCastDom)
 
 
 def test_structor_doms():
@@ -68,12 +68,12 @@ def test_structor_doms():
                                  d=Castage(kls=Diger, ipn=None)),
     }
 
-    assert asdict(BClanDom) == \
+    assert asdict(BSClanDom) == \
     {
         'BlindState': BlindState,
     }
 
-    assert asdict(BCastDom) == \
+    assert asdict(BSCastDom) == \
     {
         'BlindState': BlindState(d=Castage(kls=Noncer, ipn='nonce'),
                                  u=Castage(kls=Noncer, ipn='nonce'),
@@ -91,7 +91,8 @@ def test_structor_doms():
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
-        'BlindState': 'BlindedStateQuadruples'
+        'BlindState': 'BlindedStateQuadruples',
+        'TypeMedia': 'TypedMediaQuadruples'
     }
     assert CodenToClans == \
     {
@@ -102,7 +103,8 @@ def test_structor_doms():
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
-        'BlindedStateQuadruples': 'BlindState'
+        'BlindedStateQuadruples': 'BlindState',
+        'TypedMediaQuadruples': 'TypeMedia'
     }
 
     """End Test"""
@@ -122,7 +124,8 @@ def test_structor_class():
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
-        ('d', 'u', 'td', 'ts'): 'BlindState'
+        ('d', 'u', 'td', 'ts'): 'BlindState',
+        ('d', 'u', 'mt', 'mv'): 'TypeMedia'
     }
 
     assert Structor.ClanCodens == ClanToCodens == \
@@ -134,7 +137,8 @@ def test_structor_class():
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
-        'BlindState': 'BlindedStateQuadruples'
+        'BlindState': 'BlindedStateQuadruples',
+        'TypeMedia': 'TypedMediaQuadruples'
     }
 
     assert Structor.CodenClans == CodenToClans == \
@@ -146,7 +150,8 @@ def test_structor_class():
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
-        'BlindedStateQuadruples': 'BlindState'
+        'BlindedStateQuadruples': 'BlindState',
+        'TypedMediaQuadruples': 'TypeMedia'
     }
 
 
@@ -1217,8 +1222,8 @@ def test_sealer():
 
 def test_blinder_class():
     """test Blinder class variables etc"""
-    assert Blinder.Clans == BClanDom
-    assert Blinder.Casts == BCastDom
+    assert Blinder.Clans == BSClanDom
+    assert Blinder.Casts == BSCastDom
     assert Blinder.Names == \
     {
         ('d', 'u', 'td', 'ts'): 'BlindState',
@@ -1344,7 +1349,7 @@ def test_blinder():
     assert snonceq == 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
 
     clan = BlindState
-    cast = BCastDom.BlindState  # defined dom cast with non-None ipns
+    cast = BSCastDom.BlindState  # defined dom cast with non-None ipns
     ncast = BlindState(d=Castage(snoncer.__class__),
                        u=Castage(noncer.__class__),
                        td=Castage(anoncer.__class__),
@@ -1832,7 +1837,7 @@ def test_blinder():
     assert snonceq == 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD'
 
     clan = BlindState
-    cast = BCastDom.BlindState  # defined dom cast with non-None ipns
+    cast = BSCastDom.BlindState  # defined dom cast with non-None ipns
     ncast = BlindState(d=Castage(snoncer.__class__),
                        u=Castage(noncer.__class__),
                        td=Castage(anoncer.__class__),

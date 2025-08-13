@@ -3355,7 +3355,7 @@ class Labeler(Matter):
                     #code = LabelDex.Bytes_L0
                     #raw = label
 
-        elif text is not None:  # text can be empty strin since '' is Reb64
+        elif text is not None:  # text can be empty string since '' is Reb64
             if hasattr(text, "encode"):  # make text bytes
                 text = text.encode()
 

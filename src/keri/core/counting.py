@@ -245,8 +245,8 @@ class CounterCodex_2_0(IceMapDom):
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     BlindedStateQuadruples: str = '-a'  # Blinded transaction event state quadruples blid+uuid+said+state.
     BigBlindedStateQuadruples: str = '--a'  # Big Blinded transaction event state quadruples blid+uuid+said+state.
-    BlindedMediaQuadruples: str = '-b'  # Blinded IANA media type quadruples blid+uuid+type+media
-    BigBlindedMediaQuadruples: str = '--b'  # Big Blinded IANA media type  quadruples blid+uuid+type+media
+    TypedMediaQuadruples: str = '-b'  # Typed and Blinded IANA media type quadruples blid+uuid+type+media
+    BigTypedMediaQuadruples: str = '--b'  # Big Type and Blinded IANA media type  quadruples blid+uuid+type+media
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
