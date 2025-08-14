@@ -90,8 +90,8 @@ def test_codexes_tags():
         'SealSourceCouples': '-G',
         'TransLastIdxSigGroups': '-H',
         'SealSourceTriples': '-I',
-        'PathedMaterialGroup': '-L',
-        'BigPathedMaterialGroup': '--L',
+        'PathedMaterialCouples': '-L',
+        'BigPathedMaterialCouples': '--L',
         'GenericGroup': '-T',
         'BigGenericGroup': '--T',
         'BodyWithAttachmentGroup': '-U',
@@ -107,8 +107,8 @@ def test_codexes_tags():
 
     assert  asdict(counting.QTDex_1_0) == \
     {
-        'PathedMaterialGroup': '-L',
-        'BigPathedMaterialGroup': '--L',
+        'PathedMaterialCouples': '-L',
+        'BigPathedMaterialCouples': '--L',
         'GenericGroup': '-T',
         'BigGenericGroup': '--T',
         'BodyWithAttachmentGroup': '-U',
@@ -170,8 +170,8 @@ def test_codexes_tags():
         'BigTransReceiptQuadruples': '--N',
         'FirstSeenReplayCouples': '-O',
         'BigFirstSeenReplayCouples': '--O',
-        'PathedMaterialGroup': '-P',
-        'BigPathedMaterialGroup': '--P',
+        'PathedMaterialCouples': '-P',
+        'BigPathedMaterialCouples': '--P',
         'DigestSealSingles': '-Q',
         'BigDigestSealSingles': '--Q',
         'MerkleRootSealSingles': '-R',
@@ -282,8 +282,8 @@ def test_codexes_tags():
         'BigTransReceiptQuadruples',
         'FirstSeenReplayCouples',
         'BigFirstSeenReplayCouples',
-        'PathedMaterialGroup',
-        'BigPathedMaterialGroup',
+        'PathedMaterialCouples',
+        'BigPathedMaterialCouples',
         'DigestSealSingles',
         'BigDigestSealSingles',
         'MerkleRootSealSingles',
@@ -346,8 +346,8 @@ def test_codexes_tags():
         BigFirstSeenReplayCouples='BigFirstSeenReplayCouples',
         DigestSealSingles='DigestSealSingles',
         BigDigestSealSingles='BigDigestSealSingles',
-        PathedMaterialGroup='PathedMaterialGroup',
-        BigPathedMaterialGroup='BigPathedMaterialGroup',
+        PathedMaterialCouples='PathedMaterialCouples',
+        BigPathedMaterialCouples='BigPathedMaterialCouples',
         MerkleRootSealSingles='MerkleRootSealSingles',
         BigMerkleRootSealSingles='BigMerkleRootSealSingles',
         SealSourceCouples='SealSourceCouples',
@@ -452,8 +452,8 @@ def test_counter_class():
                     '-G': 'SealSourceCouples',
                     '-H': 'TransLastIdxSigGroups',
                     '-I': 'SealSourceTriples',
-                    '-L': 'PathedMaterialGroup',
-                    '--L': 'BigPathedMaterialGroup',
+                    '-L': 'PathedMaterialCouples',
+                    '--L': 'BigPathedMaterialCouples',
                     '-T': 'GenericGroup',
                     '--T': 'BigGenericGroup',
                     '-U': 'BodyWithAttachmentGroup',
@@ -500,8 +500,8 @@ def test_counter_class():
                     '--N': 'BigTransReceiptQuadruples',
                     '-O': 'FirstSeenReplayCouples',
                     '--O': 'BigFirstSeenReplayCouples',
-                    '-P': 'PathedMaterialGroup',
-                    '--P': 'BigPathedMaterialGroup',
+                    '-P': 'PathedMaterialCouples',
+                    '--P': 'BigPathedMaterialCouples',
                     '-Q': 'DigestSealSingles',
                     '--Q': 'BigDigestSealSingles',
                     '-R': 'MerkleRootSealSingles',
@@ -1086,16 +1086,16 @@ def test_counter_v1():
     test = counter._binfil()
     assert test == qb2
 
-    # test BigPathedMaterialGroup with big codes index=100024000
+    # test BigPathedMaterialCouples with big codes index=100024000
     count = 100024000
-    qsc = CtrDex.BigPathedMaterialGroup + intToB64(count, l=5)
+    qsc = CtrDex.BigPathedMaterialCouples + intToB64(count, l=5)
     assert qsc == '--LF9j7A'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
-    assert counter.code == CtrDex.BigPathedMaterialGroup
-    assert counter.name == "BigPathedMaterialGroup"
+    counter = Counter(code=CtrDex.BigPathedMaterialCouples, count=count, version=Vrsn_1_0)
+    assert counter.code == CtrDex.BigPathedMaterialCouples
+    assert counter.name == "BigPathedMaterialCouples"
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1103,8 +1103,8 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     counter = Counter(qb64b=qscb, version=Vrsn_1_0)  # test with bytes not str
-    assert counter.code == CtrDex.BigPathedMaterialGroup
-    assert counter.name == "BigPathedMaterialGroup"
+    assert counter.code == CtrDex.BigPathedMaterialCouples
+    assert counter.name == "BigPathedMaterialCouples"
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1112,8 +1112,8 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     counter = Counter(qb64=qsc, version=Vrsn_1_0)  # test with str not bytes
-    assert counter.code == CtrDex.BigPathedMaterialGroup
-    assert counter.name == "BigPathedMaterialGroup"
+    assert counter.code == CtrDex.BigPathedMaterialCouples
+    assert counter.name == "BigPathedMaterialCouples"
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1121,8 +1121,8 @@ def test_counter_v1():
     assert counter.version == Vrsn_1_0
 
     counter = Counter(qb2=qscb2, version=Vrsn_1_0)  # test with qb2
-    assert counter.code == CtrDex.BigPathedMaterialGroup
-    assert counter.name == "BigPathedMaterialGroup"
+    assert counter.code == CtrDex.BigPathedMaterialCouples
+    assert counter.name == "BigPathedMaterialCouples"
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -1136,7 +1136,7 @@ def test_counter_v1():
     qb2 = counter.qb2
     counter._bexfil(qb2)
     assert counter.code == code
-    assert counter.name == "BigPathedMaterialGroup"
+    assert counter.name == "BigPathedMaterialCouples"
     assert counter.count == count
     assert counter.qb64 == qsc
     assert counter.qb2 == qb2

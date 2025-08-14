@@ -65,8 +65,8 @@ class CounterCodex_1_0(IceMapDom):
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialCouples: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
     BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
@@ -96,8 +96,8 @@ class QuadTripCodex_1_0(IceMapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialCouples: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
     BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
@@ -221,8 +221,8 @@ class CounterCodex_2_0(IceMapDom):
     BigTransReceiptQuadruples: str = '--N'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
     FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
     BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
-    PathedMaterialGroup: str = '-P'  # Pathed Material couples. path+text
-    BigPathedMaterialGroup: str = '--P'  # Big Pathed Material couples. path+text
+    PathedMaterialCouples: str = '-P'  # Pathed Material couples. path+text
+    BigPathedMaterialCouples: str = '--P'  # Big Pathed Material couples. path+text
     DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
     BigDigestSealSingles: str = '--Q'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
