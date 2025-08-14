@@ -1083,13 +1083,13 @@ class Parser:
                                                      klas=Counter,
                                                      cold=cold,
                                                      abort=framed or enclosed,
-                                                     strip=False)
+                                                     strip=False)  # peek at ctr
 
                     # check if group belongs to top level group message in stream
                     if (ctr.code in self.mucodes or ctr.code in self.sucodes or
                         ctr.code == self.codes.KERIACDCGenusVersion):
-                        # do not consume leave in stream
-                        break  # finished attachments not a valid attachement group
+                        # do not consume leave belongs with new msg
+                        break  # not a valid attachment so done with attachments to this msg
 
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
 
@@ -2006,7 +2006,7 @@ class Parser:
 
 
     def _SealSourceTriples2(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESRv2 SealSourceTriples group
+        """Generator to extract and strip CESRv2 SealSourceTriples group
 
         Parameters:
             exts (dict): of extracted group elements for keyword args.
@@ -2046,9 +2046,10 @@ class Parser:
 
 
     def _PathedMaterialGroup(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESR v1 and v2 PathedMaterialGroup group both
-        big and small sized groups. Since v1 counts quadlets/triples the logic is
-        the same for both v1 and v2. The contexts of a pathed material group
+        """Generator to extract  and strip CESR v1 and v2 PathedMaterialGroup
+        Includes both big and small sized groups.
+        Since v1 counts quadlets/triples the logic is the same for both v1 and v2.
+        The contexts of a pathed material group
         MUST be a CESR attachment sub-stream i.e. primitives or groups of primitives.
         It may not include any top-level messages expecially not any messages
         as JSON, CBOR, MGPK

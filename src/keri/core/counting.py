@@ -221,8 +221,8 @@ class CounterCodex_2_0(IceMapDom):
     BigTransReceiptQuadruples: str = '--N'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
     FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
     BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
-    PathedMaterialGroup: str = '-P'  # Pathed Material Group.
-    BigPathedMaterialGroup: str = '--P'  # Big Pathed Material Group.
+    PathedMaterialGroup: str = '-P'  # Pathed Material couples. path+text
+    BigPathedMaterialGroup: str = '--P'  # Big Pathed Material couples. path+text
     DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
     BigDigestSealSingles: str = '--Q'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
