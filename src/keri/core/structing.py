@@ -220,7 +220,7 @@ class BlindStateClanDom(IceMapDom):
     Only provide defined classes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Example: BlindClanDom[name]
+    Example: BlindStateClanDom[name]
     """
     BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
 
@@ -240,7 +240,7 @@ class BlindStateCastDom(IceMapDom):
     Only provide defined namedtuples casts.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Example: BlindCastDom[name]
+    Example: BlindStateCastDom[name]
 
     Note: the d, and td field values may be empty so instead of Diger users
     Noncer which allows all the Diger codes plus empty
@@ -257,26 +257,26 @@ BSCastDom = BlindStateCastDom()  # create instance
 
 
 @dataclass(frozen=True)
-class BlindMediaClanDom(IceMapDom):
-    """BlindMediaClanDom is dataclass of namedtuple blinded media class references
+class TypeMediaClanDom(IceMapDom):
+    """TypeMediaClanDom is dataclass of namedtuple blinded media class references
     (clans) each indexed by its class name.
 
     Only provide defined classes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Example: BlindMediaClanDom[name]
+    Example: TypeMediaClanDom[name]
     """
     TypeMedia: type[NamedTuple] = TypeMedia  # TypeMedia class reference (d,u,mt,mv)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-BMClanDom = BlindMediaClanDom()  # create instance
+TMClanDom = TypeMediaClanDom()  # create instance
 
 
 @dataclass(frozen=True)
-class BlindMediaCastDom(IceMapDom):
-    """BlindMediaCastDom is dataclass of namedtuple instances (blind casts) whose
+class TypeMediaCastDom(IceMapDom):
+    """TypeMediaCastDom is dataclass of namedtuple instances (blind casts) whose
     field values are Castage instances of named primitive class class references
     for those fields.
 
@@ -285,7 +285,7 @@ class BlindMediaCastDom(IceMapDom):
     Only provide defined namedtuples casts.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Example: BlindMediaDom[name]
+    Example: TypeMediaCastDom[name]
 
     Note: the d field value is a SAID but so instead of Diger users Noncer which
     allows all the Diger codes plus empty
@@ -298,7 +298,7 @@ class BlindMediaCastDom(IceMapDom):
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-BMCastDom = BlindMediaCastDom()  # create instance
+TMCastDom = TypeMediaCastDom()  # create instance
 
 
 @dataclass(frozen=True)
@@ -461,9 +461,6 @@ class Structor:
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
-        said (str|None): primary said field value if any. None otherwise
-                         primary has same label as zeroth item in .saids
-        saidb (bytes|None): .said as bytes
         saids (dict):   default saidive fields at top-level.
                           Assumes .mad already in most compact form.
                           Each key is label of saidive field.
@@ -471,6 +468,10 @@ class Structor:
                               value to be computed from serialized dummied .mad
         saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
     Methods:
 
@@ -1093,6 +1094,13 @@ class Sealer(Structor):
                            ser/des as group
         CodenClans (dict): map of counter code name to clan named tuple for
                            ser/des as group
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+        Dummy (str): dummy character for computing SAIDs
+
 
 
     When known casts are provided in .Clans/.Casts then more flexible creation
@@ -1112,6 +1120,17 @@ class Sealer(Structor):
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
+        saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
 
     Methods:
@@ -1249,8 +1268,10 @@ class Blinder(Structor):
                               value to be computed from serialized dummied .mad
         saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
-        said (str): qb64 said given .saids given .saids as saidive
-        saidb (bytes): qb64b said given .saids as saidive fields
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
     Properties:
         uuid (str): qb64 uuid of BlindState CESR .data.u 'u' field
@@ -1526,9 +1547,7 @@ class Mediar(Structor):
     named values belonging to IANA media type media quadrule with blindable SAID
     (BLID)
 
-
     See Structor class for more details.
-
 
     Inherited Class Attributes:
         Clans (type[Namedtuple]): each value is known NamedTuple class keyed
@@ -1578,8 +1597,10 @@ class Mediar(Structor):
                               value to be computed from serialized dummied .mad
         saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
-        said (str): qb64 said given .saids given .saids as saidive
-        saidb (bytes): qb64b said given .saids as saidive fields
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
     Properties:
         uuid (str): qb64 uuid of TypeMedia CESR .data.u.qb64 'u' field
@@ -1602,8 +1623,8 @@ class Mediar(Structor):
 
 
     """
-    Clans = BMClanDom  # known namedtuple clans. Override in subclass with non-empty
-    Casts = BMCastDom  # known namedtuple casts. Override in subclass with non-empty
+    Clans = TMClanDom  # known namedtuple clans. Override in subclass with non-empty
+    Casts = TMCastDom  # known namedtuple casts. Override in subclass with non-empty
     # Create .Names dict that maps clan/cast fields names to its namedtuple
     # class type name so can look up a know clan or cast given a matching set
     # of either field names from a namedtuple or keys from a dict.
@@ -1611,7 +1632,7 @@ class Mediar(Structor):
 
     # map clan names to counter code for ser/des as counted group
     ClanCodens = dict()
-    ClanCodens[BMClanDom.TypeMedia.__name__] = Codens.TypedMediaQuadruples
+    ClanCodens[TMClanDom.TypeMedia.__name__] = Codens.TypedMediaQuadruples
 
     # mapcounter code to clan name for ser/des as counted group
     CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict
@@ -1711,9 +1732,9 @@ class Mediar(Structor):
 
 
     @property
-    def stateb(self):
-        """stateb property getter
+    def mvb(self):
+        """mvb property getter
         Returns:
-            stateb (bytes): media value as bytes TypeMedia .data.mv.text 'mv' field
+            mvb (bytes): media value as bytes TypeMedia .data.mv.text 'mv' field
         """
         return self.data.mv.text.encode()

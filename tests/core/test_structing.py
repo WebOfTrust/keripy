@@ -8,6 +8,7 @@ from typing import NamedTuple
 from collections import namedtuple
 from collections.abc import Mapping
 
+import json
 
 import pytest
 
@@ -18,16 +19,17 @@ from keri.kering import ValidationError, InvalidValueError, EmptyMaterialError, 
 from keri.help import helping
 
 from keri.core import (Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
-                       Noncer, NonceDex, Salter)
+                       Noncer, NonceDex, Salter, Texter)
 
-from keri.core import (Structor, Sealer, Blinder,
+from keri.core import (Structor, Sealer, Blinder, Mediar,
                        SealDigest, SealRoot, SealBack, SealEvent,
-                                 SealLast, SealSource, SealKind, BlindState)
+                                 SealLast, SealSource, SealKind, BlindState,
+                                 TypeMedia)
 from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
                                  EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
                                  AClanDom, ACastDom,
                                  SClanDom, SCastDom, SealClanDom, SealCastDom,
-                                 BSClanDom, BSCastDom)
+                                 BSClanDom, BSCastDom, TMClanDom, TMCastDom)
 
 
 def test_structor_doms():
@@ -153,9 +155,8 @@ def test_structor_class():
         'BlindedStateQuadruples': 'BlindState',
         'TypedMediaQuadruples': 'TypeMedia'
     }
-
-
     """End Test"""
+
 
 def test_structor():
     """test Structor instance"""
@@ -2038,6 +2039,213 @@ def test_blinder():
     """Done Test"""
 
 
+def test_mediar_class():
+    """test Mediar class variables etc"""
+    assert Mediar.Clans == TMClanDom
+    assert Mediar.Casts == TMCastDom
+    assert Mediar.Names == {('d', 'u', 'mt', 'mv'): 'TypeMedia'}
+    assert Mediar.ClanCodens == {'TypeMedia': 'TypedMediaQuadruples'}
+    assert Mediar.CodenClans == {'TypedMediaQuadruples': 'TypeMedia'}
+
+    """End Test"""
+
+def test_mediar():
+    """test mediar instance"""
+
+    raws = [b'mediarrawnonce_' + b'%0x'%(i, ) for i in range(4)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+    assert uuids == \
+    [
+        '0ABtZWRpYXJyYXdub25jZV8w',
+        '0ABtZWRpYXJyYXdub25jZV8x',
+        '0ABtZWRpYXJyYXdub25jZV8y',
+        '0ABtZWRpYXJyYXdub25jZV8z'
+    ]
+
+    with pytest.raises(kering.InvalidValueError):
+        mediar = Mediar()  # test default
+
+    code = DigDex.Blake3_256
+
+    uuid = uuids[0]
+    assert uuid == '0ABtZWRpYXJyYXdub25jZV8w'
+    uuider = Noncer(nonce=uuid)
+    mt = 'application/json'
+    mter = Labeler(text=mt)
+    mtq = mter.qb64
+    mvdict = dict(name='Sue', food='Pizza')
+    mv = json.dumps(mvdict, separators=(",", ":"), ensure_ascii=False)
+    assert mv == '{"name":"Sue","food":"Pizza"}'
+    mver = Texter(text=mv)
+    mvq = mver.qb64
+
+    name = TypeMedia.__name__
+    assert name == 'TypeMedia'
+
+    # manually compute said
+    tail = ''.join([uuider.qb64, mter.qb64, mver.qb64])
+    assert tail == '0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+    code = DigDex.Blake3_256
+    size = Noncer._fullSize(code=code)
+    ser = '#' * size + tail  # prepend dummy to tail end
+    assert ser == '############################################0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+    saider = Noncer(ser=ser.encode(), code=code)  # said nonce
+    said = saider.qb64
+    assert said == 'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE'
+
+    clan = TypeMedia
+    cast = TMCastDom.TypeMedia  # defined dom cast with non-None ipns
+    ncast = TypeMedia(d=Castage(saider.__class__),
+                       u=Castage(uuider.__class__),
+                       mt=Castage(mter.__class__),
+                       mv=Castage(mver.__class__))  # naive cast
+    crew = TypeMedia(d=said, u=uuid, mt=mt, mv=mv)
+    ncrew = TypeMedia(d=said, u=uuid, mt=mtq, mv=mvq)
+    dncast = ncast._asdict()
+    dcrew = crew._asdict()
+    dncrew = ncrew._asdict()
+
+    # create said using makify  said nonce
+    msaider = Noncer(nonce='')
+    data = TypeMedia(d=msaider, u=uuider, mt=mter, mv=mver)  # empty said
+
+    mediar = Mediar(data=data, cast=cast, makify=True)
+    assert mediar.crew == TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                                    u='0ABtZWRpYXJyYXdub25jZV8w',
+                                    mt='application/json',
+                                    mv='{"name":"Sue","food":"Pizza"}')
+    assert mediar.said == said
+    assert mediar.uuid == uuid
+    assert mediar.mt == mt
+    assert mediar.mv == mv
+
+    assert data._fields == TypeMedia._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = saider.qb64 + uuider.qb64 + mter.qb64 + mver.qb64
+    assert qb64 == 'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+
+    qb64b = qb64.encode()
+    qb2 = saider.qb2 + uuider.qb2 + mter.qb2 + mver.qb2
+    assert qb2 == (b'\x10v\x05\x99\x1f\xd0X"\xf3\xf2\x06r\x85\xce\x01C\xccI\xf9\xfbY\xe8\xe08'
+                    b'|\xd9\xae\xbbV@\xbf$\xc4\xd0\x00mediarrawnonce_0\xe8\x10\x06\x00\x00applicat'
+                    b'ion/json\xe4\x10\n\x00{"name":"Sue","food":"Pizza"}')
+
+
+    enclqb64 = bytearray(b'-bAjEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdu'
+                         b'b25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZv'
+                         b'b2QiOiJQaXp6YSJ9')
+
+    enclqb2 = bytearray(b'\xf9\xb0#\x10v\x05\x99\x1f\xd0X"\xf3\xf2\x06r\x85\xce\x01C\xcc'
+          b'I\xf9\xfbY\xe8\xe08|\xd9\xae\xbbV@\xbf$\xc4\xd0\x00mediarrawnonce'
+          b'_0\xe8\x10\x06\x00\x00application/json\xe4\x10\n\x00{"name":"Sue"'
+          b',"food":"Pizza"}')
+
+
+    # Test data naive (no cast) not empty said
+    data = TypeMedia(d=saider, u=uuider, mt=mter, mv=mver)
+    mediar = Mediar(data=data)  # bare data so uses naive cast
+    assert mediar.data == data
+    assert mediar.clan == clan
+    assert mediar.name == name
+    assert mediar.cast == ncast != cast  # since naive data
+    assert mediar.crew == ncrew != crew  # since naive data
+    assert mediar.asdict == dncrew == \
+    {
+        'd': 'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+        'u': '0ABtZWRpYXJyYXdub25jZV8w',
+        'mt': '6BAGAABhcHBsaWNhdGlvbi9qc29u',
+        'mv': '5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+    }
+    assert mediar.qb64 == qb64
+    assert mediar.qb64b == qb64b
+    assert mediar.qb2 == qb2
+    assert mediar.said == said
+    assert mediar.saidb == said.encode()
+    assert mediar.uuid == uuid
+    assert mediar.uuidb == uuid.encode()
+    assert mediar.mt == mt
+    assert mediar.mtb == mt.encode()
+    assert mediar.mv == mv
+    assert mediar.mvb == mv.encode()
+
+    # test round trip with enclose and extract qb64 not naive since clan from ct
+    assert mediar.enclose([mediar]) == enclqb64  # ctr from clan
+    assert mediar.enclose([mediar], cold=Colds.bny) == enclqb2  # ctr from clan
+
+    # round trip from enclosure
+    ims = bytearray(enclqb64)
+    emediar = Mediar.extract(qb64=ims)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+
+    # test strip qb64
+    assert ims  # not stripped
+    emediar = Mediar.extract(qb64=ims, strip=True)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+    assert not ims  # stripped
+
+    # test round trip with extract qb2
+    ims = bytearray(enclqb2)
+    emediar = Mediar.extract(qb2=ims)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+
+    # test strip qb2
+    assert ims  # not stripped
+    emediar = Mediar.extract(qb2=ims, strip=True)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+    assert not ims  # stripped
+
+    """Done Test"""
+
 if __name__ == "__main__":
     test_structor_doms()
     test_structor_class()
@@ -2047,6 +2255,8 @@ if __name__ == "__main__":
     test_sealer()
     test_blinder_class()
     test_blinder()
+    test_mediar_class()
+    test_mediar()
 
 
 
