@@ -110,10 +110,10 @@ class Parser:
     Methods[2][0][Codens.FirstSeenReplayCouples] = "_FirstSeenReplayCouples2"
     Methods[2][0][Codens.BigFirstSeenReplayCouples] = "_FirstSeenReplayCouples2"
 
-    Methods[1][0][Codens.PathedMaterialCouples] = "_PathedMaterialGroup"
-    Methods[1][0][Codens.BigPathedMaterialCouples] = "_PathedMaterialGroup"
-    Methods[2][0][Codens.PathedMaterialCouples] = "_PathedMaterialGroup"
-    Methods[2][0][Codens.BigPathedMaterialCouples] = "_PathedMaterialGroup"
+    Methods[1][0][Codens.PathedMaterialCouples] = "_PathedMaterialCouples"
+    Methods[1][0][Codens.BigPathedMaterialCouples] = "_PathedMaterialCouples"
+    Methods[2][0][Codens.PathedMaterialCouples] = "_PathedMaterialCouples"
+    Methods[2][0][Codens.BigPathedMaterialCouples] = "_PathedMaterialCouples"
 
     Methods[1][0][Codens.SealSourceTriples] = "_SealSourceTriples1"
     Methods[2][0][Codens.SealSourceTriples] = "_SealSourceTriples2"
@@ -2045,7 +2045,7 @@ class Parser:
             exts['ssts'] = ssts
 
 
-    def _PathedMaterialGroup(self, exts, ims, ctr, cold, abort):
+    def _PathedMaterialCouples(self, exts, ims, ctr, cold, abort):
         """Generator to extract  and strip CESR v1 and v2 PathedMaterialCouples
         Includes both big and small sized groups.
         Since v1 counts quadlets/triples the logic is the same for both v1 and v2.
