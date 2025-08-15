@@ -20,7 +20,6 @@ from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0)
 from ..core.coring import IceMapDom
 
 
-
 @dataclass(frozen=True)
 class GenusCodex(IceMapDom):
     """GenusCodex is codex of protocol genera for code table.
@@ -245,8 +244,10 @@ class CounterCodex_2_0(IceMapDom):
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     BlindedStateQuadruples: str = '-a'  # Blinded transaction event state quadruples blid+uuid+said+state.
     BigBlindedStateQuadruples: str = '--a'  # Big Blinded transaction event state quadruples blid+uuid+said+state.
-    TypedMediaQuadruples: str = '-b'  # Typed and Blinded IANA media type quadruples blid+uuid+type+media
-    BigTypedMediaQuadruples: str = '--b'  # Big Type and Blinded IANA media type  quadruples blid+uuid+type+media
+    BoundStateSextuples: str = '-b'  # Bound Blinded transaction event state sextuples blid+uuid+said+state+bsnu+bsaid.
+    BigBoundStateSextuples: str = '--b'  # Big Bound Blinded transaction event state sextuples blid+uuid+said+state+bsnu+bsaid.
+    TypedMediaQuadruples: str = '-c'  # Typed and Blinded IANA media type quadruples blid+uuid+type+media
+    BigTypedMediaQuadruples: str = '--c'  # Big Type and Blinded IANA media type  quadruples blid+uuid+type+media
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -652,6 +653,8 @@ class Counter:
                 '--a': Cizage(hs=3, ss=5, fs=8),
                 '-b': Cizage(hs=2, ss=2, fs=4),
                 '--b': Cizage(hs=3, ss=5, fs=8),
+                '-c': Cizage(hs=2, ss=2, fs=4),
+                '--c': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },

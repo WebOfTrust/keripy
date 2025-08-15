@@ -23,8 +23,8 @@ from keri.core import (Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
 
 from keri.core import (Structor, Sealer, Blinder, Mediar,
                        SealDigest, SealRoot, SealBack, SealEvent,
-                                 SealLast, SealSource, SealKind, BlindState,
-                                 TypeMedia)
+                                 SealLast, SealSource, SealKind,
+                                 BlindState, BoundState, TypeMedia)
 from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
                                  EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
                                  AClanDom, ACastDom,
@@ -54,6 +54,7 @@ def test_structor_doms():
         'SealKind': SealKind,
     }
 
+
     assert asdict(SCastDom) == \
     {
         'SealDigest': SealDigest(d=Castage(kls=Diger, ipn=None)),
@@ -70,17 +71,26 @@ def test_structor_doms():
                                  d=Castage(kls=Diger, ipn=None)),
     }
 
+
     assert asdict(BSClanDom) == \
     {
         'BlindState': BlindState,
+        'BoundState': BoundState
     }
+
 
     assert asdict(BSCastDom) == \
     {
         'BlindState': BlindState(d=Castage(kls=Noncer, ipn='nonce'),
                                  u=Castage(kls=Noncer, ipn='nonce'),
                                  td=Castage(kls=Noncer, ipn='nonce'),
-                                 ts=Castage(kls=Labeler, ipn='text'))
+                                 ts=Castage(kls=Labeler, ipn='text')),
+        'BoundState': BoundState(d=Castage(Noncer, 'nonce'),
+                                u=Castage(Noncer, ipn='nonce'),
+                                td=Castage(Noncer, ipn='nonce'),
+                                ts=Castage(Labeler, ipn='text'),
+                                bn=Castage(Number, ipn='numh'),
+                                bd=Castage(Noncer, ipn='nonce'))
     }
 
 
@@ -94,6 +104,7 @@ def test_structor_doms():
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
         'BlindState': 'BlindedStateQuadruples',
+        'BoundState': 'BoundStateSextuples',
         'TypeMedia': 'TypedMediaQuadruples'
     }
     assert CodenToClans == \
@@ -106,6 +117,7 @@ def test_structor_doms():
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
         'BlindedStateQuadruples': 'BlindState',
+        'BoundStateSextuples': 'BoundState',
         'TypedMediaQuadruples': 'TypeMedia'
     }
 
@@ -127,6 +139,7 @@ def test_structor_class():
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
         ('d', 'u', 'td', 'ts'): 'BlindState',
+        ('d', 'u', 'td', 'ts', 'bn', 'bd'): 'BoundState',
         ('d', 'u', 'mt', 'mv'): 'TypeMedia'
     }
 
@@ -140,6 +153,7 @@ def test_structor_class():
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
         'BlindState': 'BlindedStateQuadruples',
+        'BoundState': 'BoundStateSextuples',
         'TypeMedia': 'TypedMediaQuadruples'
     }
 
@@ -153,6 +167,7 @@ def test_structor_class():
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
         'BlindedStateQuadruples': 'BlindState',
+        'BoundStateSextuples': 'BoundState',
         'TypedMediaQuadruples': 'TypeMedia'
     }
     """End Test"""
@@ -1228,15 +1243,19 @@ def test_blinder_class():
     assert Blinder.Names == \
     {
         ('d', 'u', 'td', 'ts'): 'BlindState',
+        ('d', 'u', 'td', 'ts', 'bn', 'bd'): 'BoundState'
     }
+
     assert Blinder.ClanCodens == \
     {
         'BlindState': 'BlindedStateQuadruples',
+        'BoundState': 'BoundStateSextuples'
     }
 
     assert Blinder.CodenClans == \
     {
         'BlindedStateQuadruples': 'BlindState',
+        'BoundStateSextuples': 'BoundState'
     }
 
     # test makeUUID class method
@@ -2133,11 +2152,11 @@ def test_mediar():
                     b'ion/json\xe4\x10\n\x00{"name":"Sue","food":"Pizza"}')
 
 
-    enclqb64 = bytearray(b'-bAjEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdu'
+    enclqb64 = bytearray(b'-cAjEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdu'
                          b'b25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZv'
                          b'b2QiOiJQaXp6YSJ9')
 
-    enclqb2 = bytearray(b'\xf9\xb0#\x10v\x05\x99\x1f\xd0X"\xf3\xf2\x06r\x85\xce\x01C\xcc'
+    enclqb2 = bytearray(b'\xf9\xc0#\x10v\x05\x99\x1f\xd0X"\xf3\xf2\x06r\x85\xce\x01C\xcc'
           b'I\xf9\xfbY\xe8\xe08|\xd9\xae\xbbV@\xbf$\xc4\xd0\x00mediarrawnonce'
           b'_0\xe8\x10\x06\x00\x00application/json\xe4\x10\n\x00{"name":"Sue"'
           b',"food":"Pizza"}')

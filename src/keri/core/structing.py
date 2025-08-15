@@ -75,7 +75,7 @@ SealBack = namedtuple("SealBack", 'bi d')
 # use TypedDigestSealCouples count code for CESR Native
 SealKind = namedtuple("SealKind", 't d')
 
-# Blinded State quaruple for Blindable State Update Event 'bup' for Transaction
+# Blinded State quadruple for Blindable State Update Event 'bup' for Transaction
 # Event Registry
 # d = SAID digest qb64 of blindable state (Noncer)
 # u = UUID blind as deterministically derived from update sn and salty nonce (Noncer)
@@ -83,6 +83,20 @@ SealKind = namedtuple("SealKind", 't d')
 # ts = state as string text (Labeler)
 # use BlindedStateQuadruples count code for CESR native
 BlindState = namedtuple("BlindState", 'd u td ts')
+
+# Bound Blinded State sextuple for Blindable State Update Event 'bup' for Transaction
+# Event Registry. Binds the key state of the issue to the state update. This
+# effectively cross anchors the issuees key state to the issuers key state at
+# the time of the state update so that downstream issuances by issuee can be
+# verified against the delegated entitlements (authorizations) from issuer
+# d = SAID digest qb64 of blindable state (Noncer)
+# u = UUID blind as deterministically derived from update sn and salty nonce (Noncer)
+# td = SAID of ACDC top-level 'd' field value (Noncer)
+# ts = state as string text (Labeler)
+# bn = bound issuee key event sequence number at time of state update
+# bd = bound issuee key event SAID at time of state update
+# use BoundStateSextuples count code for CESR native
+BoundState = namedtuple("BoundState", 'd u td ts bn bd')
 
 # Typed and Blinded Media quadruple for IANA media-type media in attachment
 # d = SAID digest qb64 of blindable media  (Noncer)
@@ -223,6 +237,7 @@ class BlindStateClanDom(IceMapDom):
     Example: BlindStateClanDom[name]
     """
     BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
+    BoundState: type[NamedTuple] = BoundState  # BoundState class reference (d,u,td,ts,bn,bd)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -249,6 +264,12 @@ class BlindStateCastDom(IceMapDom):
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),
                                         ts=Castage(Labeler, 'text'))  # BlindState instance
+    BoundState: NamedTuple = BoundState(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        td=Castage(Noncer, 'nonce'),
+                                        ts=Castage(Labeler, 'text'),
+                                        bn=Castage(Number, 'numh'),
+                                        bd=Castage(Noncer, 'nonce'))  # BoundState instance
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -322,6 +343,7 @@ class AllClanDom(IceMapDom):
     SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
     SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
     BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
+    BoundState: type[NamedTuple] = BoundState  # BoundState class reference (d,u,td,ts,bn,bd)
     TypeMedia: type[NamedTuple] = TypeMedia  # TypeMedia class reference (d,u,mt,mv)
 
     def __iter__(self):
@@ -362,6 +384,12 @@ class AllCastDom(IceMapDom):
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),
                                         ts=Castage(Labeler, 'text'))  # BlindState instance
+    BoundState: NamedTuple = BoundState(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        td=Castage(Noncer, 'nonce'),
+                                        ts=Castage(Labeler, 'text'),
+                                        bn=Castage(Number, 'numh'),
+                                        bd=Castage(Noncer, 'nonce'))  # BoundState instance
     TypeMedia: NamedTuple = TypeMedia(d=Castage(Noncer, 'nonce'),
                                         u=Castage(Noncer, 'nonce'),
                                         mt=Castage(Labeler, 'text'),
@@ -383,6 +411,7 @@ ClanToCodens[AClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
 ClanToCodens[AClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
 ClanToCodens[AClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
 ClanToCodens[AClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+ClanToCodens[AClanDom.BoundState.__name__] = Codens.BoundStateSextuples
 ClanToCodens[AClanDom.TypeMedia.__name__] = Codens.TypedMediaQuadruples
 
 
@@ -1329,6 +1358,7 @@ class Blinder(Structor):
     # map clan names to counter code for ser/des as counted group
     ClanCodens = dict()
     ClanCodens[BSClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+    ClanCodens[BSClanDom.BoundState.__name__] = Codens.BoundStateSextuples
 
     # mapcounter code to clan name for ser/des as counted group
     CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict

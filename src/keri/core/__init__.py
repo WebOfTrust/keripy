@@ -21,6 +21,6 @@ from .serdering import Serdery, Serder, SerderKERI, SerderACDC
 from .structing import (Structor, Sealer, Blinder, Mediar,
                         CodenToClans, ClanToCodens,
                         SealDigest, SealRoot, SealBack, SealLast, SealSource,
-                        SealEvent, SealKind, BlindState, TypeMedia)
+                        SealEvent, SealKind, BlindState, BoundState, TypeMedia)
 from .eventing import (incept, interact, rotate, delcept, deltate, receipt,
                        query, reply, prod, bare, exchept, exchange)
