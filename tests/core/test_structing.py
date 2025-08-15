@@ -1284,11 +1284,19 @@ def test_blinder_class():
     acdc = ''
     state = ''
     said = 'EGwVS-ldAC1LTERsS34nsZITPqb4xc0CCzVTKgLST5NV'
+
+    # test default as placeholder
     blinder = Blinder.blind(salt=salt, sn=sn)  # defaults acdc='' sn=1, tier=Tiers.low
+    assert blinder.clan == BlindState
     assert blinder.said == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
+    assert blinder.bsn == None
+    assert blinder.bnh == None
+    assert blinder.bnhb == None
+    assert blinder.bd == None
+    assert blinder.bdb == None
     assert blinder.crew == BlindState(d='EGwVS-ldAC1LTERsS34nsZITPqb4xc0CCzVTKgLST5NV',
                                       u='aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_',
                                       td='',
@@ -1317,6 +1325,7 @@ def test_blinder_class():
     state = 'revoked'
     said = 'EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev'
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)  # defaults tier=Tiers.low
+    assert blinder.clan == BlindState
     assert blinder.crew == BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
                                       u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
                                       td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
@@ -1326,6 +1335,11 @@ def test_blinder_class():
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
+    assert blinder.bsn == None
+    assert blinder.bnh == None
+    assert blinder.bnhb == None
+    assert blinder.bd == None
+    assert blinder.bdb == None
 
     # test if unblinded is acdc or placeholder, generate uuid from salt and sn
     unblinder = Blinder.unblind(said=said,
@@ -1340,6 +1354,104 @@ def test_blinder_class():
     uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
     blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states)
     assert blinder is None
+
+
+    #Test blind classmethod bound=True
+    #salt = Salter().qb64
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    salter = Salter(qb64=salt)  # default tier is Tiers.low
+    assert salter.qb64 == salt
+    sn = 1
+    path = Number(num=sn).snh
+    assert path == '1'
+    uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+    assert uuid == 'aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_'
+    acdc = ''
+    state = ''
+    bsn = 0
+    bsaid = ''
+
+    said = 'EOj0JmuM1wUbifbztCdA6av1EdV7AYb0hRkUeScCm8G4'
+
+    # test default as placeholder
+    # defaults acdc='' sn=1, tier=Tiers.low, bsn=0, bsaid=''
+    blinder = Blinder.blind(salt=salt, sn=sn, bound=True)
+    assert blinder.clan == BoundState
+    assert blinder.said == said
+    assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
+    assert blinder.bsn == 0
+    assert blinder.bnh == '0'
+    assert blinder.bnhb == b'0'
+    assert blinder.bd == ''
+    assert blinder.bdb == b''
+    assert blinder.crew == BoundState(d='EOj0JmuM1wUbifbztCdA6av1EdV7AYb0hRkUeScCm8G4',
+                                      u='aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+
+    #states = ['issued', 'revoked']
+    ## test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    #unblinder = Blinder.unblind(said=said,
+                                #acdc='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                #states=states,
+                                #salt=salt,
+                                #sn=sn)
+    #assert unblinder
+    #assert unblinder.crew == blinder.crew
+
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    salter = Salter(qb64=salt)  # default tier is Tiers.low
+    assert salter.qb64 == salt
+    sn = 2
+    path = Number(num=sn).snh
+    assert path == '2'
+    uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+    assert uuid == 'aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev'
+    acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    state = 'revoked'
+    bsn = 2
+    bsaid = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+
+    said = 'EEeMsBUnPL6kXTRHZoLqkYCuvIAN8LjV-GpIet2Th2e9'
+
+    # defaults tier=Tiers.low
+    blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
+                            bound=True, bsn=bsn, bkd=bsaid)
+    assert blinder.clan == BoundState
+    assert blinder.crew == BoundState(d='EEeMsBUnPL6kXTRHZoLqkYCuvIAN8LjV-GpIet2Th2e9',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked',
+                                      bn='2',
+                                      bd='EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    assert blinder.said == said
+    assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
+    assert blinder.bsn == 2
+    assert blinder.bnh == '2'
+    assert blinder.bnhb == b'2'
+    assert blinder.bd == 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    assert blinder.bdb == b'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+
+    ## test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    #unblinder = Blinder.unblind(said=said,
+                                #acdc=acdc,
+                                #states=states,
+                                #salt=salt,
+                                #sn=sn)
+    #assert unblinder
+    #assert unblinder.crew == blinder.crew
+
+    ##test unblind fails when wrong nonce
+    #uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
+    #blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states)
+    #assert blinder is None
     """End Test"""
 
 

@@ -1313,6 +1313,19 @@ class Blinder(Structor):
                         BlindState CESR .data.ts 'ts' field
         stateb (bytes): transaction state string of
                             BlindState CESR .data.ts 'ts' field
+        bsn (int): bound key state sequence number of issuees key state at
+                      time of update
+                      BoundState CESR .data.bn 'bn' field
+        bnh (str): bound key state  hex sequence number of issuees key state
+                       at time of update
+                       BoundState CESR .data.bn 'bn' field
+        bnhb (bytes): bound key state hex sequence number of issuees key
+                           state at time of update
+                           BoundState CESR .data.bn 'bn' field
+        bd (str): qb64 bound key state said  of issuee at time of update
+                      BoundState CESR .data.bd 'bd' field
+        bdb (bytes): qb64b bound key state said of issuee at time of update
+                          BoundState CESR .data.bd 'bd' field
 
     Methods:
 
@@ -1386,7 +1399,8 @@ class Blinder(Structor):
 
 
     @classmethod
-    def blind(cls, *, acdc='', state='', raw=None, salt=None, sn=1, tier=None):
+    def blind(cls, *, acdc='', state='', raw=None, salt=None, sn=1, tier=None,
+              bound=False, bsn=0, bkd=''):
         """Creates blinded blinder by generating blinding factor uuid given:
            either raw or salt as shared secret if both None then generate salt
            sn of blindable update event,
@@ -1407,10 +1421,24 @@ class Blinder(Structor):
             sn (int): sequence number of blindable update message. Converted to
                       Number.huge which is qb64 (24 char) used to generate uuid
             tier (str|None): used to generate uuid
+            bound (bool): True means use BoundState
+                          False means use BlindState default
+            bsn (int): bound sequence number of latest key event of issuee at
+                       time of state update as (cross anchor)
+                       when bound==True and bsaid is not empty
+                       when bsaid is empty then bsn must be 0 as placeholder
+            bkd (str): bound key event said of latest issuee key event at
+                        time of state update as (cross anchor)
+                         when bound==True and bsaid is not empty
+                        Empty string means placeholder and bsn must be 0
+
         """
         uuid = cls.makeUUID(raw=raw, salt=salt, sn=sn, tier=tier)
 
-        crew = BlindState(d="", u=uuid, td=acdc, ts=state)
+        if bound:
+            crew = BoundState(d="", u=uuid, td=acdc, ts=state, bn=bsn, bd=bkd)
+        else:
+            crew = BlindState(d="", u=uuid, td=acdc, ts=state)
         return cls(crew=crew, makify=True, saidive=True)
 
 
@@ -1536,7 +1564,7 @@ class Blinder(Structor):
     def acdc(self):
         """acdc property getter
         Returns:
-           acdc (str): transaction acdc said or empty of
+           acdc (str): qb64 transaction acdc said or empty of
                        BlindState CESR .data.td 'td' field
         """
         return self.data.td.nonce
@@ -1570,6 +1598,58 @@ class Blinder(Structor):
                             BlindState CESR .data.ts 'ts' field
         """
         return self.data.ts.text.encode()
+
+
+    @property
+    def bsn(self):
+        """bsn property getter
+        Returns:
+           bsn (int): bound key state sequence number of issuees key state at
+                      time of update
+                      BoundState CESR .data.bn 'bn' field
+        """
+        return self.data.bn.sn if self.clan is BoundState else None
+
+
+    @property
+    def bnh(self):
+        """bnh property getter
+        Returns:
+            bnh (str): bound key state  hex sequence number of issuees key state
+                       at time of update
+                       BoundState CESR .data.bn 'bn' field
+        """
+        return self.data.bn.snh if self.clan is BoundState else None
+
+    @property
+    def bnhb(self):
+        """bnhb property getter
+        Returns:
+            bnhb (bytes): bound key state hex sequence number of issuees key
+                           state at time of update
+                           BoundState CESR .data.bn 'bn' field
+        """
+        return self.data.bn.snh.encode() if self.clan is BoundState else None
+
+
+    @property
+    def bd(self):
+        """bd property getter
+        Returns:
+           bd (str): qb64 bound key state said  of issuee at time of update
+                      BoundState CESR .data.bd 'bd' field
+        """
+        return self.data.bd.nonce if self.clan is BoundState else None
+
+
+    @property
+    def bdb(self):
+        """bdb property getter
+        Returns:
+            bdb (bytes): qb64b bound key state said of issuee at time of update
+                          BoundState CESR .data.bd 'bd' field
+        """
+        return self.data.bd.nonceb if self.clan is BoundState else None
 
 
 class Mediar(Structor):
