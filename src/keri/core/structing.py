@@ -1400,7 +1400,7 @@ class Blinder(Structor):
 
     @classmethod
     def blind(cls, *, acdc='', state='', raw=None, salt=None, sn=1, tier=None,
-              bound=False, bsn=0, bkd=''):
+              bound=False, bsn=0, bd=''):
         """Creates blinded blinder by generating blinding factor uuid given:
            either raw or salt as shared secret if both None then generate salt
            sn of blindable update event,
@@ -1427,7 +1427,7 @@ class Blinder(Structor):
                        time of state update as (cross anchor)
                        when bound==True and bsaid is not empty
                        when bsaid is empty then bsn must be 0 as placeholder
-            bkd (str): bound key event said of latest issuee key event at
+            bd (str): bound key event said of latest issuee key event at
                         time of state update as (cross anchor)
                          when bound==True and bsaid is not empty
                         Empty string means placeholder and bsn must be 0
@@ -1436,7 +1436,7 @@ class Blinder(Structor):
         uuid = cls.makeUUID(raw=raw, salt=salt, sn=sn, tier=tier)
 
         if bound:
-            crew = BoundState(d="", u=uuid, td=acdc, ts=state, bn=bsn, bd=bkd)
+            crew = BoundState(d="", u=uuid, td=acdc, ts=state, bn=bsn, bd=bd)
         else:
             crew = BlindState(d="", u=uuid, td=acdc, ts=state)
         return cls(crew=crew, makify=True, saidive=True)
@@ -1444,7 +1444,7 @@ class Blinder(Structor):
 
     @classmethod
     def unblind(cls, said, *, uuid=None, acdc="", states=None,
-                raw=None, salt=None, sn=1, tier=None):
+                raw=None, salt=None, sn=1, tier=None, bound=False, bounds=None):
         """Creates unblinded blinder given said, uuid, acdc said, and states
         list of possible state values
 
@@ -1467,6 +1467,12 @@ class Blinder(Structor):
                       Number.huge which is qb64 (24 char)
                       used to create uuid when provided uuid is None
             tier (str|None): used to create uuid when provided uuid is None
+            bound (bool): True means use BoundState
+                          False means use BlindState default
+            bounds (list[tuple[bsn, bd]]): possible (bsn, bd) pairs to try in
+                    computing possible bound blinded state where:
+                    bsn (int): possible bound issuee key event sequence number
+                    bd (str): bound issuee key event SAID qb64
 
         Tests possible combinations of empty acdc, provided acdc,  with
         empty state string plus all states strings provided by states to find
@@ -1485,12 +1491,27 @@ class Blinder(Structor):
         if "" not in states:
             states.append("")
 
-        for td in acdcs:
-            for ts in states:
-                crew = BlindState(d="", u=uuid, td=td, ts=ts)
-                blinder = cls(crew=crew, makify=True, saidive=True)
-                if blinder.crew.d == said:
-                    return blinder
+        if bound:
+            bounds = bounds if bounds is not None else [(0, '')]
+            if (0, '') not in bounds:
+                bounds.append((0, ''))
+
+            for bsn, bd in bounds:
+                # bn = f"{bsn:x}"  # numh respects ints now
+                for td in acdcs:
+                    for ts in states:
+                        crew = BoundState(d="", u=uuid, td=td, ts=ts, bn=bsn, bd=bd)
+                        blinder = cls(crew=crew, makify=True, saidive=True)
+                        if blinder.crew.d == said:
+                            return blinder
+
+        else:
+            for td in acdcs:
+                for ts in states:
+                    crew = BlindState(d="", u=uuid, td=td, ts=ts)
+                    blinder = cls(crew=crew, makify=True, saidive=True)
+                    if blinder.crew.d == said:
+                        return blinder
         return None
 
 

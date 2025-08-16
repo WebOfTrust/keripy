@@ -1369,7 +1369,7 @@ def test_blinder_class():
     acdc = ''
     state = ''
     bsn = 0
-    bsaid = ''
+    bd = ''
 
     said = 'EOj0JmuM1wUbifbztCdA6av1EdV7AYb0hRkUeScCm8G4'
 
@@ -1381,11 +1381,11 @@ def test_blinder_class():
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
-    assert blinder.bsn == 0
+    assert blinder.bsn == bsn
     assert blinder.bnh == '0'
     assert blinder.bnhb == b'0'
-    assert blinder.bd == ''
-    assert blinder.bdb == b''
+    assert blinder.bd == bd
+    assert blinder.bdb == bd.encode()
     assert blinder.crew == BoundState(d='EOj0JmuM1wUbifbztCdA6av1EdV7AYb0hRkUeScCm8G4',
                                       u='aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_',
                                       td='',
@@ -1393,15 +1393,19 @@ def test_blinder_class():
                                       bn='0',
                                       bd='')
 
-    #states = ['issued', 'revoked']
-    ## test if unblinded is acdc or placeholder, generate uuid from salt and sn
-    #unblinder = Blinder.unblind(said=said,
-                                #acdc='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
-                                #states=states,
-                                #salt=salt,
-                                #sn=sn)
-    #assert unblinder
-    #assert unblinder.crew == blinder.crew
+    states = ['issued', 'revoked']
+    bd = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    bounds = [(2, bd)]
+    # test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    unblinder = Blinder.unblind(said=said,
+                                acdc='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                states=states,
+                                salt=salt,
+                                sn=sn,
+                                bound=True,
+                                bounds=bounds)
+    assert unblinder
+    assert unblinder.crew == blinder.crew
 
     salt = '0ABdM7EmNFAlGe05ng6s1ljh'
     salter = Salter(qb64=salt)  # default tier is Tiers.low
@@ -1414,13 +1418,13 @@ def test_blinder_class():
     acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
     state = 'revoked'
     bsn = 2
-    bsaid = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    bd = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
 
     said = 'EEeMsBUnPL6kXTRHZoLqkYCuvIAN8LjV-GpIet2Th2e9'
 
     # defaults tier=Tiers.low
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
-                            bound=True, bsn=bsn, bkd=bsaid)
+                            bound=True, bsn=bsn, bd=bd)
     assert blinder.clan == BoundState
     assert blinder.crew == BoundState(d='EEeMsBUnPL6kXTRHZoLqkYCuvIAN8LjV-GpIet2Th2e9',
                                       u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
@@ -1433,26 +1437,30 @@ def test_blinder_class():
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
-    assert blinder.bsn == 2
+    assert blinder.bsn == bsn
     assert blinder.bnh == '2'
     assert blinder.bnhb == b'2'
-    assert blinder.bd == 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
-    assert blinder.bdb == b'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    assert blinder.bd == bd
+    assert blinder.bdb == bd.encode()
 
-    ## test if unblinded is acdc or placeholder, generate uuid from salt and sn
-    #unblinder = Blinder.unblind(said=said,
-                                #acdc=acdc,
-                                #states=states,
-                                #salt=salt,
-                                #sn=sn)
-    #assert unblinder
-    #assert unblinder.crew == blinder.crew
+    # test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    unblinder = Blinder.unblind(said=said,
+                                acdc=acdc,
+                                states=states,
+                                salt=salt,
+                                sn=sn,
+                                bound=True,
+                                bounds=bounds)
+    assert unblinder
+    assert unblinder.crew == blinder.crew
 
-    ##test unblind fails when wrong nonce
-    #uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
-    #blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states)
-    #assert blinder is None
-    """End Test"""
+    #test unblind fails when wrong nonce
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
+    blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states,
+                              bound=True, bounds=bounds)
+    assert blinder is None
+
+    """Done Test"""
 
 
 def test_blinder():
@@ -1468,7 +1476,6 @@ def test_blinder():
     labeler = Labeler(text="issued")
     text = labeler.text
     textq = labeler.qb64
-    name = BlindState.__name__
 
     # manually compute said
     tail = ''.join([nonceq, anonceq, textq])
@@ -1479,6 +1486,8 @@ def test_blinder():
     snoncer = Noncer(ser=ser.encode(), code=code)  # said nonce
     snonceq = snoncer.qb64
     assert snonceq == 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    name = BlindState.__name__
+    assert name == 'BlindState'
 
     clan = BlindState
     cast = BSCastDom.BlindState  # defined dom cast with non-None ipns
@@ -2166,6 +2175,136 @@ def test_blinder():
     assert blinder.acdcb == anonce.encode()
     assert blinder.state == text
     assert blinder.stateb == text.encode()
+
+    # Test Blinder with BoundState
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    uuider = Noncer(nonce=uuid)
+    td = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    tder = Noncer(nonce=td)
+    ts = "issued"
+    tser = Labeler(text=ts)
+    tsq = labeler.qb64
+    bsn = 2
+    bner = Number(numh=bsn)
+    bn = bner.snh
+    bd = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    bder = Noncer(nonce=bd)
+
+    # manually compute said
+    tail = ''.join([uuider.qb64, tder.qb64, tser.qb64, bner.qb64, bder.qb64])
+    code = DigDex.Blake3_256
+    size = Noncer._fullSize(code=code)
+    ser = '#' * size + tail  # prepend dummy to tail end
+    assert ser == '############################################aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPdEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0MissuedMAACEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    saider = Noncer(ser=ser.encode(), code=code)  # said nonce
+    said = saider.qb64
+    assert said == 'EKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1'
+    name = BoundState.__name__
+    assert name == 'BoundState'
+
+    clan = BoundState
+    cast = BSCastDom.BoundState  # defined dom cast with non-None ipns
+    crew = BoundState(d=said, u=uuid, td=td, ts=ts, bn=bn, bd=bd)
+
+    # create said using makify  said nonce
+    msaider = Noncer(nonce='')
+    data = BoundState(d=msaider, u=uuider, td=tder, ts=tser, bn=bner, bd=bder)
+    blinder = Blinder(data=data, cast=cast, makify=True)
+    assert blinder.crew == BoundState(d='EKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1',
+                                      u='aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='issued',
+                                      bn='2',
+                                      bd='EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    assert blinder.said == said
+    # not empty said this time
+    data = BoundState(d=saider, u=uuider, td=tder, ts=tser, bn=bner, bd=bder)
+    assert data._fields == BoundState._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = saider.qb64 + uuider.qb64 + tder.qb64 + tser.qb64 + bner.qb64 + bder.qb64
+    qb64b = qb64.encode()
+    qb2 = saider.qb2 + uuider.qb2 + tder.qb2 + tser.qb2 + bner.qb2 + bder.qb2
+    enclqb64 = bytearray(b'-bAvEKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1aJte0a_x8dBbGQrB'
+          b'kdYRgkzvFlQss3ovVOkUz1L1YGPdEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbY'
+          b'GGCUQgqQ0MissuedMAACEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    enclqb2 = bytearray(b'\xf9\xb0/\x10\xa9\xb2D\x19\xf5\x984p<\xe0xL\xf8\xa6X\x91'
+          b'\xbf\xbe\xaa\xfe+=T\xd8|\xae\x90e\xf3W\xbf\xb5h\x9b^\xd1'
+          b'\xaf\xf1\xf1\xd0[\x19\n\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/'
+          b'T\xe9\x14\xcfR\xf5`c\xdd\x10\x18\xee\xd6\x8e1\xd5G~\xcfk'
+          b'\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86\xd8\x18`\x94B'
+          b'\n\x90\xd0\xc8\xac\xb2\xe7\x9d0\x00\x02\x10\x93\xa7\x00\xa5'
+          b'\xc6i,\x89\xff\x8d\xe4\x8a\xdd\x15\xf3N\x8d5\xe1\x96KN\xe5~'
+          b'<\x9b\x07U\x1c}k/')
+
+    blinder = Blinder(data=data, cast=cast)  # no makify default verify
+    assert blinder.crew == BoundState(d='EKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1',
+                                      u='aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='issued',
+                                      bn='2',
+                                      bd='EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    # test round trip with enclose and extract qb64
+    assert blinder.enclose([blinder]) == enclqb64  # ctr from clan
+    assert blinder.enclose([blinder], cold=Colds.bny) == enclqb2  # ctr from clan
+    ims = bytearray(enclqb64)
+    eblinder = Blinder.extract(qb64=ims)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.enclose([eblinder]) == enclqb64
+    assert eblinder.enclose([eblinder], cold=Colds.bny) == enclqb2
+    assert eblinder.said == said
+    assert ims  # not stripped
+
+    eblinder = Blinder.extract(qb64=ims, strip=True)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.said == said
+    assert not ims  # stripped
+
+    # test round trip with extract qb2
+    ims = bytearray(enclqb2)
+    eblinder = Blinder.extract(qb2=ims)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.enclose([eblinder]) == enclqb64
+    assert eblinder.enclose([eblinder], cold=Colds.bny) == enclqb2
+    assert eblinder.said == said
+    assert ims  # not stripped
+
+    eblinder = Blinder.extract(qb2=ims, strip=True)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.said == said
+    assert not ims  # stripped
 
     """Done Test"""
 
