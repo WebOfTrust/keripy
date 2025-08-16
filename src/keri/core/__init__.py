@@ -18,9 +18,9 @@ from .signing import (Tiers, Signer, Salter, Cipher, CiXDex,
 from .counting import Counter, Codens, GenDex, CtrDex_1_0, CtrDex_2_0, ProGen
 from .mapping import Mapper, EscapeDex, Compactor, Aggor
 from .serdering import Serdery, Serder, SerderKERI, SerderACDC
-from .structing import (Structor, Sealer, Blinder,
+from .structing import (Structor, Sealer, Blinder, Mediar,
                         CodenToClans, ClanToCodens,
                         SealDigest, SealRoot, SealBack, SealLast, SealSource,
-                        SealEvent, SealKind, BlindState)
+                        SealEvent, SealKind, BlindState, BoundState, TypeMedia)
 from .eventing import (incept, interact, rotate, delcept, deltate, receipt,
                        query, reply, prod, bare, exchept, exchange)

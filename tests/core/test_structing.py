@@ -8,6 +8,7 @@ from typing import NamedTuple
 from collections import namedtuple
 from collections.abc import Mapping
 
+import json
 
 import pytest
 
@@ -18,16 +19,17 @@ from keri.kering import ValidationError, InvalidValueError, EmptyMaterialError, 
 from keri.help import helping
 
 from keri.core import (Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
-                       Noncer, NonceDex, Salter)
+                       Noncer, NonceDex, Salter, Texter)
 
-from keri.core import (Structor, Sealer, Blinder,
+from keri.core import (Structor, Sealer, Blinder, Mediar,
                        SealDigest, SealRoot, SealBack, SealEvent,
-                                 SealLast, SealSource, SealKind, BlindState)
+                                 SealLast, SealSource, SealKind,
+                                 BlindState, BoundState, TypeMedia)
 from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
                                  EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
                                  AClanDom, ACastDom,
                                  SClanDom, SCastDom, SealClanDom, SealCastDom,
-                                 BClanDom, BCastDom)
+                                 BSClanDom, BSCastDom, TMClanDom, TMCastDom)
 
 
 def test_structor_doms():
@@ -52,6 +54,7 @@ def test_structor_doms():
         'SealKind': SealKind,
     }
 
+
     assert asdict(SCastDom) == \
     {
         'SealDigest': SealDigest(d=Castage(kls=Diger, ipn=None)),
@@ -68,17 +71,26 @@ def test_structor_doms():
                                  d=Castage(kls=Diger, ipn=None)),
     }
 
-    assert asdict(BClanDom) == \
+
+    assert asdict(BSClanDom) == \
     {
         'BlindState': BlindState,
+        'BoundState': BoundState
     }
 
-    assert asdict(BCastDom) == \
+
+    assert asdict(BSCastDom) == \
     {
         'BlindState': BlindState(d=Castage(kls=Noncer, ipn='nonce'),
                                  u=Castage(kls=Noncer, ipn='nonce'),
                                  td=Castage(kls=Noncer, ipn='nonce'),
-                                 ts=Castage(kls=Labeler, ipn='text'))
+                                 ts=Castage(kls=Labeler, ipn='text')),
+        'BoundState': BoundState(d=Castage(Noncer, 'nonce'),
+                                u=Castage(Noncer, ipn='nonce'),
+                                td=Castage(Noncer, ipn='nonce'),
+                                ts=Castage(Labeler, ipn='text'),
+                                bn=Castage(Number, ipn='numh'),
+                                bd=Castage(Noncer, ipn='nonce'))
     }
 
 
@@ -91,7 +103,9 @@ def test_structor_doms():
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
-        'BlindState': 'BlindedStateQuadruples'
+        'BlindState': 'BlindedStateQuadruples',
+        'BoundState': 'BoundStateSextuples',
+        'TypeMedia': 'TypedMediaQuadruples'
     }
     assert CodenToClans == \
     {
@@ -102,7 +116,9 @@ def test_structor_doms():
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
-        'BlindedStateQuadruples': 'BlindState'
+        'BlindedStateQuadruples': 'BlindState',
+        'BoundStateSextuples': 'BoundState',
+        'TypedMediaQuadruples': 'TypeMedia'
     }
 
     """End Test"""
@@ -122,7 +138,9 @@ def test_structor_class():
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
-        ('d', 'u', 'td', 'ts'): 'BlindState'
+        ('d', 'u', 'td', 'ts'): 'BlindState',
+        ('d', 'u', 'td', 'ts', 'bn', 'bd'): 'BoundState',
+        ('d', 'u', 'mt', 'mv'): 'TypeMedia'
     }
 
     assert Structor.ClanCodens == ClanToCodens == \
@@ -134,7 +152,9 @@ def test_structor_class():
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
-        'BlindState': 'BlindedStateQuadruples'
+        'BlindState': 'BlindedStateQuadruples',
+        'BoundState': 'BoundStateSextuples',
+        'TypeMedia': 'TypedMediaQuadruples'
     }
 
     assert Structor.CodenClans == CodenToClans == \
@@ -146,11 +166,12 @@ def test_structor_class():
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
-        'BlindedStateQuadruples': 'BlindState'
+        'BlindedStateQuadruples': 'BlindState',
+        'BoundStateSextuples': 'BoundState',
+        'TypedMediaQuadruples': 'TypeMedia'
     }
-
-
     """End Test"""
+
 
 def test_structor():
     """test Structor instance"""
@@ -1217,20 +1238,24 @@ def test_sealer():
 
 def test_blinder_class():
     """test Blinder class variables etc"""
-    assert Blinder.Clans == BClanDom
-    assert Blinder.Casts == BCastDom
+    assert Blinder.Clans == BSClanDom
+    assert Blinder.Casts == BSCastDom
     assert Blinder.Names == \
     {
         ('d', 'u', 'td', 'ts'): 'BlindState',
+        ('d', 'u', 'td', 'ts', 'bn', 'bd'): 'BoundState'
     }
+
     assert Blinder.ClanCodens == \
     {
         'BlindState': 'BlindedStateQuadruples',
+        'BoundState': 'BoundStateSextuples'
     }
 
     assert Blinder.CodenClans == \
     {
         'BlindedStateQuadruples': 'BlindState',
+        'BoundStateSextuples': 'BoundState'
     }
 
     # test makeUUID class method
@@ -1259,11 +1284,19 @@ def test_blinder_class():
     acdc = ''
     state = ''
     said = 'EGwVS-ldAC1LTERsS34nsZITPqb4xc0CCzVTKgLST5NV'
+
+    # test default as placeholder
     blinder = Blinder.blind(salt=salt, sn=sn)  # defaults acdc='' sn=1, tier=Tiers.low
+    assert blinder.clan == BlindState
     assert blinder.said == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
+    assert blinder.bsn == None
+    assert blinder.bnh == None
+    assert blinder.bnhb == None
+    assert blinder.bd == None
+    assert blinder.bdb == None
     assert blinder.crew == BlindState(d='EGwVS-ldAC1LTERsS34nsZITPqb4xc0CCzVTKgLST5NV',
                                       u='aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_',
                                       td='',
@@ -1292,6 +1325,7 @@ def test_blinder_class():
     state = 'revoked'
     said = 'EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev'
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)  # defaults tier=Tiers.low
+    assert blinder.clan == BlindState
     assert blinder.crew == BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
                                       u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
                                       td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
@@ -1301,6 +1335,11 @@ def test_blinder_class():
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
+    assert blinder.bsn == None
+    assert blinder.bnh == None
+    assert blinder.bnhb == None
+    assert blinder.bd == None
+    assert blinder.bdb == None
 
     # test if unblinded is acdc or placeholder, generate uuid from salt and sn
     unblinder = Blinder.unblind(said=said,
@@ -1315,7 +1354,113 @@ def test_blinder_class():
     uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
     blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states)
     assert blinder is None
-    """End Test"""
+
+
+    #Test blind classmethod bound=True
+    #salt = Salter().qb64
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    salter = Salter(qb64=salt)  # default tier is Tiers.low
+    assert salter.qb64 == salt
+    sn = 1
+    path = Number(num=sn).snh
+    assert path == '1'
+    uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+    assert uuid == 'aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_'
+    acdc = ''
+    state = ''
+    bsn = 0
+    bd = ''
+
+    said = 'EOj0JmuM1wUbifbztCdA6av1EdV7AYb0hRkUeScCm8G4'
+
+    # test default as placeholder
+    # defaults acdc='' sn=1, tier=Tiers.low, bsn=0, bsaid=''
+    blinder = Blinder.blind(salt=salt, sn=sn, bound=True)
+    assert blinder.clan == BoundState
+    assert blinder.said == said
+    assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
+    assert blinder.bsn == bsn
+    assert blinder.bnh == '0'
+    assert blinder.bnhb == b'0'
+    assert blinder.bd == bd
+    assert blinder.bdb == bd.encode()
+    assert blinder.crew == BoundState(d='EOj0JmuM1wUbifbztCdA6av1EdV7AYb0hRkUeScCm8G4',
+                                      u='aE3_MHQbvGMppHB9ZiRxhIq6oEoYPm8AGBxMmSrcBCG_',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+
+    states = ['issued', 'revoked']
+    bd = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    bounds = [(2, bd)]
+    # test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    unblinder = Blinder.unblind(said=said,
+                                acdc='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                states=states,
+                                salt=salt,
+                                sn=sn,
+                                bound=True,
+                                bounds=bounds)
+    assert unblinder
+    assert unblinder.crew == blinder.crew
+
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    salter = Salter(qb64=salt)  # default tier is Tiers.low
+    assert salter.qb64 == salt
+    sn = 2
+    path = Number(num=sn).snh
+    assert path == '2'
+    uuid = Noncer(raw=salter.stretch(path=path), code=NonceDex.Salt_256).qb64
+    assert uuid == 'aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev'
+    acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    state = 'revoked'
+    bsn = 2
+    bd = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+
+    said = 'EEeMsBUnPL6kXTRHZoLqkYCuvIAN8LjV-GpIet2Th2e9'
+
+    # defaults tier=Tiers.low
+    blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
+                            bound=True, bsn=bsn, bd=bd)
+    assert blinder.clan == BoundState
+    assert blinder.crew == BoundState(d='EEeMsBUnPL6kXTRHZoLqkYCuvIAN8LjV-GpIet2Th2e9',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked',
+                                      bn='2',
+                                      bd='EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    assert blinder.said == said
+    assert blinder.uuid == uuid
+    assert blinder.acdc == acdc
+    assert blinder.state == state
+    assert blinder.bsn == bsn
+    assert blinder.bnh == '2'
+    assert blinder.bnhb == b'2'
+    assert blinder.bd == bd
+    assert blinder.bdb == bd.encode()
+
+    # test if unblinded is acdc or placeholder, generate uuid from salt and sn
+    unblinder = Blinder.unblind(said=said,
+                                acdc=acdc,
+                                states=states,
+                                salt=salt,
+                                sn=sn,
+                                bound=True,
+                                bounds=bounds)
+    assert unblinder
+    assert unblinder.crew == blinder.crew
+
+    #test unblind fails when wrong nonce
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPA'
+    blinder = Blinder.unblind(said=said, uuid=uuid, acdc=acdc, states=states,
+                              bound=True, bounds=bounds)
+    assert blinder is None
+
+    """Done Test"""
 
 
 def test_blinder():
@@ -1331,7 +1476,6 @@ def test_blinder():
     labeler = Labeler(text="issued")
     text = labeler.text
     textq = labeler.qb64
-    name = BlindState.__name__
 
     # manually compute said
     tail = ''.join([nonceq, anonceq, textq])
@@ -1342,9 +1486,11 @@ def test_blinder():
     snoncer = Noncer(ser=ser.encode(), code=code)  # said nonce
     snonceq = snoncer.qb64
     assert snonceq == 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769'
+    name = BlindState.__name__
+    assert name == 'BlindState'
 
     clan = BlindState
-    cast = BCastDom.BlindState  # defined dom cast with non-None ipns
+    cast = BSCastDom.BlindState  # defined dom cast with non-None ipns
     ncast = BlindState(d=Castage(snoncer.__class__),
                        u=Castage(noncer.__class__),
                        td=Castage(anoncer.__class__),
@@ -1832,7 +1978,7 @@ def test_blinder():
     assert snonceq == 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD'
 
     clan = BlindState
-    cast = BCastDom.BlindState  # defined dom cast with non-None ipns
+    cast = BSCastDom.BlindState  # defined dom cast with non-None ipns
     ncast = BlindState(d=Castage(snoncer.__class__),
                        u=Castage(noncer.__class__),
                        td=Castage(anoncer.__class__),
@@ -2030,8 +2176,345 @@ def test_blinder():
     assert blinder.state == text
     assert blinder.stateb == text.encode()
 
+    # Test Blinder with BoundState
+    uuid = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
+    uuider = Noncer(nonce=uuid)
+    td = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+    tder = Noncer(nonce=td)
+    ts = "issued"
+    tser = Labeler(text=ts)
+    tsq = labeler.qb64
+    bsn = 2
+    bner = Number(numh=bsn)
+    bn = bner.snh
+    bd = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    bder = Noncer(nonce=bd)
+
+    # manually compute said
+    tail = ''.join([uuider.qb64, tder.qb64, tser.qb64, bner.qb64, bder.qb64])
+    code = DigDex.Blake3_256
+    size = Noncer._fullSize(code=code)
+    ser = '#' * size + tail  # prepend dummy to tail end
+    assert ser == '############################################aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPdEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ0MissuedMAACEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    saider = Noncer(ser=ser.encode(), code=code)  # said nonce
+    said = saider.qb64
+    assert said == 'EKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1'
+    name = BoundState.__name__
+    assert name == 'BoundState'
+
+    clan = BoundState
+    cast = BSCastDom.BoundState  # defined dom cast with non-None ipns
+    crew = BoundState(d=said, u=uuid, td=td, ts=ts, bn=bn, bd=bd)
+
+    # create said using makify  said nonce
+    msaider = Noncer(nonce='')
+    data = BoundState(d=msaider, u=uuider, td=tder, ts=tser, bn=bner, bd=bder)
+    blinder = Blinder(data=data, cast=cast, makify=True)
+    assert blinder.crew == BoundState(d='EKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1',
+                                      u='aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='issued',
+                                      bn='2',
+                                      bd='EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    assert blinder.said == said
+    # not empty said this time
+    data = BoundState(d=saider, u=uuider, td=tder, ts=tser, bn=bner, bd=bder)
+    assert data._fields == BoundState._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = saider.qb64 + uuider.qb64 + tder.qb64 + tser.qb64 + bner.qb64 + bder.qb64
+    qb64b = qb64.encode()
+    qb2 = saider.qb2 + uuider.qb2 + tder.qb2 + tser.qb2 + bner.qb2 + bder.qb2
+    enclqb64 = bytearray(b'-bAvEKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1aJte0a_x8dBbGQrB'
+          b'kdYRgkzvFlQss3ovVOkUz1L1YGPdEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbY'
+          b'GGCUQgqQ0MissuedMAACEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    enclqb2 = bytearray(b'\xf9\xb0/\x10\xa9\xb2D\x19\xf5\x984p<\xe0xL\xf8\xa6X\x91'
+          b'\xbf\xbe\xaa\xfe+=T\xd8|\xae\x90e\xf3W\xbf\xb5h\x9b^\xd1'
+          b'\xaf\xf1\xf1\xd0[\x19\n\xc1\x91\xd6\x11\x82L\xef\x16T,\xb3z/'
+          b'T\xe9\x14\xcfR\xf5`c\xdd\x10\x18\xee\xd6\x8e1\xd5G~\xcfk'
+          b'\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86\xd8\x18`\x94B'
+          b'\n\x90\xd0\xc8\xac\xb2\xe7\x9d0\x00\x02\x10\x93\xa7\x00\xa5'
+          b'\xc6i,\x89\xff\x8d\xe4\x8a\xdd\x15\xf3N\x8d5\xe1\x96KN\xe5~'
+          b'<\x9b\x07U\x1c}k/')
+
+    blinder = Blinder(data=data, cast=cast)  # no makify default verify
+    assert blinder.crew == BoundState(d='EKmyRBn1mDRwPOB4TPimWJG_vqr-Kz1U2HyukGXzV7-1',
+                                      u='aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='issued',
+                                      bn='2',
+                                      bd='EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
+
+    # test round trip with enclose and extract qb64
+    assert blinder.enclose([blinder]) == enclqb64  # ctr from clan
+    assert blinder.enclose([blinder], cold=Colds.bny) == enclqb2  # ctr from clan
+    ims = bytearray(enclqb64)
+    eblinder = Blinder.extract(qb64=ims)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.enclose([eblinder]) == enclqb64
+    assert eblinder.enclose([eblinder], cold=Colds.bny) == enclqb2
+    assert eblinder.said == said
+    assert ims  # not stripped
+
+    eblinder = Blinder.extract(qb64=ims, strip=True)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.said == said
+    assert not ims  # stripped
+
+    # test round trip with extract qb2
+    ims = bytearray(enclqb2)
+    eblinder = Blinder.extract(qb2=ims)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.enclose([eblinder]) == enclqb64
+    assert eblinder.enclose([eblinder], cold=Colds.bny) == enclqb2
+    assert eblinder.said == said
+    assert ims  # not stripped
+
+    eblinder = Blinder.extract(qb2=ims, strip=True)[0]
+    assert isinstance(eblinder, Blinder)
+    assert eblinder.clan == clan
+    assert eblinder.name == name
+    assert eblinder.cast == cast  # since look up cast from clan from ctr
+    assert eblinder.crew == crew  # since look up crew cast from clan from ctr
+    assert eblinder.qb64 == qb64
+    assert eblinder.qb64b == qb64b
+    assert eblinder.qb2 == qb2
+    assert eblinder.said == said
+    assert not ims  # stripped
+
     """Done Test"""
 
+
+def test_mediar_class():
+    """test Mediar class variables etc"""
+    assert Mediar.Clans == TMClanDom
+    assert Mediar.Casts == TMCastDom
+    assert Mediar.Names == {('d', 'u', 'mt', 'mv'): 'TypeMedia'}
+    assert Mediar.ClanCodens == {'TypeMedia': 'TypedMediaQuadruples'}
+    assert Mediar.CodenClans == {'TypedMediaQuadruples': 'TypeMedia'}
+
+    """End Test"""
+
+def test_mediar():
+    """test mediar instance"""
+
+    raws = [b'mediarrawnonce_' + b'%0x'%(i, ) for i in range(4)]
+    uuids = [Noncer(raw=raw).qb64 for raw in raws]
+    assert uuids == \
+    [
+        '0ABtZWRpYXJyYXdub25jZV8w',
+        '0ABtZWRpYXJyYXdub25jZV8x',
+        '0ABtZWRpYXJyYXdub25jZV8y',
+        '0ABtZWRpYXJyYXdub25jZV8z'
+    ]
+
+    with pytest.raises(kering.InvalidValueError):
+        mediar = Mediar()  # test default
+
+    code = DigDex.Blake3_256
+
+    uuid = uuids[0]
+    assert uuid == '0ABtZWRpYXJyYXdub25jZV8w'
+    uuider = Noncer(nonce=uuid)
+    mt = 'application/json'
+    mter = Labeler(text=mt)
+    mtq = mter.qb64
+    mvdict = dict(name='Sue', food='Pizza')
+    mv = json.dumps(mvdict, separators=(",", ":"), ensure_ascii=False)
+    assert mv == '{"name":"Sue","food":"Pizza"}'
+    mver = Texter(text=mv)
+    mvq = mver.qb64
+
+    name = TypeMedia.__name__
+    assert name == 'TypeMedia'
+
+    # manually compute said
+    tail = ''.join([uuider.qb64, mter.qb64, mver.qb64])
+    assert tail == '0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+    code = DigDex.Blake3_256
+    size = Noncer._fullSize(code=code)
+    ser = '#' * size + tail  # prepend dummy to tail end
+    assert ser == '############################################0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+    saider = Noncer(ser=ser.encode(), code=code)  # said nonce
+    said = saider.qb64
+    assert said == 'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE'
+
+    clan = TypeMedia
+    cast = TMCastDom.TypeMedia  # defined dom cast with non-None ipns
+    ncast = TypeMedia(d=Castage(saider.__class__),
+                       u=Castage(uuider.__class__),
+                       mt=Castage(mter.__class__),
+                       mv=Castage(mver.__class__))  # naive cast
+    crew = TypeMedia(d=said, u=uuid, mt=mt, mv=mv)
+    ncrew = TypeMedia(d=said, u=uuid, mt=mtq, mv=mvq)
+    dncast = ncast._asdict()
+    dcrew = crew._asdict()
+    dncrew = ncrew._asdict()
+
+    # create said using makify  said nonce
+    msaider = Noncer(nonce='')
+    data = TypeMedia(d=msaider, u=uuider, mt=mter, mv=mver)  # empty said
+
+    mediar = Mediar(data=data, cast=cast, makify=True)
+    assert mediar.crew == TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                                    u='0ABtZWRpYXJyYXdub25jZV8w',
+                                    mt='application/json',
+                                    mv='{"name":"Sue","food":"Pizza"}')
+    assert mediar.said == said
+    assert mediar.uuid == uuid
+    assert mediar.mt == mt
+    assert mediar.mv == mv
+
+    assert data._fields == TypeMedia._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = saider.qb64 + uuider.qb64 + mter.qb64 + mver.qb64
+    assert qb64 == 'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+
+    qb64b = qb64.encode()
+    qb2 = saider.qb2 + uuider.qb2 + mter.qb2 + mver.qb2
+    assert qb2 == (b'\x10v\x05\x99\x1f\xd0X"\xf3\xf2\x06r\x85\xce\x01C\xccI\xf9\xfbY\xe8\xe08'
+                    b'|\xd9\xae\xbbV@\xbf$\xc4\xd0\x00mediarrawnonce_0\xe8\x10\x06\x00\x00applicat'
+                    b'ion/json\xe4\x10\n\x00{"name":"Sue","food":"Pizza"}')
+
+
+    enclqb64 = bytearray(b'-cAjEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdu'
+                         b'b25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZv'
+                         b'b2QiOiJQaXp6YSJ9')
+
+    enclqb2 = bytearray(b'\xf9\xc0#\x10v\x05\x99\x1f\xd0X"\xf3\xf2\x06r\x85\xce\x01C\xcc'
+          b'I\xf9\xfbY\xe8\xe08|\xd9\xae\xbbV@\xbf$\xc4\xd0\x00mediarrawnonce'
+          b'_0\xe8\x10\x06\x00\x00application/json\xe4\x10\n\x00{"name":"Sue"'
+          b',"food":"Pizza"}')
+
+
+    # Test data naive (no cast) not empty said
+    data = TypeMedia(d=saider, u=uuider, mt=mter, mv=mver)
+    mediar = Mediar(data=data)  # bare data so uses naive cast
+    assert mediar.data == data
+    assert mediar.clan == clan
+    assert mediar.name == name
+    assert mediar.cast == ncast != cast  # since naive data
+    assert mediar.crew == ncrew != crew  # since naive data
+    assert mediar.asdict == dncrew == \
+    {
+        'd': 'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+        'u': '0ABtZWRpYXJyYXdub25jZV8w',
+        'mt': '6BAGAABhcHBsaWNhdGlvbi9qc29u',
+        'mv': '5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9'
+    }
+    assert mediar.qb64 == qb64
+    assert mediar.qb64b == qb64b
+    assert mediar.qb2 == qb2
+    assert mediar.said == said
+    assert mediar.saidb == said.encode()
+    assert mediar.uuid == uuid
+    assert mediar.uuidb == uuid.encode()
+    assert mediar.mt == mt
+    assert mediar.mtb == mt.encode()
+    assert mediar.mv == mv
+    assert mediar.mvb == mv.encode()
+
+    # test round trip with enclose and extract qb64 not naive since clan from ct
+    assert mediar.enclose([mediar]) == enclqb64  # ctr from clan
+    assert mediar.enclose([mediar], cold=Colds.bny) == enclqb2  # ctr from clan
+
+    # round trip from enclosure
+    ims = bytearray(enclqb64)
+    emediar = Mediar.extract(qb64=ims)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+
+    # test strip qb64
+    assert ims  # not stripped
+    emediar = Mediar.extract(qb64=ims, strip=True)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+    assert not ims  # stripped
+
+    # test round trip with extract qb2
+    ims = bytearray(enclqb2)
+    emediar = Mediar.extract(qb2=ims)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+
+    # test strip qb2
+    assert ims  # not stripped
+    emediar = Mediar.extract(qb2=ims, strip=True)[0]
+    assert isinstance(emediar, Mediar)
+    assert emediar.clan == clan
+    assert emediar.name == name
+    assert emediar.cast == cast  # since look up cast from clan from ctr
+    assert emediar.crew == crew  # since look up crew cast from clan from ctr
+    assert emediar.asdict == dcrew
+    assert emediar.qb64 == qb64
+    assert emediar.qb64b == qb64b
+    assert emediar.qb2 == qb2
+    assert emediar.enclose([emediar]) == enclqb64
+    assert emediar.enclose([emediar], cold=Colds.bny) == enclqb2
+    assert emediar.said == said
+    assert emediar.saidb == said.encode()
+    assert not ims  # stripped
+
+    """Done Test"""
 
 if __name__ == "__main__":
     test_structor_doms()
@@ -2042,6 +2525,8 @@ if __name__ == "__main__":
     test_sealer()
     test_blinder_class()
     test_blinder()
+    test_mediar_class()
+    test_mediar()
 
 
 

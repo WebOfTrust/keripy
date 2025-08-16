@@ -1777,12 +1777,10 @@ class Serder:
                             gcode = None  # code for counter for consecutive same type seals
                             gframe = bytearray()  # consecutive same type seals
                             for e in v:  # list of seal dicts
-                                # need support for grouping consecutive seals of same type with same counter
-
-                                try:
+                                try:  # groups consequetive seals of same type with same counter
                                     sealer = Sealer(crew=e)
-                                    code = self.ClanCodes[sealer.name]
-                                    if gcode and gcode == code:
+                                    code = self.ClanCodes[sealer.name]  # code by sealer type name
+                                    if gcode and gcode == code:  # same counter code
                                         gframe.extend(sealer.qb64b)
                                     else:
                                         if gframe:  # not same so close off and rotate group

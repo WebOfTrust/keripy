@@ -110,10 +110,10 @@ class Parser:
     Methods[2][0][Codens.FirstSeenReplayCouples] = "_FirstSeenReplayCouples2"
     Methods[2][0][Codens.BigFirstSeenReplayCouples] = "_FirstSeenReplayCouples2"
 
-    Methods[1][0][Codens.PathedMaterialGroup] = "_PathedMaterialGroup"
-    Methods[1][0][Codens.BigPathedMaterialGroup] = "_PathedMaterialGroup"
-    Methods[2][0][Codens.PathedMaterialGroup] = "_PathedMaterialGroup"
-    Methods[2][0][Codens.BigPathedMaterialGroup] = "_PathedMaterialGroup"
+    Methods[1][0][Codens.PathedMaterialCouples] = "_PathedMaterialCouples"
+    Methods[1][0][Codens.BigPathedMaterialCouples] = "_PathedMaterialCouples"
+    Methods[2][0][Codens.PathedMaterialCouples] = "_PathedMaterialCouples"
+    Methods[2][0][Codens.BigPathedMaterialCouples] = "_PathedMaterialCouples"
 
     Methods[1][0][Codens.SealSourceTriples] = "_SealSourceTriples1"
     Methods[2][0][Codens.SealSourceTriples] = "_SealSourceTriples2"
@@ -1083,13 +1083,13 @@ class Parser:
                                                      klas=Counter,
                                                      cold=cold,
                                                      abort=framed or enclosed,
-                                                     strip=False)
+                                                     strip=False)  # peek at ctr
 
                     # check if group belongs to top level group message in stream
                     if (ctr.code in self.mucodes or ctr.code in self.sucodes or
                         ctr.code == self.codes.KERIACDCGenusVersion):
-                        # do not consume leave in stream
-                        break  # finished attachments not a valid attachement group
+                        # do not consume leave belongs with new msg
+                        break  # not a valid attachment so done with attachments to this msg
 
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
 
@@ -2006,7 +2006,7 @@ class Parser:
 
 
     def _SealSourceTriples2(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESRv2 SealSourceTriples group
+        """Generator to extract and strip CESRv2 SealSourceTriples group
 
         Parameters:
             exts (dict): of extracted group elements for keyword args.
@@ -2045,10 +2045,11 @@ class Parser:
             exts['ssts'] = ssts
 
 
-    def _PathedMaterialGroup(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESR v1 and v2 PathedMaterialGroup group both
-        big and small sized groups. Since v1 counts quadlets/triples the logic is
-        the same for both v1 and v2. The contexts of a pathed material group
+    def _PathedMaterialCouples(self, exts, ims, ctr, cold, abort):
+        """Generator to extract  and strip CESR v1 and v2 PathedMaterialCouples
+        Includes both big and small sized groups.
+        Since v1 counts quadlets/triples the logic is the same for both v1 and v2.
+        The contexts of a pathed material group
         MUST be a CESR attachment sub-stream i.e. primitives or groups of primitives.
         It may not include any top-level messages expecially not any messages
         as JSON, CBOR, MGPK

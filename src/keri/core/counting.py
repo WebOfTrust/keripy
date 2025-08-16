@@ -20,7 +20,6 @@ from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0)
 from ..core.coring import IceMapDom
 
 
-
 @dataclass(frozen=True)
 class GenusCodex(IceMapDom):
     """GenusCodex is codex of protocol genera for code table.
@@ -65,8 +64,8 @@ class CounterCodex_1_0(IceMapDom):
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
     TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialCouples: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
     BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
@@ -96,8 +95,8 @@ class QuadTripCodex_1_0(IceMapDom):
     As subclass of MapCodex can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
-    PathedMaterialGroup: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
-    BigPathedMaterialGroup: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    BigPathedMaterialCouples: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
     BigGenericGroup: str = '--T'  # Big Generic Material Quadlet (Universal with override)
     BodyWithAttachmentGroup: str = '-U'  # Message Body plus Attachments Quadlet (Universal with Override).
@@ -221,8 +220,8 @@ class CounterCodex_2_0(IceMapDom):
     BigTransReceiptQuadruples: str = '--N'  # Big Trans Receipt Quadruple(s), pre+snu+dig+sig.
     FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
     BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
-    PathedMaterialGroup: str = '-P'  # Pathed Material Group.
-    BigPathedMaterialGroup: str = '--P'  # Big Pathed Material Group.
+    PathedMaterialCouples: str = '-P'  # Pathed Material couples. path+text
+    BigPathedMaterialCouples: str = '--P'  # Big Pathed Material couples. path+text
     DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
     BigDigestSealSingles: str = '--Q'  # Big Digest Seal Single(s), dig of sealed data.
     MerkleRootSealSingles: str = '-R'  # Merkle Tree Root Digest Seal Single(s), dig of sealed data.
@@ -245,8 +244,10 @@ class CounterCodex_2_0(IceMapDom):
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     BlindedStateQuadruples: str = '-a'  # Blinded transaction event state quadruples blid+uuid+said+state.
     BigBlindedStateQuadruples: str = '--a'  # Big Blinded transaction event state quadruples blid+uuid+said+state.
-    BlindedMediaQuadruples: str = '-b'  # Blinded IANA media type quadruples blid+uuid+type+media
-    BigBlindedMediaQuadruples: str = '--b'  # Big Blinded IANA media type  quadruples blid+uuid+type+media
+    BoundStateSextuples: str = '-b'  # Bound Blinded transaction event state sextuples blid+uuid+said+state+bsnu+bsaid.
+    BigBoundStateSextuples: str = '--b'  # Big Bound Blinded transaction event state sextuples blid+uuid+said+state+bsnu+bsaid.
+    TypedMediaQuadruples: str = '-c'  # Typed and Blinded IANA media type quadruples blid+uuid+type+media
+    BigTypedMediaQuadruples: str = '--c'  # Big Type and Blinded IANA media type  quadruples blid+uuid+type+media
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -652,6 +653,8 @@ class Counter:
                 '--a': Cizage(hs=3, ss=5, fs=8),
                 '-b': Cizage(hs=2, ss=2, fs=4),
                 '--b': Cizage(hs=3, ss=5, fs=8),
+                '-c': Cizage(hs=2, ss=2, fs=4),
+                '--c': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },

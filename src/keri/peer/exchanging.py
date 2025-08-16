@@ -470,11 +470,11 @@ def exchange(route,
         pathed.extend(pather.qb64b)
         pathed.extend(atc)
         if len(pathed) // 4 < 4096:
-            end.extend(core.Counter(core.Codens.PathedMaterialGroup,
+            end.extend(core.Counter(core.Codens.PathedMaterialCouples,
                                       count=(len(pathed) // 4),
                                       version=kering.Vrsn_1_0).qb64b)
         else:
-            end.extend(core.Counter(core.Codens.BigPathedMaterialGroup,
+            end.extend(core.Counter(core.Codens.BigPathedMaterialCouples,
                                       count=(len(pathed) // 4),
                                       version=kering.Vrsn_1_0).qb64b)
         end.extend(pathed)
@@ -597,7 +597,7 @@ def serializeMessage(hby, said, pipelined=False):
 
     # Smash the pathed components on the end
     for p in hby.db.epath.get(keys=(exn.said,)):
-        atc.extend(core.Counter(core.Codens.PathedMaterialGroup,
+        atc.extend(core.Counter(core.Codens.PathedMaterialCouples,
                                   count=(len(p) // 4), version=kering.Vrsn_1_0).qb64b)
         atc.extend(p.encode("utf-8"))
 

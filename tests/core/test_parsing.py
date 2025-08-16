@@ -157,25 +157,25 @@ def test_parser_v1_basic():
         msgs.extend(Seqner(snh=serder.snh).qb64b)
         msgs.extend(serder.said.encode())
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.PathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.PathedMaterialCouples, count=count, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(pms)
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.BigPathedMaterialCouples, count=count, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(pms)
 
@@ -533,25 +533,25 @@ def test_parser_v1_version():
         msgs.extend(Seqner(snh=serder.snh).qb64b)
         msgs.extend(serder.said.encode())
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.PathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.PathedMaterialCouples, count=count, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(pms)
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.BigPathedMaterialCouples, count=count, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(pms)
 
@@ -723,25 +723,25 @@ def test_parser_v1_enclosed_attachments():
         emas.extend(Seqner(snh=serder.snh).qb64b)
         emas.extend(serder.said.encode())
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.PathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.PathedMaterialCouples, count=count, version=Vrsn_1_0)
         emas.extend(counter.qb64b)
         emas.extend(pms)
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.BigPathedMaterialCouples, count=count, version=Vrsn_1_0)
         emas.extend(counter.qb64b)
         emas.extend(pms)
 
@@ -1065,25 +1065,25 @@ def test_parser_v1_enclosed_message():
         eims.extend(Seqner(snh=serder.snh).qb64b)
         eims.extend(serder.said.encode())
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.PathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.PathedMaterialCouples, count=count, version=Vrsn_1_0)
         eims.extend(counter.qb64b)
         eims.extend(pms)
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.BigPathedMaterialCouples, count=count, version=Vrsn_1_0)
         eims.extend(counter.qb64b)
         eims.extend(pms)
 
@@ -1474,25 +1474,25 @@ def test_parser_v1_non_native_message():
         msgs.extend(Seqner(snh=serder.snh).qb64b)
         msgs.extend(serder.said.encode())
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.PathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.PathedMaterialCouples, count=count, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(pms)
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         count = len(pms) // 4  # quadlets
-        counter = Counter(Codens.BigPathedMaterialGroup, count=count, version=Vrsn_1_0)
+        counter = Counter(Codens.BigPathedMaterialCouples, count=count, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(pms)
 
@@ -1884,23 +1884,23 @@ def test_parser_v2_basic():
         # enclose and extend with quadlet counter, enclose defaults to V2
         msgs.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        msgs.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+        msgs.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialCouples))
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        msgs.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+        msgs.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialCouples))
 
         # add ESSRPayloadGroup
         aims = bytearray()  # attachment substream
@@ -2311,23 +2311,23 @@ def test_parser_v2_mix():
         # enclose and extend with quadlet counter, enclose defaults to V2
         msgs.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        msgs.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+        msgs.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialCouples))
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        msgs.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+        msgs.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialCouples))
 
         # add ESSRPayloadGroup
         aims = bytearray()  # attachment substream
@@ -2725,23 +2725,23 @@ def test_parser_v2_enclosed_attachments():
         # enclose and extend with quadlet counter, enclose defaults to V2
         emas.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialCouples))
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialCouples))
 
         # add ESSRPayloadGroup
         aims = bytearray()  # attachment substream
@@ -3112,23 +3112,23 @@ def test_parser_v2_enclosed_message():
         # enclose and extend with quadlet counter, enclose defaults to V2
         emas.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialCouples))
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialCouples))
 
         # add ESSRPayloadGroup
         aims = bytearray()  # attachment substream
@@ -3556,23 +3556,23 @@ def test_parse_generic_group():
         # enclose and extend with quadlet counter, enclose defaults to V2
         emas.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialCouples))
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialCouples))
 
         # add ESSRPayloadGroup
         aims = bytearray()  # attachment substream
@@ -4006,23 +4006,23 @@ def test_group_parsator():
         # enclose and extend with quadlet counter, enclose defaults to V2
         emas.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialCouples))
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialCouples))
 
         # add ESSRPayloadGroup
         aims = bytearray()  # attachment substream
@@ -4487,23 +4487,23 @@ def test_parse_native_cesr_fixed_field():
         # enclose and extend with quadlet counter, enclose defaults to V2
         emas.extend(Counter.enclose(qb64=aims, code=Codens.SealSourceTriples))
 
-        # add small PathedMaterialGroup
+        # add small PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('Z', 'W'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Should we stop and rest here?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.PathedMaterialCouples))
 
-        # add big PathedMaterialGroup
+        # add big PathedMaterialCouples
         pms = bytearray()
         pather = Pather(parts=('K', 'P'))
         pms.extend(pather.qb64b)
         texter = Texter(text=b'Is not that a better spot over there?')
         pms.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialGroup))
+        emas.extend(Counter.enclose(qb64=pms, code=Codens.BigPathedMaterialCouples))
 
         # add ESSRPayloadGroup
         aims = bytearray()  # attachment substream

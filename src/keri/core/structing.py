@@ -19,7 +19,7 @@ from ..help import isNonStringSequence
 
 
 from .coring import (IceMapDom, Matter, Diger, DigDex, Prefixer, Number, Verser,
-                     Labeler, Noncer, NonceDex)
+                     Labeler, Noncer, NonceDex, Texter)
 from .counting import CtrDex_2_0, Codens, Counter
 from .signing import Tiers, Salter
 
@@ -65,26 +65,46 @@ SealLast = namedtuple("SealLast", 'i')
 
 # Backer Seal: couple (bi, d)
 # bi = pre qb64 backer nontrans identifier prefix
-# d = digest qb64 of backer metadata anchored to event usually SAID of data
+# d = digest qb64 of backer metadata anchored to event usually SAID of data (Diger)
 # use BackerRegistrarSealCouples as count code for CESR native
 SealBack = namedtuple("SealBack", 'bi d')
 
 # Kind Digest Seal for typed versioned digests : duple (t, d)
-# t = type of digest as Verser qb64,
-# d = SAID digest qb64 of transaction event
+# t = type of digest as (Verser)
+# d = SAID digest qb64 of transaction event (Diger)
 # use TypedDigestSealCouples count code for CESR Native
 SealKind = namedtuple("SealKind", 't d')
 
-# Following is Blinded State Attribute Block for 'bup' Transaction Event
-
-# Blinded State for Blindable State Update Event for Transaction Event Registry
-# d = SAID digest qb64 of blindable state
-# u = UUID blind as deterministically derived from update sn and salty nonce
-# tc = SAID of ACDC top-level 'd' field value
-# ts = state as string of Labler.label type
-# use BlindStateGroup count code for CESR native
+# Blinded State quadruple for Blindable State Update Event 'bup' for Transaction
+# Event Registry
+# d = SAID digest qb64 of blindable state (Noncer)
+# u = UUID blind as deterministically derived from update sn and salty nonce (Noncer)
+# td = SAID of ACDC top-level 'd' field value (Noncer)
+# ts = state as string text (Labeler)
+# use BlindedStateQuadruples count code for CESR native
 BlindState = namedtuple("BlindState", 'd u td ts')
 
+# Bound Blinded State sextuple for Blindable State Update Event 'bup' for Transaction
+# Event Registry. Binds the key state of the issue to the state update. This
+# effectively cross anchors the issuees key state to the issuers key state at
+# the time of the state update so that downstream issuances by issuee can be
+# verified against the delegated entitlements (authorizations) from issuer
+# d = SAID digest qb64 of blindable state (Noncer)
+# u = UUID blind as deterministically derived from update sn and salty nonce (Noncer)
+# td = SAID of ACDC top-level 'd' field value (Noncer)
+# ts = state as string text (Labeler)
+# bn = bound issuee key event sequence number at time of state update
+# bd = bound issuee key event SAID at time of state update
+# use BoundStateSextuples count code for CESR native
+BoundState = namedtuple("BoundState", 'd u td ts bn bd')
+
+# Typed and Blinded Media quadruple for IANA media-type media in attachment
+# d = SAID digest qb64 of blindable media  (Noncer)
+# u = UUID blind as salty nonce (Noncer)
+# mt = IANA media type text string (Labeler)
+# mv = media value as Text (Texter)
+# use TypedMediaQuadruples count code for CESR native
+TypeMedia = namedtuple("TypeMedia", 'd u mt mv')
 
 # Following are not seals only used in database
 
@@ -119,9 +139,6 @@ class EmptyClanDom(IceMapDom):
     Only provide defined classes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get class reference with item syntax using
-    name variables.
-
     Example: EmptyClanDex[name]
     """
 
@@ -142,9 +159,6 @@ class EmptyCastDom(IceMapDom):
     Only provide defined namedtuples casts.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get namedtuple instance with item syntax using
-    name variables.
-
     Example: EmptyCastDex[name]
     """
 
@@ -161,9 +175,6 @@ class SealClanDom(IceMapDom):
 
     Only provide defined classes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    As subclass of MapCodex can get class reference with item syntax using
-    name variables.
 
     Example: SealClanDom[name]
     """
@@ -194,9 +205,6 @@ class SealCastDom(IceMapDom):
     Only provide defined namedtuples casts.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get namedtuple instance with item syntax using
-    name variables.
-
     Example: SealCastDom[name]
     """
     SealDigest: NamedTuple = SealDigest(d=Castage(Diger))  # SealDigest class reference
@@ -219,28 +227,26 @@ SCastDom = SealCastDom()  # create instance
 
 
 @dataclass(frozen=True)
-class BlindClanDom(IceMapDom):
-    """BlindClanDom is dataclass of namedtuple blinded state class references
+class BlindStateClanDom(IceMapDom):
+    """BlindStateClanDom is dataclass of namedtuple blinded state class references
     (clans) each indexed by its class name.
 
     Only provide defined classes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get class reference with item syntax using
-    name variables.
-
-    Example: BlindClanDom[name]
+    Example: BlindStateClanDom[name]
     """
     BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
+    BoundState: type[NamedTuple] = BoundState  # BoundState class reference (d,u,td,ts,bn,bd)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-BClanDom = BlindClanDom()  # create instance
+BSClanDom = BlindStateClanDom()  # create instance
 
 @dataclass(frozen=True)
-class BlindCastDom(IceMapDom):
-    """BlindCastDom is dataclass of namedtuple instances (blind casts) whose
+class BlindStateCastDom(IceMapDom):
+    """BlindStateCastDom is dataclass of namedtuple instances (blind casts) whose
     field values are Castage instances of named primitive class class references
     for those fields.
 
@@ -249,22 +255,71 @@ class BlindCastDom(IceMapDom):
     Only provide defined namedtuples casts.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get namedtuple instance with item syntax using
-    name variables.
+    Example: BlindStateCastDom[name]
 
-    Example: BlindCastDom[name]
-    Note: the td field value is a SAID but when placeholder may be empty so
-    instead of Diger users Noncer which allows all the Diger codes plus empty
+    Note: the d, and td field values may be empty so instead of Diger users
+    Noncer which allows all the Diger codes plus empty
     """
     BlindState: NamedTuple = BlindState(d=Castage(Noncer, 'nonce'),
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),
                                         ts=Castage(Labeler, 'text'))  # BlindState instance
+    BoundState: NamedTuple = BoundState(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        td=Castage(Noncer, 'nonce'),
+                                        ts=Castage(Labeler, 'text'),
+                                        bn=Castage(Number, 'numh'),
+                                        bd=Castage(Noncer, 'nonce'))  # BoundState instance
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
-BCastDom = BlindCastDom()  # create instance
+BSCastDom = BlindStateCastDom()  # create instance
+
+
+@dataclass(frozen=True)
+class TypeMediaClanDom(IceMapDom):
+    """TypeMediaClanDom is dataclass of namedtuple blinded media class references
+    (clans) each indexed by its class name.
+
+    Only provide defined classes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    Example: TypeMediaClanDom[name]
+    """
+    TypeMedia: type[NamedTuple] = TypeMedia  # TypeMedia class reference (d,u,mt,mv)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+TMClanDom = TypeMediaClanDom()  # create instance
+
+
+@dataclass(frozen=True)
+class TypeMediaCastDom(IceMapDom):
+    """TypeMediaCastDom is dataclass of namedtuple instances (blind casts) whose
+    field values are Castage instances of named primitive class class references
+    for those fields.
+
+    indexed by its namedtuple class name.
+
+    Only provide defined namedtuples casts.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    Example: TypeMediaCastDom[name]
+
+    Note: the d field value is a SAID but so instead of Diger users Noncer which
+    allows all the Diger codes plus empty
+    """
+    TypeMedia: NamedTuple = TypeMedia(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        mt=Castage(Labeler, 'text'),
+                                        mv=Castage(Texter, 'text'))  # TypeMedia instance
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+TMCastDom = TypeMediaCastDom()  # create instance
 
 
 @dataclass(frozen=True)
@@ -288,6 +343,8 @@ class AllClanDom(IceMapDom):
     SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
     SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
     BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
+    BoundState: type[NamedTuple] = BoundState  # BoundState class reference (d,u,td,ts,bn,bd)
+    TypeMedia: type[NamedTuple] = TypeMedia  # TypeMedia class reference (d,u,mt,mv)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -327,6 +384,16 @@ class AllCastDom(IceMapDom):
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),
                                         ts=Castage(Labeler, 'text'))  # BlindState instance
+    BoundState: NamedTuple = BoundState(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        td=Castage(Noncer, 'nonce'),
+                                        ts=Castage(Labeler, 'text'),
+                                        bn=Castage(Number, 'numh'),
+                                        bd=Castage(Noncer, 'nonce'))  # BoundState instance
+    TypeMedia: NamedTuple = TypeMedia(d=Castage(Noncer, 'nonce'),
+                                        u=Castage(Noncer, 'nonce'),
+                                        mt=Castage(Labeler, 'text'),
+                                        mv=Castage(Texter, 'text'))  # TypeMedia instance
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -336,14 +403,16 @@ ACastDom = AllCastDom()  # create instance
 
 # map Structor clan names to counter code names for ser/des as counted group
 ClanToCodens = dict()
-ClanToCodens[SClanDom.SealDigest.__name__] = Codens.DigestSealSingles
-ClanToCodens[SClanDom.SealRoot.__name__] = Codens.MerkleRootSealSingles
-ClanToCodens[SClanDom.SealSource.__name__] = Codens.SealSourceCouples
-ClanToCodens[SClanDom.SealEvent.__name__] = Codens.SealSourceTriples
-ClanToCodens[SClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
-ClanToCodens[SClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
-ClanToCodens[SClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
-ClanToCodens[BClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+ClanToCodens[AClanDom.SealDigest.__name__] = Codens.DigestSealSingles
+ClanToCodens[AClanDom.SealRoot.__name__] = Codens.MerkleRootSealSingles
+ClanToCodens[AClanDom.SealSource.__name__] = Codens.SealSourceCouples
+ClanToCodens[AClanDom.SealEvent.__name__] = Codens.SealSourceTriples
+ClanToCodens[AClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
+ClanToCodens[AClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
+ClanToCodens[AClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
+ClanToCodens[AClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+ClanToCodens[AClanDom.BoundState.__name__] = Codens.BoundStateSextuples
+ClanToCodens[AClanDom.TypeMedia.__name__] = Codens.TypedMediaQuadruples
 
 
 # map counter codename to Structor clan name for ser/des as counted group
@@ -421,9 +490,6 @@ class Structor:
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
-        said (str|None): primary said field value if any. None otherwise
-                         primary has same label as zeroth item in .saids
-        saidb (bytes|None): .said as bytes
         saids (dict):   default saidive fields at top-level.
                           Assumes .mad already in most compact form.
                           Each key is label of saidive field.
@@ -431,6 +497,10 @@ class Structor:
                               value to be computed from serialized dummied .mad
         saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
     Methods:
 
@@ -1053,6 +1123,13 @@ class Sealer(Structor):
                            ser/des as group
         CodenClans (dict): map of counter code name to clan named tuple for
                            ser/des as group
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+        Dummy (str): dummy character for computing SAIDs
+
 
 
     When known casts are provided in .Clans/.Casts then more flexible creation
@@ -1072,6 +1149,17 @@ class Sealer(Structor):
         qb64 (str): concatenated data values as qb64 str of data's primitives
         qb64b (bytes): concatenated data values as qb64b  of data's primitives
         qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
+        saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
 
     Methods:
@@ -1209,13 +1297,15 @@ class Blinder(Structor):
                               value to be computed from serialized dummied .mad
         saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
-        said (str): qb64 said given .saids given .saids as saidive
-        saidb (bytes): qb64b said given .saids as saidive fields
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
     Properties:
-        uuid (str): uuid of BlindState CESR .data.u 'u' field
+        uuid (str): qb64 uuid of BlindState CESR .data.u 'u' field
         uuidb (bytes): qb64b uuid of BlindState CESR .data.u 'u' field
-        acdc (str): transaction acdc said or empty of
+        acdc (str): qb64 transaction acdc said or empty of
                        BlindState CESR .data.td 'td' field
         acdcb (bytes): qb64b transaction acdc said of
                            BlindState CESR .data.td 'td' field
@@ -1223,6 +1313,19 @@ class Blinder(Structor):
                         BlindState CESR .data.ts 'ts' field
         stateb (bytes): transaction state string of
                             BlindState CESR .data.ts 'ts' field
+        bsn (int): bound key state sequence number of issuees key state at
+                      time of update
+                      BoundState CESR .data.bn 'bn' field
+        bnh (str): bound key state  hex sequence number of issuees key state
+                       at time of update
+                       BoundState CESR .data.bn 'bn' field
+        bnhb (bytes): bound key state hex sequence number of issuees key
+                           state at time of update
+                           BoundState CESR .data.bn 'bn' field
+        bd (str): qb64 bound key state said  of issuee at time of update
+                      BoundState CESR .data.bd 'bd' field
+        bdb (bytes): qb64b bound key state said of issuee at time of update
+                          BoundState CESR .data.bd 'bd' field
 
     Methods:
 
@@ -1258,8 +1361,8 @@ class Blinder(Structor):
         assert blinder.asdict == data._asdict() == sealer.crew._asdict()
 
     """
-    Clans = BClanDom  # known namedtuple clans. Override in subclass with non-empty
-    Casts = BCastDom  # known namedtuple casts. Override in subclass with non-empty
+    Clans = BSClanDom  # known namedtuple clans. Override in subclass with non-empty
+    Casts = BSCastDom  # known namedtuple casts. Override in subclass with non-empty
     # Create .Names dict that maps clan/cast fields names to its namedtuple
     # class type name so can look up a know clan or cast given a matching set
     # of either field names from a namedtuple or keys from a dict.
@@ -1267,7 +1370,8 @@ class Blinder(Structor):
 
     # map clan names to counter code for ser/des as counted group
     ClanCodens = dict()
-    ClanCodens[BClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+    ClanCodens[BSClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
+    ClanCodens[BSClanDom.BoundState.__name__] = Codens.BoundStateSextuples
 
     # mapcounter code to clan name for ser/des as counted group
     CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict
@@ -1295,7 +1399,8 @@ class Blinder(Structor):
 
 
     @classmethod
-    def blind(cls, *, acdc='', state='', raw=None, salt=None, sn=1, tier=None):
+    def blind(cls, *, acdc='', state='', raw=None, salt=None, sn=1, tier=None,
+              bound=False, bsn=0, bd=''):
         """Creates blinded blinder by generating blinding factor uuid given:
            either raw or salt as shared secret if both None then generate salt
            sn of blindable update event,
@@ -1316,16 +1421,30 @@ class Blinder(Structor):
             sn (int): sequence number of blindable update message. Converted to
                       Number.huge which is qb64 (24 char) used to generate uuid
             tier (str|None): used to generate uuid
+            bound (bool): True means use BoundState
+                          False means use BlindState default
+            bsn (int): bound sequence number of latest key event of issuee at
+                       time of state update as (cross anchor)
+                       when bound==True and bsaid is not empty
+                       when bsaid is empty then bsn must be 0 as placeholder
+            bd (str): bound key event said of latest issuee key event at
+                        time of state update as (cross anchor)
+                         when bound==True and bsaid is not empty
+                        Empty string means placeholder and bsn must be 0
+
         """
         uuid = cls.makeUUID(raw=raw, salt=salt, sn=sn, tier=tier)
 
-        crew = BlindState(d="", u=uuid, td=acdc, ts=state)
+        if bound:
+            crew = BoundState(d="", u=uuid, td=acdc, ts=state, bn=bsn, bd=bd)
+        else:
+            crew = BlindState(d="", u=uuid, td=acdc, ts=state)
         return cls(crew=crew, makify=True, saidive=True)
 
 
     @classmethod
     def unblind(cls, said, *, uuid=None, acdc="", states=None,
-                raw=None, salt=None, sn=1, tier=None):
+                raw=None, salt=None, sn=1, tier=None, bound=False, bounds=None):
         """Creates unblinded blinder given said, uuid, acdc said, and states
         list of possible state values
 
@@ -1348,6 +1467,12 @@ class Blinder(Structor):
                       Number.huge which is qb64 (24 char)
                       used to create uuid when provided uuid is None
             tier (str|None): used to create uuid when provided uuid is None
+            bound (bool): True means use BoundState
+                          False means use BlindState default
+            bounds (list[tuple[bsn, bd]]): possible (bsn, bd) pairs to try in
+                    computing possible bound blinded state where:
+                    bsn (int): possible bound issuee key event sequence number
+                    bd (str): bound issuee key event SAID qb64
 
         Tests possible combinations of empty acdc, provided acdc,  with
         empty state string plus all states strings provided by states to find
@@ -1366,12 +1491,27 @@ class Blinder(Structor):
         if "" not in states:
             states.append("")
 
-        for td in acdcs:
-            for ts in states:
-                crew = BlindState(d="", u=uuid, td=td, ts=ts)
-                blinder = cls(crew=crew, makify=True, saidive=True)
-                if blinder.crew.d == said:
-                    return blinder
+        if bound:
+            bounds = bounds if bounds is not None else [(0, '')]
+            if (0, '') not in bounds:
+                bounds.append((0, ''))
+
+            for bsn, bd in bounds:
+                # bn = f"{bsn:x}"  # numh respects ints now
+                for td in acdcs:
+                    for ts in states:
+                        crew = BoundState(d="", u=uuid, td=td, ts=ts, bn=bsn, bd=bd)
+                        blinder = cls(crew=crew, makify=True, saidive=True)
+                        if blinder.crew.d == said:
+                            return blinder
+
+        else:
+            for td in acdcs:
+                for ts in states:
+                    crew = BlindState(d="", u=uuid, td=td, ts=ts)
+                    blinder = cls(crew=crew, makify=True, saidive=True)
+                    if blinder.crew.d == said:
+                        return blinder
         return None
 
 
@@ -1445,7 +1585,7 @@ class Blinder(Structor):
     def acdc(self):
         """acdc property getter
         Returns:
-           acdc (str): transaction acdc said or empty of
+           acdc (str): qb64 transaction acdc said or empty of
                        BlindState CESR .data.td 'td' field
         """
         return self.data.td.nonce
@@ -1480,3 +1620,252 @@ class Blinder(Structor):
         """
         return self.data.ts.text.encode()
 
+
+    @property
+    def bsn(self):
+        """bsn property getter
+        Returns:
+           bsn (int): bound key state sequence number of issuees key state at
+                      time of update
+                      BoundState CESR .data.bn 'bn' field
+        """
+        return self.data.bn.sn if self.clan is BoundState else None
+
+
+    @property
+    def bnh(self):
+        """bnh property getter
+        Returns:
+            bnh (str): bound key state  hex sequence number of issuees key state
+                       at time of update
+                       BoundState CESR .data.bn 'bn' field
+        """
+        return self.data.bn.snh if self.clan is BoundState else None
+
+    @property
+    def bnhb(self):
+        """bnhb property getter
+        Returns:
+            bnhb (bytes): bound key state hex sequence number of issuees key
+                           state at time of update
+                           BoundState CESR .data.bn 'bn' field
+        """
+        return self.data.bn.snh.encode() if self.clan is BoundState else None
+
+
+    @property
+    def bd(self):
+        """bd property getter
+        Returns:
+           bd (str): qb64 bound key state said  of issuee at time of update
+                      BoundState CESR .data.bd 'bd' field
+        """
+        return self.data.bd.nonce if self.clan is BoundState else None
+
+
+    @property
+    def bdb(self):
+        """bdb property getter
+        Returns:
+            bdb (bytes): qb64b bound key state said of issuee at time of update
+                          BoundState CESR .data.bd 'bd' field
+        """
+        return self.data.bd.nonceb if self.clan is BoundState else None
+
+
+class Mediar(Structor):
+    """Mediar is Structor subclass each instance holds a namedtuple .data of
+    named values belonging to IANA media type media quadrule with blindable SAID
+    (BLID)
+
+    See Structor class for more details.
+
+    Inherited Class Attributes:
+        Clans (type[Namedtuple]): each value is known NamedTuple class keyed
+            by its own field names (tuple). Enables easy query of its values() to
+            find known data types given field names tuple.
+        Casts (NamedTuple): each value is primitive class of cast keyed by fields
+            names of the associated NamedTuple class in .Clans. Enables finding
+            known primitive classes given NamedTuple class of clan or instance
+            of cast or crew.
+        Names (dict):  maps tuple of clan/cast fields names to its namedtuple
+                       class type name so can look up a know clan or cast
+                       given a matching tuple
+        ClanCodens (dict): map of clan namedtuple to counter code name for
+                           ser/des as group
+        CodenClans (dict): map of counter code name to clan named tuple for
+                           ser/des as group
+        Saids (dict):  default saidive fields at top-level. Assumes .mad already
+            in most compact form.
+            Each key is label of saidive field.
+            Each value is default primitive code of said digest value to be
+                computed from serialized dummied .mad
+        Dummy (str): dummy character for computing SAIDs
+
+    Class Attributes:
+
+    When known casts are provided in .Clans/.Casts then more flexible creation
+    is supported for different types of provided cast and crew.
+    When no clan is provided and an unknown cast and/or crew are provided as
+    Mappings then Structor may create custom clan from the names given by the
+    cast and/or crew keys(). Subclasses may override this behavior by raising
+    an exception for unknown or custom clans.
+
+
+    Inherited Properties:
+        data (NamedTuple): fields are named instances of CESR primitives
+        clan (type[NamedTuple]): class reference of .data's class
+        cast (NamedTuple): CESR primitive class references of .data's primitive
+                           instances
+        crew (NamedTuple): named qb64 values of .data's primitive instances
+        qb64 (str): concatenated data values as qb64 str of data's primitives
+        qb64b (bytes): concatenated data values as qb64b  of data's primitives
+        qb2 (bytes): concatenated data values as qb2 bytes of data's primitives
+        saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+        saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
+        said (str): qb64 said given .saids given .saids as saidive .data.d.qb64
+                      primary said field value if any. None otherwise
+                      primary has same label as zeroth item in .saids
+        saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
+
+    Properties:
+        uuid (str): qb64 uuid of TypeMedia CESR .data.u.qb64 'u' field
+        uuidb (bytes): qb64b uuid of TypeMedia CESR .data.u.qb64b 'u' field
+        mt (str): media type string TypeMedia  .data.mt.text 'mt' field
+        mtb (bytes): media tytpe as bytes TypeMedia .data.mt.text 'mt' field
+        mv (str):  media value string TypeMedia .data.mv.text 'mv' field
+        mvb (bytes): media value as bytes TypeMedia .data.mv.text  'mv' field
+
+    Methods:
+
+
+    Hidden:
+        _data (namedtuple): named CESR primitive instances
+        _cast (namedtuple): named Castage instances
+        _saids (dict): default top-level said fields and codes
+        _saidive (bool): compute saids or not
+
+    Example:
+
+
+    """
+    Clans = TMClanDom  # known namedtuple clans. Override in subclass with non-empty
+    Casts = TMCastDom  # known namedtuple casts. Override in subclass with non-empty
+    # Create .Names dict that maps clan/cast fields names to its namedtuple
+    # class type name so can look up a know clan or cast given a matching set
+    # of either field names from a namedtuple or keys from a dict.
+    Names = {tuple(clan._fields): clan.__name__ for clan in Clans}
+
+    # map clan names to counter code for ser/des as counted group
+    ClanCodens = dict()
+    ClanCodens[TMClanDom.TypeMedia.__name__] = Codens.TypedMediaQuadruples
+
+    # mapcounter code to clan name for ser/des as counted group
+    CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict
+
+
+    def __init__(self, saidive=True, **kwa):
+        """Initialize instance
+
+        Inherited Parameters:  (see Structor)
+            data (NamedTuple): fields are named primitive instances for .data
+                Given data can derive clan, cast, crew, qb64, and qb2
+            clan (type[NamedTuple]): provides class reference for generated .data
+                when data missing.
+            cast (NamedTuple | dict | Iterable): each value provides CESR
+                primitive subclass reference used to create primitive instances
+                for generating .data. Can be used to infer namedtuple type of
+                .data when data and clan missing. Takes precendence over crew.
+            crew (NamedTuple | dict | Iterable): each value provides qb64 value
+                of primitive for generating .data with .cast when data missing.
+                Can be used to infer namedtuple type of .data when data and clan
+                missing.
+            qb64b (str|bytes|bytearray|None): concatenation of qb64b data values to
+                generate .data with data and crew missing.
+            qb64 (str|bytes|bytearray|None): alias for qb64b
+            qb2 (bytes|bytearray|None): concatenation of qb2 data values to generate
+                .data when data and crew and qb64 missing.
+            strip (bool): False means do not strip each value from qb64 or qb2.
+                Default is False. True means if qb64 or qb2 are bytearray then
+                strip contained concatenated data values. Else convert qb64 or
+                qb2 to bytearray so can strip inplace. Enables parser to extract
+                data fields from front of CESR stream when stream is bytearray.
+            makify (bool): True means compute saids when .saidive
+                           False means do not comput saids even when .saidive
+            verify (bool): True means verify serialization against mad.
+                           False means do not verify
+            saids (dict):   default saidive fields at top-level.
+                          Assumes .mad already in most compact form.
+                          Each key is label of saidive field.
+                          Each value is default primitive code of said digest
+                              value to be computed from serialized dummied .mad
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+                        False means do not compute SAIDs
+
+        Parameters:
+
+
+        """
+        super(Mediar, self).__init__(saidive=saidive, **kwa)
+
+        if self.clan not in self.Clans:
+            raise InvalidValueError("Unrecognized clan={self.clan}")
+
+
+    @property
+    def uuid(self):
+        """uuid property getter
+        Returns:
+           uuid (str): uuid of TypeMedia CESR .data.u 'u' field
+        """
+        return self.data.u.nonce
+
+
+    @property
+    def uuidb(self):
+        """uuidb property getter
+        Returns:
+            uuidb (bytes): qb64b uuid of TypeMedia CESR .data.u 'u' field
+        """
+        return self.data.u.nonceb
+
+
+    @property
+    def mt(self):
+        """mt property getter
+        Returns:
+           mt (str): media type string TypeMedia  .data.mt.text 'mt' field
+        """
+        return self.data.mt.text
+
+
+    @property
+    def mtb(self):
+        """mtb property getter
+        Returns:
+            mtb (bytes): media type as  bytes TypeMedia .data.mt.text 'mt' field
+        """
+        return self.data.mt.text.encode()
+
+
+    @property
+    def mv(self):
+        """mv property getter
+        Returns:
+           mv (str): media value string TypeMedia .data.mv.text 'mv' field
+        """
+        return self.data.mv.text
+
+
+    @property
+    def mvb(self):
+        """mvb property getter
+        Returns:
+            mvb (bytes): media value as bytes TypeMedia .data.mv.text 'mv' field
+        """
+        return self.data.mv.text.encode()
