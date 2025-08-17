@@ -12,22 +12,17 @@ from keri import help, kering
 from keri.app import agenting, indirecting, habbing
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Request KEL for local multisig AID from witness')
-parser.set_defaults(handler=lambda args: update(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Request KEL for local multisig AID from witness', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: update(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--witness', '-w', help='QB64 identifier of witness to query', default="", required=True)
 
-# Authentication for keystore
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
 

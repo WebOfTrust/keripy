@@ -10,22 +10,18 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, agenting, indirecting
 from keri.app.cli.common import existing, displaying
+from keri.app.cli.common.parsing import Parsery
 from keri.help import helping
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Submit current event to witnesses for receipting')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Submit current event to witnesses for receipting', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
 
 # Authentication for keystore
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
 parser.add_argument('--force', action="store_true", required=False,

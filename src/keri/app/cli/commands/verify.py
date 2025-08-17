@@ -9,16 +9,12 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring, indexing
 
-parser = argparse.ArgumentParser(description='Verify signature(s) on arbitrary data')
+parser = argparse.ArgumentParser(description='Verify signature(s) on arbitrary data', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-
 parser.add_argument("--prefix", help="Identifier prefix of the signer", required=True)
 parser.add_argument('--text', '-t', help='Original signed text or file (starts with "@")', required=True)
 parser.add_argument('--signature', '-s', default=[], help='list of signatures to verify (can appear multiple times)',
