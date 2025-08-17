@@ -93,7 +93,7 @@ BlindState = namedtuple("BlindState", 'd u td ts')
 # u = UUID blind as deterministically derived from update sn and salty nonce (Noncer)
 # td = SAID of ACDC top-level 'd' field value (Noncer)
 # ts = state as string text (Labeler)
-# bn = bound issuee key event sequence number at time of state update
+# bn = bound issuee key event hex sequence number at time of state update
 # bd = bound issuee key event SAID at time of state update
 # use BoundStateSextuples count code for CESR native
 BoundState = namedtuple("BoundState", 'd u td ts bn bd')
