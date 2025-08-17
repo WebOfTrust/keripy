@@ -1234,7 +1234,19 @@ def test_sealer():
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
+    # Test SealKind and TypedDigestSealCouples
+    verser = Verser(proto='OCSR')
+    assert verser.qb64 == 'YOCSRCAA'
+    crew = SealKind(t=verser.qb64, d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE')
+    sealer = Sealer(crew=crew)
+    assert sealer.qb64 == 'YOCSRCAAEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE'
+    # enclose and extend with quadlet counter,
+    ims = Sealer.enclose([sealer]) #enclose defaults to V2
+    assert ims == bytearray(b'-WANYOCSRCAAEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE')
+    esealer = Sealer.extract(qb64=ims, strip=True)[0]
+    assert esealer.crew == crew
     """Done Test"""
+
 
 def test_blinder_class():
     """test Blinder class variables etc"""

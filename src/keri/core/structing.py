@@ -1399,8 +1399,8 @@ class Blinder(Structor):
 
 
     @classmethod
-    def blind(cls, *, acdc='', state='', raw=None, salt=None, sn=1, tier=None,
-              bound=False, bsn=0, bd=''):
+    def blind(cls, *, raw=None, salt=None, sn=1, tier=None, acdc='', state='',
+                      bound=False, bsn=0, bd=''):
         """Creates blinded blinder by generating blinding factor uuid given:
            either raw or salt as shared secret if both None then generate salt
            sn of blindable update event,
@@ -1412,15 +1412,16 @@ class Blinder(Structor):
             blinder (Blinder): blinded blinder
 
         Parameters:
-            acdc (str): qb64 said of associated acdc (trans event acdc).
-                        Allows empty str for placeholder
-            state (str): state string value.
-                        Allows empty str for placeholder
+
             raw (bytes|None): random crypto material as salt used to generate uuid
             salt (str|None): qb64 of 128 bit random salt used to generate uuid
             sn (int): sequence number of blindable update message. Converted to
                       Number.huge which is qb64 (24 char) used to generate uuid
             tier (str|None): used to generate uuid
+            acdc (str): qb64 said of associated acdc (trans event acdc).
+                        Allows empty str for placeholder
+            state (str): state string value.
+                        Allows empty str for placeholder
             bound (bool): True means use BoundState
                           False means use BlindState default
             bsn (int): bound sequence number of latest key event of issuee at

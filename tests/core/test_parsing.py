@@ -14,7 +14,9 @@ from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri import help
 
 from keri import core
-from keri.core import coring, Counter, GenDex, Codens, Seqner, Dater, Texter, Pather
+from keri.core import coring
+from keri.core import (Counter, GenDex, Codens, Seqner, Dater, Texter, Pather,
+                       Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser)
 from keri.core.parsing import Parser
 
 from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
@@ -1915,6 +1917,61 @@ def test_parser_v2_basic():
         aims.extend(texter.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
         msgs.extend(Counter.enclose(qb64=aims, code=Codens.BigESSRPayloadGroup))
+
+        # add BlindedStateQuadruples
+        salt = '0ABhY2Rjc3BlY3dvcmtyYXdm'
+        sn = 1
+        acdc = ''
+        state = ''
+        blinder0 = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
+        sn = 2
+        acdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob project report ACDC
+        state = 'issued'
+        blinder1 = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
+        # enclose and extend with quadlet counter,
+        aims = Blinder.enclose([blinder0, blinder1]) #enclose defaults to V2
+        msgs.extend(aims)
+
+        # add BoundStateSextuples
+        salt = '0ABhY2Rjc3BlY3dvcmtyYXdm'
+        sn = 1
+        acdc = ''
+        state = ''
+        bsn = 0
+        bd = ''
+        blinder0 = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
+                                 bound=True, bsn=bsn, bd=bd)
+        sn = 2
+        acdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob project report ACDC
+        state = 'issued'
+        bsn = 2
+        bd = "EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv"
+        blinder1 = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
+                                 bound=True, bsn=bsn, bd=bd)
+        # enclose and extend with quadlet counter,
+        aims = Blinder.enclose([blinder0, blinder1]) #enclose defaults to V2
+        msgs.extend(aims)
+
+        # add TypedMediaQuadruples
+        crew = TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                         u='0ABtZWRpYXJyYXdub25jZV8w',
+                         mt='application/json',
+                         mv='{"name":"Sue","food":"Pizza"}')
+
+        mediar = Mediar(crew=crew)
+        # enclose and extend with quadlet counter,
+        aims = Mediar.enclose([mediar]) #enclose defaults to V2
+        msgs.extend(aims)
+
+        # add TypedDigestSealCouples
+        verser = Verser(proto='OCSR')
+        assert verser.qb64 == 'YOCSRCAA'
+        crew = SealKind(t=verser.qb64, d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE')
+        sealer = Sealer(crew=crew)
+        assert sealer.qb64 == 'YOCSRCAAEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE'
+        # enclose and extend with quadlet counter,
+        aims = Sealer.enclose([sealer]) #enclose defaults to V2
+        msgs.extend(aims)
 
         # create key event verifier state
         kever = Kever(serder=serder, sigers=[siger0], db=conDB)
