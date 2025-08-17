@@ -14,7 +14,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from .. import kering
 from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
                       ShortageError, ColdStartError)
-from .coring import (Ilks, Seqner, Cigar,
+from .coring import (Ilks, Seqner, Cigar, Diger, Noncer, Labeler, Number, Verser,
                      Dater, Verfer, Prefixer, Saider, Texter)
 from .counting import (Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex,
                        UniDex_1_0, UniDex_2_0)
@@ -123,11 +123,22 @@ class Parser:
     Methods[2][0][Codens.SealSourceCouples] = "_SealSourceCouples2"
     Methods[2][0][Codens.BigSealSourceCouples] = "_SealSourceCouples2"
 
+    Methods[2][0][Codens.TypedDigestSealCouples] = "_TypedDigestSealCouples"
+    Methods[2][0][Codens.BigTypedDigestSealCouples] = "_TypedDigestSealCouples"
+
     Methods[1][0][Codens.ESSRPayloadGroup] = "_ESSRPayloadGroup1"
     Methods[1][0][Codens.BigESSRPayloadGroup] = "_ESSRPayloadGroup1"
     Methods[2][0][Codens.ESSRPayloadGroup] = "_ESSRPayloadGroup2"
     Methods[2][0][Codens.BigESSRPayloadGroup] = "_ESSRPayloadGroup2"
 
+    Methods[2][0][Codens.BlindedStateQuadruples] = "_BlindedStateQuadruples"
+    Methods[2][0][Codens.BigBlindedStateQuadruples] = "_BlindedStateQuadruples"
+
+    Methods[2][0][Codens.BoundStateSextuples] = "_BoundStateSextuples"
+    Methods[2][0][Codens.BigBoundStateSextuples] = "_BoundStateSextuples"
+
+    Methods[2][0][Codens.TypedMediaQuadruples] = "_TypedMediaQuadruples"
+    Methods[2][0][Codens.BigTypedMediaQuadruples] = "_TypedMediaQuadruples"
 
 
     def __init__(self, ims=None, framed=True, piped=False, kvy=None,
@@ -865,12 +876,16 @@ class Parser:
         # frcs (list[tuple]): (seqner, dater)
         # sscs (list[tuple]): (seqner, saider) issuing or delegating
         # ssts (list[tuple]): (prefixer, seqner, saider) issued or delegated
+        # tdcs (list[tuple]): (verser, diger) SealKind TypedDigestSealCouples
         # ptds (list[bytes]): pathed streams
         # essrs (list[Texter]): essr encapsulations as Texters
+        # bsqs (list[tuple]): (diger, noncer, noncer, labeler) BlindState
+        # bsss (list[tuple]): (diger, noncer, noncer, labeler, number, noncer) BoundState
+        # tmqs (list[tuple]): (diger, noncer, labeler, texter) TypeMedia
         # local (bool): True if local source controller context for processing
         exts = dict(serder=None, sigers=[], wigers=[], cigars=[], trqs=[],
-                    tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], ptds=[],
-                    essrs=[], local=local)
+                    tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], tdcs=[],
+                    ptds=[], essrs=[], bsqs=[], bsss=[], tmqs=[], local=local)
 
         serdery = serdering.Serdery(version=kering.Version)
 
@@ -2045,6 +2060,45 @@ class Parser:
             exts['ssts'] = ssts
 
 
+    def _TypedDigestSealCouples(self, exts, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 TypedDigestSealCouples group
+
+        Parameters:
+            exts (dict): of extracted group elements for keyword args.
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            tdcs (list[tuple]): [(verser, diger)]
+
+        """
+        gs = ctr.byteCount(cold=cold)
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        tdcs = []
+        while gims:   # extract each attached group and strip from gims
+            verser = self.extract(ims=gims, klas=Verser, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            tdcs.append((verser, diger))
+        try:
+            exts['tdcs'].extend(tdcs)
+        except KeyError:
+            exts['tdcs'] = tdcs
+
+
     def _PathedMaterialCouples(self, exts, ims, ctr, cold, abort):
         """Generator to extract  and strip CESR v1 and v2 PathedMaterialCouples
         Includes both big and small sized groups.
@@ -2153,3 +2207,127 @@ class Parser:
         except KeyError:
             exts['essrs'] = essrs
 
+
+    def _BlindedStateQuadruples(self, exts, ims, ctr, cold, abort):
+        """Generator to extract and strip CESRv2 BlindedStateQuadruples group
+
+        Parameters:
+            exts (dict): of extracted group elements for keyword args.
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            bsqs (list[tuple]): [(diger, noncer, acdcer, stater)]
+
+        """
+        gs = ctr.byteCount(cold=cold)
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        bsqs = []
+        while gims:   # extract each attached group and strip from gims
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            noncer = self.extract(ims=gims, klas=Noncer, cold=cold) # Noncer may be empty code
+            acdcer = self.extract(ims=gims, klas=Noncer, cold=cold)  # Noncer may be empty code
+            stater = self.extract(ims=gims, klas=Labeler, cold=cold) # Labeler may be empty code
+            bsqs.append((diger, noncer, acdcer, stater))
+        try:
+            exts['bsqs'].extend(bsqs)
+        except KeyError:
+            exts['bsqs'] = bsqs
+
+
+    def _BoundStateSextuples(self, exts, ims, ctr, cold, abort):
+        """Generator to extract and strip CESRv2 BoundStateSextuples group
+
+        Parameters:
+            exts (dict): of extracted group elements for keyword args.
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            bsss (list[tuple]): [(diger, noncer, acdcer, stater, number, eventer)]
+
+        """
+        gs = ctr.byteCount(cold=cold)
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        bsss = []
+        while gims:   # extract each attached group and strip from gims
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            noncer = self.extract(ims=gims, klas=Noncer, cold=cold) # Noncer may be empty code
+            acdcer = self.extract(ims=gims, klas=Noncer, cold=cold)  # Noncer may be empty code
+            stater = self.extract(ims=gims, klas=Labeler, cold=cold) # Labeler may be empty code
+            number = self.extract(ims=gims, klas=Number, cold=cold) # Labeler may be empty code
+            eventer = self.extract(ims=gims, klas=Noncer, cold=cold)  # Noncer may be empty code
+            bsss.append((diger, noncer, acdcer, stater, number, eventer))
+        try:
+            exts['bsss'].extend(bsss)
+        except KeyError:
+            exts['bsss'] = bsss
+
+
+    def _TypedMediaQuadruples(self, exts, ims, ctr, cold, abort):
+        """Generator to extract and strip CESRv2 TypedMediaQuadruples group
+
+        Parameters:
+            exts (dict): of extracted group elements for keyword args.
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            tmqs (list[tuple]): [(diger, noncer, labeler, texter)]
+
+        """
+        gs = ctr.byteCount(cold=cold)
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        tmqs = []
+        while gims:   # extract each attached group and strip from gims
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            noncer = self.extract(ims=gims, klas=Noncer, cold=cold) # Noncer may be empty code
+            labeler = self.extract(ims=gims, klas=Labeler, cold=cold)
+            texter = self.extract(ims=gims, klas=Texter, cold=cold)
+            tmqs.append((diger, noncer, labeler, texter))
+        try:
+            exts['tmqs'].extend(tmqs)
+        except KeyError:
+            exts['tmqs'] = tmqs
