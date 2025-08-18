@@ -662,7 +662,7 @@ class Structor:
         return structors
 
 
-    def __init__(self, data=None, *, clan=None, cast=None, crew=None,
+    def __init__(self, data=None, *, clan=None, cast=None, crew=None, naive=False,
                                      qb64b=None, qb64=None, qb2=None,
                                      strip=False, makify=False, verify=True,
                                      saids=None, saidive=False):
@@ -685,6 +685,11 @@ class Structor:
                 of primitive for generating .data with .cast when data missing.
                 Can be used to infer namedtuple type of .data when data and clan
                 missing.
+            naive (bool): False means when none of cast, clan, crew provided
+                            then infer cast from namedtupe type of data in .Costs
+                            otherwise create naive cast from fields in data
+                          True means when when none of cast, clan, crew provided
+                            then create naive cast from fields in data
             qb64b (str|bytes|bytearray|None): concatenation of qb64b data values to
                 generate .data with data and crew missing.
             qb64 (str|bytes|bytearray|None): alias for qb64b
@@ -892,9 +897,15 @@ class Structor:
                     data = data._replace(**replace)  # data with saided noncers
 
 
-        self._data = data
-        self._cast = (cast if cast is not None else
-                      self.clan(*(Castage(val.__class__) for val in self.data)))
+        self._data = data  # now have self.clan which is self._data.__class__
+        if cast is None:
+            if naive:  # force naive
+                cast = self.clan(*(Castage(val.__class__) for val in self.data))
+            elif cname := self.Names.get(self.clan._fields):  # fields is mark
+                cast = self.Casts[cname]  # get known cast if possilbe
+            else:  # naive cast as only recourse
+                cast = self.clan(*(Castage(val.__class__) for val in self.data))
+        self._cast = cast
 
         if self.saidive and not makify and verify:  # verify saids
             # dummy serialization of .data
