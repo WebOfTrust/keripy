@@ -234,8 +234,8 @@ class CounterCodex_2_0(IceMapDom):
     BigSealSourceLastSingles: str = '--U'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
     BackerRegistrarSealCouples: str = '-V'  # Backer Registrar Seal Couple(s), brid+dig of sealed data.
     BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
-    TypedDigestSealCouples: str = '-W'  # Typed Digest Seal Couple(s), type seal +dig of sealed data.
-    BigTypedDigestSealCouples: str = '--W'  # Big Typed Digest Seal Couple(s), type seal +dig of sealed data.
+    TypedDigestSealCouples: str = '-W'  # Typed Digest Seal Couple(s), type seal vers+dig of sealed data.
+    BigTypedDigestSealCouples: str = '--W'  # Big Typed Digest Seal Couple(s), type seal vers+dig of sealed data.
     TransIdxSigGroups: str = '-X'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
     BigTransIdxSigGroups: str = '--X'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
     TransLastIdxSigGroups: str = '-Y'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.

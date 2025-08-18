@@ -536,8 +536,8 @@ def test_structor():
                         b'\xb0\xb9/x\x81T>\xfbw\xf3\x18m\x81\x86\tD \xa9\x00c\xbbZ8\xc7'
                         b'U\x1d\xfb=\xac/\xeb\xb1')
 
-    # Test data
-    structor = Structor(data=data)
+    # Test data with naive
+    structor = Structor(data=data, naive=True)
     assert structor.data == data
     assert structor.clan == clan
     assert structor.cast == ncast
@@ -565,8 +565,8 @@ def test_structor():
     assert estructors[0].crew != structor.crew
     assert not buf  # stripped
 
-    # Test data with cast so not naive
-    structor = Structor(data=data, cast=cast)
+    # Test data not naive
+    structor = Structor(data=data)
     assert structor.data == data
     assert structor.clan == clan
     assert structor.cast == cast
@@ -1104,8 +1104,8 @@ def test_sealer():
                     b'\xb0\xb9/x\x81T>\xfbw\xf3\x18m\x81\x86\tD \xa9\x00c\xbbZ8\xc7'
                     b'U\x1d\xfb=\xac/\xeb\xb1')
 
-    # Test data
-    sealer = Sealer(data=data)  # bare data so uses naive cast
+    # Test data with naive
+    sealer = Sealer(data=data, naive=True)  # force naive cast
     assert sealer.data == data
     assert sealer.clan == clan
     assert sealer.name == name
@@ -1119,7 +1119,8 @@ def test_sealer():
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
-    # test round trip with enclose  extract
+
+    # test round trip with enclose  extract  esealer not naive via extraction process
     assert sealer.enclose([sealer]) == enclqb64
     assert sealer.enclose([sealer], cold=Colds.bny) == enclqb2
 
@@ -1137,6 +1138,7 @@ def test_sealer():
     assert esealer.enclose([sealer]) == enclqb64
     assert esealer.enclose([sealer], cold=Colds.bny) == enclqb2
     assert ims  # not stripped
+
     esealer = Sealer.extract(qb64=ims, strip=True)[0]
     assert isinstance(esealer, Sealer)
     assert esealer.clan == clan
@@ -1148,6 +1150,7 @@ def test_sealer():
     assert esealer.qb64b == qb64b
     assert esealer.qb2 == qb2
     assert not ims  # stripped
+
     # test round trip with extract qb2
     ims = bytearray(enclqb2)
     esealer = Sealer.extract(qb2=ims)[0]
@@ -1201,6 +1204,23 @@ def test_sealer():
             's': 'e',
             'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'}
 
+    # Test data non-naive
+    sealer = Sealer(data=data)
+    assert sealer.data == data
+    assert sealer.clan == clan
+    assert sealer.name == name
+    assert sealer.cast == cast
+    assert sealer.crew == crew
+    assert sealer.asdict == dcrew == \
+           {
+               'i': 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR',
+               's': 'e',
+               'd': 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+           }
+    assert sealer.qb64 == qb64
+    assert sealer.qb64b == qb64.encode()
+    assert sealer.qb2 == qb2
+
 
     # Test no clan but with one or the other of cast and crew as dict or namedtuple
     sealer = Sealer(crew=crew)  # uses known cast i.e not naive
@@ -1234,7 +1254,19 @@ def test_sealer():
     assert sealer.qb64b == qb64.encode()
     assert sealer.qb2 == qb2
 
+    # Test SealKind and TypedDigestSealCouples
+    verser = Verser(proto='OCSR')
+    assert verser.qb64 == 'YOCSRCAA'
+    crew = SealKind(t=verser.qb64, d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE')
+    sealer = Sealer(crew=crew)
+    assert sealer.qb64 == 'YOCSRCAAEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE'
+    # enclose and extend with quadlet counter,
+    ims = Sealer.enclose([sealer]) #enclose defaults to V2
+    assert ims == bytearray(b'-WANYOCSRCAAEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE')
+    esealer = Sealer.extract(qb64=ims, strip=True)[0]
+    assert esealer.crew == crew
     """Done Test"""
+
 
 def test_blinder_class():
     """test Blinder class variables etc"""
@@ -1532,8 +1564,35 @@ def test_blinder():
           b'\x0b\xfa\xecK\x0b\x92\xf7\x88\x15C\xef\xb7\x7f1\x86\xd8\x18`\x94B'
           b'\n\x90\xd0\xc8\xac\xb2\xe7\x9d')
 
-    # Test data naive (no cast)
-    blinder = Blinder(data=data)  # bare data so uses naive cast
+
+    # Test data not naive
+    blinder = Blinder(data=data)
+    assert blinder.data == data
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew == \
+    {
+        'd': 'EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769',
+        'u': 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd',
+        'td': 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+        'ts': 'issued'
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+    assert blinder.said == snonceq
+    assert blinder.saidb == snonceq.encode()
+    assert blinder.uuid == nonceq
+    assert blinder.uuidb == nonceq.encode()
+    assert blinder.acdc == anonceq
+    assert blinder.acdcb == anonceq.encode()
+    assert blinder.state == text
+    assert blinder.stateb == text.encode()
+
+    # Test data force naive
+    blinder = Blinder(data=data, naive=True)
     assert blinder.data == data
     assert blinder.clan == clan
     assert blinder.name == name
@@ -1557,7 +1616,6 @@ def test_blinder():
     assert blinder.acdcb == anonceq.encode()
     assert blinder.state == text
     assert blinder.stateb == text.encode()
-
 
     # test round trip with enclose and extract qb64
     assert blinder.enclose([blinder]) == enclqb64  # ctr from clan
@@ -1641,8 +1699,8 @@ def test_blinder():
     assert blinder.enclose([blinder]) == enclqb64
     assert blinder.enclose([blinder], cold=Colds.bny) == enclqb2
 
-    # Test data with cast so not naive cast
-    blinder = Blinder(data=data, cast=cast)  # not bare data has cast so use it
+    # Test data with cast
+    blinder = Blinder(data=data, cast=cast)
     assert blinder.data == data
     assert blinder.clan == clan
     assert blinder.name == name
@@ -2008,8 +2066,34 @@ def test_blinder():
     qb64b = qb64.encode()
     qb2 = snoncer.qb2 + noncer.qb2 + anoncer.qb2 + labeler.qb2
 
-    # Test data naive (no cast)
-    blinder = Blinder(data=data)  # bare data so uses naive cast
+    # Test data
+    blinder = Blinder(data=data)
+    assert blinder.data == data
+    assert blinder.clan == clan
+    assert blinder.name == name
+    assert blinder.cast == cast
+    assert blinder.crew == crew
+    assert blinder.asdict == dcrew == \
+    {
+        'd': 'ENDgQYks3cty6eIo0g30pH8ScChzT-KisNRxrf6eNrcD',
+        'u': '',
+        'td': '',
+        'ts': ''
+    }
+    assert blinder.qb64 == qb64
+    assert blinder.qb64b == qb64b
+    assert blinder.qb2 == qb2
+    assert blinder.said == snonceq
+    assert blinder.saidb == snonceq.encode()
+    assert blinder.uuid == nonce
+    assert blinder.uuidb == nonce.encode()
+    assert blinder.acdc == anonce
+    assert blinder.acdcb == anonce.encode()
+    assert blinder.state == text
+    assert blinder.stateb == text.encode()
+
+    # Test data naive
+    blinder = Blinder(data=data, naive=True)
     assert blinder.data == data
     assert blinder.clan == clan
     assert blinder.name == name
@@ -2412,10 +2496,36 @@ def test_mediar():
           b'_0\xe8\x10\x06\x00\x00application/json\xe4\x10\n\x00{"name":"Sue"'
           b',"food":"Pizza"}')
 
-
-    # Test data naive (no cast) not empty said
+    # Test data not empty said
     data = TypeMedia(d=saider, u=uuider, mt=mter, mv=mver)
-    mediar = Mediar(data=data)  # bare data so uses naive cast
+    mediar = Mediar(data=data)
+    assert mediar.data == data
+    assert mediar.clan == clan
+    assert mediar.name == name
+    assert mediar.cast == cast
+    assert mediar.crew == crew
+    assert mediar.asdict == dcrew == \
+    {
+        'd': 'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+        'u': '0ABtZWRpYXJyYXdub25jZV8w',
+        'mt': 'application/json',
+        'mv': '{"name":"Sue","food":"Pizza"}'
+    }
+    assert mediar.qb64 == qb64
+    assert mediar.qb64b == qb64b
+    assert mediar.qb2 == qb2
+    assert mediar.said == said
+    assert mediar.saidb == said.encode()
+    assert mediar.uuid == uuid
+    assert mediar.uuidb == uuid.encode()
+    assert mediar.mt == mt
+    assert mediar.mtb == mt.encode()
+    assert mediar.mv == mv
+    assert mediar.mvb == mv.encode()
+
+    # Test data naive not empty said
+    data = TypeMedia(d=saider, u=uuider, mt=mter, mv=mver)
+    mediar = Mediar(data=data, naive=True)
     assert mediar.data == data
     assert mediar.clan == clan
     assert mediar.name == name
