@@ -5,7 +5,7 @@ from keri.help import helping
 from keri import kering
 
 
-def test_timeliness(monkeypatch):
+def test_timeliness(monkeypatch, create_test_serder):
 
     def mockNowIso8601():
         return "2021-06-27T21:26:21.233257+00:00"
@@ -22,31 +22,11 @@ def test_timeliness(monkeypatch):
         # Set window parameters for the test AIDs
         tc.setWindowParameters(hab.pre, windowSize=1.0, driftSkew=1.0)
 
-        def create_test_serder(ilk, timestamp=None, route=None, sourceAid=hab.pre, qBlock=None, routeParams=None):
-            """Helper to create a test serder with specified parameters"""
-            if timestamp is None:
-                timestamp = helping.nowIso8601()
-
-            sad = {
-                "v": "KERI10JSON00011c_",
-                "t": ilk,
-                "i": sourceAid,
-                "dt": timestamp,
-            }
-
-            if route:
-                if routeParams:
-                    route += "?" + "&".join([f"{k}={v}" for k, v in routeParams.items()])
-                sad["r"] = route
-
-            if qBlock:
-                sad["q"] = qBlock
-
-            return serdering.SerderKERI(sad=sad, makify=True)
 
         current_time = helping.nowIso8601()
 
         offerSerder = create_test_serder(
+            sourceAid=hab.pre,
             ilk="exn",
             timestamp=current_time,
             route="/credential/offer",
@@ -61,8 +41,8 @@ def test_timeliness(monkeypatch):
 
         monkeypatch.setattr(helping, "nowIso8601", mockNowIso8601Later)
 
-        offerSerder2 = create_test_serder(ilk="exn", timestamp=mockNowIso8601Later(), route="/credential/offer",
-                                          sourceAid="BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo")
+        offerSerder2 = create_test_serder(sourceAid="BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
+                                          ilk="exn", timestamp=mockNowIso8601Later(), route="/credential/offer")
 
         # Cache new entry
         isValid = tc.checkMessageTimeliness(offerSerder2)

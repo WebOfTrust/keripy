@@ -1315,7 +1315,7 @@ class Baser(dbing.LMDBer):
                                       sep=">",
                                       )
 
-        # Timeliness cache of identifiers (soon to also include message types)
+        # KRAM escrow database, not yet implemented
         self.krms = subing.IoSetSuber(db=self, subkey='krms.', sep=">")
 
         self.reload()

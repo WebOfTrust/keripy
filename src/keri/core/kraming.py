@@ -159,7 +159,7 @@ class TimelinessCache:
 
         if (messageTime < currentTime - driftSkew - windowSize or
                 messageTime > currentTime + driftSkew):
-            raise kering.ValidationError(f"Message is out of time window {serder.pretty()}")
+            raise kering.KramError(f"Message is out of time window {serder.pretty()}")
 
         cacheKey = self._constructCacheKey(serder)
 
@@ -176,9 +176,9 @@ class TimelinessCache:
             return True
 
         if messageTime == cachedTimestamp:
-            raise kering.ValidationError(f"Message replay detected {serder.pretty()}")
+            raise kering.KramError(f"Message replay detected {serder.pretty()}")
 
-        raise kering.ValidationError(f"Message is out of order {serder.pretty()}")
+        raise kering.KramError(f"Message is out of order {serder.pretty()}")
 
     def pruneCache(self):
         """Prune stale entries from the Replay Cache Table.
@@ -213,7 +213,7 @@ class TimelinessCache:
                     # TODO: Implement escrowing functionality
                     self.db.krms.rem(said)
                     logger.info(f"Message accepted: {serder.pretty()}")
-            except kering.ValidationError as e:
+            except kering.KramError as e:
                 logger.error(f"Invalid message: {e}")
             self.pruneCache()
 
