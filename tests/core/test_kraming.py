@@ -37,7 +37,7 @@ def test_timeliness(monkeypatch, create_test_serder):
         assert isValid
 
         def mockNowIso8601Later():
-            return "2021-06-27T21:26:23.233258+00:00"
+            return "2021-06-27T21:26:24.233258+00:00"
 
         monkeypatch.setattr(helping, "nowIso8601", mockNowIso8601Later)
 
@@ -49,7 +49,7 @@ def test_timeliness(monkeypatch, create_test_serder):
         assert isValid
 
         # Attempt to cache first entry again - this should now raise ValidationError
-        with pytest.raises(kering.ValidationError):
+        with pytest.raises(kering.KramError):
             tc.checkMessageTimeliness(offerSerder)
 
         # Prune only the entry with a time outside the window
