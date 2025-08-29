@@ -89,8 +89,8 @@ class Exchanger:
                 if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < seqner.sn:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=pathed):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
-                        msg = f"Unable to find sender {prefixer.qb64} in kevers for evt = {serder.said}"
-                        logger.info(msg)
+                    msg = f"Unable to find sender {prefixer.qb64} in kevers for evt = {serder.said}"
+                    logger.info(msg)
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
 
