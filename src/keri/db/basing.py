@@ -1281,6 +1281,24 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.imgs = self.env.open_db(key=b'imgs.')
 
+        # Field values for identifier information for local identifiers. Keyed by prefix/field
+        # TODO: clean
+        self.ifld = subing.Suber(db=self,
+                                 subkey="ifld.")
+
+        # Signed identifier data, keys by prefix
+        # TODO: clean
+        self.icons = subing.Suber(db=self,
+                                  subkey="icons.")
+
+        # Transferable signatures on identifier data
+        # TODO: clean
+        self.icigs = subing.CesrSuber(db=self, subkey='icigs.', klas=coring.Cigar)
+
+        # Chunked image data for identifier information for local identifiers
+        # TODO: clean
+        self.iimgs = self.env.open_db(key=b'iimgs.')
+
         # Delegation escrow dbs #
         # delegated partial witness escrow
         self.dpwe = subing.SerderSuber(db=self, subkey='dpwe.')
@@ -1499,7 +1517,8 @@ class Baser(dbing.LMDBer):
                 # reprocess them.  We need a more secure method in the future
                 unsecured = ["hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns", "erpy",
                              "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi", "mfa", "rmfa",
-                             "cfld", "cons", "ccigs", "cdel", "migs"]
+                             "cfld", "cons", "ccigs", "cdel", "migs",
+                             "ifld", "icons", "icigs"]
 
                 for name in unsecured:
                     srcdb = getattr(self, name)
@@ -1520,6 +1539,10 @@ class Baser(dbing.LMDBer):
                 # Insecure raw imgs database copy.
                 for (key, val) in self.getTopItemIter(self.imgs):
                     copy.imgs.setVal(key=key, val=val)
+
+                # Insecure raw iimgs database copy.
+                for (key, val) in self.getTopItemIter(self.iimgs):
+                    copy.iimgs.setVal(key=key, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy

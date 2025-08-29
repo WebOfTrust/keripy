@@ -11,16 +11,24 @@ from ordered_set import OrderedSet as oset
 from keri import kering
 
 
-class Organizer:
-    """ Organizes contacts relating contact information to AIDs """
+class BaseOrganizer:
+    """ Base class for organizing contact or identifier information """
 
-    def __init__(self, hby):
-        """ Create contact Organizer
+    def __init__(self, hby, cigsdb, datadb, fielddb, imgsdb):
+        """ Create base Organizer
 
         Parameters:
-            hby (Habery): database environment for contact information
+            hby (Habery): database environment
+            cigsdb: database for storing signatures
+            datadb: database for storing main data
+            fielddb: database for storing individual fields
+            imgsdb: database for storing images
         """
         self.hby = hby
+        self.cigsdb = cigsdb
+        self.datadb = datadb
+        self.fielddb = fielddb
+        self.imgsdb = imgsdb
 
     def update(self, pre, data):
         """ Add or update contact information in data for the identifier prefix
@@ -39,11 +47,11 @@ class Organizer:
         raw = json.dumps(existing).encode("utf-8")
         cigar = self.hby.signator.sign(ser=raw)
 
-        self.hby.db.ccigs.pin(keys=(pre,), val=cigar)
-        self.hby.db.cons.pin(keys=(pre,), val=raw)
+        self.cigsdb.pin(keys=(pre,), val=cigar)
+        self.datadb.pin(keys=(pre,), val=raw)
 
         for field, val in data.items():
-            self.hby.db.cfld.pin(keys=(pre, field), val=val)
+            self.fielddb.pin(keys=(pre, field), val=val)
 
     def replace(self, pre, data):
         """ Replace all contact information for identifier prefix with data
@@ -68,7 +76,7 @@ class Organizer:
         data = self.get(pre) or dict()
         data[field] = val
         self.replace(pre, data)
-        self.hby.db.cfld.pin(keys=(pre, field), val=val)
+        self.fielddb.pin(keys=(pre, field), val=val)
 
     def unset(self, pre, field):
         """ Remove field from contact information for identifier prefix
@@ -81,7 +89,7 @@ class Organizer:
         data = self.get(pre)
         del data[field]
         self.replace(pre, data)
-        self.hby.db.cfld.rem(keys=(pre, field))
+        self.fielddb.rem(keys=(pre, field))
 
     def rem(self, pre):
         """ Remove all contact information for identifier prefix
@@ -92,9 +100,9 @@ class Organizer:
         Returns:
 
         """
-        self.hby.db.ccigs.rem(keys=(pre,))
-        self.hby.db.cons.rem(keys=(pre,))
-        return self.hby.db.cfld.trim(keys=(pre,))
+        self.cigsdb.rem(keys=(pre,))
+        self.datadb.rem(keys=(pre,))
+        return self.fielddb.trim(keys=(pre,))
 
     def get(self, pre, field=None):
         """ Retrieve all contact information for identifier prefix
@@ -107,10 +115,10 @@ class Organizer:
             dict: Contact data
 
         """
-        raw = self.hby.db.cons.get(keys=(pre,))
+        raw = self.datadb.get(keys=(pre,))
         if raw is None:
             return None
-        cigar = self.hby.db.ccigs.get(keys=(pre,))
+        cigar = self.cigsdb.get(keys=(pre,))
 
         if not self.hby.signator.verify(ser=raw.encode("utf-8"), cigar=cigar):
             raise kering.ValidationError(f"failed signature on {pre} contact data")
@@ -135,7 +143,7 @@ class Organizer:
         key = ""
         data = None
         contacts = []
-        for (pre, field), val in self.hby.db.cfld.getItemIter():
+        for (pre, field), val in self.fielddb.getItemIter():
             if pre != key:
                 if data is not None:
                     contacts.append(data)
@@ -162,7 +170,7 @@ class Organizer:
         """
         pres = []
         prog = re.compile(f".*{val}.*", re.I)
-        for (pre, f), v in self.hby.db.cfld.getItemIter():
+        for (pre, f), v in self.fielddb.getItemIter():
             if f == field and prog.match(v):
                 pres.append(pre)
 
@@ -182,10 +190,9 @@ class Organizer:
         prog = re.compile(f".*{val}.*", re.I) if val is not None else None
 
         vals = oset()
-        for (pre, f), v in self.hby.db.cfld.getItemIter():
-            if f == field:
-                if prog is None or prog.match(v):
-                    vals.add(v)
+        for (pre, f), v in self.fielddb.getItemIter():
+            if f == field and (prog is None or prog.match(v)):
+                vals.add(v)
 
         return list(vals)
 
@@ -201,10 +208,10 @@ class Organizer:
             stream (file): file-like stream of image data
 
         """
-        self.hby.db.delTopVal(db=self.hby.db.imgs, top=pre.encode("utf-8"))
+        self.hby.db.delTopVal(db=self.imgsdb, top=pre.encode("utf-8"))
 
         key = f"{pre}.content-type".encode("utf-8")
-        self.hby.db.setVal(db=self.hby.db.imgs, key=key, val=typ.encode("utf-8"))
+        self.hby.db.setVal(db=self.imgsdb, key=key, val=typ.encode("utf-8"))
 
         idx = 0
         size = 0
@@ -213,12 +220,12 @@ class Organizer:
             if not chunk:
                 break
             key = f"{pre}.{idx}".encode("utf-8")
-            self.hby.db.setVal(db=self.hby.db.imgs, key=key, val=chunk)
+            self.hby.db.setVal(db=self.imgsdb, key=key, val=chunk)
             idx += 1
             size += len(chunk)
 
         key = f"{pre}.content-length".encode("utf-8")
-        self.hby.db.setVal(db=self.hby.db.imgs, key=key, val=size.to_bytes(4, "big"))
+        self.hby.db.setVal(db=self.imgsdb, key=key, val=size.to_bytes(4, "big"))
 
     def getImgData(self, pre):
         """ Get image metadata for identifier image if one exists
@@ -231,19 +238,19 @@ class Organizer:
 
         """
         key = f"{pre}.content-length".encode("utf-8")
-        size = self.hby.db.getVal(db=self.hby.db.imgs, key=key)
+        size = self.hby.db.getVal(db=self.imgsdb, key=key)
         if size is None:
             return None
 
         key = f"{pre}.content-type".encode("utf-8")
-        typ = self.hby.db.getVal(db=self.hby.db.imgs, key=key)
+        typ = self.hby.db.getVal(db=self.imgsdb, key=key)
         if typ is None:
             return None
 
-        return dict(
-            type=bytes(typ).decode("utf-8"),
-            length=int.from_bytes(size, "big")
-        )
+        return {
+            "type": bytes(typ).decode("utf-8"),
+            "length": int.from_bytes(size, "big")
+        }
 
     def getImg(self, pre):
         """ Generator that yields image data in 4k chunks for identifier
@@ -255,8 +262,44 @@ class Organizer:
         idx = 0
         while True:
             key = f"{pre}.{idx}".encode("utf-8")
-            chunk = self.hby.db.getVal(db=self.hby.db.imgs, key=key)
+            chunk = self.hby.db.getVal(db=self.imgsdb, key=key)
             if not chunk:
                 break
             yield bytes(chunk)
             idx += 1
+
+
+class Organizer(BaseOrganizer):
+    """ Organizes contacts relating contact information to AIDs """
+
+    def __init__(self, hby):
+        """ Create contact Organizer
+
+        Parameters:
+            hby (Habery): database environment for contact information
+        """
+        super().__init__(
+            hby=hby,
+            cigsdb=hby.db.ccigs,
+            datadb=hby.db.cons,
+            fielddb=hby.db.cfld,
+            imgsdb=hby.db.imgs
+        )
+
+
+class IdentifierOrganizer(BaseOrganizer):
+    """ Organizes identifier information for local identifiers """
+
+    def __init__(self, hby):
+        """ Create identifier Organizer
+
+        Parameters:
+            hby (Habery): database environment for identifier information
+        """
+        super().__init__(
+            hby=hby,
+            cigsdb=hby.db.icigs,
+            datadb=hby.db.icons,
+            fielddb=hby.db.ifld,
+            imgsdb=hby.db.iimgs
+        )
