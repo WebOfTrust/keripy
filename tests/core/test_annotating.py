@@ -218,7 +218,7 @@ def test_annot():
       -JAB # 'c' Config Trait List Counter GenericListGroup count=1 quadlets
         XDID # trait Traitor Tag3 trait=DID
       -JAA # 'a' Seal List Counter GenericListGroup count=0 quadlets
-"""
+      """
 
     """End Test"""
 

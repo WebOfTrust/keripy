@@ -10,6 +10,7 @@ import shutil
 import multicommand
 
 import pytest
+
 from hio.base import doing
 
 from keri import kering
@@ -61,6 +62,7 @@ def mockHelpingNowIso8601(monkeypatch):
         return "2021-06-27T21:26:21.233257+00:00"
 
     monkeypatch.setattr(helping, "nowIso8601", mockNowIso8601)
+
 
 @pytest.fixture()
 def mockCoringRandomNonce(monkeypatch):
