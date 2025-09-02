@@ -9,18 +9,14 @@ from hio.base import doing
 
 from keri import help
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: remove(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='existing 21 character encryption passcode for keystore',
-                    dest="bran", default=None)  # passcode => bran
+parser = argparse.ArgumentParser(description='Initialize a prefix', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: remove(args))
 
 
 def handler(args):

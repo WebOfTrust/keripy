@@ -8,6 +8,7 @@ import argparse
 from hio.base import doing
 
 from keri import help
+from keri.app.cli.common.parsing import Parsery
 import keri.app.oobiing
 from keri.app import habbing, oobiing
 from keri.app.cli.common import existing
@@ -16,25 +17,14 @@ from keri.help import helping
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description="Resolve the provided OOBI")
-parser.set_defaults(handler=lambda args: resolve(args),
-                    transferable=True)
-
-# Parameters for basic structure of database
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description="Resolve the provided OOBI", 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: resolve(args))
 parser.add_argument("--oobi", "-o", help="out-of-band introduciton to load", required=True)
 parser.add_argument("--oobi-alias", dest="oobiAlias", help="alias for AID resolved from out-of-band introduciton",
                     required=False, default=None)
 parser.add_argument('--force', action="store_true", required=False,
                     help='True means to resolve OOBI even if it has already been previously resolved')
-
-
-# Parameters for Manager access
-# passcode => bran
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)
 
 
 def resolve(args):

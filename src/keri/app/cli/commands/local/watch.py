@@ -13,24 +13,15 @@ from hio.help import decking
 from keri import help
 from keri.app import agenting, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, terming
+from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
 from keri.app.watching import States, diffState
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Perform a one time watch of all current local AIDs')
-parser.set_defaults(handler=lambda args: watch(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-
-# Authentication for keystore
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
-                                   'and encryption of secrets in keystore', default=None)
-
+parser = argparse.ArgumentParser(description='Perform a one time watch of all current local AIDs', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: watch(args))
 
 def watch(args):
     name = args.name

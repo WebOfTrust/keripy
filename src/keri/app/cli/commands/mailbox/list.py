@@ -11,20 +11,16 @@ from hio.base import doing
 from keri import help
 from keri.app import connecting
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.kering import ConfigurationError, Roles
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List current mailboxes')
-parser.set_defaults(handler=lambda args: handle(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser = argparse.ArgumentParser(description='List current mailboxes', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handle(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 
 
 def handle(args):

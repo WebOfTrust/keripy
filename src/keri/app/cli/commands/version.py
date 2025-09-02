@@ -9,16 +9,10 @@ from hio.base import doing
 
 import keri
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 
-parser = argparse.ArgumentParser(description='Print version of KLI')
+parser = argparse.ArgumentParser(description='Print version of KLI', parents=[Parsery.keystore(required=False)])
 parser.set_defaults(handler=lambda args: handler(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=False,
-                    default=None)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-
 
 def handler(args):
     kwa = dict(args=args)

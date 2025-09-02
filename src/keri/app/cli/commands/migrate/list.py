@@ -10,6 +10,7 @@ from prettytable import PrettyTable
 
 from keri import help
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 
 logger = help.ogler.getLogger()
 
@@ -25,20 +26,10 @@ def handler(args):
     return [lister]
 
 
-parser = argparse.ArgumentParser(description='Lists the local LMDB migrations and their completion status')
-parser.set_defaults(handler=handler,
-                    transferable=True)
-
-# Parameters for basic structure of database
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Lists the local LMDB migrations and their completion status', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=handler)
 parser.add_argument('--temp', '-t', help='create a temporary keystore, used for testing', default=False)
-
-# Parameters for Manager creation
-# passcode => bran
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)
 
 
 class ListDoer(doing.Doer):

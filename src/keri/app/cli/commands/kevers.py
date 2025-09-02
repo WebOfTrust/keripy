@@ -13,20 +13,16 @@ from hio.base import doing
 from keri import help
 from keri.app import indirecting
 from keri.app.cli.common import displaying, existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import serdering
 from keri.help import helping
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Poll events at controller for prefix')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Poll events at controller for prefix', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--prefix', help='qb64 identifier prefix to display', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--poll", "-P", help="Poll mailboxes for any events", action="store_true")
 
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")

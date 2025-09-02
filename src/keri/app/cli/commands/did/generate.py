@@ -17,20 +17,10 @@ from keri.app.cli.common import existing
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Generate and print an AID\'s DID.')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
+parser.set_defaults(handler=lambda args: handler(args))
 
-# Parameters for basic structure of database
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for which to generate a DID', default=None)
 parser.add_argument("--role", "-r", help="role of oobis to generate", required=False, default="witness")
-
-# Parameters for Manager access
-# passcode => bran
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)
 parser.add_argument('--url', '-u', help="generate a DID URL instead of a DID", action="store_true")
 
 

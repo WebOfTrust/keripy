@@ -12,21 +12,17 @@ from hio.base import doing
 from keri import help
 from keri.app import signing
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import serdering
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Export credential from store and any related material')
+parser = argparse.ArgumentParser(description='Export credential from store and any related material', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: export_credentials(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-
 parser.add_argument("--said", "-s", help="SAID of the credential to export.", required=False, default=None)
 parser.add_argument("--tels", help="export the transaction event logs for the credential and any chained credentials",
                     action="store_true")

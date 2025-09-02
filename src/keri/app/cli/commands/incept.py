@@ -10,16 +10,15 @@ from hio.base import doing
 
 from keri import help
 from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
-from keri.app.cli.common import existing, incepting, config
+from keri.app.cli.common import existing, config
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description='Initialize a prefix', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
 parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
@@ -28,12 +27,28 @@ parser.add_argument("--proxy", help="alias for delegation communication proxy", 
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
 
-# Authentication for keystore
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
-incepting.addInceptingArgs(parser)
+parser.add_argument('--transferable', '-tf', action="store_true",
+                    help='Whether the prefix is transferable or non-transferable')
+parser.add_argument('--wits',         '-w', default=[], required=False, action="append", metavar="<prefix>",
+                    help='New set of witnesses, replaces all existing witnesses.  Can appear multiple times')
+parser.add_argument('--toad',         '-t', default=None, required=False, type=int,
+                    help='int or str hex of witness threshold (threshold of accountable duplicity)',)
+parser.add_argument('--icount',       '-ic', default=None, required=False,
+                    help='incepting key count for number of keys used for inception')
+parser.add_argument('--isith',        '-s', default=None, required=False,
+                    help='signing threshold for the inception event')
+parser.add_argument('--ncount',       '-nc', default=None, required=False,
+                    help='next key count for number of next keys used on first rotation')
+parser.add_argument('--nsith',        '-x', default=None, required=False,
+                    help='signing threshold for the next rotation event',)
+parser.add_argument('--est-only',     '-e', type=bool, default=None,
+                    help='only allow establishment events in KEL for this prefix')
+parser.add_argument('--data',         '-d', default=None, required=False, action="store",
+                    help='Anchor data, \'@\' allowed',)
+parser.add_argument('--delpre',       '-di', default=None, required=False, action="store",
+                    help='Delegator AID for delegated identfiers',)
 
 
 @dataclass
