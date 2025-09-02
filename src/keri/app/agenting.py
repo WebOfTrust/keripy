@@ -27,9 +27,23 @@ logger = help.ogler.getLogger()
 
 
 class Receiptor(doing.DoDoer):
+    """
+    Receiptor is a parent task orchestrating both initial receipt retrieval of KEL events and
+    subsequent retrieval of receipts for specific events based on queries.
+    """
 
     def __init__(self, hby, msgs=None, gets=None, cues=None):
+        """
+        Initialize the Receiptor and create doers for processing and retrieving witness receipts.
 
+        Parameters:
+            hby (Habery): Habery to pull identifiers and witnesses for those identifiers from
+            msgs (Deck): KEL event messages to publish to witnesses for receipting
+                Messages should have {"pre": <str>, "sn": <int>, "auths": <dict>}
+            gets (Deck): query messages of KEL events to retrieve receipts from witnesses for
+                Messages should have {"pre": <str>, "sn": <int>}
+            cues (Deck): outgoing cues of successful messages; currently the messages placed here are not used
+        """
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.gets = gets if gets is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
@@ -41,11 +55,11 @@ class Receiptor(doing.DoDoer):
         super(Receiptor, self).__init__(doers=doers)
 
     def receipt(self, pre, sn=None, auths=None):
-        """ Returns a generator for witness receipting
+        """Returns a generator performing witness receipting of KEL events.
 
         The returns a generator that will submit the designated event to witnesses for receipts using
-        the synchronous witness API, then propogate the receipts to each of the other witnesses.
-
+        the synchronous witness API, then propagate the receipts to each of the other witnesses.
+        Delegates to .catchup to catch up any new witnesses to the current state of the KEL.
 
         Parameters:
             pre (str): qualified base64 identifier to gather receipts for
@@ -54,7 +68,6 @@ class Receiptor(doing.DoDoer):
 
         Returns:
             list: identifiers of witnesses that returned receipts.
-
         """
         auths = auths if auths is not None else dict()
         if pre not in self.hby.prefixes:
@@ -87,6 +100,7 @@ class Receiptor(doing.DoDoer):
             except (kering.MissingEntryError, gaierror) as e:
                 logger.error(f"unable to create http client for witness {wit}: {e}")
 
+        # send to each witness and gather receipts
         rcts = dict()
         for wit, client in clients.items():
             headers = dict()
@@ -110,9 +124,10 @@ class Receiptor(doing.DoDoer):
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
 
+        # send retrieved receipts to all other witnesses
         for wit in rcts:
-            ewits = [w for w in rcts if w != wit]
-            wigs = [sig for w, sig in rcts.items() if w != wit]
+            ewits = [w for w in rcts if w != wit] # get complement of all other witnesses
+            wigs = [sig for w, sig in rcts.items() if w != wit] # all other witness signatures
 
             msg = bytearray()
             if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
@@ -141,18 +156,15 @@ class Receiptor(doing.DoDoer):
         return rcts.keys()
 
     def get(self, pre, sn=None):
-        """ Returns a generator for witness querying
-
-        The returns a generator that will request receipts for event identified by pre and sn
-
-
-        Parameters:
-            pre (str): qualified base64 identifier to gather receipts for
-            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
+        """
+        Queries a random witness for the receipt of the event at the sequence number for a prefix.
 
         Returns:
-            list: identifiers of witnesses that returned receipts.
+             a generator requesting receipts for event identified by pre and sn
 
+        Parameters:
+            pre (str): qualified base64 identifier to gather a receipt for
+            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
         """
         if pre not in self.hby.prefixes:
             raise kering.MissingEntryError(f"{pre} not a valid AID")
@@ -185,12 +197,16 @@ class Receiptor(doing.DoDoer):
         return rep.status == 200
 
     def catchup(self, pre, wit):
-        """ When adding a new Witness, use this method to catch the witness up to the current state of the KEL
+        """
+        A generator that catches up a target witness with the latest KEL state of a prefix.
+        When adding a new Witness use this method to catch the witness up to the current state of the KEL
+
+        Returns:
+            a generator that sends the KEL to the witness
 
         Parameters:
             pre (str): qualified base64 AID of the KEL to send
             wit (str): qualified base64 AID of the witness to send the KEL to
-
         """
         if pre not in self.hby.prefixes:
             raise kering.MissingEntryError(f"{pre} not a valid AID")
@@ -209,14 +225,17 @@ class Receiptor(doing.DoDoer):
 
     def witDo(self, tymth=None, tock=0.0, **kwa):
         """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery and .tevery escrows.
+        A generator that obtains witness receipts for one key event message at a tyme by processing all messages in
+        the .msgs buffer and adds processed messages to cues. Catches up any new witnesses in "adds"
+        to the current state of the KEL using self.catchup.
+        Intended to be used with doify to create a generator Doer.
+        Delegates to the internal receipt generator function.
 
+        Returns:
+             a Hio generator function to be used as a Doer.
         Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
+            tymth (function): function returning cycle time for configuring this Doer's cycle time.
+            tock (float): cycle time for this Doer, default is 0.0 seconds.
         Usage:
             add result of doify on this method to doers list
         """
@@ -238,14 +257,15 @@ class Receiptor(doing.DoDoer):
 
     def gitDo(self, tymth=None, tock=0.0, **kwa):
         """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery and .tevery escrows.
+        A generator that obtains a witness receipts for key event messages specified in the query messages in the
+        .gets buffer
+        Intended to be used with doify to create a generator Doer.
 
+        Returns:
+            a Hio generator function to be used as a Doer.
         Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
+            tymth (function): function returning cycle time for configuring this Doer's cycle time.
+            tock (float): cycle time for this Doer, default is 0.0 seconds.
         Usage:
             add result of doify on this method to doers list
         """
@@ -266,14 +286,13 @@ class Receiptor(doing.DoDoer):
 
 class WitnessReceiptor(doing.DoDoer):
     """
-    Sends messages to all current witnesses of given identifier (from hab) and waits
-    for receipts from each of those witnesses and propagates those receipts to each
+    Sends receipt messages to all current witnesses of given identifier (from hab), waits
+    for receipts from each of those witnesses, and propagates those receipts to each
     of the other witnesses after receiving the complete set.
 
     Removes all Doers and exits as Done once all witnesses have been sent the entire
     receipt set.  Could be enhanced to have a `once` method that runs once and cleans up
     and an `all` method that runs and waits for more messages to receipt.
-
     """
 
     def __init__(self, hby, msgs=None, cues=None, force=False, auths=None, **kwa):
@@ -283,10 +302,12 @@ class WitnessReceiptor(doing.DoDoer):
 
         Parameters:
             hby (Habery): Habitat of the identifier to receipt witnesses
-            msgs (Deck): incoming messages to publish to witnesses
-            cues (Deck): outgoing cues of successful messages
-            force (bool): True means to send witnesses all receipts even if we have a full compliment.
-
+            msgs (Deck): events to send the event and receipt to all witnesses
+                Messages should have {"pre": <str>, "sn": <int>, "auths": <dict>}
+            cues (Deck): outgoing cues of events confirmed as fully receipted
+                Messages have {"pre": <str>, "sn": <int>, "auths": <dict>}
+            force (bool): True means to send witnesses all receipts even if we have a full complement.
+            auths (dict): map of witness AIDs to (time,auth) tuples for providing TOTP auth for witnessing
         """
         self.hby = hby
         self.force = force
@@ -298,16 +319,18 @@ class WitnessReceiptor(doing.DoDoer):
 
     def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """
-        Returns doifiable Doist compatible generator method (doer dog)
+        Sends events, their receipts, receipt signatures, delegation chain, and location record
+         URLs between witnesses in the set of current witnesses.
+
+        Returns:
+             a doifiable Hio generator to perform event and receipt sending.
 
         Usage:
             add result of doify on this method to doers list
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-
+            tymth (function): function returning cycle time for configuring this Doer's cycle time.
+            tock (float): cycle time for this Doer, default is 0.0 seconds.
         """
         self.wind(tymth)
         self.tock = tock
@@ -365,7 +388,7 @@ class WitnessReceiptor(doing.DoDoer):
                             break
                         _ = yield self.tock
 
-                # If we started with all our recipts, exit unless told to force resubmit of all receipts
+                # If we started with all our receipts, exit unless told to force resubmit of all receipts
                 if completed and not self.force:
                     self.cues.push(evt)
                     continue
@@ -423,28 +446,30 @@ class WitnessReceiptor(doing.DoDoer):
 
 class WitnessInquisitor(doing.DoDoer):
     """
-    Sends messages to all current witnesses of given identifier (from hab) and waits
-    for receipts from each of those witnesses and propagates those receipts to each
-    of the other witnesses after receiving the complete set.
+    Sends KEL and TEL query messages to different types of targets whether witnesses, controllers, or agents
+    based on the locally available endpoint role records for the query target.
+    Queries are performed by sending query messages either to a random witness or to the controller or agent that is the target of the query.
 
-    Removes all Doers and exits as Done once all witnesses have been sent the entire
-    receipt set.  Could be enhanced to have a `once` method that runs once and cleans up
-    and an `all` method that runs and waits for more messages to receipt.
+    Removes all Doers and exits as Done once the query target has been sent the query message
 
+    TODO: possibly rename based on the fact that multiple types of targets are supported (controller, agent, witness)
     """
 
-    def __init__(self, hby, reger=None, msgs=None, klas=None, **kwa):
+    def __init__(self, hby, msgs=None, klas=None, **kwa):
         """
-        For all msgs, select a random witness from Habitat's current set of witnesses
-        send the msg and process all responses (KEL replays, RCTs, etc)
+        Initialize the WitnessInquisitor with the given parameters.
 
         Parameters:
-            hby (Habitat): Habitat of the identifier to use to identify witnesses
-            msgs: is the message buffer to process and send to one random witness.
-
+            hby (Habery): Habery context to use to retrieve the source Hab for reading endpoint role records
+            klas (class): Type of messenger to use to send messages; defaults to HTTPMessenger; currently unused
+            msgs (decking.Deck): query message buffer to be sent to the target or a random witness
+        Attributes:
+            hby (Habery): Habery context to use to retrieve the source Hab for reading endpoint role records
+            klas (class): Type of messenger to use to send messages; defaults to HTTPMessenger; currently unused
+            msgs (decking.Deck): query message buffer to be sent to the target or a random witness
+            sent (decking.Deck): buffer for sent messages to track sent queries
         """
         self.hby = hby
-        self.reger = reger
         self.klas = klas if klas is not None else HTTPMessenger
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = decking.Deck()
@@ -453,7 +478,11 @@ class WitnessInquisitor(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=1.0, **opts):
         """
-        Returns doifiable Doist compatible generator method (doer dog)
+        Signs and sends provided KEL and TEL query messages to query targets using HTTPMessenger or
+        TCPMessenger. Uses  a randomly selected witness if the query target is a witness, or uses
+        the specified controller or agent when a controller or agent is specified.
+
+        Returns a Hio generator function that runs until all messages in .msgs are processed.
 
         Usage:
             add result of doify on this method to doers list
@@ -527,21 +556,20 @@ class WitnessInquisitor(doing.DoDoer):
             yield self.tock
 
     def query(self, pre, r="logs", sn='0', fn='0', src=None, hab=None, anchor=None, wits=None, **kwa):
-        """ Create, sign and return a `qry` message against the attester for the prefix
+        """
+        Create a KEL query (`qry`) message against the attester for the prefix (`pre`) and place on the internal .msgs
+        queue for processing by the .msgDo doer. May also contain an anchor to use to locate a key event.
+        May specify the hab to use for signing and retrieving endpoint role records.
 
         Parameters:
-            src (str): qb64 identifier prefix of source of query
-            hab (Hab): Hab to use instead of src if provided
             pre (str): qb64 identifier prefix being queried for
             r (str): query route
             sn (str): optional specific hex str of sequence number to query for
             fn (str): optional specific hex str of sequence number to start with
-            anchor (Seal): anchored Seal to search for
+            src (str): qb64 identifier prefix of source of query
+            hab (Hab): Hab to use instead of src, if provided, to retrieve endpoint role records from and to perform signing
+            anchor (Seal): anchored Seal to search for in the query target
             wits (list) witnesses to query
-
-        Returns:
-            bytearray: signed query event
-
         """
         qry = dict(s=sn, fn=fn)
         if anchor is not None:
@@ -554,6 +582,20 @@ class WitnessInquisitor(doing.DoDoer):
         self.msgs.append(msg)
 
     def telquery(self, ri, src=None, i=None, r="tels", hab=None, pre=None, wits=None, **kwa):
+        """
+        Create a TEL Query message to search against a given registry, issuer, route, in the target
+        prefixe's (`pre`) records, and add that query message on the internal .msgs queue.
+        May specify the hab to use for signing and retrieving endpoint role records.
+
+        Parameters:
+            ri (str): qb64 identifier prefix of the registry being queried
+            src (str): qb64 identifier prefix of source of query
+            i (str): qb64 identifier prefix of the issuer of the registry being queried
+            r (str): query route
+            hab (Hab): Hab to use instead of src, if provided, to retrieve endpoint role records from and to perform signing
+            pre (str): qb64 identifier prefix of the target being queried
+            wits (list): witnesses to query
+        """
         qry = dict(ri=ri)
         msg = dict(src=src, pre=pre, target=i, r=r, wits=wits, q=qry)
         if hab is not None:
@@ -985,6 +1027,16 @@ class HTTPStreamMessenger(doing.DoDoer):
 
 
 def mailbox(hab, cid):
+    """
+    Finds and returns a mailbox, if any, based on the provided Mab and controller AID (cid).
+
+    Returns:
+        str | None: qb64 identifier prefix of the mailbox to use for the controller, or None if no mailbox found.
+
+    Parameters:
+        hab (Hab): Hab to use to look up witness URLs
+        cid (str): qb64 identifier prefix of controller to find mailbox for
+    """
     for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.mailbox)):
         if end.allowed:
             return eid
@@ -1089,6 +1141,17 @@ def httpClient(hab, wit):
 
 
 def schemes(db, eids):
+    """
+    Creates a message bytearray of reply messages containing location records (URLs) and witness
+    signatures, if any, for a given list of authorized endpoint role AIDs (eids).
+
+    Returns:
+        a bytearray of reply messages and their signatures
+
+    Parameters:
+        db (Baser): Hab database used to retrieve location records and witness signatures
+        eids (list): list of endpoint role AIDs (eids) to retrieve location records and witness signatures for
+    """
     msgs = bytearray()
     for eid in eids:
         for scheme in kering.Schemes:
