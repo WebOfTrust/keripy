@@ -82,6 +82,36 @@ def mockCoringRandomNonce(monkeypatch):
 def seeder():
     return DbSeed
 
+@pytest.fixture
+def create_test_serder():
+    """Fixture that provides a helper function to create test serders"""
+
+    def _create_test_serder(sourceAid, ilk, timestamp=None, route=None, qBlock=None, routeParams=None):
+        """Helper to create a test serder with specified parameters"""
+        from keri.core import serdering
+        from keri.help import helping
+
+        if timestamp is None:
+            timestamp = helping.nowIso8601()
+
+        sad = {
+            "v": "KERI10JSON00011c_",
+            "t": ilk,
+            "i": sourceAid,
+            "dt": timestamp,
+        }
+
+        if route:
+            if routeParams:
+                route += "?" + "&".join([f"{k}={v}" for k, v in routeParams.items()])
+            sad["r"] = route
+
+        if qBlock:
+            sad["q"] = qBlock
+
+        return serdering.SerderKERI(sad=sad, makify=True)
+
+    return _create_test_serder
 
 class DbSeed:
     @staticmethod
