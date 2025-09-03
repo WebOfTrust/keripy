@@ -247,10 +247,10 @@ class BaseOrganizer:
         if typ is None:
             return None
 
-        return {
-            "type": bytes(typ).decode("utf-8"),
-            "length": int.from_bytes(size, "big")
-        }
+        return dict(
+            type=bytes(typ).decode("utf-8"),
+            length=int.from_bytes(size, "big")
+        )
 
     def getImg(self, pre):
         """ Generator that yields image data in 4k chunks for identifier
@@ -299,7 +299,7 @@ class IdentifierOrganizer(BaseOrganizer):
         super().__init__(
             hby=hby,
             cigsdb=hby.db.icigs,
-            datadb=hby.db.icons,
+            datadb=hby.db.sids,
             fielddb=hby.db.ifld,
             imgsdb=hby.db.iimgs
         )

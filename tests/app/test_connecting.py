@@ -428,6 +428,6 @@ def test_base_organizer_inheritance():
         assert contact_org.imgsdb == hby.db.imgs
         
         assert id_org.cigsdb == hby.db.icigs
-        assert id_org.datadb == hby.db.icons
+        assert id_org.datadb == hby.db.sids
         assert id_org.fielddb == hby.db.ifld
         assert id_org.imgsdb == hby.db.iimgs

@@ -1288,8 +1288,8 @@ class Baser(dbing.LMDBer):
 
         # Signed identifier data, keys by prefix
         # TODO: clean
-        self.icons = subing.Suber(db=self,
-                                  subkey="icons.")
+        self.sids = subing.Suber(db=self,
+                                  subkey="sids.")
 
         # Transferable signatures on identifier data
         # TODO: clean
@@ -1518,7 +1518,7 @@ class Baser(dbing.LMDBer):
                 unsecured = ["hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns", "erpy",
                              "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi", "mfa", "rmfa",
                              "cfld", "cons", "ccigs", "cdel", "migs",
-                             "ifld", "icons", "icigs"]
+                             "ifld", "sids", "icigs"]
 
                 for name in unsecured:
                     srcdb = getattr(self, name)
