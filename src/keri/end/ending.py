@@ -574,7 +574,7 @@ class OOBIEnd:
 
         kever = self.hby.kevers[aid]
         if not self.hby.db.fullyWitnessed(kever.serder):
-            rep.status = falcon.HTTP_NOT_FOUND
+            rep.status = falcon.HTTP_CONFLICT
             return
 
         if kever.delegated and kever.delpre not in self.hby.kevers:
