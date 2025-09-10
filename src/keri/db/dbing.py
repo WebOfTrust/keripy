@@ -57,13 +57,23 @@ from ordered_set import OrderedSet as oset
 from hio.base import filing
 
 import keri
+from .. import help
 from ..kering import MaxON  # maximum ordinal number for seqence or first seen
 from ..help import helping
+
+logger = help.ogler.getLogger()
 
 ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
 SuffixSize = 32  # does not include trailing separator
 MaxSuffix = int("f"*(SuffixSize), 16)
+
+KERILMDBMapSizeKey = "KERI_LMDB_MAP_SIZE"  # fallback
+KERIBaserMapSizeKey = "KERI_BASER_MAP_SIZE"
+KERIRegerMapSizeKey = "KERI_REGER_MAP_SIZE"
+KERIKeeperMapSizeKey = "KERI_KEEPER_MAP_SIZE"
+KERIMailboxerMapSizeKey = "KERI_MAILBOXER_MAP_SIZE"
+KERINoterMapSizeKey = "KERI_NOTER_MAP_SIZE"
 
 def onKey(top, on, *, sep=b'.'):
     """
@@ -382,6 +392,7 @@ class LMDBer(filing.Filer):
         self.env = None
         self._version = None
         self.readonly = True if readonly else False
+
         super(LMDBer, self).__init__(**kwa)
 
     def reopen(self, readonly=False, **kwa):

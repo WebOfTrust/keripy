@@ -3,6 +3,7 @@
 keri.app.storing module
 
 """
+import os
 
 from hio.base import doing
 from hio.help import decking
@@ -48,6 +49,15 @@ class Mailboxer(dbing.LMDBer):
         """
         self.tpcs = None
         self.msgs = None
+
+        mapSize = os.getenv(dbing.KERIMailboxerMapSizeKey) or os.getenv(dbing.KERILMDBMapSizeKey)
+        if mapSize is not None:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error(f"LMDB map size environment variable must be an integer value > 1! "
+                            f"Use {dbing.KERIMailboxerMapSizeKey} or {dbing.KERILMDBMapSizeKey}")
+                raise
 
         super(Mailboxer, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 

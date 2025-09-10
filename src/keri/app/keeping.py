@@ -23,6 +23,7 @@ raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 """
 import math
+import os
 from collections import namedtuple, deque
 from dataclasses import dataclass, asdict, field
 
@@ -33,7 +34,10 @@ from .. import kering
 from .. import core
 from ..core import coring
 from ..db import dbing, subing, koming
+from .. import help
 from ..help import helping
+
+logger = help.ogler.getLogger()
 
 Algoage = namedtuple("Algoage", 'randy salty group extern')
 Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
@@ -250,6 +254,15 @@ class Keeper(dbing.LMDBer):
         """
         if perm is None:
             perm = self.Perm  # defaults to restricted permissions for non temp
+
+        mapSize = os.getenv(dbing.KERIKeeperMapSizeKey) or os.getenv(dbing.KERILMDBMapSizeKey)
+        if mapSize is not None:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error(f"LMDB map size environment variable must be an integer value > 1! "
+                            f"Use {dbing.KERIKeeperMapSizeKey} or {dbing.KERILMDBMapSizeKey}")
+                raise
 
         super(Keeper, self).__init__(headDirPath=headDirPath, perm=perm,
                                      reopen=reopen, **kwa)
