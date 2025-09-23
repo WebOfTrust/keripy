@@ -102,11 +102,7 @@ class ExportDoer(doing.DoDoer):
             f = open(f"{pre}-ends.cesr", "w")
 
         msgs = self.hab.replyToOobi(aid=pre, role="controller")
-        for msg in msgs:
-            if f is not None:
-                f.write(msg.decode("utf-8"))
-            else:
-                serder = serdering.SerderKERI(raw=msg)
-                atc = msg[serder.size:]
-                sys.stdout.write(serder.raw.decode("utf-8"))
-                sys.stdout.write(atc.decode("utf-8"))
+        if f is not None:
+            f.write(msgs.decode("utf-8"))
+        else:
+            sys.stdout.write(msgs.decode("utf-8"))
