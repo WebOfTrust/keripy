@@ -1041,3 +1041,9 @@ class QueryNotFoundError(KeriError):
         raise QueryNotFoundError("error message")
     """
 
+class KramError(KeriError):
+    """
+    Timestamp indicating replay attack or other KRAM related error
+    Usage:
+        raise KramError("error message")
+    """
