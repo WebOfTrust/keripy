@@ -41,7 +41,7 @@ def respond(args):
     recp = args.recipient
 
     if args.words.startswith("@"):
-        f = open(args.data[1:], "r")
+        f = open(args.words[1:], "r")
         words = f.read()
     else:
         words = args.words

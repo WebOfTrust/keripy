@@ -10,7 +10,7 @@ import sys
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing
+from keri.app import habbing, connecting
 from keri.app.cli.common import existing
 from keri.core import coring, serdering, parsing
 
@@ -25,6 +25,7 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--file", help="File of streamed CESR events to import", required=True)
+parser.add_argument("--alias", help="alias for AID resolved from file import", required=False, default=None)
 
 
 def export(args):
@@ -35,14 +36,16 @@ def export(args):
     ed = ImportDoer(name=args.name,
                     base=args.base,
                     bran=args.bran,
-                    file=args.file)
+                    file=args.file,
+                    alias=args.alias)
     return [ed]
 
 
 class ImportDoer(doing.DoDoer):
 
-    def __init__(self, name, base, bran, file):
+    def __init__(self, name, base, bran, file, alias):
         self.file = file
+        self.alias = alias
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
 
@@ -68,8 +71,15 @@ class ImportDoer(doing.DoDoer):
 
         with open(self.file, 'rb') as f:
             ims = f.read()
+
+            serder = serdering.SerderKERI(raw=ims)
+
             parsing.Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False).parse(ims=ims)
             self.hby.kvy.processEscrows()
+
+            if serder.pre in self.hby.kevers and self.alias is not None:
+                org = connecting.Organizer(hby=self.hby)
+                org.update(pre=serder.pre, data=dict(alias=self.alias))
 
         self.exit()
         return True

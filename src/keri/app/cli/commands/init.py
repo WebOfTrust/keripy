@@ -5,6 +5,7 @@ keri.kli.commands module
 """
 import argparse
 import getpass
+from pathlib import Path
 
 from hio.base import doing
 
