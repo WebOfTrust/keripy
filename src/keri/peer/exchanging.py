@@ -160,6 +160,7 @@ class Exchanger:
         try:
             behavior.handle(serder=serder, **kwargs)
         except AttributeError:
+            self.cues.append(dict(kin="notFound", said=serder.said))
             logger.debug("Behavior for %s missing or does not have handle for SAID=%s", route, serder.said)
             logger.debug("Event=\n%s\n", serder.pretty())
 

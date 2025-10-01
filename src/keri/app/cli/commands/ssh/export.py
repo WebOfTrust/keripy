@@ -31,6 +31,7 @@ parser.add_argument('--passcode', '-p', help='21 character encryption passcode f
 
 parser.add_argument("--private", help="export private key instead of public key", action="store_true")
 parser.add_argument("--username", help="override file name for the key to export", default=None)
+parser.add_argument("--format", help="override file format for the key to export, valid values are openssh(default) or pem", default="openssh")
 
 
 def handler(args):
@@ -49,6 +50,7 @@ def export(tymth, tock=0.0, **opts):
     base = args.base
     bran = args.bran
     private = args.private
+    format = args.format
     filename = args.username if args.username else alias
     home = str(Path.home())
 
@@ -74,8 +76,13 @@ def export(tymth, tock=0.0, **opts):
 
             else:
                 verkey = ed25519.Ed25519PublicKey.from_public_bytes(hab.kever.verfers[0].raw)
-                pem = verkey.public_bytes(encoding=serialization.Encoding.OpenSSH,
-                                          format=serialization.PublicFormat.OpenSSH)
+                match format:
+                    case "pem":
+                        pem = verkey.public_bytes(encoding=serialization.Encoding.PEM,
+                                                  format=serialization.PublicFormat.SubjectPublicKeyInfo)
+                    case "openssh":
+                        pem = verkey.public_bytes(encoding=serialization.Encoding.OpenSSH,
+                                                  format=serialization.PublicFormat.OpenSSH)
 
                 f = open(os.path.join(home, ".ssh", f"{filename}.pub"), "w")
                 for line in pem.splitlines(keepends=True):
