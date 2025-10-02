@@ -33,6 +33,8 @@ parser.add_argument("--url", "-u", help="Location URL",
                     required=True)
 parser.add_argument("--eid", "-e", help="qualified base64 of AID to associate a location with, defaults to alias aid ",
                     required=False, default=None)
+parser.add_argument("--end", help="qualified base64 of AID for endpoint to publish location with endpoint reply messages",
+                    required=False, default=None)
 parser.add_argument("--time", help="timestamp for the end auth", required=False, default=None)
 
 
@@ -46,15 +48,17 @@ def add_loc(args):
                       bran=args.bran,
                       url=args.url,
                       eid=args.eid,
+                      end=args.end,
                       timestamp=args.time)
     return [ld]
 
 
 class LocationDoer(doing.DoDoer):
 
-    def __init__(self, name, base, alias, bran, url, eid, timestamp=None):
+    def __init__(self, name, base, alias, bran, url, eid, end=None, timestamp=None):
         self.url = url
         self.eid = eid
+        self.end = end
         self.timestamp = timestamp
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
@@ -118,6 +122,19 @@ class LocationDoer(doing.DoDoer):
             yield self.tock
 
         print(f"Location {self.url} added for aid {eid} with scheme {up.scheme}")
+
+        # If end is specified, publish endpoint reply messages to witnesses
+        if self.end:
+            # Generate endpoint reply messages (loc scheme + end role authorizations)
+            endmsgs = self.hab.replyToOobi(aid=self.end, role="controller")
+
+            if endmsgs:
+                self.witpub.msgs.append(dict(pre=self.hab.pre, msg=bytes(endmsgs)))
+
+                while not self.witpub.cues:
+                    yield self.tock
+
+                print(f"Endpoint reply messages published to witnesses for aid {self.end}")
 
         self.remove(self.toRemove)
         return
