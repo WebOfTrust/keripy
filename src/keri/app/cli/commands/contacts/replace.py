@@ -12,19 +12,15 @@ from hio.base import doing
 from keri import help
 from keri.app import connecting
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
 # Could be expanded to provide arbitrary data if desired
-parser = argparse.ArgumentParser(description='Replace contact information for identifier prefix with alias information')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
+parser = argparse.ArgumentParser(description='Replace contact information for identifier prefix with alias information', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--prefix', '-o', help='identifier prefix to replace contact information for', required=True)
 parser.add_argument('--alias', '-a', help='human readable alias for the contact', required=True)
 

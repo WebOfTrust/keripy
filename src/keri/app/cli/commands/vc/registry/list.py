@@ -10,19 +10,15 @@ from hio.base import doing
 
 from keri import help
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List credential registry names and identifiers')
+parser = argparse.ArgumentParser(description='List credential registry names and identifiers', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: list_registries(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 
 

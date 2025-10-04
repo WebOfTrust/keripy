@@ -212,15 +212,44 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
 
 
 class Clienter(doing.DoDoer):
+    """
+    Clienter is a DoDoer that manages hio HTTP clients using a ClientDoer for each HTTP request.
+    It executes HTTP requests using a HIO HTTP Client run by a ClientDoer. Once a request has
+    received a response then the corresponding Doer is removed from this Clienter.
 
-    TimeoutClient = 300
+    Doers:
+        - clientDo: Periodically checks for stale clients and removes them if they have not received a response
+          within the specified timeout period.
+    """
+
+    TimeoutClient = 300  # seconds to wait for response before removing client, default is 5 minutes
 
     def __init__(self):
+        """
+        Initialize clienter with an empty list of client tuples.
+
+        Attributes:
+            clients (list((client, clientdoer, timestamp)):
+                list of client tuples containing (client, clientDoer, datetime) for each active client.
+            doers (list): List of Doers to be managed by this Clienter, initialized with clientDo method.
+        """
         self.clients = []
         doers = [doing.doify(self.clientDo)]
         super(Clienter, self).__init__(doers=doers)
 
     def request(self, method, url, body=None, headers=None):
+        """
+        Perform an HTTP request using a hio http Client and ClientDoer and returns the Client.
+
+        Parameters:
+            method (str): HTTP method to use (e.g., "GET", "POST")
+            url (str): URL to send the request to
+            body (str or bytes, optional): Body of the request, defaults to None
+            headers (dict, optional): Headers to include in the request, defaults to None
+
+        Returns:
+            http.clienting.Client: The hio HTTP Client used for the request, or None if an error occurs.
+        """
         purl = parse.urlparse(url)
 
         try:
@@ -250,6 +279,12 @@ class Clienter(doing.DoDoer):
         return client
 
     def remove(self, client):
+        """
+        Find a client tuple by hio HTTP Client and remove it and its Doer from the Clienter.
+
+        Parameters:
+            client (http.clienting.Client): The hio HTTP Client to remove from the Clienter.
+        """
         doers = [(c, d, dt) for (c, d, dt) in self.clients if c == client]
         if len(doers) == 0:
             return

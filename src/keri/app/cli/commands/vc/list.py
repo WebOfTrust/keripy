@@ -14,23 +14,18 @@ from hio.base import doing
 from keri import help, kering
 from keri.app import indirecting
 from keri.app.cli.common import existing, terming
+from keri.app.cli.common.parsing import Parsery
 from keri.core import scheming
 from keri.help import helping
 from keri.vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials')
-parser.set_defaults(handler=lambda args: list_credentials(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: list_credentials(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     default=None)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
-
 parser.add_argument("--verbose", "-V", help="print full JSON of all credentials", action="store_true")
 parser.add_argument("--poll", "-P", help="Poll mailboxes for any issued credentials", action="store_true")
 parser.add_argument("--issued", "-i", help="Display credentials that this AID has issued.",

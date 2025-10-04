@@ -9,6 +9,7 @@ from hio.base import doing
 from keri import kering
 
 from keri import help
+from keri.app.cli.common.parsing import Parsery
 from keri.db import basing
 
 logger = help.ogler.getLogger()
@@ -25,20 +26,10 @@ def handler(args):
     return [migrator]
 
 
-parser = argparse.ArgumentParser(description='Migrates a database and keystore')
-parser.set_defaults(handler=handler,
-                    transferable=True)
-
-# Parameters for basic structure of database
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Migrates a database and keystore', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=handler)
 parser.add_argument('--temp', '-t', help='create a temporary keystore, used for testing', default=False)
-
-# Parameters for Manager creation
-# passcode => bran
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)
 
 
 class MigrateDoer(doing.Doer):

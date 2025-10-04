@@ -13,21 +13,17 @@ from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing, grouping, indirecting, forwarding
 from keri.app.agenting import WitnessPublisher
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.app.notifying import Notifier
 from keri.core import parsing
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Add new endpoint role authorization.')
-parser.set_defaults(handler=lambda args: add_end(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
+parser = argparse.ArgumentParser(description='Add new endpoint role authorization.', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: add_end(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--role", "-r", help="KERI enpoint authorization role.",
                     required=True)
 parser.add_argument("--eid", "-e", help="qualified base64 of AID to authorize with new role for the AID identified "

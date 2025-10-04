@@ -13,18 +13,14 @@ from hio.base import doing
 from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring, serdering, parsing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Import key events in CESR stream format')
-parser.set_defaults(handler=lambda args: export(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
+parser = argparse.ArgumentParser(description='Import key events in CESR stream format', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: export(args))
 parser.add_argument("--file", help="File of streamed CESR events to import", required=True)
 
 

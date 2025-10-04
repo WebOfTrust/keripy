@@ -11,20 +11,16 @@ from hio.base import doing
 
 from keri import help
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import serdering
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Export key events in CESR stream format')
-parser.set_defaults(handler=lambda args: export(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser = argparse.ArgumentParser(description='Export key events in CESR stream format', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: export(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--files", help="export artifacts to individual files keyed off of AIDs or SAIDS, default is "
                                     "stdout", action="store_true")
 parser.add_argument("--ends", help="export service end points", action="store_true")
@@ -106,11 +102,7 @@ class ExportDoer(doing.DoDoer):
             f = open(f"{pre}-ends.cesr", "w")
 
         msgs = self.hab.replyToOobi(aid=pre, role="controller")
-        for msg in msgs:
-            if f is not None:
-                f.write(msg.decode("utf-8"))
-            else:
-                serder = serdering.SerderKERI(raw=msg)
-                atc = msg[serder.size:]
-                sys.stdout.write(serder.raw.decode("utf-8"))
-                sys.stdout.write(atc.decode("utf-8"))
+        if f is not None:
+            f.write(msgs.decode("utf-8"))
+        else:
+            sys.stdout.write(msgs.decode("utf-8"))

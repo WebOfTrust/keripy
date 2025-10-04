@@ -11,15 +11,12 @@ from hio.base import doing
 from keri import kering
 from keri.app import habbing
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 
-parser = argparse.ArgumentParser(description='Sign an arbitrary string')
+parser = argparse.ArgumentParser(description='Sign an arbitrary string', 
+                                 parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--text', '-t', help='Text or file (starts with "@") to sign', required=True)
 
 

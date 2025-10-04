@@ -12,10 +12,11 @@ from keri import __version__
 from keri import help
 from keri.app import directing, indirecting, habbing, keeping, configing
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -H 5631 -t 5632\n"
-parser = argparse.ArgumentParser(description=d)
+parser = argparse.ArgumentParser(description=d, parents=[Parsery.keystore()], conflict_handler='resolve')
 parser.set_defaults(handler=lambda args: launch(args))
 parser.add_argument('-V', '--version',
                     action='version',
@@ -33,11 +34,7 @@ parser.add_argument('-n', '--name',
                     action='store',
                     default="witness",
                     help="Name of controller. Default is witness.")
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
 parser.add_argument("--config-dir", "-c", dest="configDir", help="directory override for configuration data")
 parser.add_argument('--config-file',
                     dest="configFile",

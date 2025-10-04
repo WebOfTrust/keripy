@@ -7,16 +7,12 @@ import os
 from hio.base import doing
 from keri.app import connecting, apping
 from keri.app.cli.common import existing
+from keri.app.cli.common.parsing import Parsery
 from keri.core import coring
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
-                    required=False, default="")
-parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
-                    dest="bran", default=None)  # passcode => bran
+parser = argparse.ArgumentParser(description='Initialize a prefix', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handler(args))
 
 parser.add_argument('--static-threshold', '-t', help='Specify this to switch to using one static number as the signing'
                                                      'threshold for the multisig group AID',
