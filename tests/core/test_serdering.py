@@ -2154,6 +2154,17 @@ def test_serderkeri_bar():
 
     """End Test"""
 
+def test_serderkeri_exn_old():
+    """Test SerderKERI exn msg"""
+    serder = SerderKERI(raw=b'{"v":"KERI10JSON000088_","t":"exn",'
+                   b'"d":"EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0'
+                   b'cFC4e-bU","i":"","p":"","dt":"","r":"","q":{},"a":[],"e":{}}', ilk=kering.Ilks.exn)
+
+    assert serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.exn
+    assert serder.pre == ''
+    assert serder.prior == ''
+
 def test_serderkeri_exn():
     """Test SerderKERI exn msg"""
 
@@ -3304,6 +3315,17 @@ def test_cesr_native_dumps_hby():
 
     """End Test"""
 
+def test_serderkeri_exn_old():
+    """Test SerderKERI exn msg"""
+    serder = SerderKERI(raw=b'{"v":"KERI10JSON000088_","t":"exn",'
+                   b'"d":"EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0'
+                   b'cFC4e-bU","i":"","p":"","dt":"","r":"","q":{},"a":[],"e":{}}', ilk=kering.Ilks.exn)
+
+    assert serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.exn
+    assert serder.pre == ''
+    assert serder.prior == ''
+
 if __name__ == "__main__":
     test_fielddom()
     test_spans()
@@ -3327,4 +3349,5 @@ if __name__ == "__main__":
     test_serdery()
     test_cesr_native_dumps()
     test_cesr_native_dumps_hby()
+    test_serderkeri_exn_old()
 
