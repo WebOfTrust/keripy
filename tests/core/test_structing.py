@@ -1321,6 +1321,7 @@ def test_blinder_class():
     blinder = Blinder.blind(salt=salt, sn=sn)  # defaults acdc='' sn=1, tier=Tiers.low
     assert blinder.clan == BlindState
     assert blinder.said == said
+    assert blinder.blid == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
@@ -1364,6 +1365,7 @@ def test_blinder_class():
                                       ts='revoked')
 
     assert blinder.said == said
+    assert blinder.blid = said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
@@ -1410,6 +1412,7 @@ def test_blinder_class():
     blinder = Blinder.blind(salt=salt, sn=sn, bound=True)
     assert blinder.clan == BoundState
     assert blinder.said == said
+    assert blinder.blid == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
@@ -1466,6 +1469,7 @@ def test_blinder_class():
                                       bd='EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv')
 
     assert blinder.said == said
+    assert blinder.blid == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
@@ -1584,6 +1588,8 @@ def test_blinder():
     assert blinder.qb2 == qb2
     assert blinder.said == snonceq
     assert blinder.saidb == snonceq.encode()
+    assert blinder.blid == blinder.said
+    assert blinder.blidb == blinder.saidb
     assert blinder.uuid == nonceq
     assert blinder.uuidb == nonceq.encode()
     assert blinder.acdc == anonceq
@@ -1610,6 +1616,8 @@ def test_blinder():
     assert blinder.qb2 == qb2
     assert blinder.said == snonceq
     assert blinder.saidb == snonceq.encode()
+    assert blinder.blid == blinder.said
+    assert blinder.blidb == blinder.saidb
     assert blinder.uuid == nonceq
     assert blinder.uuidb == nonceq.encode()
     assert blinder.acdc == anonceq
