@@ -1365,7 +1365,7 @@ def test_blinder_class():
                                       ts='revoked')
 
     assert blinder.said == said
-    assert blinder.blid = said
+    assert blinder.blid == said
     assert blinder.uuid == uuid
     assert blinder.acdc == acdc
     assert blinder.state == state
