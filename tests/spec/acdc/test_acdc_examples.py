@@ -829,14 +829,14 @@ def test_blindable_state_tel_examples_JSON():
     assert serder.sad['b'] == blid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAEi.',
-        't': 'bup',
-        'd': 'EGu4B78s6G_GVrzaoBw2a1vkFpB5tVo-wZ1OGsC9D_pK',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        'n': '2',
-        'p': 'EOBVdcIL2rVEzBDpQvmBpsp3R52DsoKhTAAdvHqAz9yc',
-        'dt': '2020-08-02T12:00:20.000000+00:00',
-        'b': 'EJAeKLEtVtMtt28IdAKJShyZHodEIZTHJHzaP21A_ZU4'
+        "v": "ACDCCAACAAJSONAAEi.",
+        "t": "bup",
+        "d": "EGu4B78s6G_GVrzaoBw2a1vkFpB5tVo-wZ1OGsC9D_pK",
+        "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "n": "2",
+        "p": "EOBVdcIL2rVEzBDpQvmBpsp3R52DsoKhTAAdvHqAz9yc",
+        "dt": "2020-08-02T12:00:20.000000+00:00",
+        "b": "EJAeKLEtVtMtt28IdAKJShyZHodEIZTHJHzaP21A_ZU4"
     }
 
     state = 'revoked'
@@ -882,14 +882,14 @@ def test_blindable_state_tel_examples_JSON():
     assert serder.sad['b'] == blid
     assert serder.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAEi.',
-        't': 'bup',
-        'd': 'EDXGqM-V_sfj65Dk-lgMnpOZ9DYziqMaYkrju7NRKpFn',
-        'rd': 'ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ',
-        'n': '3',
-        'p': 'EGu4B78s6G_GVrzaoBw2a1vkFpB5tVo-wZ1OGsC9D_pK',
-        'dt': '2020-08-03T12:00:20.000000+00:00',
-        'b': 'EIBNZ3t5rA_-PbBNmhtvtf0VgHBjVrE0fc-DO67f-wGv'
+        "v": "ACDCCAACAAJSONAAEi.",
+        "t": "bup",
+        "d": "EDXGqM-V_sfj65Dk-lgMnpOZ9DYziqMaYkrju7NRKpFn",
+        "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
+        "n": "3",
+        "p": "EGu4B78s6G_GVrzaoBw2a1vkFpB5tVo-wZ1OGsC9D_pK",
+        "dt": "2020-08-03T12:00:20.000000+00:00",
+        "b": "EIBNZ3t5rA_-PbBNmhtvtf0VgHBjVrE0fc-DO67f-wGv"
     }
 
 
