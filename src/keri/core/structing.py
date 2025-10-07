@@ -1314,6 +1314,8 @@ class Blinder(Structor):
         saidb (bytes): qb64b said given .saids as saidive fields .data.d.qb64b
 
     Properties:
+        blid (str): alias of .said property
+        blidb (bytes): alias .saidb property
         uuid (str): qb64 uuid of BlindState CESR .data.u 'u' field
         uuidb (bytes): qb64b uuid of BlindState CESR .data.u 'u' field
         acdc (str): qb64 transaction acdc said or empty of
@@ -1573,6 +1575,24 @@ class Blinder(Structor):
 
         if self.clan not in self.Clans:
             raise InvalidValueError("Unrecognized clan={self.clan}")
+
+
+    @property
+    def blid(self):
+        """blid property getter (alias of .said)
+        Returns:
+           blid (str): blid of BlindState CESR .data.d 'd' field
+        """
+        return self.said
+
+
+    @property
+    def blidb(self):
+        """blidb property getter (alias of .saidb)
+        Returns:
+            blidb (bytes): qb64b blid of BlindState CESR .data.d 'd' field
+        """
+        return self.saidb
 
 
     @property

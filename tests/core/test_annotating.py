@@ -173,7 +173,52 @@ def test_annot():
     assert 105 - 36 == 69
 
 
+    # From keri spec examples
+    ims = (b'-FCS0OKERICAACAAXicpEDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsEDZOA3y_b_0L'
+                    b'G4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsMAAAMAAC-JAhDBFiIgoCOpJ_zW_OO0GdffhHfEvJWb1H'
+                    b'xpDx95bFvufuDG-YwInLUxzVDD5z8SqZmS2FppXSB-ZX_f2bJC_ZnsM5DGIAk2jkC3xuLIe-DI9r'
+                    b'cA0naevtZiKuU9wz91L_qBAVMAAC-JAhELeFYMmuJb0hevKjhv97joA5bTfuA8E697cMzi8eoaZB'
+                    b'ENY9GYShOjeh7qZUpIipKRHgrWcoR2WkJ7Wgj4wZx1YTEGyJ7y3TlewCW97dgBN-4pckhCqsni-z'
+                    b'HNZ_G8zVerPGMAAD-JAsBGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3BBJfueFAYc7N_'
+                    b'V-zmDEn2SPCoVFx3H20alWsNZKgsS1vtBAPv2MnoiCsgOnklmFyfU07QDK_93NeH9iKfOy8V22aH'
+                    b'BA4PSatfQMw1lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB-JABXDID-JAA')
 
+    bms = bytearray(ims)
+    print(f"KERI spec icp incoming = \n{ims}\n")
+    ams = annot(bms)  # annotated message stream see terminal output
+    assert not bms
+    print(f"annotated = \n{ams}\n")
+    dms = denot(ams)
+    assert dms == ims
+
+    ann = \
+    """
+    -FCS # Key Event Counter FixBodyGroup count=146 quadlets
+      0OKERICAACAA # 'v' version  Verser Tag10 proto=KERI vrsn=2.00
+      Xicp # 't' message type Ilker Tag3 Ilk=icp
+      EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs # 'd' SAID Diger Blake3_256
+      EDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYs # 'i' AID Prefixer Blake3_256
+      MAAA # 's' Number Short sn=0
+      MAAC # 'kt' Tholder signing threshold=2
+      -JAh # 'k' Signing Key List Counter GenericListGroup count=33 quadlets
+        DBFiIgoCOpJ_zW_OO0GdffhHfEvJWb1HxpDx95bFvufu # key Verfer Ed25519
+        DG-YwInLUxzVDD5z8SqZmS2FppXSB-ZX_f2bJC_ZnsM5 # key Verfer Ed25519
+        DGIAk2jkC3xuLIe-DI9rcA0naevtZiKuU9wz91L_qBAV # key Verfer Ed25519
+      MAAC # 'nt' Tholder rotation threshold=2
+      -JAh # 'n' Rotation Key Digest List Counter GenericListGroup count=33 quadlets
+        ELeFYMmuJb0hevKjhv97joA5bTfuA8E697cMzi8eoaZB # key digest Diger Blake3_256
+        ENY9GYShOjeh7qZUpIipKRHgrWcoR2WkJ7Wgj4wZx1YT # key digest Diger Blake3_256
+        EGyJ7y3TlewCW97dgBN-4pckhCqsni-zHNZ_G8zVerPG # key digest Diger Blake3_256
+      MAAD # 'bt' Tholder Backer (witness) threshold=3
+      -JAs # 'b' Backer (witness)List Counter GenericListGroup count=44 quadlets
+        BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B # AID Prefixer Ed25519N
+        BJfueFAYc7N_V-zmDEn2SPCoVFx3H20alWsNZKgsS1vt # AID Prefixer Ed25519N
+        BAPv2MnoiCsgOnklmFyfU07QDK_93NeH9iKfOy8V22aH # AID Prefixer Ed25519N
+        BA4PSatfQMw1lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB # AID Prefixer Ed25519N
+      -JAB # 'c' Config Trait List Counter GenericListGroup count=1 quadlets
+        XDID # trait Traitor Tag3 trait=DID
+      -JAA # 'a' Seal List Counter GenericListGroup count=0 quadlets
+      """
 
     """End Test"""
 
