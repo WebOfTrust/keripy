@@ -595,9 +595,6 @@ def reopenDB(db, clear=False, **kwa):
         db.close(clear=clear)
 
 
-KERIBaserMapSizeKey = "KERI_BASER_MAP_SIZE"
-
-
 class Baser(dbing.LMDBer):
     """
     Baser sets up named sub databases with Keri Event Logs within main database
@@ -967,11 +964,13 @@ class Baser(dbing.LMDBer):
         self._kevers = dbdict()
         self._kevers.db = self  # assign db for read through cache of kevers
 
-        if (mapSize := os.getenv(KERIBaserMapSizeKey)) is not None:
+        mapSize = os.getenv(dbing.KERIBaserMapSizeKey) or os.getenv(dbing.KERILMDBMapSizeKey)
+        if mapSize is not None:
             try:
                 self.MapSize = int(mapSize)
             except ValueError:
-                logger.error("KERI_BASER_MAP_SIZE must be an integer value >1!")
+                logger.error(f"LMDB map size environment variable must be an integer value > 1! "
+                            f"Use {dbing.KERIBaserMapSizeKey} or {dbing.KERILMDBMapSizeKey}")
                 raise
 
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)

@@ -3,6 +3,7 @@
 keri.app.notifying module
 
 """
+import os
 from collections.abc import Iterable
 from typing import Union, Type
 
@@ -220,6 +221,15 @@ class Noter(dbing.LMDBer):
         self.notes = None
         self.nidx = None
         self.ncigs = None
+
+        mapSize = os.getenv(dbing.KERINoterMapSizeKey) or os.getenv(dbing.KERILMDBMapSizeKey)
+        if mapSize is not None:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error(f"LMDB map size environment variable must be an integer value > 1! "
+                            f"Use {dbing.KERINoterMapSizeKey} or {dbing.KERILMDBMapSizeKey}")
+                raise
 
         super(Noter, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 

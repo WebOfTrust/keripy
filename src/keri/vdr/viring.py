@@ -7,6 +7,7 @@ VIR  Verifiable Issuance(Revocation) Registry
 Provides public simple Verifiable Credential Issuance/Revocation Registry
 A special purpose Verifiable Data Registry (VDR)
 """
+import os
 
 from dataclasses import dataclass, field, asdict
 
@@ -275,6 +276,15 @@ class Reger(dbing.LMDBer):
             self._tevers.db = kwa["db"]
         else:
             self._tevers = dict()
+
+        mapSize = os.getenv(dbing.KERIRegerMapSizeKey) or os.getenv(dbing.KERILMDBMapSizeKey)
+        if mapSize is not None:
+            try:
+                self.MapSize = int(mapSize)
+            except ValueError:
+                logger.error(f"LMDB map size environment variable must be an integer value > 1! "
+                            f"Use {dbing.KERIRegerMapSizeKey} or {dbing.KERILMDBMapSizeKey}")
+                raise
 
         super(Reger, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
