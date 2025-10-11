@@ -7,11 +7,13 @@ import os
 from collections.abc import Iterable
 from typing import Union, Type
 
-from keri import kering
+from keri import kering, help
 from keri.help import helping
 from keri.app import signaling
 from keri.core import coring
 from keri.db import dbing, subing
+
+logger = help.ogler.getLogger()
 
 
 def notice(attrs, dt=None, read=False):

@@ -34,7 +34,10 @@ from .. import kering
 from .. import core
 from ..core import coring
 from ..db import dbing, subing, koming
+from .. import help
 from ..help import helping
+
+logger = help.ogler.getLogger()
 
 Algoage = namedtuple("Algoage", 'randy salty group extern')
 Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
