@@ -1682,27 +1682,58 @@ class Kever:
 
 
     def locallyDelegated(self, pre: str):
-        """Returns True if pre is in .prefixes and not in .groups
-        False otherwise. Use when pre is a delegator for some event and
-        want to confirm that pre is also locallyOwned thereby making the
-        associated event locallyDelegated.
+        """Returns True if pre w is in .prefixes which includes group AIDs in
+        self.groups which have a local member AID.
+
+        Which means it is either locally controlled single sig or a multi-sig
+        group with a locally controlled member.
+        False otherwise.
+
+        Use when pre is a delegator, i.e. the delpre from some delegated event and
+        want to confirm that pre is also locally controller as either the single
+        sig AID or the group multisig AID of a locally controlled member of the group.
 
         Indicates that provided identifier prefix is controlled by a local
-        controller from .prefixes but is not a group with local member.
-        i.e pre is a locally owned (controlled) AID (identifier prefix)
+        controller from .prefixes is a group prefix that is controlled by a local
+        member of that group.
+
         Because delpre may be None, changes the default to "" instead of
         self.prefixer.pre because self.prefixer.pre is delegate not delegator
         of self. Unaccepted dip events do not have self.delpre set yet.
 
         Returns:
-            (bool): True if pre is local hab but not group hab
+            (bool): True if pre is local hab or group hab that has a local member
                         When pre="" empty or None then returns False
 
         Parameters:
             pre (str): qb64 identifier prefix if any.
+
+
+        ToDo: this code does not account for stale group members as delegators.
+        i.e. a stale group membed is a member AID for a group AID in .groups
+        for which the member AID was a signing (smids) or rotating (rmids) member
+        in the past but is no longer. For delegation approval there must be
+        a local member for the delegator group AID that is a current signing member
+        i,e. in .smids for the group hab.
+
+        The current logic allows an event to be escrowed for later approval
+        but whose delpre (delegator) is a group with a stale local member
+        That later approval must detect and properly handle the staleness.
+
+        Alternatively the logic could be changed to short circut that later
+        work by checking here for staleness. For example:
+            delpre.mhab.pre in delpre's hab.smids  (not stale )
+
+
+        if pre in self.groups:  # local group delegator
+            habord = self.db.habs.get(keys=(pre,))
+            return habord.mid in habord.smids  # True not stale, False stale
+
+        return pre in self.prefixes  # otherwise local non-group delegator
+
         """
         pre = pre if pre is not None else ""
-        return self.locallyOwned(pre=pre)
+        return pre in self.prefixes
 
 
     def locallyWitnessed(self, *, wits: list[str]=None, serder: (str)=None):
@@ -2388,7 +2419,8 @@ class Kever:
         # seal in this case can't be malicious since sourced locally.
         # Doesn't get to here until fully signed and witnessed.
 
-        if self.locallyDelegated(delpre) and not self.locallyOwned():  # local delegator
+        # should only run for delegated inception and rotation, not interaction. Ixn does not require approval.
+        if serder.ilk != Ilks.ixn and self.locallyDelegated(delpre) and not self.locallyOwned():  # local delegator
             # must be local if locallyDelegated or caught above as misfit
             if delseqner is None or delsaider is None:  # missing delegation seal
                 # so escrow delegable. So local delegator can approve OOB.

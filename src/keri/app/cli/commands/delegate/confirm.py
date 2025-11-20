@@ -121,12 +121,10 @@ class ConfirmDoer(doing.DoDoer):
                 if ilk in (coring.Ilks.dip,):
                     typ = "inception"
                     delpre = eserder.sad["di"]
-
                 elif ilk in (coring.Ilks.drt,):
                     typ = "rotation"
                     dkever = self.hby.kevers[eserder.pre]
                     delpre = dkever.delpre
-
                 else:
                     continue
 
@@ -170,11 +168,11 @@ class ConfirmDoer(doing.DoDoer):
                             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, sner.qb64))
                             if saider is not None:
                                 break
-
                             yield self.tock
 
-                        print(f"Delegate {eserder.pre} {typ} event committed.")
+                        print(f"Delegate {typ} event {eserder.pre} committed.")
 
+                        self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
                         self.remove(self.toRemove)
                         return True
 
@@ -211,27 +209,23 @@ class ConfirmDoer(doing.DoDoer):
                             while not witDoer.cues:
                                 _ = yield self.tock
 
-                        print(f'Delegagtor Prefix  {hab.pre}')
-                        print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
+                        print(f'Delegagtor Prefix {hab.pre}')
+                        print(f'\tDelegate {typ} event {eserder.pre} Anchored at Seq. No. {hab.kever.sner.num}')
 
                         # wait for confirmation of fully commited event
                         if eserder.pre in self.hby.kevers:
                             self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn)
-
                             while eserder.sn < self.hby.kevers[eserder.pre].sn:
                                 yield self.tock
-
-                            print(f"Delegate {eserder.pre} {typ} event committed.")
                         else:  # It should be an inception event then...
                             wits = [werfer.qb64 for werfer in eserder.berfers]
                             self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits)
-
                             while eserder.pre not in self.hby.kevers:
                                 yield self.tock
 
-                            print(f"Delegate {eserder.pre} {typ} event committed.")
+                        print(f"Delegate {typ} event {eserder.pre} committed.")
 
-                        self.hby.db.delegables.rem(keys=(pre, sn))
+                        self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
                         self.remove(self.toRemove)
                         return True
 
