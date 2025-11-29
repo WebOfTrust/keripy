@@ -8,6 +8,7 @@ simple direct mode demo support classes
 import itertools
 from hio.base import doing
 
+from . import tocking
 from .. import help
 from ..core import eventing, routing
 from ..core import parsing
@@ -207,7 +208,7 @@ class Reactor(doing.DoDoer):
         self.client.wind(tymth)
 
 
-    def msgDo(self, tymth=None, tock=0.0, **opts):
+    def msgDo(self, tymth=None, tock=None, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -227,14 +228,16 @@ class Reactor(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock if tock is not None else tocking.ReactorMsgTock
+        _ = (yield self.tock)  # enter context
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.name, self.parser.ims[:1024])
         done = yield from self.parser.parsator(local=True)  # process messages continuously
         return done  # should nover get here except forced close
 
 
-    def cueDo(self, tymth=None, tock=0.0, **opts):
+    def cueDo(self, tymth=None, tock=None, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
@@ -253,15 +256,17 @@ class Reactor(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock if tock is not None else tocking.ReactorCueTock
+        _ = (yield self.tock)  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 self.sendMessage(msg, label="chit or receipt")
-                yield  # throttle just do one cue at a time
-            yield
+                yield self.tock  # throttle just do one cue at a time
+            yield self.tock
         return False  # should never get here except forced close
 
-    def escrowDo(self, tymth=None, tock=0.0, **opts):
+    def escrowDo(self, tymth=None, tock=None, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
@@ -280,12 +285,14 @@ class Reactor(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock if tock is not None else tocking.ReactorEscrowTock
+        _ = (yield self.tock)  # enter context
         while True:
             self.kevery.processEscrows()
             if self.tvy is not None:
                 self.tvy.processEscrows()
-            yield
+            yield self.tock
         return False  # should never get here except forced close
 
     def sendMessage(self, msg, label=""):
@@ -561,7 +568,7 @@ class Reactant(doing.DoDoer):
         self.remoter.wind(tymth)
 
 
-    def msgDo(self, tymth=None, tock=0.0, **opts):
+    def msgDo(self, tymth=None, tock=None, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
@@ -581,7 +588,9 @@ class Reactant(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock if tock is not None else tocking.ReactantMsgTock
+        _ = (yield self.tock)  # enter context
         if self.parser.ims:
             logger.info("Server %s: received:\n%s\n...\n", self.hab.name,
                         self.parser.ims[:1024])
@@ -589,7 +598,7 @@ class Reactant(doing.DoDoer):
         return done  # should nover get here except forced close
 
 
-    def cueDo(self, tymth=None, tock=0.0, **opts):
+    def cueDo(self, tymth=None, tock=None, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
@@ -608,19 +617,21 @@ class Reactant(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock if tock is not None else tocking.ReactantCueTock
+        _ = (yield self.tock)  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 if isinstance(msg, list):
                     msg = bytearray(itertools.chain(*msg))
 
                 self.sendMessage(msg, label="chit or receipt or replay")
-                yield  # throttle just do one cue at a time
-            yield
+                yield self.tock  # throttle just do one cue at a time
+            yield self.tock
         return False  # should never get here except forced close
 
 
-    def escrowDo(self, tymth=None, tock=0.0, **opts):
+    def escrowDo(self, tymth=None, tock=None, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
@@ -639,12 +650,14 @@ class Reactant(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock if tock is not None else tocking.ReactantEscrowTock
+        _ = (yield self.tock)  # enter context
         while True:
             self.kevery.processEscrows()
             if self.tevery is not None:
                 self.tevery.processEscrows()
-            yield
+            yield self.tock
         return False  # should never get here except forced close
 
     def sendMessage(self, msg, label=""):
