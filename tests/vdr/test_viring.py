@@ -11,7 +11,10 @@ import tempfile
 
 import lmdb
 
+from keri import kering
+from keri.core import coring
 from keri.core.coring import Diger, versify, Kinds
+from keri.core.serdering import SerderACDC
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger
 
@@ -345,6 +348,65 @@ def test_clone():
           b'AAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4')
 
 
+def test_clearEscrows():
+    with openLMDB(cls=Reger) as db:
+        regk = "EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0".encode("utf-8")
+        sn = 0
+        ooKey = snKey(regk, sn)
+        vs = versify(kind=coring.Kinds.json, size=20)
+        rarb = "BBjzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
+        vcp = dict(v=vs, i=regk.decode("utf-8"),
+                   s="{:x}".format(sn), b=[rarb.decode("utf-8")],
+                   t="vcp")
+
+        vcpb = json.dumps(vcp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        vdig = Diger(ser=vcpb)
+
+        db.putOot(ooKey, val=vdig.qb64b)
+        db.putTwe(ooKey, val=vdig.qb64b)
+        db.putTae(ooKey, val=vdig.qb64b)
+
+        pre = 'k'
+        db.mre.put(keys=(pre, ), val=coring.Dater())
+        db.mce.put(keys=(pre, ), val=coring.Dater())
+        db.mse.put(keys=(pre, ), val=coring.Dater())
+
+        creder = SerderACDC(makify=True, proto=kering.Protocols.acdc, verify=False)
+        db.cmse.put(("a", "b"), val=creder)
+
+        prefixer = coring.Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
+        seqner = coring.Seqner(sn=0)
+        saider = coring.Saider(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
+        db.tpwe.add(("a", "b"), (prefixer, seqner, saider))
+        db.tmse.add(("a", "b"), (prefixer, seqner, saider))
+        db.tede.add(("a", "b"), (prefixer, seqner, saider))
+
+        assert db.getOot(ooKey) == vdig.qb64b
+        assert db.getTwe(ooKey) == vdig.qb64b
+        assert db.getTae(ooKey) == vdig.qb64b
+        assert db.mre.get((pre, )) is not None
+        assert db.mce.get((pre, )) is not None
+        assert db.mse.get((pre, )) is not None
+        assert db.cmse.cntAll() == 1
+        assert db.tpwe.cntAll() == 1
+        assert db.tmse.cntAll() == 1
+        assert db.tede.cntAll() == 1
+
+        db.clearEscrows()
+
+        assert db.getOot(ooKey) is None
+        assert db.getTwe(ooKey) is None
+        assert db.getTae(ooKey) is None
+        assert db.mre.get((pre, )) is None
+        assert db.mce.get((pre, )) is None
+        assert db.mse.get((pre, )) is None
+        assert db.cmse.cntAll() == 0
+        assert db.tpwe.cntAll() == 0
+        assert db.tmse.cntAll() == 0
+        assert db.tede.cntAll() == 0
+
+
 if __name__ == "__main__":
     test_issuer()
     test_clone()
+    test_clearEscrows()
