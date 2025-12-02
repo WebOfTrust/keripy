@@ -370,7 +370,7 @@ def test_metrics_end():
         reger = viring.Reger(name=hby.name, db=hby.db, temp=True)
 
         app = falcon.App()
-        metricsEnd = indirecting.MetricsEnd(hby=hby, reger=reger)
+        metricsEnd = indirecting.EscrowEnd(hby=hby, reger=reger)
         app.add_route("/metrics", metricsEnd)
 
         client = testing.TestClient(app)
