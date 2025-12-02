@@ -798,6 +798,13 @@ class Reger(dbing.LMDBer):
         """
         return self.delVal(self.twes, key)
 
+    def getTweItemIter(self):
+        """
+        Return iterator of all items in .twes
+
+        """
+        return self.getTopItemIter(self.twes)
+
     def putTae(self, key, val):
         """
         Use snKey()
