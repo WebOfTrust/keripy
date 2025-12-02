@@ -18,6 +18,7 @@ from hio.help import decking
 from keri import kering
 from keri import core
 from keri.app import indirecting, storing, habbing, agenting
+from keri.metric import EscrowEnd
 from keri.vdr import viring
 
 
@@ -370,7 +371,7 @@ def test_metrics_end():
         reger = viring.Reger(name=hby.name, db=hby.db, temp=True)
 
         app = falcon.App()
-        metricsEnd = indirecting.EscrowEnd(hby=hby, reger=reger)
+        metricsEnd = EscrowEnd(hby=hby, reger=reger)
         app.add_route("/metrics", metricsEnd)
 
         client = testing.TestClient(app)
