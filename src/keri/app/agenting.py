@@ -14,7 +14,7 @@ from hio.help import decking, Hict
 
 from socket import gaierror
 
-from . import httping, forwarding
+from . import httping, forwarding, tocking
 from .. import help
 from .. import kering
 from .. import core
@@ -295,7 +295,7 @@ class WitnessReceiptor(doing.DoDoer):
 
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-    def receiptDo(self, tymth=None, tock=0.0, **kwa):
+    def receiptDo(self, tymth=None, tock=None, **kwa):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -309,7 +309,7 @@ class WitnessReceiptor(doing.DoDoer):
 
         """
         self.wind(tymth)
-        self.tock = tock
+        self.tock = tock if tock is not None else tocking.WitnessReceiptorTock
         _ = (yield self.tock)
 
         while True:
@@ -450,7 +450,7 @@ class WitnessInquisitor(doing.DoDoer):
 
         super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.msgDo)], **kwa)
 
-    def msgDo(self, tymth=None, tock=1.0, **opts):
+    def msgDo(self, tymth=None, tock=None, **opts):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -458,7 +458,7 @@ class WitnessInquisitor(doing.DoDoer):
             add result of doify on this method to doers list
         """
         self.wind(tymth)
-        self.tock = tock
+        self.tock = tock if tock is not None else tocking.WitnessInquisitorTock
         _ = (yield self.tock)
 
         while True:
@@ -588,7 +588,7 @@ class WitnessPublisher(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
-    def sendDo(self, tymth=None, tock=0.0, **opts):
+    def sendDo(self, tymth=None, tock=None, **opts):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -596,7 +596,7 @@ class WitnessPublisher(doing.DoDoer):
             add result of doify on this method to doers list
         """
         self.wind(tymth)
-        self.tock = tock
+        self.tock = tock if tock is not None else tocking.WitnessPublisherTock
         _ = (yield self.tock)
 
         while True:
