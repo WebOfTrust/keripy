@@ -23,7 +23,7 @@ RUN python -m venv venv
 
 ENV PATH=/keripy/venv/bin:${PATH}
 
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip setuptools "cffi==1.17.1"
 RUN mkdir /keripy/src
 
 COPY requirements.txt setup.py ./
