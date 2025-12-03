@@ -32,6 +32,8 @@ parser.add_argument('--force', action="store_true", required=False,
                          'the current event')
 parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
                     dest="endpoint", action='store_true')
+parser.add_argument('--sn', '-s', help='sequence number of the event to submit (defaults to latest event)',
+                    type=int, default=None)
 
 
 def handler(args):
@@ -48,8 +50,9 @@ def handler(args):
     alias = args.alias
     force = args.force
     endpoint = args.endpoint
+    sn = args.sn
 
-    subDoer = SubmitDoer(name=name, base=base, alias=alias, bran=bran, force=force, endpoint=endpoint)
+    subDoer = SubmitDoer(name=name, base=base, alias=alias, bran=bran, force=force, endpoint=endpoint, sn=sn)
 
     doers = [subDoer]
     return doers
@@ -59,7 +62,7 @@ class SubmitDoer(doing.DoDoer):
     """ DoDoer for submitting the current event to witnesses for receipts.
     """
 
-    def __init__(self, name, base, alias, bran, force, endpoint=False):
+    def __init__(self, name, base, alias, bran, force, endpoint=False, sn=None):
 
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
@@ -68,6 +71,7 @@ class SubmitDoer(doing.DoDoer):
         self.hby = hby
         self.force = force
         self.endpoint = endpoint
+        self.sn = sn
 
         doers = [self.hbyDoer, self.mbx, doing.doify(self.submitDo)]
 
@@ -88,14 +92,20 @@ class SubmitDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(name=self.alias)
+        sn = self.sn if self.sn is not None else hab.kever.sn
+
+        if sn > hab.kever.sn:
+            print(f"Error: sequence number {sn} does not exist. Latest is {hab.kever.sn}")
+            self.remove([self.hbyDoer, self.mbx])
+            return
 
         if self.endpoint:
             receiptor = agenting.Receiptor(hby=self.hby)
             self.extend([receiptor])
 
             if hab.kever.wits:
-                print("Waiting for witness receipts...")
-                yield from receiptor.receipt(hab.pre, sn=hab.kever.sn)
+                print(f"Waiting for witness receipts for event {sn}...")
+                yield from receiptor.receipt(hab.pre, sn=sn)
 
             self.remove([receiptor])
 
@@ -104,8 +114,8 @@ class SubmitDoer(doing.DoDoer):
             self.extend([witDoer])
 
             if hab.kever.wits:
-                print("Waiting for witness receipts...")
-                witDoer.msgs.append(dict(pre=hab.pre))
+                print(f"Waiting for witness receipts for event {sn}...")
+                witDoer.msgs.append(dict(pre=hab.pre, sn=sn))
                 while not witDoer.cues:
                     _ = yield self.tock
 
