@@ -269,6 +269,53 @@ def test_standalone_kli_commands(helpers, capsys):
                           '}\n')
 
 
+def test_sn_command(capsys):
+    """Test the sn command for hex/decimal conversion because Kevin is lazy"""
+    parser = multicommand.create_parser(commands)
+
+    args = parser.parse_args(["sn", "--hex", "a3f"])
+    assert args.handler is not None
+    doers = args.handler(args)
+    directing.runController(doers=doers)
+    out = capsys.readouterr()
+    assert out.out == "2623\n"
+
+    args = parser.parse_args(["sn", "--decimal", "2623"])
+    assert args.handler is not None
+    doers = args.handler(args)
+    directing.runController(doers=doers)
+    out = capsys.readouterr()
+    assert out.out == "a3f\n"
+
+    args = parser.parse_args(["sn", "-x", "ff"])
+    assert args.handler is not None
+    doers = args.handler(args)
+    directing.runController(doers=doers)
+    out = capsys.readouterr()
+    assert out.out == "255\n"
+
+    args = parser.parse_args(["sn", "-d", "255"])
+    assert args.handler is not None
+    doers = args.handler(args)
+    directing.runController(doers=doers)
+    out = capsys.readouterr()
+    assert out.out == "ff\n"
+
+    args = parser.parse_args(["sn", "-x", "0"])
+    assert args.handler is not None
+    doers = args.handler(args)
+    directing.runController(doers=doers)
+    out = capsys.readouterr()
+    assert out.out == "0\n"
+
+    args = parser.parse_args(["sn", "-d", "0"])
+    assert args.handler is not None
+    doers = args.handler(args)
+    directing.runController(doers=doers)
+    out = capsys.readouterr()
+    assert out.out == "0\n"
+
+
 def test_incept_and_rotate_opts(helpers, capsys):
     """
     Tests using the command line arguments for incept and the file argument for rotate
