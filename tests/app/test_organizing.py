@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.app.connecting module
+tests.app.organizing module
 """
 import io
 import os
@@ -8,7 +8,7 @@ import os
 import pytest
 
 from keri import kering
-from keri.app import connecting, habbing
+from keri.app import organizing, habbing
 from keri.core import signing
 
 
@@ -34,7 +34,7 @@ def test_organizer():
                 company="GLEIF", alias="sally")
 
     with habbing.openHby(name="test", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+        org = organizing.Organizer(hby=hby)
 
         org.replace(pre=joe, data=joed)
         org.replace(pre=bob, data=bobd)
@@ -158,7 +158,7 @@ def test_organizer():
 def test_organizer_imgs():
 
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        org = connecting.Organizer(hby=hby)
+        org = organizing.Organizer(hby=hby)
         pre = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
         data = bytearray(os.urandom(100000))
         assert len(data) == 100000
@@ -199,7 +199,7 @@ def test_base_organizer():
 
     with habbing.openHby(name="test", temp=True) as hby:
         # Test BaseOrganizer with contact databases (same as Organizer)
-        base_org = connecting.BaseOrganizer(
+        base_org = organizing.BaseOrganizer(
             hby=hby,
             cigsdb=hby.db.ccigs,
             datadb=hby.db.cons,
@@ -260,7 +260,7 @@ def test_identifier_organizer():
 
     with habbing.openHby(name="test", temp=True) as hby:
         # Test IdentifierOrganizer 
-        id_org = connecting.IdentifierOrganizer(hby=hby)
+        id_org = organizing.IdentifierOrganizer(hby=hby)
 
         # Test basic CRUD operations
         id_org.replace(pre=aid1, data=id1_data)
@@ -326,8 +326,8 @@ def test_organizer_vs_identifier_organizer_separation():
 
     with habbing.openHby(name="test", temp=True) as hby:
         # Create both organizers
-        contact_org = connecting.Organizer(hby=hby)
-        id_org = connecting.IdentifierOrganizer(hby=hby)
+        contact_org = organizing.Organizer(hby=hby)
+        id_org = organizing.IdentifierOrganizer(hby=hby)
 
         # Add data to both
         contact_org.replace(pre=contact_id, data=contact_data)
@@ -366,7 +366,7 @@ def test_organizer_vs_identifier_organizer_separation():
 def test_identifier_organizer_imgs():
     """Test IdentifierOrganizer image functionality"""
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        id_org = connecting.IdentifierOrganizer(hby=hby)
+        id_org = organizing.IdentifierOrganizer(hby=hby)
         pre = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
 
         # Create test image data
@@ -404,12 +404,12 @@ def test_identifier_organizer_imgs():
 def test_base_organizer_inheritance():
     """Test that Organizer and IdentifierOrganizer properly inherit from BaseOrganizer"""
     with habbing.openHby(name="test", temp=True) as hby:
-        contact_org = connecting.Organizer(hby=hby)
-        id_org = connecting.IdentifierOrganizer(hby=hby)
+        contact_org = organizing.Organizer(hby=hby)
+        id_org = organizing.IdentifierOrganizer(hby=hby)
 
         # Test inheritance
-        assert isinstance(contact_org, connecting.BaseOrganizer)
-        assert isinstance(id_org, connecting.BaseOrganizer)
+        assert isinstance(contact_org, organizing.BaseOrganizer)
+        assert isinstance(id_org, organizing.BaseOrganizer)
 
         # Test that they have all the expected methods
         expected_methods = ['update', 'replace', 'set', 'unset', 'rem', 'get', 'list', 'find', 'values', 

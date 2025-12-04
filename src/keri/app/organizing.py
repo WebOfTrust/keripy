@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.app.connecting module
+keri.app.organizing module
 
 """
 import re

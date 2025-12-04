@@ -5,7 +5,7 @@ import json
 import os
 
 from hio.base import doing
-from keri.app import connecting, apping
+from keri.app import organizing, apping
 from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
 from keri.core import coring
@@ -37,7 +37,7 @@ def kims(tymth, tock=0.0, **opts):
     static = args.static
 
     with existing.existingHby(name=name, base=base, bran=bran) as hby:
-        org = connecting.Organizer(hby=hby)
+        org = organizing.Organizer(hby=hby)
         contacts = org.list()
         MultiSigShell(hby, contacts, static).cmdloop()
         return True

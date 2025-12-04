@@ -10,7 +10,7 @@ from hio.base import doing
 from keri.app.cli.common.parsing import Parsery
 from keri.core import serdering
 from ..common import existing
-from ... import habbing, connecting, forwarding
+from ... import habbing, organizing, forwarding
 
 parser = argparse.ArgumentParser(description='Send an rpy /introduce message to recipient with OOBI', 
                                  parents=[Parsery.keystore()])
@@ -64,7 +64,7 @@ class IntroduceDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.introduceDo)]
 

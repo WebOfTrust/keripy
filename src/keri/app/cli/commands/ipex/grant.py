@@ -8,7 +8,7 @@ import argparse
 from hio.base import doing
 
 from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
+from keri.app import forwarding, organizing, habbing, grouping, indirecting, signing
 from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
 from keri.app.notifying import Notifier
@@ -54,7 +54,7 @@ class GrantDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
 
