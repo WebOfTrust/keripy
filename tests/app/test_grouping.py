@@ -5,12 +5,15 @@ tests.app.grouping module
 """
 from contextlib import contextmanager
 
+from hio.base import Doist
+
 from keri import kering, core
 from keri.app import habbing, grouping, notifying
 from keri.core import coring, eventing, parsing, serdering
 from keri.vdr import eventing as veventing
 from keri.db import dbing
 from keri.peer import exchanging
+from tests.app.app_helpers import openWit, openCtrlWited
 
 
 def test_counselor():
@@ -900,3 +903,12 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         prefixers = hby1.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 1
         assert prefixers[0].qb64 == ghab2.mhab.pre
+
+def test_multisig_delegate():
+    doist = Doist(limit=0.0, tock=0.03125, real=True)
+    with (
+        openWit() as (witHby, witHab, witDoers, witOobi),
+        openCtrlWited(doist, witOobi) as (ctrlHby, ctrlHab, ctrlDoers, ctrlOobi)
+    ):
+        print(f"Witnesses: {[witHab.pre]}")
+        print(f"Controller: {ctrlHab.pre}")
