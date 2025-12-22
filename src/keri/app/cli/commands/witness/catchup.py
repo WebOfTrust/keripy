@@ -25,6 +25,8 @@ parser.add_argument('--alias', '-a', help='human readable alias for the identifi
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--witness', '-w', help='witness AID to send KEL to', required=True)
+parser.add_argument('--force', '-f', help='send KEL even if witness is not in current witness pool',
+                    action='store_true', default=False)
 
 
 def handler(args):
@@ -40,8 +42,9 @@ def handler(args):
     bran = args.bran
     alias = args.alias
     witness = args.witness
+    force = args.force
 
-    doer = CatchupDoer(name=name, base=base, alias=alias, bran=bran, witness=witness)
+    doer = CatchupDoer(name=name, base=base, alias=alias, bran=bran, witness=witness, force=force)
 
     return [doer]
 
@@ -50,13 +53,14 @@ class CatchupDoer(doing.DoDoer):
     """ DoDoer for sending full KEL to a witness to catch it up.
     """
 
-    def __init__(self, name, base, alias, bran, witness):
+    def __init__(self, name, base, alias, bran, witness, force=False):
 
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.alias = alias
         self.hby = hby
         self.witness = witness
+        self.force = force
 
         doers = [self.hbyDoer, doing.doify(self.catchupDo)]
 
@@ -83,10 +87,14 @@ class CatchupDoer(doing.DoDoer):
 
         # Validate witness is in the current witness list
         if self.witness not in hab.kever.wits:
-            print(f"Error: {self.witness} is not a witness for {self.alias}")
-            print(f"Current witnesses: {hab.kever.wits}")
-            self.remove([self.hbyDoer])
-            return
+            if not self.force:
+                print(f"Error: {self.witness} is not a witness for {self.alias}")
+                print(f"Current witnesses: {hab.kever.wits}")
+                print("Use --force to send KEL anyway")
+                self.remove([self.hbyDoer])
+                return
+            else:
+                print(f"Warning: {self.witness} is not a witness for {self.alias}, forcing anyway")
 
         receiptor = agenting.Receiptor(hby=self.hby)
         self.extend([receiptor])
