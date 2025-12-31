@@ -2633,9 +2633,8 @@ class Kever:
         # seal in this case can't be malicious since sourced locally.
         # Doesn't get to here until fully signed and witnessed.
 
-        if self.locallyDelegated(delpre) and not self.locallyOwned():  # local delegator
-            #if (delpre in self.prefixes) and not self.locallyOwned(): # local delegator
-            # must be local if locallyDelegated or caught above as misfit
+        if (serder.ilk in (Ilks.dip, Ilks.drt) and self.locallyDelegated(delpre)
+                and not self.locallyOwned()):  # local delegator of delegated event
             if delseqner is None or delsaider is None: # missing delegation seal
                 # so escrow delegable. So local delegator can approve OOB.
                 # and create delegator event with valid event seal of this
@@ -2981,7 +2980,7 @@ class Kever:
         does not get written to 'aes' database.
 
         """
-        if not delpre:  # not delegable so no delegation validation needed
+        if not delpre: # not delegable delpre is None if ilk is not dip or drt
             return (None, None)  # non-delegated so delseqner delsaider must be None
 
         # if we are the delegatee, accept the event without requiring the
