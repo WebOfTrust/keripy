@@ -37,5 +37,15 @@ pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+PID_LIST=""
+
+kli multisig interact --name multisig1 --base "${KERI_TEMP_DIR}"  --alias multisig --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json &
+pid=$!
+PID_LIST="$pid"
+kli multisig interact --name multisig2 --base "${KERI_TEMP_DIR}"  --alias multisig --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST
 
 echo "Test Complete"
