@@ -297,16 +297,23 @@ class WitnessReceiptor(doing.DoDoer):
 
     def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-
+        Generator that asynchronously processes witness receipt requests from self.msgs queue.
+        
+        For each request in msgs (dict with 'pre' and optional 'sn'):
+        1. Creates HTTPMessenger or TCPMessenger for each witness
+        2. Sends delegator KEL (if delegated) to each witness for context
+        3. Sends full KEL to newly added witnesses (icp/dip or rotation adds)
+        4. Sends the target event to each witness
+        5. Waits for all witness receipts to arrive in hab.db (via MailboxDirector)
+        6. Propagates all collected receipts to each witness so they know about each other
+        7. Pushes the original request to self.cues to signal completion
+        
+        The receipts themselves arrive asynchronously via the MailboxDirector which
+        polls the witness mailbox and parses incoming receipts into hab.db.
+        
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-
+            tymth: injected function wrapper closure from Tymist for timing
+            tock: injected initial tock value for yielding
         """
         self.wind(tymth)
         self.tock = tock
@@ -358,13 +365,13 @@ class WitnessReceiptor(doing.DoDoer):
                         witer.msgs.append(bytearray(msg))  # make a copy
                         _ = (yield self.tock)
 
-                    while True:
+                    while True: # wait for all receipts to arrive
                         wigs = hab.db.getWigs(dgkey)
                         if len(wigs) == len(wits):
                             break
                         _ = yield self.tock
 
-                # If we started with all our recipts, exit unless told to force resubmit of all receipts
+                # If we started with all our receipts, exit unless told to force resubmit of all receipts
                 if completed and not self.force:
                     self.cues.push(evt)
                     continue
