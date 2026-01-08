@@ -8,11 +8,10 @@ import json
 from collections import deque
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import List, Generator, Tuple, Any, Optional
+from typing import List, Generator, Tuple
 
 from hio.base import Doer, doing, Doist
 from hio.help import decking
-from hio.help.decking import Deck
 
 from keri import kering
 from keri.app import habbing, delegating, grouping, oobiing
@@ -26,12 +25,40 @@ from keri.app.notifying import Notifier
 from keri.core import Salter, coring, serdering
 from keri.db import basing, dbing
 from keri.help import helping
+from keri.peer import exchanging
 from keri.peer.exchanging import Exchanger
 
 
 # =============================================================================
 # Data Classes for Structured Returns
 # =============================================================================
+
+@dataclass
+class EscrowDoer(doing.Doer):
+    """
+    Doer that processes escrows for both Habery's Kevery and Counselor. 
+    This Doer is just a testing helper to speed up event processing in tests.
+    
+    This fills a gap in the standard controller setup where:
+    - MailboxDirector.escrowDo processes mbx.kvy escrows (a separate Kevery for remote events)
+    - Counselor.escrowDo processes counselor escrows but with yield 0.5 delay, not great for tests that should run as fast as possible.
+    - Nothing processes hby.kvy escrows (the Habery's Kevery for local events)
+    
+    This doer runs both processEscrows calls on every recur for faster test execution.
+    """
+    
+    def __init__(self, hby: Habery, counselor: grouping.Counselor = None, **kwa):
+        super(EscrowDoer, self).__init__(**kwa)
+        self.hby = hby
+        self.counselor = counselor
+    
+    def recur(self, tyme):
+        """Process escrows on every recur call for responsive tests."""
+        self.hby.kvy.processEscrows()
+        if self.counselor is not None:
+            self.counselor.processEscrows()
+        return False  # Keep running
+
 
 @dataclass
 class ControllerContext:
@@ -129,7 +156,8 @@ def openCtrlWited(name: str = 'aceCtlrKS',
         receiptor = Receiptor(hby=hby)
         witq = WitnessInquisitor(hby=hby)
         counselor = grouping.Counselor(hby=hby)
-        doers = [hbyDoer, anchorer, postman, mbx, witReceiptor, receiptor, witq, counselor]
+        escrowDoer = EscrowDoer(hby=hby, counselor=counselor)
+        doers = [hbyDoer, anchorer, postman, mbx, witReceiptor, receiptor, witq, counselor, escrowDoer]
         yield ControllerContext(
             hby=hby,
             doers=doers,
@@ -154,7 +182,7 @@ class HabHelpers:
     """Static helpers for Hab/Habery operations."""
 
     @staticmethod
-    def generate_oobi(hby: Habery, alias: str, role: str = kering.Roles.witness) -> str:
+    def generateOobi(hby: Habery, alias: str, role: str = kering.Roles.witness) -> str:
         """Generate an OOBI URL for the given Hab."""
         hab = hby.habByName(name=alias)
         if hab is None:
@@ -187,7 +215,7 @@ class HabHelpers:
             raise kering.ConfigurationError(f'Unable to generate OOBI for {alias} identifier {hab.pre} with role {role}')
 
     @staticmethod
-    def resolve_oobi(doist: Doist, deeds: deque, hby: Habery, oobi: str, alias: str = None):
+    def resolveOobi(doist: Doist, deeds: deque, hby: Habery, oobi: str, alias: str = None):
         """Resolve an OOBI for a given Habery using the provided Doist and deeds."""
         obr = basing.OobiRecord(date=helping.nowIso8601())
         if alias is not None:
@@ -198,16 +226,49 @@ class HabHelpers:
         authn = oobiing.Authenticator(hby=hby)
         oobiery_deeds = doist.enter(doers=oobiery.doers + authn.doers)
         while not oobiery.hby.db.roobi.get(keys=(oobi,)):
+            # Note: EscrowDoer in controller context handles processEscrows for controller deeds
+            # but oobiery_deeds are separate so escrows for those may still need processing
             doist.recur(deeds=decking.Deck(list(deeds) + list(oobiery_deeds)))
-            hby.kvy.processEscrows() # TODO again, why is this needed here and what else should be covering it?
 
     @staticmethod
-    def has_delegables(db: basing.Baser) -> List[Tuple[str, int, bytes]]:
+    def hasDelegables(db: basing.Baser) -> List[Tuple[str, int, bytes]]:
         """Check if there are any delegable events in escrow."""
         dlgs = []
         for (pre, sn), edig in db.delegables.getItemIter():
             dlgs.append((pre, sn, edig))
         return dlgs
+
+    @staticmethod
+    def collectWitnessReceipts(doist: Doist, deeds: deque, wit_receiptor, pre: str, sn: int = None):
+        """
+        Collect witness receipts for an event.
+        
+        This queues a request for the WitnessReceiptor to send the event to all
+        witnesses and collect their receipts. The actual receipts arrive asynchronously
+        via the MailboxDirector which polls the witness mailbox.
+
+        WitnessReceiptor.cues must be cleared after receipts are collected to ensure a clean
+        start condition for the next event.
+        
+        Parameters:
+            doist: The Doist running the event loop
+            deeds: The deeds to recur with (should include wit_receiptor's doers)
+            wit_receiptor: The WitnessReceiptor instance (from controller context)
+            pre: The AID prefix of the identifier to collect receipts for
+            sn: Optional sequence number of event (defaults to latest if not provided)
+        """
+        msg = dict(pre=pre)
+        if sn is not None:
+            msg['sn'] = sn
+        wit_receiptor.msgs.append(msg)
+        while not wit_receiptor.cues:
+            doist.recur(deeds=deeds)
+        wit_receiptor.cues.clear()
+
+    @staticmethod
+    def delegationSeal(delegateAid: str, delegateSnh: str, delegateEvtSaid: str):
+        """Returns a delegation seal a delegator can use to approve a delegated inception or rotation event."""
+        return dict(i=delegateAid, s=delegateSnh, d=delegateEvtSaid)
 
 
 # =============================================================================
@@ -216,13 +277,16 @@ class HabHelpers:
 
 class MultisigInceptLeader(doing.DoDoer):
     """
+    Similar to `kli multisig incept`.
     Orchestrates multisig inception from the leader's perspective.
 
     The leader:
     1. Creates the GroupHab with makeGroupHab
-    2. Sends /multisig/icp EXN to all followers
+    2. Sends /multisig/icp EXN notification to all followers
     3. Starts Counselor to collect signatures
     4. Waits for cgms (confirmed group multisig)
+
+    Counselor completes only when all followers have 
 
     Parameters:
         hby: The Habery for this participant
@@ -260,9 +324,13 @@ class MultisigInceptLeader(doing.DoDoer):
         self.ghab: GroupHab = None
         self.cues = decking.Deck()
         self.done = False
+        self.pending_sends = []  # Track SAIDs of messages waiting for delivery confirmation
+        self.counselor_started = False
 
-        doers = [postman, counselor] # TODO There's already a postman and counselor in the controller doers, why separate them here?
-        super(MultisigInceptLeader, self).__init__(doers=doers, **kwa)
+        # Note: postman and counselor are NOT included here because they're already
+        # running via the controller context's doers (all_deeds). The CLI's 
+        # GroupMultisigIncept creates its own instances, but we reuse the existing ones.
+        super(MultisigInceptLeader, self).__init__(doers=[], **kwa)
 
     def recur(self, tyme, deeds=None):
         """Main orchestration loop."""
@@ -294,7 +362,7 @@ class MultisigInceptLeader(doing.DoDoer):
                 icp=icp
             )
 
-            # Send to all other participants
+            # Send to all other participants and track for delivery confirmation
             others = [m for m in self.smids if m != self.mhab.pre]
             for recpt in others:
                 self.postman.send(
@@ -304,19 +372,29 @@ class MultisigInceptLeader(doing.DoDoer):
                     serder=exn,
                     attachment=ims
                 )
+            self.pending_sends.append(exn.said)  # Track SAID for delivery confirmation
+            return False  # Keep running
 
-            # Step 3: Start the Counselor
+        # Step 3: Wait for sends to complete before starting Counselor
+        if self.pending_sends:
+            for said in list(self.pending_sends):
+                if self.postman.sent(said=said):
+                    self.pending_sends.remove(said)
+            if self.pending_sends:
+                return False  # Still waiting for sends to complete
+            self.postman.cues.clear()  # Clear cues after all sends confirmed
+
+        # Step 4: Start the Counselor (once, after sends complete)
+        if not self.counselor_started:
             prefixer = coring.Prefixer(qb64=self.ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
+            self.counselor_started = True
             return False  # Keep running
 
-        # Step 4: Wait for Counselor to complete (cgms)
-        # Process escrows to speed up event processing
-        self.hby.kvy.processEscrows()
-        self.counselor.processEscrows()
-        
+        # Step 5: Wait for Counselor to complete (cgms)
+        # Note: EscrowDoer in controller context handles processEscrows calls
         prefixer = coring.Prefixer(qb64=self.ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=self.ghab.pre)
@@ -329,6 +407,7 @@ class MultisigInceptLeader(doing.DoDoer):
 
 class MultisigInceptFollower(doing.DoDoer):
     """
+    Similar to `kli multisig join`.
     Joins a multisig inception from a follower's perspective.
 
     The follower:
@@ -362,129 +441,115 @@ class MultisigInceptFollower(doing.DoDoer):
         self.ghab: GroupHab = None
         self.started = False
         self.done = False
+        self.pendingSends = []  # Track SAIDs of messages waiting for delivery confirmation
+        self.counselorStarted = False
 
-        doers = [postman, counselor]
-        super(MultisigInceptFollower, self).__init__(doers=doers, **kwa)
+        # Note: postman and counselor are NOT included here because they're already
+        # running via the controller context's doers (all_deeds).
+        super(MultisigInceptFollower, self).__init__(doers=[], **kwa)
 
     def recur(self, tyme, deeds=None):
         """Main orchestration loop."""
         super(MultisigInceptFollower, self).recur(tyme, deeds=deeds)
 
         if self.ghab is None:
-            # Wait for notification from leader
-            # Debug: show signal count periodically
-            if not hasattr(self, '_debug_count'):
-                self._debug_count = 0
-            self._debug_count += 1
-            if self._debug_count % 100 == 0:
-                sig_count = len(list(self.notifier.signaler.signals))
-                print(f"[Follower {self.mhab.pre[:8]}] Waiting for signal... (checked {self._debug_count}x, signals={sig_count})", flush=True)
+            # Wait for notification from leader using noter.notes (persistent notifications)
+            # not signaler.signals (transient pings). Pattern from kli multisig join.
+            if self.notifier.noter.notes.cntAll() == 0:
+                return False  # No notifications yet, keep waiting
             
-            signals_list = list(self.notifier.signaler.signals)
-            if signals_list and not hasattr(self, '_printed_signals'):
-                self._printed_signals = True
-                for idx, signal in enumerate(signals_list):
-                    print(f"[Follower {self.mhab.pre[:8]}] Signal[{idx}] pad: {signal.pad}", flush=True)
-                    
-            # TODO is this much code really needed, checking signals and all? Or is part of this handled 
-            #      automatically by other Doers or other parts of the code?
-            for signal in signals_list:
-                # Actual signal structure is:
-                # signal.pad = {i, dt, r: '/notification', a: {action, dt, note: {i, dt, r: read_bool, a: {r: route, d: said}}}}
-                a_section = signal.pad.get('a', {})
-                note = a_section.get('note', {})
-                note_attrs = note.get('a', {})
-                route = note_attrs.get('r')
-                if route == '/multisig/icp':
-                    # Found the inception notification
-                    print(f"[Follower {self.mhab.pre[:8]}] Processing /multisig/icp signal", flush=True)
-                    
-                    # Get the EXN message SAID from the notification (in note_attrs.d)
-                    exn_said = note_attrs.get('d')
-                    print(f"[Follower {self.mhab.pre[:8]}] EXN SAID: {exn_said}", flush=True)
-                    if not exn_said:
-                        print(f"[Follower {self.mhab.pre[:8]}] No EXN SAID in notification, skipping", flush=True)
-                        continue
-                    
-                    # Retrieve the EXN message from the database using the SAID
-                    from keri.peer import exchanging
-                    exn, paths = exchanging.cloneMessage(self.hby, said=exn_said)
-                    if exn is None:
-                        print(f"[Follower {self.mhab.pre[:8]}] Could not find EXN {exn_said}, skipping", flush=True)
-                        continue
-                    
-                    # Extract smids and rmids from the EXN payload
-                    attrs = exn.ked.get('a', {})
-                    smids = attrs.get('smids', [])
-                    rmids = attrs.get('rmids', smids)
+            for keys, notice in self.notifier.noter.notes.getItemIter():
+                attrs = notice.attrs
+                route = attrs['r']
+                
+                if route != '/multisig/icp':
+                    print(f"[Follower {self.mhab.pre[:8]}] Not an inception notification - only care about inception notifications for this follower", flush=True)
+                    continue  # Not an inception notification - only care about inception notifications for this follower
+                
+                exnSaid = attrs['d']
+                exn, _ = exchanging.cloneMessage(self.hby, said=exnSaid)
 
-                    # Check if we're a participant
-                    if self.mhab.pre not in smids:
-                        print(f"[Follower {self.mhab.pre[:8]}] Not in smids ({self.mhab.pre}), skipping. smids={smids}", flush=True)
-                        continue
+                payload = exn.ked['a']
+                smids = payload['smids']
+                rmids = payload['rmids']
 
-                    # Get the embedded icp event from the EXN
-                    embeds = exn.ked.get('e', {})
-                    icp_ked = embeds.get('icp', {})
-                    oicp = serdering.SerderKERI(sad=icp_ked)
+                # Check if we're a participant
+                if self.mhab.pre not in smids:
+                    raise ValueError(f"[Follower {self.mhab.pre[:8]}] Not in smids ({self.mhab.pre}), skipping. smids={smids}")
 
-                    # Extract parameters from the ICP
-                    inits = dict(
-                        isith=oicp.ked["kt"],
-                        nsith=oicp.ked["nt"],
-                        toad=oicp.ked["bt"],
-                        wits=oicp.ked["b"],
-                        delpre=oicp.ked.get("di"),
+                # Get the embedded icp event from the EXN
+                embeds = exn.ked['e']
+                icpKed = embeds['icp']
+                origIcp = serdering.SerderKERI(sad=icpKed)
+
+                # Extract parameters from the ICP
+                inits = dict(
+                    isith=origIcp.ked["kt"],
+                    nsith=origIcp.ked["nt"],
+                    estOnly=kering.TraitCodex.EstOnly in origIcp.ked['c'],
+                    DnD=kering.TraitCodex.DoNotDelegate in origIcp.ked['c'],
+                    toad=origIcp.ked["bt"],
+                    wits=origIcp.ked["b"],
+                    delpre=origIcp.ked["di"] if "di" in origIcp.ked else None,
+                )
+
+                # Create our GroupHab
+                self.ghab = self.hby.makeGroupHab(
+                    group=self.group,
+                    mhab=self.mhab,
+                    smids=smids,
+                    rmids=rmids,
+                    **inits
+                )
+
+                # Remove the notification now that we've processed it
+                self.notifier.noter.notes.rem(keys=keys)
+
+                # Send our signature to others and track for delivery confirmation
+                icp = self.ghab.makeOwnInception(allowPartiallySigned=True)
+                exn, ims = grouping.multisigInceptExn(
+                    self.mhab,
+                    smids=smids,
+                    rmids=rmids,
+                    icp=icp
+                )
+
+                others = [m for m in smids if m != self.mhab.pre]
+                for recpt in others:
+                    # Remember, the Postman is already created in the controller context's doers (all_deeds) and is run
+                    # by the controller context's doers.
+                    self.postman.send(
+                        src=self.mhab.pre,
+                        dest=recpt,
+                        topic="multisig",
+                        serder=exn,
+                        attachment=ims
                     )
-
-                    # Create our GroupHab
-                    print(f"[Follower {self.mhab.pre[:8]}] Creating GroupHab...", flush=True)
-                    self.ghab = self.hby.makeGroupHab(
-                        group=self.group,
-                        mhab=self.mhab,
-                        smids=smids,
-                        rmids=rmids,
-                        **inits
-                    )
-                    print(f"[Follower {self.mhab.pre[:8]}] Created GroupHab {self.group} with pre={self.ghab.pre}", flush=True)
-
-                    # Send our signature to others
-                    icp = self.ghab.makeOwnInception(allowPartiallySigned=True)
-                    exn, ims = grouping.multisigInceptExn(
-                        self.mhab,
-                        smids=smids,
-                        rmids=rmids,
-                        icp=icp
-                    )
-
-                    others = [m for m in smids if m != self.mhab.pre]
-                    for recpt in others:
-                        print(f"[Follower {self.mhab.pre[:8]}] Sending signature to {recpt[:16]}...", flush=True)
-                        self.postman.send(
-                            src=self.mhab.pre,
-                            dest=recpt,
-                            topic="multisig",
-                            serder=exn,
-                            attachment=ims
-                        )
-                    print(f"[Follower {self.mhab.pre[:8]}] Sent signature to {len(others)} others", flush=True)
-
-                    # Start Counselor
-                    print(f"[Follower {self.mhab.pre[:8]}] Starting Counselor...", flush=True)
-                    prefixer = coring.Prefixer(qb64=self.ghab.pre)
-                    seqner = coring.Seqner(sn=0)
-                    saider = coring.Saider(qb64=prefixer.qb64)
-                    self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
-                    print(f"[Follower {self.mhab.pre[:8]}] Counselor started", flush=True)
-                    break
+                self.pendingSends.append(exn.said)  # Track SAID for delivery confirmation
+                break  # Exit notification loop after processing
 
             return False  # Keep running
 
-        # Wait for Counselor to complete
-        # Process escrows to speed up event processing
-        self.hby.kvy.processEscrows()
-        self.counselor.processEscrows()
-        
+        # Step 2: Wait for sends to complete before starting Counselor
+        if self.pendingSends:
+            for said in list(self.pendingSends):
+                if self.postman.sent(said=said):
+                    self.pendingSends.remove(said)
+            if self.pendingSends:
+                return False  # Still waiting for sends to complete
+            self.postman.cues.clear()  # Clear cues after all sends confirmed
+
+        # Step 3: Start Counselor (once, after sends complete)
+        if not self.counselorStarted:
+            prefixer = coring.Prefixer(qb64=self.ghab.pre)
+            seqner = coring.Seqner(sn=0)
+            saider = coring.Saider(qb64=prefixer.qb64)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
+            self.counselorStarted = True
+            return False  # Keep running
+
+        # Step 4: Wait for Counselor to complete
+        # Note: EscrowDoer in controller context handles processEscrows calls
         prefixer = coring.Prefixer(qb64=self.ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=self.ghab.pre)
@@ -531,10 +596,15 @@ class MultisigDelegationApprover(doing.DoDoer):
         self.postman = postman
         self.interact = interact
         self.auto = auto
-        self.approved = set()  # Track approved delegation SAIDs
+        self.approved = set()  # Track approved delegation (pre, sn) tuples
+        # Track pending sends: {(pre, sn): {'said': exn_said, 'ixn_sn': sn, 'ixn_said': said}}
+        self.pendingSends = {}
+        # Track delegations ready for counselor start
+        self.readyForcounselor = {}
 
-        doers = [counselor, postman]
-        super(MultisigDelegationApprover, self).__init__(doers=doers, **kwa)
+        # Note: counselor and postman are NOT included here because they're already
+        # running via the controller context's doers (all_deeds).
+        super(MultisigDelegationApprover, self).__init__(doers=[], **kwa)
 
     def delegablesEscrowed(self) -> List[Tuple[str, int, bytes]]:
         """Get list of delegable events in escrow."""
@@ -544,9 +614,31 @@ class MultisigDelegationApprover(doing.DoDoer):
         """Main orchestration loop."""
         super(MultisigDelegationApprover, self).recur(tyme, deeds=deeds)
 
+        # Step 1: Check for pending sends that have completed
+        for key in list(self.pendingSends.keys()):
+            info = self.pendingSends[key]
+            if self.postman.sent(said=info['said']):
+                # Send complete, move to ready_for_counselor
+                self.readyForcounselor[key] = info
+                del self.pendingSends[key]
+                self.postman.cues.clear()  # Clear cues after send confirmed
+
+        # Step 2: Start counselor for delegations that are ready
+        for key in list(self.readyForcounselor.keys()):
+            info = self.readyForcounselor[key]
+            prefixer = coring.Prefixer(qb64=self.ghab.pre)
+            seqner = coring.Seqner(sn=info['ixn_sn'])
+            saider = coring.Saider(qb64=info['ixn_said'])
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
+            self.approved.add(key)
+            print(f"[DelegationApprover {self.mhab.pre[:8]}] Started counselor for anchor at sn={info['ixn_sn']}")
+            del self.readyForcounselor[key]
+
+        # Step 3: Process new delegables
         dlgs = self.delegablesEscrowed()
         for pre, sn, edig in dlgs:
-            if (pre, sn) in self.approved:
+            key = (pre, sn)
+            if key in self.approved or key in self.pendingSends or key in self.readyForcounselor:
                 continue
 
             dgkey = dbing.dgKey(pre, edig)
@@ -575,12 +667,12 @@ class MultisigDelegationApprover(doing.DoDoer):
 
             if self.auto:
                 # Create the anchor
-                anchor = dict(i=eserder.ked['i'], s=eserder.snh, d=eserder.said)
+                anchor = HabHelpers.delegationSeal(eserder.ked['i'], eserder.snh, eserder.said)
 
                 if self.interact:
                     ixn = self.ghab.interact(data=[anchor])
                 else:
-                    ixn = self.ghab.rotate(data=[anchor])
+                    raise ValueError(f"[DelegationApprover {self.mhab.pre[:8]}] delegation approval not yet supported for rotation events")
 
                 # Create and send multisig IXN EXN to other members
                 ixnser = serdering.SerderKERI(raw=ixn)
@@ -600,14 +692,13 @@ class MultisigDelegationApprover(doing.DoDoer):
                         attachment=ims
                     )
 
-                # Start counselor for the IXN
-                prefixer = coring.Prefixer(qb64=self.ghab.pre)
-                seqner = coring.Seqner(sn=ixnser.sn)
-                saider = coring.Saider(qb64=ixnser.said)
-                self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
-
-                self.approved.add((pre, sn))
-                print(f"[DelegationApprover {self.mhab.pre[:8]}] Created anchor for {eserder.pre[:8]} at sn={ixnser.sn}")
+                # Track this send for delivery confirmation
+                self.pendingSends[key] = {
+                    'said': exn.said,
+                    'ixn_sn': ixnser.sn,
+                    'ixn_said': ixnser.said
+                }
+                print(f"[DelegationApprover {self.mhab.pre[:8]}] Created anchor for {eserder.pre[:8]} at sn={ixnser.sn}, waiting for send confirmation")
 
         return False  # Keep running forever
 

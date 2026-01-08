@@ -4,8 +4,7 @@ tests.app.grouping module
 
 """
 from collections import deque
-import contextlib
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 
 from hio.base import Doist
 
@@ -933,7 +932,7 @@ def test_multisig_delegate():
     DEL2_SALT = b'0AAB_Fidf5WeZf6VFc53IxV2'
 
     # Use ExitStack to open all contexts and flatten nesting
-    with contextlib.ExitStack() as stack:
+    with ExitStack() as stack:
         # Witness
         wit_ctx = stack.enter_context(openWit(name='wan', tcpPort=6632, httpPort=6642))
         # delegator contexts - dgt1, dgt2
@@ -957,32 +956,27 @@ def test_multisig_delegate():
             (dgt2_ctx, 'dgt2'), 
             (del1_ctx, 'del1'), 
             (del2_ctx, 'del2')]:
-            HabHelpers.resolve_oobi(doist, wit_deeds, ctx.hby, wit_ctx.oobi, alias='wan')
+            HabHelpers.resolveOobi(doist, wit_deeds, ctx.hby, wit_ctx.oobi, alias='wan')
             print(f"  {name} resolved witness OOBI", flush=True)
 
         # Create single sig AIDs for delegator participants (dgt1, dgt2)
         # dgt1 init + incept
         dgt1_hab = dgt1_ctx.hby.makeHab(name='dgt1', isith='1', icount=1, toad=1, wits=[wit_ctx.pre])
-        dgt1_ctx.witReceiptor.msgs.append(dict(pre=dgt1_hab.pre))
-        while not dgt1_ctx.witReceiptor.cues:
-            doist.recur(deeds=all_deeds)
-        dgt1_ctx.witReceiptor.cues.clear()  # clear cues so I can wait on cues appearing later - TODO: ask Claude why
+        HabHelpers.collectWitnessReceipts(doist, all_deeds, dgt1_ctx.witReceiptor, dgt1_hab.pre)
 
         # dgt2 init + incept
         dgt2_hab = dgt2_ctx.hby.makeHab(name='dgt2', isith='1', icount=1, toad=1, wits=[wit_ctx.pre])
-        dgt2_ctx.witReceiptor.msgs.append(dict(pre=dgt2_hab.pre))
-        while not dgt2_ctx.witReceiptor.cues:
-            doist.recur(deeds=all_deeds)
-        dgt2_ctx.witReceiptor.cues.clear()
+        HabHelpers.collectWitnessReceipts(doist, all_deeds, dgt2_ctx.witReceiptor, dgt2_hab.pre)
 
         # OOBI Exchange between dgt1, dgt2
-        dgt1_oobi = HabHelpers.generate_oobi(dgt1_ctx.hby, alias='dgt1')
-        dgt2_oobi = HabHelpers.generate_oobi(dgt2_ctx.hby, alias='dgt2')
+        dgt1_oobi = HabHelpers.generateOobi(dgt1_ctx.hby, alias='dgt1')
+        dgt2_oobi = HabHelpers.generateOobi(dgt2_ctx.hby, alias='dgt2')
         
-        HabHelpers.resolve_oobi(doist, all_deeds, dgt2_ctx.hby, dgt1_oobi, alias='dgt1')
-        HabHelpers.resolve_oobi(doist, all_deeds, dgt1_ctx.hby, dgt2_oobi, alias='dgt2')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, dgt1_oobi, alias='dgt1')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, dgt2_oobi, alias='dgt2')
 
         # Create delegator multisig from del1, del2
+        # smids and rmids are the same since all participants here are both signing and rotation members
         dgt_smids = [dgt1_hab.pre, dgt2_hab.pre]
         dgt_rmids = dgt_smids
 
@@ -1014,56 +1008,42 @@ def test_multisig_delegate():
         )
 
         # Run until multisig inception is complete
-        dgt_deeds = doist.enter(doers=[dgt_leader, dgt_follower])  # TODO should I have separate multisig deeds or should this be a part of a multisig controller context?
+        dgt_deeds = doist.enter(doers=[dgt_leader, dgt_follower])
         # Wait for both ghabs to be created and counselor to confirm completion
         while dgt_leader.ghab is None or dgt_follower.ghab is None:
             doist.recur(deeds=all_deeds + dgt_deeds)
-            dgt1_ctx.hby.kvy.processEscrows()  # TODO why is process escrows needed here? Isn't there something in the context handling this?
-            dgt2_ctx.hby.kvy.processEscrows()
         # Now wait for counselor completion
         prefixer = coring.Prefixer(qb64=dgt_leader.ghab.pre)
         seqner = coring.Seqner(sn=0)
         while not dgt1_ctx.counselor.complete(prefixer, seqner):
             doist.recur(deeds=all_deeds + dgt_deeds)
-            dgt1_ctx.hby.kvy.processEscrows()
-            dgt2_ctx.hby.kvy.processEscrows()
-            dgt1_ctx.counselor.processEscrows()
-            dgt2_ctx.counselor.processEscrows()
         dgt_ghab = dgt_leader.ghab
-        print(f"  dgt Multisig created: {dgt_ghab.pre}", flush=True)
 
         # Verify dgt multisig exists and has correct properties
         assert dgt_ghab is not None, "dgt multisig should exist"
         assert dgt_ghab.pre in dgt1_ctx.hby.kevers, "dgt1 should have dgt kever"
         assert dgt_ghab.pre in dgt2_ctx.hby.kevers, "dgt2 should have dgt kever"
         assert len(dgt_ghab.smids) == 2, "dgt should have 2 signing members"
-        print(f"  ✓ dgt multisig verified")
 
         # Create delegate participants del1, del2
         # Create del1 single-sig AID
         del1_hab = del1_ctx.hby.makeHab(name='del1', isith='1', icount=1, toad=1, wits=[wit_ctx.pre])
-        del1_ctx.witReceiptor.msgs.append(dict(pre=del1_hab.pre))
-        while not del1_ctx.witReceiptor.cues:
-            doist.recur(deeds=all_deeds)
-        del1_ctx.witReceiptor.cues.clear()
+        HabHelpers.collectWitnessReceipts(doist, all_deeds, del1_ctx.witReceiptor, del1_hab.pre)
 
         # Create del2 single-sig AID
         del2_hab = del2_ctx.hby.makeHab(name='del2', isith='1', icount=1, toad=1, wits=[wit_ctx.pre])
-        del2_ctx.witReceiptor.msgs.append(dict(pre=del2_hab.pre))
-        while not del2_ctx.witReceiptor.cues:
-            doist.recur(deeds=all_deeds)
-        del2_ctx.witReceiptor.cues.clear()
+        HabHelpers.collectWitnessReceipts(doist, all_deeds, del2_ctx.witReceiptor, del2_hab.pre)
 
         # Delegates resolve delegator (dgt) OOBI
-        dgt_oobi = HabHelpers.generate_oobi(dgt1_ctx.hby, alias='dgt')
-        HabHelpers.resolve_oobi(doist, all_deeds, del1_ctx.hby, dgt_oobi, alias='dgt')
-        HabHelpers.resolve_oobi(doist, all_deeds, del2_ctx.hby, dgt_oobi, alias='dgt')
+        dgt_oobi = HabHelpers.generateOobi(dgt1_ctx.hby, alias='dgt')
+        HabHelpers.resolveOobi(doist, all_deeds, del1_ctx.hby, dgt_oobi, alias='dgt')
+        HabHelpers.resolveOobi(doist, all_deeds, del2_ctx.hby, dgt_oobi, alias='dgt')
 
         # OOBI exchange between del1 and del2
-        del1_oobi = HabHelpers.generate_oobi(del1_ctx.hby, alias='del1')
-        del2_oobi = HabHelpers.generate_oobi(del2_ctx.hby, alias='del2')
-        HabHelpers.resolve_oobi(doist, all_deeds, del2_ctx.hby, del1_oobi, alias='del1')
-        HabHelpers.resolve_oobi(doist, all_deeds, del1_ctx.hby, del2_oobi, alias='del2')
+        del1_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del1')
+        del2_oobi = HabHelpers.generateOobi(del2_ctx.hby, alias='del2')
+        HabHelpers.resolveOobi(doist, all_deeds, del2_ctx.hby, del1_oobi, alias='del1')
+        HabHelpers.resolveOobi(doist, all_deeds, del1_ctx.hby, del2_oobi, alias='del2')
 
         # Create delegated multisig from del1 and del2
         del_smids = [del1_hab.pre, del2_hab.pre]
@@ -1104,13 +1084,11 @@ def test_multisig_delegate():
         while del_leader.ghab is None:
             doist.recur(deeds=all_deeds + del_deeds)
         del_ghab = del_leader.ghab
-        print(f"  del Multisig created (pending delegation): {del_ghab.pre}")
 
         # Delegators approve delegation (dgt1 and dgt2 confirm)
         # Wait for delegation request to appear in delegables escrow
-        while not HabHelpers.has_delegables(dgt1_ctx.hby.db):
+        while not HabHelpers.hasDelegables(dgt1_ctx.hby.db):
             doist.recur(deeds=all_deeds + del_deeds)
-        print(f"  Delegation request found in dgt escrow")
 
         # Both delegator participants approve
         dgt1_approver = MultisigDelegationApprover(
@@ -1137,15 +1115,9 @@ def test_multisig_delegate():
         # Check for the anchor event on the delegator
         while dgt_ghab.kever.sn < 1:
             doist.recur(deeds=all_deeds + del_deeds + approver_deeds)
-        print(f"  dgt anchor event created at sn={dgt_ghab.kever.sn}")
 
         # Get witness receipts for the anchor
-        # TODO should I really be manually putting messages on witReceiptor's .msgs deck? That should be handled by something else. Fix this.
-        dgt1_ctx.witReceiptor.msgs.append(dict(pre=dgt_ghab.pre, sn=dgt_ghab.kever.sn))
-        while not dgt1_ctx.witReceiptor.cues:
-            doist.recur(deeds=all_deeds + approver_deeds)
-        dgt1_ctx.witReceiptor.cues.clear()
-        print(f"  dgt anchor witnessed")
+        HabHelpers.collectWitnessReceipts(doist, all_deeds + approver_deeds, dgt1_ctx.witReceiptor, dgt_ghab.pre, sn=dgt_ghab.kever.sn)
 
         # Delegates query delegator keystate to discover approval anchor and complete delegation
         del1_query = KeystateQueryDoer(
@@ -1169,32 +1141,23 @@ def test_multisig_delegate():
         # Run until queries complete - check by looking at the kever in del1's database
         while dgt_ghab.pre not in del1_ctx.hby.kevers or del1_ctx.hby.kevers[dgt_ghab.pre].sn < 1:
             doist.recur(deeds=all_deeds + del_deeds + query_deeds)
-            del1_ctx.hby.kvy.processEscrows()
-            del2_ctx.hby.kvy.processEscrows()
-        print(f"  Delegates discovered delegator anchor")
 
         # Now the del multisig inception should complete - wait for counselor
         prefixer = coring.Prefixer(qb64=del_ghab.pre)
         seqner = coring.Seqner(sn=0)
         while not del1_ctx.counselor.complete(prefixer, seqner):
             doist.recur(deeds=all_deeds + del_deeds)
-            del1_ctx.hby.kvy.processEscrows()
-            del2_ctx.hby.kvy.processEscrows()
-            del1_ctx.counselor.processEscrows()
-            del2_ctx.counselor.processEscrows()
-        print(f"  del Multisig delegation complete: {del_ghab.pre}")
 
         # Verify del delegated multisig exists and has correct properties
         assert del_ghab is not None, "del multisig should exist"
         assert del_ghab.kever.delpre == dgt_ghab.pre, "del delegator should be dgt"
         assert del_ghab.pre in del1_ctx.hby.kevers, "del1 should have del kever"
         assert del_ghab.pre in del2_ctx.hby.kevers, "del2 should have del kever"
-        print(f"  ✓ del delegated multisig verified")
 
         # Generate delegate (del) OOBI for resolving by the delegators
-        del_oobi = HabHelpers.generate_oobi(del1_ctx.hby, alias='del')
-        HabHelpers.resolve_oobi(doist, all_deeds, dgt1_ctx.hby, del_oobi, alias='del')
-        HabHelpers.resolve_oobi(doist, all_deeds, dgt2_ctx.hby, del_oobi, alias='del')
+        del_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del_oobi, alias='del')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del_oobi, alias='del')
 
         # Assertions
 
