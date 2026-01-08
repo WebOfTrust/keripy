@@ -1,7 +1,11 @@
 
-.PHONY: build-keri
+.PHONY: build-keri build-witness-demo publish-keri-witness-demo publish-keri
 
 VERSION=1.2.8
+REGISTRY=weboftrust
+IMAGE=keri
+LATEST_TAG=$(REGISTRY)/$(IMAGE):latest
+VERSIONED_TAG=$(REGISTRY)/$(IMAGE):$(VERSION)
 
 define DOCKER_WARNING
 In order to use the multi-platform build enable the containerd image store
@@ -12,19 +16,28 @@ To enable the feature for Docker Desktop:
 	Select Apply and Restart."
 endef
 
+.PHONY: build-keri
 build-keri: .warn
-	@docker build --platform=linux/amd64,linux/arm64 -f images/keripy.dockerfile -t weboftrust/keri:$(VERSION) .
+	@docker build \
+		--platform=linux/amd64,linux/arm64 \
+		-f images/keripy.dockerfile \
+		-t $(VERSIONED_TAG) \
+		-t $(LATEST_TAG) .
 
 .PHONY: build-witness-demo
 build-witness-demo: .warn
-	@docker build --platform=linux/amd64,linux/arm64 -f images/witness.demo.dockerfile -t weboftrust/keri-witness-demo:1.1.10 .
+	@docker build \
+		--platform=linux/amd64,linux/arm64 \
+		-f images/witness.demo.dockerfile \
+		-t $(REGISTRY)/keri-witness-demo:$(VERSION) .
 
 .PHONY: publish-keri-witness-demo
 publish-keri-witness-demo:
-	@docker push weboftrust/keri-witness-demo --all-tags
+	@docker push $(REGISTRY)/keri-witness-demo --all-tags
 
+.PHONY: publish-keri
 publish-keri:
-	@docker push weboftrust/keri:$(VERSION)
+	@docker push $(REGISTRY)/$(IMAGE) --all-tags
 
 .warn:
 	@echo -e ${RED}"$$DOCKER_WARNING"${NO_COLOUR}
