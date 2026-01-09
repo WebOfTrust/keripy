@@ -45,7 +45,7 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2, local=True)
 
         smids = [hab1.pre, hab2.pre, hab3.pre]
-        rmids = None  # need to fixe this
+        rmids = None  # TODO: fix this
         inits = dict(isith='["1/2", "1/2", "1/2"]', nsith='["1/2", "1/2", "1/2"]', toad=0, wits=[])
 
         # Create group hab with init params
@@ -282,7 +282,7 @@ def test_the_seven():
             parsing.Parser().parse(ims=bytearray(icp), kvy=kev, local=True)
 
         smids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre, hab5.pre, hab6.pre, hab7.pre]
-        rmids = None  # need to fixe this
+        rmids = None  # TODO: fix this
         inits = dict(isith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                      nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                      toad=0, wits=[])
@@ -815,19 +815,25 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         assert len(prefixers) == 1
         assert prefixers[0].qb64 == ghab2.mhab.pre
 
-def test_multisig_delegate():
+def test_multisig_delegation_workflow():
     """
     End-to-end test for multisig delegation workflow.
 
-    This test covers:
-    1. A delegator multisig (dgt) formed by two single-sig participants (dgt1, dgt2)
-    2. Two delegate participants (del1, del2) who create a delegated multisig (del)
-    3. The delegates having OOBId with the delegator multisig
-    4. Delegation approvals from both delegator single-sig AID participants
-    5. Keystate queries from delegates to discover the delegation approval seal
-    6. Generation of an OOBI for the multisig delegate
-    7. Resolution of the multisig delegate OOBI by the delegator
-    8. Verifications by the delegator about delegate state
+    This test validates the complete flow of a multisig identifier delegating
+    authority to another multisig identifier.
+
+    Participants:
+        - dgt1, dgt2: Single-sig AIDs that form the delegator multisig (dgt)
+        - del1, del2: Single-sig AIDs that form the delegate multisig (del)
+
+    Flow:
+        1. Create delegator multisig (dgt) from dgt1 + dgt2
+        2. Create delegate participants (del1, del2) and resolve delegator OOBI
+        3. Delegates create delegated multisig inception (DIP) - escrowed until approved
+        4. Both delegator participants approve via anchor interaction event (IXN)
+        5. Delegates query delegator keystate to discover the approval anchor
+        6. Delegate multisig completes once anchor is discovered
+        7. Delegators query delegate KEL to verify the delegation
     """
     doist = Doist(limit=0.0, tock=0.03125, real=True)
 
@@ -863,7 +869,6 @@ def test_multisig_delegate():
             (del1_ctx, 'del1'), 
             (del2_ctx, 'del2')]:
             HabHelpers.resolveOobi(doist, wit_deeds, ctx.hby, wit_ctx.oobi, alias='wan')
-            print(f"  {name} resolved witness OOBI", flush=True)
 
         # Create single sig AIDs for delegator participants (dgt1, dgt2)
         # dgt1 init + incept
@@ -930,7 +935,7 @@ def test_multisig_delegate():
         assert dgt_ghab.pre in dgt1_ctx.hby.kevers, "dgt1 should have dgt kever"
         assert dgt_ghab.pre in dgt2_ctx.hby.kevers, "dgt2 should have dgt kever"
         assert len(dgt_ghab.smids) == 2, "dgt should have 2 signing members"
-
+        
         # Create delegate participants del1, del2
         # Create del1 single-sig AID
         del1_hab = del1_ctx.hby.makeHab(name='del1', isith='1', icount=1, toad=1, wits=[wit_ctx.pre])
@@ -985,13 +990,11 @@ def test_multisig_delegate():
 
         del_deeds = doist.enter(doers=[del_leader, del_follower])
 
-        # Run until the delegate sends the DIP to the delegator
-        # This will escrow until delegation is approved
+        # Run until the delegate sends the DIP to the delegator (will escrow until approved)
         while del_leader.ghab is None:
             doist.recur(deeds=all_deeds + del_deeds)
         del_ghab = del_leader.ghab
 
-        # Delegators approve delegation (dgt1 and dgt2 confirm)
         # Wait for delegation request to appear in delegables escrow
         while not HabHelpers.hasDelegables(dgt1_ctx.hby.db):
             doist.recur(deeds=all_deeds + del_deeds)
@@ -1014,16 +1017,29 @@ def test_multisig_delegate():
             witReceiptor=dgt2_ctx.witReceiptor,
             witq=dgt2_ctx.witq,
             postman=dgt2_ctx.postman,
+            notifier=dgt2_ctx.notifier,
+            leader=False,  # dgt2 is the follower
         )
         approver_deeds = doist.enter(doers=[dgt1_approver, dgt2_approver])
 
         # Run until delegation is approved (anchor event created)
-        # Check for the anchor event on the delegator
         while dgt_ghab.kever.sn < 1:
             doist.recur(deeds=all_deeds + del_deeds + approver_deeds)
 
         # Get witness receipts for the anchor
         HabHelpers.collectWitnessReceipts(doist, all_deeds + approver_deeds, dgt1_ctx.witReceiptor, dgt_ghab.pre, sn=dgt_ghab.kever.sn)
+
+        # Wait for counselor to complete the anchor
+        prefixer = coring.Prefixer(qb64=dgt_ghab.pre)
+        seqner = coring.Seqner(sn=dgt_ghab.kever.sn)
+        while not dgt1_ctx.counselor.complete(prefixer, seqner):
+            doist.recur(deeds=all_deeds + del_deeds + approver_deeds)
+        
+        # Allow approvers to release the escrowed DIP event from delegables
+        # After counselor completes, the approver's _releaseCompletedDelegations()
+        # needs to run to reprocess the DIP with the delegation seal attached
+        while del_ghab.pre not in dgt1_ctx.hby.kevers or del_ghab.pre not in dgt2_ctx.hby.kevers:
+            doist.recur(deeds=all_deeds + del_deeds + approver_deeds)
 
         # Delegates query delegator keystate to discover approval anchor and complete delegation
         del1_query = KeystateQueryDoer(
@@ -1060,9 +1076,12 @@ def test_multisig_delegate():
         assert del_ghab.pre in del1_ctx.hby.kevers, "del1 should have del kever"
         assert del_ghab.pre in del2_ctx.hby.kevers, "del2 should have del kever"
 
+        # Verify delegation anchor exists
+        assert dgt_ghab.kever.sn == 1, "dgt should have two events, icp and ixn (with dip approval anchor)"
+        assert del_ghab.kever.sn == 0, "delegate should have exactly one event - dip"
+
         # Before delegators can verify the delegate multisig's events, they need
         # the public keys of the multisig members (del1, del2) to verify signatures.
-        # Resolve del1 and del2's OOBIs for both delegator participants.
         del1_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del1')
         del2_oobi = HabHelpers.generateOobi(del2_ctx.hby, alias='del2')
         HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del1_oobi, alias='del1')
@@ -1070,26 +1089,19 @@ def test_multisig_delegate():
         HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del1_oobi, alias='del1')
         HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del2_oobi, alias='del2')
 
-        # Now delegators can resolve the delegate multisig OOBI and verify signatures
-        del_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del')
-        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del_oobi, alias='del')
-        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del_oobi, alias='del')
-
-        # Wait for KEL processing to complete after OOBI resolution
-        # resolveOobi only waits for the HTTP response and parsing to start,
-        # but for delegated identifiers the KEL goes through escrow processing
-        # before appearing in kevers. We must run deeds until processing completes.
+        # Now delegators query for the delegate's KEL - this should work because
+        # eventing.py now checks for existing seals before escrowing to delegables
+        dgt1_ctx.witq.query(src=dgt1_hab.pre, pre=del_ghab.pre, sn=0, wits=[wit_ctx.pre])
+        dgt2_ctx.witq.query(src=dgt2_hab.pre, pre=del_ghab.pre, sn=0, wits=[wit_ctx.pre])
+        
+        # Wait for delegate to appear in delegator kevers
         while del_ghab.pre not in dgt1_ctx.hby.kevers or del_ghab.pre not in dgt2_ctx.hby.kevers:
             doist.recur(deeds=all_deeds)
 
-        # Assertions
-
         # Verify delegator knows about delegate
-        assert del_ghab.pre in dgt1_ctx.hby.kevers, "dgt1 should know about del after OOBI resolution"
-        print(f"  ✓ dgt1 knows about del delegate")
-        assert del_ghab.pre in dgt2_ctx.hby.kevers, "dgt2 should know about del after OOBI resolution"
-        print(f"  ✓ dgt2 knows about del delegate")
+        assert del_ghab.pre in dgt1_ctx.hby.kevers, "dgt1 should know about del after witness query"
+        assert del_ghab.pre in dgt2_ctx.hby.kevers, "dgt2 should know about del after witness query"
 
-        # Verify delegation anchor exists
-        assert dgt_ghab.kever.sn == 1, "dgt should have two events, icp and ixn (with dip approval anchor)"
-        assert del_ghab.kever.sn == 0, "delegate should have exactly one event - dip"
+        # Verify delegables escrow is empty (delegation was properly released)
+        assert not HabHelpers.hasDelegables(dgt1_ctx.hby.db), "dgt1 delegables escrow should be empty"
+        assert not HabHelpers.hasDelegables(dgt2_ctx.hby.db), "dgt2 delegables escrow should be empty"

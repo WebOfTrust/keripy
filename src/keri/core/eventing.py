@@ -2401,16 +2401,25 @@ class Kever:
             #if (delpre in self.prefixes) and not self.locallyOwned(): # local delegator
             # must be local if locallyDelegated or caught above as misfit
             if delseqner is None or delsaider is None: # missing delegation seal
-                # so escrow delegable. So local delegator can approve OOB.
-                # and create delegator event with valid event seal of this
-                # delegated event and then reprocess event with attached source
-                # seal to delegating event, i.e. delseqner, delsaider.
-                self.escrowDelegableEvent(serder=serder, sigers=sigers,
-                                          wigers=wigers, local=local)
-                msg = f"Missing approval for delegation by {delpre} of event = {serder.said}"
-                logger.info(msg)
-                logger.debug("Event Body=\n%s\n", serder.pretty())
-                raise MissingDelegableApprovalError(msg)
+                # Before escrowing, check if we already have the seal in our KEL
+                # This handles the case where delegation was already approved and
+                # we're receiving the event via OOBI resolution or query
+                seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
+                dserder = self.db.fetchLastSealingEventByEventSeal(pre=delpre, seal=seal)
+                if dserder is not None:  # found seal - use it instead of escrowing
+                    delseqner = coring.Seqner(sn=dserder.sn)
+                    delsaider = coring.Saider(qb64=dserder.said)
+                else:
+                    # Seal not found - escrow delegable. So local delegator can approve OOB.
+                    # and create delegator event with valid event seal of this
+                    # delegated event and then reprocess event with attached source
+                    # seal to delegating event, i.e. delseqner, delsaider.
+                    self.escrowDelegableEvent(serder=serder, sigers=sigers,
+                                              wigers=wigers, local=local)
+                    msg = f"Missing approval for delegation by {delpre} of event = {serder.said}"
+                    logger.info(msg)
+                    logger.debug("Event Body=\n%s\n", serder.pretty())
+                    raise MissingDelegableApprovalError(msg)
 
         # validateDelegation returns (None, None) when delegation validation
         # does not apply. Raises ValidationError if validation applies but
