@@ -1065,15 +1065,20 @@ def test_multisig_delegate():
         HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del_oobi, alias='del')
         HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del_oobi, alias='del')
 
+        # Wait for KEL processing to complete after OOBI resolution
+        # resolveOobi only waits for the HTTP response and parsing to start,
+        # but for delegated identifiers the KEL goes through escrow processing
+        # before appearing in kevers. We must run deeds until processing completes.
+        while del_ghab.pre not in dgt1_ctx.hby.kevers or del_ghab.pre not in dgt2_ctx.hby.kevers:
+            doist.recur(deeds=all_deeds)
+
         # Assertions
 
         # Verify delegator knows about delegate
-        # TODO make sure the OOBI resolution has completed and that the delegate KEL appears in the delegate.
-        #      run all deeds until the delegate KEL appears in both dgt1 and dg2
-        # assert del_ghab.pre in dgt1_ctx.hby.kevers
-        # print(f"  ✓ dgt1 knows about del delegate")
-        # assert del_ghab.pre in dgt2_ctx.hby.kevers
-        # print(f"  ✓ dgt2 knows about del delegate")
+        assert del_ghab.pre in dgt1_ctx.hby.kevers, "dgt1 should know about del after OOBI resolution"
+        print(f"  ✓ dgt1 knows about del delegate")
+        assert del_ghab.pre in dgt2_ctx.hby.kevers, "dgt2 should know about del after OOBI resolution"
+        print(f"  ✓ dgt2 knows about del delegate")
 
         # Verify delegation anchor exists
         assert dgt_ghab.kever.sn == 1, "dgt should have two events, icp and ixn (with dip approval anchor)"
