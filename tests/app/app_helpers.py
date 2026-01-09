@@ -22,7 +22,7 @@ from keri.app.forwarding import Poster
 from keri.app.habbing import openHab, HaberyDoer, Habery, Hab, openHby, GroupHab
 from keri.app.indirecting import MailboxDirector, setupWitness
 from keri.app.notifying import Notifier
-from keri.core import Salter, coring, serdering
+from keri.core import Salter, coring, serdering, indexing
 from keri.db import basing, dbing
 from keri.help import helping
 from keri.peer import exchanging
@@ -270,6 +270,24 @@ class HabHelpers:
         """Returns a delegation seal a delegator can use to approve a delegated inception or rotation event."""
         return dict(i=delegateAid, s=delegateSnh, d=delegateEvtSaid)
 
+    @staticmethod
+    def clearSentCue(postman: Poster, said: str):
+        """
+        Remove cue(s) from Poster.cues that match the given SAID.
+        
+        This is more precise than postman.cues.clear() because it only removes
+        cues for the specific message, leaving other pending send confirmations intact.
+        
+        Parameters:
+            postman: The Poster instance
+            said: The SAID of the message to clear from cues
+        """
+        # Build new list without matching cues, then replace contents
+        remaining = [cue for cue in postman.cues if cue.get("said") != said]
+        postman.cues.clear()
+        for cue in remaining:
+            postman.cues.append(cue)
+
 
 # =============================================================================
 # Orchestration Doers for Multisig
@@ -333,76 +351,97 @@ class MultisigInceptLeader(doing.DoDoer):
         super(MultisigInceptLeader, self).__init__(doers=[], **kwa)
 
     def recur(self, tyme, deeds=None):
-        """Main orchestration loop."""
+        """Main orchestration loop for leading a multisig inception."""
         super(MultisigInceptLeader, self).recur(tyme, deeds=deeds)
 
+        # Step 1: Create GroupHab and notify followers
         if self.ghab is None:
-            # Step 1: Create the GroupHab
-            inits = dict(
-                isith=self.isith,
-                nsith=self.nsith,
-                toad=self.toad,
-                wits=self.wits,
-                delpre=self.delpre,
-            )
-            self.ghab = self.hby.makeGroupHab(
-                group=self.group,
-                mhab=self.mhab,
-                smids=self.smids,
-                rmids=self.rmids,
-                **inits
-            )
+            self._createGroupHabAndNotifyFollowers()
+            return False
 
-            # Step 2: Create and send the inception EXN to followers
-            icp = self.ghab.makeOwnInception(allowPartiallySigned=True)
-            exn, ims = grouping.multisigInceptExn(
-                self.mhab,
-                smids=self.smids,
-                rmids=self.rmids,
-                icp=icp
-            )
+        # Step 2: Wait for sends to complete before starting Counselor
+        if not self._checkPendingSendsComplete():
+            return False
 
-            # Send to all other participants and track for delivery confirmation
-            others = [m for m in self.smids if m != self.mhab.pre]
-            for recpt in others:
-                self.postman.send(
-                    src=self.mhab.pre,
-                    dest=recpt,
-                    topic="multisig",
-                    serder=exn,
-                    attachment=ims
-                )
-            self.pending_sends.append(exn.said)  # Track SAID for delivery confirmation
-            return False  # Keep running
-
-        # Step 3: Wait for sends to complete before starting Counselor
-        if self.pending_sends:
-            for said in list(self.pending_sends):
-                if self.postman.sent(said=said):
-                    self.pending_sends.remove(said)
-            if self.pending_sends:
-                return False  # Still waiting for sends to complete
-            self.postman.cues.clear()  # Clear cues after all sends confirmed
-
-        # Step 4: Start the Counselor (once, after sends complete)
+        # Step 3: Start the Counselor (once, after sends complete)
         if not self.counselor_started:
-            prefixer = coring.Prefixer(qb64=self.ghab.pre)
-            seqner = coring.Seqner(sn=0)
-            saider = coring.Saider(qb64=prefixer.qb64)
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
-            self.counselor_started = True
-            return False  # Keep running
+            self._startCounselor()
+            return False
 
-        # Step 5: Wait for Counselor to complete (cgms)
-        # Note: EscrowDoer in controller context handles processEscrows calls
+        # Step 4: Wait for Counselor to complete (cgms)
+        if self._isCounselorComplete():
+            self.done = True
+            return True
+
+        return False
+
+    def _createGroupHabAndNotifyFollowers(self):
+        """Create the GroupHab and send /multisig/icp EXN to all followers."""
+        inits = dict(
+            isith=self.isith,
+            nsith=self.nsith,
+            toad=self.toad,
+            wits=self.wits,
+            delpre=self.delpre,
+        )
+        self.ghab = self.hby.makeGroupHab(
+            group=self.group,
+            mhab=self.mhab,
+            smids=self.smids,
+            rmids=self.rmids,
+            **inits
+        )
+
+        # Create and send the inception EXN to followers
+        icp = self.ghab.makeOwnInception(allowPartiallySigned=True)
+        exn, ims = grouping.multisigInceptExn(
+            self.mhab,
+            smids=self.smids,
+            rmids=self.rmids,
+            icp=icp
+        )
+
+        self._sendToOtherMembers(exn, ims)
+        self.pending_sends.append(exn.said)
+
+    def _sendToOtherMembers(self, exn: serdering.SerderKERI, attachment: bytes):
+        """Send an EXN message to all other multisig members."""
+        others = [m for m in self.smids if m != self.mhab.pre]
+        for recpt in others:
+            self.postman.send(
+                src=self.mhab.pre,
+                dest=recpt,
+                topic="multisig",
+                serder=exn,
+                attachment=attachment
+            )
+
+    def _checkPendingSendsComplete(self) -> bool:
+        """Check if all pending EXN sends have been delivered."""
+        if not self.pending_sends:
+            return True
+
+        for said in list(self.pending_sends):
+            if self.postman.sent(said=said):
+                self.pending_sends.remove(said)
+                HabHelpers.clearSentCue(self.postman, said)
+
+        return not self.pending_sends
+
+    def _startCounselor(self):
+        """Start the Counselor to coordinate signature collection."""
+        prefixer = coring.Prefixer(qb64=self.ghab.pre)
+        seqner = coring.Seqner(sn=0)
+        saider = coring.Saider(qb64=prefixer.qb64)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
+        self.counselor_started = True
+
+    def _isCounselorComplete(self) -> bool:
+        """Check if Counselor has completed signature coordination."""
         prefixer = coring.Prefixer(qb64=self.ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=self.ghab.pre)
-        if self.counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider):
-            self.done = True
-            return True  # Done
-
-        return False  # Keep running
+        return self.counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
 
 
 class MultisigInceptFollower(doing.DoDoer):
@@ -449,116 +488,150 @@ class MultisigInceptFollower(doing.DoDoer):
         super(MultisigInceptFollower, self).__init__(doers=[], **kwa)
 
     def recur(self, tyme, deeds=None):
-        """Main orchestration loop."""
+        """Main orchestration loop for joining a multisig inception."""
         super(MultisigInceptFollower, self).recur(tyme, deeds=deeds)
 
+        # Step 1: Wait for /multisig/icp notification and create GroupHab
         if self.ghab is None:
-            # Wait for notification from leader using noter.notes (persistent notifications)
-            # not signaler.signals (transient pings). Pattern from kli multisig join.
-            if self.notifier.noter.notes.cntAll() == 0:
-                return False  # No notifications yet, keep waiting
-            
-            for keys, notice in self.notifier.noter.notes.getItemIter():
-                attrs = notice.attrs
-                route = attrs['r']
-                
-                if route != '/multisig/icp':
-                    print(f"[Follower {self.mhab.pre[:8]}] Not an inception notification - only care about inception notifications for this follower", flush=True)
-                    continue  # Not an inception notification - only care about inception notifications for this follower
-                
-                exnSaid = attrs['d']
-                exn, _ = exchanging.cloneMessage(self.hby, said=exnSaid)
-
-                payload = exn.ked['a']
-                smids = payload['smids']
-                rmids = payload['rmids']
-
-                # Check if we're a participant
-                if self.mhab.pre not in smids:
-                    raise ValueError(f"[Follower {self.mhab.pre[:8]}] Not in smids ({self.mhab.pre}), skipping. smids={smids}")
-
-                # Get the embedded icp event from the EXN
-                embeds = exn.ked['e']
-                icpKed = embeds['icp']
-                origIcp = serdering.SerderKERI(sad=icpKed)
-
-                # Extract parameters from the ICP
-                inits = dict(
-                    isith=origIcp.ked["kt"],
-                    nsith=origIcp.ked["nt"],
-                    estOnly=kering.TraitCodex.EstOnly in origIcp.ked['c'],
-                    DnD=kering.TraitCodex.DoNotDelegate in origIcp.ked['c'],
-                    toad=origIcp.ked["bt"],
-                    wits=origIcp.ked["b"],
-                    delpre=origIcp.ked["di"] if "di" in origIcp.ked else None,
-                )
-
-                # Create our GroupHab
-                self.ghab = self.hby.makeGroupHab(
-                    group=self.group,
-                    mhab=self.mhab,
-                    smids=smids,
-                    rmids=rmids,
-                    **inits
-                )
-
-                # Remove the notification now that we've processed it
-                self.notifier.noter.notes.rem(keys=keys)
-
-                # Send our signature to others and track for delivery confirmation
-                icp = self.ghab.makeOwnInception(allowPartiallySigned=True)
-                exn, ims = grouping.multisigInceptExn(
-                    self.mhab,
-                    smids=smids,
-                    rmids=rmids,
-                    icp=icp
-                )
-
-                others = [m for m in smids if m != self.mhab.pre]
-                for recpt in others:
-                    # Remember, the Postman is already created in the controller context's doers (all_deeds) and is run
-                    # by the controller context's doers.
-                    self.postman.send(
-                        src=self.mhab.pre,
-                        dest=recpt,
-                        topic="multisig",
-                        serder=exn,
-                        attachment=ims
-                    )
-                self.pendingSends.append(exn.said)  # Track SAID for delivery confirmation
-                break  # Exit notification loop after processing
-
-            return False  # Keep running
+            self._processInceptionNotifications()
+            return False
 
         # Step 2: Wait for sends to complete before starting Counselor
-        if self.pendingSends:
-            for said in list(self.pendingSends):
-                if self.postman.sent(said=said):
-                    self.pendingSends.remove(said)
-            if self.pendingSends:
-                return False  # Still waiting for sends to complete
-            self.postman.cues.clear()  # Clear cues after all sends confirmed
+        if not self._checkPendingSendsComplete():
+            return False
 
         # Step 3: Start Counselor (once, after sends complete)
         if not self.counselorStarted:
-            prefixer = coring.Prefixer(qb64=self.ghab.pre)
-            seqner = coring.Seqner(sn=0)
-            saider = coring.Saider(qb64=prefixer.qb64)
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
-            self.counselorStarted = True
-            return False  # Keep running
+            self._startCounselor()
+            return False
 
         # Step 4: Wait for Counselor to complete
-        # Note: EscrowDoer in controller context handles processEscrows calls
+        if self._isCounselorComplete():
+            print(f"[Follower {self.mhab.pre[:8]}] Multisig inception complete for {self.ghab.pre}", flush=True)
+            self.done = True
+            return True
+
+        return False
+
+    def _processInceptionNotifications(self):
+        """
+        Scan notifications for /multisig/icp and create GroupHab.
+        
+        Uses noter.notes (persistent notifications) not signaler.signals
+        (transient pings). This pattern matches `kli multisig join`.
+        """
+        if self.notifier.noter.notes.cntAll() == 0:
+            return  # No notifications yet
+
+        for keys, notice in self.notifier.noter.notes.getItemIter():
+            if self._processIcpNotification(keys, notice):
+                break  # Successfully processed one notification
+
+    def _processIcpNotification(self, keys, notice) -> bool:
+        """
+        Process a single /multisig/icp notification.
+        
+        Returns:
+            True if successfully processed, False to skip
+        """
+        attrs = notice.attrs
+        route = attrs['r']
+
+        if route != '/multisig/icp':
+            return False  # Not an inception notification
+
+        exnSaid = attrs['d']
+        exn, _ = exchanging.cloneMessage(self.hby, said=exnSaid)
+
+        # Extract member info from payload
+        payload = exn.ked['a']
+        smids = payload['smids']
+        rmids = payload['rmids']
+
+        # Verify we're a participant
+        if self.mhab.pre not in smids:
+            raise ValueError(f"[Follower {self.mhab.pre[:8]}] Not in smids ({self.mhab.pre}), skipping. smids={smids}")
+
+        # Extract inception parameters and create GroupHab
+        inits = self._extractInceptionParams(exn)
+        self.ghab = self.hby.makeGroupHab(
+            group=self.group,
+            mhab=self.mhab,
+            smids=smids,
+            rmids=rmids,
+            **inits
+        )
+
+        # Remove processed notification
+        self.notifier.noter.notes.rem(keys=keys)
+
+        # Send our signature to others
+        self._sendSignatureToOthers(smids, rmids)
+        return True
+
+    def _extractInceptionParams(self, exn: serdering.SerderKERI) -> dict:
+        """Extract GroupHab initialization parameters from the embedded ICP."""
+        embeds = exn.ked['e']
+        icpKed = embeds['icp']
+        origIcp = serdering.SerderKERI(sad=icpKed)
+
+        return dict(
+            isith=origIcp.ked["kt"],
+            nsith=origIcp.ked["nt"],
+            estOnly=kering.TraitCodex.EstOnly in origIcp.ked['c'],
+            DnD=kering.TraitCodex.DoNotDelegate in origIcp.ked['c'],
+            toad=origIcp.ked["bt"],
+            wits=origIcp.ked["b"],
+            delpre=origIcp.ked["di"] if "di" in origIcp.ked else None,
+        )
+
+    def _sendSignatureToOthers(self, smids: List[str], rmids: List[str]):
+        """Create and send our signed inception EXN to other members."""
+        icp = self.ghab.makeOwnInception(allowPartiallySigned=True)
+        exn, ims = grouping.multisigInceptExn(
+            self.mhab,
+            smids=smids,
+            rmids=rmids,
+            icp=icp
+        )
+
+        others = [m for m in smids if m != self.mhab.pre]
+        for recpt in others:
+            self.postman.send(
+                src=self.mhab.pre,
+                dest=recpt,
+                topic="multisig",
+                serder=exn,
+                attachment=ims
+            )
+        self.pendingSends.append(exn.said)
+
+    def _checkPendingSendsComplete(self) -> bool:
+        """Check if all pending EXN sends have been delivered."""
+        if not self.pendingSends:
+            return True
+
+        for said in list(self.pendingSends):
+            if self.postman.sent(said=said):
+                self.pendingSends.remove(said)
+                HabHelpers.clearSentCue(self.postman, said)
+
+        return not self.pendingSends
+
+    def _startCounselor(self):
+        """Start the Counselor to coordinate signature collection."""
+        prefixer = coring.Prefixer(qb64=self.ghab.pre)
+        seqner = coring.Seqner(sn=0)
+        saider = coring.Saider(qb64=prefixer.qb64)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
+        self.counselorStarted = True
+
+    def _isCounselorComplete(self) -> bool:
+        """Check if Counselor has completed signature coordination."""
         prefixer = coring.Prefixer(qb64=self.ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=self.ghab.pre)
-        if self.counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider):
-            print(f"[Follower {self.mhab.pre[:8]}] Multisig inception complete for {self.ghab.pre}", flush=True)
-            self.done = True
-            return True  # Done
-
-        return False  # Keep running
+        return self.counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
 
 
 class MultisigDelegationApprover(doing.DoDoer):
@@ -567,7 +640,7 @@ class MultisigDelegationApprover(doing.DoDoer):
 
     This coordinates both members of the delegator multisig to:
     1. Watch the delegables escrow for delegation requests
-    2. Create anchor events via interact
+    2. Create anchor events via interact (leader) or wait for coordination (follower)
     3. Coordinate signature collection
     4. Propagate to witnesses
 
@@ -579,14 +652,17 @@ class MultisigDelegationApprover(doing.DoDoer):
         witReceiptor: WitnessReceiptor for getting receipts
         witq: WitnessInquisitor for querying witnesses
         postman: Poster for sending messages
+        notifier: Notifier for receiving messages (follower mode)
         interact: Whether to use interact (True) or rotate (False) for anchor
         auto: Whether to auto-approve all delegation requests
+        leader: Whether this participant is the leader (creates events)
     """
 
     def __init__(self, hby: Habery, ghab: GroupHab, mhab: Hab,
                  counselor: grouping.Counselor, witReceiptor: WitnessReceiptor,
                  witq: WitnessInquisitor, postman: Poster,
-                 interact: bool = True, auto: bool = True, **kwa):
+                 notifier: Notifier = None,
+                 interact: bool = True, auto: bool = True, leader: bool = True, **kwa):
         self.hby = hby
         self.ghab = ghab
         self.mhab = mhab
@@ -594,13 +670,18 @@ class MultisigDelegationApprover(doing.DoDoer):
         self.witReceiptor = witReceiptor
         self.witq = witq
         self.postman = postman
+        self.notifier = notifier
         self.interact = interact
         self.auto = auto
+        self.leader = leader
         self.approved = set()  # Track approved delegation (pre, sn) tuples
         # Track pending sends: {(pre, sn): {'said': exn_said, 'ixn_sn': sn, 'ixn_said': said}}
         self.pendingSends = {}
         # Track delegations ready for counselor start
-        self.readyForcounselor = {}
+        self.readyForCounselor = {}
+        # Track delegations waiting for counselor completion
+        # {(pre, sn): {'ixn_sn': int, 'ixn_said': str, 'edig': bytes}}
+        self.waitingForComplete = {}
 
         # Note: counselor and postman are NOT included here because they're already
         # running via the controller context's doers (all_deeds).
@@ -611,96 +692,354 @@ class MultisigDelegationApprover(doing.DoDoer):
         return [(pre, sn, edig) for (pre, sn), edig in self.hby.db.delegables.getItemIter()]
 
     def recur(self, tyme, deeds=None):
-        """Main orchestration loop."""
+        """
+        Main orchestration loop for delegation approval.
+        
+        The approval process flows through these stages:
+        1. Leader finds delegables → creates anchor → sends EXN to followers
+        2. Followers receive EXN notification → sign same anchor → send EXN back
+        3. Counselor coordinates signatures across all participants
+        4. Once complete, release escrowed delegation by reprocessing with seal
+        """
         super(MultisigDelegationApprover, self).recur(tyme, deeds=deeds)
 
-        # Step 1: Check for pending sends that have completed
+        # Process the approval pipeline
+        self._processPendingSends()
+        self._startCounselorForReadyDelegations()
+        self._releaseCompletedDelegations()
+        
+        # Leader creates anchors, follower signs from notifications
+        if self.leader:
+            self._leaderProcessDelegables()
+        else:
+            self._followerProcessNotifications()
+
+        return False  # Keep running
+
+    def _processPendingSends(self):
+        """
+        Check for EXN messages that have been successfully delivered.
+        
+        After the leader sends an anchor proposal to followers, we wait for
+        postman to confirm delivery before starting the Counselor coordination.
+        """
         for key in list(self.pendingSends.keys()):
             info = self.pendingSends[key]
             if self.postman.sent(said=info['said']):
-                # Send complete, move to ready_for_counselor
-                self.readyForcounselor[key] = info
+                self.readyForCounselor[key] = info
                 del self.pendingSends[key]
-                self.postman.cues.clear()  # Clear cues after send confirmed
+                HabHelpers.clearSentCue(self.postman, info['said'])
 
-        # Step 2: Start counselor for delegations that are ready
-        for key in list(self.readyForcounselor.keys()):
-            info = self.readyForcounselor[key]
+    def _startCounselorForReadyDelegations(self):
+        """
+        Start Counselor coordination for delegations that are ready.
+        
+        The Counselor collects signatures from all multisig participants
+        and marks the event complete when threshold is met.
+        """
+        for key in list(self.readyForCounselor.keys()):
+            info = self.readyForCounselor[key]
             prefixer = coring.Prefixer(qb64=self.ghab.pre)
             seqner = coring.Seqner(sn=info['ixn_sn'])
             saider = coring.Saider(qb64=info['ixn_said'])
+            
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
-            self.approved.add(key)
+            self.waitingForComplete[key] = info
             print(f"[DelegationApprover {self.mhab.pre[:8]}] Started counselor for anchor at sn={info['ixn_sn']}")
-            del self.readyForcounselor[key]
+            del self.readyForCounselor[key]
 
-        # Step 3: Process new delegables
-        dlgs = self.delegablesEscrowed()
-        for pre, sn, edig in dlgs:
+    def _releaseCompletedDelegations(self):
+        """
+        Release escrowed delegations after anchor coordination completes.
+        
+        This is necessary because the delegables escrow has no automatic processor.
+        Delegation approval is an active policy decision (like `kli delegate confirm`).
+        
+        Once the multisig anchor is complete, we:
+        1. Retrieve the escrowed DIP/DRT event
+        2. Reprocess it with the delegation seal (delseqner, delsaider) attached
+        3. Remove it from the delegables escrow
+        """
+        for key in list(self.waitingForComplete.keys()):
+            info = self.waitingForComplete[key]
+            prefixer = coring.Prefixer(qb64=self.ghab.pre)
+            seqner = coring.Seqner(sn=info['ixn_sn'])
+            
+            if not self.counselor.complete(prefixer=prefixer, seqner=seqner):
+                continue
+            
+            self._releaseEscrowedDelegation(key, info)
+            self.approved.add(key)
+            del self.waitingForComplete[key]
+
+    def _releaseEscrowedDelegation(self, key: Tuple[str, str], info: dict):
+        """
+        Reprocess an escrowed DIP/DRT event with the delegation seal attached.
+        
+        Args:
+            key: (delegate_pre, delegate_sn) tuple identifying the escrowed event
+            info: dict with 'ixn_sn' and 'ixn_said' for the anchor event
+        """
+        (pre, sn) = key
+        edigs = self.hby.db.delegables.get(keys=(pre, sn))
+        if not edigs:
+            return
+        
+        edig = edigs[0]
+        dgkey = dbing.dgKey(pre.encode() if isinstance(pre, str) else pre, edig)
+        eraw = self.hby.db.getEvt(dgkey)
+        if not eraw:
+            return
+            
+        # Reconstruct the event with signatures
+        eserder = serdering.SerderKERI(raw=bytes(eraw))
+        sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in self.hby.db.getSigs(dgkey)]
+        wigers = [indexing.Siger(qb64b=bytes(sig)) for sig in self.hby.db.getWigs(dgkey)]
+        
+        # Reprocess with the delegation seal
+        # - now that all signatures and receipts exist event can be processed.
+        self.hby.kvy.processEvent(
+            serder=eserder,
+            sigers=sigers,
+            wigers=wigers,
+            delseqner=coring.Seqner(sn=info['ixn_sn']),
+            delsaider=coring.Saider(qb64=info['ixn_said'])
+        )
+        
+        self.hby.db.delegables.rem(keys=(pre, sn), val=edig) # now remove from escrow since complete
+        print(f"[DelegationApprover {self.mhab.pre[:8]}] Released delegation for {pre[:8]} from escrow")
+
+    def _leaderProcessDelegables(self):
+        """
+        Leader: Find delegable events and create anchor proposals.
+        
+        The leader is responsible for:
+        1. Scanning the delegables escrow for DIP/DRT events we need to approve
+        2. Creating an IXN anchor event with the delegation seal
+        3. Sending a /multisig/ixn EXN to all other multisig members
+        """
+        for pre, sn, edig in self.delegablesEscrowed():
             key = (pre, sn)
-            if key in self.approved or key in self.pendingSends or key in self.readyForcounselor:
+            if self._isAlreadyProcessing(key):
                 continue
 
-            dgkey = dbing.dgKey(pre, edig)
-            eraw = self.hby.db.getEvt(dgkey)
-            if eraw is None:
+            eserder = self._getValidDelegableEvent(pre, edig)
+            if eserder is None:
                 continue
 
-            eserder = serdering.SerderKERI(raw=bytes(eraw))
-            ilk = eserder.sad['t']
-
-            if ilk not in (coring.Ilks.dip, coring.Ilks.drt):
+            if not self.auto:
                 continue
 
-            # Get the delegator prefix
-            if ilk == coring.Ilks.dip:
-                delpre = eserder.sad['di']
-            else:  # drt
-                dkever = self.hby.kevers[eserder.pre]
-                delpre = dkever.delpre
+            self._createAndSendAnchor(key, eserder)
 
-            # Check if we are the delegator
-            if delpre != self.ghab.pre:
-                continue
+    def _isAlreadyProcessing(self, key: Tuple[str, str]) -> bool:
+        """Check if this delegation is already being processed."""
+        return (key in self.approved or
+                key in self.pendingSends or
+                key in self.readyForCounselor or
+                key in self.waitingForComplete)
 
-            print(f"[DelegationApprover {self.mhab.pre[:8]}] Found delegable {ilk} event for {eserder.pre[:8]}")
+    def _getValidDelegableEvent(self, pre: str, edig: bytes) -> serdering.SerderKERI:
+        """
+        Get a delegable event if it's a valid DIP/DRT for our multisig.
+        
+        Returns:
+            SerderKERI if valid, None otherwise
+        """
+        dgkey = dbing.dgKey(pre, edig)
+        eraw = self.hby.db.getEvt(dgkey)
+        if eraw is None:
+            return None
 
-            if self.auto:
-                # Create the anchor
-                anchor = HabHelpers.delegationSeal(eserder.ked['i'], eserder.snh, eserder.said)
+        eserder = serdering.SerderKERI(raw=bytes(eraw))
+        ilk = eserder.sad['t']
 
-                if self.interact:
-                    ixn = self.ghab.interact(data=[anchor])
-                else:
-                    raise ValueError(f"[DelegationApprover {self.mhab.pre[:8]}] delegation approval not yet supported for rotation events")
+        # Must be a delegated event
+        if ilk not in (coring.Ilks.dip, coring.Ilks.drt):
+            return None
 
-                # Create and send multisig IXN EXN to other members
-                ixnser = serdering.SerderKERI(raw=ixn)
-                exn, ims = grouping.multisigInteractExn(
-                    ghab=self.ghab,
-                    aids=self.ghab.smids,
-                    ixn=ixn
-                )
+        # Get the delegator prefix
+        if ilk == coring.Ilks.dip:
+            delpre = eserder.sad['di']
+        else:  # drt
+            dkever = self.hby.kevers[eserder.pre]
+            delpre = dkever.delpre
 
-                others = [m for m in self.ghab.smids if m != self.mhab.pre]
-                for recpt in others:
-                    self.postman.send(
-                        src=self.mhab.pre,
-                        dest=recpt,
-                        topic="multisig",
-                        serder=exn,
-                        attachment=ims
-                    )
+        # We must be the delegator
+        if delpre != self.ghab.pre:
+            return None
 
-                # Track this send for delivery confirmation
-                self.pendingSends[key] = {
-                    'said': exn.said,
-                    'ixn_sn': ixnser.sn,
-                    'ixn_said': ixnser.said
-                }
-                print(f"[DelegationApprover {self.mhab.pre[:8]}] Created anchor for {eserder.pre[:8]} at sn={ixnser.sn}, waiting for send confirmation")
+        return eserder
 
-        return False  # Keep running forever
+    def _createAndSendAnchor(self, key: Tuple[str, str], eserder: serdering.SerderKERI):
+        """
+        Create an anchor IXN and send /multisig/ixn EXN to other members.
+        
+        Args:
+            key: (delegate_pre, delegate_sn) tuple
+            eserder: The delegated event to approve
+        """
+        print(f"[DelegationApprover {self.mhab.pre[:8]}] Found delegable {eserder.sad['t']} event for {eserder.pre[:8]}")
+
+        # Create the delegation seal
+        anchor = HabHelpers.delegationSeal(eserder.ked['i'], eserder.snh, eserder.said)
+
+        if not self.interact:
+            raise ValueError(f"[DelegationApprover {self.mhab.pre[:8]}] delegation approval via rotation not yet supported")
+
+        # Create the anchor IXN (signs and stores locally)
+        ixn = self.ghab.interact(data=[anchor])
+        ixnser = serdering.SerderKERI(raw=ixn)
+
+        # Create and send the multisig coordination EXN
+        exn, ims = grouping.multisigInteractExn(
+            ghab=self.ghab,
+            aids=self.ghab.smids,
+            ixn=ixn
+        )
+
+        self._sendToOtherMembers(exn, ims) # sends exn notification to other members (followers)
+
+        # Track for delivery confirmation
+        self.pendingSends[key] = {
+            'said': exn.said,
+            'ixn_sn': ixnser.sn,
+            'ixn_said': ixnser.said
+        }
+        print(f"[DelegationApprover {self.mhab.pre[:8]}] Created anchor for {eserder.pre[:8]} at sn={ixnser.sn}, waiting for send confirmation")
+
+    def _sendToOtherMembers(self, exn: serdering.SerderKERI, attachment: bytes):
+        """Send an EXN message to all other multisig members."""
+        others = [m for m in self.ghab.smids if m != self.mhab.pre]
+        for recpt in others:
+            self.postman.send(
+                src=self.mhab.pre,
+                dest=recpt,
+                topic="multisig",
+                serder=exn,
+                attachment=attachment
+            )
+
+    def _followerProcessNotifications(self):
+        """
+        Follower: Listen for /multisig/ixn notifications and co-sign the anchor.
+        
+        When the leader creates an anchor, they send a /multisig/ixn EXN to
+        all other members. The follower:
+        1. Receives the notification via the Notifier
+        2. Extracts the IXN data (which contains the delegation seal)
+        3. Creates the SAME IXN locally (this signs it)
+        4. Sends their own /multisig/ixn EXN back to coordinate signatures
+        5. Starts the Counselor to complete coordination
+        """
+        if self.notifier is None:
+            return
+
+        for keys, notice in self.notifier.noter.notes.getItemIter():
+            result = self._processIxnNotification(keys, notice)
+            if result:
+                # Successfully processed, remove the notification
+                self.notifier.noter.notes.rem(keys=keys)
+
+    def _processIxnNotification(self, keys, notice) -> bool:
+        """
+        Process a single /multisig/ixn notification.
+        
+        Returns:
+            True if successfully processed, False to skip
+        """
+        attrs = notice.attrs
+        route = attrs.get('r')
+        
+        if route != '/multisig/ixn':
+            return False
+            
+        said = attrs.get('d')  # EXN SAID
+        if said is None:
+            return False
+            
+        # Get the EXN message
+        exn, _ = exchanging.cloneMessage(self.hby, said=said)
+        if exn is None:
+            return False
+            
+        # Verify this is for our multisig group
+        payload = exn.ked.get('a', {})
+        gid = payload.get('gid')
+        if gid != self.ghab.pre:
+            return False
+            
+        # Extract the embedded IXN data
+        embeds = exn.ked.get('e', {})
+        ixn_data = embeds.get('ixn', {})
+        if not ixn_data:
+            return False
+
+        # Extract delegation info from the anchor seal
+        delegate_info = self._extractDelegateInfoFromAnchor(ixn_data)
+        if delegate_info is None:
+            return False
+        
+        delegate_pre, delegate_sn, anchor_data = delegate_info
+        
+        # Sign and coordinate
+        self._signAndCoordinateAnchor(delegate_pre, delegate_sn, anchor_data)
+        return True
+
+    def _extractDelegateInfoFromAnchor(self, ixn_data: dict) -> Tuple[str, str, list]:
+        """
+        Extract delegate prefix and sn from the anchor's seal data.
+        
+        The anchor IXN contains seals like: {'i': delegate_pre, 's': delegate_sn, 'd': delegate_said}
+        
+        Returns:
+            (delegate_pre, delegate_sn, anchor_data) or None if not found
+        """
+        oixnser = serdering.SerderKERI(sad=ixn_data)
+        data = oixnser.ked.get('a', [])
+        
+        for seal in data:
+            if isinstance(seal, dict) and 'i' in seal and 's' in seal:
+                delegate_pre = seal['i']
+                # Convert to 32-char hex string to match db.delegables key format
+                sn_int = int(seal['s'], 16) if isinstance(seal['s'], str) else seal['s']
+                delegate_sn = f"{sn_int:032x}"
+                return (delegate_pre, delegate_sn, data)
+        
+        return None
+
+    def _signAndCoordinateAnchor(self, delegate_pre: str, delegate_sn: str, anchor_data: list):
+        """
+        Create the same anchor IXN locally and start coordination.
+        
+        By calling ghab.interact() with the same data, we create an event
+        with the same SAID as the leader's, which allows signature aggregation.
+        """
+        # Create the SAME interaction event (this signs it locally)
+        ixn = self.ghab.interact(data=anchor_data)
+        ixnser = serdering.SerderKERI(raw=ixn)
+        
+        # Send our signing notification to others
+        exn_out, ims = grouping.multisigInteractExn(
+            ghab=self.ghab, 
+            aids=self.ghab.smids, 
+            ixn=ixn
+        )
+        self._sendToOtherMembers(exn_out, ims)
+        
+        # Start Counselor coordination
+        prefixer = coring.Prefixer(qb64=self.ghab.pre)
+        seqner = coring.Seqner(sn=ixnser.sn)
+        saider = coring.Saider(qb64=ixnser.said)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=self.ghab)
+        
+        # Track for completion (key must match delegables format)
+        self.waitingForComplete[(delegate_pre, delegate_sn)] = {
+            'ixn_sn': ixnser.sn,
+            'ixn_said': ixnser.said
+        }
+        
+        print(f"[DelegationApprover {self.mhab.pre[:8]}] Signed anchor from leader at sn={ixnser.sn} for delegate {delegate_pre[:8]}", flush=True)
 
 
 class KeystateQueryDoer(doing.Doer):
@@ -731,15 +1070,27 @@ class KeystateQueryDoer(doing.Doer):
     def recur(self, tyme, deeds=None):
         """Query and wait for keystate."""
         if not self.queried:
-            self.witq.query(src=self.hab.pre, pre=self.target_pre, wits=self.wits)
-            self.queried = True
-            print(f"[KeystateQuery] Querying for {self.target_pre[:8]}")
+            self._sendQuery()
 
-        # Check if we have the keystate
-        if self.target_pre in self.hby.kevers:
-            kever = self.hby.kevers[self.target_pre]
-            if self.target_sn is None or kever.sn >= self.target_sn:
-                print(f"[KeystateQuery] Found keystate for {self.target_pre[:8]} at sn={kever.sn}")
-                return True
+        if self._hasRequiredKeystate():
+            return True
 
         return False
+
+    def _sendQuery(self):
+        """Send the keystate query to witnesses."""
+        self.witq.query(src=self.hab.pre, pre=self.target_pre, wits=self.wits)
+        self.queried = True
+        print(f"[KeystateQuery] Querying for {self.target_pre[:8]}")
+
+    def _hasRequiredKeystate(self) -> bool:
+        """Check if we have the required keystate."""
+        if self.target_pre not in self.hby.kevers:
+            return False
+
+        kever = self.hby.kevers[self.target_pre]
+        if self.target_sn is not None and kever.sn < self.target_sn:
+            return False
+
+        print(f"[KeystateQuery] Found keystate for {self.target_pre[:8]} at sn={kever.sn}")
+        return True

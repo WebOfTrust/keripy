@@ -1090,7 +1090,7 @@ def test_multisig_delegate():
         while not HabHelpers.hasDelegables(dgt1_ctx.hby.db):
             doist.recur(deeds=all_deeds + del_deeds)
 
-        # Both delegator participants approve
+        # Both delegator participants approve (dgt1 is leader, dgt2 is follower)
         dgt1_approver = MultisigDelegationApprover(
             hby=dgt1_ctx.hby,
             ghab=dgt_ghab,
@@ -1099,6 +1099,7 @@ def test_multisig_delegate():
             witReceiptor=dgt1_ctx.witReceiptor,
             witq=dgt1_ctx.witq,
             postman=dgt1_ctx.postman,
+            leader=True,  # dgt1 is the leader
         )
         dgt2_approver = MultisigDelegationApprover(
             hby=dgt2_ctx.hby,
@@ -1108,6 +1109,8 @@ def test_multisig_delegate():
             witReceiptor=dgt2_ctx.witReceiptor,
             witq=dgt2_ctx.witq,
             postman=dgt2_ctx.postman,
+            notifier=dgt2_ctx.notifier,
+            leader=False,  # dgt2 is the follower
         )
         approver_deeds = doist.enter(doers=[dgt1_approver, dgt2_approver])
 
@@ -1118,6 +1121,18 @@ def test_multisig_delegate():
 
         # Get witness receipts for the anchor
         HabHelpers.collectWitnessReceipts(doist, all_deeds + approver_deeds, dgt1_ctx.witReceiptor, dgt_ghab.pre, sn=dgt_ghab.kever.sn)
+
+        # Wait for counselor to complete the anchor
+        prefixer = coring.Prefixer(qb64=dgt_ghab.pre)
+        seqner = coring.Seqner(sn=dgt_ghab.kever.sn)
+        while not dgt1_ctx.counselor.complete(prefixer, seqner):
+            doist.recur(deeds=all_deeds + del_deeds + approver_deeds)
+        
+        # Allow approvers to release the escrowed DIP event from delegables
+        # After counselor completes, the approver's _releaseCompletedDelegations()
+        # needs to run to reprocess the DIP with the delegation seal attached
+        while del_ghab.pre not in dgt1_ctx.hby.kevers or del_ghab.pre not in dgt2_ctx.hby.kevers:
+            doist.recur(deeds=all_deeds + del_deeds + approver_deeds)
 
         # Delegates query delegator keystate to discover approval anchor and complete delegation
         del1_query = KeystateQueryDoer(
@@ -1154,21 +1169,32 @@ def test_multisig_delegate():
         assert del_ghab.pre in del1_ctx.hby.kevers, "del1 should have del kever"
         assert del_ghab.pre in del2_ctx.hby.kevers, "del2 should have del kever"
 
-        # Generate delegate (del) OOBI for resolving by the delegators
-        del_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del')
-        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del_oobi, alias='del')
-        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del_oobi, alias='del')
+        # Before delegators can verify the delegate multisig's events, they need
+        # the public keys of the multisig members (del1, del2) to verify signatures.
+        del1_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del1')
+        del2_oobi = HabHelpers.generateOobi(del2_ctx.hby, alias='del2')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del1_oobi, alias='del1')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del2_oobi, alias='del2')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del1_oobi, alias='del1')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del2_oobi, alias='del2')
 
-        # Assertions
+        # Now delegators query for the delegate's KEL - this should work because
+        # eventing.py now checks for existing seals before escrowing to delegables
+        dgt1_ctx.witq.query(src=dgt1_hab.pre, pre=del_ghab.pre, sn=0, wits=[wit_ctx.pre])
+        dgt2_ctx.witq.query(src=dgt2_hab.pre, pre=del_ghab.pre, sn=0, wits=[wit_ctx.pre])
+        
+        # Wait for delegate to appear in delegator kevers
+        while del_ghab.pre not in dgt1_ctx.hby.kevers or del_ghab.pre not in dgt2_ctx.hby.kevers:
+            doist.recur(deeds=all_deeds)
 
-        # Verify delegator knows about delegate
-        # TODO make sure the OOBI resolution has completed and that the delegate KEL appears in the delegate.
-        #      run all deeds until the delegate KEL appears in both dgt1 and dg2
-        # assert del_ghab.pre in dgt1_ctx.hby.kevers
-        # print(f"  ✓ dgt1 knows about del delegate")
-        # assert del_ghab.pre in dgt2_ctx.hby.kevers
-        # print(f"  ✓ dgt2 knows about del delegate")
+        # Assertions - Verify delegator knows about delegate
+        assert del_ghab.pre in dgt1_ctx.hby.kevers, "dgt1 should know about del after witness query"
+        assert del_ghab.pre in dgt2_ctx.hby.kevers, "dgt2 should know about del after witness query"
 
         # Verify delegation anchor exists
         assert dgt_ghab.kever.sn == 1, "dgt should have two events, icp and ixn (with dip approval anchor)"
         assert del_ghab.kever.sn == 0, "delegate should have exactly one event - dip"
+
+        # Verify delegables escrow is empty (delegation was properly released)
+        assert not HabHelpers.hasDelegables(dgt1_ctx.hby.db), "dgt1 delegables escrow should be empty"
+        assert not HabHelpers.hasDelegables(dgt2_ctx.hby.db), "dgt2 delegables escrow should be empty"
