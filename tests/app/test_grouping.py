@@ -1060,7 +1060,17 @@ def test_multisig_delegate():
         assert del_ghab.pre in del1_ctx.hby.kevers, "del1 should have del kever"
         assert del_ghab.pre in del2_ctx.hby.kevers, "del2 should have del kever"
 
-        # Generate delegate (del) OOBI for resolving by the delegators
+        # Before delegators can verify the delegate multisig's events, they need
+        # the public keys of the multisig members (del1, del2) to verify signatures.
+        # Resolve del1 and del2's OOBIs for both delegator participants.
+        del1_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del1')
+        del2_oobi = HabHelpers.generateOobi(del2_ctx.hby, alias='del2')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del1_oobi, alias='del1')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del2_oobi, alias='del2')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del1_oobi, alias='del1')
+        HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del2_oobi, alias='del2')
+
+        # Now delegators can resolve the delegate multisig OOBI and verify signatures
         del_oobi = HabHelpers.generateOobi(del1_ctx.hby, alias='del')
         HabHelpers.resolveOobi(doist, all_deeds, dgt1_ctx.hby, del_oobi, alias='del')
         HabHelpers.resolveOobi(doist, all_deeds, dgt2_ctx.hby, del_oobi, alias='del')
