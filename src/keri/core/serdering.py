@@ -776,8 +776,8 @@ class Serder:
 
         if (self.kind == Kinds.cesr and (self.pvrsn.major < Vrsn_2_0.major or
                 (self.gvrsn is not None and self.gvrsn.major < Vrsn_2_0.major))):
-            raise ValidationError(f"Invalid major protocol version={pvrsn} and/or"
-                                  f" invalid major genus version={gvrsn} "
+            raise ValidationError(f"Invalid major protocol version={self.pvrsn} and/or"
+                                  f" invalid major genus version={self.gvrsn} "
                                   f"for native CESR serialization.")
 
         if self.pvrsn not in self.Fields[self.proto]:
@@ -1465,8 +1465,8 @@ class Serder:
 
                     case _:  # if extra fields this is where logic would be
                         raise DeserializeError(f"Unsupported protocol field label"
-                                             f"='{l}' for protocol={proto}"
-                                             f" version={pvrsn}.")
+                                             f"='{l}' for protocol={self.proto}"
+                                             f" version={self.pvrsn}.")
 
 
         elif self.proto == Protocols.acdc:
@@ -1586,8 +1586,8 @@ class Serder:
 
                     case _:  # if extra fields this is where logic would be
                         raise DeserializeError(f"Unsupported protocol field label"
-                                             f"='{l}' for protocol={proto}"
-                                             f" version={pvrsn}.")
+                                             f"='{l}' for protocol={self.proto}"
+                                             f" version={self.pvrsn}.")
 
         else:  # unsupported protocol type
             raise DeserializeError(f"Unsupported protocol={self.proto}.")
