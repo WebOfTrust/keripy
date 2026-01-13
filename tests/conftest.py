@@ -8,6 +8,9 @@ https://docs.pytest.org/en/latest/pythonpath.html
 import os
 import shutil
 import multicommand
+import sys
+import importlib
+import pkgutil
 
 import pytest
 from hio.base import doing
@@ -388,3 +391,23 @@ class CommandDoer(doing.DoDoer):
             yield self.tock
 
         return True
+
+def reload_commands_module():
+    """
+    Reload the commands module and all its submodules to ensure fresh parser objects.
+
+    This is necessary because multicommand modifies parsers in-place by calling
+    add_subparsers(), and Python 3.12+ doesn't allow calling add_subparsers()
+    multiple times on the same parser object.
+    """
+    # Reload all submodules first
+    for importer, modname, ispkg in pkgutil.walk_packages(
+        path=commands.__path__,
+        prefix=commands.__name__ + ".",
+        onerror=lambda x: None
+    ):
+        if modname in sys.modules:
+            importlib.reload(sys.modules[modname])
+    # Then reload the main module
+    importlib.reload(commands)
+

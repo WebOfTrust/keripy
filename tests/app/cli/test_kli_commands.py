@@ -13,6 +13,7 @@ from keri.app import directing
 
 from keri.app.cli import commands
 from keri.app.cli.common import existing
+from tests import conftest
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -259,6 +260,9 @@ def test_incept_and_rotate_opts(helpers, capsys):
     """
     Tests using the command line arguments for incept and the file argument for rotate
     """
+    # Reload commands module to ensure fresh parser objects - see fn docs for explanation
+    conftest.reload_commands_module()
+
     helpers.remove_test_dirs("test-opts")
     assert os.path.isdir("/usr/local/var/keri/ks/test-opts") is False
 
