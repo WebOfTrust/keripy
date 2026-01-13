@@ -4,11 +4,15 @@ keri.kli.commands module
 
 """
 import argparse
+import json
 
 from keri import help
 from hio.base import doing
 
-from keri.app import habbing, agenting
+from hio.core import http
+
+from keri import kering
+from keri.app import habbing, httping
 from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
@@ -96,14 +100,123 @@ class CatchupDoer(doing.DoDoer):
             else:
                 print(f"Warning: {self.witness} is not a witness for {self.alias}, forcing anyway")
 
-        receiptor = agenting.Receiptor(hby=self.hby)
-        self.extend([receiptor])
+        # Collect and display all events that will be sent
+        events = list(hab.db.clonePreIter(pre=hab.pre))
+        print(f"\nEvents to send to witness {self.witness}:")
+        print("=" * 70)
 
-        print(f"Sending full KEL to witness {self.witness}...")
-        yield from receiptor.catchup(hab.pre, self.witness)
+        for i, fmsg in enumerate(events):
+            msg = bytes(fmsg)
+            # Parse out the JSON message body
+            try:
+                # Find start and end of JSON
+                json_start = msg.find(b'{')
+                if json_start >= 0:
+                    # Parse to find the full JSON
+                    depth = 0
+                    json_end = json_start
+                    in_string = False
+                    escape = False
+                    for j in range(json_start, len(msg)):
+                        ch = chr(msg[j])
+                        if escape:
+                            escape = False
+                        elif ch == '\\' and in_string:
+                            escape = True
+                        elif ch == '"' and not escape:
+                            in_string = not in_string
+                        elif not in_string:
+                            if ch == '{':
+                                depth += 1
+                            elif ch == '}':
+                                depth -= 1
+                                if depth == 0:
+                                    json_end = j + 1
+                                    break
 
-        print(f"KEL sent successfully. Witness should now be at sn={hab.kever.sn}")
+                    json_body = msg[json_start:json_end].decode('utf-8')
+                    ked = json.loads(json_body)
+                    attachments = msg[json_end:].decode('utf-8')
 
-        self.remove([receiptor, self.hbyDoer])
+                    print(f"\nEvent {i + 1}/{len(events)}:")
+                    print(f"  Type: {ked.get('t', 'unknown')}")
+                    print(f"  SN: {ked.get('s', 'unknown')}")
+                    print(f"  SAID: {ked.get('d', 'unknown')}")
+                    print(f"  Body: {json.dumps(ked, indent=4)}")
+                    if attachments:
+                        print(f"  Attachments: {attachments}")
+                    print("-" * 70)
+                else:
+                    print(f"\nEvent {i + 1}/{len(events)}: (raw)")
+                    print(f"  {msg.decode('utf-8', errors='replace')}")
+                    print("-" * 70)
+            except Exception:
+                print(f"\nEvent {i + 1}/{len(events)}: (raw)")
+                print(f"  {msg.decode('utf-8', errors='replace')}")
+                print("-" * 70)
+
+        print(f"\nTotal events: {len(events)}")
+        print("=" * 70)
+
+        # Prompt user to continue
+        try:
+            input("\nPress Enter to send events to witness...")
+        except EOFError:
+            pass  # Handle non-interactive mode
+
+        print(f"\nSending full KEL to witness {self.witness}...")
+
+        # Get witness URL and create HTTP client
+        urls = hab.fetchUrls(eid=self.witness, scheme=kering.Schemes.http) or \
+               hab.fetchUrls(eid=self.witness, scheme=kering.Schemes.https)
+        if not urls:
+            print(f"Error: unable to find HTTP endpoint for witness {self.witness}")
+            self.remove([self.hbyDoer])
+            return
+
+        from urllib.parse import urlparse
+        url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        print(f"Witness URL: {url}")
+        up = urlparse(url)
+        client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
+        clientDoer = http.clienting.ClientDoer(client=client)
+        self.extend([clientDoer])
+
+        # Send each event and log response
+        success_count = 0
+        error_count = 0
+
+        for i, fmsg in enumerate(events):
+            print(f"\nSending event {i + 1}/{len(events)}...")
+            httping.streamCESRRequests(client=client, dest=self.witness, ims=bytearray(fmsg))
+
+            # Wait for response
+            while not client.responses:
+                yield self.tock
+
+            # Get and log response
+            rep = client.responses.popleft()
+            status = rep.status
+            reason = rep.reason
+            body = rep.body.decode('utf-8') if rep.body else ""
+
+            if 200 <= status < 300:
+                print(f"  Response: {status} {reason}")
+                success_count += 1
+            else:
+                print(f"  ERROR Response: {status} {reason}")
+                if body:
+                    print(f"  Response body: {body}")
+                error_count += 1
+
+        print(f"\n{'=' * 70}")
+        print(f"Summary: {success_count} successful, {error_count} errors")
+        if error_count == 0:
+            print(f"KEL sent successfully. Witness should now be at sn={hab.kever.sn}")
+        else:
+            print(f"WARNING: {error_count} events failed to send!")
+        print(f"{'=' * 70}")
+
+        self.remove([clientDoer, self.hbyDoer])
 
         return
