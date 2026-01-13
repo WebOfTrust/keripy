@@ -2401,25 +2401,16 @@ class Kever:
             #if (delpre in self.prefixes) and not self.locallyOwned(): # local delegator
             # must be local if locallyDelegated or caught above as misfit
             if delseqner is None or delsaider is None: # missing delegation seal
-                # Before escrowing, check if we already have the seal in our KEL
-                # This handles the case where delegation was already approved and
-                # we're receiving the event via OOBI resolution or query
-                seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
-                dserder = self.db.fetchLastSealingEventByEventSeal(pre=delpre, seal=seal)
-                if dserder is not None:  # found seal - use it instead of escrowing
-                    delseqner = coring.Seqner(sn=dserder.sn)
-                    delsaider = coring.Saider(qb64=dserder.said)
-                else:
-                    # Seal not found - escrow delegable. So local delegator can approve OOB.
-                    # and create delegator event with valid event seal of this
-                    # delegated event and then reprocess event with attached source
-                    # seal to delegating event, i.e. delseqner, delsaider.
-                    self.escrowDelegableEvent(serder=serder, sigers=sigers,
-                                              wigers=wigers, local=local)
-                    msg = f"Missing approval for delegation by {delpre} of event = {serder.said}"
-                    logger.info(msg)
-                    logger.debug("Event Body=\n%s\n", serder.pretty())
-                    raise MissingDelegableApprovalError(msg)
+                # so escrow delegable. So local delegator can approve OOB.
+                # and create delegator event with valid event seal of this
+                # delegated event and then reprocess event with attached source
+                # seal to delegating event, i.e. delseqner, delsaider.
+                self.escrowDelegableEvent(serder=serder, sigers=sigers,
+                                          wigers=wigers, local=local)
+                msg = f"Missing approval for delegation by {delpre} of event = {serder.said}"
+                logger.info(msg)
+                logger.debug("Event Body=\n%s\n", serder.pretty())
+                raise MissingDelegableApprovalError(msg)
 
         # validateDelegation returns (None, None) when delegation validation
         # does not apply. Raises ValidationError if validation applies but
@@ -5338,6 +5329,7 @@ class Kevery:
             self.processEscrowPartialWigs()
             self.processEscrowPartialSigs()
             self.processEscrowDuplicitous()
+            self.processEscrowDelegables()
             self.processQueryNotFound()
 
         except Exception as ex:  # log diagnostics errors etc
@@ -6316,17 +6308,9 @@ class Kevery:
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # get delgate seal
-                couple = self.db.getAes(dgkey)
-                if couple is not None:  # Only try to parse the event if we have the del seal
-                    raw = bytearray(couple)
-                    seqner = coring.Seqner(qb64b=raw, strip=True)
-                    saider = coring.Saider(qb64b=raw)
-
-                    # process event
-                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
-                                      delsaider=saider, local=esr.local)
-                else:
-                    raise MissingDelegableApprovalError("No delegation seal found for event.")
+                seqner, saider = self._getDelegationSeal(eserder=eserder, dgkey=dgkey)
+                self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
+                                  delsaider=saider, local=esr.local)
 
             except MissingDelegableApprovalError as ex:
                 # still waiting on missing delegation approval
@@ -6349,6 +6333,58 @@ class Kevery:
                 logger.info("Kevery DEL unescrow succeeded in valid event: "
                             "event=%s", eserder.said)
                 logger.debug(f"Event=\n%s\n", eserder.pretty())
+
+    def _getDelegationSeal(self, eserder: serdering.SerderKERI, dgkey: bytes) -> tuple[
+        coring.Seqner, coring.Saider]:
+        """
+        Get sequence number (delseqner) and event digest (delsaider)
+        for delegated inception (dip) or rotation (drt) event from AES seal database or KEL state.
+
+        Parameters:
+            eserder: SerderKERI instance of the delegated event
+            dgkey: bytes of the digest key of the delegated event
+        Returns:
+            (Seqner, Saider): sequence number and event digest
+        Raises:
+            MissingDelegableApprovalError: if the delegation seal is not found
+        """
+        # get delgate seal
+        couple = self.db.getAes(dgkey)
+        if couple is not None:  # Only try to parse the event if we have the del seal
+            raw = bytearray(couple)
+            seqner = coring.Seqner(qb64b=raw, strip=True)
+            saider = coring.Saider(qb64b=raw)
+            return seqner, saider
+        else:
+            # Check KEL for seal (like in valSigsWigsDel)
+            # This handles the case where delegation was approved
+            # and the seal is in the delegator's KEL
+            if eserder.ilk in (Ilks.dip, Ilks.drt):
+                # Get delpre (delegator prefix) from dip or drt
+                if eserder.ilk == Ilks.dip:
+                    delpre = eserder.delpre  # delegator from dip event
+                    if not delpre:
+                        raise MissingDelegableApprovalError(
+                            f"Empty or missing delegator for delegated inception event = {eserder.said}.")
+                else:  # For drt, delpre is in kever state
+                    # If we have the kever, use it; otherwise we can't process
+                    if eserder.pre in self.kevers:
+                        delpre = self.kevers[eserder.pre].delpre
+                    else:
+                        raise MissingDelegableApprovalError(
+                            f"No kever found for delegated rotation event = {eserder.said}.")
+
+                # Look up seal in delegator's KEL
+                seal = dict(i=eserder.pre, s=eserder.snh, d=eserder.said)
+                dserder = self.db.fetchLastSealingEventByEventSeal(pre=delpre, seal=seal)
+                if dserder is not None:  # found seal - use it
+                    seqner = coring.Seqner(sn=dserder.sn)
+                    saider = coring.Saider(qb64=dserder.said)
+                    return seqner, saider
+                else:
+                    raise MissingDelegableApprovalError("No delegation seal found for event.")
+            else:
+                raise MissingDelegableApprovalError("No delegation seal found for event.")
 
     def processQueryNotFound(self):
         """

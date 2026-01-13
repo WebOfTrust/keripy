@@ -8,7 +8,9 @@ import os
 from keri import help
 
 from keri import kering, core
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
+from keri.core.eventing import MissingDelegableApprovalError
+import pytest
 
 from keri.app import keeping, habbing
 
@@ -769,6 +771,242 @@ def test_delegables_escrow():
         assert len(torHab.db.delegables.get(keys=snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn))) == 0
         assert gateHab.pre in torKvy.kevers
 
+def test_get_delegation_seal():
+    """
+    Test Kevery._getDelegationSeal:
+    1. Seal found in AES
+    2. Seal not in AES, dip event, delpre exists, seal found in KEL
+    3. Seal not in AES, dip event, delpre is empty
+    4. Seal not in AES, dip event, delpre exists, seal not found in KEL
+    5. Seal not in AES, drt event, kever exists, delpre exists, seal found in KEL
+    6. Seal not in AES, drt event, kever doesn't exist
+    7. Seal not in AES, drt event, kever exists, delpre exists, seal not found in KEL
+    8. Seal not in AES, event is neither dip nor drt
+    """
+    bobSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    delSalt = core.Salter(raw=b'abcdef0123456789').qb64
+
+    with (basing.openDB(name="bob") as bobDB,
+            keeping.openKS(name="bob") as bobKS,
+            basing.openDB(name="del") as delDB,
+            keeping.openKS(name="del") as delKS,
+            keeping.openKS(name="fake") as fakeKS):
+
+        # Init key pair managers
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
+
+        # Init Keverys
+        bobKvy = eventing.Kevery(db=bobDB)
+        delKvy = eventing.Kevery(db=delDB)
+
+        # Setup Bob by creating inception event
+        verfers, digers = bobMgr.incept(stem='bob', temp=True)
+        bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                  ndigs=[diger.qb64 for diger in digers],
+                                  code=coring.MtrDex.Blake3_256)
+
+        bob = bobSrdr.ked["i"]
+        bobMgr.move(old=verfers[0].qb64, new=bob)
+
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
+        msg = bytearray(bobSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        # apply msg to bob's Kevery
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bobKvy)
+        bobK = bobKvy.kevers[bob]
+
+        # Setup Del's delegated inception event
+        verfers, digers = delMgr.incept(stem='del', temp=True)
+        delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                   delpre=bobK.prefixer.qb64,
+                                   ndigs=[diger.qb64 for diger in digers])
+
+        delPre = delSrdr.ked["i"]
+        delMgr.move(old=verfers[0].qb64, new=delPre)
+
+        # Create delegating event for Bob
+        seal = eventing.SealEvent(i=delPre,
+                                  s=delSrdr.ked["s"],
+                                  d=delSrdr.said)
+        bobIxnSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+                                      dig=bobK.serder.said,
+                                      sn=bobK.sn + 1,
+                                      data=[seal._asdict()])
+
+        sigers = bobMgr.sign(ser=bobIxnSrdr.raw, verfers=bobK.verfers)
+        msg = bytearray(bobIxnSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        # apply msg to bob's Kevery
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bobKvy)
+        assert bobK.serder.said == bobIxnSrdr.said
+
+        # Create Saider for the interaction event
+        bobIxnSaider = coring.Saider(qb64=bobIxnSrdr.said)
+
+        # Test 1: Seal found in AES
+        dgkey = dbing.dgKey(delPre.encode("utf-8"), delSrdr.saidb)
+        seqner = coring.Seqner(sn=bobK.sn)
+        couple = seqner.qb64b + bobIxnSaider.qb64b
+        bobKvy.db.setAes(dgkey, couple)
+
+        result_seqner, result_saider = bobKvy._getDelegationSeal(eserder=delSrdr, dgkey=dgkey)
+        assert result_seqner.sn == seqner.sn
+        assert result_saider.qb64 == bobIxnSaider.qb64
+
+        # Test 2: Seal not in AES, dip event, delpre exists, seal found in KEL
+        # Remove from AES to test KEL lookup
+        bobKvy.db.delAes(dgkey)
+        # Seal should be found in KEL via fetchLastSealingEventByEventSeal
+        result_seqner, result_saider = bobKvy._getDelegationSeal(eserder=delSrdr, dgkey=dgkey)
+        assert result_seqner.sn == bobK.sn
+        assert result_saider.qb64 == bobIxnSaider.qb64
+
+        # Test 3: Seal not in AES, dip event, delpre is empty
+        # Create a dip event with empty delpre by manually creating the sad dict
+        # and then creating SerderKERI with verify=False
+        tempDelSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                      delpre=bob,  # valid delpre for creation
+                                      ndigs=[diger.qb64 for diger in digers])
+        # Create a copy of the sad and set delpre to empty
+        badSad = dict(tempDelSrdr.sad)
+        badSad['di'] = ""  # set delpre to empty
+        # Create SerderKERI from the modified sad with verify=False
+        badDelSrdr = serdering.SerderKERI(sad=badSad, verify=False)
+        badDgkey = dbing.dgKey(badDelSrdr.pre.encode("utf-8"), badDelSrdr.saidb)
+        with pytest.raises(MissingDelegableApprovalError) as exc_info:
+            bobKvy._getDelegationSeal(eserder=badDelSrdr, dgkey=badDgkey)
+        assert "Empty or missing delegator" in str(exc_info.value)
+
+        # Test 4: Seal not in AES, dip event, delpre exists, seal not found in KEL
+        # Create a dip event with valid delpre but no seal in KEL
+        # Use a different Manager with different salt and KS to create a different delegate prefix
+        fakeSalt = core.Salter(raw=b'fakedelegate012345').qb64
+        fakeMgr = keeping.Manager(ks=fakeKS, salt=fakeSalt)
+        fakeVerfers, fakeDigers = fakeMgr.incept(stem='fake', temp=True)
+        fakeDelSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in fakeVerfers],
+                                      delpre=bob,  # valid delpre
+                                      ndigs=[diger.qb64 for diger in fakeDigers])
+        fakeDgkey = dbing.dgKey(fakeDelSrdr.pre.encode("utf-8"), fakeDelSrdr.saidb)
+        # Ensure no seal exists in KEL for this event (it's a different delegate)
+        with pytest.raises(MissingDelegableApprovalError) as exc_info:
+            bobKvy._getDelegationSeal(eserder=fakeDelSrdr, dgkey=fakeDgkey)
+        assert "No delegation seal found for event" in str(exc_info.value)
+
+        # Test 5: Seal not in AES, drt event, kever exists, delpre exists, seal found in KEL
+        # First, create a valid dip event and process it so we have a kever
+        sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
+        msg = bytearray(delSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        counter = core.Counter(core.Codens.SealSourceCouples, count=1,
+                               gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        seqner = coring.Seqner(sn=bobK.sn)
+        msg.extend(seqner.qb64b)
+        msg.extend(bobIxnSaider.qb64b)
+
+        # Process the dip event so we have a kever for the delegate
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bobKvy)
+        assert delPre in bobKvy.kevers
+        delK = bobKvy.kevers[delPre]
+
+        # Now create a drt event
+        verfers, digers = delMgr.rotate(pre=delPre, temp=True)
+        delRotSrdr = eventing.deltate(pre=delK.prefixer.qb64,
+                                      keys=[verfer.qb64 for verfer in verfers],
+                                      dig=delK.serder.said,
+                                      sn=delK.sn + 1,
+                                      ndigs=[diger.qb64 for diger in digers])
+
+        # Create delegating interaction event for the rotation
+        rotSeal = eventing.SealEvent(i=delPre,
+                                     s=delRotSrdr.ked["s"],
+                                     d=delRotSrdr.said)
+        bobRotIxnSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+                                         dig=bobK.serder.said,
+                                         sn=bobK.sn + 1,
+                                         data=[rotSeal._asdict()])
+
+        sigers = bobMgr.sign(ser=bobRotIxnSrdr.raw, verfers=bobK.verfers)
+        msg = bytearray(bobRotIxnSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                               gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        # Process the delegated rotation event
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bobKvy)
+
+        # Test KEL lookup for drt event
+        bobRotIxnSaider = coring.Saider(qb64=bobRotIxnSrdr.said)
+        drtDgkey = dbing.dgKey(delPre.encode("utf-8"), delRotSrdr.saidb)
+        result_seqner, result_saider = bobKvy._getDelegationSeal(eserder=delRotSrdr, dgkey=drtDgkey)
+        assert result_seqner.sn == bobK.sn
+        assert result_saider.qb64 == bobRotIxnSaider.qb64
+
+        # Test 6: Seal not in AES, drt event, kever doesn't exist
+        # Create a drt event for a delegate we don't have a kever for
+        # First create a valid delegate prefix by creating a dip event
+        fakeVerfers, fakeDigers = fakeMgr.incept(stem='fake2', temp=True)
+        fakeDipSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in fakeVerfers],
+                                      delpre=bob,
+                                      ndigs=[diger.qb64 for diger in fakeDigers])
+        fakeDelPre = fakeDipSrdr.pre  # valid prefix
+        fakeMgr.move(old=fakeVerfers[0].qb64, new=fakeDelPre)  # move key to prefix
+        # Now create a drt event for this delegate (but kever doesn't exist in bobKvy)
+        fakeRotVerfers, fakeRotDigers = fakeMgr.rotate(pre=fakeDelPre, temp=True)
+        fakeDrtSrdr = eventing.deltate(pre=fakeDelPre,
+                                      keys=[verfer.qb64 for verfer in fakeRotVerfers],
+                                      dig=fakeDipSrdr.said,  # use the dip said as prior
+                                      sn=1,
+                                      ndigs=[diger.qb64 for diger in fakeRotDigers])
+        fakeDrtDgkey = dbing.dgKey(fakeDelPre.encode("utf-8"), fakeDrtSrdr.saidb)
+        with pytest.raises(MissingDelegableApprovalError) as exc_info:
+            bobKvy._getDelegationSeal(eserder=fakeDrtSrdr, dgkey=fakeDrtDgkey)
+        assert "No kever found for delegated rotation event" in str(exc_info.value)
+
+        # Test 7: Seal not in AES, drt event, kever exists, delpre exists, seal not found in KEL
+        # Create a drt event with valid kever and delpre but no seal in KEL
+        fakeRotSrdr = eventing.deltate(pre=delK.prefixer.qb64,
+                                      keys=[verfer.qb64 for verfer in verfers],
+                                      dig=delK.serder.said,
+                                      sn=delK.sn + 2,  # different sn, so no seal
+                                      ndigs=[diger.qb64 for diger in digers])
+        fakeRotDgkey = dbing.dgKey(delPre.encode("utf-8"), fakeRotSrdr.saidb)
+        with pytest.raises(MissingDelegableApprovalError) as exc_info:
+            bobKvy._getDelegationSeal(eserder=fakeRotSrdr, dgkey=fakeRotDgkey)
+        assert "No delegation seal found for event" in str(exc_info.value)
+
+        # Test 8: Seal not in AES, event is neither dip nor drt
+        # Create a regular icp event (not dip)
+        icpVerfers, icpDigers = bobMgr.incept(stem='icp', temp=True)
+        icpSrdr = eventing.incept(keys=[verfer.qb64 for verfer in icpVerfers],
+                                  ndigs=[diger.qb64 for diger in icpDigers],
+                                  code=coring.MtrDex.Blake3_256)
+        icpDgkey = dbing.dgKey(icpSrdr.pre.encode("utf-8"), icpSrdr.saidb)
+        with pytest.raises(MissingDelegableApprovalError) as exc_info:
+            bobKvy._getDelegationSeal(eserder=icpSrdr, dgkey=icpDgkey)
+        assert "No delegation seal found for event" in str(exc_info.value)
+
+    assert not os.path.exists(delKS.path)
+    assert not os.path.exists(delDB.path)
+    assert not os.path.exists(bobKS.path)
+    assert not os.path.exists(bobDB.path)
 
 if __name__ == "__main__":
     test_delegation()
