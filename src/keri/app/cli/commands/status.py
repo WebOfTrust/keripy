@@ -5,6 +5,7 @@ keri.kli.commands module
 
 """
 import argparse
+import json
 
 from keri import help
 from hio.base import doing
@@ -60,8 +61,23 @@ def status(tymth, tock=0.0, **opts):
 
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    srdr = serdering.SerderKERI(raw=msg)
-                    print(srdr.pretty(size=10000))
+                    try:
+                        srdr = serdering.SerderKERI(raw=msg)
+                        print("KERI Event:")
+                        print(json.dumps(srdr.sad, indent=2))
+                        # Show attachments if any
+                        attachments = bytes(msg[srdr.size:])
+                        if attachments:
+                            print(f"\nAttachments ({len(attachments)} bytes):")
+                            print(attachments.decode())
+                    except Exception:
+                        try:
+                            msg_str = bytes(msg).decode('utf-8')
+                            print("Raw Event:")
+                            print(msg_str)
+                        except Exception:
+                            print("Raw Event:")
+                            print(bytes(msg))
                     print()
 
     except ConfigurationError as e:
