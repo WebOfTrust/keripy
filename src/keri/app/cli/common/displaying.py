@@ -51,8 +51,23 @@ def printIdentifier(hby, pre, label="Identifier"):
 
         print("\nWitnesses:")
         print("Count:\t\t{}".format(len(kever.wits)))
-        print("Receipts:\t{}".format(len(wigs)))
-        print("Threshold:\t{}".format(kever.toader.num))
+        print("Receipts count:\t{}".format(len(wigs)))
+        print("Threshold:\t{}\n".format(kever.toader.num))
+
+        print("Witnesses Receipts:\n")
+        if len(kever.wits) > len(wigs):
+            print("Number of witness receipts doesn't match the number of witnesses")
+            print("Witnesses:\n")
+            for w in kever.wits:
+                print(f"Witness prefix: {w}\n")
+            print("Receipts:\n")
+            for r in wigs:
+                print(f"Receipt: {r}\n")
+        else:
+            for i, w in enumerate(kever.wits):
+                print(f"Witness prefix: {w}")
+                print(f"Receipt: {wigs[i].tobytes()}\n")
+
         print("\nPublic Keys:\t")
         for idx, verfer in enumerate(kever.verfers):
             print(f'\t{idx+1}. {verfer.qb64}')
