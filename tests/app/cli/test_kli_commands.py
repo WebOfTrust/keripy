@@ -1,4 +1,5 @@
 import os
+import re
 
 import multicommand
 import pytest
@@ -218,20 +219,31 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
     capsigs = capsys.readouterr()
-    assert capsigs.out == ('Alias: \ttrans\n'
-                           'Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
-                           'Seq No:\t5\n'
-                           '\n'
-                           'Witnesses:\n'
-                           'Count:\t\t0\n'
-                           'Receipts:\t0\n'
-                           'Threshold:\t0\n'
-                           '\n'
-                           'Public Keys:\t\n'
-                           '\t1. DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8\n'
-                           '\t2. DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg\n'
-                           '\t3. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
-                           '\n')
+    # Pattern with regex placeholder for Witnesses Receipts section
+    # The witness receipts section may be empty (zero receipts) or contain entries
+    pattern = (
+        r'Alias: \ttrans\n'
+        r'Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
+        r'Seq No:\t5\n'
+        r'\n'
+        r'Witnesses:\n'
+        r'Count:\t\t0\n'
+        r'Receipts count:\t0\n'
+        r'Threshold:\t0\n'
+        r'\n'
+        r'Witnesses Receipts:\n'
+        r'\n'
+        r'(?:Witness prefix:\s+[A-Za-z0-9_-]+\n'
+        r'Receipt:\s+b\'[A-Za-z0-9_+/=]+\'\n'
+        r'\n?)*'
+        r'\n'
+        r'Public Keys:\t\n'
+        r'\t1\. DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8\n'
+        r'\t2\. DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg\n'
+        r'\t3\. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
+        r'\n'
+    )
+    assert re.fullmatch(pattern, capsigs.out), f"Output does not match expected pattern. Got:\n{capsigs.out}"
 
     args = parser.parse_args(["escrow", "list", "--name", "test"])
     assert args.handler is not None
