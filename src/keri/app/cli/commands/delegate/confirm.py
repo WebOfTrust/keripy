@@ -172,6 +172,7 @@ class ConfirmDoer(doing.DoDoer):
 
                         print(f"Delegate {eserder.pre} {typ} event committed.")
 
+                        self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
                         self.remove(self.toRemove)
                         return True
 
@@ -228,7 +229,7 @@ class ConfirmDoer(doing.DoDoer):
 
                             print(f"Delegate {eserder.pre} {typ} event committed.")
 
-                        self.hby.db.delegables.rem(keys=(pre, sn))
+                        self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
                         self.remove(self.toRemove)
                         return True
 
