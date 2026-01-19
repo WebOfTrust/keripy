@@ -1707,8 +1707,7 @@ class Kever:
             pre (str): qb64 identifier prefix if any.
         """
 
-        pre = pre if pre is not None else ""
-        return pre in self.prefixes or pre in self.groups
+        return pre in self.prefixes
 
 
 
@@ -2397,7 +2396,7 @@ class Kever:
         # seal in this case can't be malicious since sourced locally.
         # Doesn't get to here until fully signed and witnessed.
 
-        if self.locallyDelegated(delpre) and not self.locallyOwned():  # local delegator
+        if serder.ilk in (Ilks.dip, Ilks.drt) and self.locallyDelegated(delpre) and not self.locallyOwned():  # local delegator
             #if (delpre in self.prefixes) and not self.locallyOwned(): # local delegator
             # must be local if locallyDelegated or caught above as misfit
             if delseqner is None or delsaider is None: # missing delegation seal
