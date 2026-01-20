@@ -24,11 +24,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '>=3.12.6  <3.14'
-      
+          
+      - name: Install libsodium via Homebrew
         runs-on: macos-latest # This uses the latest macOS runner image
           steps:
-            - name: Install libsodium via Homebrew
-              run: brew install libsodium
+            run: brew install libsodium
               
       - name: Install dependencies
         run: |
