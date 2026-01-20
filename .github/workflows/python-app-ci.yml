@@ -11,22 +11,21 @@ on:
   workflow_dispatch:
 
 jobs:
+  build:
+    runs-on: macos-latest # This uses the latest macOS runner image
+      steps:
+        - name: Install libsodium via Homebrew
+          run: brew install libsodium
+          
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ macos-latest, ubuntu-latest, windows-latest ]
-
+        
     steps:  
       - uses: actions/checkout@v3
-      - name: Brew install libsodium
-        build:
-          runs-on: macos-latest # This uses the latest macOS runner image
-            steps:
-              - name: Install libsodium via Homebrew
-                run: brew install libsodium
-                
       - name: Set up Python 3.12.6+
         uses: actions/setup-python@v2
         with:
