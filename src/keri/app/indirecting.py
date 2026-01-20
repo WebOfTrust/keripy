@@ -20,6 +20,7 @@ from hio.help import decking
 
 import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
+from ..metric import EscrowEnd
 from .habbing import GroupHab
 from .. import help, kering
 from ..core import (eventing, parsing, routing, coring, serdering,
@@ -92,6 +93,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/receipts", receiptEnd)
     queryEnd = QueryEnd(hab=hab)
     app.add_route("/query", queryEnd)
+    metricsEnd = EscrowEnd(hby=hby, reger=reger)
+    app.add_route("/metrics", metricsEnd)
 
     server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
     if not server.reopen():
