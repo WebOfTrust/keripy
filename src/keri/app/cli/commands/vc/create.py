@@ -5,7 +5,7 @@ from typing import Optional
 from hio.base import doing
 
 from keri import core, help, kering
-from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
+from keri.app import indirecting, habbing, grouping, organizing, forwarding, signing, notifying
 from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
 from keri.core import coring, eventing, serdering
@@ -145,7 +145,7 @@ class CredentialIssuer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.counselor = grouping.Counselor(hby=self.hby)
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
         notifier = notifying.Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
