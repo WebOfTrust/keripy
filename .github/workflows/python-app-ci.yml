@@ -19,17 +19,17 @@ jobs:
         os: [ macos-latest, ubuntu-latest, windows-latest ]
 
     steps:
+      - name: Install Libsodium with Homebrew
+        runs-on: macos-latest # This uses the latest macOS runner image
+          steps:
+            - name: Install libsodium via Homebrew
+              run: brew install libsodium
       - uses: actions/checkout@v3
       - name: Set up Python 3.12.6+
         uses: actions/setup-python@v2
         with:
           python-version: '>=3.12.6  <3.14'
-      
-        runs-on: macos-latest # This uses the latest macOS runner image
-          steps:
-            - name: Install libsodium via Homebrew
-              run: brew install libsodium
-              
+          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
