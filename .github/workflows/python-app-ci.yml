@@ -30,12 +30,13 @@ jobs:
         run: |
           brew update
           brew install libsodium
-  
-      # (optional) only if your build needs pkg-config to discover libsodium
-      - name: Export libsodium pkg-config path (macOS)
+
+      - name: Make libsodium discoverable
         if: runner.os == 'macOS'
-        run: echo "PKG_CONFIG_PATH=$(brew --prefix libsodium)/lib/pkgconfig:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
-        
+        run: |
+          echo "DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix)/lib:/usr/local/lib:/usr/lib" >> "$GITHUB_ENV"
+          echo "DYLD_LIBRARY_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
