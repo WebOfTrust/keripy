@@ -102,7 +102,7 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
 
     with openHby(name=name, base=base, salt=salt, temp=temp, cf=cf) as hby:
         if (hab := hby.habByName(name)) is None:
-            hab = hby.makeHab(name=name, icount=1, isith='1', ncount=1, nsith='1', **kwa)
+            hab = hby.makeHab(name=name, icount=1, isith='1', ncount=1, nsith='1', cf=cf, **kwa)
 
         yield hby, hab
 
