@@ -561,6 +561,7 @@ class Registrar(doing.DoDoer):
         if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = coring.Saider(qb64=hab.kever.serder.said)
+            # Key is credential SAID and TEL event SAID
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
