@@ -218,8 +218,6 @@ class CredentialIssuer(doing.DoDoer):
         dt = self.creder.attrib["dt"] if "dt" in self.creder.attrib else helping.nowIso8601()
         iserder = registry.issue(said=self.creder.said, dt=dt)
 
-        #vcid = iserder.ked["i"]
-        #rseq = coring.Seqner(snh=iserder.ked["s"])
         rseal = eventing.SealEvent(iserder.pre, iserder.snh, iserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 

@@ -17,7 +17,6 @@ from .. import kering, core
 from ..app import signing
 from ..core import coring, serdering, indexing, counting
 from ..db import dbing, basing
-from ..db.dbing import snKey
 from ..vdr import eventing
 from .. import help
 

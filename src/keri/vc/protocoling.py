@@ -219,7 +219,7 @@ def ipexAgreeExn(hab, message, offer):
     return exn, ims
 
 
-def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=None):
+def ipexGrantExn(hab, recp, message, acdc, reg=None, iss=None, anc=None, agree=None, dt=None):
     """ Disclose an ACDC
 
     Parameters:
@@ -227,6 +227,7 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
         recp (str) qb64 AID of recipient of GRANT message
         message(str): Human readable message regarding the credential disclosure
         acdc (bytes): CESR stream of serialized ACDC with attachments
+        reg (bytes): serialized TEL registry event
         iss (bytes): serialized TEL issuance event
         anc (bytes): serialized anchoring event in the KEL, either ixn or rot
         agree (Serder): optional IPEX exn agree message that this grant is response to.
@@ -245,6 +246,9 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
     embeds = dict(
         acdc=acdc,
     )
+
+    if reg is not None:
+        embeds['reg'] = reg
 
     if iss is not None:
         embeds['iss'] = iss
