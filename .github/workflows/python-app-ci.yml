@@ -37,6 +37,16 @@ jobs:
           echo "DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix)/lib:/usr/local/lib:/usr/lib" >> "$GITHUB_ENV"
           echo "DYLD_LIBRARY_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
 
+      - name: Install libsodium (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $url = "https://download.libsodium.org/libsodium/releases/libsodium-1.0.20-stable-msvc.zip"
+          $output = "$env:TEMP\libsodium.zip"
+          Invoke-WebRequest -Uri $url -OutFile $output
+          Expand-Archive -Path $output -DestinationPath "$env:TEMP\libsodium"
+          Copy-Item "$env:TEMP\libsodium\libsodium\x64\Release\v143\dynamic\libsodium.dll" -Destination "$env:windir\System32\libsodium.dll"
+        shell: pwsh
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
