@@ -110,6 +110,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+venv-windows
 
 # Spyder project settings
 .spyderproject
