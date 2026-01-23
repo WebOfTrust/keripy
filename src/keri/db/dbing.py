@@ -492,32 +492,25 @@ class LMDBer(filing.Filer):
             gc.collect()
             # Windows with clear=True: Retry with exponential backoff
             max_retries = 10
-            base_delay = 0.05  # Start with 50ms
+            base_delay = 0.1  # Start with 100ms
+            last_error = None
+            
             for attempt in range(max_retries):
                 try:
                     return super(LMDBer, self).close(clear=clear)
                 except (PermissionError, OSError) as e:
-                    # Check if it's a file-in-use error (WinError 32 or errno 13)
-                    is_file_lock_error = (
-                        isinstance(e, PermissionError) or
-                        (isinstance(e, OSError) and (
-                            e.errno == 13 or 
-                            getattr(e, 'winerror', None) == 32
-                        ))
-                    )
-                    
-                    if not is_file_lock_error:
-                        raise  # Not a file lock issue, re-raise immediately
-                    
+                    last_error = e
+                    # On Windows, any PermissionError or OSError during cleanup
+                    # is likely a file lock issue - retry with backoff
                     if attempt < max_retries - 1:
-                        # Exponential backoff: 50ms, 100ms, 200ms, 400ms, 800ms...
+                        # Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1.6s...
                         delay = base_delay * (2 ** attempt)
                         time.sleep(delay)
                         # Force garbage collection between retries
                         gc.collect()
                     else:
-                        # Final attempt failed, re-raise original error
-                        raise
+                        # Final attempt failed, re-raise the last error
+                        raise last_error
             # Shouldn't reach here but satisfy type checker
             return False  # type: ignore[unreachable]
         
