@@ -615,9 +615,7 @@ class WitnessPublisher(doing.DoDoer):
     """
 
     def __init__(self, hby, msgs=None, cues=None, **kwa):
-        """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
+        """Initialize with publish queue (msgs) and completion cues.
 
         Parameters:
             hby (Habery): Habitat of the identifier to populate witnesses
@@ -632,11 +630,9 @@ class WitnessPublisher(doing.DoDoer):
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
     def sendDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
+        """Doer loop that sends queued messages to each witness.
 
-        Usage:
-            add result of doify on this method to doers list
+        Pushes the original request to self.cues to signal completion
         """
         self.wind(tymth)
         self.tock = tock
@@ -695,18 +691,17 @@ class WitnessPublisher(doing.DoDoer):
 
 
 class TCPMessenger(doing.DoDoer):
-    """ Send events to witnesses for receipting using TCP direct connection
-
-    """
+    """Send outbound CESR messages to a witness via TCP and parse inbound receipts."""
 
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
-        """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
+        """Initialize TCP messenger with queues and parser wiring.
 
         Parameters:
-            hab: Habitat of the identifier to populate witnesses
-
+            hab (Hab): habitat for KEL parsing and db access.
+            wit (str): qb64 witness identifier.
+            url (str): tcp endpoint URL for the witness.
+            msgs (Deck | None): outbound message queue.
+            sent (Deck | None): sent message queue.
         """
         self.hab = hab
         self.wit = wit
@@ -724,12 +719,7 @@ class TCPMessenger(doing.DoDoer):
         super(TCPMessenger, self).__init__(doers=doers)
 
     def receiptDo(self, tymth=None, tock=0.0, **kwa):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
+        """Doer loop that sends queued messages over TCP."""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -763,25 +753,7 @@ class TCPMessenger(doing.DoDoer):
             yield self.tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatible generator method (doer dog) to process
-            incoming message stream of .kevery
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-
-        Usage:
-            add result of doify on this method to doers list
-        """
+        """Doer loop that parses inbound TCP messages into the Kevery."""
         yield from self.parser.parsator(local=True)  # process messages continuously
 
     @property
@@ -790,18 +762,17 @@ class TCPMessenger(doing.DoDoer):
 
 
 class TCPStreamMessenger(doing.DoDoer):
-    """ Send events to witnesses for receipting using TCP direct connection
-
-    """
+    """Stream a CESR message to a witness via TCP and parse inbound receipts."""
 
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
-        """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
+        """Initialize TCP stream messenger with queues and parser wiring.
 
         Parameters:
-            hab: Habitat of the identifier to populate witnesses
-
+            hab (Hab): habitat for KEL parsing and db access.
+            wit (str): qb64 witness identifier.
+            url (str): tcp endpoint URL for the witness.
+            msgs (Deck | None): outbound message queue.
+            sent (Deck | None): sent message queue.
         """
         self.hab = hab
         self.wit = wit
@@ -819,11 +790,9 @@ class TCPStreamMessenger(doing.DoDoer):
         super(TCPStreamMessenger, self).__init__(doers=doers)
 
     def receiptDo(self, tymth=None, tock=0.0, **kwa):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
+        """Doer loop that sends queued messages over TCP.
 
-        Usage:
-            add result of doify on this method to doers list
+        Pushes the original request to self.sent to signal completion
         """
         self.wind(tymth)
         self.tock = tock
@@ -858,25 +827,7 @@ class TCPStreamMessenger(doing.DoDoer):
             yield self.tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatible generator method (doer dog) to process
-            incoming message stream of .kevery
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-
-        Usage:
-            add result of doify on this method to doers list
-        """
+        """Doer loop that parses inbound TCP messages into the Kevery."""
         yield from self.parser.parsator(local=True)  # process messages continuously
 
     @property
@@ -885,19 +836,18 @@ class TCPStreamMessenger(doing.DoDoer):
 
 
 class HTTPMessenger(doing.DoDoer):
-    """
-    Interacts with Recipients on HTTP and SSE for sending events and receiving receipts
-
-    """
+    """Send CESR messages to a witness over HTTP and capture responses."""
 
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, auth=None, **kwa):
-        """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
+        """Initialize HTTP messenger with queues and optional auth.
 
         Parameters:
-            hab: Habitat of the identifier to populate witnesses
-
+            hab (Hab): habitat for KEL parsing and db access.
+            wit (str): qb64 witness identifier.
+            url (str): http/https endpoint URL for the witness.
+            msgs (Deck | None): outbound message queue.
+            sent (Deck | None): response queue.
+            auth (str | None): optional 2FA auth codes for witnesses.
         """
         self.hab = hab
         self.wit = wit
@@ -921,12 +871,7 @@ class HTTPMessenger(doing.DoDoer):
         super(HTTPMessenger, self).__init__(doers=doers, **kwa)
 
     def msgDo(self, tymth=None, tock=0.0, **kwa):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
+        """Doer loop that sends queued messages over HTTP."""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -947,10 +892,7 @@ class HTTPMessenger(doing.DoDoer):
             yield self.tock
 
     def responseDo(self, tymth=None, tock=0.0, **kwa):
-        """
-        Processes responses from client and adds them to sent cue
-
-        """
+        """Doer loop that processes HTTP responses from the client and adds them into `sent` cues."""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -968,19 +910,17 @@ class HTTPMessenger(doing.DoDoer):
 
 
 class HTTPStreamMessenger(doing.DoDoer):
-    """
-    Interacts with Recipients on HTTP and SSE for sending events and receiving receipts
-
-    """
+    """Stream a single CESR message via HTTP PUT and capture the response."""
 
     def __init__(self, hab, wit, url, msg=b'', headers=None, **kwa):
-        """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
+        """Initialize a single-request HTTP messenger and add the HTTP client Doer to this DoDoer.
 
         Parameters:
-            hab: Habitat of the identifier to populate witnesses
-
+            hab (Hab): habitat for KEL parsing and db access.
+            wit (str): qb64 witness identifier.
+            url (str): http/https endpoint URL for the witness.
+            msg (bytes): CESR message body to send.
+            headers (dict | None): extra HTTP headers.
         """
         self.hab = hab
         self.wit = wit
@@ -1012,12 +952,7 @@ class HTTPStreamMessenger(doing.DoDoer):
         super(HTTPStreamMessenger, self).__init__(doers=doers, **kwa)
 
     def recur(self, tyme, deeds=None):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
+        """Poll for a response and stop once received."""
         if self.client.responses:
             self.rep = self.client.respond()
             self.remove([self.client])
@@ -1092,7 +1027,7 @@ def messengerFrom(hab, pre, urls, auth=None):
 
 
 def streamMessengerFrom(hab, pre, urls, msg, headers=None):
-    """ Create a Witnesser (tcp or http) based on provided endpoints
+    """Create a stream messenger (HTTP or TCP) for a single outbound message.
 
     Parameters:
         hab (Habitat): Environment to use to look up witness URLs
