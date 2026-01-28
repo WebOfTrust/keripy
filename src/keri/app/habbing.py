@@ -2020,7 +2020,7 @@ class BaseHab:
         for sig in self.db.getSigsIter(key):
             sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-        couple = self.db.getAes(key)
+        couple = self.db.getAes((self.pre, dig))
 
         return serder, sigs, couple
 
@@ -2045,9 +2045,10 @@ class BaseHab:
             msg.extend(sig.qb64b)  # attach sig
 
         if couple is not None:
+            seqner, saider = couple
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
                                version=kering.Vrsn_1_0).qb64b)
-            msg.extend(couple)
+            msg.extend(seqner.qb64b + saider.qb64b)
 
         return msg
 

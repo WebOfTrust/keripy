@@ -3278,10 +3278,10 @@ class Kever:
         Found delegation may not be superseding so do not repair .aess unless
         delegate was already accepted.
         """
-        dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key of delegate
+        keys = (serder.preb, serder.saidb)  # database key of delegate
 
-        if (couple := self.db.getAes(dgkey)):  # delegation source couple at delegate
-            seqner, saider = deSourceCouple(couple)
+        if (result := self.db.getAes(keys)):  # delegation source couple at delegate
+            seqner, saider = result
             deldig = saider.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
             #  fner = first seen Number instance index
@@ -3289,7 +3289,7 @@ class Kever:
                 if original:  # should not happen aes database broken
                     # repair by deleting aes and returning None so it escrows
                     # and then next time around find below with repair it
-                    self.db.delAes(dgkey)  # delete aes so next time repairs it
+                    self.db.delAes(keys)  # delete aes so next time repairs it
                 # superseding may not have happened yet so let it escrow
                 return None
             ddgkey = dgKey(pre=delpre, dig=deldig)  # database key of delegation
@@ -3330,8 +3330,9 @@ class Kever:
                 # Repair .aess of delegated event by writing found source
                 # seal couple of delegation. This is safe becaause we confirmed
                 # delegation event was accepted in delegator's kel.
-                couple = dserder.sner.huge.encode() + dserder.saidb
-                self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
+                seqner = coring.Seqner(sn=dserder.sn)
+                saider = coring.Saider(qb64b=dserder.saidb)
+                self.db.setAes(keys, (seqner, saider))  # authorizer (delegator/issuer) event seal
 
             return dserder
 
@@ -3395,8 +3396,7 @@ class Kever:
         # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
         if (self.delpre and not serder.ilk == Ilks.ixn and not self.locallyOwned()
             and not self.locallyWitnessed(wits=wits) and seqner and saider):
-            couple = seqner.qb64b + saider.qb64b
-            self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
+            self.db.setAes(dgkeys, (seqner, saider))  # authorizer (delegator/issuer) event seal
 
         #if seqner and saider:
             #couple = seqner.qb64b + saider.qb64b
@@ -6550,11 +6550,9 @@ class Kevery:
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # get delgate seal
-                couple = self.db.getAes(dgkey)
-                if couple is not None:  # Only try to parse the event if we have the del seal
-                    raw = bytearray(couple)
-                    seqner = coring.Seqner(qb64b=raw, strip=True)
-                    saider = coring.Saider(qb64b=raw)
+                result = self.db.getAes((pre.encode("utf-8"), edig))
+                if result is not None:  # Only try to parse the event if we have the del seal
+                    seqner, saider = result
 
                     # process event
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
@@ -7154,11 +7152,9 @@ def loadEvent(db, preb, dig):
     event["witness_signatures"] = dwigs
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
-    couple = db.getAes(dgkey)
-    if couple is not None:
-        raw = bytearray(couple)
-        seqner = coring.Seqner(qb64b=raw, strip=True)
-        saider = coring.Saider(qb64b=raw)
+    result = db.getAes((preb, dig))
+    if result is not None:
+        seqner, saider = result
         event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
 
     receipts = dict()

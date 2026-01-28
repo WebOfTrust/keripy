@@ -1,4 +1,5 @@
 import os
+import importlib
 
 import multicommand
 import pytest
@@ -262,6 +263,10 @@ def test_incept_and_rotate_opts(helpers, capsys):
     helpers.remove_test_dirs("test-opts")
     assert os.path.isdir("/usr/local/var/keri/ks/test-opts") is False
 
+    # Reload commands module and its submodules to avoid parser state issues from previous test
+    if hasattr(commands, 'escrow'):
+        importlib.reload(commands.escrow)
+    importlib.reload(commands)
     parser = multicommand.create_parser(commands)
     salt = core.Salter(raw=b'0123456789abcdef').qb64
     args = parser.parse_args(["init", "--name", "test-opts", "--nopasscode", "--salt", salt])
