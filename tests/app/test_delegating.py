@@ -58,12 +58,12 @@ def test_anchorer(seeder):
         palHab = palHby.habByName("pal")
         delHab = delHby.habByName("del")
         # Get the key of the seal we will create when delegation is anchored
-        keys = (delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)
+        dgkey = dbing.dgKey(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)
         # Get the value of the seal created when delegation is anchored
         seqner = coring.Seqner(sn=palHab.kever.sn)
         saider = coring.Saider(qb64b=palHab.kever.serder.saidb)
         couple = seqner.qb64b + saider.qb64b
-        result = delHby.db.getAes(keys)
+        result = delHby.db.aess.get(keys=dgkey)
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b + rsaider.qb64b == couple
@@ -120,12 +120,12 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
-    keys = (delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)
+    dgkey = dbing.dgKey(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)
     seqner = coring.Seqner(sn=palHab.kever.sn)
     saider = coring.Saider(qb64b=palHab.kever.serder.saidb)
     couple = seqner.qb64b + saider.qb64b
     while True:
-        result = delHby.db.getAes(keys)
+        result = delHby.db.aess.get(keys=dgkey)
         if result is not None:
             rseqner, rsaider = result
             if rseqner.qb64b + rsaider.qb64b == couple:

@@ -311,7 +311,7 @@ def test_baser():
         assert db.getDts(key) == None
 
         # Test .aess authorizing event source seal couples
-        keys = (preb, digb)
+        dgkey = dgKey(preb, digb)
 
         # test .aess sub db methods
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
@@ -325,28 +325,28 @@ def test_baser():
         val1 = (seqner1, saider1)
         val2 = (seqner2, saider2)
 
-        assert db.getAes(keys) == None
-        assert db.delAes(keys) == False
-        assert db.putAes(keys, val1) == True
-        result = db.getAes(keys)
+        assert db.aess.get(keys=dgkey) == None
+        assert db.aess.rem(keys=dgkey) == False
+        assert db.aess.put(keys=dgkey, val=val1) == True
+        result = db.aess.get(keys=dgkey)
         assert result is not None
         rseqner1, rsaider1 = result
         assert rseqner1.qb64b == seqner1.qb64b
         assert rsaider1.qb64b == saider1.qb64b
-        assert db.putAes(keys, val2) == False
-        result = db.getAes(keys)
+        assert db.aess.put(keys=dgkey, val=val2) == False
+        result = db.aess.get(keys=dgkey)
         assert result is not None
         rseqner1, rsaider1 = result
         assert rseqner1.qb64b == seqner1.qb64b
         assert rsaider1.qb64b == saider1.qb64b
-        assert db.setAes(keys, val2) == True
-        result = db.getAes(keys)
+        assert db.aess.pin(keys=dgkey, val=val2) == True
+        result = db.aess.get(keys=dgkey)
         assert result is not None
         rseqner2, rsaider2 = result
         assert rseqner2.qb64b == seqner2.qb64b
         assert rsaider2.qb64b == saider2.qb64b
-        assert db.delAes(keys) == True
-        assert db.getAes(keys) == None
+        assert db.aess.rem(keys=dgkey) == True
+        assert db.aess.get(keys=dgkey) == None
 
         # test .sigs sub db methods
         key = dgKey(preb, digb)

@@ -2020,7 +2020,7 @@ class BaseHab:
         for sig in self.db.getSigsIter(key):
             sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-        couple = self.db.getAes((self.pre, dig))
+        couple = self.db.aess.get(keys=key)
 
         return serder, sigs, couple
 

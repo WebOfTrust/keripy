@@ -167,7 +167,7 @@ def test_delegation():
         delK = delKvy.kevers[delPre]
         assert delK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.getAes((delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -180,7 +180,7 @@ def test_delegation():
         bobDelK = bobKvy.kevers[delPre]
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = bobKvy.db.getAes((delPre, delSrdr.said))
+        result = bobKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -264,7 +264,7 @@ def test_delegation():
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.getAes((delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -275,7 +275,7 @@ def test_delegation():
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = delKvy.db.getAes((delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -617,7 +617,7 @@ def test_delegation_supersede():
         delK = delKvy.kevers[delPre]
         assert delK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.getAes((delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -630,7 +630,7 @@ def test_delegation_supersede():
         bobDelK = bobKvy.kevers[delPre]
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = bobKvy.db.getAes((delPre, delSrdr.said))
+        result = bobKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -714,7 +714,7 @@ def test_delegation_supersede():
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.getAes((delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -725,7 +725,7 @@ def test_delegation_supersede():
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = delKvy.db.getAes((delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -786,7 +786,8 @@ def test_delegables_escrow():
         serder = torHab.kever.serder
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        torHab.db.setAes((gateHab.kever.prefixer.qb64b, gateHab.kever.serder.saidb), (seqner, saider))  # authorizer event seal (delegator/issuer)
+        torHab.db.aess.pin(keys=dbing.dgKey(gateHab.kever.prefixer.qb64b, gateHab.kever.serder.saidb),
+                           val=(seqner, saider))  # authorizer event seal (delegator/issuer)
 
         # delegate still not kevers
         assert gateHab.pre not in torKvy.kevers

@@ -199,7 +199,8 @@ class Counselor(doing.DoDoer):
                                                                           seal=anchor):
                     aseq = coring.Seqner(sn=serder.sn)
                     asaider = coring.Saider(qb64b=serder.saidb)
-                    self.hby.db.setAes((pre, saider.qb64b), (aseq, asaider))  # authorizer event seal (delegator/issuer)
+                    self.hby.db.aess.pin(keys=dbing.dgKey(pre, saider.qb64b),
+                                         val=(aseq, asaider))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 
@@ -540,7 +541,7 @@ def getEscrowedEvent(db, pre, sn):
     for sig in db.getSigsIter(key):
         sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-    result = db.getAes((pre, dig))
+    result = db.aess.get(keys=key)
 
     msg = bytearray()
     msg.extend(serder.raw)

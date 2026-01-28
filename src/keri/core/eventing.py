@@ -3278,9 +3278,9 @@ class Kever:
         Found delegation may not be superseding so do not repair .aess unless
         delegate was already accepted.
         """
-        keys = (serder.preb, serder.saidb)  # database key of delegate
+        dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key of delegate
 
-        if (result := self.db.getAes(keys)):  # delegation source couple at delegate
+        if (result := self.db.aess.get(keys=dgkey)):  # delegation source couple at delegate
             seqner, saider = result
             deldig = saider.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
@@ -3289,7 +3289,7 @@ class Kever:
                 if original:  # should not happen aes database broken
                     # repair by deleting aes and returning None so it escrows
                     # and then next time around find below with repair it
-                    self.db.delAes(keys)  # delete aes so next time repairs it
+                    self.db.aess.rem(keys=dgkey)  # delete aes so next time repairs it
                 # superseding may not have happened yet so let it escrow
                 return None
             ddgkey = dgKey(pre=delpre, dig=deldig)  # database key of delegation
@@ -3332,7 +3332,7 @@ class Kever:
                 # delegation event was accepted in delegator's kel.
                 seqner = coring.Seqner(sn=dserder.sn)
                 saider = coring.Saider(qb64b=dserder.saidb)
-                self.db.setAes(keys, (seqner, saider))  # authorizer (delegator/issuer) event seal
+                self.db.aess.pin(keys=dgkey, val=(seqner, saider))  # authorizer (delegator/issuer) event seal
 
             return dserder
 
@@ -3396,7 +3396,7 @@ class Kever:
         # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
         if (self.delpre and not serder.ilk == Ilks.ixn and not self.locallyOwned()
             and not self.locallyWitnessed(wits=wits) and seqner and saider):
-            self.db.setAes(dgkeys, (seqner, saider))  # authorizer (delegator/issuer) event seal
+            self.db.aess.pin(keys=dgkey, val=(seqner, saider))  # authorizer (delegator/issuer) event seal
 
         #if seqner and saider:
             #couple = seqner.qb64b + saider.qb64b
@@ -6550,7 +6550,7 @@ class Kevery:
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # get delgate seal
-                result = self.db.getAes((pre.encode("utf-8"), edig))
+                result = self.db.aess.get(keys=dgKey(pre.encode("utf-8"), edig))
                 if result is not None:  # Only try to parse the event if we have the del seal
                     seqner, saider = result
 
@@ -7152,7 +7152,7 @@ def loadEvent(db, preb, dig):
     event["witness_signatures"] = dwigs
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
-    result = db.getAes((preb, dig))
+    result = db.aess.get(keys=dgkey)
     if result is not None:
         seqner, saider = result
         event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
