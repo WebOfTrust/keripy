@@ -174,15 +174,15 @@ class SuberBase():
 
         """
         if hasattr(keys, "encode"):  # str
-            return keys.encode("utf-8")
+            return keys.encode()
         if isinstance(keys, memoryview):  # memoryview of bytes
             return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
             return keys
         if topive and keys[-1]:  # topive and keys is not already partial
             keys = tuple(keys) + ('',)  # cat empty str so join adds trailing sep
-        return (self.sep.join(key.decode() if hasattr(key, "decode") else key
-                              for key in keys).encode("utf-8"))
+        return (self.sep.join(key if hasattr(key, "encode") else bytes(key).decode()
+                              for key in keys).encode())  # bytes(key) converts memoryview
 
 
     def _tokeys(self, key: str | bytes | memoryview):
@@ -200,7 +200,7 @@ class SuberBase():
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
         if hasattr(key, "decode"):  # bytes
-            key = key.decode("utf-8")  # convert to str
+            key = key.decode()  # convert to str
         return tuple(key.split(self.sep))
 
 
@@ -212,7 +212,7 @@ class SuberBase():
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # return bytes
-        return (val.encode("utf-8") if hasattr(val, "encode") else val)
+        return (val.encode() if hasattr(val, "encode") else val)
 
 
     def _des(self, val: bytes | memoryview):
@@ -223,7 +223,7 @@ class SuberBase():
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
-        return (val.decode("utf-8") if hasattr(val, "decode") else val)
+        return (val.decode() if hasattr(val, "decode") else val)
 
 
     def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
