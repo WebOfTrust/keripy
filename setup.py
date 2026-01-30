@@ -20,12 +20,6 @@ $ git show v0.6.11
 $ git push --tags # pushes tags to default remote
 $ git push wot --tags   # pushes tags to wot remote
 
-$ git tag -a v0.4.2 -m "bump version"
-$ git push --tags
-$ git checkout -b release_0.4.2
-$ git push --set-upstream origin release_0.4.2
-$ git checkout master
-
 Best practices for setup.py and requirements.txt
 https://caremad.io/posts/2013/07/setup-vs-requirement/
 """
@@ -83,7 +77,7 @@ setup(
                         'cbor2>=5.8.0',
                         'multidict>=6.7.0',
                         'ordered-set>=4.1.0',
-                        'hio>=0.7.18',
+                        'hio>=0.7.19',
                         'multicommand==1.0.0',
                         'jsonschema>=4.26.0',
                         'falcon>=4.2.0',
