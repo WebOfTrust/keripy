@@ -18,11 +18,12 @@ def test_mailboxing():
     """
     Test Mailboxer Class
     """
-    mber = Mailboxer()
+    mber = Mailboxer(temp=True)
 
     assert isinstance(mber, Mailboxer)
     assert mber.name == "mbx"
-    assert mber.temp is False
+    #assert mber.temp is False
+    assert mber.temp
     assert isinstance(mber.env, lmdb.Environment)
     assert mber.path.endswith(os.path.join("keri", "mbx", "mbx"))
     assert mber.env.path() == mber.path
@@ -35,10 +36,11 @@ def test_mailboxing():
     assert not os.path.exists(mber.path)
     assert not mber.opened
 
-    mber = Mailboxer(reopen=False)
+    mber = Mailboxer(reopen=False, temp=True)
     assert isinstance(mber, Mailboxer)
     assert mber.name == "mbx"
-    assert mber.temp is False
+    assert mber.temp
+    #assert mber.temp is False
     assert mber.opened is False
     assert mber.path is None
     assert mber.env is None

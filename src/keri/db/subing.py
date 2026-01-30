@@ -174,7 +174,7 @@ class SuberBase():
 
         """
         if hasattr(keys, "encode"):  # str
-            return keys.encode("utf-8")
+            return keys.encode()
         if isinstance(keys, memoryview):  # memoryview of bytes
             return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
@@ -202,7 +202,7 @@ class SuberBase():
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
         if hasattr(key, "decode"):  # bytes
-            key = key.decode("utf-8")  # convert to str
+            key = key.decode()  # convert to str
         return tuple(key.split(self.sep))
 
 
@@ -214,7 +214,7 @@ class SuberBase():
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # return bytes
-        return (val.encode("utf-8") if hasattr(val, "encode") else val)
+        return (val.encode() if hasattr(val, "encode") else val)
 
 
     def _des(self, val: bytes | memoryview):
@@ -225,7 +225,7 @@ class SuberBase():
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
-        return (val.decode("utf-8") if hasattr(val, "decode") else val)
+        return (val.decode() if hasattr(val, "decode") else val)
 
 
     def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
