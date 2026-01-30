@@ -45,11 +45,14 @@ l
 
 """
 
+import gc
 import os
 import platform
 import shutil
 import stat
+import sys
 import tempfile
+import time
 from collections import abc
 from contextlib import contextmanager
 from typing import Union
@@ -460,17 +463,58 @@ class LMDBer(filing.Filer):
     def close(self, clear=False):
         """
         Close lmdb at .env and if clear or .temp then remove lmdb directory at .path
+        
         Parameters:
            clear is boolean, True means clear lmdb directory
+        
+        Note:
+            On Windows, LMDB uses mandatory file locks that may persist briefly
+            after env.close(). We add explicit sync and retry logic to ensure
+            locks are released before attempting directory cleanup.
         """
         if self.env:
             try:
+                # Explicitly sync to ensure all writes are flushed
+                self.env.sync(force=True)
                 self.env.close()
-            except:
+                # Give Windows time to release file handles immediately after close
+                if sys.platform == 'win32':
+                    time.sleep(0.01)  # 10ms initial delay
+            except Exception:
                 pass
 
         self.env = None
 
+        # Windows-specific: Retry cleanup with exponential backoff
+        # Windows holds file locks longer than Unix, causing PermissionError
+        if clear and sys.platform == 'win32':
+            # Force garbage collection to release any lingering file handles
+            gc.collect()
+            # Windows with clear=True: Retry with exponential backoff
+            max_retries = 10
+            base_delay = 0.1  # Start with 100ms
+            last_error = None
+            
+            for attempt in range(max_retries):
+                try:
+                    return super(LMDBer, self).close(clear=clear)
+                except (PermissionError, OSError) as e:
+                    last_error = e
+                    # On Windows, any PermissionError or OSError during cleanup
+                    # is likely a file lock issue - retry with backoff
+                    if attempt < max_retries - 1:
+                        # Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1.6s...
+                        delay = base_delay * (2 ** attempt)
+                        time.sleep(delay)
+                        # Force garbage collection between retries
+                        gc.collect()
+                    else:
+                        # Final attempt failed, re-raise the last error
+                        raise last_error
+            # Shouldn't reach here but satisfy type checker
+            return False  # type: ignore[unreachable]
+        
+        # Non-Windows or not clearing, no retry needed
         return super(LMDBer, self).close(clear=clear)
 
     def getVer(self):

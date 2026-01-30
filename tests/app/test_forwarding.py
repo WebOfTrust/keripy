@@ -19,6 +19,14 @@ from keri.app import forwarding, habbing, indirecting, storing
 from keri.peer import exchanging
 from keri.spac import payloading
 
+# Import Windows port utilities for cross-platform testing
+try:
+    from .windows_ports import get_available_port
+except ImportError:
+    # Fallback if windows_ports module not available
+    def get_available_port(port):
+        return port
+
 
 def test_postman(seeder):
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab), \
@@ -26,7 +34,10 @@ def test_postman(seeder):
             habbing.openHby(name="repTest", temp=True) as recpHby:
 
         mbx = storing.Mailboxer(name="wes", temp=True)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        # Use Windows-compatible ports
+        tcp_port = get_available_port(5634)
+        http_port = get_available_port(5644)
+        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=tcp_port, httpPort=http_port)
         wesHab = wesHby.habByName("wes")
         seeder.seedWitEnds(hby.db, witHabs=[wesHab])
         seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
@@ -96,7 +107,9 @@ def test_essr_stream(seeder):
         app = falcon.App()
         httpEnd = indirecting.HttpEnd(rxbs=recpHab.psr.ims)
         app.add_route("/", httpEnd)
-        server = http.Server(port=5555, app=app)
+        # Use Windows-compatible port
+        http_port = get_available_port(5555)
+        server = http.Server(port=http_port, app=app)
         httpServerDoer = http.ServerDoer(server=server)
 
         kvy = eventing.Kevery(db=hab.db)
@@ -115,7 +128,7 @@ def test_essr_stream(seeder):
                                         role=kering.Roles.controller,
                                         stamp=help.nowIso8601()))
 
-        msgs.extend(recpHab.makeLocScheme(url='http://127.0.0.1:5555',
+        msgs.extend(recpHab.makeLocScheme(url=f'http://127.0.0.1:{http_port}',
                                           scheme=kering.Schemes.http,
                                           stamp=help.nowIso8601()))
         hab.psr.parse(ims=msgs)
@@ -197,7 +210,10 @@ def test_essr_mbx(seeder):
             habbing.openHby(name="repTest", temp=True) as recpHby:
 
         mbx = storing.Mailboxer(name="wes", temp=True)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        # Use Windows-compatible ports
+        tcp_port = get_available_port(5634)
+        http_port = get_available_port(5644)
+        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=tcp_port, httpPort=http_port)
         wesHab = wesHby.habByName("wes")
         seeder.seedWitEnds(hby.db, witHabs=[wesHab])
         seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
