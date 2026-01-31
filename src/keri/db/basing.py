@@ -1024,7 +1024,7 @@ class Baser(dbing.LMDBer):
                                         klas=(coring.Seqner, coring.Saider))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
-        self.dels = self.env.open_db(key=b'dels.', dupsort=True)
+        self.dels = subing.DelsIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.LdesIoDupSuber(db=self, subkey='ldes.')
         self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
 
@@ -2985,7 +2985,7 @@ class Baser(dbing.LMDBer):
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
-        return self.putIoDupVals(self.dels, key, vals)
+        return self.dels.put(key, vals)
 
     def addDe(self, key, val):
         """
@@ -2995,7 +2995,7 @@ class Baser(dbing.LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
         """
-        return self.addIoDupVal(self.dels, key, val)
+        return self.dels.add(key, val)
 
     def getDes(self, key):
         """
@@ -3004,7 +3004,7 @@ class Baser(dbing.LMDBer):
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupVals(self.dels, key)
+        return self.dels.get(key)
 
     def getDeLast(self, key):
         """
@@ -3014,7 +3014,7 @@ class Baser(dbing.LMDBer):
 
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoDupValLast(self.dels, key)
+        return self.dels.getLast(key)
 
     def cntDes(self, key):
         """
@@ -3022,7 +3022,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.dels, key)
+        return self.dels.cnt(key)
 
     def delDes(self, key):
         """
@@ -3030,7 +3030,7 @@ class Baser(dbing.LMDBer):
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        return self.delIoDupVals(self.dels, key)
+        return self.dels.rem(key)
 
     def getDelItemIter(self, pre):
         """
@@ -3049,7 +3049,7 @@ class Baser(dbing.LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getTopIoDupItemIter(self.dels, pre)
+        return self.dels.getDelItemIter(pre)
         #return self.getOnIoDupValsAnyPreIter(self.dels, pre)
 
     def putLdes(self, key, vals):
