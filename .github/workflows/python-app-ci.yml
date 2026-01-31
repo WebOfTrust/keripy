@@ -16,10 +16,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-13, ubuntu-latest ]
+        os: [ macos-latest, ubuntu-latest ]
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install libsodium
+        if: runner.os == 'macOS'
+        run: |
+          brew install libsodium
       - name: Set up Python 3.12.2
         uses: actions/setup-python@v2
         with:
@@ -35,6 +39,10 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --ignore=E7,F841,E301,E302,E303 --max-complexity=10 --max-line-length=127 --statistics
+      - name: Set DYLD_FALLBACK_LIBRARY_PATH
+        if: runner.os == 'macOS'
+        run: |
+          echo "DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix libsodium)/lib" >> $GITHUB_ENV
       - name: Run core KERI tests
         run: |
           pytest tests/ --ignore tests/demo/ --ignore test/scripts
