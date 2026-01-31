@@ -2516,6 +2516,30 @@ class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
         """
         super(B64OnIoDupSuber, self).__init__(*pa, **kwa)
 
+
+class OoesIoDupSuber(IoDupSuber):
+    """
+    Suber for out-of-order escrowed events (.ooes).
+    Maps snKey (prefix + sequence number) to one or more event digests.
+    Values are raw bytes and must preserve insertion order.
+    """
+    def _des(self, val):
+        """
+        Domain-specific deserializer.
+        LMDB returns memoryview; DELS stores raw bytes.
+        """
+        return bytes(val)
+
+    def getOoeItemIter(self, key=b''):
+        """
+        Iterate over (key, val) pairs starting at the given key.
+        Lexicographic order of keys, and lexicographic order of dupsort values.
+        """
+        for k, v in self.db.getTopIoDupItemIter(db=self.sdb, top=key):
+            # v is raw LMDB bytes; convert using _des
+            yield (k, bytes(v))
+
+
 class DelsIoDupSuber(IoDupSuber):
     """
     Suber for duplicitous event log entries (.dels).
@@ -2538,6 +2562,7 @@ class DelsIoDupSuber(IoDupSuber):
         for k, v in self.db.getTopIoDupItemIter(db=self.sdb, top=key):
             # v is raw LMDB bytes; convert using _des
             yield (k, bytes(v))
+
 
 class LdesIoDupSuber(IoDupSuber):
     """
