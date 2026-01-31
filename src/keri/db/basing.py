@@ -1010,7 +1010,8 @@ class Baser(dbing.LMDBer):
         self.fels = self.env.open_db(key=b'fels.')
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.dtss = self.env.open_db(key=b'dtss.')
-        self.aess = self.env.open_db(key=b'aess.')
+        self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
+                                        klas=(coring.Seqner, coring.Saider))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
@@ -1683,11 +1684,11 @@ class Baser(dbing.LMDBer):
                 atc.extend(wig)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
-        couple = self.getAes(dgkey)
-        if couple is not None:
+        if couple := self.aess.get(keys=dgkey):
+            seqner, saider = couple
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
                                     count=1, version=kering.Vrsn_1_0).qb64b)
-            atc.extend(couple)
+            atc.extend(seqner.qb64b + saider.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
@@ -2145,40 +2146,43 @@ class Baser(dbing.LMDBer):
         """
         return self.delVal(self.dtss, key)
 
-    def putAes(self, key, val):
-        """
-        Use dgKey()
-        Write serialized source seal event couple val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Returns False if key already exists
-        """
-        return self.putVal(self.aess, key, val)
-
-    def setAes(self, key, val):
-        """
-        Use dgKey()
-        Write serialized source seal event couple val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.aess, key, val)
-
-    def getAes(self, key):
-        """
-        Use dgKey()
-        Return source seal event couple at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.aess, key)
-
-    def delAes(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.aess, key)
+    # NOTE: aess access is via self.aess suber directly, aligned with the
+    # validated "suber-only" pattern used elsewhere (e.g. udes).
+    #
+    #def putAes(self, key, val):
+        #"""
+        #Use dgKey()
+        #Write source seal event couple val to key
+        #Does not overwrite existing val if any
+        #Returns True If val successfully written Else False
+        #Returns False if key already exists
+        #"""
+        #return self.aess.put(keys=key, val=val)
+    #
+    #def setAes(self, key, val):
+        #"""
+        #Use dgKey()
+        #Write source seal event couple val to key
+        #Overwrites existing val if any
+        #Returns True If val successfully written Else False
+        #"""
+        #return self.aess.pin(keys=key, val=val)
+    #
+    #def getAes(self, key):
+        #"""
+        #Use dgKey()
+        #Return source seal event couple at key
+        #Returns None if no entry at key
+        #"""
+        #return self.aess.get(keys=key)
+    #
+    #def delAes(self, key):
+        #"""
+        #Use dgKey()
+        #Deletes value at key.
+        #Returns True If key exists in database Else False
+        #"""
+        #return self.aess.rem(keys=key)
 
     def getSigs(self, key):
         """
