@@ -56,7 +56,9 @@ def test_baser():
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
     assert isinstance(baser.dels, lmdb._Database)
-    assert isinstance(baser.ldes, lmdb._Database)
+    
+    # test .ldes IoDupSuber 
+    assert isinstance(baser.ldes, subing.IoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -87,7 +89,8 @@ def test_baser():
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
     assert isinstance(baser.dels, lmdb._Database)
-    assert isinstance(baser.ldes, lmdb._Database)
+    # test .ldes IoDupSuber 
+    assert isinstance(baser.ldes, subing.IoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -115,7 +118,9 @@ def test_baser():
         assert isinstance(baser.ooes, lmdb._Database)
         assert isinstance(baser.pses, lmdb._Database)
         assert isinstance(baser.dels, lmdb._Database)
-        assert isinstance(baser.ldes, lmdb._Database)
+        
+        # test .ldes IoDupSuber 
+        assert isinstance(baser.ldes, subing.IoDupSuber)
 
 
     assert not os.path.exists(baser.path)

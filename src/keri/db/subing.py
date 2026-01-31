@@ -2515,3 +2515,30 @@ class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
                            False means do not reverify. Default False
         """
         super(B64OnIoDupSuber, self).__init__(*pa, **kwa)
+
+
+class LdesIoDupSuber(IoDupSuber):
+    """
+    Domain-specific DupSuber for the 'ldes' (local descriptors) domain.
+    Stores small, lexicographically ordered descriptor values per key.
+    """
+
+    def _des(self, val):
+        """ Converst val to raw bytes, not strings """
+        return bytes(val)
+
+    def getLdes(self, key):
+        """
+        Return all descriptor values for the given key as a list.
+        Values are returned in lexicographic order (LMDB dupsort semantics).
+        """
+        return list(self.getIter(key))
+
+    def getLdeItemIter(self, key=b''):
+        """
+        Iterate over (key, val) pairs starting at the given key.
+        Lexicographic order of keys, and lexicographic order of dupsort values.
+        """
+        for k, v in self.db.getTopIoDupItemIter(db=self.sdb, top=key):
+            # v is raw LMDB bytes; convert using _des
+            yield (k, bytes(v))
