@@ -124,12 +124,11 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     seqner = coring.Seqner(sn=palHab.kever.sn)
     saider = coring.Saider(qb64b=palHab.kever.serder.saidb)
     couple = seqner.qb64b + saider.qb64b
-    while True:
-        result = delHby.db.aess.get(keys=dgkey)
-        if result is not None:
-            rseqner, rsaider = result
-            if rseqner.qb64b + rsaider.qb64b == couple:
-                break
+
+    while result := delHby.db.aess.get(keys=dgkey):
+        rseqner, rsaider = result
+        if rseqner.qb64b + rsaider.qb64b == couple:
+            break
         yield tock
 
 
