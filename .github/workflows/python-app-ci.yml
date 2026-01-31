@@ -20,9 +20,14 @@ jobs:
         os: [ macos-latest, ubuntu-latest ]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Install libsodium (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install libsodium
+          echo "DYLD_LIBRARY_PATH=$(brew --prefix libsodium)/lib" >> $GITHUB_ENV
       - name: Set up Python 3.12.2
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.12.2
       - name: Install dependencies
@@ -46,9 +51,9 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.12.2
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.12.2
       - name: Install dependencies
@@ -67,9 +72,9 @@ jobs:
   scripts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.12.2
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.12.2
       - name: Install dependencies
@@ -89,7 +94,7 @@ jobs:
       GITHUB_REPOSITORY_NAME: ${{ steps.cache.outputs.GITHUB_REPOSITORY_NAME }}
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set outputs
         id: cache
         run: |
@@ -106,7 +111,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: interop
         run: |
           echo ${{ secrets.CR_PAT }} | docker login ghcr.io --username ${{ secrets.CR_USER }} --password-stdin
