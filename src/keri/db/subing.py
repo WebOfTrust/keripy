@@ -181,10 +181,8 @@ class SuberBase():
             return keys
         if topive and keys[-1]:  # topive and keys is not already partial
             keys = tuple(keys) + ('',)  # cat empty str so join adds trailing sep
-        # Convert memoryview to bytes before processing
-        processed_keys = [bytes(key) if isinstance(key, memoryview) else key for key in keys]
-        return (self.sep.join(key.decode() if hasattr(key, "decode") else key
-                              for key in processed_keys).encode("utf-8"))
+        return (self.sep.join(key if hasattr(key, "encode") else bytes(key).decode()
+                              for key in keys).encode())  # bytes(key) converts memoryview
 
 
     def _tokeys(self, key: str | bytes | memoryview):

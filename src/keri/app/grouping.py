@@ -541,7 +541,7 @@ def getEscrowedEvent(db, pre, sn):
     for sig in db.getSigsIter(key):
         sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-    result = db.aess.get(keys=key)
+    couple = db.aess.get(keys=key)
 
     msg = bytearray()
     msg.extend(serder.raw)
@@ -550,8 +550,8 @@ def getEscrowedEvent(db, pre, sn):
     for sig in sigs:
         msg.extend(sig.qb64b)  # attach sig
 
-    if result is not None:
-        seqner, saider = result
+    if couple is not None:
+        seqner, saider = couple
         msg.extend(core.Counter(core.Codens.SealSourceCouples,
                                 count=1, version=kering.Vrsn_1_0).qb64b)
         msg.extend(seqner.qb64b + saider.qb64b)
