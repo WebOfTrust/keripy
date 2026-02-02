@@ -2961,6 +2961,208 @@ def test_cesr_dup_suber():
     assert not db.opened
 
 
+def test_cat_cesr_dup_suber():
+    """
+    Test CatCesrDupSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        sdb = subing.CatCesrDupSuber(db=db, subkey='bags.')
+        assert isinstance(sdb, subing.CatCesrDupSuber)
+        assert sdb.klas == (coring.Matter, )  # default
+        assert sdb.sdb.flags()["dupsort"]
+        assert isinstance(sdb, subing.CatCesrSuberBase)
+        assert isinstance(sdb, subing.DupSuber)
+
+        klases = (coring.Number, coring.Diger)
+        sdb = subing.CatCesrDupSuber(db=db, subkey='bags.', klas=klases)
+        assert isinstance(sdb, subing.CatCesrDupSuber)
+        for klas, sklas in zip(klases, sdb.klas):
+            assert klas == sklas
+        assert sdb.sdb.flags()["dupsort"]
+
+        # test .toval and tovals  needs .klas to work
+        sqr0 = coring.Number(num=20)
+        assert sqr0.qb64b == b'MAAU'
+
+        dgr0 = coring.Diger(ser=b"Hello Me Maties.")
+        assert dgr0.qb64b == b'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
+
+        vals0 = (sqr0, dgr0)
+
+        val0b = sdb._ser(val=vals0)
+        assert val0b == sqr0.qb64b + dgr0.qb64b
+        vals = sdb._des(val=val0b)
+        assert b"".join(val.qb64b for val in vals0) == val0b
+        for val, klas in zip(vals, sdb.klas):
+            assert isinstance(val, klas)
+
+        sqr1 = coring.Number(num=32)
+        sqr1.qb64b == b'MAAg'
+
+        dgr1 = coring.Diger(ser=b"Hi Guy.")
+        assert dgr1.qb64b == b'EAdfsnL-ko8ldxIZ9JL-KBTD4eMCqAAkEw4HmKFsT45C'
+
+        vals1 = (sqr1, dgr1)
+
+        sqr2 = coring.Number(num=1534)
+        assert sqr2.qb64b == b'MAX-'
+
+        dgr2 = coring.Diger(ser=b"Bye Bye Birdie.")
+        assert dgr2.qb64b == b'EAO4UVcSfvfoGnSzJycMiihykJyYOshsyvU_l8U5TrO2'
+
+        vals2 = (sqr2, dgr2)
+
+        keys0 = ("a", "front")
+        keys1 = ("ab", "side")
+        keys2 = ("ac", "back")
+
+        assert sdb.put(keys=keys0, vals=[vals0, vals1])
+        assert sdb.cnt(keys0) == 2
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr0.qb64, dgr0.qb64],
+                        [sqr1.qb64, dgr1.qb64],
+                       ]
+
+        actual = sdb.getLast(keys=keys0)
+        assert [actual[0].qb64, actual[1].qb64] == [sqr1.qb64, dgr1.qb64]
+
+        sdb.rem(keys0)
+        assert sdb.get(keys=keys0) == []
+        assert sdb.cnt(keys0) == 0
+
+        sdb.put(keys=keys0, vals=[vals1, vals0])  # reverse order
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        # since dup order is not insertion order but lexicographic order of values
+        assert valss == [
+                        [sqr0.qb64, dgr0.qb64],
+                        [sqr1.qb64, dgr1.qb64],
+                       ]
+        actual = sdb.getLast(keys=keys0)
+        assert [actual[0].qb64, actual[1].qb64] == [sqr1.qb64, dgr1.qb64]
+
+        assert sdb.add(keys=keys0, val=vals2)
+        assert sdb.cnt(keys0) == 3
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr0.qb64, dgr0.qb64],
+                        [sqr1.qb64, dgr1.qb64],
+                        [sqr2.qb64, dgr2.qb64],
+            ]
+        actual = sdb.getLast(keys=keys0)
+        assert [actual[0].qb64, actual[1].qb64] == [sqr2.qb64, dgr2.qb64]
+
+        assert sdb.pin(keys=keys0, vals=[vals0, vals1])
+        assert sdb.cnt(keys0) == 2
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr0.qb64, dgr0.qb64],
+                        [sqr1.qb64, dgr1.qb64],
+                       ]
+
+        assert sdb.put(keys=keys1, vals=[vals2, vals1])  # change order
+        assert sdb.cnt(keys1) == 2
+        actuals = sdb.get(keys=keys1)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        # not insertion order dup is lexicographic
+        assert valss == [
+                        [sqr1.qb64, dgr1.qb64],
+                        [sqr2.qb64, dgr2.qb64],
+                       ]
+
+        valss = [[val.qb64 for val in vals] for vals in sdb.getIter(keys=keys1)]
+        assert valss == [
+                          [sqr1.qb64, dgr1.qb64],
+                          [sqr2.qb64, dgr2.qb64],
+                        ]
+
+        #  test remove with a specific val not just remove all.
+        assert sdb.rem(keys=keys1, val=vals1)
+        assert sdb.cnt(keys1) == 1
+        actuals = sdb.get(keys=keys1)
+        vals = [[val.qb64 for val in actual] for actual in actuals]
+        assert vals == [
+                        [sqr2.qb64, dgr2.qb64],
+                       ]
+
+        assert sdb.put(keys=keys2, vals=[vals0, vals2])
+
+        items = [(keys, [val.qb64 for val in  vals])
+                                         for keys, vals in sdb.getItemIter()]
+        assert items == [
+                         (keys0, [sqr0.qb64, dgr0.qb64]),
+                         (keys0, [sqr1.qb64, dgr1.qb64]),
+                         (keys1, [sqr2.qb64, dgr2.qb64]),
+                         (keys2, [sqr0.qb64, dgr0.qb64]),
+                         (keys2, [sqr2.qb64, dgr2.qb64])
+                        ]
+
+        items = [(iokeys, [val.qb64 for val in  vals])
+                                      for iokeys, vals in sdb.getFullItemIter()]
+        assert items ==  [
+                          (keys0 , [sqr0.qb64, dgr0.qb64]),
+                          (keys0 , [sqr1.qb64, dgr1.qb64]),
+                          (keys1 , [sqr2.qb64, dgr2.qb64]),
+                          (keys2, [sqr0.qb64, dgr0.qb64]),
+                          (keys2 , [sqr2.qb64, dgr2.qb64])
+                         ]
+
+        items = [(keys, [val.qb64 for val in vals])
+                                 for keys, vals in sdb.getItemIter(keys=keys1)]
+        assert items == [(keys1, [sqr2.qb64, dgr2.qb64])]
+
+        items = [(keys, [val.qb64 for val in vals])
+                             for keys, vals in  sdb.getItemIter(keys=keys0)]
+        assert items == [
+                        (keys0, [sqr0.qb64, dgr0.qb64]),
+                        (keys0, [sqr1.qb64, dgr1.qb64]),
+                        ]
+
+
+        topkeys = ("a", "")
+        items = [(keys, [val.qb64 for val in vals])
+                            for keys, vals in sdb.getItemIter(keys=topkeys)]
+        assert items == [
+                          (keys0, [sqr0.qb64, dgr0.qb64]),
+                          (keys0, [sqr1.qb64, dgr1.qb64]),
+                        ]
+
+        items = [(iokeys, [val.qb64 for val in vals])
+                             for iokeys, vals in sdb.getFullItemIter(keys=topkeys)]
+
+        assert items == [
+                        (keys0, [sqr0.qb64, dgr0.qb64]),
+                        (keys0, [sqr1.qb64, dgr1.qb64]),
+                        ]
+
+
+        # Try Siger Indexer Subclass
+        sdb = subing.CatCesrDupSuber(db=db, subkey='pigs.', klas=(indexing.Siger, ))
+        assert isinstance(sdb, subing.CatCesrDupSuber)
+        assert issubclass(sdb.klas[0], indexing.Siger)
+        sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+        val0 = indexing.Siger(qb64=sig0)
+        keys = ("zeta", "cat")
+        assert sdb.put(keys=keys, vals=[[val0]])
+        actuals = sdb.get(keys=keys)
+        assert isinstance(actuals[0][0], indexing.Siger)
+        assert actuals[0][0].qb64 == val0.qb64
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
+
 def test_signer_suber():
     """
     Test SignerSuber LMDBer sub database class
@@ -3302,6 +3504,7 @@ if __name__ == "__main__":
     test_cesr_ioset_suber()
     test_cat_cesr_ioset_suber()
     test_cesr_dup_suber()
+    test_cat_cesr_dup_suber()
     test_serder_suber()
     test_serder_ioset_suber()
     test_schemer_suber()

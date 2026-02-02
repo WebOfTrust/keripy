@@ -1538,6 +1538,7 @@ class BaseHab:
 
         return msgs
 
+
     def replayAll(self):
         """
         Returns replay of FEL first seen event log for all pre starting at key
@@ -1550,6 +1551,7 @@ class BaseHab:
         for msg in self.db.cloneAllPreIter():
             msgs.extend(msg)
         return msgs
+
 
     def makeOtherEvent(self, pre, sn):
         """
@@ -1577,6 +1579,7 @@ class BaseHab:
             msg.extend(sig)  # attach sig
         return msg
 
+
     def fetchEnd(self, cid: str, role: str, eid: str):
         """
         Returns:
@@ -1584,12 +1587,14 @@ class BaseHab:
         """
         return self.db.ends.get(keys=(cid, role, eid))
 
+
     def fetchLoc(self, eid: str, scheme: str = kering.Schemes.http):
         """
         Returns:
             location (basing.LocationRecord): instance or None
         """
         return self.db.locs.get(keys=(eid, scheme))
+
 
     def fetchEndAllowed(self, cid: str, role: str, eid: str):
         """
@@ -1605,6 +1610,7 @@ class BaseHab:
         end = self.db.ends.get(keys=(cid, role, eid))
         return end.allowed if end else None
 
+
     def fetchEndEnabled(self, cid: str, role: str, eid: str):
         """
         Returns:
@@ -1618,6 +1624,7 @@ class BaseHab:
         """
         end = self.db.ends.get(keys=(cid, role, eid))
         return end.enabled if end else None
+
 
     def fetchEndAuthzed(self, cid: str, role: str, eid: str):
         """
@@ -1633,6 +1640,7 @@ class BaseHab:
         end = self.db.ends.get(keys=(cid, role, eid))
         return (end.enabled or end.allowed) if end else None
 
+
     def fetchUrl(self, eid: str, scheme: str = kering.Schemes.http):
         """
         Returns:
@@ -1642,6 +1650,7 @@ class BaseHab:
         """
         loc = self.db.locs.get(keys=(eid, scheme))
         return loc.url if loc else loc
+
 
     def fetchUrls(self, eid: str, scheme: str = ""):
         """
@@ -1656,6 +1665,7 @@ class BaseHab:
         """
         return hicting.Mict([(keys[1], loc.url) for keys, loc in
                              self.db.locs.getItemIter(keys=(eid, scheme)) if loc.url])
+
 
     def fetchRoleUrls(self, cid: str, *, role: str = "", scheme: str = "",
                       eids=None, enabled: bool = True, allowed: bool = True):
@@ -1698,6 +1708,7 @@ class BaseHab:
                         rurls.add(erole, hicting.Mict([(eid, surls)]))
         return rurls
 
+
     def fetchWitnessUrls(self, cid: str, scheme: str = "", eids=None,
                          enabled: bool = True, allowed: bool = True):
         """
@@ -1724,6 +1735,7 @@ class BaseHab:
                                    eids=eids,
                                    enabled=enabled,
                                    allowed=allowed))
+
 
     def endsFor(self, pre):
         """ Load Authroized endpoints for provided AID
@@ -1763,6 +1775,7 @@ class BaseHab:
 
         return ends
 
+
     def reply(self, **kwa):
         """
         Returns:
@@ -1777,6 +1790,7 @@ class BaseHab:
             kind is serialization kind
         """
         return self.endorse(eventing.reply(**kwa))
+
 
     def makeEndRole(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
         """
@@ -1795,6 +1809,7 @@ class BaseHab:
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
         return self.reply(route=route, data=data, stamp=stamp)
+
 
     def loadEndRole(self, cid, eid, role=kering.Roles.controller):
         msgs = bytearray()
@@ -1827,6 +1842,7 @@ class BaseHab:
                                            pipelined=True))
         return msgs
 
+
     def makeLocScheme(self, url, eid=None, scheme="http", stamp=None):
         """
         Returns:
@@ -1844,6 +1860,7 @@ class BaseHab:
         eid = eid if eid is not None else self.pre
         data = dict(eid=eid, scheme=scheme, url=url)
         return self.reply(route="/loc/scheme", data=data, stamp=stamp)
+
 
     def replyLocScheme(self, eid, scheme=""):
         """
@@ -1872,6 +1889,7 @@ class BaseHab:
             msgs.extend(self.makeLocScheme(eid=eid, url=url, scheme=rscheme))
 
         return msgs
+
 
     def loadLocScheme(self, eid, scheme=None):
         msgs = bytearray()
@@ -1902,6 +1920,7 @@ class BaseHab:
                                            seal=seal,
                                            pipelined=True))
         return msgs
+
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=""):
 
@@ -1969,6 +1988,7 @@ class BaseHab:
 
         return msgs
 
+
     def replyToOobi(self, aid, role, eids=None):
         """
         Returns a reply message stream composed of entries authed by the given
@@ -1992,6 +2012,7 @@ class BaseHab:
         # for self then reply with loc scheme for all witnesses even if self
         # not permiteed in .habs.oobis
         return self.replyEndRole(cid=aid, role=role, eids=eids)
+
 
     def getOwnEvent(self, sn, allowPartiallySigned=False):
         """
@@ -2024,16 +2045,18 @@ class BaseHab:
 
         return serder, sigs, couple
 
+
     def makeOwnEvent(self, sn, allowPartiallySigned=False):
-        """
-        Returns: messagized bytearray message with attached signatures of
-                 own event at sequence number sn from retrieving event at sn
-                 and associated signatures from database.
+        """Messagize event at sn with attachments if any
+
+        Returns:
+            msg (bytearray): with qb64b serialization of own event at sn and
+                             optionally attached (concatenated) qb64b of
+                             signatures (if any), and seal source couple (if any)
 
         Parameters:
             sn(int): is int sequence number of event
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
-
         """
         msg = bytearray()
         serder, sigs, couple = self.getOwnEvent(sn=sn,
@@ -2051,6 +2074,7 @@ class BaseHab:
 
         return msg
 
+
     def makeOwnInception(self, allowPartiallySigned=False):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -2058,6 +2082,7 @@ class BaseHab:
                  from database.
         """
         return self.makeOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned)
+
 
     def processCues(self, cues):
         """
@@ -2070,6 +2095,7 @@ class BaseHab:
         for msg in self.processCuesIter(cues):
             msgs.extend(msg)
         return msgs
+
 
     def processCuesIter(self, cues):
         """
@@ -2133,7 +2159,6 @@ class BaseHab:
             # ToDo XXXX cue for kin = "stream"
             # ToDo XXXX cue for kin = "invalid"
             # ToDo XXXX cue for kin=""remoteMemberedSig""
-
 
     def witnesser(self):
         return True
