@@ -941,7 +941,7 @@ class CatCesrSuberBase(CesrSuberBase):
                 , each of to Type[coring.Matter etc]
     """
 
-    def __init__(self, *pa, klas: Iterable = None, **kwa):
+    def __init__(self, *pa, klas: Iterable|Type[coring.Matter]|None = None, **kwa):
         """
         Inherited Parameters:
             db (dbing.LMDBer): base db
@@ -953,8 +953,11 @@ class CatCesrSuberBase(CesrSuberBase):
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
                            False means do not reverify. Default False
-            klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
 
         """
         if klas is None:
@@ -1026,8 +1029,11 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
                            False means do not reverify. Default False
-            klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
 
         """
         super(CatCesrSuber, self).__init__(*pa, **kwa)
@@ -1373,8 +1379,11 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
                            False means do not reverify. Default False
-            klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
 
         """
         super(CatCesrIoSetSuber, self).__init__(*pa, **kwa)
@@ -1777,6 +1786,8 @@ class DupSuber(SuberBase):
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+            dupsort (bool): True (forced default) means enable duplicates at each key
+                            False  means do not enable duplicates at each key
         """
         super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
 
@@ -1920,8 +1931,7 @@ class DupSuber(SuberBase):
 
     def rem(self, keys: str | bytes | memoryview | Iterable,
             val: str | bytes | memoryview = b''):
-        """
-        Removes entry at keys
+        """Removes entry at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -1955,11 +1965,45 @@ class CesrDupSuber(CesrSuberBase, DupSuber):
     This is a limitation of dupsort==True sub dbs in LMDB
     """
     def __init__(self, *pa, **kwa):
-        """
+        """Initialize Instance
         Inherited Parameters:
 
         """
         super(CesrDupSuber, self).__init__(*pa, **kwa)
+
+
+class CatCesrDupSuber(CatCesrSuberBase, DupSuber):
+    """
+    Sub class of DupSuber whose values are CESR ducktypes of Matter subclasses.
+    serialized to and deserialied from val instance .qb64b property
+    which is a fully qualified serialization.
+    Automatically serializes and deserializes from qb64b to/from Matter ducktyped
+    instances
+    DupSuber supports multiple entries at each key (duplicates) with dupsort==True
+
+    Do not use if  serialized value is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
+    """
+    def __init__(self, *pa, **kwa):
+        """Initialize Instance
+
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True (forced default) means enable duplicates at each key
+                            False  means do not enable duplicates at each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
+
+        """
+        super(CatCesrDupSuber, self).__init__(*pa, **kwa)
 
 
 class IoDupSuber(DupSuber):
