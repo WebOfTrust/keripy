@@ -307,16 +307,17 @@ def test_baser():
         assert db.getDts(key) == None
         assert db.delDts(key) == False
         assert db.putDts(key, val1) == True
-        dater1 = db.getDts(key)
-        assert isinstance(dater1, coring.Dater)
-        assert dater1.dts == val1.decode('utf-8')  # Check ISO-8601 string
+        dts1 = db.getDts(key)
+        # getDts returns bytes for backward compatibility (internal storage is Dater)
+        assert isinstance(dts1, bytes)
+        assert dts1 == val1
         assert db.putDts(key, val2) == False  # Can't overwrite with put
-        dater_check = db.getDts(key)
-        assert dater_check.dts == val1.decode('utf-8')  # Still val1
+        dts_check = db.getDts(key)
+        assert dts_check == val1  # Still val1
         assert db.setDts(key, val2) == True  # setDts overwrites
-        dater2 = db.getDts(key)
-        assert isinstance(dater2, coring.Dater)
-        assert dater2.dts == val2.decode('utf-8')  # Now val2
+        dts2 = db.getDts(key)
+        assert isinstance(dts2, bytes)
+        assert dts2 == val2  # Now val2
         assert db.delDts(key) == True
         assert db.getDts(key) == None
 
