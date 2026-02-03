@@ -493,10 +493,10 @@ class Registrar(doing.DoDoer):
         self.hby = hby
         self.rgy = rgy
         self.counselor = counselor
-        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.receiptor = agenting.Receiptor(hby=self.hby)
         self.witPub = agenting.WitnessPublisher(hby=self.hby)
 
-        doers = [self.witDoer, self.witPub, doing.doify(self.escrowDo)]
+        doers = [self.receiptor, self.witPub, doing.doify(self.escrowDo)]
 
         super(Registrar, self).__init__(doers=doers)
 
@@ -524,7 +524,7 @@ class Registrar(doing.DoDoer):
                                saider=saider)
 
             print("Waiting for TEL event witness receipts")
-            self.witDoer.msgs.append(dict(pre=anc.pre, sn=seqner.sn))
+            self.receiptor.msgs.append(dict(pre=anc.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
@@ -565,7 +565,7 @@ class Registrar(doing.DoDoer):
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
-            self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
+            self.receiptor.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
@@ -605,7 +605,7 @@ class Registrar(doing.DoDoer):
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
-            self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
+            self.receiptor.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
@@ -704,7 +704,7 @@ class Registrar(doing.DoDoer):
                 if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
                     hab = self.hby.habs[prefixer.qb64]
                     witnessed = False
-                    for cue in self.witDoer.cues:
+                    for cue in self.receiptor.cues:
                         if cue["pre"] == hab.pre and cue["sn"] == seqner.sn:
                             witnessed = True
 
