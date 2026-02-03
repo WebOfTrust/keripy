@@ -53,11 +53,11 @@ def test_baser():
     assert isinstance(baser.fels, subing.OnSuber)    # POC: Baser→Suber migration (#1163)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
-    assert isinstance(baser.kels, lmdb._Database)
-    assert isinstance(baser.ooes, lmdb._Database)
-    assert isinstance(baser.pses, lmdb._Database)
-    assert isinstance(baser.dels, lmdb._Database)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.kels, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+    assert isinstance(baser.ooes, lmdb._Database)  # Keanu's work - not migrating
+    assert isinstance(baser.pses, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+    assert isinstance(baser.dels, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -85,11 +85,12 @@ def test_baser():
     assert isinstance(baser.fels, subing.OnSuber)    # POC: Baser→Suber migration (#1163)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
-    assert isinstance(baser.kels, lmdb._Database)
-    assert isinstance(baser.ooes, lmdb._Database)
-    assert isinstance(baser.pses, lmdb._Database)
-    assert isinstance(baser.dels, lmdb._Database)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.kels, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+    assert isinstance(baser.ooes, lmdb._Database)  # Keanu's work - not migrating
+    assert isinstance(baser.pses, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+    assert isinstance(baser.pwes, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+    assert isinstance(baser.dels, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -114,11 +115,12 @@ def test_baser():
         assert isinstance(baser.fels, subing.OnSuber)    # POC: Baser→Suber migration (#1163)
         assert isinstance(baser.rcts, lmdb._Database)
         assert isinstance(baser.ures, lmdb._Database)
-        assert isinstance(baser.kels, lmdb._Database)
-        assert isinstance(baser.ooes, lmdb._Database)
-        assert isinstance(baser.pses, lmdb._Database)
-        assert isinstance(baser.dels, lmdb._Database)
-        assert isinstance(baser.ldes, lmdb._Database)
+        assert isinstance(baser.kels, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+        assert isinstance(baser.ooes, lmdb._Database)  # Keanu's work - not migrating
+        assert isinstance(baser.pses, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+        assert isinstance(baser.pwes, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+        assert isinstance(baser.dels, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
+        assert isinstance(baser.ldes, subing.OnIoDupSuber)  # Phase 3: Baser→Suber migration (#1163)
 
 
     assert not os.path.exists(baser.path)
