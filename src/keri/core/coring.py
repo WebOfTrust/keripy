@@ -1772,7 +1772,7 @@ class Number(Matter):
 
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=None, num=None, numh=None, **kwa):
+                 code=None, num=None, numh=None, sn=None, snh=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw (bytes): unqualified crypto material usable for crypto operations
@@ -1790,12 +1790,16 @@ class Number(Matter):
             num (int | str | None): non-negative int number or hex str of int
                 number or 0 if None
             numh (str): hex string equivalent of non-negative int number
+            sn (int | str | None): alias of num for backwards compat with Seqner
+            snh (str): alias of numh for backwards compat with Seqner
 
         Note: int("0xab", 16) is also valid since int recognizes 0x hex prefix
 
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             try:
+                num = num if num is not None else sn
+                numh = numh if numh is not None else snh
                 if num is None:
                     if numh is None or numh == '':
                         num = 0
