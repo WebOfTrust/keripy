@@ -2171,13 +2171,17 @@ class Baser(dbing.LMDBer):
     def getDts(self, key):
         """
         Use dgKey()
-        Return Dater instance at key (was bytes in old implementation)
+        Return datetime as bytes (backward compatible)
         Returns None if no entry at key
         
-        BREAKING CHANGE: Now returns Dater instance instead of bytes.
-        Use .dts property to get ISO-8601 string, .datetime for datetime object.
+        BACKWARD COMPATIBILITY: Returns bytes (ISO-8601 string encoded)
+        Internal storage is Dater object, but this method returns bytes for compatibility.
         """
-        return self.dtss.get(keys=key)
+        dater = self.dtss.get(keys=key)
+        if dater is None:
+            return None
+        # Return bytes for backward compatibility
+        return dater.dtsb  # ISO-8601 string as bytes
 
     def delDts(self, key):
         """
