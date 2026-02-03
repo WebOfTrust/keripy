@@ -187,7 +187,7 @@ class JoinDoer(doing.DoDoer):
 
         inits["toad"] = oicp.ked["bt"]
         inits["wits"] = oicp.ked["b"]
-        inits["delpre"] = oicp.ked["di"] if "di" in ked else None
+        inits["delpre"] = oicp.ked["di"] if "di" in oicp.ked else None
 
         print()
         print("Group Multisig Inception proposed:")
