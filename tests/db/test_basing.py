@@ -49,7 +49,8 @@ def test_baser():
 
     assert isinstance(baser.evts, lmdb._Database)
     assert isinstance(baser.sigs, lmdb._Database)
-    assert isinstance(baser.dtss, lmdb._Database)
+    assert isinstance(baser.dtss, subing.CesrSuber)  # POC: Baser→Suber migration (#1163)
+    assert isinstance(baser.fels, subing.OnSuber)    # POC: Baser→Suber migration (#1163)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
     assert isinstance(baser.kels, lmdb._Database)
@@ -80,7 +81,8 @@ def test_baser():
 
     assert isinstance(baser.evts, lmdb._Database)
     assert isinstance(baser.sigs, lmdb._Database)
-    assert isinstance(baser.dtss, lmdb._Database)
+    assert isinstance(baser.dtss, subing.CesrSuber)  # POC: Baser→Suber migration (#1163)
+    assert isinstance(baser.fels, subing.OnSuber)    # POC: Baser→Suber migration (#1163)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
     assert isinstance(baser.kels, lmdb._Database)
@@ -108,7 +110,8 @@ def test_baser():
 
         assert isinstance(baser.evts, lmdb._Database)
         assert isinstance(baser.sigs, lmdb._Database)
-        assert isinstance(baser.dtss, lmdb._Database)
+        assert isinstance(baser.dtss, subing.CesrSuber)  # POC: Baser→Suber migration (#1163)
+        assert isinstance(baser.fels, subing.OnSuber)    # POC: Baser→Suber migration (#1163)
         assert isinstance(baser.rcts, lmdb._Database)
         assert isinstance(baser.ures, lmdb._Database)
         assert isinstance(baser.kels, lmdb._Database)
@@ -291,22 +294,27 @@ def test_baser():
         assert db.putFe(keyA0, val=digA) == True
         assert db.putFe(keyC0, val=digC) == True
 
-        # Test .dtss datetime stamps
+        # Test .dtss datetime stamps (POC: now returns Dater objects, #1163)
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        # test .dtss sub db methods
+        # test .dtss sub db methods (accepts bytes for backward compat, returns Dater)
         val1 = b'2020-08-22T17:50:09.988921+00:00'
         val2 = b'2020-08-22T17:50:09.988921+00:00'
 
         assert db.getDts(key) == None
         assert db.delDts(key) == False
         assert db.putDts(key, val1) == True
-        assert db.getDts(key) == val1
-        assert db.putDts(key, val2) == False
-        assert db.getDts(key) == val1
-        assert db.setDts(key, val2) == True
-        assert db.getDts(key) == val2
+        dater1 = db.getDts(key)
+        assert isinstance(dater1, coring.Dater)
+        assert dater1.dts == val1.decode('utf-8')  # Check ISO-8601 string
+        assert db.putDts(key, val2) == False  # Can't overwrite with put
+        dater_check = db.getDts(key)
+        assert dater_check.dts == val1.decode('utf-8')  # Still val1
+        assert db.setDts(key, val2) == True  # setDts overwrites
+        dater2 = db.getDts(key)
+        assert isinstance(dater2, coring.Dater)
+        assert dater2.dts == val2.decode('utf-8')  # Now val2
         assert db.delDts(key) == True
         assert db.getDts(key) == None
 

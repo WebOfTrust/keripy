@@ -1007,9 +1007,9 @@ class Baser(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.evts = self.env.open_db(key=b'evts.')
-        self.fels = self.env.open_db(key=b'fels.')
+        self.fels = subing.OnSuber(db=self, subkey='fels.')  # POC: Baser→Suber migration (#1163)
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
-        self.dtss = self.env.open_db(key=b'dtss.')
+        self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)  # POC: Baser→Suber migration (#1163)
         self.aess = self.env.open_db(key=b'aess.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
@@ -2027,8 +2027,13 @@ class Baser(dbing.LMDBer):
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
         Return False if key already exists
+        
+        Parameters:
+            val: bytes event digest (auto-converted to str qb64)
         """
-        return self.putVal(self.fels, key, val)
+        if isinstance(val, bytes):
+            val = val.decode('utf-8')  # Convert bytes to str qb64
+        return self.fels.put(keys=key, val=val)
 
     def setFe(self, key, val):
         """
@@ -2036,16 +2041,26 @@ class Baser(dbing.LMDBer):
         Write event digest bytes val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
+        
+        Parameters:
+            val: bytes event digest (auto-converted to str qb64)
         """
-        return self.setVal(self.fels, key, val)
+        if isinstance(val, bytes):
+            val = val.decode('utf-8')  # Convert bytes to str qb64
+        return self.fels.pin(keys=key, val=val)
 
     def getFe(self, key):
         """
         Use fnKey()
-        Return event digest at key
+        Return event digest at key as bytes (converted from str qb64)
         Returns None if no entry at key
+        
+        Note: Internal storage is str qb64, returned as bytes for backward compatibility
         """
-        return self.getVal(self.fels, key)
+        val = self.fels.get(keys=key)
+        if val is not None:
+            return val.encode('utf-8') if isinstance(val, str) else val
+        return None
 
     def delFe(self, key):
         """
@@ -2053,7 +2068,7 @@ class Baser(dbing.LMDBer):
         Deletes value at key.
         Returns True If key exists in database Else False
         """
-        return self.delVal(self.fels, key)
+        return self.fels.rem(keys=key)
 
     def appendFe(self, pre, val):
         """
@@ -2066,9 +2081,11 @@ class Baser(dbing.LMDBer):
 
         Parameters:
             pre is bytes identifier prefix for event
-            val is event digest
+            val is event digest (bytes, auto-converted to str qb64)
         """
-        return self.appendOnVal(db=self.fels, key=pre, val=val)
+        if isinstance(val, bytes):
+            val = val.decode('utf-8')  # Convert bytes to str qb64
+        return self.fels.appendOn(keys=pre, val=val)
 
     def getFelItemPreIter(self, pre, fn=0):
         """
@@ -2076,19 +2093,26 @@ class Baser(dbing.LMDBer):
         all events with same prefix, pre, in database. Items are sorted by
         fnKey(pre, fn) where fn is first seen order number int.
         Returns a First Seen Event Log FEL.
-        Returned items are duples of (fn, dig): Where fn is first seen order
-        number int and dig is event digest for lookup in .evts sub db.
+        Returned items are triples of (pre, fn, dig): Where fn is first seen order
+        number int and dig is event digest (bytes for backward compatibility).
 
         Raises StopIteration Error when empty.
 
         Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
+            pre is bytes of identifier prefix
+            fn is int fn to resume replay. Earliest is fn=0
 
         Returns:
-           items (Iterator[(pre, fn, val)]): over all items starting at pre, on
+           items (Iterator[(pre, fn, bytes)]): over all items starting at pre, fn
         """
-        return self.getOnItemIter(db=self.fels, key=pre, on=fn)
+        # OnSuber.getOnItemIter returns (keys_tuple, on, val) where keys_tuple is tuple of keyparts
+        # and val is str qb64. We need to flatten keys_tuple[0] to bytes for backward compat
+        for keys, on, val in self.fels.getOnItemIter(keys=pre, on=fn):
+            # keys is tuple like ('EH7Oq...w',), extract first element
+            key = keys[0] if isinstance(keys, tuple) else keys
+            if isinstance(key, str):
+                key = key.encode('utf-8')
+            yield (key, on, val.encode('utf-8') if isinstance(val, str) else val)
 
 
     def getFelItemAllPreIter(self):
@@ -2097,18 +2121,19 @@ class Baser(dbing.LMDBer):
         all events for all prefixes in database. Items are sorted by
         fnKey(pre, fn) where fn is first seen order number int.
         Returns all First Seen Event Logs FELs.
-        Returned items are tripes of (pre, fn, dig): Where pre is identifier prefix,
-        fn is first seen order number int and dig is event digest for lookup
-        in .evts sub db.
+        Returned items are triples of (pre, fn, dig): Where pre is identifier prefix,
+        fn is first seen order number int and dig is event digest (bytes for backward compatibility).
 
         Raises StopIteration Error when empty.
-
-        Parameters:
-            key is key location in db to resume replay, If empty then start at
-                first key in database
         """
-        #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
-        return self.getOnItemIter(db=self.fels, key=b'')
+        # OnSuber.getOnItemIter with empty keys returns all items
+        # Convert keys tuple and val back to bytes for backward compatibility
+        for keys, on, val in self.fels.getOnItemIter(keys=b'', on=0):
+            # keys is tuple like ('EH7Oq...w',), extract first element
+            key = keys[0] if isinstance(keys, tuple) else keys
+            if isinstance(key, str):
+                key = key.encode('utf-8')
+            yield (key, on, val.encode('utf-8') if isinstance(val, str) else val)
 
     def putDts(self, key, val):
         """
@@ -2117,8 +2142,15 @@ class Baser(dbing.LMDBer):
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
         Returns False if key already exists
+        
+        Parameters:
+            val: bytes (ISO-8601 datetime string) or Dater instance
+                 Accepts bytes for backward compatibility, auto-converts to Dater
         """
-        return self.putVal(self.dtss, key, val)
+        if isinstance(val, bytes):
+            # Backward compatibility: convert bytes ISO-8601 to Dater
+            val = coring.Dater(dts=val.decode('utf-8'))
+        return self.dtss.put(keys=key, val=val)
 
     def setDts(self, key, val):
         """
@@ -2126,16 +2158,26 @@ class Baser(dbing.LMDBer):
         Write serialized event datetime stamp val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
+        
+        Parameters:
+            val: bytes (ISO-8601 datetime string) or Dater instance
+                 Accepts bytes for backward compatibility, auto-converts to Dater
         """
-        return self.setVal(self.dtss, key, val)
+        if isinstance(val, bytes):
+            # Backward compatibility: convert bytes ISO-8601 to Dater
+            val = coring.Dater(dts=val.decode('utf-8'))
+        return self.dtss.pin(keys=key, val=val)
 
     def getDts(self, key):
         """
         Use dgKey()
-        Return datetime stamp at key
+        Return Dater instance at key (was bytes in old implementation)
         Returns None if no entry at key
+        
+        BREAKING CHANGE: Now returns Dater instance instead of bytes.
+        Use .dts property to get ISO-8601 string, .datetime for datetime object.
         """
-        return self.getVal(self.dtss, key)
+        return self.dtss.get(keys=key)
 
     def delDts(self, key):
         """
@@ -2143,7 +2185,7 @@ class Baser(dbing.LMDBer):
         Deletes value at key.
         Returns True If key exists in database Else False
         """
-        return self.delVal(self.dtss, key)
+        return self.dtss.rem(keys=key)
 
     def putAes(self, key, val):
         """
