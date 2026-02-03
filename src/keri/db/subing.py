@@ -820,11 +820,11 @@ class B64Suber(B64SuberBase, Suber):
 
 
 class CesrSuberBase(SuberBase):
-    """
-    Sub class of SuberBase where data is CESR encode/decode ducktyped subclass
+    """Sub class of SuberBase where data is CESR encode/decode ducktyped subclass
     instance such as Matter, Indexer, Counter with .qb64b property when provided
     as fully qualified serialization
     Automatically serializes and deserializes from qb64b to/from CESR instance
+    ._ser override .put .set input value to be instance that is serialized
 
     """
 
@@ -926,12 +926,12 @@ class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
 
 
 class CatCesrSuberBase(CesrSuberBase):
-    """
-    Base Class whose values stored in db are a concatenation of the  .qb64b property
+    """Base Class whose values stored in db are a concatenation of the  .qb64b property
     from one or more  subclass instances (qb64b is bytes of fully qualified
     serialization) that support CESR encode/decode ducktyped subclass instance
     such as Matter, Indexer, Counter
-    Automatically serializes and deserializes from qb64b to/from CESR instances
+    Automatically serializes and deserializes iterable of qb64b to/from CESR instances
+    ._ser override .put .set input value to be instance that is serialized
 
      Attributes:
         db (dbing.LMDBer): base LMDB db
