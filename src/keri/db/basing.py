@@ -695,16 +695,15 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             Value is ISO 8601 datetime stamp bytes
 
-        .aess is named sub DB of authorizing event source seal couples
-            that map digest to seal source couple of authorizer's
-            (delegator or issuer) event. Each couple is a concatenation of full
-            qualified items, snu+dig of the authorizing (delegating or issuing)
-            source event.
+        .aess is named sub DB instance of CatCesrSuber for authorizing event
+            source seal couples that map digest of key event to seal source
+            couple of authorizer's (delegator or issuer) event.
+            subkey "aess."
             dgKey
-            Values are couples used to lookup authorizer's source event in
-            .kels sub DB
             DB is keyed by identifier prefix plus digest of key event
-            Only one value per DB key is allowed
+            Value is (Seqner, Saider) tuple used to lookup authorizer's source
+            event in .kels sub DB.
+            Only one value per DB key is allowed.
 
         .sigs is named sub DB of fully qualified indexed event signatures
             dgKey
