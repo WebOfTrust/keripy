@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.vc.messaging module
+keri.acdc.messaging module
 
 Utility functions for creating ACDC messages of all message types for v2
 
