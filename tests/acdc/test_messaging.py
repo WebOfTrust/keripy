@@ -7,13 +7,14 @@ tests.vc.test_messaging module
 import pytest
 
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
-from keri.vc import (regcept, blindate, update,
+from keri.core import (GenDex, Noncer, SerderACDC, BlindState, Blinder,
+                       Compactor, Aggor)
+from keri.acdc import (regcept, blindate, update,
                     acdcatt, acdcagg, acdcmap,
                     sectschema, sectattr, sectedge, sectrule, sectaggr,
                     sectionate,
                     actSchemaDefault, acgSchemaDefault, acmSchemaDefault)
-from keri.core import (GenDex, Noncer, SerderACDC, BlindState, Blinder,
-                       Compactor, Aggor)
+
 
 def test_regcept_message():
     """Test regcept message"""
