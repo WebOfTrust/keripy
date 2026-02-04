@@ -3280,8 +3280,8 @@ class Kever:
         """
         dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key of delegate
 
-        if (couple := self.db.aess.get(keys=dgkey)):  # delegation source couple at delegate
-            seqner, saider = couple
+        if (duple := self.db.aess.get(keys=dgkey)):  # delegation source couple at delegate
+            seqner, saider = duple
             deldig = saider.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
             #  fner = first seen Number instance index
@@ -6550,8 +6550,8 @@ class Kevery:
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # parse the event if we have a delegate seal
-                if couple := self.db.aess.get(keys=dgKey(pre.encode("utf-8"), edig)):
-                    seqner, saider = couple
+                if (duple := self.db.aess.get(keys=dgKey(pre.encode("utf-8"), edig))) is not None:
+                    seqner, saider = duple
 
                     # process event
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
@@ -7151,8 +7151,8 @@ def loadEvent(db, preb, dig):
     event["witness_signatures"] = dwigs
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
-    if couple := db.aess.get(keys=dgkey):
-        seqner, saider = couple
+    if (duple := db.aess.get(keys=dgkey)) is not None:
+        seqner, saider = duple
         event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
 
     receipts = dict()
