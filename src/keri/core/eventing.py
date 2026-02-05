@@ -3555,7 +3555,7 @@ class Kever:
             self.db.esrs.put(keys=dgkey, val=esr)
 
         snkey = snKey(serder.preb, serder.sn)
-        self.db.addPse(snkey, serder.saidb)
+        self.db.pses.add(snkey, serder.saidb)
         logger.debug("Kever: Escrowed partially signed or delegated event = \n%s\n", serder.pretty())
 
 
@@ -5310,7 +5310,7 @@ class Kevery:
             #couple = seqner.qb64b + saider.qb64b
             #self.db.putUde(dgkey, couple)  # idempotent
             self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
-        self.db.addOoe(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.ooes.add(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed out of order event=\n%s", serder.pretty())
 
@@ -5591,7 +5591,7 @@ class Kevery:
         This allows FIFO processing of events with same prefix and sn but different
         digest.
 
-        Uses  .db.addOoe(self, key, val) which is IOVal with dups.
+        Uses  .db.ooes.add(self, key, val) which is IOVal with dups.
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
@@ -5600,7 +5600,7 @@ class Kevery:
             self.db.putDts(dgkey, nowIso8601().encode("utf-8"))
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             self.db.putEvt(dgkey, serder.raw)
-            self.db.addOoe(snKey(pre, sn), serder.dig)
+            self.db.ooes.add(snKey(pre, sn), serder.dig)
             where:
                 serder is SerderKERI instance of  event
                 sigers is list of Siger instance for  event
@@ -5619,8 +5619,10 @@ class Kevery:
 
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, edig in self.db.getOoeItemIter(key=key):
+            for ekey, edig in self.db.ooes.getItemIter(keys=key):
                 try:
+                    ekey = self.db.ooes._tokey(ekey) # convert back to bytes
+                    edig = self.db.ooes._ser(edig)  # convert back to bytes
                     pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                     dgkey = dgKey(pre, bytes(edig))
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
@@ -5682,7 +5684,7 @@ class Kevery:
                     # with respect to processing events that result in escrow items.
                     # On re-escrow attempt by process, Ooe escrow is called by
                     # Kevery.self.escrowOOEvent Which calls
-                    # self.db.addOoe(snKey(pre, sn), serder.digb)
+                    # self.db.ooes.add(snKey(pre, sn), serder.digb)
                     # which in turn will not enter dig as dup if one already exists.
                     # So re-escrow attempt will not change the escrowed ooe db.
                     # Non re-escrow ValidationError means some other issue so unescrow.
@@ -5696,7 +5698,7 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
-                    self.db.delOoe(snKey(pre, sn), edig)  # removes one escrow at key val
+                    self.db.ooes.rem(snKey(pre, sn), edig)  # removes one escrow at key val
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug("Kevery: OOO escrow other error on escrow: %s\n", ex.args[0])
                         logger.exception("Kevery: OOO escrow other error on : %s\n", ex.args[0])
@@ -5705,7 +5707,7 @@ class Kevery:
                     # We don't remove all escrows at pre,sn because some might be
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
-                    self.db.delOoe(snKey(pre, sn), edig)  # removes one escrow at key val
+                    self.db.ooes.rem(snKey(pre, sn), edig)  # removes one escrow at key val
                     logger.info("Kevery OOO unescrow succeeded in valid event: "
                                 "event=%s", eserder.said)
                     logger.debug("Event=\n%s\n", eserder.pretty())
@@ -5724,7 +5726,7 @@ class Kevery:
         Escrowed items are indexed in database table keyed by prefix and
         sequence number with duplicates inserted in insertion order. This allows
         FIFO processing of events with same prefix and sn.
-        Uses  .db.addPse(self, key, val) which is IOVal with dups.
+        Uses  .db.pses.add(self, key, val) which is IOVal with dups.
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
@@ -5733,7 +5735,7 @@ class Kevery:
             .db.putDts(dgkey, nowIso8601().encode("utf-8"))
             .db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
-            .db.addPse(snKey(pre, sn), serder.digb)
+            .db.pses.add(snKey(pre, sn), serder.digb)
             where:
                 serder is SerderKERI instance of  event
                 sigers is list of Siger instance for  event
@@ -5752,9 +5754,11 @@ class Kevery:
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
-        for ekey, edig in self.db.getPseItemIter(key=b''):
+        for ekey, edig in self.db.pses.getItemIter(keys=b''):
             eserder = None
             try:
+                ekey = self.db.ooes._tokey(ekey) # convert back to bytes
+                edig = self.db.ooes._ser(edig)  # convert back to bytes
                 pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                 dgkey = dgKey(pre, bytes(edig))
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
@@ -5840,7 +5844,7 @@ class Kevery:
                 # with respect to processing events that result in escrow items.
                 # On re-escrow attempt by process, Pse escrow is called by
                 # Kever.self.escrowPSEvent Which calls
-                # self.db.addPse(snKey(pre, sn), serder.digb)
+                # self.db.pses.add(snKey(pre, sn), serder.digb)
                 # which in turn will not enter dig as dup if one already exists.
                 # So re-escrow attempt will not change the escrowed pse db.
                 # Non re-escrow ValidationError means some other issue so unescrow.
@@ -5855,7 +5859,7 @@ class Kevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than waiting on sigs  so remove from escrow
-                self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                self.db.pses.rem(snKey(pre, sn), edig)  # removes one escrow at key val
                 #self.db.udes.rem(keys=dgkey)  # leave here since could PartialDelegationEscrow
 
                 if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
@@ -5871,7 +5875,7 @@ class Kevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                self.db.pses.rem(snKey(pre, sn), edig)  # removes one escrow at key val
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
 
                 if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
@@ -7062,7 +7066,7 @@ class Kevery:
                     # with respect to processing events that result in escrow items.
                     # On re-escrow attempt by process, Ooe escrow is called by
                     # Kevery.self.escrowOOEvent Which calls
-                    # self.db.addOoe(snKey(pre, sn), serder.digb)
+                    # self.db.ooes.add(snKey(pre, sn), serder.digb)
                     # which in turn will not enter dig as dup if one already exists.
                     # So re-escrow attempt will not change the escrowed ooe db.
                     # Non re-escrow ValidationError means some other issue so unescrow.

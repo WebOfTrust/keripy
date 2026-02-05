@@ -52,7 +52,7 @@ def escrows(tymth, tock=0.0, **opts):
                 oots = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:
-                    for ekey, edig in hby.db.getOoeItemIter(key=key):
+                    for ekey, edig in hby.db.ooes.getItemIter(keys=key):
                         pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
 
                         try:
@@ -88,7 +88,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pses = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for ekey, edig in hby.db.getPseItemIter(key=key):
+                    for ekey, edig in hby.db.pses.getItemIter(keys=key):
                         pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
 
                         try:
