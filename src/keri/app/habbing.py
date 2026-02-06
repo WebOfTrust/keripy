@@ -2041,9 +2041,9 @@ class BaseHab:
         for sig in self.db.getSigsIter(key):
             sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-        couple = self.db.getAes(key)
+        duple = self.db.aess.get(keys=key)
 
-        return serder, sigs, couple
+        return serder, sigs, duple
 
 
     def makeOwnEvent(self, sn, allowPartiallySigned=False):
@@ -2059,7 +2059,7 @@ class BaseHab:
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
         msg = bytearray()
-        serder, sigs, couple = self.getOwnEvent(sn=sn,
+        serder, sigs, duple = self.getOwnEvent(sn=sn,
                                                 allowPartiallySigned=allowPartiallySigned)
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigs),
@@ -2067,10 +2067,11 @@ class BaseHab:
         for sig in sigs:
             msg.extend(sig.qb64b)  # attach sig
 
-        if couple is not None:
+        if duple is not None:
+            seqner, saider = duple
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
                                version=kering.Vrsn_1_0).qb64b)
-            msg.extend(couple)
+            msg.extend(seqner.qb64b + saider.qb64b)
 
         return msg
 

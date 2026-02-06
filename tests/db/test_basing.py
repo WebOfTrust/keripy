@@ -311,27 +311,42 @@ def test_baser():
         assert db.getDts(key) == None
 
         # Test .aess authorizing event source seal couples
-        key = dgKey(preb, digb)
-        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+        dgkey = dgKey(preb, digb)
 
         # test .aess sub db methods
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
-        val1 = ssnu1 + sdig1
-        val2 = ssnu2 + sdig2
+        number1 = coring.Number(qb64b=ssnu1)
+        saider1 = coring.Saider(qb64b=sdig1)
+        number2 = coring.Number(qb64b=ssnu2)
+        saider2 = coring.Saider(qb64b=sdig2)
+        val1 = (number1, saider1)
+        val2 = (number2, saider2)
 
-        assert db.getAes(key) == None
-        assert db.delAes(key) == False
-        assert db.putAes(key, val1) == True
-        assert db.getAes(key) == val1
-        assert db.putAes(key, val2) == False
-        assert db.getAes(key) == val1
-        assert db.setAes(key, val2) == True
-        assert db.getAes(key) == val2
-        assert db.delAes(key) == True
-        assert db.getAes(key) == None
+        assert db.aess.get(keys=dgkey) == None
+        assert db.aess.rem(keys=dgkey) == False
+        assert db.aess.put(keys=dgkey, val=val1) == True
+        result = db.aess.get(keys=dgkey)
+        assert result is not None
+        rnumber1, rsaider1 = result
+        assert rnumber1.qb64b == number1.qb64b
+        assert rsaider1.qb64b == saider1.qb64b
+        assert db.aess.put(keys=dgkey, val=val2) == False
+        result = db.aess.get(keys=dgkey)
+        assert result is not None
+        rnumber1, rsaider1 = result
+        assert rnumber1.qb64b == number1.qb64b
+        assert rsaider1.qb64b == saider1.qb64b
+        assert db.aess.pin(keys=dgkey, val=val2) == True
+        result = db.aess.get(keys=dgkey)
+        assert result is not None
+        rnumber2, rsaider2 = result
+        assert rnumber2.qb64b == number2.qb64b
+        assert rsaider2.qb64b == saider2.qb64b
+        assert db.aess.rem(keys=dgkey) == True
+        assert db.aess.get(keys=dgkey) == None
 
         # test .sigs sub db methods
         key = dgKey(preb, digb)
