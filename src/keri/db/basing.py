@@ -2146,44 +2146,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delVal(self.dtss, key)
 
-    # NOTE: aess access is via self.aess suber directly, aligned with the
-    # validated "suber-only" pattern used elsewhere (e.g. udes).
-    #
-    #def putAes(self, key, val):
-        #"""
-        #Use dgKey()
-        #Write source seal event couple val to key
-        #Does not overwrite existing val if any
-        #Returns True If val successfully written Else False
-        #Returns False if key already exists
-        #"""
-        #return self.aess.put(keys=key, val=val)
-    #
-    #def setAes(self, key, val):
-        #"""
-        #Use dgKey()
-        #Write source seal event couple val to key
-        #Overwrites existing val if any
-        #Returns True If val successfully written Else False
-        #"""
-        #return self.aess.pin(keys=key, val=val)
-    #
-    #def getAes(self, key):
-        #"""
-        #Use dgKey()
-        #Return source seal event couple at key
-        #Returns None if no entry at key
-        #"""
-        #return self.aess.get(keys=key)
-    #
-    #def delAes(self, key):
-        #"""
-        #Use dgKey()
-        #Deletes value at key.
-        #Returns True If key exists in database Else False
-        #"""
-        #return self.aess.rem(keys=key)
-
     def getSigs(self, key):
         """
         Use dgKey()
