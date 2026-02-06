@@ -3330,9 +3330,9 @@ class Kever:
                 # Repair .aess of delegated event by writing found source
                 # seal couple of delegation. This is safe becaause we confirmed
                 # delegation event was accepted in delegator's kel.
-                seqner = coring.Seqner(sn=dserder.sn)
+                sner = coring.Number(num=dserder.sn, code=coring.NumDex.Huge)
                 saider = coring.Saider(qb64b=dserder.saidb)
-                self.db.aess.pin(keys=dgkey, val=(seqner, saider))  # authorizer (delegator/issuer) event seal
+                self.db.aess.pin(keys=dgkey, val=(sner, saider))  # authorizer (delegator/issuer) event seal
 
             return dserder
 
@@ -3396,7 +3396,7 @@ class Kever:
         # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
         if (self.delpre and not serder.ilk == Ilks.ixn and not self.locallyOwned()
             and not self.locallyWitnessed(wits=wits) and seqner and saider):
-            self.db.aess.pin(keys=dgkey, val=(seqner, saider))  # authorizer (delegator/issuer) event seal
+            self.db.aess.pin(keys=dgkey, val=(coring.Number(num=seqner.sn, code=coring.NumDex.Huge), saider))  # authorizer (delegator/issuer) event seal
 
         #if seqner and saider:
             #couple = seqner.qb64b + saider.qb64b

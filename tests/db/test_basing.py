@@ -318,32 +318,32 @@ def test_baser():
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
-        seqner1 = coring.Seqner(qb64b=ssnu1)
+        number1 = coring.Number(qb64b=ssnu1)
         saider1 = coring.Saider(qb64b=sdig1)
-        seqner2 = coring.Seqner(qb64b=ssnu2)
+        number2 = coring.Number(qb64b=ssnu2)
         saider2 = coring.Saider(qb64b=sdig2)
-        val1 = (seqner1, saider1)
-        val2 = (seqner2, saider2)
+        val1 = (number1, saider1)
+        val2 = (number2, saider2)
 
         assert db.aess.get(keys=dgkey) == None
         assert db.aess.rem(keys=dgkey) == False
         assert db.aess.put(keys=dgkey, val=val1) == True
         result = db.aess.get(keys=dgkey)
         assert result is not None
-        rseqner1, rsaider1 = result
-        assert rseqner1.qb64b == seqner1.qb64b
+        rnumber1, rsaider1 = result
+        assert rnumber1.qb64b == number1.qb64b
         assert rsaider1.qb64b == saider1.qb64b
         assert db.aess.put(keys=dgkey, val=val2) == False
         result = db.aess.get(keys=dgkey)
         assert result is not None
-        rseqner1, rsaider1 = result
-        assert rseqner1.qb64b == seqner1.qb64b
+        rnumber1, rsaider1 = result
+        assert rnumber1.qb64b == number1.qb64b
         assert rsaider1.qb64b == saider1.qb64b
         assert db.aess.pin(keys=dgkey, val=val2) == True
         result = db.aess.get(keys=dgkey)
         assert result is not None
-        rseqner2, rsaider2 = result
-        assert rseqner2.qb64b == seqner2.qb64b
+        rnumber2, rsaider2 = result
+        assert rnumber2.qb64b == number2.qb64b
         assert rsaider2.qb64b == saider2.qb64b
         assert db.aess.rem(keys=dgkey) == True
         assert db.aess.get(keys=dgkey) == None

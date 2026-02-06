@@ -197,10 +197,10 @@ class Counselor(doing.DoDoer):
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
                 if serder := self.hby.db.fetchLastSealingEventByEventSeal(kever.delpre,
                                                                           seal=anchor):
-                    aseq = coring.Seqner(sn=serder.sn)
+                    sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
                     asaider = coring.Saider(qb64b=serder.saidb)
                     self.hby.db.aess.pin(keys=dbing.dgKey(pre, saider.qb64b),
-                                         val=(aseq, asaider))  # authorizer event seal (delegator/issuer)
+                                         val=(sner, asaider))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 

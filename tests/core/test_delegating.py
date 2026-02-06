@@ -784,10 +784,10 @@ def test_delegables_escrow():
 
         # Place the anchor seal in the database... this will be retrieved from the fully committed delegate event
         serder = torHab.kever.serder
-        seqner = coring.Seqner(sn=serder.sn)
+        sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
         saider = coring.Saider(qb64b=serder.saidb)
         torHab.db.aess.pin(keys=dbing.dgKey(gateHab.kever.prefixer.qb64b, gateHab.kever.serder.saidb),
-                           val=(seqner, saider))  # authorizer event seal (delegator/issuer)
+                           val=(sner, saider))  # authorizer event seal (delegator/issuer)
 
         # delegate still not kevers
         assert gateHab.pre not in torKvy.kevers

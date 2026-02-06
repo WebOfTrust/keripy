@@ -701,8 +701,9 @@ class Baser(dbing.LMDBer):
             subkey "aess."
             dgKey
             DB is keyed by identifier prefix plus digest of key event
-            Value is (Seqner, Saider) tuple used to lookup authorizer's source
-            event in .kels sub DB.
+            Value is (Number, Saider) tuple; first component serialized as
+            Huge (fixed 24-char), used to lookup authorizer's source event
+            in .kels sub DB.
             Only one value per DB key is allowed.
 
         .sigs is named sub DB of fully qualified indexed event signatures
@@ -1010,7 +1011,7 @@ class Baser(dbing.LMDBer):
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.dtss = self.env.open_db(key=b'dtss.')
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
-                                        klas=(coring.Seqner, coring.Saider))
+                                        klas=(coring.Number, coring.Saider))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
