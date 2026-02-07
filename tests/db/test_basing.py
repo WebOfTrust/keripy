@@ -55,7 +55,7 @@ def test_baser():
     assert isinstance(baser.kels, lmdb._Database)
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
-    assert isinstance(baser.dels, lmdb._Database)
+    assert isinstance(baser.dels, subing.OnIoDupSuber)
     assert isinstance(baser.ldes, lmdb._Database)
 
     baser.close(clear=True)
@@ -86,7 +86,7 @@ def test_baser():
     assert isinstance(baser.kels, lmdb._Database)
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
-    assert isinstance(baser.dels, lmdb._Database)
+    assert isinstance(baser.dels, subing.OnIoDupSuber)
     assert isinstance(baser.ldes, lmdb._Database)
 
     baser.close(clear=True)
@@ -114,7 +114,7 @@ def test_baser():
         assert isinstance(baser.kels, lmdb._Database)
         assert isinstance(baser.ooes, lmdb._Database)
         assert isinstance(baser.pses, lmdb._Database)
-        assert isinstance(baser.dels, lmdb._Database)
+        assert isinstance(baser.dels, subing.OnIoDupSuber)
         assert isinstance(baser.ldes, lmdb._Database)
 
 
@@ -1069,24 +1069,28 @@ def test_baser():
             assert db.delOoe(ikey, val) == True
 
         # test .dels insertion order dup methods.  dup vals are insertion order
-        key = b'A'
-        vals = [b"z", b"m", b"x", b"a"]
+        keys = b'A'
+        on = 0
+        vals = ["z", "m", "x", "a"]
 
-        assert db.getDes(key) == []
-        assert db.getDeLast(key) == None
-        assert db.cntDes(key) == 0
-        assert db.delDes(key) == False
-        assert db.putDes(key, vals) == True
-        assert db.getDes(key) == vals  # preserved insertion order
-        assert db.cntDes(key) == len(vals) == 4
-        assert db.getDeLast(key) == vals[-1]
-        assert db.putDes(key, vals=[b'a']) == False   # duplicate
-        assert db.getDes(key) == vals  #  no change
-        assert db.addDe(key, b'a') == False   # duplicate
-        assert db.addDe(key, b'b') == True
-        assert db.getDes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delDes(key) == True
-        assert db.getDes(key) == []
+        assert db.dels.getOn(keys=keys, on=on) == []
+        result = db.dels.getOn(keys=keys, on=on)
+        assert (result[-1] if result else None) == None
+        assert db.dels.cntOn(keys=(keys,), on=on) == 0
+        assert db.dels.remOn(keys=keys, on=on) == False
+        for val in vals:
+            db.dels.addOn(keys=keys, on=on, val=val)
+        assert db.dels.getOn(keys=keys, on=on) == vals  # preserved insertion order
+        assert db.dels.cntOn(keys=(keys,), on=on) == len(vals) == 4
+        result = db.dels.getOn(keys=keys, on=on)
+        assert result[-1] == vals[-1]
+        assert db.dels.addOn(keys=keys, on=on, val='a') == False   # duplicate
+        assert db.dels.getOn(keys=keys, on=on) == vals  #  no change
+        assert db.dels.addOn(keys=keys, on=on, val='a') == False   # duplicate
+        assert db.dels.addOn(keys=keys, on=on, val='b') == True
+        assert db.dels.getOn(keys=keys, on=on) == ["z", "m", "x", "a", "b"]
+        assert db.dels.remOn(keys=keys, on=on) == True
+        assert db.dels.getOn(keys=keys, on=on) == []
 
         # test .ldes insertion order dup methods.  dup vals are insertion order
         key = b'A'
@@ -1381,22 +1385,20 @@ def test_fetchkeldel():
         assert key == (b'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw.'
                        b'00000000000000000000000000000001')
         vals0 = [skedb]
-        assert db.addDe(key, vals0[0]) == True
+        assert db.dels.addOn(keys=preb, on=sn, val=vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals1:
-            assert db.addDe(key, val) == True
+            assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 3  # skip make gap in SN
-        key = snKey(preb, sn)
         for val in vals2:
-            assert db.addDe(key, val) == True
+            assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         allvals = vals0 + vals1 + vals2
-        vals = [bytes(val) for key, val in db.getDelItemIter(preb)]
+        vals = [val.encode("utf-8") for keys, on, val in db.dels.getOnItemIter(keys=preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)
