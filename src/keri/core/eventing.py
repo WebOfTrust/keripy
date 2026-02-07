@@ -5302,7 +5302,7 @@ class Kevery:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
@@ -5327,7 +5327,7 @@ class Kevery:
         """
         cigars = cigars if cigars is not None else []
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
@@ -5362,7 +5362,7 @@ class Kevery:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
@@ -5394,7 +5394,7 @@ class Kevery:
         # so can compare digs from receipt and in database for receipted event
         # with different algos.  Can't lookup event by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, said), helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgKey(serder.preb, said), val=coring.Dater())
         for wiger in wigers:  # escrow each couple
             # don't know witness pre yet without witness list so no verfer in wiger
             # if wiger.verfer.transferable:  # skip transferable verfers
