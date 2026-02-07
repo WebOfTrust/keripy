@@ -5262,7 +5262,7 @@ class Kevery:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
