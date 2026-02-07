@@ -6259,8 +6259,7 @@ class Kevery:
             try:
                 rdigerBytes = rdiger.encode('utf-8')
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgKey(pre, bytes(rdigerBytes)))
-                if dtb is None:  # othewise is a datetime as bytes
+                if not (dater := self.db.dtss.get(keys=dgKey(pre, bytes(rdigerBytes)))):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"UWE Missing escrowed event datetime at dig = {rdiger.qb64b}"
                     logger.trace("Kevery unescrow error: %s", rdiger.qb64b)
@@ -6268,7 +6267,7 @@ class Kevery:
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(bytes(dtb))
+                dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutUWE):
                     # escrow stale so raise ValidationError which unescrows below
                     msg = f"UWE Stale event escrow at dig = {rdiger.qb64b}"
@@ -6370,8 +6369,7 @@ class Kevery:
                     cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgKey(pre, bytes(rsaider.qb64b)))
-                    if dtb is None:  # othewise is a datetime as bytes
+                    if not (dater := self.db.dtss.get(keys=dgKey(pre, bytes(rsaider.qb64b)))):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"URE Missing escrowed event datetime at dig = {rsaider.qb64b}"
                         logger.trace("Kevery unescrow error: %s", msg)
@@ -6379,7 +6377,7 @@ class Kevery:
 
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow = helping.nowUTC()
-                    dte = helping.fromIso8601(bytes(dtb))
+                    dte = dater.datetime
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutURE):
                         # escrow stale so raise ValidationError which unescrows below
                         msg = f"URE Stale event escrow at dig = {rsaider.qb64b}"
@@ -6506,8 +6504,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgkey)
-                if dtb is None:  # othewise is a datetime as bytes
+                if not (dater := self.db.dtss.get(keys=dgkey)):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"DEL Missing escrowed event datetime at dig = {bytes(edig)}"
                     logger.info("Kevery unescrow error: %s", msg)
@@ -6515,7 +6512,7 @@ class Kevery:
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(bytes(dtb))
+                dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
                     # escrow stale so raise ValidationError which unescrows below
                     msg = f"DEL Stale event escrow at dig = {bytes(edig)}"
