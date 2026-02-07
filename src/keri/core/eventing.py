@@ -5510,7 +5510,7 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, serder.saidb), helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=coring.Dater())
         # since serder of of receipt not receipted event must use dig in
         # serder.ked["d"] not serder.dig
         prelet = (serder.ked["d"].encode("utf-8") + prefixer.qb64b +
@@ -5547,7 +5547,7 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, serder.said), helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgKey(serder.preb, serder.said), val=coring.Dater())
         quintuple = (serder.saidb + sprefixer.qb64b + sseqner.qb64b +
                      saider.qb64b + siger.qb64b)
         self.db.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
@@ -5598,7 +5598,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
-            self.db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgkey, val=coring.Dater())
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             self.db.putEvt(dgkey, serder.raw)
             self.db.addOoe(snKey(pre, sn), serder.dig)
@@ -5730,7 +5730,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
-            .db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            .db.dtss.put(keys=dgkey, val=coring.Dater())
             .db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
             .db.addPse(snKey(pre, sn), serder.digb)
@@ -5899,7 +5899,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
-            .db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            .db.dtss.put(keys=dgkey, val=coring.Dater())
             .db.putWigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
             .db.addPwe(snKey(pre, sn), serder.digb)
@@ -6234,7 +6234,7 @@ class Kevery:
         Value is couple
 
         Original Escrow steps:
-            self.db.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgKey(pre, dig), val=coring.Dater())
             for wiger in wigers:  # escrow each couple
                 couple = dig.encode("utf-8") + wiger.qb64b
                 self.db.addUwe(key=snKey(pre, sn), val=triple)
@@ -6337,7 +6337,7 @@ class Kevery:
         Value is triple
 
         Original Escrow steps:
-            self.db.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgKey(pre, dig), val=coring.Dater())
             for cigar in cigars:  # escrow each triple
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
@@ -6818,7 +6818,7 @@ class Kevery:
         Value is quintuple
 
         Original Escrow steps:
-            self.db.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgKey(serder.preb, dig), val=coring.Dater())
             prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
             for siger in sigers:  # escrow each quintlet
@@ -6977,7 +6977,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
-            self.db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgkey, val=coring.Dater())
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             self.db.putEvt(dgkey, serder.raw)
             self.db.addLde(snKey(pre, sn), serder.digb)
