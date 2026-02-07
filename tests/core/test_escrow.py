@@ -103,7 +103,9 @@ def test_partial_signed_escrow():
         assert len(sigs) == 2
 
         # get DTS set by escrow date time stamp on event
-        edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        edtsb = dater.dtsb
 
         time.sleep(0.001)
         # verify Kevery process partials escrow now unescrows correctly given
@@ -118,7 +120,9 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0
 
         # get DTS set by first seen event acceptance date time stamp
-        adtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        adtsb = dater.dtsb
         # ensure accept time is later than escrow time, default timedelta is zero
         assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
@@ -137,7 +141,9 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted
-        pdtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        pdtsb = dater.dtsb
         assert pdtsb == adtsb
 
         # get first seen
@@ -222,7 +228,9 @@ def test_partial_signed_escrow():
         assert escrows[0] == srdr.saidb  #  escrow entry for event
 
         # get DTS set by escrow date time stamp on event
-        edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        edtsb = dater.dtsb
 
         time.sleep(0.001)
         # Process partials but now escrow not stale
@@ -233,7 +241,9 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0  # escrow gone
 
         # get DTS set by first seen event acceptance date time stamp
-        adtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        adtsb = dater.dtsb
         # ensure accept time is later than escrow time, default timedelta is zero
         assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
@@ -250,7 +260,9 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted
-        pdtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        pdtsb = dater.dtsb
         assert pdtsb == adtsb
 
         # get first seen
@@ -333,7 +345,9 @@ def test_partial_signed_escrow():
         assert kvr.serder.said != srdr.said  # key state not updated
 
         # get DTS set by escrow date time stamp on event
-        edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        edtsb = dater.dtsb
 
         time.sleep(0.001)
         # process escrow
@@ -341,7 +355,9 @@ def test_partial_signed_escrow():
         assert kvr.serder.said == srdr.said  # key state updated
 
         # get DTS set by first seen event acceptance date time stamp
-        adtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        dater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert dater is not None
+        adtsb = dater.dtsb
         # ensure accept time is later than escrow time, default timedelta is zero
         assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 

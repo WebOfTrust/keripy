@@ -3375,8 +3375,7 @@ class Kever:
         fn = None  # None means not a first seen log event so does not return an fn
         dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
-        dtsb = helping.nowIso8601().encode("utf-8")
-        self.db.putDts(dgkey, dtsb)  # idempotent do not change dts if already
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent do not change dts if already
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
         if wigers:
