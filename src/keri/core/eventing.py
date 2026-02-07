@@ -3411,6 +3411,7 @@ class Kever:
             self.db.esrs.put(keys=dgkeys, val=esr)
 
         pre = self.prefixer.qb64
+        timestamp_dater = None  # Initialize for non-first seen case
         if first:  # append event dig to first seen database in order
             fn = self.db.appendFe(serder.preb, serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
@@ -3431,11 +3432,15 @@ class Kever:
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
                          serder.pre, timestamp_dater.dts)
             logger.debug("Event Body=\n%s\n", serder.pretty())
+        else:  # not first seen, get existing timestamp
+            timestamp_dater = self.db.dtss.get(keys=dgkey)
+        
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
         logger.info("AID %s...%s: Added to KEL %s at sn=%s valid event SAID=%s",
                     pre[:4], pre[-4:], serder.ilk, serder.sn, serder.said)
         logger.debug("Event Body=\n%s\n", serder.pretty())
-        return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
+        dts = timestamp_dater.dts if timestamp_dater else None
+        return (fn, dts)  # (fn int, dts str) if first else (None, dts str)
 
 
     def escrowMFEvent(self, serder, sigers, wigers=None,
