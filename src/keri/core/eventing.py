@@ -3422,12 +3422,14 @@ class Kever:
                             serder.preb, fn, firner.sn, serder.said)
                 logger.debug("Event body=\n%s\n", serder.pretty())
             if dater:  # cloned replay use original's dts from dater
-                dtsb = dater.dtsb
-            self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
+                timestamp_dater = dater
+            else:
+                timestamp_dater = coring.Dater()
+            self.db.dtss.pin(keys=dgkey, val=timestamp_dater)  # first seen so set dts to now
             self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.debug("AID %s...%s: First seen %s at sn=%s valid event SAID=%s for %s at %s",
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
-                         serder.pre, dtsb.decode("utf-8"))
+                         serder.pre, timestamp_dater.dts)
             logger.debug("Event Body=\n%s\n", serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
         logger.info("AID %s...%s: Added to KEL %s at sn=%s valid event SAID=%s",
@@ -3463,7 +3465,7 @@ class Kever:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
@@ -3505,7 +3507,7 @@ class Kever:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
@@ -3534,7 +3536,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:
@@ -3577,7 +3579,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
 
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -3633,7 +3635,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
 
         if sigers:  # idempotent
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
