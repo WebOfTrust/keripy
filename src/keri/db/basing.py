@@ -1025,7 +1025,7 @@ class Baser(dbing.LMDBer):
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
-        self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
+        self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
         self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
 
         # events as ordered by first seen ordinals
@@ -1413,15 +1413,13 @@ class Baser(dbing.LMDBer):
             self.delPwes(key=k)
         for (k, _) in self.getOoeItemIter():
             self.delOoes(key=k)
-        for (k, _) in self.getLdeItemIter():
-            self.delLdes(key=k)
         for (pre, said), edig in self.qnfs.getItemIter():
             self.qnfs.rem(keys=(pre, said))
         for (pre, snh), rdigerWigerTuple in self.uwes.getItemIter():
             self.uwes.rem(keys=(pre, snh))
 
         for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
-                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
+                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune, self.ldes]:
             count = escrow.cntAll()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
@@ -2998,86 +2996,6 @@ class Baser(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoDupVal(self.ooes, key, val)
-
-    def putLdes(self, key, vals):
-        """
-        Use snKey()
-        Write each likely duplicitous event entry dig from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.ldes, key, vals)
-
-    def addLde(self, key, val):
-        """
-        Use snKey()
-        Add likely duplicitous escrow val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.ldes, key, val)
-
-    def getLdes(self, key):
-        """
-        Use snKey()
-        Return list of likely duplicitous event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.ldes, key)
-
-    def getLdeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup val of likely duplicitous event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.ldes, key)
-
-    def getLdeItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of likely duplicitous escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.ldes, key)
-        #return self.getIoDupItemsNextIter(self.ldes, key, skip)
-
-    def cntLdes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.ldes, key)
-
-    def delLdes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.ldes, key)
-
-    def delLde(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.ldes, key, val)
 
 
 class BaserDoer(doing.Doer):

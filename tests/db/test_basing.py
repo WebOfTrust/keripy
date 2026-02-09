@@ -56,7 +56,7 @@ def test_baser():
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -87,7 +87,7 @@ def test_baser():
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -115,7 +115,7 @@ def test_baser():
         assert isinstance(baser.ooes, lmdb._Database)
         assert isinstance(baser.pses, lmdb._Database)
         assert isinstance(baser.dels, subing.OnIoDupSuber)
-        assert isinstance(baser.ldes, lmdb._Database)
+        assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
 
     assert not os.path.exists(baser.path)
@@ -1096,18 +1096,21 @@ def test_baser():
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert db.getLdes(key) == []
-        assert db.getLdeLast(key) == None
-        assert db.cntLdes(key) == 0
-        assert db.delLdes(key) == False
-        assert db.putLdes(key, vals) == True
-        assert db.getLdes(key) == vals  # preserved insertion order
-        assert db.cntLdes(key) == len(vals) == 4
-        assert db.getLdeLast(key) == vals[-1]
-        assert db.putLdes(key, vals=[b'a']) == False   # duplicate
-        assert db.getLdes(key) == vals  #  no change
-        assert db.delLdes(key) == True
-        assert db.getLdes(key) == []
+        assert db.ldes.get(keys=key) == []
+        assert db.ldes.getLast(keys=key) == None
+        assert db.ldes.cnt(keys=key) == 0
+        assert db.ldes.rem(keys=key) == False
+        # put is not fully compatible with putLdes because putLdes took list of vals
+        # and IoDupSuber.put takes iterable of vals.
+        assert db.ldes.put(keys=key, vals=vals) == True
+        # OnIoDupSuber decodes bytes to utf-8 strings
+        assert db.ldes.get(keys=key) == [v.decode("utf-8") for v in vals]
+        assert db.ldes.cnt(keys=key) == len(vals) == 4
+        assert db.ldes.getLast(keys=key) == vals[-1].decode("utf-8")
+        assert db.ldes.put(keys=key, vals=[b'a']) == False   # duplicate
+        assert db.ldes.get(keys=key) == [v.decode("utf-8") for v in vals] #  no change
+        assert db.ldes.rem(keys=key) == True
+        assert db.ldes.get(keys=key) == []
 
         # Setup Tests for getLdeItemsNext and getLdeItemsNextIter
         aKey = snKey(pre=b'A', sn=1)
@@ -1119,58 +1122,105 @@ def test_baser():
         dKey = snKey(pre=b'A', sn=7)
         dVals = [b"k", b"b"]
 
-        assert db.putLdes(key=aKey, vals=aVals)
-        assert db.putLdes(key=bKey, vals=bVals)
-        assert db.putLdes(key=cKey, vals=cVals)
-        assert db.putLdes(key=dKey, vals=dVals)
+        assert db.ldes.put(keys=aKey, vals=aVals)
+        assert db.ldes.put(keys=bKey, vals=bVals)
+        assert db.ldes.put(keys=cKey, vals=cVals)
+        assert db.ldes.put(keys=dKey, vals=dVals)
 
 
         # Test getLdeItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getLdeItemIter()]
+        # Using getOnItemIter to verify it handles snKey correctly
+        items = [item for item in db.ldes.getOnItemIter()]
         assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals ==  aVals + bVals + cVals + dVals
+        # item is (keys, on, val)
+        # keys should be b'A' (prefix)
+        # on should be 1, 2, 4, 7
+        
+        # Verify flattening works if we want to match old test structure
+        # Old structure: (key, val)
+        # New structure: (pre, sn, val)
+        # We can reconstruct key = snKey(pre, sn)
+        
+        flat_items = []
+        for pre, sn, val in items:
+            if isinstance(pre, tuple):
+                pre = pre[0]
+            flat_items.append((snKey(pre, sn), val))
+            
+        items = flat_items
 
-        items = [item for item in db.getLdeItemIter(key=aKey)]
-        assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
-        assert vals == aVals
+        assert vals ==  [v.decode("utf-8") for v in aVals] + [v.decode("utf-8") for v in bVals] + [v.decode("utf-8") for v in cVals] + [v.decode("utf-8") for v in dVals]
+
+        # Iterate specific key (prefix specific?)
+        # snKey incorporates SN, so iterate specific SN or prefix?
+        # getOnItemIter(keys=b'A') would iterate all 'A' keys
+        # getOnItemIter(keys=b'A', on=1) would start at 1
+        
+        # getLdeItemIter(key=aKey) used DB traversal.
+        # db.ldes.getOnItemIter(keys=b'A', on=1) matches behavior.
+        
+        # Original test passed aKey (full key).
+        # SuberBase.getItemIter(key=aKey) start there.
+        # But we want to use OnIoDup to strip proems.
+        
+        # Let's test getOnItemIter usage
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=1)]
+        assert items
+        # Check first item
+        pre, sn, val = items[0]
+        if isinstance(pre, tuple):
+             pre = pre[0]
+        if hasattr(pre, "encode"):
+             pre = pre.encode("utf-8")
+        assert pre == b'A'
+        assert sn == 1
+        assert val == aVals[0].decode("utf-8")
+        
+        # Reconstruct vals for comparison
+        # Helper to get pre bytes
+        def get_pre_bytes(p):
+            p = p[0] if isinstance(p, tuple) else p
+            return p.encode("utf-8") if hasattr(p, "encode") else p
+
+        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 1]
+        assert vals == [v.decode("utf-8") for v in aVals]
 
         # bVals
-        items = [item for item in db.getLdeItemIter(key=bKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=2)]
+        assert items
+        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 2]
+        assert vals == [v.decode("utf-8") for v in bVals]
+        for p, s, val in items:
+            p_bytes = get_pre_bytes(p)
+            if p_bytes == b'A' and s == 2:
+                 # rem uses _ser which encodes, so we pass string
+                 assert db.ldes.rem(keys=snKey(p_bytes, s), val=val) == True
 
         # cVals
-        items = [item for item in db.getLdeItemIter(key=cKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=4)]
+        assert items
+        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 4]
+        assert vals == [v.decode("utf-8") for v in cVals]
+        for p, s, val in items:
+             p_bytes = get_pre_bytes(p)
+             if p_bytes == b'A' and s == 4:
+                assert db.ldes.rem(keys=snKey(p_bytes, s), val=val) == True
 
         # dVals
-        items = [item for item in db.getLdeItemIter(key=dKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=7)]
+        assert items
+        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 7]
+        assert vals == [v.decode("utf-8") for v in dVals]
+        for p, s, val in items:
+             p_bytes = get_pre_bytes(p)
+             if p_bytes == b'A' and s == 7:
+                 assert db.ldes.rem(keys=snKey(p_bytes, s), val=val) == True
+
 
     assert not os.path.exists(db.path)
 
@@ -1831,7 +1881,8 @@ def test_clear_escrows():
         db.putPses(key, vals)
         db.putPwes(key, vals)
         db.putOoes(key, vals)
-        db.putLdes(key, vals)
+        # putLdes was list based, db.ldes.put is iterable based
+        db.ldes.put(keys=key, vals=vals)
 
         pre = b'k'
         snh = b'snh'
@@ -1898,7 +1949,7 @@ def test_clear_escrows():
         assert db.getPwes(key) == []
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
-        assert db.getLdes(key) == []
+        assert db.ldes.get(keys=key) == []
         assert db.qnfs.cntAll() == 0
         assert db.pdes.cntAll() == 0
         assert db.rpes.cntAll() == 0
