@@ -828,19 +828,23 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .dels is named sub DB of duplicitous event log tables that map sequence numbers
-            to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+        .dels is named sub DB instance of OnIoDupSuber for duplicitous event
+            log tables that map identifier prefix plus sequence number to
+            serialized event digests.
+            subkey "dels."
+            snKey (prefix + ordinal sequence number)
+            DB is keyed by identifier prefix, ordinal is sequence number
+            Values are qb64 digests used to lookup event in .evts sub DB
+            More than one value per DB key is allowed (insertion ordered).
 
-        .ldes is named sub DB of likely duplicitous escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+        .ldes is named sub DB instance of OnIoDupSuber for likely duplicitous
+            escrowed event tables that map identifier prefix plus sequence
+            number to serialized event digests.
+            subkey "ldes."
+            snKey (prefix + ordinal sequence number)
+            DB is keyed by identifier prefix, ordinal is sequence number
+            Values are qb64 digests used to lookup event in .evts sub DB
+            More than one value per DB key is allowed (insertion ordered).
 
 
         .states (subkey stts.) is named subDB instance of SerderSuber that maps a prefix

@@ -1112,114 +1112,65 @@ def test_baser():
         assert db.ldes.rem(keys=key) == True
         assert db.ldes.get(keys=key) == []
 
-        # Setup Tests for getLdeItemsNext and getLdeItemsNextIter
-        aKey = snKey(pre=b'A', sn=1)
+        # Setup Tests for getOnItemIter with proper OnIoDupSuber API
+        # Use addOn with explicit ordinal instead of snKey
         aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
         bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
         cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
         dVals = [b"k", b"b"]
 
-        assert db.ldes.put(keys=aKey, vals=aVals)
-        assert db.ldes.put(keys=bKey, vals=bVals)
-        assert db.ldes.put(keys=cKey, vals=cVals)
-        assert db.ldes.put(keys=dKey, vals=dVals)
+        for val in aVals:
+            assert db.ldes.addOn(keys=b'A', on=1, val=val) == True
+        for val in bVals:
+            assert db.ldes.addOn(keys=b'A', on=2, val=val) == True
+        for val in cVals:
+            assert db.ldes.addOn(keys=b'A', on=4, val=val) == True
+        for val in dVals:
+            assert db.ldes.addOn(keys=b'A', on=7, val=val) == True
 
-
-        # Test getLdeItemsNextIter(key=b"")
-        #  get dups at first key in database
-        # aVals
-        # Using getOnItemIter to verify it handles snKey correctly
-        items = [item for item in db.ldes.getOnItemIter()]
+        # Test getOnItemIter - iterate all items for prefix b'A'
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A')]
         assert items  # not empty
         # item is (keys, on, val)
-        # keys should be b'A' (prefix)
-        # on should be 1, 2, 4, 7
-        
-        # Verify flattening works if we want to match old test structure
-        # Old structure: (key, val)
-        # New structure: (pre, sn, val)
-        # We can reconstruct key = snKey(pre, sn)
-        
-        flat_items = []
-        for pre, sn, val in items:
-            if isinstance(pre, tuple):
-                pre = pre[0]
-            flat_items.append((snKey(pre, sn), val))
-            
-        items = flat_items
+        vals = [val for pre, sn, val in items]
+        allVals = aVals + bVals + cVals + dVals
+        assert vals == [v.decode("utf-8") for v in allVals]
 
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals ==  [v.decode("utf-8") for v in aVals] + [v.decode("utf-8") for v in bVals] + [v.decode("utf-8") for v in cVals] + [v.decode("utf-8") for v in dVals]
-
-        # Iterate specific key (prefix specific?)
-        # snKey incorporates SN, so iterate specific SN or prefix?
-        # getOnItemIter(keys=b'A') would iterate all 'A' keys
-        # getOnItemIter(keys=b'A', on=1) would start at 1
-        
-        # getLdeItemIter(key=aKey) used DB traversal.
-        # db.ldes.getOnItemIter(keys=b'A', on=1) matches behavior.
-        
-        # Original test passed aKey (full key).
-        # SuberBase.getItemIter(key=aKey) start there.
-        # But we want to use OnIoDup to strip proems.
-        
-        # Let's test getOnItemIter usage
+        # Iterate starting from specific ordinal (sn=1)
         items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=1)]
         assert items
-        # Check first item
         pre, sn, val = items[0]
-        if isinstance(pre, tuple):
-             pre = pre[0]
-        if hasattr(pre, "encode"):
-             pre = pre.encode("utf-8")
-        assert pre == b'A'
         assert sn == 1
         assert val == aVals[0].decode("utf-8")
-        
-        # Reconstruct vals for comparison
-        # Helper to get pre bytes
-        def get_pre_bytes(p):
-            p = p[0] if isinstance(p, tuple) else p
-            return p.encode("utf-8") if hasattr(p, "encode") else p
 
-        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 1]
+        # Verify vals at sn=1
+        vals = [val for p, s, val in items if s == 1]
         assert vals == [v.decode("utf-8") for v in aVals]
 
-        # bVals
+        # bVals at sn=2
         items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=2)]
-        assert items
-        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 2]
+        vals = [val for p, s, val in items if s == 2]
         assert vals == [v.decode("utf-8") for v in bVals]
+        # Remove bVals using remOn
         for p, s, val in items:
-            p_bytes = get_pre_bytes(p)
-            if p_bytes == b'A' and s == 2:
-                 # rem uses _ser which encodes, so we pass string
-                 assert db.ldes.rem(keys=snKey(p_bytes, s), val=val) == True
+            if s == 2:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
-        # cVals
+        # cVals at sn=4
         items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=4)]
-        assert items
-        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 4]
+        vals = [val for p, s, val in items if s == 4]
         assert vals == [v.decode("utf-8") for v in cVals]
         for p, s, val in items:
-             p_bytes = get_pre_bytes(p)
-             if p_bytes == b'A' and s == 4:
-                assert db.ldes.rem(keys=snKey(p_bytes, s), val=val) == True
+            if s == 4:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
-        # dVals
+        # dVals at sn=7
         items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=7)]
-        assert items
-        vals = [val for p, s, val in items if get_pre_bytes(p) == b'A' and s == 7]
+        vals = [val for p, s, val in items if s == 7]
         assert vals == [v.decode("utf-8") for v in dVals]
         for p, s, val in items:
-             p_bytes = get_pre_bytes(p)
-             if p_bytes == b'A' and s == 7:
-                 assert db.ldes.rem(keys=snKey(p_bytes, s), val=val) == True
+            if s == 7:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
 
     assert not os.path.exists(db.path)
