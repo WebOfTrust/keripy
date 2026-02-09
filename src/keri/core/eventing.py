@@ -3411,7 +3411,6 @@ class Kever:
             self.db.esrs.put(keys=dgkeys, val=esr)
 
         pre = self.prefixer.qb64
-        timestamp_dater = None  # Initialize for non-first seen case
         if first:  # append event dig to first seen database in order
             fn = self.db.appendFe(serder.preb, serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
@@ -3422,24 +3421,22 @@ class Kever:
                             "ordinal fn %s and clone fn %s, said=%s",
                             serder.preb, fn, firner.sn, serder.said)
                 logger.debug("Event body=\n%s\n", serder.pretty())
-            if dater:  # cloned replay use original's dts from dater
-                timestamp_dater = dater
-            else:
-                timestamp_dater = coring.Dater()
-            self.db.dtss.pin(keys=dgkey, val=timestamp_dater)  # first seen so set dts to now
+            if not dater:  # not cloned replay, create new dater
+                dater = coring.Dater()
+            self.db.dtss.pin(keys=dgkey, val=dater)  # first seen so set dts to now
             self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.debug("AID %s...%s: First seen %s at sn=%s valid event SAID=%s for %s at %s",
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
-                         serder.pre, timestamp_dater.dts)
+                         serder.pre, dater.dts)
             logger.debug("Event Body=\n%s\n", serder.pretty())
         else:  # not first seen, get existing timestamp
-            timestamp_dater = self.db.dtss.get(keys=dgkey)
-        
+            dater = self.db.dtss.get(keys=dgkey)
+
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
         logger.info("AID %s...%s: Added to KEL %s at sn=%s valid event SAID=%s",
                     pre[:4], pre[-4:], serder.ilk, serder.sn, serder.said)
         logger.debug("Event Body=\n%s\n", serder.pretty())
-        dts = timestamp_dater.dts if timestamp_dater else None
+        dts = dater.dts if dater else None
         return (fn, dts)  # (fn int, dts str) if first else (None, dts str)
 
 
@@ -5399,7 +5396,7 @@ class Kevery:
         # so can compare digs from receipt and in database for receipted event
         # with different algos.  Can't lookup event by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, said), val=coring.Dater())
+        self.db.dtss.put(keys=(serder.preb, said), val=coring.Dater())
         for wiger in wigers:  # escrow each couple
             # don't know witness pre yet without witness list so no verfer in wiger
             # if wiger.verfer.transferable:  # skip transferable verfers
@@ -5431,7 +5428,7 @@ class Kevery:
         # so can compare digs from receipt and in database for receipted event
         # with different algos.  Can't lookup event by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, said), val=coring.Dater())
+        self.db.dtss.put(keys=(serder.preb, said), val=coring.Dater())
         for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
@@ -5473,7 +5470,7 @@ class Kevery:
         # lookup last event by sn not by dig.
         for tsg in tsgs:
             prefixer, seqner, saider, sigers = tsg
-            self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=coring.Dater())
+            self.db.dtss.put(keys=(serder.preb, serder.saidb), val=coring.Dater())
             # since serder of of receipt not receipted event must use dig in
             # serder.ked["d"] not serder.dig
             prelet = (serder.ked["d"].encode("utf-8") + prefixer.qb64b +
@@ -5515,7 +5512,7 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=coring.Dater())
+        self.db.dtss.put(keys=(serder.preb, serder.saidb), val=coring.Dater())
         # since serder of of receipt not receipted event must use dig in
         # serder.ked["d"] not serder.dig
         prelet = (serder.ked["d"].encode("utf-8") + prefixer.qb64b +
@@ -5552,7 +5549,7 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, serder.said), val=coring.Dater())
+        self.db.dtss.put(keys=(serder.preb, serder.said), val=coring.Dater())
         quintuple = (serder.saidb + sprefixer.qb64b + sseqner.qb64b +
                      saider.qb64b + siger.qb64b)
         self.db.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
@@ -6264,7 +6261,7 @@ class Kevery:
             try:
                 rdigerBytes = rdiger.encode('utf-8')
                 # check date if expired then remove escrow.
-                if not (dater := self.db.dtss.get(keys=dgKey(pre, bytes(rdigerBytes)))):
+                if not (dater := self.db.dtss.get(keys=(pre, rdigerBytes))):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"UWE Missing escrowed event datetime at dig = {rdiger.qb64b}"
                     logger.trace("Kevery unescrow error: %s", rdiger.qb64b)
@@ -6374,7 +6371,7 @@ class Kevery:
                     cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
 
                     # check date if expired then remove escrow.
-                    if not (dater := self.db.dtss.get(keys=dgKey(pre, bytes(rsaider.qb64b)))):
+                    if not (dater := self.db.dtss.get(keys=(pre, rsaider.qb64))):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"URE Missing escrowed event datetime at dig = {rsaider.qb64b}"
                         logger.trace("Kevery unescrow error: %s", msg)
@@ -6853,7 +6850,7 @@ class Kevery:
                     esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
 
                     # check date if expired then remove escrow.
-                    if not (dater := self.db.dtss.get(keys=dgKey(pre, bytes(esaider.qb64b)))):
+                    if not (dater := self.db.dtss.get(keys=(pre, esaider.qb64))):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"VRE Missing escrowed event datetime at dig = {esaider.qb64b}"
                         logger.trace("Kevery unescrow error: %s", msg)
