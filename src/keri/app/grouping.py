@@ -527,8 +527,8 @@ def multisigExn(ghab, exn):
 
 
 def getEscrowedEvent(db, pre, sn):
-    key = snKey(pre, sn)
-    dig = db.pses.getLast(key)
+    vals = list(db.pses.getOnLastIter(pre, sn))
+    dig = vals[0] if vals else None
     if dig is None:
         dig = db.getKeLast(key)
 

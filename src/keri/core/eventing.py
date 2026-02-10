@@ -3555,7 +3555,7 @@ class Kever:
             self.db.esrs.put(keys=dgkey, val=esr)
 
         snkey = snKey(serder.preb, serder.sn)
-        self.db.pses.add(snkey, serder.saidb)
+        self.db.pses.addOn(keys=serder.preb, on=serder.sn, val=serder.saidb)
         logger.debug("Kever: Escrowed partially signed or delegated event = \n%s\n", serder.pretty())
 
 
@@ -5719,7 +5719,7 @@ class Kevery:
         Escrowed items are indexed in database table keyed by prefix and
         sequence number with duplicates inserted in insertion order. This allows
         FIFO processing of events with same prefix and sn.
-        Uses  .db.pses.add(self, key, val) which is IOVal with dups.
+        Uses  .db.pses.addOn(pre, sn, val) which is OnIoVal with dups.
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
@@ -5728,7 +5728,7 @@ class Kevery:
             .db.putDts(dgkey, nowIso8601().encode("utf-8"))
             .db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
-            .db.pses.add(snKey(pre, sn), serder.digb)
+            .db.pses.addOn(pre, sn, serder.digb)
             where:
                 serder is SerderKERI instance of  event
                 sigers is list of Siger instance for  event
@@ -5747,13 +5747,13 @@ class Kevery:
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
-        for ekey, edig in self.db.pses.getItemIter(keys=b''):
+        for pre, sn, edig in self.db.pses.getOnItemIter():
             eserder = None
             try:
-                pre, sn_hex = ekey    # ekey is a tuple (pre, sn)
-                sn = int(sn_hex, 16)               # int sequence number
+                if isinstance(pre, (tuple, list)):
+                    pre = pre[0]
                 edig = edig.encode("utf-8") # convert back to bytes
-                dgkey = dgKey(pre, bytes(edig))
+                dgkey = dgKey(pre, edig)
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local source so raise ValidationError which unescrows below
                     msg = f"PSE Missing escrowed event source at dig = {bytes(edig)}"
@@ -5837,7 +5837,7 @@ class Kevery:
                 # with respect to processing events that result in escrow items.
                 # On re-escrow attempt by process, Pse escrow is called by
                 # Kever.self.escrowPSEvent Which calls
-                # self.db.pses.add(snKey(pre, sn), serder.digb)
+                # self.db.pses.addOn(pre, sn, serder.digb)
                 # which in turn will not enter dig as dup if one already exists.
                 # So re-escrow attempt will not change the escrowed pse db.
                 # Non re-escrow ValidationError means some other issue so unescrow.
@@ -5852,7 +5852,12 @@ class Kevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than waiting on sigs  so remove from escrow
-                self.db.pses.rem(snKey(pre, sn), edig)  # removes one escrow at key val
+                print("DELETING ESCROW: ")
+                print("pre: ", pre)
+                print("sn: ", sn)
+                print("edig: ", edig)
+                print("EX: ", ex)
+                self.db.pses.remOn(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                 #self.db.udes.rem(keys=dgkey)  # leave here since could PartialDelegationEscrow
 
                 if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
@@ -5868,7 +5873,7 @@ class Kevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.db.pses.rem(snKey(pre, sn), edig)  # removes one escrow at key val
+                self.db.pses.remOn(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
 
                 if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):

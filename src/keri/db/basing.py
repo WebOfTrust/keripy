@@ -767,9 +767,9 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .pses is a named subDB instance of IoDupSuber that maps
-            an event’s (prefix, sequence number) snKey to a set of escrowed event
-            digests for partially‑signed events.
+        .pses is a named subDB instance of OnIoDupSuber stores partially‑signed
+            escrows under composite keys of the form "<pre><sep><on>", where pre
+            is the identifier prefix and on is the event’s sequence number.
             Used by Kevery to track events that have at least one verified signature
             but cannot yet be fully validated due to missing signatures or dependent
             events. Values are stored in insertion order.
@@ -819,9 +819,9 @@ class Baser(dbing.LMDBer):
             of serialized event
             More than one value per DB key is allowed
 
-        .ooes is a named subDB instance of IoDupSuber that maps
-            an event's (prefix, sequence number) snKey to a set of escrowed event
-            digests for out‑of‑order events.
+        .ooes is a named subDB instance of OnIoDupSuber stores out‑of‑order
+            escrows under composite keys of the form "<pre><sep><on>", where
+            pre is the identifier prefix and on is the event’s sequence number.
             Used by Kevery to track events whose prior event has not yet been
             accepted into the KEL. Values are stored in insertion order.
 

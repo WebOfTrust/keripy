@@ -65,7 +65,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -73,7 +73,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -82,6 +82,7 @@ def test_partial_signed_escrow():
         # assuming not stale but nothing else has changed
         kvy.processEscrowPartialSigs()
         assert pre not in kvy.kevers  # event not accepted
+        # escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
@@ -96,7 +97,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
         sigs = kvy.db.getSigs(dbing.dgKey(pre, srdr.said))  #  but sigs is more
@@ -114,7 +115,7 @@ def test_partial_signed_escrow():
         assert kvr.prefixer.qb64 == pre
         assert kvr.serder.said == srdr.said  # key state updated so event was validated
         # escrows now empty
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0
 
         # get DTS set by first seen event acceptance date time stamp
@@ -133,7 +134,7 @@ def test_partial_signed_escrow():
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         sigs = kvy.db.getSigs(dbing.dgKey(pre, srdr.said))
         assert len(sigs) == 3
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted
@@ -161,7 +162,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -175,7 +176,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
         sigs = kvy.db.getSigs(dbing.dgKey(pre, srdr.said))  #  but sigs is more
@@ -187,7 +188,7 @@ def test_partial_signed_escrow():
         kvy.processEscrowPartialSigs()
         assert kvr.sn == 0  # key state not updated
         # escrows now empty
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0
 
         # Now reset timeout so not zero
@@ -203,7 +204,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -217,7 +218,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -229,7 +230,7 @@ def test_partial_signed_escrow():
         kvy.processEscrowPartialSigs()
         assert kvr.serder.said == srdr.said  # key state updated so event was validated
         assert kvr.sn == 1  # key state successfully updated
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0  # escrow gone
 
         # get DTS set by first seen event acceptance date time stamp
@@ -246,7 +247,7 @@ def test_partial_signed_escrow():
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         sigs = kvy.db.getSigs(dbing.dgKey(pre, srdr.said))  #  but sigs is more
         assert len(sigs) == 3
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted

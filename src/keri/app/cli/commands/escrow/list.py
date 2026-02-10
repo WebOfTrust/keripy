@@ -86,9 +86,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pses = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for ekey, edig in hby.db.pses.getItemIter(keys=key):
-                        pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
-
+                    for pre, sn, edig in hby.db.pses.getOnItemIter(keys=key):
                         try:
                             pses.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
