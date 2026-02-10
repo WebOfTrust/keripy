@@ -168,7 +168,7 @@ class Anchorer(doing.DoDoer):
             seqner = coring.Seqner(sn=serder.sn)
 
             # Load all the witness receipts we have so far
-            wigs = self.hby.db.getWigs(dgkey)
+            wigs = self.hby.db.wigs.get(dgkey)
             if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
                 if len(kever.wits) > 0:
                     witnessed = False

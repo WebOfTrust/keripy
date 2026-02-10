@@ -734,7 +734,7 @@ class Registrar(doing.DoDoer):
             dgkey = dbing.dgKey(prefixer.qb64b, saider.qb64)
 
             # Load all the witness receipts we have so far
-            wigs = self.hby.db.getWigs(dgkey)
+            wigs = self.hby.db.wigs.get(dgkey)
             if kever.wits:
                 if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
                     hab = self.hby.habs[prefixer.qb64]
