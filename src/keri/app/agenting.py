@@ -127,7 +127,7 @@ class Receiptor(doing.DoDoer):
         # send retrieved receipts to all other witnesses
         for wit in rcts:
             ewits = [w for w in rcts if w != wit] # get complement of all other witnesses
-            wigs = [sig for w, sig in rcts.items() if w != wit] # all other witness signatures
+            wigers = [sig for w, sig in rcts.items() if w != wit] # all other witness signatures
 
             msg = bytearray()
             if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
@@ -141,9 +141,9 @@ class Receiptor(doing.DoDoer):
                                        said=ser.said)
             msg.extend(rserder.raw)
             msg.extend(core.Counter(core.Codens.NonTransReceiptCouples,
-                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                msg.extend(wig.qb64b)
+                                    count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                msg.extend(wiger.qb64b)
 
             client = clients[wit]
 

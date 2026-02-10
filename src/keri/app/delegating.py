@@ -164,12 +164,11 @@ class Anchorer(doing.DoDoer):
         """
         for (pre, said), serder in self.hby.db.dpwe.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
-            dgkey = dbing.dgKey(pre, serder.said)
             seqner = coring.Seqner(sn=serder.sn)
 
             # Load all the witness receipts we have so far
-            wigs = self.hby.db.wigs.get(dgkey)
-            if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
+            wigers = self.hby.db.wigs.get(dbing.dgKey(pre, serder.said))
+            if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                 if len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:

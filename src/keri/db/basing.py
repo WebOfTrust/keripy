@@ -1678,11 +1678,11 @@ class Baser(dbing.LMDBer):
             atc.extend(sig)
 
         # add indexed witness signatures to attachments
-        if wigs := self.wigs.get(keys=dgkey):
+        if wigers := self.wigs.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.WitnessIdxSigs,
-                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                atc.extend(wig.qb64b)
+                                    count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                atc.extend(wiger.qb64b)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
         if (duple := self.aess.get(keys=dgkey)) is not None:
@@ -1883,14 +1883,12 @@ class Baser(dbing.LMDBer):
         """
         # Verify fully receipted, because this witness may have persisted before all receipts
         # have been gathered if this ius a witness for serder.pre
-        dgkey = dbing.dgKey(serder.preb, serder.saidb)
-
         # get unique verified wigers and windices lists from wigers list
-        wigs = self.wigs.get(keys=dgkey)
+        wigers = self.wigs.get(keys=dbing.dgKey(serder.preb, serder.saidb))
         kever = self.kevers[serder.pre]
         toad = kever.toader.num
 
-        return not len(wigs) < toad
+        return not len(wigers) < toad
 
     def resolveVerifiers(self, pre=None, sn=0, dig=None):
         """

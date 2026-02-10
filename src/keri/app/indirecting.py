@@ -1149,11 +1149,11 @@ class ReceiptEnd(doing.DoDoer):
                                    sn=sn,
                                    said=said.decode("utf-8"))
         rct = bytearray(rserder.raw)
-        if wigs := self.hab.db.wigs.get(keys=dgkey):
-            rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigs),
+        if wigers := self.hab.db.wigs.get(keys=dgkey):
+            rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
                                version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                rct.extend(wig.qb64b)
+            for wiger in wigers:
+                rct.extend(wiger.qb64b)
 
         rep.set_header('Content-Type', "application/json+cesr")
         rep.status = falcon.HTTP_200

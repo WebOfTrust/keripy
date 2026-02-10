@@ -5162,8 +5162,8 @@ class Kevery:
             kever = self.kevers[pre]
 
             # get list of witness signatures to ensure we are presenting a fully witnessed event
-            wigs = self.db.wigs.get(dgKey(pre, kever.serder.saidb))  # list of wigs
-            wigers = [Siger(qb64b=wig.qb64b) for wig in wigs]
+            wigers = self.db.wigs.get(dgKey(pre, kever.serder.saidb))
+            
 
             if len(wigers) < kever.toader.num:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
@@ -5668,9 +5668,8 @@ class Kevery:
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
 
-                    #  get wigs
-                    wigs = self.db.wigs.get(dgKey(pre, bytes(edig)))  # list of wigs
-                    wigers = [Siger(qb64b=wig.qb64b) for wig in wigs]
+                    #  get wigers
+                    wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
 
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, local=esr.local)
 
@@ -5796,8 +5795,8 @@ class Kevery:
                     msg = f"PSE Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
-                wigs = self.db.wigs.get(dgKey(pre, bytes(edig)))  # list of wigs
-                if not wigs:  # empty list wigs witness sigs not wits
+                wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
+                if not wigers:  # empty list wigs witness sigs not wits
                     # wigs maybe empty  if not wits or if wits while waiting
                     # for first witness signature
                     # which may not arrive until some time after event is fully signed
@@ -5826,7 +5825,6 @@ class Kevery:
 
                 # process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
-                wigers = [Siger(qb64b=wig.qb64b) for wig in wigs]
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
                                   delseqner=delseqner, delsaider=delsaider,
                                   eager=True, local=esr.local)
@@ -5966,9 +5964,9 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get witness signatures (wigs not wits)
-                wigs = self.db.wigs.get(dgKey(pre, bytes(edig)))  # list of wigs
+                wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
 
-                if not wigs:  # empty list
+                if not wigers:  # empty list
                     # wigs maybe empty if not wits or if wits while waiting
                     # for first witness signature
                     # which may not arrive until some time after event is fully signed
@@ -5982,7 +5980,6 @@ class Kevery:
 
                 # process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
-                wigers = [Siger(qb64b=wig.qb64b) for wig in wigs]
 
                 # seal source (delegator issuer if any)
                 delseqner = delsaider = None
@@ -6123,10 +6120,10 @@ class Kevery:
 
                 # get witness signatures (wigs not wits) assumes wont be in this
                 # escrow if wigs not needed because no wits
-                wigs = self.db.wigs.get(dgkey)  # list of wigs if any
+                wigers = self.db.wigs.get(dgkey)  # list of wigs if any
                 # may want to checks wits and wigs here. We are assuming that
                 # never get to this escrow if wits and not wigs
-                #if wits and not wigs:  # non empty wits but empty wigs
+                #if wits and not wigers:  # non empty wits but empty wigs
                     ## wigs maybe empty  if not wits or if wits while waiting
                     ## for first witness signature
                     ## which may not arrive until some time after event is fully signed
@@ -6140,7 +6137,6 @@ class Kevery:
 
                 # setup parameters to process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
-                wigers = [Siger(qb64b=wig.qb64b) for wig in wigs]
 
                 # seal source (delegator issuer if any)
                 # If delegator KEL not available should also cue a trigger to
@@ -6545,9 +6541,8 @@ class Kevery:
 
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
 
-                #  get wigs
-                wigs = self.db.wigs.get(dgKey(pre, bytes(edig)))  # list of wigs
-                wigers = [Siger(qb64b=wig.qb64b) for wig in wigs]
+                #  get wigers
+                wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
 
                 # parse the event if we have a delegate seal
                 if (duple := self.db.aess.get(keys=dgKey(pre.encode("utf-8"), edig))) is not None:
