@@ -5621,9 +5621,9 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.db.ooes.getItemIter(keys=key):
                 try:
-                    ekey = self.db.ooes._tokey(ekey) # convert back to bytes
-                    edig = self.db.ooes._ser(edig)  # convert back to bytes
-                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+                    pre, sn_hex = ekey      # ekey is a tuple (pre, sn)
+                    sn = int(sn_hex, 16) 
+                    edig = edig.encode("utf-8")  # convert back to bytes
                     dgkey = dgKey(pre, bytes(edig))
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local source so raise ValidationError which unescrows below
@@ -5757,9 +5757,9 @@ class Kevery:
         for ekey, edig in self.db.pses.getItemIter(keys=b''):
             eserder = None
             try:
-                ekey = self.db.ooes._tokey(ekey) # convert back to bytes
-                edig = self.db.ooes._ser(edig)  # convert back to bytes
-                pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
+                pre, sn_hex = ekey    # ekey is a tuple (pre, sn)
+                sn = int(sn_hex, 16)               # int sequence number
+                edig = edig.encode("utf-8") # convert back to bytes
                 dgkey = dgKey(pre, bytes(edig))
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local source so raise ValidationError which unescrows below

@@ -2006,8 +2006,7 @@ class BaseHab:
         key = dbing.snKey(self.pre, sn)
         dig = self.db.getKeLast(key)
         if dig is None and allowPartiallySigned:
-            dig = self.db.pses.getLast(key)
-            dig = self.db.pses._ser(dig)    # serialize to bytes for the key
+            dig = self.db.pses.getLast(key).encode("utf-8") #encode to bytes
 
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
