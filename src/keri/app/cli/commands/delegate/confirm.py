@@ -94,6 +94,14 @@ class ConfirmDoer(doing.DoDoer):
         self.auto = auto
         super(ConfirmDoer, self).__init__(doers=doers)
 
+    def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
+        """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
+        dgkey = dbing.dgKey(pre, edig)
+        seqner = coring.Seqner(sn=anchorSn)
+        saider = coring.Saider(qb64=anchorSaid)
+        couple = seqner.qb64b + saider.qb64b
+        self.hby.db.setAes(dgkey, couple)
+
     def confirmDo(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
@@ -175,7 +183,8 @@ class ConfirmDoer(doing.DoDoer):
 
                         print(f"Delegate {eserder.pre} {typ} event committed.")
 
-                        self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
+                        self._addAuthorizerSeal(pre, edig, anchorSn=serder.sn, anchorSaid=serder.said)
+                        self.hby.kvy.processEscrowDelegables()  # removes DIP/DRT from delegables after adding it to kevers
                         self.remove(self.toRemove)
                         return True
 
@@ -232,7 +241,8 @@ class ConfirmDoer(doing.DoDoer):
 
                             print(f"Delegate {eserder.pre} {typ} event committed.")
 
-                        self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
+                        self._addAuthorizerSeal(pre, edig, anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
+                        self.hby.kvy.processEscrowDelegables()  # removes DIP/DRT from delegables after adding it to kevers
                         self.remove(self.toRemove)
                         return True
 
