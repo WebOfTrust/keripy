@@ -756,8 +756,8 @@ class MultisigDelegationApprover(doing.DoDoer):
         Delegation approval is an active policy decision (like `kli delegate confirm`).
 
         Once the multisig anchor is complete, we:
-        1. Retrieve the escrowed DIP/DRT event
-        2. Reprocess it with the delegation seal (delseqner, delsaider) attached
+        1. Save the authorizer seal (AES) so processEscrowDelegables can find it
+        2. Reprocess the escrowed DIP/DRT via processEscrowDelegables
         3. Remove it from the delegables escrow
         """
         for key in list(self.waitingForComplete.keys()):
@@ -768,20 +768,45 @@ class MultisigDelegationApprover(doing.DoDoer):
             if not self.counselor.complete(prefixer=prefixer, seqner=seqner):
                 continue
 
+            self._setAuthorizerSeal(key, info)
             self._releaseEscrowedDelegation(key)
             self.approved.add(key)
             del self.waitingForComplete[key]
 
-    def _releaseEscrowedDelegation(self, key: Tuple[str, str]):
+    def _setAuthorizerSeal(self, key: Tuple[str, str], info: dict):
         """
-        Reprocess an escrowed DIP/DRT event with the delegation seal attached.
+        Save the authorizer (delegator) event seal for the escrowed delegated event.
+
+        AES maps: dgKey(delegate_pre, delegate_event_dig) -> (delegator_anchor_sn + delegator_anchor_said)
+
+        This must be set BEFORE calling processEscrowDelegables() so the escrow
+        processor can find the seal and successfully reprocess the event.
 
         Args:
             key: (delegate_pre, delegate_sn) tuple identifying the escrowed event
-            info: dict with 'ixn_sn' and 'ixn_said' for the anchor event
+            info: dict with 'ixn_sn' and 'ixn_said' for the delegator's anchor event
+        """
+        (pre, sn) = key
+        for dpre, dsn, edig in self.delegablesEscrowed():
+            if dpre == pre and dsn == sn:
+                dgkey = dbing.dgKey(pre, edig)
+                seqner = coring.Seqner(sn=info['ixn_sn'])
+                saider = coring.Saider(qb64=info['ixn_said'])
+                couple = seqner.qb64b + saider.qb64b
+                self.hby.db.setAes(dgkey, couple)
+                break
+
+    def _releaseEscrowedDelegation(self, key: Tuple[str, str]):
+        """
+        Release an escrowed DIP/DRT event via processEscrowDelegables.
+
+        The AES seal must already be set (via _setAuthorizerSeal) before calling this.
+
+        Args:
+            key: (delegate_pre, delegate_sn) tuple identifying the escrowed event
         """
         self.hby.kvy.processEscrowDelegables()
-        (pre, _sn) = key        
+        (pre, _sn) = key
         print(f"[DelegationApprover {self.mhab.pre[:8]}] Released delegation for {pre[:8]} from escrow")
 
     def _leaderProcessDelegables(self):
