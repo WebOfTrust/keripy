@@ -1014,13 +1014,13 @@ class Baser(dbing.LMDBer):
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
         self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
-        self.pses = subing.IoDupSuber(db=self, subkey='pses.')
+        self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
-        self.ooes = subing.IoDupSuber(db=self, subkey='ooes.')
+        self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
@@ -1390,8 +1390,9 @@ class Baser(dbing.LMDBer):
             self.pses.rem(keys=k)
         for (k, _) in self.getPweItemIter():
             self.delPwes(key=k)
-        for (k, _) in self.ooes.getItemIter():
-            self.ooes.rem(keys=k)
+        for (pre, on, dig) in self.ooes.getOnItemIter():
+            self.ooes.remOn(keys=pre, on=on, val=dig)
+            print(self.ooes.getOn(keys=pre))
         for (k, _) in self.getLdeItemIter():
             self.delLdes(key=k)
         for (pre, said), edig in self.qnfs.getItemIter():

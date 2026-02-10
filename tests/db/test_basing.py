@@ -2140,7 +2140,9 @@ def test_clear_escrows():
         db.putVres(key, vals)
         db.pses.put(key, vals)
         db.putPwes(key, vals)
-        db.ooes.put(key, vals)
+        for v in vals:
+            db.ooes.addOn(keys=key, on=0, val=v)
+
         db.putLdes(key, vals)
 
         pre = b'k'
