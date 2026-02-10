@@ -5901,7 +5901,7 @@ class Kevery:
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
             .db.putDts(dgkey, nowIso8601().encode("utf-8"))
-            .db.putWigs(dgkey, [siger.qb64b for siger in sigers]) edit this
+            .db.putWigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
             .db.addPwe(snKey(pre, sn), serder.digb)
             where:
