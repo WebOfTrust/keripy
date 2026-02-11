@@ -125,7 +125,7 @@ def escrows(tymth, tock=0.0, **opts):
                         # pre and sn are already unpacked by Suber
                         edig = edig.encode(
                             "utf-8"
-                        )  # convert to bytes for legacy compatibility
+                        )  # Suber returns str, loadEvent expects bytes
                         found = True
 
                         try:
