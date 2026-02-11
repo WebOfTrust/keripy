@@ -348,9 +348,8 @@ class Revery:
                 continue
 
             # retrieve last event itself of signer given sdig
-            if (sserder := self.db.evts.get(keys=(spre, bytes(sdig)))) is None:
-                # assumes db ensures that sserder must not be none because sdig was in KE
-                raise kering.ValidationError("Missing signer est event.")
+            sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
+            # assumes db ensures that sserder must not be none because sdig was in KE
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
                 raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
                                              f"{seqner.sn} for reply = {serder.ked}.")

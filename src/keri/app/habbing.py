@@ -1572,9 +1572,7 @@ class BaseHab:
                                            "".format(pre, sn))
         dig = bytes(dig)
         key = dbing.dgKey(pre, dig)  # digest key
-        if (serder := self.db.evts.get(keys=key)) is None:
-            raise kering.MissingEntryError("Missing event for pre={} at sn={}."
-                                           "".format(pre, sn))
+        serder = self.db.evts.get(keys=(pre, dig))
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
                            version=kering.Vrsn_1_0).qb64b)  # attach cnt
@@ -2037,9 +2035,7 @@ class BaseHab:
                                            "".format(self.pre, sn))
         dig = bytes(dig)
         key = dbing.dgKey(self.pre, dig)  # digest key
-        if (serder := self.db.evts.get(keys=key)) is None:
-            raise kering.MissingEntryError("Missing event for pre={} at sn={}."
-                                           "".format(self.pre, sn))
+        serder = self.db.evts.get(keys=(self.pre, dig))
 
         sigs = []
         for sig in self.db.getSigsIter(key):

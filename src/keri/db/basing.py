@@ -1664,7 +1664,7 @@ class Baser(dbing.LMDBer):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
         dgkey = dbing.dgKey(pre, dig)  # get message
-        if (serder := self.evts.get(keys=dgkey)) is None:
+        if not (serder := self.evts.get(keys=(pre, dig))):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(serder.raw)
 
@@ -1798,8 +1798,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
-            srdr = evt
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
@@ -1828,8 +1827,7 @@ class Baser(dbing.LMDBer):
         # create generic Seal namedtuple class using keys from provided seal dict
         Seal = namedtuple('Seal', list(seal))  # matching type
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
-            srdr = evt
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == Seal._fields:  # same type of seal
                     eseal = Seal(**eseal)  #convert to namedtuple
@@ -1913,9 +1911,8 @@ class Baser(dbing.LMDBer):
                 raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
             # retrieve last event itself of receipter est evt from sdig
-            if (sserder := self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))) is None:
-                # assumes db ensures that sserder must not be none because sdig was in KE
-                raise kering.MissingEntryError("Missing event for sdig.")
+            sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
+            # assumes db ensures that sserder must not be none because sdig was in KE
             if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
                 raise kering.ValidationError("Bad proof sig group at sn = {}"
                                              " for ksn = {}."

@@ -1340,7 +1340,7 @@ class Tever:
             dig = bytes(dig)
 
         # retrieve event by dig
-        if (eserder := self.db.evts.get(keys=(self.pre, dig))) is None:
+        if not (eserder := self.db.evts.get(keys=(self.pre, dig))):
             return False
 
         if eserder.said != saider.qb64:

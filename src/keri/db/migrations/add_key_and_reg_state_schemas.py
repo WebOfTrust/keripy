@@ -137,8 +137,7 @@ def migrateKeys(db):
                                     klas=(coring.Prefixer, coring.Seqner))
 
     for pre, fn, dig in db.getFelItemAllPreIter():
-        dgkey = dbing.dgKey(pre, dig)  # get message
-        if (serder := db.evts.get(keys=dgkey)) is None:
+        if (serder := db.evts.get(keys=(pre, dig))) is None:
             logger.info(f"Migrate keys: missing event for dig={dig}, skipped.")
             continue
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
