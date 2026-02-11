@@ -5852,11 +5852,6 @@ class Kevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than waiting on sigs  so remove from escrow
-                print("DELETING ESCROW: ")
-                print("pre: ", pre)
-                print("sn: ", sn)
-                print("edig: ", edig)
-                print("EX: ", ex)
                 self.db.pses.remOn(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                 #self.db.udes.rem(keys=dgkey)  # leave here since could PartialDelegationEscrow
 
