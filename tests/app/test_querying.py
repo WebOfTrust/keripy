@@ -164,7 +164,7 @@ def test_query_not_found_escrow():
         serder = serdering.SerderKERI(raw=qry)
         dgkey = dgKey(inqHab.pre, serder.saidb)
 
-        subHab.db.putEvt(dgkey, serder.raw)
+        subHab.db.evts.put(keys=dgkey, val=serder)
         subHab.db.qnfs.add(keys=(inqHab.pre, serder.said), val=serder.saidb)
 
         subHab.kvy.processQueryNotFound()

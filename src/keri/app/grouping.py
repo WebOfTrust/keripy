@@ -534,8 +534,8 @@ def getEscrowedEvent(db, pre, sn):
 
     dig = bytes(dig)
     key = dbing.dgKey(pre, dig)  # digest key
-    msg = db.getEvt(key)
-    serder = serdering.SerderKERI(raw=bytes(msg))
+    if (serder := db.evts.get(keys=key)) is None:
+        raise kering.MissingEntryError("Missing event for pre={}.".format(pre))
 
     sigs = []
     for sig in db.getSigsIter(key):

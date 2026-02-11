@@ -62,12 +62,11 @@ def rollback(tymth, tock=0.0, **opts):
             ked = hby.db.states.getDict(keys=serder.pre)
             pdig = hby.db.getKeLast(dbing.snKey(serder.preb, serder.sn - 1))
 
-            pDgKey = dbing.dgKey(serder.preb, bytes(pdig))  # get message
-            raw = hby.db.getEvt(key=pDgKey)
-            pserder = serdering.SerderKERI(raw=bytes(raw))
+            if (pserder := hby.db.evts.get(keys=(serder.preb, bytes(pdig)))) is None:
+                raise kering.MissingEntryError("Missing prior event for rollback.")
 
             dgkey = dbing.dgKey(serder.preb, serder.saidb)
-            hby.db.delEvt(dgkey)
+            hby.db.evts.rem(keys=dgkey)
             hby.db.wits.rem(keys=dgkey)
             hby.db.delWigs(dgkey)
             hby.db.delSigs(dgkey)  # idempotent

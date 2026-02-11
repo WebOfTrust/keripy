@@ -119,7 +119,8 @@ def test_direct_mode_with_manager():
         # look up event to sign from validator's kever for coe
         coeIcpDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIcpDig == coeK.serder.saidb
-        coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
+        s = valKevery.db.evts.get(keys=dgKey(pre=coepre, dig=coeIcpDig))
+        coeIcpRaw = s.raw if s else None
 
         #counter = Counter(CtrDex.ControllerIdxSigs)
         #assert counter.qb64 == '-AAB'
@@ -190,7 +191,8 @@ def test_direct_mode_with_manager():
         # look up event to sign from controller's kever for validator
         valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.serder.saidb
-        valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
+        s = coeKevery.db.evts.get(keys=dgKey(pre=valpre, dig=valIcpDig))
+        valIcpRaw = s.raw if s else None
         sigers = coeMgr.sign(ser=valIcpRaw, verfers=coeVerfers)  # return Siger if index
         # create receipt message
         cmsg = messagize(reserder, sigers=sigers, seal=seal)
@@ -255,7 +257,8 @@ def test_direct_mode_with_manager():
         # look up event to sign from validator's kever for controller
         coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.serder.saidb
-        coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
+        s = valKevery.db.evts.get(keys=dgKey(pre=coepre, dig=coeRotDig))
+        coeRotRaw = s.raw if s else None
         sigers = valMgr.sign(ser=coeRotRaw, verfers=valVerfers)
         # validator create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
@@ -318,7 +321,8 @@ def test_direct_mode_with_manager():
         # look up event to sign from validator's kever for controller
         coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIxnDig == coeK.serder.saidb
-        coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
+        s = valKevery.db.evts.get(keys=dgKey(pre=coepre, dig=coeIxnDig))
+        coeIxnRaw = s.raw if s else None
         sigers = valMgr.sign(ser=coeIxnRaw, verfers=valVerfers)
         # create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
