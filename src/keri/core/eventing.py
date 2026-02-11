@@ -3280,8 +3280,8 @@ class Kever:
         """
         dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key of delegate
 
-        if (duple := self.db.aess.get(keys=dgkey)):  # delegation source couple at delegate
-            seqner, saider = duple
+        if (couple := self.db.getAes(dgkey)):  # delegation source couple at delegate
+            seqner, saider = deSourceCouple(couple)
             deldig = saider.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
             #  fner = first seen Number instance index
@@ -3289,7 +3289,7 @@ class Kever:
                 if original:  # should not happen aes database broken
                     # repair by deleting aes and returning None so it escrows
                     # and then next time around find below with repair it
-                    self.db.aess.rem(keys=dgkey)  # delete aes so next time repairs it
+                    self.db.delAes(dgkey)  # delete aes so next time repairs it
                 # superseding may not have happened yet so let it escrow
                 return None
             ddgkey = dgKey(pre=delpre, dig=deldig)  # database key of delegation
@@ -3330,9 +3330,8 @@ class Kever:
                 # Repair .aess of delegated event by writing found source
                 # seal couple of delegation. This is safe becaause we confirmed
                 # delegation event was accepted in delegator's kel.
-                sner = coring.Number(num=dserder.sn, code=coring.NumDex.Huge)
-                saider = coring.Saider(qb64b=dserder.saidb)
-                self.db.aess.pin(keys=dgkey, val=(sner, saider))  # authorizer (delegator/issuer) event seal
+                couple = dserder.sner.huge.encode() + dserder.saidb
+                self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
 
             return dserder
 
@@ -3375,8 +3374,7 @@ class Kever:
         fn = None  # None means not a first seen log event so does not return an fn
         dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
-        dtsb = helping.nowIso8601().encode("utf-8")
-        self.db.putDts(dgkey, dtsb)  # idempotent do not change dts if already
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent do not change dts if already
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
         if wigers:
@@ -3396,7 +3394,8 @@ class Kever:
         # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
         if (self.delpre and not serder.ilk == Ilks.ixn and not self.locallyOwned()
             and not self.locallyWitnessed(wits=wits) and seqner and saider):
-            self.db.aess.pin(keys=dgkey, val=(coring.Number(num=seqner.sn, code=coring.NumDex.Huge), saider))  # authorizer (delegator/issuer) event seal
+            couple = seqner.qb64b + saider.qb64b
+            self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
 
         #if seqner and saider:
             #couple = seqner.qb64b + saider.qb64b
@@ -3422,19 +3421,23 @@ class Kever:
                             "ordinal fn %s and clone fn %s, said=%s",
                             serder.preb, fn, firner.sn, serder.said)
                 logger.debug("Event body=\n%s\n", serder.pretty())
-            if dater:  # cloned replay use original's dts from dater
-                dtsb = dater.dtsb
-            self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
+            if not dater:  # not cloned replay, create new dater
+                dater = coring.Dater()
+            self.db.dtss.pin(keys=dgkey, val=dater)  # first seen so set dts to now
             self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.debug("AID %s...%s: First seen %s at sn=%s valid event SAID=%s for %s at %s",
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
-                         serder.pre, dtsb.decode("utf-8"))
+                         serder.pre, dater.dts)
             logger.debug("Event Body=\n%s\n", serder.pretty())
+        else:  # not first seen, get existing timestamp
+            dater = self.db.dtss.get(keys=dgkey)
+
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
         logger.info("AID %s...%s: Added to KEL %s at sn=%s valid event SAID=%s",
                     pre[:4], pre[-4:], serder.ilk, serder.sn, serder.said)
         logger.debug("Event Body=\n%s\n", serder.pretty())
-        return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
+        dts = dater.dts if dater else None
+        return (fn, dts)  # (fn int, dts str) if first else (None, dts str)
 
 
     def escrowMFEvent(self, serder, sigers, wigers=None,
@@ -3464,7 +3467,7 @@ class Kever:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
@@ -3506,7 +3509,7 @@ class Kever:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
@@ -3535,7 +3538,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:
@@ -3578,7 +3581,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
 
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -3634,7 +3637,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
 
         if sigers:  # idempotent
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -5261,7 +5264,7 @@ class Kevery:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
@@ -5301,7 +5304,7 @@ class Kevery:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         if wigers:
@@ -5326,7 +5329,7 @@ class Kevery:
         """
         cigars = cigars if cigars is not None else []
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
@@ -5361,7 +5364,7 @@ class Kevery:
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=dgkey, val=coring.Dater())
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
@@ -5393,7 +5396,7 @@ class Kevery:
         # so can compare digs from receipt and in database for receipted event
         # with different algos.  Can't lookup event by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, said), helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=(serder.preb, said), val=coring.Dater())
         for wiger in wigers:  # escrow each couple
             # don't know witness pre yet without witness list so no verfer in wiger
             # if wiger.verfer.transferable:  # skip transferable verfers
@@ -5425,7 +5428,7 @@ class Kevery:
         # so can compare digs from receipt and in database for receipted event
         # with different algos.  Can't lookup event by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, said), helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=(serder.preb, said), val=coring.Dater())
         for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
@@ -5467,7 +5470,7 @@ class Kevery:
         # lookup last event by sn not by dig.
         for tsg in tsgs:
             prefixer, seqner, saider, sigers = tsg
-            self.db.putDts(dgKey(serder.preb, serder.saidb), helping.nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=(serder.preb, serder.saidb), val=coring.Dater())
             # since serder of of receipt not receipted event must use dig in
             # serder.ked["d"] not serder.dig
             prelet = (serder.ked["d"].encode("utf-8") + prefixer.qb64b +
@@ -5509,7 +5512,7 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, serder.saidb), helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=(serder.preb, serder.saidb), val=coring.Dater())
         # since serder of of receipt not receipted event must use dig in
         # serder.ked["d"] not serder.dig
         prelet = (serder.ked["d"].encode("utf-8") + prefixer.qb64b +
@@ -5546,7 +5549,7 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, serder.said), helping.nowIso8601().encode("utf-8"))
+        self.db.dtss.put(keys=(serder.preb, serder.said), val=coring.Dater())
         quintuple = (serder.saidb + sprefixer.qb64b + sseqner.qb64b +
                      saider.qb64b + siger.qb64b)
         self.db.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
@@ -5597,7 +5600,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
-            self.db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgkey, val=coring.Dater())
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             self.db.putEvt(dgkey, serder.raw)
             self.db.addOoe(snKey(pre, sn), serder.dig)
@@ -5631,8 +5634,7 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgkey)
-                    if dtb is None:  # othewise is a datetime as bytes
+                    if not (dater := self.db.dtss.get(keys=dgkey)):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"OOO Missing escrowed event datetime at dig = {bytes(edig)}"
                         logger.trace("Kevery unescrow error: %s", msg)
@@ -5640,7 +5642,7 @@ class Kevery:
 
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow = helping.nowUTC()
-                    dte = helping.fromIso8601(bytes(dtb))
+                    dte = dater.datetime
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
                         # escrow stale so raise ValidationError which unescrows below
                         msg = f"OOO Stale event escrow at dig = {bytes(edig)}"
@@ -5730,7 +5732,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
-            .db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            .db.dtss.put(keys=dgkey, val=coring.Dater())
             .db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
             .db.addPse(snKey(pre, sn), serder.digb)
@@ -5764,8 +5766,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgkey)
-                if dtb is None:  # othewise is a datetime as bytes
+                if not (dater := self.db.dtss.get(keys=dgkey)):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"PSE Missing escrowed event datetime at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
@@ -5773,7 +5774,7 @@ class Kevery:
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(bytes(dtb))
+                dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
                     # escrow stale so raise ValidationError which unescrows below
                     msg = f"PSE Stale event escrow at dig = {bytes(edig)}"
@@ -5900,7 +5901,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
-            .db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            .db.dtss.put(keys=dgkey, val=coring.Dater())
             .db.putWigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
             .db.addPwe(snKey(pre, sn), serder.digb)
@@ -5931,8 +5932,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgkey)
-                if dtb is None:  # othewise is a datetime as bytes
+                if not (dater := self.db.dtss.get(keys=dgkey)):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"PWE Missing escrowed event datetime at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
@@ -5940,7 +5940,7 @@ class Kevery:
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(bytes(dtb))
+                dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPWE):
                     # escrow stale so raise ValidationError which unescrows below
                     msg = f"PWE Stale event escrow at dig = {bytes(edig)}"
@@ -6087,8 +6087,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgkey)
-                if dtb is None:  # othewise is a datetime as bytes
+                if not (dater := self.db.dtss.get(keys=dgkey)):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"PDE Missing escrowed event datetime at dig = {bytes(edig).decode()}"
                     logger.info("Kevery unescrow error: %s", msg)
@@ -6096,7 +6095,7 @@ class Kevery:
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(bytes(dtb))
+                dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPWE):
                     # escrow stale so raise ValidationError which unescrows below
                     msg = f"PDE Stale event escrow at dig = {bytes(edig)}"
@@ -6237,7 +6236,7 @@ class Kevery:
         Value is couple
 
         Original Escrow steps:
-            self.db.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgKey(pre, dig), val=coring.Dater())
             for wiger in wigers:  # escrow each couple
                 couple = dig.encode("utf-8") + wiger.qb64b
                 self.db.addUwe(key=snKey(pre, sn), val=triple)
@@ -6262,8 +6261,7 @@ class Kevery:
             try:
                 rdigerBytes = rdiger.encode('utf-8')
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgKey(pre, bytes(rdigerBytes)))
-                if dtb is None:  # othewise is a datetime as bytes
+                if not (dater := self.db.dtss.get(keys=(pre, rdigerBytes))):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"UWE Missing escrowed event datetime at dig = {rdiger.qb64b}"
                     logger.trace("Kevery unescrow error: %s", rdiger.qb64b)
@@ -6271,7 +6269,7 @@ class Kevery:
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(bytes(dtb))
+                dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutUWE):
                     # escrow stale so raise ValidationError which unescrows below
                     msg = f"UWE Stale event escrow at dig = {rdiger.qb64b}"
@@ -6341,7 +6339,7 @@ class Kevery:
         Value is triple
 
         Original Escrow steps:
-            self.db.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgKey(pre, dig), val=coring.Dater())
             for cigar in cigars:  # escrow each triple
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
@@ -6373,8 +6371,7 @@ class Kevery:
                     cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgKey(pre, bytes(rsaider.qb64b)))
-                    if dtb is None:  # othewise is a datetime as bytes
+                    if not (dater := self.db.dtss.get(keys=(pre, rsaider.qb64))):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"URE Missing escrowed event datetime at dig = {rsaider.qb64b}"
                         logger.trace("Kevery unescrow error: %s", msg)
@@ -6382,7 +6379,7 @@ class Kevery:
 
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow = helping.nowUTC()
-                    dte = helping.fromIso8601(bytes(dtb))
+                    dte = dater.datetime
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutURE):
                         # escrow stale so raise ValidationError which unescrows below
                         msg = f"URE Stale event escrow at dig = {rsaider.qb64b}"
@@ -6509,8 +6506,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 # check date if expired then remove escrow.
-                dtb = self.db.getDts(dgkey)
-                if dtb is None:  # othewise is a datetime as bytes
+                if not (dater := self.db.dtss.get(keys=dgkey)):
                     # no date time so raise ValidationError which unescrows below
                     msg = f"DEL Missing escrowed event datetime at dig = {bytes(edig)}"
                     logger.info("Kevery unescrow error: %s", msg)
@@ -6518,7 +6514,7 @@ class Kevery:
 
                 # do date math here and discard if stale nowIso8601() bytes
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(bytes(dtb))
+                dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
                     # escrow stale so raise ValidationError which unescrows below
                     msg = f"DEL Stale event escrow at dig = {bytes(edig)}"
@@ -6549,9 +6545,12 @@ class Kevery:
                 wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
-                # parse the event if we have a delegate seal
-                if (duple := self.db.aess.get(keys=dgKey(pre.encode("utf-8"), edig))) is not None:
-                    seqner, saider = duple
+                # get delgate seal
+                couple = self.db.getAes(dgkey)
+                if couple is not None:  # Only try to parse the event if we have the del seal
+                    raw = bytearray(couple)
+                    seqner = coring.Seqner(qb64b=raw, strip=True)
+                    saider = coring.Saider(qb64b=raw)
 
                     # process event
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
@@ -6615,8 +6614,7 @@ class Kevery:
                 try:
                     # check date if expired then remove escrow.
                     dgkey = dgKey(pre.encode("utf-8"), edig.encode("utf-8"))
-                    dtb = self.db.getDts(dgkey)
-                    if dtb is None:  # othewise is a datetime as bytes
+                    if not (dater := self.db.dtss.get(keys=dgkey)):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"QNF Missing escrowed event datetime at dig = {bytes(edig).decode()}"
                         logger.trace("Kevery unescrow error: %s", msg)
@@ -6624,7 +6622,7 @@ class Kevery:
 
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow = helping.nowUTC()
-                    dte = helping.fromIso8601(bytes(dtb))
+                    dte = dater.datetime
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutQNF):
                         # escrow stale so raise ValidationError which unescrows below
                         msg = f"QNF Stale qry event escrow at dig = {bytes(edig).decode()}"
@@ -6822,7 +6820,7 @@ class Kevery:
         Value is quintuple
 
         Original Escrow steps:
-            self.db.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgKey(serder.preb, dig), val=coring.Dater())
             prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
             for siger in sigers:  # escrow each quintlet
@@ -6852,8 +6850,7 @@ class Kevery:
                     esaider, sprefixer, sseqner, ssaider, siger = deTransReceiptQuintuple(equinlet)
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgKey(pre, bytes(esaider.qb64b)))
-                    if dtb is None:  # othewise is a datetime as bytes
+                    if not (dater := self.db.dtss.get(keys=(pre, esaider.qb64))):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"VRE Missing escrowed event datetime at dig = {esaider.qb64b}"
                         logger.trace("Kevery unescrow error: %s", msg)
@@ -6861,7 +6858,7 @@ class Kevery:
 
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow = helping.nowUTC()
-                    dte = helping.fromIso8601(bytes(dtb))
+                    dte = dater.datetime
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutVRE):
                         # escrow stale so raise ValidationError which unescrows below
                         msg = f"VRE Stale event escrow at dig = {esaider.qb64b}"
@@ -6982,7 +6979,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
-            self.db.putDts(dgkey, nowIso8601().encode("utf-8"))
+            self.db.dtss.put(keys=dgkey, val=coring.Dater())
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
             self.db.putEvt(dgkey, serder.raw)
             self.db.addLde(snKey(pre, sn), serder.digb)
@@ -7014,8 +7011,7 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgkey)
-                    if dtb is None:  # othewise is a datetime as bytes
+                    if not (dater := self.db.dtss.get(keys=dgkey)):
                         # no date time so raise ValidationError which unescrows below
                         msg = f"DUP Missing escrowed event datetime at dig = {bytes(edig)}"
                         logger.trace("Kevery unescrow error: %s", msg)
@@ -7023,7 +7019,7 @@ class Kevery:
 
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow = helping.nowUTC()
-                    dte = helping.fromIso8601(bytes(dtb))
+                    dte = dater.datetime
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutLDE):
                         # escrow stale so raise ValidationError which unescrows below
                         msg = f"DUP Stale event escrow at dig = {bytes(edig)}"
@@ -7151,8 +7147,11 @@ def loadEvent(db, preb, dig):
     event["witness_signatures"] = dwigs
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
-    if (duple := db.aess.get(keys=dgkey)) is not None:
-        seqner, saider = duple
+    couple = db.getAes(dgkey)
+    if couple is not None:
+        raw = bytearray(couple)
+        seqner = coring.Seqner(qb64b=raw, strip=True)
+        saider = coring.Saider(qb64b=raw)
         event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
 
     receipts = dict()
@@ -7181,8 +7180,8 @@ def loadEvent(db, preb, dig):
 
     event["receipts"] = receipts
     # add first seen replay couple to attachments
-    if not (dts := db.getDts(key=dgkey)):
+    if not (dater := db.dtss.get(keys=dgkey)):
         raise ValueError("Missing datetime for dig={}.".format(dig))
 
-    event["timestamp"] = coring.Dater(dts=bytes(dts)).dts
+    event["timestamp"] = dater.dts
     return event

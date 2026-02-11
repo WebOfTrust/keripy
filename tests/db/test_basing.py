@@ -49,7 +49,7 @@ def test_baser():
 
     assert isinstance(baser.evts, lmdb._Database)
     assert isinstance(baser.sigs, lmdb._Database)
-    assert isinstance(baser.dtss, lmdb._Database)
+    assert isinstance(baser.dtss, subing.CesrSuber)  # Now a Suber, not raw LMDB
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
     assert isinstance(baser.kels, lmdb._Database)
@@ -80,7 +80,7 @@ def test_baser():
 
     assert isinstance(baser.evts, lmdb._Database)
     assert isinstance(baser.sigs, lmdb._Database)
-    assert isinstance(baser.dtss, lmdb._Database)
+    assert isinstance(baser.dtss, subing.CesrSuber)  # Now a Suber, not raw LMDB
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
     assert isinstance(baser.kels, lmdb._Database)
@@ -108,7 +108,7 @@ def test_baser():
 
         assert isinstance(baser.evts, lmdb._Database)
         assert isinstance(baser.sigs, lmdb._Database)
-        assert isinstance(baser.dtss, lmdb._Database)
+        assert isinstance(baser.dtss, subing.CesrSuber)  # Now a Suber, not raw LMDB
         assert isinstance(baser.rcts, lmdb._Database)
         assert isinstance(baser.ures, lmdb._Database)
         assert isinstance(baser.kels, lmdb._Database)
@@ -295,20 +295,36 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        # test .dtss sub db methods
-        val1 = b'2020-08-22T17:50:09.988921+00:00'
-        val2 = b'2020-08-22T17:50:09.988921+00:00'
+        # test .dtss sub db methods - now returns Dater objects
+        dater1 = coring.Dater(dts='2020-08-22T17:50:09.988921+00:00')
+        dater2 = coring.Dater(dts='2020-08-22T17:50:10.000000+00:00')  # Different timestamp
 
-        assert db.getDts(key) == None
-        assert db.delDts(key) == False
-        assert db.putDts(key, val1) == True
-        assert db.getDts(key) == val1
-        assert db.putDts(key, val2) == False
-        assert db.getDts(key) == val1
-        assert db.setDts(key, val2) == True
-        assert db.getDts(key) == val2
-        assert db.delDts(key) == True
-        assert db.getDts(key) == None
+        # Test get on empty database
+        assert db.dtss.get(keys=key) is None
+        
+        # Test remove on empty database
+        assert db.dtss.rem(keys=key) == False
+        
+        # Test put (idempotent - doesn't overwrite)
+        assert db.dtss.put(keys=key, val=dater1) == True
+        result = db.dtss.get(keys=key)
+        assert result is not None
+        assert isinstance(result, coring.Dater)
+        assert result.dtsb == dater1.dtsb  # Use .dtsb for bytes comparison
+        
+        # Test put again (should return False - already exists)
+        assert db.dtss.put(keys=key, val=dater2) == False
+        result = db.dtss.get(keys=key)
+        assert result.dtsb == dater1.dtsb  # Still has original value
+        
+        # Test pin (overwrites)
+        assert db.dtss.pin(keys=key, val=dater2) == True
+        result = db.dtss.get(keys=key)
+        assert result.dtsb == dater2.dtsb  # Now has new value
+        
+        # Test remove
+        assert db.dtss.rem(keys=key) == True
+        assert db.dtss.get(keys=key) is None
 
         # Test .aess authorizing event source seal couples
         dgkey = dgKey(preb, digb)
