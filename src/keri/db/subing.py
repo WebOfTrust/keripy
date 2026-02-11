@@ -980,7 +980,6 @@ class CatCesrSuberBase(CesrSuberBase):
             val = (val, )  # make iterable
         return (b''.join(obj.qb64b for obj in val))
 
-
     def _des(self, val: memoryview | bytes | bytearray):
         """
         Converts val bytes to vals tuple of subclass instances by deserializing

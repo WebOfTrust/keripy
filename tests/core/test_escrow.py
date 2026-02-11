@@ -1339,12 +1339,12 @@ def test_unverified_trans_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre  (receipted)
         assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
 
-        escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
+        escrows = kvy.db.vres.get(dbing.snKey(pre, 0))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
+        diger, sprefixer, snumber, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
         assert diger.qb64 == srdr.said
         assert sprefixer.qb64 == rpre
-        assert sseqner.sn == 0
+        assert snumber.sn == 0
         assert sdiger.qb64 == rsrdr.said
         assert siger.qb64 == resigers[0].qb64
 
@@ -1405,12 +1405,12 @@ def test_unverified_trans_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
 
-        escrows = kvy.db.getVres(dbing.snKey(pre, 1))  # so escrowed receipts
+        escrows = kvy.db.vres.get(dbing.snKey(pre, 1))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
+        diger, sprefixer, snumber, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
         assert diger.qb64 == srdr.said
         assert sprefixer.qb64 == rpre
-        assert sseqner.sn == 1
+        assert snumber.sn == 1
         assert sdiger.qb64 == rsrdr.said
         assert siger.qb64 == resigers[0].qb64
 
@@ -1459,12 +1459,12 @@ def test_unverified_trans_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
 
-        escrows = kvy.db.getVres(dbing.snKey(pre, 2))  # so escrowed receipts
+        escrows = kvy.db.vres.get(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
+        diger, sprefixer, snumber, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
         assert diger.qb64 == srdr.said
         assert sprefixer.qb64 == rpre
-        assert sseqner.sn == 1
+        assert snumber.sn == 1
         assert sdiger.qb64 == rsrdr.said
         assert siger.qb64 == resigers[0].qb64
 
@@ -1475,9 +1475,9 @@ def test_unverified_trans_receipt_escrow():
         assert pre not in kvy.kevers  # key state not updated
         assert rpre not in kvy.kevers  # key state not updated for receipter
         # check escrows removed
-        assert len(kvy.db.getVres(dbing.snKey(pre, 0))) == 0
-        assert len(kvy.db.getVres(dbing.snKey(pre, 1))) == 0
-        assert len(kvy.db.getVres(dbing.snKey(pre, 2))) == 0
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 0))) == 0
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 1))) == 0
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 2))) == 0
 
         # Now reset timeout so not zero and resend receipts to reload escrow
         kvy.TimeoutVRE = 3600
@@ -1492,9 +1492,9 @@ def test_unverified_trans_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
         # check escrows are back
-        assert len(kvy.db.getVres(dbing.snKey(pre, 0))) == 3
-        assert len(kvy.db.getVres(dbing.snKey(pre, 1))) == 3
-        assert len(kvy.db.getVres(dbing.snKey(pre, 2))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 0))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 2))) == 3
 
         # apply inception msg to Kevery to process
         psr.parse(ims=bytearray(icpmsg), kvy=kvy)
@@ -1517,16 +1517,16 @@ def test_unverified_trans_receipt_escrow():
         assert kvr.sn == 2  # key state successfully updated
 
         # check escrows have not changed
-        assert len(kvy.db.getVres(dbing.snKey(pre, 0))) == 3
-        assert len(kvy.db.getVres(dbing.snKey(pre, 1))) == 3
-        assert len(kvy.db.getVres(dbing.snKey(pre, 2))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 0))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 2))) == 3
 
         # verify Kevery process unverified trans receipt escrow
         kvy.processEscrowUnverTrans()
         # check escrows have not changed because no receipter events
-        assert len(kvy.db.getVres(dbing.snKey(pre, 0))) == 3
-        assert len(kvy.db.getVres(dbing.snKey(pre, 1))) == 3
-        assert len(kvy.db.getVres(dbing.snKey(pre, 2))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 0))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 2))) == 3
 
         # apply inception msg of receipter to Kevery to process
         psr.parse(ims=bytearray(ricpmsg), kvy=kvy)
@@ -1539,9 +1539,9 @@ def test_unverified_trans_receipt_escrow():
         # verify Kevery process unverified trans receipt escrow
         kvy.processEscrowUnverTrans()
         # check escrows have changed for receipts by receipter inception
-        assert len(kvy.db.getVres(dbing.snKey(pre, 0))) == 0
-        assert len(kvy.db.getVres(dbing.snKey(pre, 1))) == 3
-        assert len(kvy.db.getVres(dbing.snKey(pre, 2))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 0))) == 0
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 2))) == 3
 
         # apply rotation msg of receipter to Kevery to process
         psr.parse(ims=bytearray(rrotmsg), kvy=kvy)
@@ -1552,30 +1552,30 @@ def test_unverified_trans_receipt_escrow():
         # verify Kevery process unverified trans receipt escrow
         kvy.processEscrowUnverTrans()
         # check escrows have changed for receipts by receipter inception
-        assert len(kvy.db.getVres(dbing.snKey(pre, 0))) == 0
-        assert len(kvy.db.getVres(dbing.snKey(pre, 1))) == 0
-        assert len(kvy.db.getVres(dbing.snKey(pre, 2))) == 0
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 0))) == 0
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 1))) == 0
+        assert len(kvy.db.vres.get(dbing.snKey(pre, 2))) == 0
 
         # verify receipts
-        receipts = kvy.db.getVrcs(dbing.dgKey(pre, icpdig))
+        receipts = kvy.db.vrcs.get(keys=dbing.dgKey(pre, icpdig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.deTransReceiptQuadruple(receipts[0])
+        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
         assert rctPrefixer.qb64 == rpre
-        assert rctSeqner.sn == 0
+        assert rctNumber.sn == 0
         assert rctDiger.qb64 == ricpdig
 
-        receipts = kvy.db.getVrcs(dbing.dgKey(pre, ixndig))
+        receipts = kvy.db.vrcs.get(keys=dbing.dgKey(pre, ixndig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.deTransReceiptQuadruple(receipts[0])
+        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
         assert rctPrefixer.qb64 == rpre
-        assert rctSeqner.sn == 1
+        assert rctNumber.sn == 1
         assert rctDiger.qb64 == rrotdig
 
-        receipts = kvy.db.getVrcs(dbing.dgKey(pre, rotdig))
+        receipts = kvy.db.vrcs.get(keys=dbing.dgKey(pre, rotdig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.deTransReceiptQuadruple(receipts[0])
+        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
         assert rctPrefixer.qb64 == rpre
-        assert rctSeqner.sn == 1
+        assert rctNumber.sn == 1
         assert rctDiger.qb64 == rrotdig
 
     assert not os.path.exists(ks.path)
