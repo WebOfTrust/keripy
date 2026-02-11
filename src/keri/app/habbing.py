@@ -2096,9 +2096,9 @@ class BaseHab:
                     dgkey = dbing.dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
-                        for quadruple in self.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True  # yes so don't send own inception
+                        for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
+                            if sprefixer.qb64 == cuedKed["i"]:
+                                found = True
                     else:  # find if already rcts of own icp
                         for couple in self.db.getRctsIter(dgkey):
                             if bytes(couple).decode("utf-8").startswith(cuedKed["i"]):

@@ -743,36 +743,30 @@ class Baser(dbing.LMDBer):
             of serialized event
             More than one value per DB key is allowed
 
-        .vrcs is named sub DB of event validator receipt quadruples from transferable
-            signers. Each quadruple is concatenation of  four fully qualified items
-            of validator. These are: transferable prefix, plus latest establishment
-            event sequence number plus latest establishment event digest,
-            plus indexed event signature.
-            These are endorsements by transferable AIDs that are not the controller
-            may be watchers or others.
-            When latest establishment event is multisig then there will
-            be multiple quadruples one per signing key, each a dup at same db key.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
+            transferable‑validator receipt quadruples. 
+            Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
+            representing a validator’s transferable receipt, including the validator’s 
+            AID, its latest establishment‑event sequence number, digest, and its indexed 
+            signature over the event. Values are preserved in insertion order 
+            and represent fully validated receipts that have been moved out of escrow.
+            
 
-        .vres is named sub DB of unverified event validator receipt escrowed
-            quadruples from transferable signers. Each quadruple is concatenation of
-            four fully qualified items  of validator. These are: transferable prefix,
-            plus latest establishment event sequence number plus latest
-            establishment event digest, plus indexed event signature.
-            When latest establishment event is multisig then there will
-            be multiple quadruples one per signing key, each a dup at same db key.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+        .vres is a named subDB instance of CatCesrIoSetSuber that maps
+            an event’s (prefix, sequence number) snKey to a set of escrowed
+            transferable‑receipt quintuples. Each value is a typed CESR tuple
+            (Diger, Prefixer, Number, Diger, Siger) representing a validator’s
+            receipt escrow. Used by Kevery to hold
+            unverified transferable receipts until they can be validated and moved
+            into the verified‑receipt store. Values are stored in insertion order.
 
-        .pses is named sub DB of partially signed key event escrows
-            that each map pre + sequence number to serialized event digest.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+
+        .pses is a named subDB instance of OnIoDupSuber stores partially‑signed
+            escrows under composite keys of the form "<pre><sep><on>", where pre
+            is the identifier prefix and on is the event’s sequence number.
+            Used by Kevery to track events that have at least one verified signature
+            but cannot yet be fully validated due to missing signatures or dependent
+            events. Values are stored in insertion order.
 
         .pwes is named sub DB of partially witnessed key event escrowes
             that each map pre + sequence number to serialized event digest.
@@ -1015,8 +1009,10 @@ class Baser(dbing.LMDBer):
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
-        self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
-        self.vres = self.env.open_db(key=b'vres.', dupsort=True)
+        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
+                                            klas=(coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
+                                            klas=(coring.Diger, coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
@@ -1387,8 +1383,8 @@ class Baser(dbing.LMDBer):
         """
         for (k, _) in self.getUreItemIter():
             self.delUres(key=k)
-        for (k, _) in self.getVreItemIter():
-            self.delVres(key=k)
+        for (k, _) in self.vres.getItemIter():
+            self.vres.rem(keys=k)
         for (k, _) in self.getPseItemIter():
             self.delPses(key=k)
         for (k, _) in self.getPweItemIter():
@@ -1668,11 +1664,14 @@ class Baser(dbing.LMDBer):
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
-        if quads := self.getVrcs(key=dgkey):
+        if quads := self.vrcs.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.TransReceiptQuadruples,
                                     count=len(quads), version=kering.Vrsn_1_0).qb64b)
-            for quad in quads:
-                atc.extend(quad)
+            for pre, snu, diger, siger in quads:    # adapt to CESR 
+                atc.extend(pre.qb64b)
+                atc.extend(snu.qb64b)
+                atc.extend(diger.qb64b)
+                atc.extend(siger.qb64b)
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
@@ -2423,159 +2422,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoDupVal(self.ures, key, val)
 
-    def putVrcs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes receipt quadruples vals to key
-        quadruple is spre+ssnu+sdig+sig
-        Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.vrcs, key, vals)
-
-    def addVrc(self, key, val):
-        """
-        Use dgKey()
-        Add receipt quadruple val bytes as dup to key in db
-        quadruple is spre+ssnu+sdig+sig
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.vrcs, key, val)
-
-    def getVrcs(self, key):
-        """
-        Use dgKey()
-        Return list of receipt quadruples at key
-        quadruple is spre+ssnu+sdig+sig
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.vrcs, key)
-
-    def getVrcsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of receipt quadruples at key
-        quadruple is spre+ssnu+sdig+sig
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.vrcs, key)
-
-    def cntVrcs(self, key):
-        """
-        Use dgKey()
-        Return count of receipt quadruples at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.vrcs, key)
-
-    def delVrcs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.vrcs, key, val)
-
-    def putVres(self, key, vals):
-        """
-        Use snKey()
-        Write each entry from list of bytes receipt quinlets vals to key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Adds to existing receipts at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.vres, key, vals)
-
-    def addVre(self, key, val):
-        """
-        Use snKey()
-        Add receipt quintuple val bytes as dup to key in db
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Adds to existing values at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.vres, key, val)
-
-    def getVres(self, key):
-        """
-        Use snKey()
-        Return list of receipt quinlets at key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.vres, key)
-
-    def getVresIter(self, key):
-        """
-        Use snKey()
-        Return iterator of receipt quinlets at key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.vres, key)
-
-    def getVreLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial signed escrowed event quintuple val at key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.vres, key)
-
-    def getVreItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial signed escrowed event quintuple items at next
-        key after key.
-        Items is (key, val) where proem has already been stripped from val
-        val is Quinlet is edig + spre + ssnu + sdig +sig
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.vres, key)
-        #return self.getIoDupItemsNextIter(self.vres, key, skip)
-
-    def cntVres(self, key):
-        """
-        Use snKey()
-        Return count of receipt quinlets at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.vres, key)
-
-    def delVres(self, key):
-        """
-         Use snKey()
-        Deletes all values at key in db.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.vres, key)
-
-    def delVre(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.vres, key, val)
 
     def putKes(self, key, vals):
         """
