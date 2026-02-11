@@ -82,8 +82,7 @@ def test_partial_signed_escrow():
         # assuming not stale but nothing else has changed
         kvy.processEscrowPartialSigs()
         assert pre not in kvy.kevers  # event not accepted
-        # escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
-        escrows = kvy.db.pses.get(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
