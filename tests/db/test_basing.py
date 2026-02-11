@@ -157,15 +157,15 @@ def test_baser():
 
         #  test .evts sub db methods (verify=False for minimal test event)
         sked = serdering.SerderKERI(raw=skedb, verify=False)
-        assert db.evts.get(keys=key) is None
-        assert db.evts.rem(keys=key) is False
-        assert db.evts.put(keys=key, val=sked) is True
-        assert db.evts.get(keys=key).raw == skedb
-        assert db.evts.put(keys=key, val=sked) is False
-        assert db.evts.pin(keys=key, val=sked) is True
-        assert db.evts.get(keys=key).raw == skedb
-        assert db.evts.rem(keys=key) is True
-        assert db.evts.get(keys=key) is None
+        assert db.evts.get(keys=(preb, digb)) is None
+        assert db.evts.rem(keys=(preb, digb)) is False
+        assert db.evts.put(keys=(preb, digb), val=sked) is True
+        assert db.evts.get(keys=(preb, digb)).raw == skedb
+        assert db.evts.put(keys=(preb, digb), val=sked) is False
+        assert db.evts.pin(keys=(preb, digb), val=sked) is True
+        assert db.evts.get(keys=(preb, digb)).raw == skedb
+        assert db.evts.rem(keys=(preb, digb)) is True
+        assert db.evts.get(keys=(preb, digb)) is None
 
         # test eventsourcerecords .srcs
         record = basing.EventSourceRecord()
@@ -1225,8 +1225,8 @@ def test_clean_baser():
         assert natHab.kever.serder.said == natsaid
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
-        serder = natHab.db.evts.get(keys=dbing.dgKey(natHab.pre, ldig))
-        assert serder is not None and serder.said == natHab.kever.serder.said
+        serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
+        assert serder.said == natHab.kever.serder.said
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
         assert state.f == '6'
@@ -1237,8 +1237,8 @@ def test_clean_baser():
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.saidb
-            serder = natHab.db.evts.get(keys=dbing.dgKey(natHab.pre, ldig))
-            assert serder is not None and serder.said == natHab.kever.serder.said
+            serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
+            assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] <= 96 #68
 
             # verify name pre kom in db
@@ -1259,7 +1259,7 @@ def test_clean_baser():
 
             assert fn == 7
             # verify garbage event in database
-            assert natHab.db.evts.get(keys=dbing.dgKey(natHab.pre, badsrdr.said)) is not None
+            assert natHab.db.evts.get(keys=(natHab.pre, badsrdr.said))
             assert natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
 
 
@@ -1289,12 +1289,12 @@ def test_clean_baser():
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.saidb
-            serder = natHab.db.evts.get(keys=dbing.dgKey(natHab.pre, ldig))
-            assert serder is not None and serder.said == natHab.kever.serder.said
+            serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
+            assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] >= 18
 
             # confirm bad event missing from database
-            assert natHab.db.evts.get(keys=dbing.dgKey(natHab.pre, badsrdr.said)) is None
+            assert not natHab.db.evts.get(keys=(natHab.pre, badsrdr.said))
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
             state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
             assert state.s == '6'
@@ -1677,9 +1677,8 @@ def test_dbdict():
                                eevt=eevt,
                                )
 
-        dgkey = eventing.dgKey(pre=pre, dig=serder.said)
-        db.evts.put(keys=dgkey, val=serder)
-        assert db.evts.get(keys=dgkey) is not None
+        db.evts.put(keys=(pre, serder.said), val=serder)
+        assert db.evts.get(keys=(pre, serder.said)) is not None
 
         db.states.pin(keys=pre, val=state)  # put state in database
         dbstate = db.states.get(keys=pre)
