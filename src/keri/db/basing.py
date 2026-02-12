@@ -610,7 +610,7 @@ class Baser(dbing.LMDBer):
         kevers (dict): Kever instances indexed by identifier prefix qb64
         prefixes (OrderedSet): local prefixes corresponding to habitats for this db
 
-        .evts is named sub DB whose values are serialized key events
+        .evts is named subDB instance of SerderSuber whose values are serialized
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
