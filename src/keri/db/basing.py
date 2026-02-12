@@ -695,16 +695,16 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             Value is ISO 8601 datetime stamp bytes
 
-        .aess is named sub DB of authorizing event source seal couples
-            that map digest to seal source couple of authorizer's
-            (delegator or issuer) event. Each couple is a concatenation of full
-            qualified items, snu+dig of the authorizing (delegating or issuing)
-            source event.
+        .aess is named sub DB instance of CatCesrSuber for authorizing event
+            source seal couples that map digest of key event to seal source
+            couple of authorizer's (delegator or issuer) event.
+            subkey "aess."
             dgKey
-            Values are couples used to lookup authorizer's source event in
-            .kels sub DB
             DB is keyed by identifier prefix plus digest of key event
-            Only one value per DB key is allowed
+            Value is (Number, Saider) tuple; first component serialized as
+            Huge (fixed 24-char), used to lookup authorizer's source event
+            in .kels sub DB.
+            Only one value per DB key is allowed.
 
         .sigs is named sub DB of fully qualified indexed event signatures
             dgKey
@@ -1010,7 +1010,8 @@ class Baser(dbing.LMDBer):
         self.fels = self.env.open_db(key=b'fels.')
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.dtss = self.env.open_db(key=b'dtss.')
-        self.aess = self.env.open_db(key=b'aess.')
+        self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
+                                        klas=(coring.Number, coring.Saider))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
@@ -1281,6 +1282,24 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.imgs = self.env.open_db(key=b'imgs.')
 
+        # Field values for identifier information for local identifiers. Keyed by prefix/field
+        # TODO: clean
+        self.ifld = subing.Suber(db=self,
+                                 subkey="ifld.")
+
+        # Signed identifier data, keys by prefix
+        # TODO: clean
+        self.sids = subing.Suber(db=self,
+                                  subkey="sids.")
+
+        # Transferable signatures on identifier data
+        # TODO: clean
+        self.icigs = subing.CesrSuber(db=self, subkey='icigs.', klas=coring.Cigar)
+
+        # Chunked image data for identifier information for local identifiers
+        # TODO: clean
+        self.iimgs = self.env.open_db(key=b'iimgs.')
+
         # Delegation escrow dbs #
         # delegated partial witness escrow
         self.dpwe = subing.SerderSuber(db=self, subkey='dpwe.')
@@ -1503,7 +1522,8 @@ class Baser(dbing.LMDBer):
                 # reprocess them.  We need a more secure method in the future
                 unsecured = ["hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns", "erpy",
                              "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi", "mfa", "rmfa",
-                             "cfld", "cons", "ccigs", "cdel", "migs"]
+                             "cfld", "cons", "ccigs", "cdel", "migs",
+                             "ifld", "sids", "icigs"]
 
                 for name in unsecured:
                     srcdb = getattr(self, name)
@@ -1524,6 +1544,10 @@ class Baser(dbing.LMDBer):
                 # Insecure raw imgs database copy.
                 for (key, val) in self.getTopItemIter(self.imgs):
                     copy.imgs.setVal(key=key, val=val)
+
+                # Insecure raw iimgs database copy.
+                for (key, val) in self.getTopItemIter(self.iimgs):
+                    copy.iimgs.setVal(key=key, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
@@ -1664,11 +1688,11 @@ class Baser(dbing.LMDBer):
                 atc.extend(wig)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
-        couple = self.getAes(dgkey)
-        if couple is not None:
+        if (duple := self.aess.get(keys=dgkey)) is not None:
+            seqner, saider = duple
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
                                     count=1, version=kering.Vrsn_1_0).qb64b)
-            atc.extend(couple)
+            atc.extend(seqner.qb64b + saider.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
@@ -2069,7 +2093,7 @@ class Baser(dbing.LMDBer):
         Returns:
            items (Iterator[(pre, fn, val)]): over all items starting at pre, on
         """
-        return self.getOnItemIter(db=self.fels, key=pre, on=fn)
+        return self.getOnItemIterAll(db=self.fels, key=pre, on=fn)
 
 
     def getFelItemAllPreIter(self):
@@ -2089,7 +2113,7 @@ class Baser(dbing.LMDBer):
                 first key in database
         """
         #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
-        return self.getOnItemIter(db=self.fels, key=b'')
+        return self.getOnItemIterAll(db=self.fels, key=b'')
 
     def putDts(self, key, val):
         """
@@ -2125,41 +2149,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.dtss, key)
-
-    def putAes(self, key, val):
-        """
-        Use dgKey()
-        Write serialized source seal event couple val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Returns False if key already exists
-        """
-        return self.putVal(self.aess, key, val)
-
-    def setAes(self, key, val):
-        """
-        Use dgKey()
-        Write serialized source seal event couple val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.aess, key, val)
-
-    def getAes(self, key):
-        """
-        Use dgKey()
-        Return source seal event couple at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.aess, key)
-
-    def delAes(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.aess, key)
 
     def getSigs(self, key):
         """
@@ -2658,7 +2647,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
-        return (self.getOnIoDupValIter(self.kels, pre, on=sn))
+        return (self.getOnIoDupIterAll(self.kels, pre, on=sn))
 
         #return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
 

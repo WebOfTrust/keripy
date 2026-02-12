@@ -2739,8 +2739,32 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    assert number.num == num
-    assert number.numh == numh
+    assert number.num == num == number.sn
+    assert number.numh == numh == number.snh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(sn=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num == number.sn
+    assert number.numh == numh == number.snh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(num=num, sn=0)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num == number.sn
+    assert number.numh == numh == number.snh
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2757,6 +2781,29 @@ def test_number():
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
 
+    number = Number(snh=numh)  # num can be hext str too
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num == number.sn
+    assert number.numh == numh == number.snh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(numh=numh, snh="0")  # num can be hext str too
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num == number.sn
+    assert number.numh == numh == number.snh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(numh=numh)
     assert number.code == code

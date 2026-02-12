@@ -174,15 +174,15 @@ class SuberBase():
 
         """
         if hasattr(keys, "encode"):  # str
-            return keys.encode("utf-8")
+            return keys.encode()
         if isinstance(keys, memoryview):  # memoryview of bytes
             return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
             return keys
         if topive and keys[-1]:  # topive and keys is not already partial
             keys = tuple(keys) + ('',)  # cat empty str so join adds trailing sep
-        return (self.sep.join(key.decode() if hasattr(key, "decode") else key
-                              for key in keys).encode("utf-8"))
+        return (self.sep.join(key if hasattr(key, "encode") else bytes(key).decode()
+                              for key in keys).encode())  # bytes(key) converts memoryview
 
 
     def _tokeys(self, key: str | bytes | memoryview):
@@ -200,7 +200,7 @@ class SuberBase():
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
         if hasattr(key, "decode"):  # bytes
-            key = key.decode("utf-8")  # convert to str
+            key = key.decode()  # convert to str
         return tuple(key.split(self.sep))
 
 
@@ -212,7 +212,7 @@ class SuberBase():
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # return bytes
-        return (val.encode("utf-8") if hasattr(val, "encode") else val)
+        return (val.encode() if hasattr(val, "encode") else val)
 
 
     def _des(self, val: bytes | memoryview):
@@ -223,7 +223,7 @@ class SuberBase():
         """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
-        return (val.decode("utf-8") if hasattr(val, "decode") else val)
+        return (val.decode() if hasattr(val, "decode") else val)
 
 
     def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
@@ -570,8 +570,8 @@ class OnSuberBase(SuberBase):
                                      sep=self.sep.encode()))
 
 
-    def cntOn(self, keys: str | bytes | memoryview = "", on: int=0):
-        """
+    def cntOnAll(self, keys: str | bytes | memoryview = "", on: int=0):
+        """Counts all entries with same key ovall all on >= on
         Returns
             cnt (int): count of of all ordinal suffix keyed vals with same
                 key prefix but different on in onkey in db starting at ordinal
@@ -586,13 +586,13 @@ class OnSuberBase(SuberBase):
                 duplicates if any.
             on (int): ordinal number used with onKey(key,on) to form key.
         """
-        return (self.db.cntOnVals(db=self.sdb,
+        return (self.db.cntOnAll(db=self.sdb,
                                      key=self._tokey(keys),
                                      on=on,
                                      sep=self.sep.encode()))
 
 
-    def getOnIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def getOnIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns:
             items (Iterator[bytes]): of val with same key but increments of
@@ -607,12 +607,12 @@ class OnSuberBase(SuberBase):
                       which to initiate retrieval
             sep (bytes): separator character for split
         """
-        for val in (self.db.getOnValIter(db=self.sdb,
+        for val in (self.db.getOnIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
 
 
-    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns:
             items (Iterator[(key, on, val)]): triples of key, on, val with same
@@ -627,7 +627,7 @@ class OnSuberBase(SuberBase):
                       which to initiate retrieval
             sep (bytes): separator character for split
         """
-        for keys, on, val in (self.db.getOnItemIter(db=self.sdb,
+        for keys, on, val in (self.db.getOnItemIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
@@ -698,8 +698,7 @@ class B64SuberBase(SuberBase):
 
 
     def _toval(self, vals: str|bytes|memoryview|Iterable[str|bytes|memoryview]):
-        """
-        Converts vals to val bytes with proper separators and returns val bytes.
+        """Converts vals to val bytes with proper separators and returns val bytes.
         If vals is already str or bytes or memoryview then returns val bytes.
         Else If vals is iterable (non-str) of strs or bytes or memoryview then
         joins with .sep and converts to val bytes and returns.
@@ -733,9 +732,6 @@ class B64SuberBase(SuberBase):
             if not (Reb64.match(val)):
                 raise ValueError(f"Non Base64 {val=}.")
         return (self.sep.encode().join(vals))
-
-        #return (self.sep.join(val.decode() if hasattr(val, "decode") else val
-                              #for val in vals).encode("utf-8"))
 
 
     def _tovals(self, val: bytes | memoryview):
@@ -820,11 +816,11 @@ class B64Suber(B64SuberBase, Suber):
 
 
 class CesrSuberBase(SuberBase):
-    """
-    Sub class of SuberBase where data is CESR encode/decode ducktyped subclass
+    """Sub class of SuberBase where data is CESR encode/decode ducktyped subclass
     instance such as Matter, Indexer, Counter with .qb64b property when provided
     as fully qualified serialization
     Automatically serializes and deserializes from qb64b to/from CESR instance
+    ._ser override .put .set input value to be instance that is serialized
 
     """
 
@@ -926,12 +922,12 @@ class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
 
 
 class CatCesrSuberBase(CesrSuberBase):
-    """
-    Base Class whose values stored in db are a concatenation of the  .qb64b property
+    """Base Class whose values stored in db are a concatenation of the  .qb64b property
     from one or more  subclass instances (qb64b is bytes of fully qualified
     serialization) that support CESR encode/decode ducktyped subclass instance
     such as Matter, Indexer, Counter
-    Automatically serializes and deserializes from qb64b to/from CESR instances
+    Automatically serializes and deserializes iterable of qb64b to/from CESR instances
+    ._ser override .put .set input value to be instance that is serialized
 
      Attributes:
         db (dbing.LMDBer): base LMDB db
@@ -941,7 +937,7 @@ class CatCesrSuberBase(CesrSuberBase):
                 , each of to Type[coring.Matter etc]
     """
 
-    def __init__(self, *pa, klas: Iterable = None, **kwa):
+    def __init__(self, *pa, klas: Iterable|Type[coring.Matter]|None = None, **kwa):
         """
         Inherited Parameters:
             db (dbing.LMDBer): base db
@@ -953,8 +949,11 @@ class CatCesrSuberBase(CesrSuberBase):
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
                            False means do not reverify. Default False
-            klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
 
         """
         if klas is None:
@@ -1026,8 +1025,11 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
                            False means do not reverify. Default False
-            klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
 
         """
         super(CatCesrSuber, self).__init__(*pa, **kwa)
@@ -1373,8 +1375,11 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
                            False means do not reverify. Default False
-            klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
 
         """
         super(CatCesrIoSetSuber, self).__init__(*pa, **kwa)
@@ -1760,6 +1765,7 @@ class SchemerSuber(SerderSuberBase, Suber):
         super(SchemerSuber, self).__init__(*pa, klas=klas, **kwa)
 
 
+
 class DupSuber(SuberBase):
     """
     Sub DB of LMDBer. Subclass of SuberBase that supports multiple entries at
@@ -1777,6 +1783,8 @@ class DupSuber(SuberBase):
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+            dupsort (bool): True (forced default) means enable duplicates at each key
+                            False  means do not enable duplicates at each key
         """
         super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
 
@@ -1809,29 +1817,6 @@ class DupSuber(SuberBase):
                                 vals=[self._ser(val) for val in vals]))
 
 
-    def add(self, keys: str | bytes | memoryview | Iterable,
-                  val: str | bytes | memoryview ):
-        """
-        Add val to vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
-
-        Parameters:
-            keys (str | bytes | memoryview | Iterable): of key strs to be combined in order to form key
-            val (str | bytes | memoryview): value
-
-        Returns:
-            result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
-
-        """
-        return (self.db.addVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self._ser(val)))
-
-
     def pin(self, keys: str | bytes | memoryview | Iterable,
                   vals: str | bytes | memoryview | Iterable):
         """
@@ -1855,6 +1840,28 @@ class DupSuber(SuberBase):
                                 key=key,
                                 vals=[self._ser(val) for val in vals]))
 
+
+    def add(self, keys: str | bytes | memoryview | Iterable,
+                  val: str | bytes | memoryview ):
+        """
+        Add val to vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): of key strs to be combined in order to form key
+            val (str | bytes | memoryview): value
+
+        Returns:
+            result (bool): True means unique value among duplications,
+                              False means duplicte of same value already exists.
+
+        """
+        return (self.db.addVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self._ser(val)))
 
 
     def get(self, keys: str | bytes | memoryview | Iterable):
@@ -1920,8 +1927,7 @@ class DupSuber(SuberBase):
 
     def rem(self, keys: str | bytes | memoryview | Iterable,
             val: str | bytes | memoryview = b''):
-        """
-        Removes entry at keys
+        """Removes entry at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -1955,11 +1961,45 @@ class CesrDupSuber(CesrSuberBase, DupSuber):
     This is a limitation of dupsort==True sub dbs in LMDB
     """
     def __init__(self, *pa, **kwa):
-        """
+        """Initialize Instance
         Inherited Parameters:
 
         """
         super(CesrDupSuber, self).__init__(*pa, **kwa)
+
+
+class CatCesrDupSuber(CatCesrSuberBase, DupSuber):
+    """
+    Sub class of DupSuber whose values are CESR ducktypes of Matter subclasses.
+    serialized to and deserialied from val instance .qb64b property
+    which is a fully qualified serialization.
+    Automatically serializes and deserializes from qb64b to/from Matter ducktyped
+    instances
+    DupSuber supports multiple entries at each key (duplicates) with dupsort==True
+
+    Do not use if  serialized value is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
+    """
+    def __init__(self, *pa, **kwa):
+        """Initialize Instance
+
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True (forced default) means enable duplicates at each key
+                            False  means do not enable duplicates at each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+            klas (Iterable|Type[coring.Matter]|None): of Class references to
+                    subclasses of CESR compatible Type[coring.Matter etc]Class
+                    reference to subclass of Matter or Indexer or Counter or
+                    any ducktyped class of Matter
+                    None is replaced with default Matter
+
+        """
+        super(CatCesrDupSuber, self).__init__(*pa, **kwa)
 
 
 class IoDupSuber(DupSuber):
@@ -2021,27 +2061,6 @@ class IoDupSuber(DupSuber):
                                      vals=[self._ser(val) for val in vals]))
 
 
-    def add(self, keys: str | bytes | memoryview | Iterable,
-                  val: str | bytes | memoryview):
-        """
-        Add val idempotently  at key made from keys in insertion order using hidden
-        ordinal proem. Idempotently means do not add val that is already in
-        dup vals at key. Does not overwrite.
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-            val (str | bytes | memoryview): serialization
-
-        Returns:
-            result (bool): True means unique value added among duplications,
-                            False means duplicate of same value already exists.
-
-        """
-        return (self.db.addIoDupVal(db=self.sdb,
-                                    key=self._tokey(keys),
-                                    val=self._ser(val)))
-
-
     def pin(self, keys: str | bytes | memoryview | Iterable,
             vals: str | bytes | memoryview | Iterable):
         """
@@ -2064,6 +2083,27 @@ class IoDupSuber(DupSuber):
         return self.db.putIoDupVals(db=self.sdb,
                                      key=key,
                                      vals=[self._ser(val) for val in vals])
+
+
+    def add(self, keys: str | bytes | memoryview | Iterable,
+                  val: str | bytes | memoryview):
+        """
+        Add val idempotently  at key made from keys in insertion order using hidden
+        ordinal proem. Idempotently means do not add val that is already in
+        dup vals at key. Does not overwrite.
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            val (str | bytes | memoryview): serialization
+
+        Returns:
+            result (bool): True means unique value added among duplications,
+                            False means duplicate of same value already exists.
+
+        """
+        return (self.db.addIoDupVal(db=self.sdb,
+                                    key=self._tokey(keys),
+                                    val=self._ser(val)))
 
 
     def get(self, keys: str | bytes | memoryview | Iterable):
@@ -2272,12 +2312,66 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         super(OnIoDupSuber, self).__init__(*pa, **kwa)
 
 
+    def putOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+            vals: str|bytes|memoryview|Iterable = b''):
+        """Put all vals idempotently at key at key made from keys with on suffix
+        in insertion order using hidden ordinal proem. Idempotently means do
+        not put any val in vals that is already in dup vals at key. Does not overwrite.
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            on (int): ordinal number used with onKey(pre,on) to form onkey.
+            vals (Iterable): of str serializations
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        if not isNonStringIterable(vals):  # not iterable
+            vals = (vals, ) if vals else ()  # make iterable
+        return self.db.putOnIoDupVals(db=self.sdb,
+                                      key=self._tokey(keys),
+                                      on=on,
+                                      vals=tuple(self._ser(val) for val in vals),
+                                      sep=self.sep.encode())
+
+
+    def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+            vals: str|bytes|memoryview|Iterable = b''):
+        """
+        Pins (sets) vals at key made from keys with on suffix in insertion order
+        using hidden ordinal proem. Overwrites. Removes all pre-existing vals
+        that share same keys and replaces them with vals
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            on (int): ordinal number used with onKey(pre,on) to form onkey.
+            vals (Iterable): str serializations
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        key = self._tokey(keys)
+        self.db.delOnIoDupVals(db=self.sdb,
+                               key=key,
+                               on=on,
+                               sep=self.sep.encode())
+
+        if not isNonStringIterable(vals):  # not iterable
+            vals = (vals, ) if vals else ()  # make iterable
+        return self.db.putOnIoDupVals(db=self.sdb,
+                                      key=key,
+                                      on=on,
+                                      vals=tuple(self._ser(val) for val in vals),
+                                      sep=self.sep.encode())
+
+
     def addOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
                   val: str | bytes | memoryview = ''):
-        """
-        Add val idempotently  at key made from keys in insertion order using hidden
-        ordinal proem. Idempotently means do not add val that is already in
-        dup vals at key. Does not overwrite.
+        """Add val idempotently at key made from keys with on suffix
+        in insertion order using hidden ordinal proem. Idempotently means do not
+        add any val that is already in dup vals at key. Does not overwrite.
 
         Parameters:
             keys (str | bytes | memoryview | Iterable): top keys as prefix to be
@@ -2315,9 +2409,27 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        sep=self.sep.encode()))
 
 
-    def getOn(self, keys: str | bytes | memoryview | Iterable, on: int = 0):
+    def getOn(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
+        """Gets dup vals list at key made from keys
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key strs to be
+                combined in order to form key
+            on (int): ordinal number used with onKey(pre,on) to form key.
+
+        Returns:
+            vals (list[str]):  values if any else empty tuuple
+
         """
-        Gets dup vals list at key made from keys
+        return [self._des(val) for val in
+                        self.db.getOnIoDupVals(db=self.sdb,
+                                                  key=self._tokey(keys),
+                                                  on=on,
+                                                  sep=self.sep.encode())]
+
+
+    def getOnIter(self, keys: str | bytes | memoryview | Iterable, on: int = 0):
+        """Iterates over dup vals at key made from keys
 
         Parameters:
             keys (str | bytes | memoryview | Iterable): of key strs to be
@@ -2325,15 +2437,12 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
 
         Returns:
-            vals (list):  each item in list is str
-                          empty list if no entry at keys
+            val (Iterator[bytes]):  deserialized val of dups at onkey
 
         """
-        return [self._des(val) for val in
-                        self.db.getOnIoDupValIter(db=self.sdb,
-                                                  key=self._tokey(keys),
-                                                  on=on,
-                                                  sep=self.sep.encode())]
+        for val in (self.db.getOnIoDupValsIter(db=self.sdb,
+                    key=self._tokey(keys), on=on, sep=self.sep.encode())):
+            yield (self._des(val))
 
 
     def remOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
@@ -2371,11 +2480,11 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
 
 
-    def getOnIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def getOnIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns
-            val (Iterator[bytes]):  deserialized val of of each
-                onkey
+            val (Iterator[bytes]):  deserialized val of of each onkey  but
+            increments of on >= on i.e. all key.on beginning with on
 
         Parameters:
             keys (str | bytes | memoryview | iterator): keys as prefix to be
@@ -2384,12 +2493,12 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
-        for val in (self.db.getOnIoDupValIter(db=self.sdb,
+        for val in (self.db.getOnIoDupIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
 
 
-    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns:
             items (Iterator[(top keys, on, val)]): triples of (onkeys, on int,
@@ -2402,7 +2511,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
-        for keys, on, val in (self.db.getOnIoDupItemIter(db=self.sdb,
+        for keys, on, val in (self.db.getOnIoDupItemIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
@@ -2515,3 +2624,4 @@ class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
                            False means do not reverify. Default False
         """
         super(B64OnIoDupSuber, self).__init__(*pa, **kwa)
+

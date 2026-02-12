@@ -10,7 +10,7 @@ from hio.base import doing
 from hio.help import Hict
 
 from keri import help, kering
-from keri.app import connecting, habbing
+from keri.app import organizing, habbing
 from keri.app.agenting import httpClient, WitnessPublisher
 from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
@@ -46,7 +46,7 @@ class AddDoer(doing.DoDoer):
     def __init__(self, name, alias, base, bran, mailbox):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         self.witpub = WitnessPublisher(hby=self.hby)
 
         if mailbox in self.hby.kevers:

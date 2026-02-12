@@ -14,7 +14,7 @@ import sys
 from hio.base import doing
 
 from keri import help, kering
-from keri.app import indirecting, notifying, connecting
+from keri.app import indirecting, notifying, organizing
 from keri.app.cli.common import existing, terming
 from keri.app.cli.common.parsing import Parsery
 from keri.core import scheming
@@ -73,7 +73,7 @@ class ListDoer(doing.DoDoer):
 
         self.hab = self.hby.habByName(alias)
         self.notifier = notifying.Notifier(hby=self.hby)
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])

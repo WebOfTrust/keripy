@@ -16,7 +16,7 @@ from keri.core import (MtrDex, Salter, Signer, Diger, Noncer, Number, Structor,
                        SealEvent, SealSource, Counter, Codens, Seqner, Pather)
 from keri.core import (incept, interact, rotate, delcept, deltate, receipt,
                        query, reply, prod, bare, exchept, exchange)
-from keri.vc import acdcmap
+from keri.acdc import acdcmap
 
 def test_cesr_examples():
     """ Working examples for CESR specification """

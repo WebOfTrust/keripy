@@ -423,29 +423,29 @@ def test_lmdber():
 
         assert dber.appendOnVal(db, preD, digY ) == 0
 
-        assert dber.cntOnVals(db, key=preB) == 5
-        assert dber.cntOnVals(db, key=b'') == 6  # all keys
-        assert dber.cntOnVals(db) == 6  # all keys
+        assert dber.cntOnAll(db, key=preB) == 5
+        assert dber.cntOnAll(db, key=b'') == 6  # all keys
+        assert dber.cntOnAll(db) == 6  # all keys
 
         # iter replay
         # replay preB event items in database
-        items = [item for item in dber.getOnItemIter(db, preB)]
+        items = [item for item in dber.getOnItemIterAll(db, preB)]
         assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
                          (preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 3
-        items = [item for item in dber.getOnItemIter(db, preB, on=3)]
+        items = [item for item in dber.getOnItemIterAll(db, preB, on=3)]
         assert items == [(preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 5
-        items = [item for item in dber.getOnItemIter(db, preB, on=5)]
+        items = [item for item in dber.getOnItemIterAll(db, preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
         assert dber.putVal(db, keyA0, val=digA) == True
         assert dber.putVal(db, keyC0, val=digC) == True
 
-        items = [item  for item in dber.getOnItemIter(db, key=b'')]
+        items = [item  for item in dber.getOnItemIterAll(db, key=b'')]
         assert items == [(preA, 0, digA),
                          (preD, 0, digY),
                          (preB, 0, digU),
@@ -455,7 +455,7 @@ def test_lmdber():
                          (preB, 4, digY),
                          (preC, 0, digC)]
 
-        items = [item  for item in dber.getOnItemIter(db)]
+        items = [item  for item in dber.getOnItemIterAll(db)]
         assert items == [(preA, 0, digA),
                          (preD, 0, digY),
                          (preB, 0, digU),
@@ -467,27 +467,27 @@ def test_lmdber():
 
         # resume replay all starting at preB on=2
         top, on = splitOnKey(keyB2)
-        items = [item for item in dber.getOnItemIter(db, key=top, on=on)]
+        items = [item for item in dber.getOnItemIterAll(db, key=top, on=on)]
         assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
 
         # resume replay all starting at preC on=1
-        items = [item for item in dber.getOnItemIter(db, key=preC, on=1)]
+        items = [item for item in dber.getOnItemIterAll(db, key=preC, on=1)]
         assert items == []
 
         # val replay
         # replay preB event vals in database
-        vals = [val for val in dber.getOnValIter(db, preB)]
+        vals = [val for val in dber.getOnIterAll(db, preB)]
         assert vals == [digU, digV, digW, digX, digY]
 
         # resume replay preB events at on = 3
-        vals = [val for val in dber.getOnValIter(db, preB, on=3)]
+        vals = [val for val in dber.getOnIterAll(db, preB, on=3)]
         assert vals == [digX, digY]
 
         # resume replay preB events at on = 5
-        vals = [val for val in dber.getOnValIter(db, preB, on=5)]
+        vals = [val for val in dber.getOnIterAll(db, preB, on=5)]
         assert vals == []
 
-        vals = [val  for val in dber.getOnValIter(db, key=b'')]
+        vals = [val  for val in dber.getOnIterAll(db, key=b'')]
         assert vals == [digA,
                         digY,
                         digU,
@@ -497,7 +497,7 @@ def test_lmdber():
                         digY,
                         digC]
 
-        vals = [val  for val in dber.getOnValIter(db)]
+        vals = [val  for val in dber.getOnIterAll(db)]
         assert vals == [digA,
                         digY,
                         digU,
@@ -509,11 +509,11 @@ def test_lmdber():
 
         # resume replay all starting at preB on=2
         top, on = splitOnKey(keyB2)
-        vals = [val for val in dber.getOnValIter(db, key=top, on=on)]
+        vals = [val for val in dber.getOnIterAll(db, key=top, on=on)]
         assert vals == [digW, digX, digY]
 
         # resume replay all starting at preC on=1
-        vals = [val for val in dber.getOnValIter(db, key=preC, on=1)]
+        vals = [val for val in dber.getOnIterAll(db, key=preC, on=1)]
         assert vals == []
 
 
@@ -523,7 +523,7 @@ def test_lmdber():
         assert dber.delOnVal(db, key=preB, on=1)
         assert not dber.delOnVal(db, key=preB, on=1)
 
-        items = [item for item in dber.getOnItemIter(db, key=preB)]
+        items = [item for item in dber.getOnItemIterAll(db, key=preB)]
         assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
 
         with pytest.raises(KeyError):
@@ -957,22 +957,38 @@ def test_lmdber():
         assert 2 == dber.appendOnIoDupVal(ldb, key, val=b'm')
         assert 3 == dber.appendOnIoDupVal(ldb, key, val=b'n')
 
-        assert dber.cntOnVals(ldb, key) == 4
+        assert dber.cntOnAll(ldb, key) == 4
 
-        vals = [ bytes(val) for val in dber.getOnIoDupValIter(ldb, key=key)]
-        assert vals == [b'k', b'l', b'm', b'n']
+        vals = [bytes(val) for val in dber.getOnIoDupVals(ldb, key=key)]  # default on=0
+        assert vals == [b'k']
 
-        vals = [ bytes(val) for val in dber.getOnIoDupValIter(ldb, key=key, on=2)]
+        vals = [bytes(val) for val in dber.getOnIoDupVals(ldb, key=key, on=2)]
+        assert vals == [b'm']
+
+        vals = [bytes(val) for val in dber.getOnIoDupValsIter(ldb, key=key)]  # default on=0
+        assert vals == [b'k']
+
+        vals = [bytes(val) for val in dber.getOnIoDupValsIter(ldb, key=key, on=2)]
+        assert vals == [b'm']
+
+        vals = [ bytes(val) for val in dber.getOnIoDupIterAll(ldb, key=key, on=2)]
         assert vals == [ b'm', b'n']
 
 
-        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key)]
+        vals = [ bytes(val) for val in dber.getOnIoDupIterAll(ldb, key=key)]  # default on=0
+        assert vals == [b'k', b'l', b'm', b'n']
+
+        vals = [ bytes(val) for val in dber.getOnIoDupIterAll(ldb, key=key, on=2)]
+        assert vals == [ b'm', b'n']
+
+
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIterAll(ldb, key=key)]
         assert items == [(b'Z', 0, b'k'),
                          (b'Z', 1, b'l'),
                          (b'Z', 2, b'm'),
                          (b'Z', 3, b'n')]
 
-        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key, on=2)]
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIterAll(ldb, key=key, on=2)]
         assert items == [
                          (b'Z', 2, b'm'),
                          (b'Z', 3, b'n')]
@@ -1002,9 +1018,9 @@ def test_lmdber():
         assert dber.addOnIoDupVal(ldb, key, on=1, val=b't')
         assert dber.addOnIoDupVal(ldb, key, on=1, val=b'u')
 
-        assert dber.cntOnVals(ldb, key) == 4
+        assert dber.cntOnAll(ldb, key) == 4
 
-        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key)]
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIterAll(ldb, key=key)]
         assert items == [(b'Y', 0, b'r'),
                          (b'Y', 0, b's'),
                          (b'Y', 1, b't'),
@@ -1012,7 +1028,7 @@ def test_lmdber():
 
         assert dber.delOnIoDupVal(ldb, key, on=0, val=b's')
         assert dber.delOnIoDupVals(ldb, key, on=1)
-        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key)]
+        items = [ (key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIterAll(ldb, key=key)]
         assert items == [(b'Y', 0, b'r')]
 
         # test IoSetVals insertion order set of vals methods.
