@@ -5902,7 +5902,7 @@ class Kevery:
             .db.putDts(dgkey, nowIso8601().encode("utf-8"))
             .db.putWigs(dgkey, [siger.qb64b for siger in sigers])
             .db.putEvt(dgkey, serder.raw)
-            .db.pwes.add(pre, sn, serder.digb)
+            .db.pwes.addOn(pre, sn, serder.digb)
             where:
                 serder is SerderKERI instance of  event
                 wigers is list of Siger instance for of witnesses of event
@@ -5919,7 +5919,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-        for pre, sn, edig in self.db.pwes.getOnItemIter(keys=b''):
+        for pre, sn, edig in self.db.pwes.getOnItemIterAll(keys=b''):
             try:
                 if isinstance(pre, (tuple, list)):
                     pre = pre[0]
@@ -6015,7 +6015,7 @@ class Kevery:
                 # with respect to processing events that result in escrow items.
                 # On re-escrow attempt by process, Pwe escrow is called by
                 # Kever.self.escrowPWEvent Which calls
-                # self.db.pwes.add(pre, sn, serder.digb)
+                # self.db.pwes.addOn(pre, sn, serder.digb)
                 # which in turn will NOT enter dig as dup if one already exists.
                 # So re-escrow attempt will not change the escrowed pwe db.
                 # Non re-escrow ValidationError means some other issue so unescrow.

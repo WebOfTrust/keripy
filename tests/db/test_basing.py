@@ -832,87 +832,91 @@ def test_baser():
         # test .pwes insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
+        deserializedVals = ["z", "m", "x", "a"]
 
         assert db.pwes.getOn(key) == []
-        assert db.pwes.getLast(key) == None
-        assert db.pwes.cnt(key) == 0
+        assert db.pwes.cntOnAll(key) == 0
         assert db.pwes.remOn(key) == False
-        for v in vals:
-            assert db.pwes.addOn(keys=key, on=0, val=v) == True
-        assert db.pwes.getOn(key) == vals  # preserved insertion order
-        assert db.pwes.cnt(key) == len(vals) == 4
-        assert db.pwes.getLast(key) == vals[-1]
-        assert db.pwes.put(key, vals=[b'a']) == False   # duplicate
-        assert db.pwes.getOn(key) == vals  #  no change
-        assert db.pwes.add(key, b'a') == False   # duplicate
-        assert db.pwes.add(key, b'b') == True
-        assert db.pwes.getOn(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in db.pwes.getOnIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
+        assert db.pwes.putOn(keys=key, vals=vals) == True
+        assert db.pwes.getOn(key) == deserializedVals  # preserved insertion order
+        assert db.pwes.cntOnAll(key) == len(vals) == 4
+        assert list(db.pwes.getOnLastIter(key))[0] == deserializedVals[-1]
+        assert db.pwes.putOn(key, vals=[b'a']) == False   # duplicate
+        assert db.pwes.getOn(key) == deserializedVals  #  no change
+        assert db.pwes.addOn(keys=key, val=b"a") == False   # duplicate
+        assert db.pwes.addOn(keys=key, val=b"b") == True
+        assert db.pwes.getOn(key) == deserializedVals + ['b']
+        assert [val for val in db.pwes.getOnIter(key)] == deserializedVals + ['b']
         assert db.pwes.remOn(key) == True
         assert db.pwes.getOn(key) == []
 
         # Setup Tests for getPwesNext and getPwesNextIter
-        aKey = snKey(pre=b'A', sn=1)
+        pre = b"A"
+        aSn = 1
+        aKey = snKey(pre=pre, sn=aSn)
         aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
+        bSn = 2
+        bKey = snKey(pre=pre, sn=bSn)
         bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
+        cSn = 4
+        cKey = snKey(pre=pre, sn=cSn)
         cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
+        dSn = 7
+        dKey = snKey(pre=pre, sn=dSn)
         dVals = [b"k", b"b"]
 
-        assert db.pwes.put(key=aKey, vals=aVals)
-        assert db.pwes.put(key=bKey, vals=bVals)
-        assert db.pwes.put(key=cKey, vals=cVals)
-        assert db.pwes.put(key=dKey, vals=dVals)
+        assert db.pwes.putOn(keys=pre, on=aSn, vals=aVals)
+        assert db.pwes.putOn(keys=pre, on=bSn, vals=bVals)
+        assert db.pwes.putOn(keys=pre, on=cSn, vals=cVals)
+        assert db.pwes.putOn(keys=pre, on=dSn, vals=dVals)
 
 
-        # Test getPweItemsNextIter(key=b"")
+        # Test getOnItemIterAll()
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.pwes.getOnItemIter()]
+        items = [item for item in db.pwes.getOnItemIterAll()]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = snKey(items[0][0][0], items[0][1])
         assert  ikey == aKey
-        vals = [val for  key, val in items]
+        vals = [db.pwes._ser(val) for  key, sn, val in items]
         assert vals ==  aVals + bVals + cVals + dVals
 
-        items = [item for item in db.pwes.getOnItemIter(key=aKey)]
+        items = [item for item in db.pwes.getItemIter(keys=aKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pwes._tokey(items[0][0])
         assert  ikey == aKey
-        vals = [val for  key, val in items]
+        vals = [db.pwes._ser(val) for  key, val in items]
         assert vals == aVals
 
         # bVals
-        items = [item for item in db.pwes.getOnItemIter(key=bKey)]
+        items = [item for item in db.pwes.getItemIter(keys=bKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pwes._tokey(items[0][0])
         assert  ikey == bKey
-        vals = [val for key, val in items]
+        vals = [db.pwes._ser(val) for  key, val in items]
         assert vals == bVals
         for key, val in items:
-            assert db.pwes.remOn(keys=ikey, val=val) == True
+            assert db.pwes.remOn(keys=pre, on=bSn, val=val) == True
 
         # cVals
-        items = [item for item in db.pwes.getOnItemIter(key=cKey)]
+        items = [item for item in db.pwes.getItemIter(keys=cKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pwes._tokey(items[0][0])
         assert  ikey == cKey
-        vals = [val for key, val in items]
+        vals = [db.pwes._ser(val) for  key, val in items]
         assert vals == cVals
         for key, val in items:
-            assert db.pwes.remOn(keys=ikey, val=val) == True
+            assert db.pwes.remOn(keys=pre, on=cSn, val=val) == True
 
         # dVals
-        items = [item for item in db.pwes.getOnItemIter(key=dKey)]
+        items = [item for item in db.pwes.getItemIter(keys=dKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pwes._tokey(items[0][0])
         assert  ikey == dKey
-        vals = [val for key, val in items]
+        vals = [db.pwes._ser(val) for  key, val in items]
         assert vals == dVals
         for key, val in items:
-            assert db.pwes.remOn(keys=ikey, val=val) == True
+            assert db.pwes.remOn(keys=pre, on=dSn, val=val) == True
 
 
         # Unverified Witness Receipt Escrows

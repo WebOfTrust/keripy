@@ -70,7 +70,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pwes = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for pre, sn, edig in hby.db.pwes.getOnItemIter(keys=key):
+                    for pre, sn, edig in hby.db.pwes.getOnItemIterAll(keys=key):
                         try:
                             pwes.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:

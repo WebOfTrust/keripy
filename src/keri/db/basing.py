@@ -1410,8 +1410,8 @@ class Baser(dbing.LMDBer):
             self.delVres(key=k)
         for (k, _) in self.getPseItemIter():
             self.delPses(key=k)
-        print(list(self.pwes.getOnItemIter()))
-        for (pre, sn, dig) in self.pwes.getOnItemIter():
+        print(list(self.pwes.getOnItemIterAll()))
+        for (pre, sn, dig) in self.pwes.getOnItemIterAll():
             pre = pre[0]
             dig = dig.encode("utf-8")
             self.pwes.remOn(keys=pre, on=sn, val=dig)
