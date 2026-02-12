@@ -396,7 +396,7 @@ def test_nonindexed_witness_receipts():
             assert hab.pre in vanKvy.kevers
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # nothing in partial witness escrow
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # nothing in partial witness escrow
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
         assert camHab.pre not in vanKvy.kevers  # still not accepted
@@ -405,13 +405,13 @@ def test_nonindexed_witness_receipts():
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
         assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
-        assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
         assert camHab.pre not in vanKvy.kevers  # not accepted
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # unescrowed from first stage
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # unescrowed from first stage
         assert vanKvy.db.cntUres(snkey) == 0  # out of first stage
         assert vanKvy.db.cntWigs(dgkey) == len(rctMsgs)  # all wigs out now
         assert camHab.pre in vanKvy.kevers  # accepted
@@ -454,7 +454,7 @@ def test_nonindexed_witness_receipts():
         assert vcKvr.sn == 0  # not ixn yet
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # nothing in partial witness escrow
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # nothing in partial witness escrow
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
         assert vcKvr.sn == 0  # not ixn yet
@@ -464,13 +464,13 @@ def test_nonindexed_witness_receipts():
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIxnMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
         assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
-        assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
         assert vcKvr.sn == 0  # not accepted yet
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # unescrowed from first stage
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # unescrowed from first stage
         assert vanKvy.db.cntUres(snkey) == 0  # out of first stage
         assert vanKvy.db.cntWigs(dgkey) == len(rctMsgs)  # all wigs out now
         assert vcKvr.sn == 1  # ixn accepted
@@ -541,7 +541,7 @@ def test_nonindexed_witness_receipts():
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # no change
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # nothing in partial witness escrow
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # nothing in partial witness escrow
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
         assert vcKvr.sn == 1  # not rot yet
@@ -551,13 +551,13 @@ def test_nonindexed_witness_receipts():
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camRotMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
         assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
-        assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
         assert vcKvr.sn == 1  # not accepted yet
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # unescrowed from first stage
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # unescrowed from first stage
         assert vanKvy.db.cntUres(snkey) == 0  # out of first stage
         assert vanKvy.db.cntWigs(dgkey) == len(rctMsgs)  # all wigs out now
         assert vcKvr.sn == 2  # rot accepted
@@ -631,7 +631,7 @@ def test_out_of_order_witnessed_events():
         assert bobHab.pre in bamKvy.kevers
         assert bamKvy.kevers[bobHab.pre].sn == 1
 
-        pwedig = bamHby.db.getPwes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
+        pwedig = bamHby.db.pwes.getOn(keys=bobHab.pre.encode("utf-8"), on=1)
         assert pwedig == []
 
 
