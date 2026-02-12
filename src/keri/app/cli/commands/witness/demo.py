@@ -22,6 +22,8 @@ from keri.core import Salter
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
 parser.add_argument("--loglevel", action="store", required=False, default=os.getenv("KERI_LOG_LEVEL", "CRITICAL"),
                     help="Set log level to DEBUG | INFO | WARNING | ERROR | CRITICAL. Default is CRITICAL")
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
 parser.set_defaults(handler=lambda args: demo(args))
 
 logger = help.ogler.getLogger()
@@ -46,12 +48,12 @@ def demo(args):
     wubcf = configing.Configer(name="wub", headDirPath="scripts", temp=False, reopen=True, clear=False)
     wyzcf = configing.Configer(name="wyz", headDirPath="scripts", temp=False, reopen=True, clear=False)
 
-    wanHby = habbing.Habery(name="wan", salt=Salter(raw=b'wann-the-witness').qb64, temp=False, cf=wancf)
-    wilHby = habbing.Habery(name="wil", salt=Salter(raw=b'will-the-witness').qb64, temp=False, cf=wilcf)
-    wesHby = habbing.Habery(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=False, cf=wescf)
-    witHby = habbing.Habery(name="wit", salt=Salter(raw=b'witn-the-witness').qb64, temp=False, cf=witcf)
-    wubHby = habbing.Habery(name="wub", salt=Salter(raw=b'wubl-the-witness').qb64, temp=False, cf=wubcf)
-    wyzHby = habbing.Habery(name="wyz", salt=Salter(raw=b'wyzs-the-witness').qb64, temp=False, cf=wyzcf)
+    wanHby = habbing.Habery(name="wan", salt=Salter(raw=b'wann-the-witness').qb64, temp=False, cf=wancf, base=args.base)
+    wilHby = habbing.Habery(name="wil", salt=Salter(raw=b'will-the-witness').qb64, temp=False, cf=wilcf, base=args.base)
+    wesHby = habbing.Habery(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=False, cf=wescf, base=args.base)
+    witHby = habbing.Habery(name="wit", salt=Salter(raw=b'witn-the-witness').qb64, temp=False, cf=witcf, base=args.base)
+    wubHby = habbing.Habery(name="wub", salt=Salter(raw=b'wubl-the-witness').qb64, temp=False, cf=wubcf, base=args.base)
+    wyzHby = habbing.Habery(name="wyz", salt=Salter(raw=b'wyzs-the-witness').qb64, temp=False, cf=wyzcf, base=args.base)
 
     doers = [InitDoer(wan=wanHby, wil=wilHby, wes=wesHby, wit=witHby, wub=wubHby, wyz=wyzHby)]
 

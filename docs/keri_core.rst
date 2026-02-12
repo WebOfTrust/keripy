@@ -49,11 +49,15 @@ keri.core.signing
 .. automodule:: keri.core.signing
     :members:
 
-keri.core.streaming
--------------------
+keri.core.annotating
+--------------------
 
-.. automodule:: keri.core.streaming
+.. automodule:: keri.core.annotating
     :members:
+
+.. note::
+   The ``Streamer`` class was moved to :mod:`keri.core.signing` 
+   but remains importable via ``from keri.core import Streamer``.
 
 keri.core.structing
 -------------------

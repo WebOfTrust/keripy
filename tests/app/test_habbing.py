@@ -17,10 +17,10 @@ from keri import help
 from keri.help import helping
 
 from keri import core
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 
 from keri.app import habbing, keeping, configing
-from keri.db import basing
+from keri.db import basing, dbing
 
 
 
@@ -848,6 +848,79 @@ def test_make_other_event():
                        b'],"nt":"1","n":["EIraDaPWlGBU9DnwCaNQ2XVaX8zQQFhnkj8Ir4R5R-Yh"],'
                        b'"bt":"0","br":[],"ba":[],"a":[]}-AABAADGsMs4ifEPuBH9vApQTnJyGCXm'
                        b'p8Sc4CcESKA-q5O0O5CmpCbSrA29UpqZnfvUagrwm8w3M1a1WJKy64OQYXIG')
+
+
+def test_get_own_event():
+    """Test Hab.getOwnEvent: happy path sn=0 and sn=1, delegated duple, error path missing event."""
+    with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="test")
+        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+
+        # Happy path: inception at sn=0
+        serder, sigs, duple = hab.getOwnEvent(sn=0)
+        assert serder.sad["t"] == "icp"
+        assert serder.sad["s"] == "0"
+        assert serder.sad["i"] == hab.pre
+        assert len(sigs) >= 1
+        assert duple is None
+
+        # Happy path: rotation at sn=1
+        hab.rotate()
+        serder, sigs, duple = hab.getOwnEvent(sn=1)
+        assert serder.sad["t"] == "rot"
+        assert serder.sad["s"] == "1"
+        assert serder.sad["i"] == hab.pre
+        assert len(sigs) >= 1
+        assert duple is None  # rotation has no authorizer seal
+
+    # Happy path: delegated hab with authorizer seal (duple is not None)
+    with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        delHab = hby.makeHab(name="delegator")
+        delHab.interact(data=[])  # anchoring event at sn=1
+        anchorSner = coring.Number(num=delHab.kever.sn, code=coring.NumDex.Huge)
+        anchorSaider = coring.Saider(qb64b=delHab.kever.serder.saidb)
+
+        subHab = hby.makeHab(name="delegate", delpre=delHab.pre)
+        dgkey = dbing.dgKey(subHab.pre, subHab.kever.serder.saidb)
+        hby.db.aess.pin(keys=dgkey, val=(anchorSner, anchorSaider))
+
+        serder, sigs, duple = subHab.getOwnEvent(sn=0)
+        assert serder.sad["t"] == "dip"
+        assert serder.sad["i"] == subHab.pre
+        assert duple is not None
+        sner, saider = duple
+        assert sner.sn == delHab.kever.sn
+        assert saider.qb64 == delHab.kever.serder.said
+
+    # Error path: missing event at sn (no event at sn=1 for inception-only hab)
+    with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="other")
+        with pytest.raises(kering.MissingEntryError) as exc_info:
+            hab.getOwnEvent(sn=1)
+        assert hab.pre in str(exc_info.value)
+        assert "1" in str(exc_info.value)
+
+
+def test_make_own_event():
+    """Test Hab.makeOwnEvent: sn=0 vs makeOwnInception, sn=1 after rotate."""
+    with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="test")
+        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+
+        # makeOwnEvent(sn=0) equals makeOwnInception()
+        msg0 = hab.makeOwnEvent(sn=0)
+        msg_icp = hab.makeOwnInception()
+        assert msg0 == msg_icp
+        assert len(msg0) > 0
+        assert msg0.startswith(b'{"v":"KERI10JSON')
+
+        # makeOwnEvent(sn=1) after rotate
+        hab.rotate()
+        msg1 = hab.makeOwnEvent(sn=1)
+        assert len(msg1) > 0
+        serder = serdering.SerderKERI(raw=bytes(msg1))
+        assert serder.sad["t"] == "rot"
+        assert serder.sad["s"] == "1"
 
 
 def test_hab_by_pre():

@@ -13,7 +13,7 @@ from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (MtrDex, Salter, Labeler, Noncer, Mapper, Compactor, Aggor,
                        Blinder, BlindState, BoundState, GenDex)
 from keri.core.eventing import incept
-from keri.vc.messaging import regcept, blindate, update, acdcmap
+from keri.acdc.messaging import regcept, blindate, update, acdcmap
 
 
 def test_acdc_examples_setup():

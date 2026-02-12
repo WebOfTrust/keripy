@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.app import habbing, forwarding, connecting
+from keri.app import habbing, forwarding, organizing
 from keri.app.cli.common import existing 
 from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
@@ -75,7 +75,7 @@ class RespondDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.postman = forwarding.Poster(hby=self.hby)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.respondDo)]
 
         super(RespondDoer, self).__init__(doers=doers)
