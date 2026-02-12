@@ -1317,7 +1317,7 @@ class Baser(dbing.LMDBer):
 
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
         # TODO: clean
-        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Saider)
+        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to group multisig participants AIDs
         # TODO: clean
