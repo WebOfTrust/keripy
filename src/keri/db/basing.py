@@ -2089,7 +2089,7 @@ class Baser(dbing.LMDBer):
         Returns:
            items (Iterator[(pre, fn, val)]): over all items starting at pre, on
         """
-        return self.getOnItemIter(db=self.fels, key=pre, on=fn)
+        return self.getOnItemIterAll(db=self.fels, key=pre, on=fn)
 
 
     def getFelItemAllPreIter(self):
@@ -2109,7 +2109,7 @@ class Baser(dbing.LMDBer):
                 first key in database
         """
         #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
-        return self.getOnItemIter(db=self.fels, key=b'')
+        return self.getOnItemIterAll(db=self.fels, key=b'')
 
     def putDts(self, key, val):
         """
@@ -2643,7 +2643,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
-        return (self.getOnIoDupValIter(self.kels, pre, on=sn))
+        return (self.getOnIoDupIterAll(self.kels, pre, on=sn))
 
         #return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
 
