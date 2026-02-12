@@ -401,7 +401,7 @@ def test_stale_event_receipts():
         # Validate that bam has 2 receipts in DB for event 1
         ser = serdering.SerderKERI(raw=rot0)
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
-        wigs = bamHby.db.getWigs(dgkey)
+        wigs = bamHby.db.wigs.get(dgkey)
         assert len(wigs) == 2
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
@@ -427,7 +427,7 @@ def test_stale_event_receipts():
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         # Validate that bam has 3 receipts in DB for event 1
-        wigs = bamHby.db.getWigs(dgkey)
+        wigs = bamHby.db.wigs.get(dgkey)
         assert len(wigs) == 3
 
         """ Done Test """

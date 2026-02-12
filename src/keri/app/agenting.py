@@ -127,7 +127,7 @@ class Receiptor(doing.DoDoer):
         # send retrieved receipts to all other witnesses
         for wit in rcts:
             ewits = [w for w in rcts if w != wit] # get complement of all other witnesses
-            wigs = [sig for w, sig in rcts.items() if w != wit] # all other witness signatures
+            wigers = [sig for w, sig in rcts.items() if w != wit] # all other witness signatures
 
             msg = bytearray()
             if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
@@ -141,9 +141,9 @@ class Receiptor(doing.DoDoer):
                                        said=ser.said)
             msg.extend(rserder.raw)
             msg.extend(core.Counter(core.Codens.NonTransReceiptCouples,
-                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                msg.extend(wig)
+                                    count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                msg.extend(wiger.qb64b)
 
             client = clients[wit]
 
@@ -365,7 +365,7 @@ class WitnessReceiptor(doing.DoDoer):
                     self.extend([witer])
 
                 # Check to see if we already have all the receipts we need for this event
-                wigs = hab.db.getWigs(dgkey)
+                wigs = hab.db.wigs.get(dgkey)
                 completed = len(wigs) == len(wits)
                 if len(wigs) != len(wits):  # We have all the receipts, skip
                     for idx, witer in enumerate(witers):
@@ -383,7 +383,7 @@ class WitnessReceiptor(doing.DoDoer):
                         _ = (yield self.tock)
 
                     while True:
-                        wigs = hab.db.getWigs(dgkey)
+                        wigs = hab.db.wigs.get(dgkey)
                         if len(wigs) == len(wits):
                             break
                         _ = yield self.tock
@@ -394,7 +394,7 @@ class WitnessReceiptor(doing.DoDoer):
                     continue
 
                 # generate all rct msgs to send to all witnesses
-                awigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
+                awigers = [indexing.Siger(qb64b=wig.qb64b) for wig in wigs]
 
                 # make sure all witnesses have fully receipted KERL and know about each other
                 for witer in witers:

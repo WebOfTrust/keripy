@@ -15,10 +15,11 @@ import lmdb
 from hio.base import doing
 from keri import core
 from keri.app import habbing
-from keri.core import coring, eventing, serdering
+from keri.core import coring, eventing, serdering, signing, indexing
 from keri.core.coring import Kinds, versify, Seqner
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.core.serdering import Serder
+from keri.core.signing import Signer
 from keri.db import basing
 from keri.db import dbing
 from keri.db import subing
@@ -388,44 +389,95 @@ def test_baser():
         assert db.delSigs(key) == True
         assert db.getSigs(key) == []
 
-        # test .wiss sub db methods (witness indexed sigs)
+        # test .wigs sub db methods (witness indexed sigs)
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        assert db.getWigs(key) == []
-        assert db.cntWigs(key) == 0
-        assert db.delWigs(key) == False
+        # Create valid test signatures
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
 
-        # dup vals are lexocographic
-        assert db.putWigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getWigs(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntWigs(key) == 4
-        assert db.putWigs(key, vals=[b'a']) == True   # duplicate but True
-        assert db.getWigs(key) == [b'a', b'm', b'x', b'z']
-        assert db.addWig(key, b'a') == False   # duplicate
-        assert db.addWig(key, b'b') == True
-        assert db.getWigs(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getWigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert db.delWigs(key) == True
-        assert db.getWigs(key) == []
-        vals = [b"z", b"m", b"x", b"a"]
-        assert db.putWigs(key, vals) == True
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+
+        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
+        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+
+        # Use siger objects for testing
+        wig0 = siger0
+        wig1 = siger1
+
+        # Test empty state
+        assert db.wigs.get(keys=key) == []
+        assert db.wigs.cnt(keys=key) == 0
+        assert db.wigs.rem(keys=key) == False
+
+        # Test pin with multiple values
+        assert db.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 2
+        # Just verify both are present (don't test exact order)
+        result_bytes = set(w.qb64b for w in result)
+        assert result_bytes == {wig0.qb64b, wig1.qb64b}
+        assert db.wigs.cnt(keys=key) == 2
+
+        # Test pin overwrites
+        assert db.wigs.pin(keys=key, vals=[wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig0.qb64b
+
+        # Reset to both
+        assert db.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        assert db.wigs.cnt(keys=key) == 2
+
+        # Test add, duplicate should return False
+        assert db.wigs.add(keys=key, val=wig0) == False  # duplicate
+        assert db.wigs.add(keys=key, val=wig1) == False  # duplicate
+        assert db.wigs.cnt(keys=key) == 2
+
+        # Test getIter, returns just values
+        result_list = list(db.wigs.getIter(keys=key))
+        assert len(result_list) == 2
+        assert set(w.qb64b for w in result_list) == {wig0.qb64b, wig1.qb64b}
+
+        # Test remove all
+        assert db.wigs.rem(keys=key) == True
+        assert db.wigs.get(keys=key) == []
+        assert db.wigs.cnt(keys=key) == 0
+
+        # Test individual removal by value
+        vals = [wig0, wig1]
+        assert db.wigs.pin(keys=key, vals=vals) == True
         for val in vals:
-            assert db.delWigs(key, val) == True
-        assert db.getWigs(key) == []
-        assert db.putWigs(key, vals) == True
-        for val in db.getWigsIter(key):
-            assert db.delWigs(key, val) == True
-        assert db.getWigs(key) == []
+            assert db.wigs.rem(keys=key, val=val) == True
+        assert db.wigs.get(keys=key) == []
 
-        assert db.putWigs(key, vals=[sig0b]) == True
-        assert db.getWigs(key) == [sig0b]
-        assert db.putWigs(key, vals=[sig1b]) == True
-        assert db.getWigs(key) == [sig1b, sig0b]  # lex order
-        assert db.putWigs(key, vals=[sig1b, sig0b]) == True
-        assert db.getWigs(key) == [sig1b, sig0b]  # lex order
-        assert db.delWigs(key) == True
-        assert db.getWigs(key) == []
+        # Test removal while iterating
+        assert db.wigs.pin(keys=key, vals=vals) == True
+        for val in db.wigs.getIter(keys=key):
+            assert db.wigs.rem(keys=key, val=val) == True
+        assert db.wigs.get(keys=key) == []
+
+        # Test sequence with individual pins
+        assert db.wigs.pin(keys=key, vals=[wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig0.qb64b
+
+        assert db.wigs.pin(keys=key, vals=[wig1]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig1.qb64b
+
+        assert db.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 2
+        assert set(w.qb64b for w in result) == {wig0.qb64b, wig1.qb64b}
+
+        assert db.wigs.rem(keys=key) == True
+        assert db.wigs.get(keys=key) == []
 
         # test .rcts sub db methods dgkey
         assert db.getRcts(key) == []

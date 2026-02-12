@@ -53,7 +53,7 @@ def rollback(tymth, tock=0.0, **opts):
 
             serder = hab.kever.serder
             dgkey = dbing.dgKey(hab.pre, serder.saidb)
-            wigs = hby.db.getWigs(dgkey)
+            wigs = hby.db.wigs.get(dgkey)
 
             if len(wigs) > 0:
                 raise kering.ValidationError(f"top event at sequence number {hab.kever.sn} has been published to "
@@ -69,7 +69,7 @@ def rollback(tymth, tock=0.0, **opts):
             dgkey = dbing.dgKey(serder.preb, serder.saidb)
             hby.db.delEvt(dgkey)
             hby.db.wits.rem(keys=dgkey)
-            hby.db.delWigs(dgkey)
+            hby.db.wigs.rem(dgkey)
             hby.db.delSigs(dgkey)  # idempotent
             hby.db.delDts(dgkey)  # idempotent do not change dts if already
             hby.db.delKes(dbing.snKey(serder.preb, serder.sn))

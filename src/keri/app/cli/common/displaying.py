@@ -25,7 +25,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         kever = hab.kever
         ser = kever.serder
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
-        wigs = hab.db.getWigs(dgkey)
+        wigs = hab.db.wigs.get(dgkey)
         seal = hab.db.aess.get(keys=dbing.dgKey(ser.preb, kever.lastEst.d))
 
         print(f"Alias: \t{hab.name}")
@@ -84,7 +84,7 @@ def printExternal(hby, pre, label="Identifier"):
     kever = hby.kevers[pre]
     ser = kever.serder
     dgkey = dbing.dgKey(ser.preb, ser.saidb)
-    wigs = hby.db.getWigs(dgkey)
+    wigs = hby.db.wigs.get(dgkey)
     anchor = hby.db.aess.get(keys=dbing.dgKey(ser.preb, kever.lastEst.d))
 
     print("{}: {}".format(label, pre))

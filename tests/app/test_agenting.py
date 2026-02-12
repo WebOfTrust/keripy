@@ -75,8 +75,8 @@ class ReceiptDoer(doing.DoDoer):
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
         while True:
-            wilWigs = self.wilHab.db.getWigs(dgkey)
-            wanWigs = self.wanHab.db.getWigs(dgkey)
+            wilWigs = self.wilHab.db.wigs.get(dgkey)
+            wanWigs = self.wanHab.db.wigs.get(dgkey)
             if len(wilWigs) == 2 and len(wanWigs) == 2:
                 break
             yield self.tock
@@ -98,9 +98,9 @@ class ReceiptDoer(doing.DoDoer):
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
         while True:
-            wilWigs = self.wilHab.db.getWigs(dgkey)
-            wanWigs = self.wanHab.db.getWigs(dgkey)
-            wesWigs = self.wesHab.db.getWigs(dgkey)
+            wilWigs = self.wilHab.db.wigs.get(dgkey)
+            wanWigs = self.wanHab.db.wigs.get(dgkey)
+            wesWigs = self.wesHab.db.wigs.get(dgkey)
             if len(wilWigs) == 3 and len(wanWigs) == 3 and len(wesWigs) == 3:
                 break
             yield self.tock
@@ -196,9 +196,9 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
                 kev = hab.kever
                 ser = kev.serder
                 dgkey = dbing.dgKey(ser.preb, ser.saidb)
-                wigs.extend(wanHab.db.getWigs(dgkey))
-                wigs.extend(wilHab.db.getWigs(dgkey))
-                wigs.extend(wesHab.db.getWigs(dgkey))
+                wigs.extend(wanHab.db.wigs.get(dgkey))
+                wigs.extend(wilHab.db.wigs.get(dgkey))
+                wigs.extend(wesHab.db.wigs.get(dgkey))
 
             if len(wigs) == 18:
                 break
@@ -209,11 +209,11 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         ser = kev.serder
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
-        wigs = wanHab.db.getWigs(dgkey)
+        wigs = wanHab.db.wigs.get(dgkey)
         assert len(wigs) == 3
-        wigs = wilHab.db.getWigs(dgkey)
+        wigs = wilHab.db.wigs.get(dgkey)
         assert len(wigs) == 3
-        wigs = wesHab.db.getWigs(dgkey)
+        wigs = wesHab.db.wigs.get(dgkey)
         assert len(wigs) == 3
 
 
