@@ -558,44 +558,81 @@ def test_baser():
         stored = db.vrcs.get(key)
         assert len(stored) == 1
         sp1, sn1, se1, ss1 = stored[0]
-        items = list(db.vrcs.getIter(key))
 
         assert sp1.qb64 == p1.qb64
         assert sn1.num == n1.num
         assert se1.qb64 == e1.qb64
         assert ss1.raw == s1.raw
 
-        # # dup vals are lexocographic
-        # assert db.vrcs.put(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        # assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
-        # assert db.cntVrcs(key) == 4
-        # assert db.vrcs.put(key, vals=[b'a']) == True   # duplicate
-        # assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
-        # assert db.addVrc(key, b'a') == False   # duplicate
-        # assert db.addVrc(key, b'b') == True
-        # assert db.getVrcs(key) == [b'a', b'b', b'm', b'x', b'z']
-        # assert [val for val in db.getVrcsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        # assert db.delVrcs(key) == True
-        # assert db.getVrcs(key) == []
-        # vals = [b"z", b"m", b"x", b"a"]
-        # assert db.vrcs.put(key, vals) == True
-        # for val in vals:
-        #     assert db.delVrcs(key, val) == True
-        # assert db.getVrcs(key) == []
-        # assert db.vrcs.put(key, vals) == True
-        # for val in db.getVrcsIter(key):
-        #     assert db.delVrcs(key, val) == True
-        # assert db.getVrcs(key) == []
+        assert db.vrcs.rem(key) == True
 
-        # assert db.vrcs.put(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
-        # assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        # assert db.vrcs.put(key, vals=[valb + vdigb + vsig1b]) == True
-        # assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        # assert db.delVrcs(key) == True
-        # assert db.vrcs.put(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
-        # assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        # assert db.delVrcs(key) == True
-        # assert db.getVrcs(key) == []
+        # # dup vals are lexocographic
+        # Build several distinct typed CESR quadruples
+        pA = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        pB = coring.Prefixer(qb64="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+        pC = coring.Prefixer(qb64="BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+        pD = coring.Prefixer(qb64="BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+
+        nA = core.Number(num=1)
+        nB = core.Number(num=2)
+        nC = core.Number(num=3)
+        nD = core.Number(num=4)
+
+        eA = coring.Diger(ser=b"estA")
+        eB = coring.Diger(ser=b"estB")
+        eC = coring.Diger(ser=b"estC")
+        eD = coring.Diger(ser=b"estD")
+
+        sA = core.Siger(raw=b"\x00" * 64)
+        sB = core.Siger(raw=b"\x01" * 64)
+        sC = core.Siger(raw=b"\x02" * 64)
+        sD = core.Siger(raw=b"\x03" * 64)
+
+        quadA = (pA, nA, eA, sA)
+        quadB = (pB, nB, eB, sB)
+        quadC = (pC, nC, eC, sC)
+        quadD = (pD, nD, eD, sD)
+
+        vals = [quadD, quadB, quadC, quadA]   # intentionally out of order
+
+        # Initially empty
+        assert db.vrcs.get(key) == []
+        assert db.vrcs.cnt(key) == 0
+
+        # Insert multiple typed tuples
+        assert db.vrcs.put(key, vals) is True
+
+        # Insertion order is preserved
+        stored = db.vrcs.get(key)
+        assert len(stored) == len(vals)
+        for (sp, sn, se, ss), (ep, en, ee, es) in zip(stored, vals):
+            assert sp.qb64 == ep.qb64
+            assert sn.num == en.num
+            assert se.qb64 == ee.qb64
+            assert ss.raw == es.raw
+
+        assert db.vrcs.cnt(key) == 4
+
+        # Duplicate insertion should not add new entries
+        assert db.vrcs.put(key, [quadA]) == False
+        assert db.vrcs.put(key, [quadB]) == False   # quadB already present → no change
+        assert db.vrcs.put(key, [quadD]) == False   # quadD already present → no change
+        assert db.vrcs.put(key, [quadC]) == False   # quadC already present → no change
+
+        # Iteration returns the same tuples in insertion order
+        itered = list(db.vrcs.getIter(key))
+        for (sp, sn, se, ss), (ep, en, ee, es) in zip(itered, vals):
+            assert sp.qb64 == ep.qb64
+            assert sn.num == en.num
+            assert se.qb64 == ee.qb64
+            assert ss.raw == es.raw
+
+        # Remove individual tuples
+        for quad in vals:
+            assert db.vrcs.rem(key, quad) == True
+
+        assert db.vrcs.get(key) == []
+        assert db.vrcs.cnt(key) == 0
 
 
         # Unverified Validator (transferable) Receipt Escrows
