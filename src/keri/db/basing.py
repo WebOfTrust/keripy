@@ -611,6 +611,7 @@ class Baser(dbing.LMDBer):
         prefixes (OrderedSet): local prefixes corresponding to habitats for this db
 
         .evts is named subDB instance of SerderSuber whose values are serialized
+            key events
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
