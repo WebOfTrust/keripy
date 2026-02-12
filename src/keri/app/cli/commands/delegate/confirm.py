@@ -108,11 +108,8 @@ class ConfirmDoer(doing.DoDoer):
         while True:
             esc = self.escrowed()
             for pre, sn, edig in esc:
-                dgkey = dbing.dgKey(pre, edig)
-                eraw = self.hby.db.getEvt(dgkey)
-                if eraw is None:
+                if (eserder := self.hby.db.evts.get(keys=(pre, edig))) is None:
                     continue
-                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                 ilk = eserder.sad["t"]
                 if ilk in (coring.Ilks.dip,):
