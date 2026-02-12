@@ -52,7 +52,7 @@ def escrows(tymth, tock=0.0, **opts):
                 oots = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:
-                    for pre, sn, edig in hby.db.ooes.getOnItemIter(keys=key):
+                    for pre, sn, edig in hby.db.ooes.getOnItemIterAll(keys=key):
                         try:
                             oots.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
@@ -86,7 +86,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pses = list()
                 key = ekey = b''  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for pre, sn, edig in hby.db.pses.getOnItemIter(keys=key):
+                    for pre, sn, edig in hby.db.pses.getOnItemIterAll(keys=key):
                         try:
                             pses.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:

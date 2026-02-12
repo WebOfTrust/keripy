@@ -1401,13 +1401,12 @@ class Baser(dbing.LMDBer):
             self.delUres(key=k)
         for (k, _) in self.vres.getItemIter():
             self.vres.rem(keys=k)
-        for (k, _) in self.pses.getItemIter():
-            self.pses.rem(keys=k)
+        for (pre, on, dig) in self.pses.getOnItemIterAll():
+            self.pses.remOn(keys=pre, on=on, val=dig)
         for (k, _) in self.getPweItemIter():
             self.delPwes(key=k)
-        for (pre, on, dig) in self.ooes.getOnItemIter():
+        for (pre, on, dig) in self.ooes.getOnItemIterAll():
             self.ooes.remOn(keys=pre, on=on, val=dig)
-            print(self.ooes.getOn(keys=pre))
         for (k, _) in self.getLdeItemIter():
             self.delLdes(key=k)
         for (pre, said), edig in self.qnfs.getItemIter():

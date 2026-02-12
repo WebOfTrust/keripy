@@ -802,9 +802,7 @@ def test_out_of_order_escrow():
         # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
         escrows = kvy.db.ooes.getOn(keys=pre, on=1)
-        assert len(escrows) == 2        # since getOn() is iterating forward until the prefix changes, it also returns on=2
-        escrows = kvy.db.ooes.get(dbing.snKey(pre, 1)) 
-        assert len(escrows) == 1    # we can still check using the IoDupSuber get()
+        assert len(escrows) == 1     
         assert escrows[0] == ixndig #  escrow entry for event
 
         # verify Kevery process out of order escrow is idempotent to previously escrowed events
@@ -812,7 +810,7 @@ def test_out_of_order_escrow():
         kvy.processEscrowOutOfOrders()
         assert pre not in kvy.kevers  # event not accepted
         escrows = kvy.db.ooes.getOn(keys=pre, on=1)
-        assert len(escrows) == 2
+        assert len(escrows) == 1
         assert escrows[0] == ixndig    #  escrow entry for event
 
         # Process partials but stale escrow  set Timeout to 0
@@ -841,7 +839,7 @@ def test_out_of_order_escrow():
         # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
         escrows = kvy.db.ooes.getOn(keys=pre, on=1)
-        assert len(escrows) == 2
+        assert len(escrows) == 1
         assert escrows[0] == ixndig  #  escrow entry for event
         # re-apply inception msg to Kevery to process
         psr.parse(ims=bytearray(icpmsg), kvy=kvy)
@@ -855,7 +853,7 @@ def test_out_of_order_escrow():
         assert len(escrows) == 1
         assert escrows[0] == rotdig  #  escrow entry for event
         escrows = kvy.db.ooes.getOn(keys=pre, on=1)
-        assert len(escrows) == 2
+        assert len(escrows) == 1
         assert escrows[0] == ixndig  #  escrow entry for event
 
         # Process out of order escrow

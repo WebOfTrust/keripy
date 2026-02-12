@@ -5634,7 +5634,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-        for pre, sn, edig in self.db.ooes.getOnItemIter():
+        for pre, sn, edig in self.db.ooes.getOnItemIterAll():
 
             if isinstance(pre, (tuple, list)):
                 pre = pre[0]
@@ -5765,7 +5765,7 @@ class Kevery:
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
-        for pre, sn, edig in self.db.pses.getOnItemIter():
+        for pre, sn, edig in self.db.pses.getOnItemIterAll():
             eserder = None
             try:
                 if isinstance(pre, (tuple, list)):
