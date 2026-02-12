@@ -774,11 +774,11 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .pwes is named sub DB of partially witnessed key event escrowes
-            that each map pre + sequence number to serialized event digest.
+        .pwes is named subDB instance of OnIoDupSuber for partially witnessed 
+            key event escrows that each map under a composite 
+            keys of the form "<pre><sep><on>" to serialized event digest.
             these are for escrows of events with verified signatures but not
-            yet verified witness reciepts.
-            snKey
+            yet verified witness receipts.
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
