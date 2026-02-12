@@ -1018,7 +1018,7 @@ class Baser(dbing.LMDBer):
         self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
-        self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
+        self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
@@ -1391,8 +1391,12 @@ class Baser(dbing.LMDBer):
             self.delVres(key=k)
         for (k, _) in self.getPseItemIter():
             self.delPses(key=k)
-        for (k, _) in self.getPweItemIter():
-            self.delPwes(key=k)
+        print(list(self.pwes.getOnItemIter()))
+        for (pre, sn, dig) in self.pwes.getOnItemIter():
+            pre = pre[0]
+            dig = dig.encode("utf-8")
+            self.pwes.remOn(keys=pre, on=sn, val=dig)
+        print(self.pwes.getOn(keys=pre))
         for (k, _) in self.getOoeItemIter():
             self.delOoes(key=k)
         for (k, _) in self.getLdeItemIter():
@@ -2795,67 +2799,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoDupVal(self.pses, key, val)
 
-
-    def putPwes(self, key, vals):
-        """
-        Use snKey()
-        Write each partial witnessed escrow event entry from list of bytes dig vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.pwes, key, vals)
-
-    def addPwe(self, key, val):
-        """
-        Use snKey()
-        Add Partial witnessed escrow dig val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.pwes, key, val)
-
-    def getPwes(self, key):
-        """
-        Use snKey()
-        Return list of witnessed signed escrowed event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.pwes, key)
-
-    def getPwesIter(self, key):
-        """
-        Use sgKey()
-        Return iterator of partial witnessed escrowed event dig vals at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.pwes, key)
-
-    def getPweLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial witnessed escrowed event dig val at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.pwes, key)
-
-    def getPweItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial witnessed escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.pwes, key)
-        #return self.getIoDupItemsNextIter(self.pwes, key, skip)
-
     #def getPweIoDupItemIter(self, key=b''):
         #"""
         #Use sgKey()
@@ -2868,33 +2811,7 @@ class Baser(dbing.LMDBer):
         #"""
         #return self.getTopIoDupItemIter(self.pwes, key)
 
-    def cntPwes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig vals at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.pwes, key)
 
-    def delPwes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key in db.
-        Returns True If key  exists in db Else False
-        """
-        return self.delIoDupVals(self.pwes, key)
-
-    def delPwe(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.pwes, key, val)
 
     def putOoes(self, key, vals):
         """

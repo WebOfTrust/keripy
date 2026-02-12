@@ -818,22 +818,23 @@ def test_baser():
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert db.getPwes(key) == []
-        assert db.getPweLast(key) == None
-        assert db.cntPwes(key) == 0
-        assert db.delPwes(key) == False
-        assert db.putPwes(key, vals) == True
-        assert db.getPwes(key) == vals  # preserved insertion order
-        assert db.cntPwes(key) == len(vals) == 4
-        assert db.getPweLast(key) == vals[-1]
-        assert db.putPwes(key, vals=[b'a']) == False   # duplicate
-        assert db.getPwes(key) == vals  #  no change
-        assert db.addPwe(key, b'a') == False   # duplicate
-        assert db.addPwe(key, b'b') == True
-        assert db.getPwes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in db.getPwesIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delPwes(key) == True
-        assert db.getPwes(key) == []
+        assert db.pwes.getOn(key) == []
+        assert db.pwes.getLast(key) == None
+        assert db.pwes.cnt(key) == 0
+        assert db.pwes.remOn(key) == False
+        for v in vals:
+            assert db.pwes.addOn(keys=key, on=0, val=v) == True
+        assert db.pwes.getOn(key) == vals  # preserved insertion order
+        assert db.pwes.cnt(key) == len(vals) == 4
+        assert db.pwes.getLast(key) == vals[-1]
+        assert db.pwes.put(key, vals=[b'a']) == False   # duplicate
+        assert db.pwes.getOn(key) == vals  #  no change
+        assert db.pwes.add(key, b'a') == False   # duplicate
+        assert db.pwes.add(key, b'b') == True
+        assert db.pwes.getOn(key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert [val for val in db.pwes.getOnIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
+        assert db.pwes.remOn(key) == True
+        assert db.pwes.getOn(key) == []
 
         # Setup Tests for getPwesNext and getPwesNextIter
         aKey = snKey(pre=b'A', sn=1)
@@ -845,23 +846,23 @@ def test_baser():
         dKey = snKey(pre=b'A', sn=7)
         dVals = [b"k", b"b"]
 
-        assert db.putPwes(key=aKey, vals=aVals)
-        assert db.putPwes(key=bKey, vals=bVals)
-        assert db.putPwes(key=cKey, vals=cVals)
-        assert db.putPwes(key=dKey, vals=dVals)
+        assert db.pwes.put(key=aKey, vals=aVals)
+        assert db.pwes.put(key=bKey, vals=bVals)
+        assert db.pwes.put(key=cKey, vals=cVals)
+        assert db.pwes.put(key=dKey, vals=dVals)
 
 
         # Test getPweItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getPweItemIter()]
+        items = [item for item in db.pwes.getOnItemIter()]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals ==  aVals + bVals + cVals + dVals
 
-        items = [item for item in db.getPweItemIter(key=aKey)]
+        items = [item for item in db.pwes.getOnItemIter(key=aKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
@@ -869,34 +870,34 @@ def test_baser():
         assert vals == aVals
 
         # bVals
-        items = [item for item in db.getPweItemIter(key=bKey)]
+        items = [item for item in db.pwes.getOnItemIter(key=bKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == bKey
         vals = [val for key, val in items]
         assert vals == bVals
         for key, val in items:
-            assert db.delPwe(ikey, val) == True
+            assert db.pwes.remOn(keys=ikey, val=val) == True
 
         # cVals
-        items = [item for item in db.getPweItemIter(key=cKey)]
+        items = [item for item in db.pwes.getOnItemIter(key=cKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == cKey
         vals = [val for key, val in items]
         assert vals == cVals
         for key, val in items:
-            assert db.delPwe(ikey, val) == True
+            assert db.pwes.remOn(keys=ikey, val=val) == True
 
         # dVals
-        items = [item for item in db.getPweItemIter(key=dKey)]
+        items = [item for item in db.pwes.getOnItemIter(key=dKey)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == dKey
         vals = [val for key, val in items]
         assert vals == dVals
         for key, val in items:
-            assert db.delPwe(ikey, val) == True
+            assert db.pwes.remOn(keys=ikey, val=val) == True
 
 
         # Unverified Witness Receipt Escrows
@@ -1827,7 +1828,8 @@ def test_clear_escrows():
         db.putUres(key, vals)
         db.putVres(key, vals)
         db.putPses(key, vals)
-        db.putPwes(key, vals)
+        for v in vals:
+            db.pwes.addOn(keys=key, on=0, val=v)
         db.putOoes(key, vals)
         db.putLdes(key, vals)
 
@@ -1893,7 +1895,7 @@ def test_clear_escrows():
         assert db.getUres(key) == []
         assert db.getVres(key) == []
         assert db.getPses(key) == []
-        assert db.getPwes(key) == []
+        assert db.pwes.getOn(key) == []
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
         assert db.getLdes(key) == []
