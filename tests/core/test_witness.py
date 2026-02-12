@@ -618,8 +618,8 @@ def test_out_of_order_witnessed_events():
 
         # Ensure the rot ended up in out-of-order escrow
         assert bobHab.pre not in bamKvy.kevers
-        oodig = bamHby.db.getOoes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
-        assert bobRot.saidb == bytes(oodig[0])
+        oodig = bamHby.db.ooes.getOn(keys=bobHab.pre.encode("utf-8"), on=1)
+        assert bobRot.saidb == oodig[0].encode("utf-8")
 
         # Pass the icp to Bam, process escrows and see if the fully
         # receipted event lands in Bam's Kevery
