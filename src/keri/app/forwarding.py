@@ -540,8 +540,8 @@ def introduce(hab, wit):
             if bytes(quadruple).decode("utf-8").startswith(hab.pre):
                 found = True  # yes so don't send own inception
     else:  # find if already rcts of own icp
-        for couple in hab.db.getRctsIter(dgkey):
-            if bytes(couple).decode("utf-8").startswith(hab.pre):
+        for prefixer, cigar in hab.db.rcts.getIter(dgkey):
+            if prefixer.qb64.startswith(hab.pre):
                 found = True  # yes so don't send own inception
 
     if not found:  # no receipt from remote so send own inception

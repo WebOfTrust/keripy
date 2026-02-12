@@ -720,16 +720,15 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .rcts is named sub DB of event receipt couplets from nontransferable
+        .rcts is CatCesrIoSetSuber for event receipt couplets from nontransferable
             signers.
             These are endorsements from nontrasferable signers who are not witnesses
             May be watchers or other
-            Each couple is concatenation of fully qualified items.
-            These are: non-transferale prefix plus non-indexed event signature
-            by that prefix.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+            Each entry is a duple of CESR objects: Prefixer and Cigar
+            DB is keyed by dgKey: identifier prefix plus digest of serialized event
+            Multiple values per key are stored as an ordered set (duplicates ignored,
+            insertion order preserved)
+
 
         .ures is named sub DB of unverified event receipt escrowed triples from
             non-transferable signers. Each triple is concatenation of fully
@@ -1014,7 +1013,8 @@ class Baser(dbing.LMDBer):
                                         klas=(coring.Number, coring.Saider))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
-        self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
+        self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
+                                             klas=(coring.Prefixer, coring.Cigar))
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
         self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
@@ -1700,11 +1700,12 @@ class Baser(dbing.LMDBer):
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
-        if coups := self.getRcts(key=dgkey):
+        if coups := self.rcts.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.NonTransReceiptCouples,
                                     count=len(coups), version=kering.Vrsn_1_0).qb64b)
-            for coup in coups:
-                atc.extend(coup)
+            for prefixer, cigar in coups:
+                atc.extend(prefixer.qb64b)
+                atc.extend(cigar.qb64b)
 
         # add first seen replay couple to attachments
         if not (dts := self.getDts(key=dgkey)):
@@ -2255,66 +2256,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.wigs, key, val)
-
-    def putRcts(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes receipt couplets vals to key
-        Couple is pre+cig (non indexed signature)
-        Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.rcts, key, vals)
-
-    def addRct(self, key, val):
-        """
-        Use dgKey()
-        Add receipt couple val bytes as dup to key in db
-        Couple is pre+cig (non indexed signature)
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.rcts, key, val)
-
-    def getRcts(self, key):
-        """
-        Use dgKey()
-        Return list of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.rcts, key)
-
-    def getRctsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.rcts, key)
-
-    def cntRcts(self, key):
-        """
-        Use dgKey()
-        Return count of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.rcts, key)
-
-    def delRcts(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.rcts, key, val)
 
     def putUres(self, key, vals):
         """
