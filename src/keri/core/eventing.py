@@ -6080,7 +6080,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (epre,), esn, edig in self.db.pdes.getOnItemIter(keys=b''):
+        for (epre,), esn, edig in self.db.pdes.getOnItemIterAll(keys=b''):
             try:
                 #pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                 dgkey = dgKey(epre, edig)

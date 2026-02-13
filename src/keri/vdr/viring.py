@@ -692,7 +692,7 @@ class Reger(dbing.LMDBer):
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
         """
-        return self.getOnItemIter(db=self.tels, key=pre, on=fn)
+        return self.getOnItemIterAll(db=self.tels, key=pre, on=fn)
 
     def cntTels(self, pre, fn=0):
         """
@@ -706,7 +706,7 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
-        return self.cntOnVals(db=self.tels, key=pre, on=fn)
+        return self.cntOnAll(db=self.tels, key=pre, on=fn)
 
     def getTibs(self, key):
         """
