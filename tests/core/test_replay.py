@@ -483,6 +483,9 @@ def test_replay():
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 8
+        # Explicit receipt+firner path: clone replay receipt processing uses
+        # fels.getOn(keys=pre, on=firner.sn) to look up the event digest.
+        assert artHab.db.fels.getOn(keys=debHab.pre, on=0) == debHab.iserder.said
         artDebFelMsgs = artHab.replay(pre=debHab.pre)
         assert len(artDebFelMsgs) == 9638
 
@@ -631,6 +634,8 @@ def test_replay_all():
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 10
+        # Explicit receipt+firner path: fels.getOn(keys=pre, on=firner.sn) in clone replay
+        assert artHab.db.fels.getOn(keys=debHab.pre, on=0) == debHab.iserder.said
         artAllFelMsgs = artHab.replayAll()
         assert len(artAllFelMsgs) == 12717 #12113
 

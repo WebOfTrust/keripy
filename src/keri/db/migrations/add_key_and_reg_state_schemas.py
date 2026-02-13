@@ -136,8 +136,8 @@ def migrateKeys(db):
     digs = subing.CatCesrIoSetSuber(db=db, subkey="digs.",
                                     klas=(coring.Prefixer, coring.Seqner))
 
-    for pre, fn, dig in db.getFelItemAllPreIter():
-        dgkey = dbing.dgKey(pre, dig)  # get message
+    for keys, fn, dig in db.fels.getOnItemIterAll(keys=b'', on=0):
+        dgkey = dbing.dgKey(keys[0], dig)  # get message
         if not (raw := db.getEvt(key=dgkey)):
             logger.info(f"Migrate keys: missing event for dig={dig}, skipped.")
             continue

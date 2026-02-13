@@ -141,8 +141,8 @@ def test_partial_signed_escrow():
         assert pdtsb == adtsb
 
         # get first seen
-        fsdig = kvy.db.getFe(dbing.fnKey(pre, 0))
-        assert fsdig == srdr.saidb
+        fsdig = kvy.db.fels.getOn(keys=pre, on=0)
+        assert fsdig == srdr.saidb.decode("utf-8")
 
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
@@ -254,8 +254,8 @@ def test_partial_signed_escrow():
         assert pdtsb == adtsb
 
         # get first seen
-        fsdig = kvy.db.getFe(dbing.fnKey(pre, 1))
-        assert fsdig == srdr.saidb
+        fsdig = kvy.db.fels.getOn(keys=pre, on=1)
+        assert fsdig == srdr.saidb.decode("utf-8")
 
         # Create rotation event
         # get current keys as verfers and next digests as digers
@@ -346,8 +346,8 @@ def test_partial_signed_escrow():
         assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
         # get first seen
-        fsdig = kvy.db.getFe(dbing.fnKey(pre, 3))
-        assert fsdig == srdr.saidb
+        fsdig = kvy.db.fels.getOn(keys=pre, on=3)
+        assert fsdig == srdr.saidb.decode("utf-8")
 
     assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)

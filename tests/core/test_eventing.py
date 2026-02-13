@@ -20,7 +20,7 @@ from keri.core.coring import (Diger, MtrDex, Matter,
                               Cigar,
                               Seqner, Verfer, Prefixer, DigDex)
 from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
-from keri.core.eventing import Kever, Kevery
+from keri.core.eventing import Kever, Kevery, UnverifiedReceiptError
 from keri.core.eventing import (SealDigest, SealRoot, SealBack,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
 from keri.core.eventing import (TraitDex, LastEstLoc, Kinds, versify,
@@ -3490,6 +3490,36 @@ def test_receipt():
 
     assert not os.path.exists(valKevery.db.path)
     assert not os.path.exists(coeKever.db.path)
+
+    """ Done Test """
+
+
+def test_process_attached_receipt_couples_firner_missing_fels():
+    """
+    When processAttachedReceiptCouples is called with firner set (clone replay mode)
+    but the db has no fels entry at firner.sn, it must escrow and raise
+    UnverifiedReceiptError. This explicitly tests the fels.getOn(keys=pre, on=firner.sn)
+    path in receipt processing.
+    """
+    salter = core.Salter(raw=b'firner_missing_fels_test_seed_0123456789')
+    signer = salter.signers(count=1, path="ctl", temp=True)[0]
+    valSigner = salter.signers(count=1, path="val", transferable=False, temp=True)[0]
+
+    serder = incept(keys=[signer.verfer.qb64], ndigs=[coring.Diger(ser=signer.verfer.qb64b).qb64])
+    valCigar = valSigner.sign(ser=serder.raw)
+
+    with openDB(name="firner_test") as db:
+        kvy = Kevery(db=db)
+        # DB is empty: no event, no fels entry at (pre, 0). Call with firner so
+        # processAttachedReceiptCouples uses fels.getOn(keys=pre, on=0) -> None.
+        with pytest.raises(UnverifiedReceiptError) as exc_info:
+            kvy.processAttachedReceiptCouples(serder, [valCigar], firner=Seqner(sn=0))
+        assert "Unverified receipt=" in str(exc_info.value)
+        # Receipt must be escrowed (addUre via escrowUReceipt)
+        sn = int(serder.sn, 16) if isinstance(serder.sn, str) else int(serder.sn)
+        ures = db.getUres(key=snKey(pre=serder.preb, sn=sn))
+        assert len(ures) == 1
+        assert bytes(ures[0]).startswith(serder.said.encode("utf-8"))
 
     """ Done Test """
 
