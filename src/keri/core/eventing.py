@@ -5364,7 +5364,7 @@ class Kevery:
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
-        self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.ldes.addOn(keys=serder.preb, on=serder.sn, val=serder.saidb)
         # log duplicitous
         logger.debug("Kevery process: escrowed likely duplicitous event=\n%s\n", serder.pretty())
 
@@ -7003,10 +7003,12 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, edig in self.db.getLdeItemIter(key=key):
+            for pre, sn, edig in self.db.ldes.getOnItemIter(keys=key):
                 try:
-                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
-                    dgkey = dgKey(pre, bytes(edig))
+                    # pre and sn are already unpacked
+                    ekey = snKey(pre, sn)
+                    edig = edig.encode("utf-8")  # convert to bytes for legacy compatibility
+                    dgkey = dgKey(pre, edig)
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local source so raise ValidationError which unescrows below
                         msg = f"DUP Missing escrowed event source at dig = {bytes(edig)}"
@@ -7073,7 +7075,7 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than likely duplicitous so remove from escrow
-                    self.db.delLde(snKey(pre, sn), edig)  # removes one escrow at key val
+                    self.db.ldes.remOn(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.trace("Kevery: DUP other unescrow error: %s\n", ex.args[0])
                         logger.exception("Kevery: DUP other unescrow error: %s\n", ex.args[0])
@@ -7082,7 +7084,7 @@ class Kevery:
                     # We don't remove all escrows at pre,sn because some might be
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
-                    self.db.delLde(snKey(pre, sn), edig)  # removes one escrow at key val
+                    self.db.ldes.remOn(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                     logger.info("Kevery DUP unescrow succeeded in valid event: event=%s",
                                 eserder.said)
                     logger.debug("event=\n%s\n", eserder.pretty())
