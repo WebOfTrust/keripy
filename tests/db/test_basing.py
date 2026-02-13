@@ -282,6 +282,18 @@ def test_baser():
         assert db.fels.putOn(keys=preA, on=0, val=digA) == True
         assert db.fels.putOn(keys=preC, on=0, val=digC) == True
 
+        # replay all pres in first-seen order (keys=b'', on=0)
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=b'', on=0)]
+        assert items == [
+            (preA, 0, digA.decode("utf-8")),
+            (preB, 0, digU.decode("utf-8")),
+            (preB, 1, digV.decode("utf-8")),
+            (preB, 2, digW.decode("utf-8")),
+            (preB, 3, digX.decode("utf-8")),
+            (preB, 4, digY.decode("utf-8")),
+            (preC, 0, digC.decode("utf-8")),
+        ]
+
         # Test .dtss datetime stamps
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
@@ -1177,6 +1189,25 @@ def test_baser():
     assert not os.path.exists(db.path)
 
     """ End Test """
+
+
+def test_baser_clone_all_pre_iter():
+    """
+    Test cloneAllPreIter yields first-seen event messages for all identifier
+    prefixes in the database (fels getOnItemIterAll(keys=b'', on=0) path).
+    """
+    with habbing.openHby(name="test", base="test", temp=True) as hby:
+        hab1 = hby.makeHab(name="alice", isith="1", icount=1)
+        hab2 = hby.makeHab(name="bob", isith="1", icount=1)
+        # Single shared db now has fels (and evts, sigs) for both identifiers
+        msgs = list(hby.db.cloneAllPreIter())
+        assert len(msgs) >= 2
+        pres = set()
+        for msg in msgs:
+            serder = serdering.SerderKERI(raw=bytes(msg))
+            pres.add(serder.pre)
+        assert hab1.pre in pres
+        assert hab2.pre in pres
 
 
 def test_clean_baser():
