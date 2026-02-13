@@ -370,7 +370,8 @@ def test_tever_escrow(mockCoringRandomNonce):
                               b'8VCMGHB475dgKWCxO3qX4HlvW_4_lsrVZ9Q","s":"0","c":[],"bt":"0","b":[],"n":"0AA'
                               b'UiJMii_rPXXCiLTEEaDT7"}')
 
-        dig = reg.getTae(snKey(pre=regk, sn=0))
+        dig = reg.taes.getOn(keys=regk, on=0)
+        dig = dig[0].encode("utf-8")
         assert bytes(dig) == b'EEu4cX0EqO9mTqsNgxDgCT9lJbj9qmuPvD7BwNUl6wms'
 
     # registry with backers, no signatures.  should escrow
