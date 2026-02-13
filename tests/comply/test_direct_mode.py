@@ -117,7 +117,8 @@ def test_direct_mode_with_manager():
 
         # sign controller's event not receipt
         # look up event to sign from validator's kever for coe
-        coeIcpDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        rawIpcDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn))
+        coeIcpDig = rawIpcDig.encode("utf-8")
         assert coeIcpDig == coeK.serder.saidb
         coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
 
@@ -188,7 +189,8 @@ def test_direct_mode_with_manager():
                            said=valK.serder.said, )
         # sign validator's event not receipt
         # look up event to sign from controller's kever for validator
-        valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
+        valIcpDig = next(coeKevery.db.kels.getOnLastIter(keys=valpre, on=vsn), None)
+        valIcpDig = valIcpDig.encode("utf-8")
         assert valIcpDig == valK.serder.saidb
         valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
         sigers = coeMgr.sign(ser=valIcpRaw, verfers=coeVerfers)  # return Siger if index
@@ -253,7 +255,8 @@ def test_direct_mode_with_manager():
                            said=coeK.serder.said)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
-        coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeRotDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
+        coeRotDig = coeRotDig.encode("utf-8")
         assert coeRotDig == coeK.serder.saidb
         coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
         sigers = valMgr.sign(ser=coeRotRaw, verfers=valVerfers)
@@ -316,7 +319,8 @@ def test_direct_mode_with_manager():
                            said=coeK.serder.said)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
-        coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeIxnDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
+        coeIxnDig = coeIxnDig.encode("utf-8")
         assert coeIxnDig == coeK.serder.saidb
         coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
         sigers = valMgr.sign(ser=coeIxnRaw, verfers=valVerfers)
@@ -343,22 +347,22 @@ def test_direct_mode_with_manager():
         #  verify final controller event state
         assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(coepre)]
+        db_digs = [v for v in coeKever.db.kels.getOnIterAll(keys=coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn + 1
         assert db_digs == coe_event_digs
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(coepre)]
+        db_digs = [v for v in valKever.db.kels.getOnIterAll(keys=coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn + 1
         assert db_digs == coe_event_digs
 
         #  verify final validator event state
         assert valKever.sn == valK.sn == vsn
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(valpre)]
+        db_digs = [v for v in valKever.db.kels.getOnIterAll(keys=valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn + 1
         assert db_digs == val_event_digs
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(valpre)]
+        db_digs = [v for v in coeKever.db.kels.getOnIterAll(keys=valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn + 1
         assert db_digs == val_event_digs
 
