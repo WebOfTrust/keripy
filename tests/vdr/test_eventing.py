@@ -709,6 +709,68 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         assert tev.sn == 0
 
 
+def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCoringRandomNonce):
+    """Escrow a bis event with backer sigs (tibs non-empty), then unescrow so processEscrowAnchorless uses tibs.get."""
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
+        valSecret = 'ABjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
+        valSigner = Signer(qb64=valSecret, transferable=False)
+        valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
+        valpre = valPrefixer.qb64
+
+        hby, hab = buildHab(db, kpr)
+
+        vcp = eventing.incept(hab.pre,
+                              baks=[valpre],
+                              toad=1,
+                              cnfg=[],
+                              code=MtrDex.Blake3_256)
+        regk = vcp.pre
+
+        rseal1 = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
+        rot1 = hab.rotate(data=[rseal1._asdict()])
+        rotser1 = serdering.SerderKERI(raw=rot1)
+        seqner1 = Seqner(sn=int(rotser1.ked["s"], 16))
+        saider1 = Saider(qb64=rotser1.said)
+
+        tvy = Tevery(reger=reg, db=db)
+        tvy.processEvent(serder=vcp, seqner=seqner1, saider=saider1,
+                        wigers=[valSigner.sign(ser=vcp.raw, index=0)])
+        assert regk in tvy.tevers
+
+        # Use a distinct credential id so no TEL events exist for it (vcSn returns None, sno=0).
+        vcdig = "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
+        bis = eventing.backerIssue(vcdig=vcdig, regk=regk, regsn=2, regd=vcp.said)
+        biger = valSigner.sign(ser=bis.raw, index=0)
+
+        rseal2 = keventing.SealEvent(i=bis.ked["i"], s=bis.ked["s"], d=bis.said)
+        rot2 = hab.rotate(data=[rseal2._asdict()])
+        rotser2 = serdering.SerderKERI(raw=rot2)
+        rotsaid2 = rotser2.saidb
+
+        db.delEvt(dgKey(hab.pre, rotsaid2))
+        db.delKes(snKey(hab.pre, 2))
+
+        with pytest.raises(MissingAnchorError):
+            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Saider(qb64b=rotsaid2), wigers=[biger])
+
+        vci = vcdig.encode("utf-8") if isinstance(vcdig, str) else vcdig
+        bis_saidb = bis.saidb if hasattr(bis.saidb, '__len__') else bis.said.encode("utf-8")
+        tibs_found = list(reg.tibs.get(keys=(vci, bis_saidb)))
+        assert len(tibs_found) >= 1
+
+        db.putEvt(dgKey(hab.pre, rotsaid2), rot2)
+        db.addKe(snKey(hab.pre, 2), rotsaid2)
+
+        # Unescrow: processEscrowAnchorless will load bigers from tibs and call processEvent
+        tvy.processEscrows()
+
+        assert regk in tvy.tevers
+        tev = tvy.tevers[regk]
+        assert tev.sn == 0
+        # If unescrow succeeded, bis is in TEL and reprocessing raises duplicitous
+        with pytest.raises(LikelyDuplicitousError):
+            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Saider(qb64b=rotsaid2), wigers=[biger])
+
 
 if __name__ == "__main__":
     #test_tever_escrow()
