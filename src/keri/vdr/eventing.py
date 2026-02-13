@@ -776,8 +776,8 @@ class Tever:
             cnfg.append(TraitDex.NoBackers)
 
         dgkey = dbing.dgKey(self.regk, self.serder.said)
-        couple = self.reger.getAnc(dgkey)
-        ancb = bytearray(couple)
+        couple = self.reger.ancs.get(keys=dgkey)
+        ancb = bytearray(couple.encode("utf-8"))
         seqner = coring.Seqner(qb64b=ancb, strip=True)
         diger = coring.Diger(qb64b=ancb, strip=True)
 
@@ -1193,8 +1193,8 @@ class Tever:
             ra = serder.ked["ra"]
 
         dgkey = dbing.dgKey(vci, vcdig)
-        couple = self.reger.getAnc(dgkey)
-        ancb = bytearray(couple)
+        couple = self.reger.ancs.get(keys=dgkey)
+        ancb = bytearray(couple.encode("utf-8"))
         seqner = coring.Seqner(qb64b=ancb, strip=True)
         saider = coring.Saider(qb64b=ancb, strip=True)
 
@@ -1244,7 +1244,7 @@ class Tever:
         dig = serder.saidb
         key = dgKey(pre, dig)
         sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(key, sealet)
+        self.reger.ancs.put(keys=key, val=sealet)
         if bigers:
             self.reger.putTibs(key, [biger.qb64b for biger in bigers])
         if baks:
@@ -1378,7 +1378,7 @@ class Tever:
         """
         dgkey = dgKey(serder.preb, serder.saidb)
         sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(dgkey, sealet)
+        self.reger.ancs.put(keys=dgkey, val=sealet)
         self.reger.putTibs(dgkey, [biger.qb64b for biger in bigers])
         self.reger.putTvt(dgkey, serder.raw)
         self.reger.putTwe(snKey(serder.preb, serder.sn), serder.saidb)
@@ -1402,7 +1402,7 @@ class Tever:
         key = dgKey(serder.preb, serder.saidb)
         if seqner and saider:
             sealet = seqner.qb64b + saider.qb64b
-            self.reger.putAnc(key, sealet)
+            self.reger.ancs.put(keys=key, val=sealet)
         if bigers:
             self.reger.putTibs(key, [biger.qb64b for biger in bigers])
         if baks:
@@ -2003,7 +2003,7 @@ class Tevery:
         key = dgKey(serder.preb, serder.saidb)
         self.reger.putTvt(key, serder.raw)
         sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(key, sealet)
+        self.reger.ancs.put(keys=key, val=sealet)
         self.reger.putOot(snKey(serder.preb, serder.sn), serder.saidb)
         logger.debug("Tever state: Escrowed our of order TEL event "
                      "event = %s", serder.ked)
@@ -2060,12 +2060,12 @@ class Tevery:
                 if tibs := self.reger.getTibs(key=dgkey):
                     bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
 
-                couple = self.reger.getAnc(dgkey)
+                couple = self.reger.ancs.get(keys=dgkey)
                 if couple is None:
                     msg = f"OOO Missing escrowed anchor at dig = {bytes(digb).decode()}"
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
-                ancb = bytearray(couple)
+                ancb = bytearray(couple.encode("utf-8"))
                 seqner = coring.Seqner(qb64b=ancb, strip=True)
                 saider = coring.Saider(qb64b=ancb, strip=True)
 
@@ -2123,12 +2123,12 @@ class Tevery:
                 if tibs := self.reger.getTibs(key=dgkey):
                     bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
 
-                couple = self.reger.getAnc(dgkey)
+                couple = self.reger.ancs.get(keys=dgkey)
                 if couple is None:
                     msg = f"ANC Missing escrowed anchor at dig = {bytes(digb).decode()}"
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise MissingAnchorError(msg)
-                ancb = bytearray(couple)
+                ancb = bytearray(couple.encode("utf-8"))
                 seqner = coring.Seqner(qb64b=ancb, strip=True)
                 saider = coring.Saider(qb64b=ancb, strip=True)
 

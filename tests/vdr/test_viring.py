@@ -174,15 +174,15 @@ def test_issuer():
                  "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4").encode("utf-8")
 
         key = dgKey(regk, vdig.qb64b)
-        assert issuer.getAnc(key) is None
-        assert issuer.delAnc(key) is False
-        assert issuer.putAnc(key, val=anc01)
-        assert issuer.getAnc(key) == anc01
-        assert issuer.putAnc(key, val=anc01) is False
-        assert issuer.setAnc(key, val=anc01) is True
-        assert issuer.getAnc(key) == anc01
-        assert issuer.delAnc(key) is True
-        assert issuer.getAnc(key) is None
+        assert issuer.ancs.get(keys=key) is None
+        assert issuer.ancs.rem(keys=key) is False
+        assert issuer.ancs.put(keys=key, val=anc01)
+        assert issuer.ancs.get(keys=key) == anc01.decode("utf-8")
+        assert issuer.ancs.put(keys=key, val=anc01) is False
+        assert issuer.ancs.pin(keys=key, val=anc01) is True
+        assert issuer.ancs.get(keys=key) == anc01.decode("utf-8")
+        assert issuer.ancs.rem(keys=key) is True
+        assert issuer.ancs.get(keys=key) is None
 
         #  test with verifiable credential issuance (iss) event
         vcdig = b'EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
@@ -305,21 +305,21 @@ def test_clone():
         snkey = snKey(regk, sn)
         assert issuer.putTvt(dgkey, val=vcpb) is True
         assert issuer.putTel(snkey, val=vdig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc01) is True
+        assert issuer.ancs.put(keys=dgkey, val=anc01) is True
         assert issuer.putTibs(dgkey, vals=[tib01]) is True
 
         dgkey = dgKey(regk, r1dig.qb64b)
         snkey = snKey(regk, sn + 1)
         assert issuer.putTvt(dgkey, val=rot1b) is True
         assert issuer.putTel(snkey, val=r1dig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc02) is True
+        assert issuer.ancs.put(keys=dgkey, val=anc02) is True
         assert issuer.putTibs(dgkey, vals=[tib02]) is True
 
         dgkey = dgKey(regk, r2dig.qb64b)
         snkey = snKey(regk, sn + 2)
         assert issuer.putTvt(dgkey, val=rot2b) is True
         assert issuer.putTel(snkey, val=r2dig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc03) is True
+        assert issuer.ancs.put(keys=dgkey, val=anc03) is True
         assert issuer.putTibs(dgkey, vals=[tib03]) is True
 
         msgs = bytearray()  # outgoing messages
