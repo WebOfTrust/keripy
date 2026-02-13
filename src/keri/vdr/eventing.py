@@ -2056,7 +2056,7 @@ class Tevery:
 
                 tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
 
-                bigers = self.reger.tibs.get(keys=dgkey) or None
+                bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
@@ -2117,7 +2117,7 @@ class Tevery:
 
                 tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
 
-                bigers = self.reger.tibs.get(keys=dgkey) or None
+                bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:

@@ -549,7 +549,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
             b'wSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV"],"n":"0AAUiJMii_rPXXCiLTEEaDT7"}')
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEDD2vrz4Eg3iLOOlZw5-d3ioZ1q703IC0M0LJP_3v-PT'
         assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
-        assert [tib.qb64b for tib in reg.tibs.get(keys=dgkey)] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+        assert [tib.qb64b for tib in reg.tibs.get(keys=(regk, vcp.said))] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
                                                                     b'QLbASSQLAZcC']
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 

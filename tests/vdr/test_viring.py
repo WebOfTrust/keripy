@@ -125,28 +125,28 @@ def test_issuer():
         sigers = [s0, s1, s2]
 
         key = dgKey(regk, vdig.qb64b)
-        assert issuer.tibs.get(keys=key) == []
-        assert issuer.tibs.cnt(keys=key) == 0
-        assert issuer.tibs.rem(keys=key) is False
-        assert issuer.tibs.pin(keys=key, vals=[s0]) is True
+        assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 0
+        assert issuer.tibs.rem(keys=(regk, vdig.qb64b)) is False
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[s0]) is True
         assert [s.qb64b for s in issuer.tibs.get(keys=key)] == [s0.qb64b]
-        assert issuer.tibs.cnt(keys=key) == 1
-        assert issuer.tibs.pin(keys=key, vals=[s0]) is True  # add duplicate
-        assert issuer.tibs.cnt(keys=key) == 1
-        assert issuer.tibs.add(keys=key, val=s0) is False
-        assert issuer.tibs.add(keys=key, val=s1) is True
-        assert issuer.tibs.cnt(keys=key) == 2
-        assert issuer.tibs.pin(keys=key, vals=[s1, s2]) is True
-        assert issuer.tibs.cnt(keys=key) == 2
-        assert issuer.tibs.rem(keys=key) is True
-        assert issuer.tibs.get(keys=key) == []
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 1
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[s0]) is True  # add duplicate
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 1
+        assert issuer.tibs.add(keys=(regk, vdig.qb64b), val=s0) is False
+        assert issuer.tibs.add(keys=(regk, vdig.qb64b), val=s1) is True
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 2
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[s1, s2]) is True
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 2
+        assert issuer.tibs.rem(keys=(regk, vdig.qb64b)) is True
+        assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
         for sig in sigers:
-            assert issuer.tibs.add(keys=key, val=sig) is True
-        assert issuer.tibs.cnt(keys=key) == 3
-        assert set(s.qb64b for s in issuer.tibs.get(keys=key)) == {s0.qb64b, s1.qb64b, s2.qb64b}
-        for c in issuer.tibs.getIter(keys=key):
-            assert issuer.tibs.rem(keys=key, val=c) is True
-        assert issuer.tibs.get(keys=key) == []
+            assert issuer.tibs.add(keys=(regk, vdig.qb64b), val=sig) is True
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 3
+        assert set(s.qb64b for s in issuer.tibs.get(keys=(regk, vdig.qb64b))) == {s0.qb64b, s1.qb64b, s2.qb64b}
+        for c in issuer.tibs.getIter(keys=(regk, vdig.qb64b)):
+            assert issuer.tibs.rem(keys=(regk, vdig.qb64b), val=c) is True
+        assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
 
         tweKey = snKey(regk, sn)
         assert issuer.getTwe(tweKey) is None
@@ -307,21 +307,21 @@ def test_clone():
         assert issuer.putTvt(dgkey, val=vcpb) is True
         assert issuer.putTel(snkey, val=vdig.qb64b)
         assert issuer.putAnc(dgkey, val=anc01) is True
-        assert issuer.tibs.pin(keys=dgkey, vals=[indexing.Siger(qb64b=tib01)]) is True
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[indexing.Siger(qb64b=tib01)]) is True
 
         dgkey = dgKey(regk, r1dig.qb64b)
         snkey = snKey(regk, sn + 1)
         assert issuer.putTvt(dgkey, val=rot1b) is True
         assert issuer.putTel(snkey, val=r1dig.qb64b)
         assert issuer.putAnc(dgkey, val=anc02) is True
-        assert issuer.tibs.pin(keys=dgkey, vals=[indexing.Siger(qb64b=tib02)]) is True
+        assert issuer.tibs.pin(keys=(regk, r1dig.qb64b), vals=[indexing.Siger(qb64b=tib02)]) is True
 
         dgkey = dgKey(regk, r2dig.qb64b)
         snkey = snKey(regk, sn + 2)
         assert issuer.putTvt(dgkey, val=rot2b) is True
         assert issuer.putTel(snkey, val=r2dig.qb64b)
         assert issuer.putAnc(dgkey, val=anc03) is True
-        assert issuer.tibs.pin(keys=dgkey, vals=[indexing.Siger(qb64b=tib03)]) is True
+        assert issuer.tibs.pin(keys=(regk, r2dig.qb64b), vals=[indexing.Siger(qb64b=tib03)]) is True
 
         msgs = bytearray()  # outgoing messages
         for msg in issuer.clonePreIter(regk):
