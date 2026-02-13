@@ -302,7 +302,7 @@ class Reger(dbing.LMDBer):
         self.ancs = self.env.open_db(key=b'ancs.')
         self.tibs = self.env.open_db(key=b'tibs.', dupsort=True)
         self.baks = self.env.open_db(key=b'baks.', dupsort=True)
-        self.oots = self.env.open_db(key=b'oots.')
+        self.oots = subing.OnIoDupSuber(db=self, subkey='oots')
         self.twes = subing.OnIoDupSuber(db=self, subkey='twes')
         self.taes = subing.OnIoDupSuber(db=self, subkey='taes')
         self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=coring.Dater)
@@ -760,49 +760,6 @@ class Reger(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.tibs, key, val)
-
-    def putOot(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.oots, key, val)
-
-    def setOot(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.oots, key, val)
-
-    def getOot(self, key):
-        """
-        Use snKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.oots, key)
-
-    def getOotItemIter(self):
-        """
-        Return iterator of all items in .taes
-
-        """
-        return self.getTopItemIter(self.oots)
-
-
-    def delOot(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.oots, key)
 
 
     def putAnc(self, key, val):

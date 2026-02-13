@@ -159,15 +159,15 @@ def test_issuer():
         assert issuer.twes.getOn(keys=regk, on=sn) == []
 
         ooKey = snKey(regk, sn)
-        assert issuer.getOot(ooKey) is None
-        assert issuer.delOot(ooKey) is False
-        assert issuer.putOot(ooKey, val=vdig.qb64b)
-        assert issuer.getOot(ooKey) == vdig.qb64b
-        assert issuer.putOot(ooKey, val=vdig.qb64b) is False
-        assert issuer.setOot(ooKey, val=vdig.qb64b) is True
-        assert issuer.getOot(ooKey) == vdig.qb64b
-        assert issuer.delOot(ooKey) is True
-        assert issuer.getOot(ooKey) is None
+        assert issuer.oots.getOn(keys=regk, on=sn) == []
+        assert issuer.oots.remOn(keys=regk, on=sn) is False
+        assert issuer.oots.putOn(keys=regk, on=sn, vals=vdig.qb64b)
+        assert issuer.oots.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.oots.putOn(keys=regk, on=sn, vals=vdig.qb64b) is False
+        assert issuer.oots.pinOn(keys=regk, on=sn, vals=vdig.qb64b) is True
+        assert issuer.oots.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.oots.remOn(keys=regk, on=sn) is True
+        assert issuer.oots.getOn(keys=regk, on=sn) == []
 
         anc01 = ("0AAAAAAAAAAAAAAAAAAAAABA"
                  "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4").encode("utf-8")
