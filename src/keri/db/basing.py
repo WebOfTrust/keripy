@@ -615,11 +615,9 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .kels is named sub DB of key event logs as indices that map sequence numbers
-            to serialized key event digests.
+        .kels is a named subDB instance of OnIoDupSuber for key event logs as indices that map a composite
+            key of the form "<pre><sep><on>" to serialized key event digests.
             Actual serialized key events are stored in .evts by SAID digest
-            Uses sequence number or sn.
-            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
