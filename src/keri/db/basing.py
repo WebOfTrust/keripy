@@ -624,18 +624,17 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .fels is named sub DB of first seen event logs (FEL) as indices that map
-            first seen ordinal number to digests.
+        .fels is named sub DB instance of OnSuber for first seen event logs (FEL)
+            as indices that map first seen ordinal number fn to event digests.
             Actual serialized key events are stored in .evts by SAID digest
             This indexes events in first 'seen' accepted order for replay and
             cloning of event log.
             Uses first seen order number or fn.
-            fnKey
             DB is keyed by identifier prefix plus monotonically increasing first
             seen order number fn.
-            Value is digest of serialized event used to lookup event in .evts sub DB
+            Value is qb64 str of serialized event used to lookup event in .evts sub DB.
             Only one value per DB key is allowed.
-            Provides append only ordering of accepted first seen events.
+            Provides append-only ordering of accepted first seen events.
 
         .fons is named subDB CesrSuber
             Uses digest
@@ -1007,7 +1006,7 @@ class Baser(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.evts = self.env.open_db(key=b'evts.')
-        self.fels = self.env.open_db(key=b'fels.')
+        self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.dtss = self.env.open_db(key=b'dtss.')
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
@@ -2021,56 +2020,6 @@ class Baser(dbing.LMDBer):
             yield raw  # event message
 
 
-    def putFe(self, key, val):
-        """
-        Use fnKey()
-        Write event digest bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.fels, key, val)
-
-    def setFe(self, key, val):
-        """
-        Use fnKey()
-        Write event digest bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.fels, key, val)
-
-    def getFe(self, key):
-        """
-        Use fnKey()
-        Return event digest at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.fels, key)
-
-    def delFe(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.fels, key)
-
-    def appendFe(self, pre, val):
-        """
-        Return first seen order number int, fn, of appended entry.
-        Computes fn as next fn after last entry.
-        Uses fnKey(pre, fn) for entries.
-
-        Append val to end of db entries with same pre but with fn incremented by
-        1 relative to last preexisting entry at pre.
-
-        Parameters:
-            pre is bytes identifier prefix for event
-            val is event digest
-        """
-        return self.appendOnVal(db=self.fels, key=pre, val=val)
-
     def getFelItemPreIter(self, pre, fn=0):
         """
         Returns iterator of all (pre, fn, dig) triples in first seen order for
@@ -2089,7 +2038,10 @@ class Baser(dbing.LMDBer):
         Returns:
            items (Iterator[(pre, fn, val)]): over all items starting at pre, on
         """
-        return self.getOnItemIter(db=self.fels, key=pre, on=fn)
+        for keys, on, val in self.fels.getOnItemIter(keys=pre, on=fn):
+            pre_part = keys[0] if isinstance(keys[0], str) else keys[0].decode()
+            pre_bytes = pre_part.encode() if isinstance(pre_part, str) else pre_part
+            yield (pre_bytes, on, val)
 
 
     def getFelItemAllPreIter(self):
@@ -2108,8 +2060,10 @@ class Baser(dbing.LMDBer):
             key is key location in db to resume replay, If empty then start at
                 first key in database
         """
-        #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
-        return self.getOnItemIter(db=self.fels, key=b'')
+        for keys, on, val in self.fels.getOnItemIter(keys=b'', on=0):
+            pre_part = keys[0] if isinstance(keys[0], str) else keys[0].decode()
+            pre_bytes = pre_part.encode() if isinstance(pre_part, str) else pre_part
+            yield (pre_bytes, on, val)
 
     def putDts(self, key, val):
         """

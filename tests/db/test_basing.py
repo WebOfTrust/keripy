@@ -188,16 +188,6 @@ def test_baser():
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
         preC = b'EIDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
-        keyA0 = onKey(preA, 0)
-
-        keyB0 = onKey(preB, 0)
-        keyB1 = onKey(preB, 1)
-        keyB2 = onKey(preB, 2)
-        keyB3 = onKey(preB, 3)
-        keyB4 = onKey(preB, 4)
-
-        keyC0 = onKey(preC, 0)
-
         digA = b'EA73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
         digU = b'EB73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
         digV = b'EC4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
@@ -207,89 +197,89 @@ def test_baser():
 
         digC = b'EG5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
 
-        assert db.getFe(keyA0) == None
-        assert db.delFe(keyA0) == False
-        assert db.putFe(keyA0, val=digA) == True
-        assert db.getFe(keyA0) == digA
-        assert db.putFe(keyA0, val=digA) == False
-        assert db.setFe(keyA0, val=digA) == True
-        assert db.getFe(keyA0) == digA
-        assert db.delFe(keyA0) == True
-        assert db.getFe(keyA0) == None
+        assert db.fels.getOn(keys=preA, on=0) is None
+        assert db.fels.remOn(keys=preA, on=0) == False
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        assert db.fels.getOn(keys=preA, on=0) == digA.decode("utf-8")
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == False
+        assert db.fels.pinOn(keys=preA, on=0, val=digA) == True
+        assert db.fels.getOn(keys=preA, on=0) == digA.decode("utf-8")
+        assert db.fels.remOn(keys=preA, on=0) == True
+        assert db.fels.getOn(keys=preA, on=0) is None
 
-        #  test appendFe
+        # test appendOn
         # empty database
-        assert db.getFe(keyB0) == None
-        on = db.appendFe(preB, digU)
+        assert db.fels.getOn(keys=preB, on=0) is None
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
-        assert db.delFe(keyB0) == True
-        assert db.getFe(keyB0) == None
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
+        assert db.fels.remOn(keys=preB, on=0) == True
+        assert db.fels.getOn(keys=preB, on=0) is None
 
         # earlier pre in database only
-        assert db.putFe(keyA0, val=digA) == True
-        on = db.appendFe(preB, digU)
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
-        assert db.delFe(keyB0) == True
-        assert db.getFe(keyB0) == None
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
+        assert db.fels.remOn(keys=preB, on=0) == True
+        assert db.fels.getOn(keys=preB, on=0) is None
 
         # earlier and later pre in db but not same pre
-        assert db.getFe(keyA0) == digA
-        assert db.putFe(keyC0, val=digC) == True
-        on = db.appendFe(preB, digU)
+        assert db.fels.getOn(keys=preA, on=0) == digA.decode("utf-8")
+        assert db.fels.putOn(keys=preC, on=0, val=digC) == True
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
-        assert db.delFe(keyB0) == True
-        assert db.getFe(keyB0) == None
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
+        assert db.fels.remOn(keys=preB, on=0) == True
+        assert db.fels.getOn(keys=preB, on=0) is None
 
         # later pre only
-        assert db.delFe(keyA0) == True
-        assert db.getFe(keyA0) == None
-        assert db.getFe(keyC0) == digC
-        on = db.appendFe(preB, digU)
+        assert db.fels.remOn(keys=preA, on=0) == True
+        assert db.fels.getOn(keys=preA, on=0) is None
+        assert db.fels.getOn(keys=preC, on=0) == digC.decode("utf-8")
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
 
         # earlier pre and later pre and earlier entry for same pre
-        assert db.putFe(keyA0, val=digA) == True
-        on = db.appendFe(preB, digV)
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        on = db.fels.appendOn(keys=preB, val=digV)
         assert on == 1
-        assert db.getFe(keyB1) == digV
+        assert db.fels.getOn(keys=preB, on=1) == digV.decode("utf-8")
 
         # earlier entry for same pre but only same pre
-        assert db.delFe(keyA0) == True
-        assert db.getFe(keyA0) == None
-        assert db.delFe(keyC0) == True
-        assert db.getFe(keyC0) == None
+        assert db.fels.remOn(keys=preA, on=0) == True
+        assert db.fels.getOn(keys=preA, on=0) is None
+        assert db.fels.remOn(keys=preC, on=0) == True
+        assert db.fels.getOn(keys=preC, on=0) is None
         # another value for preB
-        on = db.appendFe(preB, digW)
+        on = db.fels.appendOn(keys=preB, val=digW)
         assert on == 2
-        assert db.getFe(keyB2) == digW
+        assert db.fels.getOn(keys=preB, on=2) == digW.decode("utf-8")
         # yet another value for preB
-        on = db.appendFe(preB, digX)
+        on = db.fels.appendOn(keys=preB, val=digX)
         assert on == 3
-        assert db.getFe(keyB3) == digX
+        assert db.fels.getOn(keys=preB, on=3) == digX.decode("utf-8")
         # yet another value for preB
-        on = db.appendFe(preB, digY )
+        on = db.fels.appendOn(keys=preB, val=digY)
         assert on == 4
-        assert db.getFe(keyB4) == digY
+        assert db.fels.getOn(keys=preB, on=4) == digY.decode("utf-8")
 
         # replay preB events in database
         items = [item for item in db.getFelItemPreIter(preB)]
-        assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW), (preB, 3, digX), (preB, 4, digY)]
+        assert items == [(preB, 0, digU.decode("utf-8")), (preB, 1, digV.decode("utf-8")), (preB, 2, digW.decode("utf-8")), (preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 3
         items = [item for item in db.getFelItemPreIter(preB, fn=3)]
-        assert items == [(preB, 3, digX), (preB, 4, digY)]
+        assert items == [(preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 5
         items = [item for item in db.getFelItemPreIter(preB, fn=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
-        assert db.putFe(keyA0, val=digA) == True
-        assert db.putFe(keyC0, val=digC) == True
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        assert db.fels.putOn(keys=preC, on=0, val=digC) == True
 
         # Test .dtss datetime stamps
         key = dgKey(preb, digb)
@@ -1258,7 +1248,7 @@ def test_clean_baser():
             assert fn == 7
             # verify garbage event in database
             assert natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
-            assert natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+            assert natHab.db.fels.getOn(keys=natHab.pre, on=7)
 
 
         # test openDB copy db with clean
@@ -1293,7 +1283,7 @@ def test_clean_baser():
 
             # confirm bad event missing from database
             assert not natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
-            assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+            assert not natHab.db.fels.getOn(keys=natHab.pre, on=7)
             state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
             assert state.s == '6'
             assert state.f == '6'
