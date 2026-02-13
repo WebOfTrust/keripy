@@ -617,6 +617,8 @@ def test_iodup_suber():
         actual = ioduber.getLast(keys=keys0)
         assert actual == sue
 
+        assert ioduber.cnt(keys=keys0) == 2
+
         assert ioduber.rem(keys0)
         actuals = ioduber.get(keys=keys0)
         assert not actuals
@@ -1045,6 +1047,9 @@ def test_on_iodup_suber():
         assert oidsuber.getOn(keys="z", on=1) == [y, z]
 
         assert oidsuber.getOn(keys="z", on=0) == [w, x]  # only get for on=0
+
+        assert oidsuber.cntOn(keys="z", on=0) == 2
+        assert oidsuber.cntOn(keys="z", on=1) == 2
 
         assert [val for val in oidsuber.getOnIter(keys="z", on=0)] == [w, x]
         assert [val for val in oidsuber.getOnIter(keys="z", on=1)] == [y, z]
@@ -1709,6 +1714,13 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'A real charmer!')]
 
+        items = [(keys, val) for keys, val in iosuber.getLastItemIter()]
+        assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
+                         (('test_key', '0002'), 'A real charmer!')]
+
+        lasts = [val for val in iosuber.getLastIter()]
+        assert lasts == ['Hey gorgeous!', 'A real charmer!']
+
         items = list(iosuber.getFullItemIter())
         assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
                         (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
@@ -1721,10 +1733,23 @@ def test_ioset_suber():
         assert items == [(('test_key', '0001'), 'See ya later.'),
                          (('test_key', '0001'), 'Hey gorgeous!')]
 
+        items = [(keys, val) for keys, val in iosuber.getLastItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
+                         (('test_key', '0002'), 'A real charmer!')]
+
+        lasts = [val for val in iosuber.getLastIter(keys=keys0)]
+        assert lasts == ['Hey gorgeous!', 'A real charmer!']
+
         items = [(keys, val) for keys,  val in iosuber.getItemIter(keys=keys1)]
         assert items == [(('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'A real charmer!')]
+
+        items = [(keys, val) for keys, val in iosuber.getLastItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), 'A real charmer!')]
+
+        lasts = [val for val in iosuber.getLastIter(keys=keys1)]
+        assert lasts == ['A real charmer!']
 
 
         # Test with top keys

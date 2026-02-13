@@ -496,9 +496,9 @@ class IoSetKomer(KomerBase):
 
         """
         key = self._tokey(keys)
-        self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
+        self.db.delIoSet(db=self.sdb, key=key)  # delete all values
         vals = [self.serializer(val) for val in vals]
-        return (self.db.setIoSetVals(db=self.sdb,
+        return (self.db.pinIoSetVals(db=self.sdb,
                                      key=key,
                                      vals=vals,
                                      sep=self.sep))
@@ -517,7 +517,7 @@ class IoSetKomer(KomerBase):
 
         """
         return [self.deserializer(val) for val in
-                    self.db.getIoSetValsIter(db=self.sdb,
+                    self.db.getIoSetIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              sep=self.sep)]
 
@@ -534,7 +534,7 @@ class IoSetKomer(KomerBase):
                           None if no entry at keys
 
         """
-        val = self.db.getIoSetValLast(db=self.sdb, key=self._tokey(keys))
+        val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
         if val is not None:
             val = self.deserializer(val)
         return val
@@ -553,7 +553,7 @@ class IoSetKomer(KomerBase):
             vals (Iterator):  str values. Raises StopIteration when done
 
         """
-        for val in self.db.getIoSetValsIter(db=self.sdb,
+        for val in self.db.getIoSetIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             sep=self.sep):
             yield self.deserializer(val)
@@ -567,7 +567,7 @@ class IoSetKomer(KomerBase):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
         """
-        return (self.db.cntIoSetVals(db=self.sdb,
+        return (self.db.cntIoSet(db=self.sdb,
                                      key=self._tokey(keys),
                                      sep=self.sep))
 
@@ -592,7 +592,7 @@ class IoSetKomer(KomerBase):
                                        val=val,
                                        sep=self.sep)
         else:
-            return self.db.delIoSetVals(db=self.sdb,
+            return self.db.delIoSet(db=self.sdb,
                                        key=self._tokey(keys),
                                        sep=self.sep)
 
