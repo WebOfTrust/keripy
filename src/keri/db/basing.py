@@ -2038,7 +2038,7 @@ class Baser(dbing.LMDBer):
         Returns:
            items (Iterator[(pre, fn, val)]): over all items starting at pre, on
         """
-        for keys, on, val in self.fels.getOnItemIter(keys=pre, on=fn):
+        for keys, on, val in self.fels.getOnItemIterAll(keys=pre, on=fn):
             pre_part = keys[0] if isinstance(keys[0], str) else keys[0].decode()
             pre_bytes = pre_part.encode() if isinstance(pre_part, str) else pre_part
             yield (pre_bytes, on, val)
@@ -2060,7 +2060,7 @@ class Baser(dbing.LMDBer):
             key is key location in db to resume replay, If empty then start at
                 first key in database
         """
-        for keys, on, val in self.fels.getOnItemIter(keys=b'', on=0):
+        for keys, on, val in self.fels.getOnItemIterAll(keys=b'', on=0):
             pre_part = keys[0] if isinstance(keys[0], str) else keys[0].decode()
             pre_bytes = pre_part.encode() if isinstance(pre_part, str) else pre_part
             yield (pre_bytes, on, val)
