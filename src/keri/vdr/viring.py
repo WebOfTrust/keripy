@@ -206,9 +206,8 @@ class Reger(dbing.LMDBer):
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
-        .twes is named sub DB of partially witnessed escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
+        .twes is named subDB instance of OnIoDupSuber for partially witnessed escrowed event tables
+            that map key composites of the form <pre><sep><on> to serialized event digests.
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
