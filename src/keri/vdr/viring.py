@@ -212,9 +212,8 @@ class Reger(dbing.LMDBer):
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
-        .taes is named sub DB of anchorless escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
+        .taes is named subDB instance of OnIoDupSuber for anchorless escrowed event tables that map
+            a composite key of the form <pre><sep><on> to serialized event digest.
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
