@@ -448,7 +448,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEGe5uFh3t0JglSPQtJJoxCV1RlFoTBept1BPRk3o6hgh'
         assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
-        assert reg.getTibs(dgkey) == []
+        assert reg.tibs.get(keys=dgkey) == []
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
         # try to rotate a backerless registry
@@ -549,8 +549,8 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
             b'wSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV"],"n":"0AAUiJMii_rPXXCiLTEEaDT7"}')
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEDD2vrz4Eg3iLOOlZw5-d3ioZ1q703IC0M0LJP_3v-PT'
         assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
-        assert [bytes(tib) for tib in reg.getTibs(dgkey)] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
-                                                              b'QLbASSQLAZcC']
+        assert [tib.qb64b for tib in reg.tibs.get(keys=dgkey)] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+                                                                    b'QLbASSQLAZcC']
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
         debSecret = 'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ'
