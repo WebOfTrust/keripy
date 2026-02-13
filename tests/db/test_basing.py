@@ -266,15 +266,16 @@ def test_baser():
         assert db.fels.getOn(keys=preB, on=4) == digY.decode("utf-8")
 
         # replay preB events in database
-        items = [item for item in db.getFelItemPreIter(preB)]
+        _pre = lambda k: k[0].encode() if isinstance(k[0], str) else k[0]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB)]
         assert items == [(preB, 0, digU.decode("utf-8")), (preB, 1, digV.decode("utf-8")), (preB, 2, digW.decode("utf-8")), (preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 3
-        items = [item for item in db.getFelItemPreIter(preB, fn=3)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB, on=3)]
         assert items == [(preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 5
-        items = [item for item in db.getFelItemPreIter(preB, fn=5)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after

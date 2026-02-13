@@ -1620,7 +1620,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for _, fn, dig in self.getFelItemPreIter(pre, fn=fn):
+        for keys, fn, dig in self.fels.getOnItemIterAll(keys=pre, on=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1640,7 +1640,8 @@ class Baser(dbing.LMDBer):
            msgs (Iterator): over all items in db
 
         """
-        for pre, fn, dig in self.getFelItemAllPreIter():
+        for keys, fn, dig in self.fels.getOnItemIterAll(keys=b'', on=0):
+            pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -2019,51 +2020,6 @@ class Baser(dbing.LMDBer):
 
             yield raw  # event message
 
-
-    def getFelItemPreIter(self, pre, fn=0):
-        """
-        Returns iterator of all (pre, fn, dig) triples in first seen order for
-        all events with same prefix, pre, in database. Items are sorted by
-        fnKey(pre, fn) where fn is first seen order number int.
-        Returns a First Seen Event Log FEL.
-        Returned items are duples of (fn, dig): Where fn is first seen order
-        number int and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
-
-        Returns:
-           items (Iterator[(pre, fn, val)]): over all items starting at pre, on
-        """
-        for keys, on, val in self.fels.getOnItemIterAll(keys=pre, on=fn):
-            pre_part = keys[0] if isinstance(keys[0], str) else keys[0].decode()
-            pre_bytes = pre_part.encode() if isinstance(pre_part, str) else pre_part
-            yield (pre_bytes, on, val)
-
-
-    def getFelItemAllPreIter(self):
-        """
-        Returns iterator of all (pre, fn, dig) triples in first seen order for
-        all events for all prefixes in database. Items are sorted by
-        fnKey(pre, fn) where fn is first seen order number int.
-        Returns all First Seen Event Logs FELs.
-        Returned items are tripes of (pre, fn, dig): Where pre is identifier prefix,
-        fn is first seen order number int and dig is event digest for lookup
-        in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            key is key location in db to resume replay, If empty then start at
-                first key in database
-        """
-        for keys, on, val in self.fels.getOnItemIterAll(keys=b'', on=0):
-            pre_part = keys[0] if isinstance(keys[0], str) else keys[0].decode()
-            pre_bytes = pre_part.encode() if isinstance(pre_part, str) else pre_part
-            yield (pre_bytes, on, val)
 
     def putDts(self, key, val):
         """
