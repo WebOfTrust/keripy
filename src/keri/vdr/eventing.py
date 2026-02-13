@@ -1381,7 +1381,7 @@ class Tever:
         self.reger.putAnc(dgkey, sealet)
         self.reger.putTibs(dgkey, [biger.qb64b for biger in bigers])
         self.reger.putTvt(dgkey, serder.raw)
-        self.reger.putTwe(snKey(serder.preb, serder.sn), serder.saidb)
+        self.reger.twes.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed partially witnessed "
                      "event = %s", serder.ked)
 

@@ -304,7 +304,7 @@ class Reger(dbing.LMDBer):
         self.tibs = self.env.open_db(key=b'tibs.', dupsort=True)
         self.baks = self.env.open_db(key=b'baks.', dupsort=True)
         self.oots = self.env.open_db(key=b'oots.')
-        self.twes = self.env.open_db(key=b'twes.')
+        self.twes = subing.OnIoDupSuber(db=self, subkey='twes')
         self.taes = subing.OnIoDupSuber(db=self, subkey='taes')
         self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=coring.Dater)
 
@@ -761,42 +761,6 @@ class Reger(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.tibs, key, val)
-
-    def putTwe(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.twes, key, val)
-
-    def setTwe(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.twes, key, val)
-
-    def getTwe(self, key):
-        """
-        Use snKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.twes, key)
-
-    def delTwe(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.twes, key)
-
 
     def putOot(self, key, val):
         """

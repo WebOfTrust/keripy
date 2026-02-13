@@ -148,16 +148,15 @@ def test_issuer():
             assert issuer.delTibs(key, c) is True
         assert issuer.getTibs(key) == []
 
-        tweKey = snKey(regk, sn)
-        assert issuer.getTwe(tweKey) is None
-        assert issuer.delTwe(tweKey) is False
-        assert issuer.putTwe(tweKey, val=vdig.qb64b)
-        assert issuer.getTwe(tweKey) == vdig.qb64b
-        assert issuer.putTwe(tweKey, val=vdig.qb64b) is False
-        assert issuer.setTwe(tweKey, val=vdig.qb64b) is True
-        assert issuer.getTwe(tweKey) == vdig.qb64b
-        assert issuer.delTwe(tweKey) is True
-        assert issuer.getTwe(tweKey) is None
+        assert issuer.twes.getOn(keys=regk, on=sn) == []
+        assert issuer.twes.remOn(keys=regk, on=sn) is False
+        assert issuer.twes.putOn(keys=regk, on=sn, vals=vdig.qb64b)
+        assert issuer.twes.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.twes.putOn(keys=regk, on=sn, vals=vdig.qb64b) is False
+        assert issuer.twes.pinOn(keys=regk, on=sn, vals=vdig.qb64b) is True
+        assert issuer.twes.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.twes.remOn(keys=regk, on=sn) is True
+        assert issuer.twes.getOn(keys=regk, on=sn) == []
 
         ooKey = snKey(regk, sn)
         assert issuer.getOot(ooKey) is None
