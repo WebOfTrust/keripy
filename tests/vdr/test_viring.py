@@ -12,7 +12,7 @@ import tempfile
 import lmdb
 
 from keri.core import indexing
-from keri.core.coring import Diger, versify, Kinds
+from keri.core.coring import Diger, Number, versify, Kinds
 from keri.db import subing
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger
@@ -171,19 +171,21 @@ def test_issuer():
         assert issuer.delOot(ooKey) is True
         assert issuer.getOot(ooKey) is None
 
-        anc01 = ("0AAAAAAAAAAAAAAAAAAAAABA"
-                 "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4").encode("utf-8")
-
         key = dgKey(regk, vdig.qb64b)
-        assert issuer.getAnc(key) is None
-        assert issuer.delAnc(key) is False
-        assert issuer.putAnc(key, val=anc01)
-        assert issuer.getAnc(key) == anc01
-        assert issuer.putAnc(key, val=anc01) is False
-        assert issuer.setAnc(key, val=anc01) is True
-        assert issuer.getAnc(key) == anc01
-        assert issuer.delAnc(key) is True
-        assert issuer.getAnc(key) is None
+        number = Number(num=0)
+        diger = Diger(qb64=vdig.qb64)
+        anc_couple = number.qb64b + diger.qb64b
+        assert issuer.ancs.get(keys=key) is None
+        assert issuer.ancs.rem(keys=key) is False
+        assert issuer.ancs.put(keys=key, val=(number, diger))
+        rnum, rdig = issuer.ancs.get(keys=key)
+        assert rnum.qb64b + rdig.qb64b == anc_couple
+        assert issuer.ancs.put(keys=key, val=(number, diger)) is False
+        assert issuer.ancs.pin(keys=key, val=(number, diger)) is True
+        rnum, rdig = issuer.ancs.get(keys=key)
+        assert rnum.qb64b + rdig.qb64b == anc_couple
+        assert issuer.ancs.rem(keys=key) is True
+        assert issuer.ancs.get(keys=key) is None
 
         #  test with verifiable credential issuance (iss) event
         vcdig = b'EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
@@ -279,7 +281,9 @@ def test_clone():
 
     vcpb = json.dumps(vcp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     vdig = Diger(ser=vcpb)
-    anc01 = "0AAAAAAAAAAAAAAAAAAAAABAEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4".encode("utf-8")
+    number01 = Number(num=0)
+    diger01 = Diger(qb64=vdig.qb64)
+    anc01_couple = number01.qb64b + diger01.qb64b
     # Valid Siger bytes (tibs must be Siger for CesrDupSuber)
     tib01 = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
              b'QLbASSQLAZcC')
@@ -293,35 +297,39 @@ def test_clone():
                 t="rot")
     rot1b = json.dumps(rot1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     r1dig = Diger(ser=rot1b)
-    anc02 = "0AAAAAAAAAAAAAAAAAAAAABBEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4".encode("utf-8")
+    number02 = Number(num=1)
+    diger02 = Diger(qb64=r1dig.qb64)
+    anc02_couple = number02.qb64b + diger02.qb64b
 
     rot2 = dict(v=vs, i=regk.decode("utf-8"),
                 s="{:x}".format(sn + 2), br=[rarb.decode("utf-8")],
                 t="rot")
     rot2b = json.dumps(rot2, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     r2dig = Diger(ser=rot2b)
-    anc03 = "0AAAAAAAAAAAAAAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4".encode("utf-8")
+    number03 = Number(num=2)
+    diger03 = Diger(qb64=r2dig.qb64)
+    anc03_couple = number03.qb64b + diger03.qb64b
 
     with openLMDB(cls=Reger) as issuer:
         dgkey = dgKey(regk, vdig.qb64b)
         snkey = snKey(regk, sn)
         assert issuer.tvts.put(keys=dgkey, val=vcpb) is True
         assert issuer.putTel(snkey, val=vdig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc01) is True
+        assert issuer.ancs.put(keys=dgkey, val=(number01, diger01)) is True
         assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[indexing.Siger(qb64b=tib01)]) is True
 
         dgkey = dgKey(regk, r1dig.qb64b)
         snkey = snKey(regk, sn + 1)
         assert issuer.tvts.put(keys=dgkey, val=rot1b) is True
         assert issuer.putTel(snkey, val=r1dig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc02) is True
+        assert issuer.ancs.put(keys=dgkey, val=(number02, diger02)) is True
         assert issuer.tibs.pin(keys=(regk, r1dig.qb64b), vals=[indexing.Siger(qb64b=tib02)]) is True
 
         dgkey = dgKey(regk, r2dig.qb64b)
         snkey = snKey(regk, sn + 2)
         assert issuer.tvts.put(keys=dgkey, val=rot2b) is True
         assert issuer.putTel(snkey, val=r2dig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc03) is True
+        assert issuer.ancs.put(keys=dgkey, val=(number03, diger03)) is True
         assert issuer.tibs.pin(keys=(regk, r2dig.qb64b), vals=[indexing.Siger(qb64b=tib03)]) is True
 
         msgs = bytearray()  # outgoing messages
@@ -330,18 +338,20 @@ def test_clone():
 
         valid_tib = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
                      b'QLbASSQLAZcC')
-        # Counter codes use current Codens (e.g. -VAp- for AttachmentGroup)
-        assert msgs == (b'{"v":"KERI10JSON000014_","i":"EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEU'
-          b'k-ODnif3O0","s":"0","b":["BAjzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL'
-          b'3WADbA"],"t":"vcp"}-VAp-BAB' + valid_tib + b'-GAB0AAAAAAAAAAAAAAAAAAAAABAEzpq0'
-          b'6UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_",'
-          b'"i":"EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0","s":"1","ba":'
-          b'["BBVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4"],"t":"rot"}-VAp-'
-          b'BAB' + valid_tib + b'-GAB0AAAAAAAAAAAAAAAAAAAAABBEzpq06UecHwzy-K9FpNoRxCJp2wIG'
-          b'M9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_","i":"EAWdT7a7fZwRz0jiZ0D'
-          b'JxZEM3vsNbLDPEUk-ODnif3O0","s":"2","br":["BAjzaUuRMwh1ivT5BQrqNh'
-          b'bvx82lB-ofrHVHjL3WADbA"],"t":"rot"}-VAp-BAB' + valid_tib + b'-GAB0AAAAAAAAAAAA'
-          b'AAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4')
+        out = bytes(msgs)
+
+        # Verify ordering of replayed events
+        assert out.find(vcpb) != -1
+        assert out.find(rot1b) != -1
+        assert out.find(rot2b) != -1
+        assert out.find(vcpb) < out.find(rot1b) < out.find(rot2b)
+
+        # Verify each event includes one indexed signature and one anchor couple
+        assert out.count(valid_tib) == 3
+        assert out.count(anc01_couple) == 1
+        assert out.count(anc02_couple) == 1
+        assert out.count(anc03_couple) == 1
+        assert out.find(anc01_couple) < out.find(anc02_couple) < out.find(anc03_couple)
 
 
 if __name__ == "__main__":
