@@ -1135,9 +1135,10 @@ class BaseHab:
         """
         Return serder of inception event
         """
-        if (dig := self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))) is None:
+        if (last := next(self.db.kels.getOnLastIter(keys=self.pre, on=0), None)) is None:
             raise kering.ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
+        dig = last.encode("utf-8")
         if (raw := self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))) is None:
             raise kering.ConfigurationError("Missing inception event for "
                                             "Habitat pre={}.".format(self.pre))
@@ -1566,10 +1567,11 @@ class BaseHab:
             return None
 
         msg = bytearray()
-        dig = self.db.getKeLast(dbing.snKey(pre, sn))
-        if dig is None:
+        last = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
+        if last is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(pre, sn))
+        dig = last.encode("utf-8")
         dig = bytes(dig)
         key = dbing.dgKey(pre, dig)  # digest key
         msg.extend(self.db.getEvt(key))
@@ -2025,14 +2027,18 @@ class BaseHab:
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
         key = dbing.snKey(self.pre, sn)
-        dig = self.db.getKeLast(key)
+        # Consume the generator 
+        last = next(self.db.kels.getOnLastIter(keys=self.pre, on=sn), None)
+        if last is None:
+            dig = None
+        else:
+            dig = last  # get the value from the generator
         if dig is None and allowPartiallySigned:
             dig = self.db.getPseLast(key)
 
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
-        dig = bytes(dig)
         key = dbing.dgKey(self.pre, dig)  # digest key
         msg = self.db.getEvt(key)
         serder = serdering.SerderKERI(raw=bytes(msg))

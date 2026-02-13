@@ -2349,11 +2349,12 @@ class Kever:
 
                 psn = sner.num - 1  # use sn of prior event to fetch prior event
                 # fetch raw serialization of last inserted  event at psn
-                pdig = self.db.getKeLast(key=snKey(pre=pre, sn=psn))
+                pdig = next(self.db.kels.getOnLastIter(keys=pre, on=psn), None)
                 if pdig is None:
                     raise ValidationError("Invalid recovery attempt: "
                                           "Bad sn = {} for event = {}."
                                           "".format(psn, ked))
+                pdig = pdig.encode("utf-8")
                 praw = self.db.getEvt(key=dgKey(pre=pre, dig=pdig))
                 if praw is None:
                     raise ValidationError("Invalid recovery attempt: "
@@ -3042,7 +3043,7 @@ class Kever:
             #  event has not already been superceded
             key = snKey(pre=delpre, sn=ssn)  # database key
             # get dig of last delegating event purported at sn
-            raw = self.db.getKeLast(key)  # last means not disputed or superseded
+            raw = next(self.db.kels.getOnLastIter(keys=delpre, on=ssn), None)  # last means not disputed or superseded
             if raw is None:  # no delegatint event yet. no index at key pre, sn
                 # Have to wait until delegating event at sn shows up in kel
                 # ToDo XXXX process  this cue of query to fetch delegating event from
@@ -3063,7 +3064,7 @@ class Kever:
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
-
+            raw = raw.encode("utf-8")
             # get the latest delegating event candidate from dig given by pre,sn index
             ddig = bytes(raw)
             key = dgKey(pre=delpre, dig=ddig)  # database key
@@ -3430,7 +3431,7 @@ class Kever:
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
                          serder.pre, dtsb.decode("utf-8"))
             logger.debug("Event Body=\n%s\n", serder.pretty())
-        self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.kels.addOn(keys=serder.preb, on=serder.sn, val=serder.saidb)
         logger.info("AID %s...%s: Added to KEL %s at sn=%s valid event SAID=%s",
                     pre[:4], pre[-4:], serder.ilk, serder.sn, serder.said)
         logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3730,7 +3731,7 @@ class Kever:
         if sn < 0:
             return None
 
-        for digb in self.db.getKelBackIter(pre, sn):
+        for digb in self.db.kels.getOnBackIter(keys=pre, on=sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
             serder = serdering.SerderKERI(raw=bytes(raw))
@@ -3775,7 +3776,7 @@ class Kever:
 
         keys = [verfer.qb64 for verfer in verfers]
 
-        for digb in self.db.getKelBackIter(pre, sn):
+        for digb in self.db.kels.getOnBackIter(keys=pre, on=sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
             serder = serdering.SerderKERI(raw=bytes(raw), verify=False)
@@ -3828,7 +3829,7 @@ class Kever:
 
         key = verfer.qb64
 
-        for digb in self.db.getKelBackIter(pre, sn):
+        for digb in self.db.kels.getOnBackIter(keys=pre, on=sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
             serder = serdering.SerderKERI(raw=bytes(raw), verify=False)
@@ -3962,7 +3963,7 @@ class Kevery:
 
         """
         preb = pre.encode("utf-8")
-        for digb in self.db.getKelBackIter(preb, sn):
+        for digb in self.db.kels.getOnBackIter(keys=preb, on=sn):
             dgkey = dgKey(preb, digb)
             raw = self.db.getEvt(dgkey)
             serder = serdering.SerderKERI(raw=bytes(raw))
@@ -4159,7 +4160,7 @@ class Kevery:
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
-                    ddig = bytes(self.db.getKeLast(key=snKey(pre, sn))).decode("utf-8")
+                    ddig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
                     if ddig == said:  # event is a duplicate but not duplicitous
                         eserder = self.fetchEstEvent(pre, sn)  # latest est event wrt sn
                         # may have attached valid signature not yet logged
@@ -4228,11 +4229,9 @@ class Kevery:
         sn = serder.sn
 
         # Only accept receipt if for last seen version of event at sn
-        snkey = snKey(pre=pre, sn=sn)
-        ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
+        ldig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)  # retrieve dig of last event at sn.
 
         if ldig is not None:  # verify digs match
-            ldig = bytes(ldig).decode("utf-8")
             # retrieve event by dig assumes if ldig is not None that event exists at ldig
             dgkey = dgKey(pre=pre, dig=ldig)
             raw = bytes(self.db.getEvt(key=dgkey))  # retrieve receipted event at dig
@@ -4313,7 +4312,7 @@ class Kevery:
 
                 # receipted event in db so attempt to get receipter est evt
                 # retrieve dig of last event at sn of est evt of receiptor.
-                sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b, sn=sseqner.sn))
+                sdig = next(self.db.kels.getOnLastIter(keys=sprefixer.qb64b, on=sseqner.sn), None)
                 if sdig is None:
                     # receiptor's est event not yet in receiptors's KEL
                     # so need cue to discover est evt KEL for receipter from watcher etc
@@ -4322,7 +4321,7 @@ class Kevery:
                                                              "missing establishment event of transferable "
                                                              "receipter for event={}."
                                                              "".format(ked))
-
+                sdig = sdig.encode("utf-8")
                 # retrieve last event itself of receiptor est evt from sdig.
                 sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
                 # assumes db ensures that sraw must not be none because sdig was in KE
@@ -4403,14 +4402,13 @@ class Kevery:
         if firner:
             ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
         else:
-            ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+            ldig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)  # retrieve dig of last event at sn.
 
         if ldig is None:  # escrow because event does not yet exist in database
             # # take advantage of fact that receipt and event have same pre, sn fields
             self.escrowUReceipt(serder, cigars, said=serder.said)  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
-        ldig = bytes(ldig).decode("utf-8")  # verify digs match
         # retrieve event by dig assumes if ldig is not None that event exists at ldig
 
         if not serder.compare(said=ldig):  # mismatch events problem with replay
@@ -4487,7 +4485,7 @@ class Kevery:
             ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
         else:
             # Only accept receipt if for last seen version of receipted event at sn
-            ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+            ldig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)  # retrieve dig of last event at sn.
 
         for sprefixer, sseqner, saider, siger in trqs:  # iterate over each trq
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
@@ -4502,16 +4500,15 @@ class Kevery:
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both receipted event and receipter in database so retreive
-                if isinstance(ldig, memoryview):
-                    ldig = bytes(ldig).decode("utf-8")
+                # if isinstance(ldig, memoryview):
+                #     ldig = bytes(ldig).decode("utf-8")        # Shouldn't need this part since its always a string
 
                 if not serder.compare(said=ldig):  # mismatch events problem with replay
                     raise ValidationError("Mismatch replay event at sn = {} with db."
                                           "".format(ked["s"]))
 
                 # retrieve dig of last event at sn of receipter.
-                sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b,
-                                                   sn=sseqner.sn))
+                sdig = next(self.db.kels.getOnLastIter(keys=sprefixer.qb64b, on=sseqner.sn), None)
                 if sdig is None:
                     # receipter's est event not yet in receipter's KEL
                     # receipter's seal event not in receipter's KEL
@@ -4520,7 +4517,7 @@ class Kevery:
                                                              "missing establishment event of transferable "
                                                              "validator receipt quadruple for event={}."
                                                              "".format(ked))
-
+                sdig = sdig.encode("utf-8")
                 # retrieve last event itself of receipter
                 sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
                 # assumes db ensures that sraw must not be none because sdig was in KE
@@ -4900,12 +4897,12 @@ class Kevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified key state notice reply. {serder.ked}")
 
-        ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+        ldig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)  # retrieve dig of last event at sn.
         diger = coring.Diger(qb64=ksr.d)
 
         # Only accept key state if for last seen version of event at sn
         if ldig is not None:  # escrow because event does not yet exist in database
-            ldig = bytes(ldig)
+            ldig = ldig.encode("utf-8")
             # retrieve last event itself of signer given sdig
             sraw = self.db.getEvt(key=dgKey(pre=pre, dig=ldig))
             # assumes db ensures that sraw must not be none because sdig was in KE
@@ -5214,12 +5211,12 @@ class Kevery:
 
         found = False
         while not found:
-            dig = self.db.getKeLast(key=snKey(pre, sn))
+            dig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
             if not dig:
                 return None
 
             # retrieve event by dig
-            dig = bytes(dig)
+            dig = dig.encode("utf-8")
             raw = self.db.getEvt(key=dgKey(pre=pre, dig=dig))
             if not raw:
                 return None
@@ -6402,7 +6399,7 @@ class Kevery:
                         # get dig of receipted accepted event in kel using lastEvt
                         # at pre and sn
 
-                        dig = self.db.getKeLast(snKey(pre, sn))
+                        dig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
                         if dig is None:  # no receipted event so keep in escrow
                             msg = f"URE Missing receipted evt at pre={pre} sn={sn:x}"
                             logger.trace("Kevery unescrow error: %s", msg)
@@ -6869,14 +6866,14 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # get dig of the receipted event using pre and sn lastEvt
-                    raw = self.db.getKeLast(snKey(pre, sn))
+                    raw = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
                     if raw is None:
                         # no event so keep in escrow
                         msg = f"VRE Missing receipted evt at pre={pre} sn={sn:x}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise UnverifiedTransferableReceiptError(msg)
 
-                    dig = bytes(raw)
+                    dig = raw.encode("utf-8")
                     # get receipted event using pre and edig
                     raw = self.db.getEvt(dgKey(pre, dig))
                     if raw is None:  # receipted event superseded so remove from escrow
@@ -6894,14 +6891,13 @@ class Kevery:
 
                     # get receipter's last est event
                     # retrieve dig of last event at sn of receipter.
-                    sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b,
-                                                       sn=sseqner.sn))
+                    sdig = next(self.db.kels.getOnLastIter(keys=sprefixer.qb64b, on=sseqner.sn), None)
                     if sdig is None:
                         # no event so keep in escrow
                         msg = f"VRE Missing receipted evt at pre={pre} sn={sn:x}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise UnverifiedTransferableReceiptError(msg)
-
+                    sdig = sdig.encode("utf-8")
                     # retrieve last event itself of receipter
                     sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
                     # assumes db ensures that sraw must not be none because sdig was in KE
@@ -7125,8 +7121,7 @@ def loadEvent(db, preb, dig):
     event["ked"] = serder.ked
 
     sn = serder.sn
-    sdig = db.getKeLast(key=dbing.snKey(pre=preb,
-                                        sn=sn))
+    sdig = next(db.kels.getOnLastIter(keys=preb, on=sn), None)
     if sdig is not None:
         event["stored"] = True
 

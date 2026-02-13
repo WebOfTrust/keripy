@@ -60,8 +60,8 @@ def rollback(tymth, tock=0.0, **opts):
                                              f"{len(wigs)} witnesses, unable to rollback.")
 
             ked = hby.db.states.getDict(keys=serder.pre)
-            pdig = hby.db.getKeLast(dbing.snKey(serder.preb, serder.sn - 1))
-
+            last = next(hby.db.kels.getOnLastIter(keys=serder.preb, on=serder.sn - 1))
+            pdig = last.encode("utf-8")
             pDgKey = dbing.dgKey(serder.preb, bytes(pdig))  # get message
             raw = hby.db.getEvt(key=pDgKey)
             pserder = serdering.SerderKERI(raw=bytes(raw))
@@ -72,7 +72,7 @@ def rollback(tymth, tock=0.0, **opts):
             hby.db.delWigs(dgkey)
             hby.db.delSigs(dgkey)  # idempotent
             hby.db.delDts(dgkey)  # idempotent do not change dts if already
-            hby.db.delKes(dbing.snKey(serder.preb, serder.sn))
+            hby.db.kels.remOn(keys=serder.preb, on=serder.sn)
 
             seqner = coring.Number(num=serder.sn - 1)
             fner = coring.Number(numh=ked['f'])

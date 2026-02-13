@@ -335,8 +335,8 @@ class Revery:
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.getKeLast(key=dbing.snKey(pre=spre, sn=seqner.sn))
-            if sdig is None:
+            last = next(self.db.kels.getOnLastIter(keys=spre, on=seqner.sn), None)
+            if last is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
                 logger.info("Revery: escrowing without key state for signer"
@@ -346,7 +346,7 @@ class Revery:
                                  ssaider=ssaider, sigers=sigers)
                 self.cues.append(dict(kin="query", q=dict(pre=spre)))
                 continue
-
+            sdig = last.encode("utf-8") # get the sdig from last and convert it from str to bytes
             # retrieve last event itself of signer given sdig
             sraw = self.db.getEvt(key=dbing.dgKey(pre=spre, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE

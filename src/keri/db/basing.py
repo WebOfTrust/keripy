@@ -1008,7 +1008,7 @@ class Baser(dbing.LMDBer):
 
         self.evts = self.env.open_db(key=b'evts.')
         self.fels = self.env.open_db(key=b'fels.')
-        self.kels = self.env.open_db(key=b'kels.', dupsort=True)
+        self.kels = subing.OnIoDupSuber(db=self, subkey='kels.')
         self.dtss = self.env.open_db(key=b'dtss.')
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
                                         klas=(coring.Number, coring.Saider))
@@ -1907,12 +1907,12 @@ class Baser(dbing.LMDBer):
         if prefixer.transferable:
             # receipted event and receipter in database so get receipter est evt
             # retrieve dig of last event at sn of est evt of receipter.
-            sdig = self.getKeLast(key=dbing.snKey(pre=prefixer.qb64b,
-                                                  sn=sn))
+            sdig = next(self.kels.getOnLastIter(keys=prefixer.qb64b, on=sn), None)
             if sdig is None:
                 # receipter's est event not yet in receipters's KEL
                 raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
+            sdig = sdig.encode("utf-8 ")
             # retrieve last event itself of receipter est evt from sdig
             sraw = self.getEvt(key=dbing.dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
@@ -1982,7 +1982,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.getKelIter(pre, sn=sn):
+        for dig in self.kels.getOnIterAll(keys=pre, sn=sn):
             try:
                 dgkey = dbing.dgKey(pre, dig)  # get message
                 if not (raw := self.getEvt(key=dgkey)):
@@ -2008,7 +2008,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.getKelLastIter(pre, sn=sn):
+        for dig in self.kels.getOnLastIter(keys=pre, on=sn):
             try:
 
                 dgkey = dbing.dgKey(pre, dig)  # get message
@@ -2576,124 +2576,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putIoDupVals(self.kels, key, vals)
 
-    def addKe(self, key, val):
-        """
-        Use snKey()
-        Add key event val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.kels, key, val)
-
-    def getKes(self, key):
-        """
-        Use snKey()
-        Return list of key event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.kels, key)
-
-    def getKeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup key event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.kels, key)
-
-    def cntKes(self, key):
-        """
-        Use snKey()
-        Return count of dup key event dig val at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.kels, key)
-
-    def delKes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.kels, key)
-
-
-    def getKelIter(self, pre, sn=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps. Stops if
-        encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int): initial sequence number to begin at
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-
-        return (self.getOnIoDupIterAll(self.kels, pre, on=sn))
-
-        #return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
-
-
-    def getKelBackIter(self, pre, sn=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps in decreasing
-        order starting with first sequence number sn. Stops if encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int):
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupValBackIter(self.kels, pre, sn)
-
-
-    def getKelLastIter(self, pre, sn=0):
-        """
-        Returns iterator of last one of dup vals at each key in insertion order
-        for all entries with same prefix across all sequence numbers without gaps.
-        Stops if encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int); sequence number to being iteration
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupLastValIter(self.kels, pre, on=sn)
 
 
     def putPses(self, key, vals):
