@@ -199,7 +199,7 @@ class Counselor(doing.DoDoer):
                                                                           seal=anchor):
                     sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
                     asaider = coring.Saider(qb64b=serder.saidb)
-                    self.hby.db.aess.pin(keys=dbing.dgKey(pre, saider.qb64b),
+                    self.hby.db.aess.pin(keys=(pre, saider.qb64b),
                                          val=(sner, asaider))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)

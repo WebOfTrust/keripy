@@ -1684,7 +1684,7 @@ class Baser(dbing.LMDBer):
                 atc.extend(wig)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
-        if (duple := self.aess.get(keys=dgkey)) is not None:
+        if (duple := self.aess.get(keys=(pre, dig))) is not None:
             seqner, saider = duple
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
                                     count=1, version=kering.Vrsn_1_0).qb64b)

@@ -311,8 +311,6 @@ def test_baser():
         assert db.getDts(key) == None
 
         # Test .aess authorizing event source seal couples
-        dgkey = dgKey(preb, digb)
-
         # test .aess sub db methods
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
@@ -325,28 +323,28 @@ def test_baser():
         val1 = (number1, saider1)
         val2 = (number2, saider2)
 
-        assert db.aess.get(keys=dgkey) == None
-        assert db.aess.rem(keys=dgkey) == False
-        assert db.aess.put(keys=dgkey, val=val1) == True
-        result = db.aess.get(keys=dgkey)
+        assert db.aess.get(keys=(preb, digb)) == None
+        assert db.aess.rem(keys=(preb, digb)) == False
+        assert db.aess.put(keys=(preb, digb), val=val1) == True
+        result = db.aess.get(keys=(preb, digb))
         assert result is not None
         rnumber1, rsaider1 = result
         assert rnumber1.qb64b == number1.qb64b
         assert rsaider1.qb64b == saider1.qb64b
-        assert db.aess.put(keys=dgkey, val=val2) == False
-        result = db.aess.get(keys=dgkey)
+        assert db.aess.put(keys=(preb, digb), val=val2) == False
+        result = db.aess.get(keys=(preb, digb))
         assert result is not None
         rnumber1, rsaider1 = result
         assert rnumber1.qb64b == number1.qb64b
         assert rsaider1.qb64b == saider1.qb64b
-        assert db.aess.pin(keys=dgkey, val=val2) == True
-        result = db.aess.get(keys=dgkey)
+        assert db.aess.pin(keys=(preb, digb), val=val2) == True
+        result = db.aess.get(keys=(preb, digb))
         assert result is not None
         rnumber2, rsaider2 = result
         assert rnumber2.qb64b == number2.qb64b
         assert rsaider2.qb64b == saider2.qb64b
-        assert db.aess.rem(keys=dgkey) == True
-        assert db.aess.get(keys=dgkey) == None
+        assert db.aess.rem(keys=(preb, digb)) == True
+        assert db.aess.get(keys=(preb, digb)) == None
 
         # test .sigs sub db methods
         key = dgKey(preb, digb)
