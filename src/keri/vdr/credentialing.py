@@ -268,7 +268,7 @@ class BaseRegistry:
         """
         key = dgKey(pre, regd)
         sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(key, sealet)
+        self.reger.ancs.put(keys=key, val=sealet)
 
 
 class Registry(BaseRegistry):
@@ -772,7 +772,7 @@ class Registrar(doing.DoDoer):
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
             sealet = seqner.qb64b + saider.qb64b
-            self.rgy.reger.putAnc(key, sealet)
+            self.rgy.reger.ancs.put(keys=key, val=sealet)
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
             self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))

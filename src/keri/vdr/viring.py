@@ -301,7 +301,7 @@ class Reger(dbing.LMDBer):
 
         self.tvts = self.env.open_db(key=b'tvts.')
         self.tels = self.env.open_db(key=b'tels.')
-        self.ancs = self.env.open_db(key=b'ancs.')
+        self.ancs = subing.Suber(db=self, subkey='ancs.')
         self.tibs = self.env.open_db(key=b'tibs.', dupsort=True)
         self.baks = self.env.open_db(key=b'baks.', dupsort=True)
         self.oots = self.env.open_db(key=b'oots.')
@@ -554,11 +554,11 @@ class Reger(dbing.LMDBer):
                 atc.extend(tib)
 
         # add authorizer (delegator/issure) source seal event couple to attachments
-        couple = self.getAnc(dgkey)
+        couple = self.ancs.get(keys=dgkey)
         if couple is not None:
             atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
                                     version=kering.Vrsn_1_0).qb64b)
-            atc.extend(couple)
+            atc.extend(couple.encode("utf-8"))
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
@@ -884,42 +884,6 @@ class Reger(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.oots, key)
-
-
-    def putAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.ancs, key, val)
-
-    def setAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.ancs, key, val)
-
-    def getAnc(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.ancs, key)
-
-    def delAnc(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.ancs, key)
 
 
     def putBaks(self, key, vals):
