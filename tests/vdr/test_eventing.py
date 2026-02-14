@@ -448,7 +448,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEGe5uFh3t0JglSPQtJJoxCV1RlFoTBept1BPRk3o6hgh'
         assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
-        assert reg.tibs.get(keys=dgkey) == []
+        assert reg.tibs.get(keys=(regk, vcp.said)) == []
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
         # try to rotate a backerless registry
