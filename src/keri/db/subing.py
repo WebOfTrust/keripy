@@ -297,11 +297,16 @@ class SuberBase():
 
     def getItemIter(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
-        """Iterator over items in .db subclasses that do special hidden transforms
-        on either the keyspace or valuespace should override this method to hide
-        hidden parts from the returned items. For example, adding either
-        a hidden key space suffix or hidden val space proem to ensure insertion
-        order. Use getFullItemIter instead to return full items with hidden parts
+        """Iterates over all the items in top branch defined by keys where
+        keys may be truncation of full branch.
+
+        Iterates over top branch of items in .db subclasses that do special
+        hidden transforms on either the keyspace or valuespace.
+        Should override this method to hide hidden parts from the returned items.
+        For example, adding either a hidden key space suffix or hidden val space
+        proem to ensure insertion order.
+
+        Use getFullItemIter instead to return full items with hidden parts
         shown for debugging or testing.
 
         Returns:
@@ -310,13 +315,11 @@ class SuberBase():
             keys. Keys may be keyspace prefix to return branches of key space.
             When keys is empty then returns all items in subdb
 
-
-
         Parameters:
             keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): of key
-                parts that may be
-                a truncation of a full keys tuple in  in order to address all the
-                items from multiple branches of the key space.
+                parts that may be a truncation of a full keys tuple in
+                in order to address all the items from multiple branches of the
+                key space.
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
@@ -332,6 +335,8 @@ class SuberBase():
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
 
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):
@@ -1081,15 +1086,15 @@ class IoSetSuber(SuberBase):
         super(IoSetSuber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
-    def put(self, keys: str|bytes| memoryview | Iterable,
-                  vals: str | bytes | memoryview | Iterable):
+    def put(self, keys: str|bytes|memoryview|Iterable,
+                  vals: str|bytes|memoryview|Iterable):
         """Puts all vals at effective key made from keys and hidden ordinal suffix.
         that are not already in set of vals at key. Does not overwrite.
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): of key parts to be
+            keys (str|bytes|memoryview|Iterable): of key parts to be
                     combined in order to form key
-            vals (str | bytes | memoryview | Iterable): of str serializations
+            vals (str|bytes|memoryview|Iterable): of str serializations
 
         Returns:
             result (bool): True If successful, False otherwise.
@@ -1111,8 +1116,8 @@ class IoSetSuber(SuberBase):
         and replaces them with vals
 
         Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-            vals (Iterable): str serializations
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined in order to form key
+            vals (str|bytes|memoryview|Iterable): str serializations
 
         Returns:
             result (bool): True If successful, False otherwise.
@@ -1136,7 +1141,7 @@ class IoSetSuber(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key parts to be
                     combined in order to form key
-            val (str | bytes | memoryview): serialization
+            val (str|bytes|memoryview): serialization
 
         Returns:
             result (bool): True means unique value added among duplications,
@@ -1149,41 +1154,74 @@ class IoSetSuber(SuberBase):
                                     sep=self.sep))
 
 
-    def get(self, keys: str | bytes | memoryview | Iterable):
-        """Gets vals set list at key made from effective keys
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-
-        Returns:
-            vals (Iterable):  each item in list is str
-                          empty list if no entry at keys
-
-        """
-        return ([self._des(val) for val in
-                    self.db.getIoSetIter(db=self.sdb,
-                                             key=self._tokey(keys),
-                                             sep=self.sep)])
-
-
-    def getIter(self, keys: str | bytes | memoryview | Iterable):
-        """Iterates over set values at effecive key made from keys and hidden ordinal
-        suffix.
+    def get(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+        """Gets vals set list at effective key made from keys and hidden
+        ordinal suffix ion starting at ion >= ion.
 
         All vals in set of vals that share same effecive key are retrieved in
-        insertion order.
+        insertion order starting at ion.
 
         Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                                                    in order to form key
+            ion (int): offset into set to start the count (0 based offset)
 
         Returns:
-            vals (Iterator):  str values. Raises StopIteration when done
+            vals (list[str]):  each item in list is str
+                          empty list if no entry at keys
+        """
+        # use iter so can more efficiently ._des(val)
+        return [self._des(val) for val in
+                    self.db.getIoSetIter(db=self.sdb,
+                                             key=self._tokey(keys),
+                                             ion=ion,
+                                             sep=self.sep)]
+
+
+    def getIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+        """Iterates over set values at effecive key made from keys and hidden
+        ordinal suffix ion starting at ion >= ion.
+
+        All vals in set of vals that share same effecive key are retrieved in
+        insertion order starting at ion.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                                                  in order to form key
+            ion (int): offset into set to start the count (0 based offset)
+
+        Returns:
+            vals (Iterator[str]):  str values. Raises StopIteration when done
 
         """
         for val in self.db.getIoSetIter(db=self.sdb,
                                             key=self._tokey(keys),
+                                            ion=ion,
                                             sep=self.sep):
             yield self._des(val)
+
+
+    def getLastItem(self, keys: str|bytes|memoryview|Iterable):
+        """Gets last set item (key, val) inserted at effecive key where
+        effective key is made from keys and hidden ordinal suffix or None when
+        keys is empty or keys not in db.
+
+        All items in the set of items that shares the same effecive key are
+        retrieved in insertion order.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                                                  in order to form key
+
+        Returns:
+            last ((str, str)|None): (key, val) tuple or None if no entry at keys
+                              or keys is empty
+
+        """
+        if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
+            key, val = last
+            return (self._tokeys(key), self._des(val))
+        return last
 
 
     def getLast(self, keys: str|bytes|memoryview|Iterable):
@@ -1205,18 +1243,17 @@ class IoSetSuber(SuberBase):
         return (self._des(val) if val is not None else val)
 
 
-
-
     def rem(self, keys: str|bytes|memoryview|Iterable,
-                   val: str | bytes | memoryview = b''):
+                   val: str|bytes|memoryview = b''):
         """Removes entry at effective key made from keys and hidden ordinal suffix
         that matches val if any. Otherwise deletes all values at effective key.
 
         Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-            val (str):  value at key to delete. Subclass ._ser method may
-                        accept different value types
-                        if val is empty then remove all values at key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined in
+                order to form key
+            val (str|bytes|memoryview):  value at key to delete. Subclass ._ser
+                method may accept different value types
+                if val is empty then remove all values at key
 
         Returns:
            result (bool): True if effective key with val exists so rem successful.
@@ -1234,16 +1271,19 @@ class IoSetSuber(SuberBase):
                                        sep=self.sep)
 
 
-    def cnt(self, keys: str | bytes | memoryview | Iterable):
+    def cnt(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """
         Return count of  values at effective key made from keys and hidden ordinal
         suffix. Zero otherwise
 
         Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
+            ion (int): offset into set to start the count (0 based offset)
         """
         return (self.db.cntIoSet(db=self.sdb,
                                      key=self._tokey(keys),
+                                     ion=ion,
                                      sep=self.sep))
 
 
@@ -1251,6 +1291,8 @@ class IoSetSuber(SuberBase):
                     *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
+
+        Transparently suffix and unsuffix insertion ordering ordinal
 
         raises StopIterationError when done
 
@@ -1279,6 +1321,8 @@ class IoSetSuber(SuberBase):
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
 
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
         """
         for key, val in self.db.getTopIoSetItemIter(db=self.sdb,
                 top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
@@ -1439,8 +1483,7 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
 
 
 class SignerSuber(CesrSuber):
-    """
-    Sub class of CesrSuber where data is Signer subclass instance .qb64b propery
+    """Sub class of CesrSuber where data is Signer subclass instance .qb64b propery
     which is a fully qualified serialization and uses the key which is the qb64b
     of the signer.verfer to get the transferable property of the verfer
     Automatically serializes and deserializes from qb64b to/from Signer instances
@@ -1494,7 +1537,9 @@ class SignerSuber(CesrSuber):
 
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
-        """
+        """Iterates over all the items in top branch defined by keys where
+        keys may be truncation of full branch.
+
         Returns:
             iterator (Iteratore: tuple (key, val) over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
@@ -1514,6 +1559,8 @@ class SignerSuber(CesrSuber):
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
 
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
@@ -1619,7 +1666,9 @@ class CryptSignerSuber(SignerSuber):
 
     def getItemIter(self, keys: str|bytes|memoryview|Iterable= "",
                        decrypter: core.Decrypter = None, *, topive=False):
-        """
+        """Iterates over all the items in top branch defined by keys where
+        keys may be truncation of full branch.
+
         Returns:
             items (Iterator): of tuples (key, val) over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
@@ -1642,6 +1691,8 @@ class CryptSignerSuber(SignerSuber):
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
 
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
@@ -2093,8 +2144,7 @@ class IoDupSuber(DupSuber):
 
     def put(self, keys: str | bytes | memoryview | Iterable,
                   vals: str | bytes | memoryview | Iterable):
-        """
-        Puts all vals idempotently at key made from keys in insertion order using
+        """Puts all vals idempotently at key made from keys in insertion order using
         hidden ordinal proem. Idempotently means do not put any val in vals that is
         already in dup vals at key. Does not overwrite.
 
@@ -2115,8 +2165,7 @@ class IoDupSuber(DupSuber):
 
     def pin(self, keys: str | bytes | memoryview | Iterable,
             vals: str | bytes | memoryview | Iterable):
-        """
-        Pins (sets) vals at key made from keys in insertion order using hidden
+        """Pins (sets) vals at key made from keys in insertion order using hidden
         ordinal proem. Overwrites. Removes all pre-existing vals that share
         same keys and replaces them with vals
 
@@ -2250,7 +2299,11 @@ class IoDupSuber(DupSuber):
 
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
-        """
+        """Iterates over all the items in top branch defined by keys where
+        keys may be truncation of full branch.
+
+        Transparently prepends and strips insertion ordering proem from value
+
         Return iterator over all the items including dup items for all keys
         in top branch defined by keys where keys may be truncation of full branch.
 
@@ -2279,6 +2332,8 @@ class IoDupSuber(DupSuber):
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
 
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
         """
 
         for key, val in self.db.getTopIoDupItemIter(db=self.sdb,

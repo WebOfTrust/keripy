@@ -1661,39 +1661,183 @@ def test_ioset_suber():
         assert isinstance(iosuber, subing.IoSetSuber)
         assert not iosuber.sdb.flags()["dupsort"]
 
+
+        # test empty keys
+        assert iosuber.cntAll() == 0
+        assert iosuber.cnt(keys="") == 0
+        assert iosuber.get(keys="") == []
+        assert [val for val in iosuber.getIter(keys="")] == []
+        assert iosuber.getLastItem(keys=()) == ()
+        assert iosuber.getLast(keys=()) == None
+        assert iosuber.getLastItem(keys="") == ()
+        assert iosuber.getLast(keys="") == None
+
         sue = "Hello sailer!"
         sal = "Not my type."
+        sam = "A real charmer!"
+        zoe = "See ya later."
+        zia = "Hey gorgeous!"
+        zul = "get lost"
+        bob = "Shove off!"
 
         keys0 = ("test_key", "0001")
         keys1 = ("test_key", "0002")
+        keys2 = "keystr"
 
+        vals0 = [sue, sal, sam]
+        vals1 = [zoe, zia, zul]
+
+        # fill database
+        assert iosuber.put(keys=keys0, vals=vals0)
+        assert iosuber.put(keys=keys1, vals=vals1)
+
+        assert iosuber.cntAll() == 6
+
+        assert iosuber.cnt(keys=keys0) == 3
+        assert iosuber.cnt(keys=keys1) == 3
+
+        # keys0
+        # ion default 0
+        assert [val for val in iosuber.getIter(keys=keys0)] == vals0
+        assert iosuber.get(keys=keys0) == vals0
+        assert iosuber.cnt(keys=keys0) == 3
+        assert iosuber.getLastItem(keys=keys0) == (keys0, sam)
+        assert iosuber.getLast(keys=keys0) == sam
+
+        # ion = 0
+        assert [val for val in iosuber.getIter(keys=keys0, ion=0)] == [sue, sal, sam]
+        assert iosuber.get(keys=keys0, ion=0) == [sue, sal, sam]
+        assert iosuber.cnt(keys=keys0, ion=0) == 3
+
+        # ion = 1
+        assert [val for val in iosuber.getIter(keys=keys0, ion=1)] == [sal, sam]
+        assert iosuber.get(keys=keys0, ion=1) == [sal, sam]
+        assert iosuber.cnt(keys=keys0, ion=1) == 2
+
+        # ion = 2
+        assert [val for val in iosuber.getIter(keys=keys0, ion=2)] == [sam]
+        assert iosuber.get(keys=keys0, ion=2) == [sam]
+        assert iosuber.cnt(keys=keys0, ion=2) == 1
+
+        # ion = 3  past end of keys0 set
+        assert [val for val in iosuber.getIter(keys=keys0, ion=3)] == []
+        assert iosuber.get(keys=keys0, ion=3) == []
+        assert iosuber.cnt(keys=keys0, ion=3) == 0
+
+        # keys1
+        # ion default 0
+        assert [val for val in iosuber.getIter(keys=keys1)] == vals1
+        assert iosuber.get(keys=keys1) == vals1
+        assert iosuber.cnt(keys=keys1) == 3
+        assert iosuber.getLastItem(keys=keys1) == (keys1, zul)
+        assert iosuber.getLast(keys=keys1) == zul
+
+        # ion = 0
+        assert [val for val in iosuber.getIter(keys=keys1, ion=0)] == [zoe, zia, zul]
+        assert iosuber.get(keys=keys1, ion=0) == [zoe, zia, zul]
+        assert iosuber.cnt(keys=keys1, ion=0) == 3
+
+        # ion = 1
+        assert [val for val in iosuber.getIter(keys=keys1, ion=1)] == [zia, zul]
+        assert iosuber.get(keys=keys1, ion=1) == [zia, zul]
+        assert iosuber.cnt(keys=keys1, ion=1) == 2
+
+        # ion = 2
+        assert [val for val in iosuber.getIter(keys=keys1, ion=2)] == [zul]
+        assert iosuber.get(keys=keys1, ion=2) == [zul]
+        assert iosuber.cnt(keys=keys1, ion=2) == 1
+
+        # ion = 3  past end of keys1 set
+        assert [val for val in iosuber.getIter(keys=keys1, ion=3)] == []
+        assert iosuber.get(keys=keys0, ion=3) == []
+        assert iosuber.cnt(keys=keys0, ion=3) == 0
+
+        # keys0 make gap keys0
+        assert iosuber.rem(keys=keys0, val=sal)
+
+        # ion default 0
+        assert [val for val in iosuber.getIter(keys=keys0)] == [sue, sam]
+        assert iosuber.get(keys=keys0) == [sue, sam]
+        assert iosuber.cnt(keys=keys0) == 2
+        assert iosuber.getLastItem(keys=keys0) == (keys0, sam)
+        assert iosuber.getLast(keys=keys0) == sam
+
+        # ion = 0
+        assert [val for val in iosuber.getIter(keys=keys0, ion=0)] == [sue, sam]
+        assert iosuber.get(keys=keys0, ion=0) == [sue, sam]
+        assert iosuber.cnt(keys=keys0, ion=0) == 2
+
+        # ion = 1
+        assert [val for val in iosuber.getIter(keys=keys0, ion=1)] == [ sam]
+        assert iosuber.get(keys=keys0, ion=1) == [sam]
+        assert iosuber.cnt(keys=keys0, ion=1) == 1
+
+        # ion = 2
+        assert [val for val in iosuber.getIter(keys=keys0, ion=2)] == [sam]
+        assert iosuber.get(keys=keys0, ion=2) == [sam]
+        assert iosuber.cnt(keys=keys0, ion=2) == 1
+
+        # ion = 3  past end of keys0 set
+        assert [val for val in iosuber.getIter(keys=keys0, ion=3)] == []
+        assert iosuber.get(keys=keys0, ion=3) == []
+        assert iosuber.cnt(keys=keys0, ion=3) == 0
+
+        # keys1 make gap keys1
+        assert iosuber.rem(keys=keys1, val=zoe)
+
+        # ion default 0
+        assert [val for val in iosuber.getIter(keys=keys1)] == [zia, zul]
+        assert iosuber.get(keys=keys1) == [zia, zul]
+        assert iosuber.cnt(keys=keys1) == 2
+        assert iosuber.getLastItem(keys=keys1) == (keys1, zul)
+        assert iosuber.getLast(keys=keys1) == zul
+
+        # ion = 0
+        assert [val for val in iosuber.getIter(keys=keys1, ion=0)] == [zia, zul]
+        assert iosuber.get(keys=keys1, ion=0) == [zia, zul]
+        assert iosuber.cnt(keys=keys1, ion=0) == 2
+
+        # ion = 1
+        assert [val for val in iosuber.getIter(keys=keys1, ion=1)] == [zia, zul]
+        assert iosuber.get(keys=keys1, ion=1) == [zia, zul]
+        assert iosuber.cnt(keys=keys1, ion=1) == 2
+
+        # ion = 2
+        assert [val for val in iosuber.getIter(keys=keys1, ion=2)] == [zul]
+        assert iosuber.get(keys=keys1, ion=2) == [zul]
+        assert iosuber.cnt(keys=keys1, ion=2) == 1
+
+        # ion = 3  past end of keys1 set
+        assert [val for val in iosuber.getIter(keys=keys1, ion=3)] == []
+        assert iosuber.get(keys=keys1, ion=3) == []
+        assert iosuber.cnt(keys=keys1, ion=3) == 0
+
+        # clear db
+        assert iosuber.rem(keys=keys0)
+        assert iosuber.rem(keys=keys1)
+        assert iosuber.cntAll() == 0
+
+        # more tests
         assert iosuber.put(keys=keys0, vals=[sal, sue])
-        actuals = iosuber.get(keys=keys0)
-        assert actuals == [sal, sue]  # insertion order not lexicographic
+        assert iosuber.get(keys=keys0) == [sal, sue]  # insertion order not lexicographic
         assert iosuber.cnt(keys0) == 2
-        actual = iosuber.getLast(keys=keys0)
-        assert actual == sue
+        assert iosuber.getLastItem(keys=keys0) == (keys0, sue)
+        assert iosuber.getLast(keys=keys0) == sue
 
         assert iosuber.rem(keys0)
-        actuals = iosuber.get(keys=keys0)
-        assert not actuals
-        assert actuals == []
+        assert iosuber.get(keys=keys0) == []
         assert iosuber.cnt(keys0) == 0
 
         assert iosuber.put(keys=keys0, vals=[sue, sal])
         actuals = iosuber.get(keys=keys0)
         assert actuals == [sue, sal]  # insertion order
-        actual = iosuber.getLast(keys=keys0)
-        assert actual == sal
+        assert iosuber.getLastItem(keys=keys0) == (keys0, sal)
+        assert iosuber.getLast(keys=keys0) == sal
 
-        sam = "A real charmer!"
         result = iosuber.add(keys=keys0, val=sam)
         assert result
         actuals = iosuber.get(keys=keys0)
         assert actuals == [sue, sal, sam]   # insertion order
-
-        zoe = "See ya later."
-        zia = "Hey gorgeous!"
 
         result = iosuber.pin(keys=keys0, vals=[zoe, zia])
         assert result
@@ -1790,7 +1934,6 @@ def test_ioset_suber():
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
-
 
 
         # test with keys as string not tuple

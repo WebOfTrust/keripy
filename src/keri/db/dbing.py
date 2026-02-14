@@ -595,7 +595,7 @@ class LMDBer(filing.Filer):
         """Iterates over branch of db given by top key
 
         Returns:
-            items (abc.Iterator): iterator of (full key, val) tuples over a
+            items (Iterator): iterator of (full key, val) tuples over a
                 branch of the db given by top key where: full key is full database
                 key for val not truncated top key
 
@@ -610,8 +610,10 @@ class LMDBer(filing.Filer):
             top (bytes): truncated top key, a key space prefix to get all the items
                         from multiple branches of the key space. If top key is
                         empty then gets all items in database.
-                        In Python str.startswith('') always returns True so if branch
-                        key is empty string it matches all keys in db with startswith.
+
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db .
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
@@ -1071,7 +1073,7 @@ class LMDBer(filing.Filer):
 
 
     def getIoSet(self, db, key, *, ion=0, sep=b'.'):
-        """Get list of set values starting at insertion order ion
+        """Get list of set values starting at insertion order ion >= ion
 
         Uses hidden ordinal key suffix for insertion ordering.
             The suffix is appended and stripped transparently.
@@ -1136,11 +1138,45 @@ class LMDBer(filing.Filer):
             return  # done raises StopIteration
 
 
-    def getIoSetLast(self, db, key, *, sep=b'.'):
-        """Gets last added ioset entry at effective key if any else None.
+    def getIoSetLastItem(self, db, key, *, sep=b'.'):
+        """Gets last added ioset entry item at effective key if any else empty
+        tuple.
 
         Uses hidden ordinal key suffix for insertion ordering.
-            The suffix is appended and stripped transparently.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            last ((bytes, memoryview)): last added entry item at apparent
+                effective key if any, otherwise empty tuple if no entry at key
+                or if key empty
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key (unsuffixed)
+            sep (bytes): separator character for split
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            last = ()
+            if not key:
+                return last
+            iokey = suffix(key, 0) # walk hidden branches starting from zero
+            cursor = txn.cursor()  # create cursor to walk back
+            if cursor.set_range(iokey):  # not past end of database
+                for ciokey, cval in cursor.iternext():  # get iokey, val at cursor
+                    ckey, cion = unsuffix(ciokey, sep=sep)
+                    if ckey != key:  # prev entry if any was the last entry for key
+                        break  # done
+                    last = (ckey, cval)
+
+            return last  # iokey past end of database
+
+
+    def getIoSetLast(self, db, key, *, sep=b'.'):
+        """Gets last added ioset entry val at effective key if any else None.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
 
         Returns:
             last (memoryview|None): last added entry at apparent effective key if any,
@@ -1151,28 +1187,17 @@ class LMDBer(filing.Filer):
             key (bytes): Apparent effective key
             sep (bytes): separator character for split
         """
-
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            if not key:
-                return None
-            iokey = suffix(key, 0) # walk hidden branches starting from zero
-            last = None
-            cursor = txn.cursor()  # create cursor to walk back
-            if cursor.set_range(iokey):  # not past end of database
-                for ciokey, cval in cursor.iternext():  # get iokey, val at cursor
-                    ckey, cion = unsuffix(ciokey, sep=sep)
-                    if ckey != key:  # prev entry if any was the last entry for key
-                        break  # done
-                    last = cval
-
-            return last  # iokey past end of database
+        val = None
+        if result := self.getIoSetLastItem(db=db, key=key, sep=sep):
+            _, val = result
+        return val
 
 
     def delIoSet(self, db, key, *, sep=b'.'):
         """Deletes all set values at apparent effective key.
 
         Uses hidden ordinal key suffix for insertion ordering.
-        The suffix is appended and stripped transparently.
+            The suffix is suffixed and unsuffixed transparently.
 
         Returns:
             result (bool): True if values were deleted at key. False otherwise
@@ -1204,7 +1229,7 @@ class LMDBer(filing.Filer):
     def delIoSetVal(self, db, key, val, *, sep=b'.'):
         """Deletes set ioval val at key onkey consisting of key + sep + on if any
         Uses hidden ordinal key suffix for insertion ordering.
-        The suffix is appended and stripped transparently.
+           The suffix is suffixed and unsuffixed transparently.
 
         Because the insertion order of val is not provided must perform a linear
         search over set of values.
@@ -1246,10 +1271,11 @@ class LMDBer(filing.Filer):
             return False
 
 
-    def cntIoSet(self, db, key, *, sep=b'.'):
-        """Count all set values with the same apparent effective key.
+    def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
+        """Count all set values with the same apparent effective key starting at
+        insertion offset ion.
         Uses hidden ordinal key suffix for insertion ordering.
-        The suffix is appended and stripped transparently.
+            The suffix is suffixed and unsuffixed transparently.
 
         Returns:
             count (int): count values in set at apparent effective key
@@ -1257,9 +1283,10 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
-        return len(self.getIoSet(db=db, key=key, sep=sep))
+        return len(self.getIoSet(db=db, key=key, ion=ion, sep=sep))
 
 
     def getTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
@@ -1268,7 +1295,7 @@ class LMDBer(filing.Filer):
             ordering ordinal.
 
         Uses hidden ordinal key suffix for insertion ordering.
-
+            The suffix is suffixed and unsuffixed transparently.
 
         Returns:
             items (Iterator[(key,val)]): iterator of tuples (key, val) where
@@ -1278,8 +1305,13 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            top (bytes): top key in db. When top is empty then every item in db.
+            top (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database.
             sep (bytes): sep character for attached io suffix
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
         """
         for iokey, val in self.getTopItemIter(db=db, top=top):
             key, ion = unsuffix(iokey, sep=sep)
@@ -1294,7 +1326,7 @@ class LMDBer(filing.Filer):
         Raises StopIterationError when done.
 
         Uses hidden ordinal key suffix for insertion ordering.
-            The suffix is appended and stripped transparently.
+            The suffix is suffixed and unsuffixed transparently.
 
         Returns:
             last (Iterator[memoryview]): last added entry item at tuple (key, val)
@@ -1339,7 +1371,7 @@ class LMDBer(filing.Filer):
         Raises StopIterationError when done.
 
         Uses hidden ordinal key suffix for insertion ordering.
-            The suffix is appended and stripped transparently.
+            The suffix is suffixed and unsuffixed transparently.
 
         Returns:
             last (Iterator[memoryview]): last added entry val at apparent effective
@@ -1353,8 +1385,6 @@ class LMDBer(filing.Filer):
         """
         for key, val in self.getIoSetLastItemIterAll(db=db, key=key, sep=sep):
             yield val
-
-
 
 
     # methods for OnIoSet that adds IoSet key suffix after On ordinal numbered
@@ -1452,7 +1482,7 @@ class LMDBer(filing.Filer):
 
 
     def getOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
-        """Get list of all set IoVals at onkey = key + sep + on in db starting
+        """Get list of all set vals at onkey = key + sep + on in db starting
         at insertion order ion within set.
         This provides ordinal ordering of keys and insertion ordering of set.
 
@@ -1477,7 +1507,7 @@ class LMDBer(filing.Filer):
 
 
     def getOnIoSetIter(self, db, key, *, on=0, ion=0, sep=b'.'):
-        """Get iterator oof all set IoVals at onkey = key + sep + on in db starting
+        """Get iterator of all set vals at onkey = key + sep + on in db starting
         at insertion order ion within set This provides ordinal ordering of
         keys and inserion ordering of set vals.
 
@@ -1499,7 +1529,34 @@ class LMDBer(filing.Filer):
             sep (bytes): separator character for split
 
         """
-        yield self.getIoSetIter(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+        return self.getIoSetIter(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+
+    def getOnIoSetLastItem(self, db, key, on=0, *, sep=b'.'):
+        """Gets item (key, val) of last member of the insertion ordered set
+        at key + sep + on
+
+        Set members are sorted internally by hidden suffixed insertion order
+        ordinal
+
+        Returns:
+            val (memoryview|Nnne): last set val at onkey. Empty tuple if onkey
+                                    not indb or key empty.
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        if last := self.getIoSetLastItem(db=db,
+                                         key=onKey(key, on, sep=sep),
+                                         sep=sep):
+            onkey, val = last
+            key, on = splitOnKey(onkey, sep=sep)
+            return (key, on, val)
+        return ()
 
 
     def getOnIoSetLast(self, db, key, on=0, *, sep=b'.'):
@@ -1509,7 +1566,7 @@ class LMDBer(filing.Filer):
         ordinal
 
         Returns:
-            val (memoryview|Nnne): last set val at onkey. None if onkey not in
+            last (memoryview|Nnne): last set val at onkey. None if onkey not in
                                     db or key empty.
 
         Parameters:
@@ -1575,8 +1632,9 @@ class LMDBer(filing.Filer):
         return self.delIoSetVal(db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 
-    def cntOnIoSet(self, db, key, *, on=0, sep=b'.'):
-        """Count all set values at onkey made from key + on.
+    def cntOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Count all set values at onkey made from key + on starting at ion offset
+        within set.
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is appended and stripped transparently.
 
@@ -1585,47 +1643,62 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
+            key (bytes): base key
             on (int): ordinal number at which to add to key form effective key
+            ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
         return len(self.getIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep))
 
 
-    def getOnIoSetIterAll(self, db, key=b'', on=0, *, sep=b'.'):
-        """Get iterator of set vals at each key over all tail ordinals on >= on.
-        but same key in db
-        Values are sorted by onKey(key, on) where on is ordinal number and ioset
-        suffix key.
+    def getTopOnIoSetItemIter(self, db, top=b'', *, sep=b'.'):
+        """Iterates over top branch of all insertion ordered set values where each
+            effective key has onkey made from key + sep + on plus trailing
+            hidden suffix of serialization of insertion ordering ordinal.
 
-        when key is empty then retrieves whole db
+        Uses hidden ordinal key suffix for insertion ordering. Transparently
+        added and stripped.
 
-        Raises StopIteration Error when empty.
 
         Returns:
-            items (Iterator[bytes]): value
+            items (Iterator[(str, int, memoryview)]): iterator of triples (key, on, val)
+                where key base key, on is int, and val is entry value of
+                with insertion ordering suffix removed from effective key.
 
         Parameters:
-            db (subdb): named sub db in lmdb
-            key (bytes): key within sub db's keyspace plus trailing part on
-                when key is empty then retrieves whole db
-            on (int): ordinal number at which to initiate retrieval
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            top (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database.
+            key (bytes): base key
             sep (bytes): separator character for split
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
         """
-        for key, on, val in self.getOnIoSetItemIterAll(db=db, key=key, on=on, sep=sep):
-            yield (val)
+        for onkey, val in self.getTopIoSetItemIter(db=db, top=top):
+            key, on = splitOnKey(onkey, sep=sep)
+            yield (key, on, val)
 
 
-    def getOnIoSetItemIterAll(self, db, key=b'', on=0, *, sep=b'.'):
-        """Gets iterator of triples (key, on, val), at each key over all ordinal
-        numbered keys starting at key + sep + on for all on >= on but same key
-        in db. Values are sorted first by onKey(key, on) where on is ordinal
-        number and then by hidden insertion ordered ordinal ion within each
-        set.
+    def getOnIoSetItemIterAll(self, db, key=b'', on=None, *, sep=b'.'):
+        """Iterates over each item of each set for each on of a given key and
+        for all on >= on of key when on is not None.
+        When on is None then iterates over all items of all on of all keys
+        for key >= key.
+        When key is empty then iterates over all items of each on for all on
+        and all keys.
 
-        when key is empty then retrieves whole db
+        Each effecive onkey = key + sep + on.
+        Items are triples of (key, on, val)
 
-        Raises StopIteration Error when empty.
+        Entries are sorted by onKey(key, on) where on
+        is ordinal number int and key is prefix sans on.
+
+        The set at each entry is sorted internally by hidden suffixed insertion
+        ordering ordinal
+
+        Raises StopIteration Error when done.
 
         Returns:
             items (Iterator[(key, on, val)]): triples of key, on, val
@@ -1651,6 +1724,85 @@ class LMDBer(filing.Filer):
             return  # done raises StopIteration
 
 
+    def getOnIoSetIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Get iterator of set vals at each key over all tail ordinals on >= on.
+        but same key in db
+        Values are sorted by onKey(key, on) where on is ordinal number and ioset
+        suffix key.
+
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when done.
+
+        Returns:
+            items (Iterator[bytes]): value
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        for key, on, val in self.getOnIoSetItemIterAll(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+
+    def getOnIoSetLastItemIterAll(self, db, key=b'', on=None, *, sep=b'.'):
+        """Iterates over last item of each set for each on of a given key and
+        for all on >= on of key when on is not None.
+        When on is None then iterates over last item of all on of all keys
+        for key >= key.
+        When key is empty then iterates over last item of each on for all on
+        and all keys.
+
+        Each effecive onkey = key + sep + on.
+        Items are triples of (key, on, val)
+
+        Entries are sorted by onKey(key, on) where on
+        is ordinal number int and key is prefix sans on.
+
+        The set at each entry is sorted internally by hidden suffixed insertion
+        ordering ordinal
+
+        Raises StopIteration Error when done.
+
+        Returns:
+            items (Iterator[(bytes, int, memoryview)]): triples of (key, on, val)
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): base key, empty defaults to whole database
+            on (int|None): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        if not key or on is None:  # iterate all on for all key starting at key
+            for onkey, val in self.getIoSetLastItemIterAll(db=db,
+                                                           key=key,
+                                                           sep=sep):
+                key, on = splitOnKey(onkey, sep=sep)
+                yield (key, on, val)
+            return
+
+        # start all on for all key starting at on of key
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            onkey = onkey(key, on, sep=sep)
+            cursor = txn.cursor()
+            while cursor.set_range(onkey):  # move to val at key >= onkey if any
+                ciokey, cval = cursor.item()  # get ciokey, cval at cursor
+                conkey, cion = unsuffix(ciokey, sep=sep)
+                # nested transactions with nested cursors supported in lmdb
+                # get last of current conkey
+                liokey, lval = self.getIoSetLastItem(db=db, key=conkey, sep=sep)
+                lonkey, lion = unsuffix(liokey, sep=sep)  # last at lonkey
+                lkey, lon = splitOnKey(lonkey, sep=sep)
+                yield (lkey, lon, lval)
+                onkey = onKey(lkey, lon + 1, sep=sep) # increment to next on
+                # now try at next on or if no next on then set_range will jump to
+                # first on of next key
+            return  # done raises StopIteration
+
+
     def getOnIoSetLastIterAll(self, db, key=b'', on=0, *, sep=b'.'):
         """Iterates over last val of each set at each on >= on of key.
         Starts at given on of key where onkey = key + sep + on in db.
@@ -1663,7 +1815,7 @@ class LMDBer(filing.Filer):
         The set at each entry is sorted internally by hidden suffixed insertion
         ordering ordinal
 
-        Raises StopIteration Error when empty.
+        Raises StopIteration Error when done.
 
         Returns:
             val (Iterator[bytes]): last set val at each onkey
@@ -1675,35 +1827,11 @@ class LMDBer(filing.Filer):
             on (int): ordinal number at which to initiate retrieval
             sep (bytes): separator character for split
         """
-        return self.getIoSetLastIterAll(db=db, key=onKey(key, on, sep=sep), sep=sep)
 
-
-    def getOnIoSetLastItemIterAll(self, db, key=b'', on=0, *, sep=b'.'):
-        """Iterates over last item of each set at each on >= on of key.
-        Starts at given on of key where onkey = key + sep + on in db.
-        When key is empty then iterates over last item of each set for all on
-        for all keys .
-        Items are triples of (key, on, val)
-
-        Entries are sorted by onKey(key, on) where on
-        is ordinal number int and key is prefix sans on.
-
-        The set at each entry is sorted internally by hidden suffixed insertion
-        ordering ordinal
-
-        Raises StopIteration Error when empty.
-
-        Returns:
-            items (Iterator[(key, on, val)]): triples of key, on, val
-
-        Parameters:
-            db (subdb): named sub db in lmdb
-            key (bytes): base key, empty defaults to whole database
-            on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
-
-        return
+        for key, on, val in self.getIoSetLastItemIterAll(db=db,
+                                                         key=onKey(key, on, sep=sep),
+                                                         sep=sep):
+            yield (val)
 
 
 
@@ -2303,6 +2431,9 @@ class LMDBer(filing.Filer):
             top (bytes): truncated top key, a key space prefix to get all the items
                         from multiple branches of the key space. If top key is
                         empty then gets all items in database
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db .
 
         Duplicates at a given key preserve insertion order of duplicate.
         Because lmdb is lexocographic an insertion ordering proem is prepended to
