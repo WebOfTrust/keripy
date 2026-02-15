@@ -614,6 +614,7 @@ def test_iodup_suber():
         actuals = ioduber.get(keys=keys0)
         assert actuals == [sal, sue]  # insertion order not lexicographic
         assert ioduber.cnt(keys0) == 2
+        assert ioduber.cnt() == 2  # cntAll
         actual = ioduber.getLast(keys=keys0)
         assert actual == sue
 

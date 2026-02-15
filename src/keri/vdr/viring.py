@@ -969,7 +969,7 @@ class Reger(dbing.LMDBer):
         Return count of backer prefixes at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.baks, key)
+        return self.cntIoDups(self.baks, key)
 
 
     def delBaks(self, key):

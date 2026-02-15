@@ -1423,7 +1423,7 @@ class Baser(dbing.LMDBer):
 
         for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
-            count = escrow.cntAll()
+            count = escrow.cnt()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
 
@@ -2390,7 +2390,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt triplets at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.ures, key)
+        return self.cntIoDups(self.ures, key)
 
     def delUres(self, key):
         """
@@ -2544,7 +2544,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt quinlets at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.vres, key)
+        return self.cntIoDups(self.vres, key)
 
     def delVres(self, key):
         """
@@ -2610,7 +2610,7 @@ class Baser(dbing.LMDBer):
         Return count of dup key event dig val at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.kels, key)
+        return self.cntIoDups(self.kels, key)
 
     def delKes(self, key):
         """
@@ -2762,7 +2762,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.pses, key)
+        return self.cntIoDups(self.pses, key)
 
     def delPses(self, key):
         """
@@ -2863,7 +2863,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.pwes, key)
+        return self.cntIoDups(self.pwes, key)
 
     def delPwes(self, key):
         """
@@ -2942,7 +2942,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.ooes, key)
+        return self.cntIoDups(self.ooes, key)
 
     def delOoes(self, key):
         """
@@ -3011,7 +3011,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.dels, key)
+        return self.cntIoDups(self.dels, key)
 
     def delDes(self, key):
         """
@@ -3098,7 +3098,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.ldes, key)
+        return self.cntIoDups(self.ldes, key)
 
     def delLdes(self, key):
         """

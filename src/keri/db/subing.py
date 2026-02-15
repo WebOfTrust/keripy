@@ -227,8 +227,7 @@ class SuberBase():
 
 
     def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
-        """
-        Removes all entries whose keys startswith keys. Enables removal of whole
+        """Removes all entries whose keys startswith keys. Enables removal of whole
         branches of db key space. To ensure that proper separation of a branch
         include empty string as last key in keys. For example ("a","") deletes
         'a.1'and 'a.2' but not 'ab'
@@ -253,7 +252,7 @@ class SuberBase():
         Returns:
            result (bool): True if val at key exists so delete successful. False otherwise
         """
-        return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys, topive=topive)))
+        return(self.db.delTop(db=self.sdb, top=self._tokey(keys, topive=topive)))
 
 
     def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]="",
@@ -342,20 +341,25 @@ class SuberBase():
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
-    def cntAll(self):
-        """
-        Return iterator over the all the items in subdb
+    def cnt(self):
+        """Counts all the entries in subdb.
+        Should be overidden in subclasses with parameters to count more
+        specifically.
 
         Returns:
-            iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db. Raises StopIteration when done
+            cnt (int): count of all entries in sdb
 
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
         """
-        return self.db.cnt(db=self.sdb)
+        return self.db.cntAll(db=self.sdb)
+
+
+    def cntAll(self):
+        """Counts all the entries in subdb.
+
+        Returns:
+            cnt (int): count of all entries in sdb
+        """
+        return self.db.cntAll(db=self.sdb)
 
 
 class Suber(SuberBase):
@@ -1108,7 +1112,6 @@ class IoSetSuber(SuberBase):
                                      sep=self.sep))
 
 
-
     def pin(self, keys: str|bytes|memoryview|Iterable,
                   vals: str|bytes|memoryview|Iterable):
         """Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
@@ -1271,16 +1274,22 @@ class IoSetSuber(SuberBase):
                                        sep=self.sep)
 
 
-    def cnt(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
-        """
-        Return count of  values at effective key made from keys and hidden ordinal
+    def cnt(self, keys: str|bytes|memoryview|Iterable = "", *, ion=0):
+        """Dount of  values at effective key made from keys and hidden ordinal
         suffix. Zero otherwise
+
+        Returns:
+            cnt (int): entries in set at at starting with ion >= ion. When keys
+                is empty then counts all entries in db.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
                 in order to form key
             ion (int): offset into set to start the count (0 based offset)
         """
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
+
         return (self.db.cntIoSet(db=self.sdb,
                                      key=self._tokey(keys),
                                      ion=ion,
@@ -2285,16 +2294,19 @@ class IoDupSuber(DupSuber):
             return self.db.delIoDupVals(db=self.sdb, key=self._tokey(keys))
 
 
-    def cnt(self, keys: str | bytes | memoryview | Iterable):
-        """
-        Return count of dup values at key made from keys with hidden ordinal
-        proem. Zero otherwise
+    def cnt(self, keys: str|bytes|memoryview|Iterable = ""):
+        """Counts dup values at key made from keys with hidden ordinal
+        proem. Zero otherwise. When keys empty then counts All entries in db
+        not just those at a given key
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): of key parts to be
-                combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key parts to be combined
+                in order to form key. When empty counts all entries in db.
         """
-        return (self.db.cntIoDupVals(db=self.sdb, key=self._tokey(keys)))
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
+
+        return (self.db.cntIoDups(db=self.sdb, key=self._tokey(keys)))
 
 
     def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
@@ -2586,8 +2598,9 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                           sep=self.sep.encode())
 
 
-    def cntOn(self, keys: str | bytes | memoryview | Iterable, on: int=0):
-        """Counts iodup values at onkey
+    def cntOn(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """Counts iodup values at onkey made from keys and on.
+        When keys is empty then counts whole db.
 
         Return count of dup values at key made from keys with hidden ordinal
         proem. Zero otherwise
@@ -2597,6 +2610,9 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                 combined in order to form key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
+
         return (self.db.cntOnIoDups(db=self.sdb, key=self._tokey(keys),
                                        on=on, sep=self.sep.encode()))
 
@@ -2989,8 +3005,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                           sep=self.sep.encode())
 
 
-    def cntOn(self, keys: str|bytes|memoryview|Iterable, on: int=0):
-        """
+    def cntOn(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """Counts all entries in set at keys
         Return count of  values at effective key made from keys and hidden ordinal
         suffix. Zero otherwise
 
@@ -2998,10 +3014,14 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             keys (Iterable): of key strs to be combined in order to form key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
+
         return (self.db.cntOnIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      on=on,
                                      sep=self.sep))
+
 
     def getOnIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """Get all values at key for all on >= on.

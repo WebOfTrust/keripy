@@ -499,6 +499,95 @@ class LMDBer(filing.Filer):
             cursor = txn.cursor()
             cursor.replace(b'__version__', val)
 
+    # Universal methods for all dbs
+
+    def delTop(self, db, top=b''):
+        """Deletes all values in branch of db given top key. Top empty deletes
+        whole db.
+
+        Returns:
+            result (bool): True if values were deleted at key. False otherwise
+                if no values at key
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            top (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then deletes all items in database
+
+        Works for both dupsort==False and dupsort==True
+        Because cursor.iter_next() advances cursor after returning item its safe
+        to delete the item within the iteration loop.
+        """
+        # when deleting can't use cursor.iternext() because the cursor advances
+        # twice (skips one) once for iternext and once for delete.
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            result = False
+            cursor = txn.cursor()
+            if cursor.set_range(top):  # move to val at key >= key if any
+                ckey, cval = cursor.item()
+                while ckey:  # end of database key == b''
+                    ckey = bytes(ckey)
+                    if not ckey.startswith(top): #  prev entry if any last in branch
+                        break  # done
+                    result = cursor.delete() or result # delete moves cursor to next item
+                    ckey, cval = cursor.item()  # cursor now at next item after deleted
+            return result
+
+
+
+    def cntAll(self, db):
+        """Return count of values in db, or zero otherwise
+
+        Parameters:
+            db is opened named sub db with either dupsort=True or False
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            count = 0
+            for _, _ in cursor:  # iter(cursor) is same as cursor.iter_next()
+                count += 1
+            return count
+
+
+    def getTopItemIter(self, db, top=b''):
+        """Iterates over branch of db given by top key
+
+        Returns:
+            items (Iterator): iterator of (full key, val) tuples over a
+                branch of the db given by top key where: full key is full database
+                key for val not truncated top key
+
+        Works for both dupsort==False and dupsort==True
+        Because cursor.iternext() advances cursor after returning item its safe
+        to delete the item within the iteration loop.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            top (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database.
+
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db .
+
+        Works for both dupsort==False and dupsort==True
+        Because cursor.iter_next() advances cursor after returning item its safe
+        to delete the item within the iteration loop.
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if cursor.set_range(top):  # move to val at key >= key if any
+                for ckey, cval in cursor.iternext():  # get key, val at cursor
+                    ckey = bytes(ckey)
+                    if not ckey.startswith(top): #  prev entry if any last in branch
+                        break  # done
+                    yield (ckey, cval)  # another entry in branch startswith key
+            return  # done raises StopIteration
+
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
     def putVal(self, db, key, val):
         """
@@ -575,92 +664,6 @@ class LMDBer(filing.Filer):
                 raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
-
-    def cnt(self, db):
-        """
-        Return count of values in db, or zero otherwise
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            count = 0
-            for _, _ in cursor:
-                count += 1
-            return count
-
-
-    def getTopItemIter(self, db, top=b''):
-        """Iterates over branch of db given by top key
-
-        Returns:
-            items (Iterator): iterator of (full key, val) tuples over a
-                branch of the db given by top key where: full key is full database
-                key for val not truncated top key
-
-        Works for both dupsort==False and dupsort==True
-        Because cursor.iternext() advances cursor after returning item its safe
-        to delete the item within the iteration loop.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then gets all items in database.
-
-
-        Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db .
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if cursor.set_range(top):  # move to val at key >= key if any
-                for ckey, cval in cursor.iternext():  # get key, val at cursor
-                    ckey = bytes(ckey)
-                    if not ckey.startswith(top): #  prev entry if any last in branch
-                        break  # done
-                    yield (ckey, cval)  # another entry in branch startswith key
-            return  # done raises StopIteration
-
-
-    def delTopVal(self, db, top=b''):
-        """
-        Deletes all values in branch of db given top key.
-
-        Returns:
-            result (bool): True if values were deleted at key. False otherwise
-                if no values at key
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then deletes all items in database
-
-        Works for both dupsort==False and dupsort==True
-        Because cursor.iternext() advances cursor after returning item its safe
-        to delete the item within the iteration loop.
-
-        Raises StopIteration Error when empty.
-
-        """
-        # when deleting can't use cursor.iternext() because the cursor advances
-        # twice (skips one) once for iternext and once for delete.
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            result = False
-            cursor = txn.cursor()
-            if cursor.set_range(top):  # move to val at key >= key if any
-                ckey, cval = cursor.item()
-                while ckey:  # end of database key == b''
-                    ckey = bytes(ckey)
-                    if not ckey.startswith(top): #  prev entry if any last in branch
-                        break  # done
-                    result = cursor.delete() or result # delete moves cursor to next item
-                    ckey, cval = cursor.item()  # cursor now at next item after deleted
-            return result
 
 
     # For subdbs  the use keys with trailing part the is  monotonically
@@ -1579,7 +1582,6 @@ class LMDBer(filing.Filer):
         return self.getIoSetLast(db=db, key=onKey(key, on, sep=sep), sep=sep)
 
 
-
     def delOnIoSet(self, db, key, *, on=0, sep=b'.'):
         """Deletes all set iovals at onkey consisting of key + sep + serialized
         on in db.
@@ -1648,7 +1650,7 @@ class LMDBer(filing.Filer):
             ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
-        return len(self.getIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep))
+        return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
 
 
     def getTopOnIoSetItemIter(self, db, top=b'', *, sep=b'.'):
@@ -2365,7 +2367,7 @@ class LMDBer(filing.Filer):
         return False
 
 
-    def cntIoDupVals(self, db, key):
+    def cntIoDups(self, db, key):
         """Get count of dup values at key in db, or zero otherwise
         Assumes DB opened with dupsort=True
         Count doesn't need to add strip proem from dups just count dups
@@ -2390,7 +2392,6 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
         """
-
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             count = 0
@@ -2828,7 +2829,7 @@ class LMDBer(filing.Filer):
             on (int): ordinal number at which to retrieve
             sep (bytes): separator character for split
         """
-        return self.cntIoDupVals(db=db, key=onKey(key, on, sep=sep))
+        return self.cntIoDups(db=db, key=onKey(key, on, sep=sep))
 
 
 

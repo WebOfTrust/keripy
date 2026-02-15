@@ -311,7 +311,7 @@ def test_lmdber():
                                                         (b'a.2', b'wee'),
                                                         (b'b.1', b'woo')]
 
-        assert dber.delTopVal(db, top=b"a.")
+        assert dber.delTop(db, top=b"a.")
         items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]
         assert items == [(b'b.1', b'woo')]
 
@@ -567,11 +567,11 @@ def test_lmdber():
 
         assert dber.getIoDupVals(db, key) == []
         assert dber.getIoDupValLast(db, key) == None
-        assert dber.cntIoDupVals(db, key) == 0
+        assert dber.cntIoDups(db, key) == 0
         assert dber.delIoDupVals(db, key) == False
         assert dber.putIoDupVals(db, key, vals) == True
         assert dber.getIoDupVals(db, key) == vals  # preserved insertion order
-        assert dber.cntIoDupVals(db, key) == len(vals) == 4
+        assert dber.cntIoDups(db, key) == len(vals) == 4
         assert dber.getIoDupValLast(db, key) == vals[-1]
         assert dber.putIoDupVals(db, key, vals=[b'a']) == False   # duplicate
         assert dber.getIoDupVals(db, key) == vals  #  no change
@@ -1383,13 +1383,16 @@ def test_lmdber():
         # create dber database
         db = dber.env.open_db(key=b'onioset.', dupsort=False)
 
+        assert [val for val in dber.getOnIoSetIter(db, b"")] == []
+        assert dber.getOnIoSet(db, b"") == []
+        assert dber.cntOnIoSet(db, b"") == 0
         assert dber.getOnIoSetLastItem(db, b"") == ()
         assert dber.getOnIoSetLast(db, b"") == None
         assert dber.getOnIoSetLastItem(db, key=b"Z.Z") == ()
         assert dber.getOnIoSetLast(db, b"Z.Z") == None
 
-        assert dber.getOnIoSet(db, key0) == []
         assert [val for val in dber.getOnIoSetIter(db, key0)] == []
+        assert dber.getOnIoSet(db, key0) == []
         assert dber.getOnIoSetLastItem(db, key0) == ()
         assert dber.getOnIoSetLast(db, key0) == None
         assert dber.cntOnIoSet(db, key0) == 0
@@ -1470,7 +1473,7 @@ def test_lmdber():
         with pytest.raises(KeyError):
             dber.getIoDupValLast(db, empty_key)
         with pytest.raises(KeyError):
-            dber.cntIoDupVals(db, empty_key)
+            dber.cntIoDups(db, empty_key)
         with pytest.raises(KeyError):
             dber.delIoDupVals(db, empty_key)
         with pytest.raises(KeyError):
