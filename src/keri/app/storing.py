@@ -102,7 +102,7 @@ class Mailboxer(dbing.LMDBer):
                     to form key at at which to initiate retrieval
         """
         msgs = []
-        for keys, on, dig in self.tpcs.getOnItemIter(keys=topic, on=fn):
+        for keys, on, dig in self.tpcs.getOnItemIterAll(keys=topic, on=fn):
             if msg := self.msgs.get(keys=dig):
                 msgs.append(msg.encode())  # want bytes not str
         return msgs
@@ -150,7 +150,7 @@ class Mailboxer(dbing.LMDBer):
         hidden.
 
         """
-        for keys, on, dig in self.tpcs.getOnItemIter(keys=topic, on=fn):
+        for keys, on, dig in self.tpcs.getOnItemIterAll(keys=topic, on=fn):
             if msg := self.msgs.get(keys=dig):
                 yield (on, topic, msg.encode("utf-8"))
 

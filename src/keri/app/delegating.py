@@ -146,7 +146,7 @@ class Anchorer(doing.DoDoer):
             if dserder := self.hby.db.fetchLastSealingEventByEventSeal(dkever.prefixer.qb64, seal=seal):
                 sner = coring.Number(num=dserder.sn, code=coring.NumDex.Huge)
                 saider = coring.Saider(qb64b=dserder.saidb)
-                self.hby.db.aess.pin(keys=dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb),
+                self.hby.db.aess.pin(keys=(kever.prefixer.qb64b, kever.serder.saidb),
                                      val=(sner, saider))  # authorizer event seal (delegator/issuer)
 
                 # Move to escrow waiting for witness receipts

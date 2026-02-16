@@ -881,8 +881,7 @@ def test_get_own_event():
         anchorSaider = coring.Saider(qb64b=delHab.kever.serder.saidb)
 
         subHab = hby.makeHab(name="delegate", delpre=delHab.pre)
-        dgkey = dbing.dgKey(subHab.pre, subHab.kever.serder.saidb)
-        hby.db.aess.pin(keys=dgkey, val=(anchorSner, anchorSaider))
+        hby.db.aess.pin(keys=(subHab.pre, subHab.kever.serder.saidb), val=(anchorSner, anchorSaider))
 
         serder, sigs, duple = subHab.getOwnEvent(sn=0)
         assert serder.sad["t"] == "dip"
