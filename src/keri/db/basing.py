@@ -828,12 +828,14 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .dels is named sub DB of duplicitous event log tables that map sequence numbers
-            to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+        .dels is named sub DB instance of OnIoDupSuber for duplicitous event
+            log tables that map identifier prefix plus sequence number to
+            serialized event digests.
+            subkey "dels."
+            snKey (prefix + ordinal sequence number)
+            DB is keyed by identifier prefix, ordinal is sequence number
+            Values are qb64 digests used to lookup event in .evts sub DB
+            More than one value per DB key is allowed (insertion ordered).
 
         .ldes is named sub DB of likely duplicitous escrowed event tables
             that map sequence numbers to serialized event digests.
@@ -1025,7 +1027,7 @@ class Baser(dbing.LMDBer):
                                         klas=(coring.Seqner, coring.Saider))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
-        self.dels = self.env.open_db(key=b'dels.', dupsort=True)
+        self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
 
@@ -2964,82 +2966,6 @@ class Baser(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoDupVal(self.ooes, key, val)
-
-
-    def putDes(self, key, vals):
-        """
-        Use snKey()
-        Write each duplicitous event entry dig from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.dels, key, vals)
-
-    def addDe(self, key, val):
-        """
-        Use snKey()
-        Add duplicate event index val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.dels, key, val)
-
-    def getDes(self, key):
-        """
-        Use snKey()
-        Return list of duplicitous event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.dels, key)
-
-    def getDeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup value of duplicitous event dig vals at key
-        Returns None if no entry at key
-
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.dels, key)
-
-    def cntDes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig vals at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.dels, key)
-
-    def delDes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.dels, key)
-
-    def getDelItemIter(self, pre):
-        """
-        Returns iterator of all dup vals  in insertion order for any entries
-        with same prefix across all sequence numbers including gaps.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getTopIoDupItemIter(self.dels, pre)
-        #return self.getOnIoDupValsAnyPreIter(self.dels, pre)
 
     def putLdes(self, key, vals):
         """
