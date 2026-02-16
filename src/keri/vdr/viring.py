@@ -201,8 +201,8 @@ class Reger(dbing.LMDBer):
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             Only one value per DB key is allowed
-        .baks is named sub DB of ordered list of backers at given point in
-            management TEL.
+        .baks is named subDB instance of IoDupSuber which represents an 
+            ordered list of backers at given point in management TEL.
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
