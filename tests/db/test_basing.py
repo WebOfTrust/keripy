@@ -56,7 +56,7 @@ def test_baser():
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -87,7 +87,7 @@ def test_baser():
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -115,7 +115,7 @@ def test_baser():
         assert isinstance(baser.ooes, lmdb._Database)
         assert isinstance(baser.pses, lmdb._Database)
         assert isinstance(baser.dels, subing.OnIoDupSuber)
-        assert isinstance(baser.ldes, lmdb._Database)
+        assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
 
     assert not os.path.exists(baser.path)
@@ -1111,81 +1111,82 @@ def test_baser():
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert db.getLdes(key) == []
-        assert db.getLdeLast(key) == None
-        assert db.cntLdes(key) == 0
-        assert db.delLdes(key) == False
-        assert db.putLdes(key, vals) == True
-        assert db.getLdes(key) == vals  # preserved insertion order
-        assert db.cntLdes(key) == len(vals) == 4
-        assert db.getLdeLast(key) == vals[-1]
-        assert db.putLdes(key, vals=[b'a']) == False   # duplicate
-        assert db.getLdes(key) == vals  #  no change
-        assert db.delLdes(key) == True
-        assert db.getLdes(key) == []
+        assert db.ldes.get(keys=key) == []
+        assert db.ldes.getLast(keys=key) == None
+        assert db.ldes.cnt(keys=key) == 0
+        assert db.ldes.rem(keys=key) == False
+        # put is not fully compatible with putLdes because putLdes took list of vals
+        # and IoDupSuber.put takes iterable of vals.
+        assert db.ldes.put(keys=key, vals=vals) == True
+        # OnIoDupSuber decodes bytes to utf-8 strings
+        assert db.ldes.get(keys=key) == [v.decode("utf-8") for v in vals]
+        assert db.ldes.cnt(keys=key) == len(vals) == 4
+        assert db.ldes.getLast(keys=key) == vals[-1].decode("utf-8")
+        assert db.ldes.put(keys=key, vals=[b'a']) == False   # duplicate
+        assert db.ldes.get(keys=key) == [v.decode("utf-8") for v in vals] #  no change
+        assert db.ldes.rem(keys=key) == True
+        assert db.ldes.get(keys=key) == []
 
-        # Setup Tests for getLdeItemsNext and getLdeItemsNextIter
-        aKey = snKey(pre=b'A', sn=1)
+        # Setup Tests for getOnItemIter with proper OnIoDupSuber API
+        # Use addOn with explicit ordinal instead of snKey
         aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
         bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
         cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
         dVals = [b"k", b"b"]
 
-        assert db.putLdes(key=aKey, vals=aVals)
-        assert db.putLdes(key=bKey, vals=bVals)
-        assert db.putLdes(key=cKey, vals=cVals)
-        assert db.putLdes(key=dKey, vals=dVals)
+        for val in aVals:
+            assert db.ldes.addOn(keys=b'A', on=1, val=val) == True
+        for val in bVals:
+            assert db.ldes.addOn(keys=b'A', on=2, val=val) == True
+        for val in cVals:
+            assert db.ldes.addOn(keys=b'A', on=4, val=val) == True
+        for val in dVals:
+            assert db.ldes.addOn(keys=b'A', on=7, val=val) == True
 
-
-        # Test getLdeItemsNextIter(key=b"")
-        #  get dups at first key in database
-        # aVals
-        items = [item for item in db.getLdeItemIter()]
+        # Test getOnItemIter - iterate all items for prefix b'A'
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A')]
         assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals ==  aVals + bVals + cVals + dVals
+        # item is (keys, on, val)
+        vals = [val for pre, sn, val in items]
+        allVals = aVals + bVals + cVals + dVals
+        assert vals == [v.decode("utf-8") for v in allVals]
 
-        items = [item for item in db.getLdeItemIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        # Iterate starting from specific ordinal (sn=1)
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=1)]
+        assert items
+        pre, sn, val = items[0]
+        assert sn == 1
+        assert val == aVals[0].decode("utf-8")
 
-        # bVals
-        items = [item for item in db.getLdeItemIter(key=bKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        # Verify vals at sn=1
+        vals = [val for p, s, val in items if s == 1]
+        assert vals == [v.decode("utf-8") for v in aVals]
 
-        # cVals
-        items = [item for item in db.getLdeItemIter(key=cKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        # bVals at sn=2
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=2)]
+        vals = [val for p, s, val in items if s == 2]
+        assert vals == [v.decode("utf-8") for v in bVals]
+        # Remove bVals using remOn
+        for p, s, val in items:
+            if s == 2:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
-        # dVals
-        items = [item for item in db.getLdeItemIter(key=dKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        # cVals at sn=4
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=4)]
+        vals = [val for p, s, val in items if s == 4]
+        assert vals == [v.decode("utf-8") for v in cVals]
+        for p, s, val in items:
+            if s == 4:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
+
+        # dVals at sn=7
+        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=7)]
+        vals = [val for p, s, val in items if s == 7]
+        assert vals == [v.decode("utf-8") for v in dVals]
+        for p, s, val in items:
+            if s == 7:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
+
 
     assert not os.path.exists(db.path)
 
@@ -1846,7 +1847,8 @@ def test_clear_escrows():
         db.putPses(key, vals)
         db.putPwes(key, vals)
         db.putOoes(key, vals)
-        db.putLdes(key, vals)
+        # putLdes was list based, db.ldes.put is iterable based
+        db.ldes.put(keys=key, vals=vals)
 
         pre = b'k'
         snh = b'snh'
@@ -1913,7 +1915,7 @@ def test_clear_escrows():
         assert db.getPwes(key) == []
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
-        assert db.getLdes(key) == []
+        assert db.ldes.get(keys=key) == []
         assert db.qnfs.cntAll() == 0
         assert db.pdes.cntAll() == 0
         assert db.rpes.cntAll() == 0
