@@ -1316,7 +1316,7 @@ class Baser(dbing.LMDBer):
         # completed group delegated AIDs
         # TODO: clean
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
-                                     klas=coring.Saider)
+                                     klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
         # TODO: clean
