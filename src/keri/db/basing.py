@@ -1203,7 +1203,7 @@ class Baser(dbing.LMDBer):
         # Watcher watched SAID database for successfully saved watched AIDs for a watcher
         # maps key=(cid, aid, oid) to val=said of rpy message
         # TODO: clean
-        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Saider)
+        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Diger)
 
         # config loaded oobis to be processed asynchronously, keyed by oobi URL
         # TODO: clean
