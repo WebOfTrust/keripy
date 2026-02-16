@@ -1198,7 +1198,7 @@ class Baser(dbing.LMDBer):
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         # TODO: clean
-        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Diger)
 
         # Watcher watched SAID database for successfully saved watched AIDs for a watcher
         # maps key=(cid, aid, oid) to val=said of rpy message
