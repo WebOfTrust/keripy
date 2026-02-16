@@ -1,5 +1,6 @@
-# Naming and Style guide
-## Python Style Guide for KERIpy
+# Coding Conventions: Naming and Style guide
+
+## Python Style Guide
 
 The Python PEPs on style have many options or allowed variants.
 The purpose of this document is to select a single preferred style
@@ -98,7 +99,9 @@ or all lowercase if start lowercase.
     http_send  Send_HTTP
 
 When using CapCamelCase or mixedCase the acronyms should be treated as words
-    httpSend sendHttp
+   unless the acronym is the last word and then it may be either treated as
+   a word or be in all UPPERCASE
+    httpSend sendHttp sendHTTP
 
 
 ### Local Variables and function parameters:
