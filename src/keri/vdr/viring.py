@@ -303,7 +303,7 @@ class Reger(dbing.LMDBer):
         self.tels = self.env.open_db(key=b'tels.')
         self.ancs = self.env.open_db(key=b'ancs.')
         self.tibs = self.env.open_db(key=b'tibs.', dupsort=True)
-        self.baks = self.env.open_db(key=b'baks.', dupsort=True)
+        self.baks = subing.IoDupSuber(db=self, subkey='baks.')
         self.oots = self.env.open_db(key=b'oots.')
         self.twes = self.env.open_db(key=b'twes.')
         self.taes = self.env.open_db(key=b'taes.')
@@ -921,77 +921,6 @@ class Reger(dbing.LMDBer):
         """
         return self.delVal(self.ancs, key)
 
-
-    def putBaks(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes prefixes to key
-        Adds to existing backers at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.baks, key, vals)
-
-
-    def addBak(self, key, val):
-        """
-        Use dgKey()
-        Add prefix val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.baks, key, val)
-
-
-    def getBaks(self, key):
-        """
-        Use dgKey()
-        Return list of backer prefixes at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.baks, key)
-
-
-    def getBaksIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of backer prefixes at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.baks, key)
-
-    def cntBaks(self, key):
-        """
-        Use dgKey()
-        Return count of backer prefixes at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.baks, key)
-
-
-    def delBaks(self, key):
-        """
-        Use dgKey()
-        Deletes all values at key in db.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.baks, key)
-
-
-    def delBak(self, key, val):
-        """
-        Use dgKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.baks, key, val)
 
 
 def buildProof(prefixer, seqner, diger, sigers):

@@ -1248,8 +1248,8 @@ class Tever:
         if bigers:
             self.reger.putTibs(key, [biger.qb64b for biger in bigers])
         if baks:
-            self.reger.delBaks(key)
-            self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
+            self.reger.baks.rem(key)
+            self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
         self.reger.putTvt(key, serder.raw)
         self.reger.putTel(snKey(pre, sn), dig)
@@ -1281,7 +1281,8 @@ class Tever:
             list: unique validated signature verified members of inputed bigers
 
         """
-
+        for bak in baks:
+            print("BAK :", bak)
         berfers = [Verfer(qb64=bak) for bak in baks]
 
         # get unique verified bigers and bindices lists from bigers list
@@ -1406,8 +1407,8 @@ class Tever:
         if bigers:
             self.reger.putTibs(key, [biger.qb64b for biger in bigers])
         if baks:
-            self.reger.delBaks(key)
-            self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
+            self.reger.baks.rem(key)
+            self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
         self.reger.putTvt(key, serder.raw)
         logger.debug("Tever state: Escrowed anchorless event "
                      "event = %s", serder.ked)
@@ -1443,7 +1444,7 @@ class Tever:
         # the backer threshold at this event in mgmt TEL
         rtoad = rserder.ked["bt"]
 
-        baks = [bytes(bak).decode("utf-8") for bak in self.reger.getBaks(dgkey)]
+        baks = [bak for bak in self.reger.baks.get(dgkey)]
 
         return rtoad, baks
 
