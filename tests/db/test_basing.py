@@ -1092,12 +1092,12 @@ def test_baser():
         assert db.dels.getOn(keys=keys, on=on) == []
         result = db.dels.getOn(keys=keys, on=on)
         assert (result[-1] if result else None) == None
-        assert db.dels.cntOn(keys=(keys,), on=on) == 0
+        assert len(db.dels.getOn(keys=keys, on=on)) == 0
         assert db.dels.remOn(keys=keys, on=on) == False
         for val in vals:
             db.dels.addOn(keys=keys, on=on, val=val)
         assert db.dels.getOn(keys=keys, on=on) == vals  # preserved insertion order
-        assert db.dels.cntOn(keys=(keys,), on=on) == len(vals) == 4
+        assert len(db.dels.getOn(keys=keys, on=on)) == len(vals) == 4
         result = db.dels.getOn(keys=keys, on=on)
         assert result[-1] == vals[-1]
         assert db.dels.addOn(keys=keys, on=on, val='a') == False   # duplicate
@@ -1145,7 +1145,7 @@ def test_baser():
             assert db.ldes.addOn(keys=b'A', on=7, val=val) == True
 
         # Test getOnItemIter - iterate all items for prefix b'A'
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A')]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A')]
         assert items  # not empty
         # item is (keys, on, val)
         vals = [val for pre, sn, val in items]
@@ -1153,7 +1153,7 @@ def test_baser():
         assert vals == [v.decode("utf-8") for v in allVals]
 
         # Iterate starting from specific ordinal (sn=1)
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=1)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=1)]
         assert items
         pre, sn, val = items[0]
         assert sn == 1
@@ -1164,7 +1164,7 @@ def test_baser():
         assert vals == [v.decode("utf-8") for v in aVals]
 
         # bVals at sn=2
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=2)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=2)]
         vals = [val for p, s, val in items if s == 2]
         assert vals == [v.decode("utf-8") for v in bVals]
         # Remove bVals using remOn
@@ -1173,7 +1173,7 @@ def test_baser():
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
         # cVals at sn=4
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=4)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=4)]
         vals = [val for p, s, val in items if s == 4]
         assert vals == [v.decode("utf-8") for v in cVals]
         for p, s, val in items:
@@ -1181,7 +1181,7 @@ def test_baser():
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
         # dVals at sn=7
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=7)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=7)]
         vals = [val for p, s, val in items if s == 7]
         assert vals == [v.decode("utf-8") for v in dVals]
         for p, s, val in items:
@@ -1434,7 +1434,7 @@ def test_fetchkeldel():
             assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         allvals = vals0 + vals1 + vals2
-        vals = [val.encode("utf-8") for keys, on, val in db.dels.getOnItemIter(keys=preb)]
+        vals = [val.encode("utf-8") for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)

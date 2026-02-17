@@ -7005,7 +7005,7 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for pre, sn, edig in self.db.ldes.getOnItemIter(keys=key):
+            for pre, sn, edig in self.db.ldes.getOnItemIterAll(keys=key):
                 try:
                     # pre and sn are already unpacked
                     ekey = snKey(pre, sn)
