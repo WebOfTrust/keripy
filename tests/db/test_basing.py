@@ -745,7 +745,9 @@ def test_baser():
 
         # Partially Signed Escrow Events
         # test .pses insertion order dup methods.  dup vals are insertion order
-        key = b'A'
+        pre = b'A'
+        sn = 0
+        key = snKey(pre, sn)
         vals = [b"z", b"m", b"x", b"a"]
         deserialized_vals = [db.pses._des(val) for val in vals] # deserialize for assertion
         
@@ -814,11 +816,11 @@ def test_baser():
 
         # test .pses retrieval behavior methods
         # insertion order preserved
-        assert db.pses.putOn(keys=key, vals=vals) == True
-        assert db.pses.getOn(keys=key) == deserialized_vals
-        assert list(db.pses.getOnIter(key)) == deserialized_vals
-        assert list(db.pses.getOnLastIter(key))[0] == deserialized_vals[-1]
-        assert db.pses.cntOnAll(keys=key) == len(vals) == 4
+        assert db.pses.putOn(keys=pre, on=sn, vals=vals) == True
+        assert db.pses.getOn(keys=pre, on=sn) == deserialized_vals
+        assert list(db.pses.getOnIter(keys=pre, on=sn)) == deserialized_vals
+        assert db.pses.getLast(key) == deserialized_vals[-1]
+        assert db.pses.cntOnAll(keys=pre, on=sn) == len(vals) == 4
 
         # retrieval on empty list
         assert db.pses.getOn(keys=b'X') == []  
@@ -836,21 +838,21 @@ def test_baser():
         assert all(k[0] == 'A' for k, v in items)
 
         # retrieval with different key types, A is the key used above where key = b'A'
-        assert db.pses.getOn(keys=key) == deserialized_vals  # key as bytes
+        assert db.pses.getOn(keys=b'A') == deserialized_vals  # key as bytes
         assert db.pses.getOn(keys='A') == deserialized_vals  # key as str
         assert db.pses.getOn(keys=['A']) == deserialized_vals  # key as list
         assert db.pses.getOn(keys=('A',)) == deserialized_vals  # key as tuple
         assert db.pses.getOn(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
 
         # retrieval afterd deletion of specific val
-        assert list(db.pses.getOnLastIter(key))[0] == 'a'              # vals = [b"z", b"m", b"x", b"a"]
-        assert db.pses.remOn(keys=key, val=b'a') == True           # vals = [b"z", b"m", b"x"]
-        assert db.pses.getOn(keys=key) == ['z', 'm', 'x']
-        assert list(db.pses.getOnLastIter(key))[0] == 'x'
-        assert db.pses.cntOnAll(keys=key) == 3
+        assert db.pses.getLast(key) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert db.pses.remOn(keys=pre, on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
+        assert db.pses.getOn(keys=pre, on=sn) == ['z', 'm', 'x']
+        assert db.pses.getLast(key) == 'x'
+        assert db.pses.cntOnAll(keys=pre, on=sn) == 3
         
         # clean up
-        assert db.pses.remOn(keys=key) == True  
+        assert db.pses.remOn(keys=pre, on=sn) == True  
 
 
         # test .pses pinning behavior method
@@ -1204,7 +1206,9 @@ def test_baser():
 
         # Ooes tests 
         # test .ooes insertion behavior methods. 
-        key = b'A'
+        pre = 'A'
+        sn = 0
+        key = snKey(pre, sn)
         vals = [b"z", b"m", b"x", b"a"]
         deserialized_vals = [db.ooes._des(val) for val in vals] # deserialize for assertion
         
@@ -1272,11 +1276,11 @@ def test_baser():
         
         # test .ooes retrieval behavior methods
         # insertion order preserved
-        assert db.ooes.putOn(keys=key,vals=vals) == True
-        assert db.ooes.getOn(keys=key) == deserialized_vals
-        assert list(db.ooes.getOnIterAll(key)) == deserialized_vals
-        assert list(db.ooes.getOnLastIter(key))[0] == deserialized_vals[-1]
-        assert db.ooes.cntOnAll(key) == len(vals) == 4
+        assert db.ooes.putOn(keys=pre,on=sn, vals=vals) == True
+        assert db.ooes.getOn(keys=pre,on=sn) == deserialized_vals
+        assert list(db.ooes.getOnIterAll(pre,on=sn)) == deserialized_vals
+        assert db.ooes.getLast(key) == deserialized_vals[-1]
+        assert db.ooes.cntOnAll(pre,on=sn) == len(vals) == 4
 
         # retrieval on empty list
         assert db.ooes.getOn(keys=b'X') == []  
@@ -1294,21 +1298,21 @@ def test_baser():
         assert all(k[0] == 'A' for k, sn, v in items)
 
         # retrieval with different key types, A is the key used above where key = b'A'
-        assert db.ooes.getOn(keys=key) == deserialized_vals  # key as bytes
+        assert db.ooes.getOn(keys=b'A') == deserialized_vals  # key as bytes
         assert db.ooes.getOn(keys='A') == deserialized_vals  # key as str
         assert db.ooes.getOn(keys=['A']) == deserialized_vals  # key as list
         assert db.ooes.getOn(keys=('A',)) == deserialized_vals  # key as tuple
         assert db.ooes.getOn(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
 
         # retrieval afterd deletion of specific val
-        assert list(db.ooes.getOnLastIter(key))[0] == 'a'              # vals = [b"z", b"m", b"x", b"a"]
-        assert db.ooes.remOn(keys=key, val=b'a') == True           # vals = [b"z", b"m", b"x"]
-        assert db.ooes.getOn(keys=key) == ['z', 'm', 'x']
-        assert list(db.ooes.getOnLastIter(key))[0] == 'x'
-        assert db.ooes.cntOnAll(key) == 3
+        assert db.ooes.getLast(key) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert db.ooes.remOn(keys=pre,on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
+        assert db.ooes.getOn(keys=pre,on=sn,) == ['z', 'm', 'x']
+        assert db.ooes.getLast(key) == 'x'
+        assert db.ooes.cntOnAll(pre,on=sn) == 3
         
         # clean up
-        assert db.ooes.remOn(key) == True  
+        assert db.ooes.remOn(pre,on=sn) == True  
 
 
         # test .ooes pinning behavior method
