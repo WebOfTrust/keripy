@@ -625,18 +625,17 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .fels is named sub DB of first seen event logs (FEL) as indices that map
-            first seen ordinal number to digests.
+        .fels is named sub DB instance of OnSuber for first seen event logs (FEL)
+            as indices that map first seen ordinal number fn to event digests.
             Actual serialized key events are stored in .evts by SAID digest
             This indexes events in first 'seen' accepted order for replay and
             cloning of event log.
             Uses first seen order number or fn.
-            fnKey
             DB is keyed by identifier prefix plus monotonically increasing first
             seen order number fn.
-            Value is digest of serialized event used to lookup event in .evts sub DB
+            Value is qb64 str of serialized event used to lookup event in .evts sub DB.
             Only one value per DB key is allowed.
-            Provides append only ordering of accepted first seen events.
+            Provides append-only ordering of accepted first seen events.
 
         .fons is named subDB CesrSuber
             Uses digest
@@ -1012,7 +1011,7 @@ class Baser(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.evts = subing.SerderSuber(db=self, subkey='evts.')
-        self.fels = self.env.open_db(key=b'fels.')
+        self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.dtss = self.env.open_db(key=b'dtss.')
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
@@ -1200,12 +1199,12 @@ class Baser(dbing.LMDBer):
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         # TODO: clean
-        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Diger)
 
         # Watcher watched SAID database for successfully saved watched AIDs for a watcher
         # maps key=(cid, aid, oid) to val=said of rpy message
         # TODO: clean
-        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Saider)
+        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Diger)
 
         # config loaded oobis to be processed asynchronously, keyed by oobi URL
         # TODO: clean
@@ -1318,7 +1317,7 @@ class Baser(dbing.LMDBer):
         # completed group delegated AIDs
         # TODO: clean
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
-                                     klas=coring.Saider)
+                                     klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
         # TODO: clean
@@ -1624,7 +1623,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for _, fn, dig in self.getFelItemPreIter(pre, fn=fn):
+        for keys, fn, dig in self.fels.getOnItemIterAll(keys=pre, on=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1644,7 +1643,8 @@ class Baser(dbing.LMDBer):
            msgs (Iterator): over all items in db
 
         """
-        for pre, fn, dig in self.getFelItemAllPreIter():
+        for keys, fn, dig in self.fels.getOnItemIterAll(keys=b'', on=0):
+            pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1980,96 +1980,6 @@ class Baser(dbing.LMDBer):
 
             yield serder  # event as Serder
 
-
-    def putFe(self, key, val):
-        """
-        Use fnKey()
-        Write event digest bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.fels, key, val)
-
-    def setFe(self, key, val):
-        """
-        Use fnKey()
-        Write event digest bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.fels, key, val)
-
-    def getFe(self, key):
-        """
-        Use fnKey()
-        Return event digest at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.fels, key)
-
-    def delFe(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.fels, key)
-
-    def appendFe(self, pre, val):
-        """
-        Return first seen order number int, fn, of appended entry.
-        Computes fn as next fn after last entry.
-        Uses fnKey(pre, fn) for entries.
-
-        Append val to end of db entries with same pre but with fn incremented by
-        1 relative to last preexisting entry at pre.
-
-        Parameters:
-            pre is bytes identifier prefix for event
-            val is event digest
-        """
-        return self.appendOnVal(db=self.fels, key=pre, val=val)
-
-    def getFelItemPreIter(self, pre, fn=0):
-        """
-        Returns iterator of all (pre, fn, dig) triples in first seen order for
-        all events with same prefix, pre, in database. Items are sorted by
-        fnKey(pre, fn) where fn is first seen order number int.
-        Returns a First Seen Event Log FEL.
-        Returned items are duples of (fn, dig): Where fn is first seen order
-        number int and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
-
-        Returns:
-           items (Iterator[(pre, fn, val)]): over all items starting at pre, on
-        """
-        return self.getOnItemIterAll(db=self.fels, key=pre, on=fn)
-
-
-    def getFelItemAllPreIter(self):
-        """
-        Returns iterator of all (pre, fn, dig) triples in first seen order for
-        all events for all prefixes in database. Items are sorted by
-        fnKey(pre, fn) where fn is first seen order number int.
-        Returns all First Seen Event Logs FELs.
-        Returned items are tripes of (pre, fn, dig): Where pre is identifier prefix,
-        fn is first seen order number int and dig is event digest for lookup
-        in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            key is key location in db to resume replay, If empty then start at
-                first key in database
-        """
-        #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
-        return self.getOnItemIterAll(db=self.fels, key=b'')
 
     def putDts(self, key, val):
         """

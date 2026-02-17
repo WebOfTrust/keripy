@@ -1246,7 +1246,7 @@ class Tever:
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
         if bigers:
-            self.reger.putTibs(key, [biger.qb64b for biger in bigers])
+            self.reger.tibs.pin(keys=key, vals=bigers)
         if baks:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
@@ -1374,7 +1374,7 @@ class Tever:
         dgkey = dgKey(serder.preb, serder.saidb)
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(dgkey, sealet)
-        self.reger.putTibs(dgkey, [biger.qb64b for biger in bigers])
+        self.reger.tibs.pin(keys=dgkey, vals=bigers)
         self.reger.putTvt(dgkey, serder.raw)
         self.reger.putTwe(snKey(serder.preb, serder.sn), serder.saidb)
         logger.debug("Tever state: Escrowed partially witnessed "
@@ -1399,7 +1399,7 @@ class Tever:
             sealet = seqner.qb64b + saider.qb64b
             self.reger.putAnc(key, sealet)
         if bigers:
-            self.reger.putTibs(key, [biger.qb64b for biger in bigers])
+            self.reger.tibs.pin(keys=key, vals=bigers)
         if baks:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
@@ -2051,9 +2051,7 @@ class Tevery:
 
                 tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
 
-                bigers = None
-                if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
+                bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
@@ -2114,9 +2112,7 @@ class Tevery:
 
                 tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
 
-                bigers = None
-                if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
+                bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:

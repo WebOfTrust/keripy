@@ -45,7 +45,7 @@ from . import serdering
 
 from ..db import basing, dbing, subing
 from ..db.basing import KeyStateRecord, StateEERecord, OobiRecord
-from ..db.dbing import dgKey, snKey, fnKey, splitSnKey, splitKey
+from ..db.dbing import dgKey, snKey, splitSnKey, splitKey
 
 
 logger = help.ogler.getLogger()
@@ -3402,7 +3402,7 @@ class Kever:
 
         pre = self.prefixer.qb64
         if first:  # append event dig to first seen database in order
-            fn = self.db.appendFe(serder.preb, serder.saidb)
+            fn = self.db.fels.appendOn(keys=serder.preb, val=serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
                 if self.cues is not None:  # cue to notice BadCloneFN
                     self.cues.push(dict(kin="noticeBadCloneFN", serder=serder,
@@ -4382,7 +4382,7 @@ class Kevery:
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
         if firner:
-            ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
+            ldig = self.db.fels.getOn(keys=pre, on=firner.sn)
         else:
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
@@ -4391,7 +4391,8 @@ class Kevery:
             self.escrowUReceipt(serder, cigars, said=serder.said)  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
-        ldig = bytes(ldig).decode("utf-8")  # verify digs match
+        if isinstance(ldig, bytes):
+            ldig = ldig.decode("utf-8")  # normalize to str for compare
         # retrieve event by dig assumes if ldig is not None that event exists at ldig
 
         if not serder.compare(said=ldig):  # mismatch events problem with replay
@@ -4465,10 +4466,13 @@ class Kevery:
         sn = serder.sn
 
         if firner:  # retrieve last event by fn ordinal
-            ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
+            ldig = self.db.fels.getOn(keys=pre, on=firner.sn)
         else:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+
+        if isinstance(ldig, bytes):
+            ldig = ldig.decode("utf-8")
 
         for sprefixer, sseqner, saider, siger in trqs:  # iterate over each trq
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
@@ -6954,7 +6958,7 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for pre, sn, edig in self.db.ldes.getOnItemIter(keys=key):
+            for pre, sn, edig in self.db.ldes.getOnItemIterAll(keys=key):
                 try:
                     # pre and sn are already unpacked
                     ekey = snKey(pre, sn)
