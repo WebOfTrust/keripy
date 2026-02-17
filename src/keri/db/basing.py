@@ -1316,7 +1316,7 @@ class Baser(dbing.LMDBer):
 
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
         # TODO: clean
-        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Saider)
+        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to group multisig participants AIDs
         # TODO: clean
@@ -1420,9 +1420,11 @@ class Baser(dbing.LMDBer):
         for (pre, snh), rdigerWigerTuple in self.uwes.getItemIter():
             self.uwes.rem(keys=(pre, snh))
 
-        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
-                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune, self.ldes]:
-            count = escrow.cntAll()
+        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes,
+                       self.udes, self.rpes, self.ldes, self.epsd, self.eoobi,
+                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse,
+                       self.epse, self.dune]:
+            count = escrow.cnt()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
 
@@ -2303,7 +2305,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt triplets at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.ures, key)
+        return self.cntIoDups(self.ures, key)
 
     def delUres(self, key):
         """
@@ -2370,7 +2372,7 @@ class Baser(dbing.LMDBer):
         Return count of dup key event dig val at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.kels, key)
+        return self.cntIoDups(self.kels, key)
 
     def delKes(self, key):
         """
@@ -2534,7 +2536,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.pwes, key)
+        return self.cntIoDups(self.pwes, key)
 
     def delPwes(self, key):
         """

@@ -155,7 +155,7 @@ def test_introduce(mockHelpingNowUTC):
         rvy = routing.Revery(db=witHby.db, rtr=rtr)
         oobiing.Oobiery(hby=witHby, rvy=rvy)
         witPsr = parsing.Parser(kvy=witKvy, rvy=rvy, version=Vrsn_1_0)
-        assert witHby.db.oobis.cntAll() == 0
+        assert witHby.db.oobis.cnt() == 0
 
         oobi = f"https://localhost:8989/oobi/{watHab.pre}/controller"
         data = dict(
@@ -173,7 +173,7 @@ def test_introduce(mockHelpingNowUTC):
                        b'qw0R5t89FbLA26RwaA3NF9-dU0JpbNuJs7jiEBYbSGeDkbBDDEM')
 
         witPsr.parseOne(ims=msg)
-        assert witHby.db.oobis.cntAll() == 1
+        assert witHby.db.oobis.cnt() == 1
         obr = witHby.db.oobis.get(keys=(oobi,))
         assert obr.cid == watHab.pre
 
@@ -181,13 +181,13 @@ def test_introduce(mockHelpingNowUTC):
         data = dict(cid=watHab.pre)
         msg = watHab.reply(route="/introduce", data=data)
         witPsr.parseOne(ims=msg)
-        assert witHby.db.oobis.cntAll() == 1  # Still one because of the missing 'oobi' field
+        assert witHby.db.oobis.cnt() == 1  # Still one because of the missing 'oobi' field
 
         # Send one bad scheme
         data = dict(cid=watHab.pre, oobi="ftp://localhost")
         msg = watHab.reply(route="/introduce", data=data)
         witPsr.parseOne(ims=msg)
-        assert witHby.db.oobis.cntAll() == 1  # Still one because of the missing 'oobi' field
+        assert witHby.db.oobis.cnt() == 1  # Still one because of the missing 'oobi' field
 
 
 
