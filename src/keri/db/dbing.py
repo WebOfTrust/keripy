@@ -2269,7 +2269,7 @@ class LMDBer(filing.Filer):
         Set inclusion scales with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-            vals (bytes): last dup value at key
+            last (bytes): last dup value at key
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
@@ -2542,12 +2542,11 @@ class LMDBer(filing.Filer):
 
     # used in OnIoDupSuber
     def appendOnIoDupVal(self, db, key, val, *, sep=b'.'):
-        """
-        Appends val in order after last previous key with same pre in db where
+        """Appends val in order after last previous key with same pre in db where
         full key has key prefix and serialized on suffix attached with sep and
         value has ordinal proem prefixed.
 
-        Returns ordinal number in, on, of appended entry. Appended on is 1 greater
+        Returns ordinal number on, of appended entry. Appended on is 1 greater
         than previous latest on at pre.
         Uses onKey(pre, on) for entries.
 
@@ -2671,6 +2670,38 @@ class LMDBer(filing.Filer):
             except lmdb.BadValsizeError as ex:
                 raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
                                    " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
+
+    def getOnIoDupLast(self, db, key, on: int = 0, *, sep=b'.'):
+        """Get last added dup value at onkey = key + sep + on in db in insertion order
+        Returns None no entry at key
+
+        Removes prepended proem ordinal from val before returning
+        Assumes DB opened with dupsort=True
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order.
+
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+        Returns:
+            last (bytes): last dup value at onkey
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort=True
+            key (bytes): base key within sub db's keyspace
+            on (int): ordinal number to form onkey to get last from dups at onkey
+            sep (bytes): separator character for split
+        """
+        return self.getIoDupValLast(db=db, key=onKey(key, on, sep=sep))
 
 
     def getOnIoDupLastValIter(self, db, key=b'', on=0, *, sep=b'.'):

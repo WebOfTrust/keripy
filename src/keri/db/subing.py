@@ -2564,6 +2564,25 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             yield (self._des(val))
 
 
+    def getLastOn(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
+        """
+        Gets last val inserted at key made from keys in insertion order using
+        hidden ordinal proem.
+
+        Parameters:
+            keys (Iterable): of key strs to be combined in order to form key
+            on (int): ordinal number used with onKey(pre,on) to form key.
+
+        Returns:
+            last (str):  value str, None if no entry at effective key made from
+                         keys and on
+
+        """
+
+        val = self.db.getOnIoDupLast(db=self.sdb, key=self._tokey(keys), on=on)
+        return (self._des(val) if val is not None else val)
+
+
     def remOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
                    val: str | bytes | memoryview = ''):
         """

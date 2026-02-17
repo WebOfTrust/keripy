@@ -560,7 +560,7 @@ def test_lmdber():
         assert dber.getVals(db, key) == []
 
 
-        # test IoVals insertion order dup methods.  dup vals are insertion order
+        # test IoDupVals insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
         db = dber.env.open_db(key=b'peep.', dupsort=True)
@@ -620,8 +620,6 @@ def test_lmdber():
         vals = [bytes(val) for key, val in dber.getTopIoDupItemIter(db, pre)]
         # dber.getTopIoDupItemIter()
         assert vals == allvals
-
-
 
         # Setup Tests for TopIoDupItemsIter
         edb = dber.env.open_db(key=b'escrow.', dupsort=True)
@@ -731,8 +729,8 @@ def test_lmdber():
                     (preA, sn, valsA0[0]),
                     (preA, sn, valsA0[1])
                  ]
-        assert dber.addIoDupVal(ldb, key, valsA0[0]) == True
-        assert dber.addIoDupVal(ldb, key, valsA0[1]) == True
+        assert dber.addOnIoDupVal(ldb, preA, on=sn, val=valsA0[0]) == True
+        assert dber.addOnIoDupVal(ldb, preA, on=sn, val=valsA0[1]) == True
 
         sn += 1
         key = snKey(preA, sn)
@@ -743,7 +741,7 @@ def test_lmdber():
                    (preA, sn, valsA1[2]),
                    (preA, sn, valsA1[3]),
                  ]
-        assert dber.putIoDupVals(ldb, key, valsA1) == True
+        assert dber.putOnIoDupVals(ldb, preA, on=sn, vals=valsA1) == True
 
         sn += 1
         key = snKey(preA, sn)
@@ -753,7 +751,11 @@ def test_lmdber():
                    (preA, sn, valsA2[1]),
                    (preA, sn, valsA2[2]),
                  ]
-        assert dber.putIoDupVals(ldb, key, valsA2) == True
+        assert dber.putOnIoDupVals(ldb, preA, on=sn, vals=valsA2) == True
+
+        assert bytes(dber.getOnIoDupLast(ldb, preA, on=0)) == valsA0[1]
+        assert bytes(dber.getOnIoDupLast(ldb, preA, on=1)) == valsA1[3]
+        assert bytes(dber.getOnIoDupLast(ldb, preA, on=2)) == valsA2[2]
 
         # second pre
         sn = 0
@@ -763,8 +765,8 @@ def test_lmdber():
                     (preB, sn, valsB0[0]),
                     (preB, sn, valsB0[1])
                  ]
-        assert dber.addIoDupVal(ldb, key, valsB0[0]) == True
-        assert dber.addIoDupVal(ldb, key, valsB0[1]) == True
+        assert dber.addOnIoDupVal(ldb, preB, on=sn, val=valsB0[0]) == True
+        assert dber.addOnIoDupVal(ldb, preB, on=sn, val=valsB0[1]) == True
 
         sn += 1
         key = snKey(preB, sn)
@@ -775,8 +777,7 @@ def test_lmdber():
                    (preB, sn, valsB1[2]),
                    (preB, sn, valsB1[3]),
                  ]
-        assert dber.putIoDupVals(ldb, key, valsB1) == True
-
+        assert dber.putOnIoDupVals(ldb, preB, on=sn, vals=valsB1) == True
 
         sn += 1
         key = snKey(preB, sn)
@@ -786,7 +787,12 @@ def test_lmdber():
                    (preB, sn, valsB2[1]),
                    (preB, sn, valsB2[2]),
                  ]
-        assert dber.putIoDupVals(ldb, key, valsB2) == True
+        assert dber.putOnIoDupVals(ldb, preB, on=sn, vals=valsB2) == True
+
+
+        assert dber.getOnIoDupLast(ldb, preB, on=0) == valsB0[1]
+        assert dber.getOnIoDupLast(ldb, preB, on=1) == valsB1[3]
+        assert dber.getOnIoDupLast(ldb, preB, on=2) == valsB2[2]
 
 
         items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupLastItemIter(ldb, preA)]
@@ -959,6 +965,11 @@ def test_lmdber():
 
         assert dber.cntOnAll(ldb, key) == 4
 
+        assert dber.cntOnIoDups(ldb, key, on=0) == 1
+        assert dber.cntOnIoDups(ldb, key, on=1) == 1
+        assert dber.cntOnIoDups(ldb, key, on=2) == 1
+        assert dber.cntOnIoDups(ldb, key, on=3) == 1
+
         vals = [bytes(val) for val in dber.getOnIoDupVals(ldb, key=key)]  # default on=0
         assert vals == [b'k']
 
@@ -1020,6 +1031,9 @@ def test_lmdber():
 
         assert dber.cntOnIoDups(ldb, key=key, on=0) == 2
         assert dber.cntOnIoDups(ldb, key=key, on=1) == 2
+
+        assert dber.getOnIoDupLast(ldb, key=key, on=0) == b's'
+        assert dber.getOnIoDupLast(ldb, key=key, on=1) == b'u'
 
         assert dber.cntOnAll(ldb, key) == 4
 
