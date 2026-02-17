@@ -2349,7 +2349,7 @@ class Kever:
 
                 psn = sner.num - 1  # use sn of prior event to fetch prior event
                 # fetch raw serialization of last inserted  event at psn
-                pdig = next(self.db.kels.getOnLastIter(keys=pre, on=psn), None)
+                pdig = self.db.kels.getOnLast(keys=pre, on=psn)
                 if pdig is None:
                     raise ValidationError("Invalid recovery attempt: "
                                           "Bad sn = {} for event = {}."
@@ -3043,7 +3043,7 @@ class Kever:
             #  event has not already been superceded
             key = snKey(pre=delpre, sn=ssn)  # database key
             # get dig of last delegating event purported at sn
-            raw = next(self.db.kels.getOnLastIter(keys=delpre, on=ssn), None)  # last means not disputed or superseded
+            raw = self.db.kels.getOnLast(keys=delpre, on=ssn)  # last means not disputed or superseded
             if raw is None:  # no delegatint event yet. no index at key pre, sn
                 # Have to wait until delegating event at sn shows up in kel
                 # ToDo XXXX process  this cue of query to fetch delegating event from
@@ -4158,7 +4158,7 @@ class Kevery:
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
-                    ddig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
+                    ddig = self.db.kels.getOnLast(keys=pre, on=sn)
                     if ddig == said:  # event is a duplicate but not duplicitous
                         eserder = self.fetchEstEvent(pre, sn)  # latest est event wrt sn
                         # may have attached valid signature not yet logged
@@ -4227,7 +4227,7 @@ class Kevery:
         sn = serder.sn
 
         # Only accept receipt if for last seen version of event at sn
-        ldig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)  # retrieve dig of last event at sn.
+        ldig = self.db.kels.getOnLast(keys=pre, on=sn) # retrieve dig of last event at sn.
 
         if ldig is not None:  # verify digs match
             # retrieve event by dig assumes if ldig is not None that event exists at ldig
@@ -4310,7 +4310,7 @@ class Kevery:
 
                 # receipted event in db so attempt to get receipter est evt
                 # retrieve dig of last event at sn of est evt of receiptor.
-                sdig = next(self.db.kels.getOnLastIter(keys=sprefixer.qb64b, on=sseqner.sn), None)
+                sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=sseqner.sn)
                 if sdig is None:
                     # receiptor's est event not yet in receiptors's KEL
                     # so need cue to discover est evt KEL for receipter from watcher etc
@@ -4400,7 +4400,7 @@ class Kevery:
         if firner:
             ldig = self.db.fels.getOn(keys=pre, on=firner.sn)
         else:
-            ldig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)  # retrieve dig of last event at sn.
+            ldig = self.db.kels.getOnLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
 
         if ldig is None:  # escrow because event does not yet exist in database
             # # take advantage of fact that receipt and event have same pre, sn fields
@@ -4511,7 +4511,7 @@ class Kevery:
                                           "".format(ked["s"]))
 
                 # retrieve dig of last event at sn of receipter.
-                sdig = next(self.db.kels.getOnLastIter(keys=sprefixer.qb64b, on=sseqner.sn), None)
+                sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=sseqner.sn)
                 if sdig is None:
                     # receipter's est event not yet in receipter's KEL
                     # receipter's seal event not in receipter's KEL
@@ -4900,7 +4900,7 @@ class Kevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified key state notice reply. {serder.ked}")
 
-        ldig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)  # retrieve dig of last event at sn.
+        ldig = self.db.kels.getOnLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
         diger = coring.Diger(qb64=ksr.d)
 
         # Only accept key state if for last seen version of event at sn
@@ -5214,7 +5214,7 @@ class Kevery:
 
         found = False
         while not found:
-            dig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
+            dig = self.db.kels.getOnLast(keys=pre, on=sn)
             if not dig:
                 return None
 
@@ -6402,7 +6402,7 @@ class Kevery:
                         # get dig of receipted accepted event in kel using lastEvt
                         # at pre and sn
 
-                        dig = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
+                        dig = self.db.kels.getOnLast(keys=pre, on=sn)
                         if dig is None:  # no receipted event so keep in escrow
                             msg = f"URE Missing receipted evt at pre={pre} sn={sn:x}"
                             logger.trace("Kevery unescrow error: %s", msg)
@@ -6869,7 +6869,7 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # get dig of the receipted event using pre and sn lastEvt
-                    raw = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
+                    raw = self.db.kels.getOnLast(keys=pre, on=sn)
                     if raw is None:
                         # no event so keep in escrow
                         msg = f"VRE Missing receipted evt at pre={pre} sn={sn:x}"
@@ -6894,7 +6894,7 @@ class Kevery:
 
                     # get receipter's last est event
                     # retrieve dig of last event at sn of receipter.
-                    sdig = next(self.db.kels.getOnLastIter(keys=sprefixer.qb64b, on=sseqner.sn), None)
+                    sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=sseqner.sn)
                     if sdig is None:
                         # no event so keep in escrow
                         msg = f"VRE Missing receipted evt at pre={pre} sn={sn:x}"
@@ -7126,7 +7126,7 @@ def loadEvent(db, preb, dig):
     event["ked"] = serder.ked
 
     sn = serder.sn
-    sdig = next(db.kels.getOnLastIter(keys=preb, on=sn), None)
+    sdig = db.kels.getOnLast(keys=preb, on=sn)
     if sdig is not None:
         event["stored"] = True
 

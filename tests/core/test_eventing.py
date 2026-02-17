@@ -3639,7 +3639,7 @@ def test_direct_mode():
                            said=coeK.serder.said)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIcpDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn))
+        coeIcpDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeIcpDig = coeIcpDig.encode("utf-8")
         assert coeIcpDig == coeK.serder.saidb == b'EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL'
         coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
@@ -3729,7 +3729,7 @@ def test_direct_mode():
                            said=valK.serder.said)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
-        valIcpDig = next(coeKevery.db.kels.getOnLastIter(keys=valpre, on=vsn))
+        valIcpDig = coeKevery.db.kels.getOnLast(keys=valpre, on=vsn)
         valIcpDig = valIcpDig.encode("utf-8")
         assert valIcpDig == valK.serder.saidb == b'EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz'
         valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
@@ -3824,7 +3824,7 @@ def test_direct_mode():
                            said=coeK.serder.said)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeRotDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn))
+        coeRotDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeRotDig = coeRotDig.encode("utf-8")
         assert coeRotDig == coeK.serder.saidb == b'EKlC013XEpwYuCQ84aVnEAqzNurjAJDN6ayK-9NxggAr'
         coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
@@ -3916,7 +3916,7 @@ def test_direct_mode():
                            said=coeK.serder.said)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIxnDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn))
+        coeIxnDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeIxnDig = coeIxnDig.encode("utf-8")
         assert coeIxnDig == coeK.serder.saidb == b'EG3O9AV3lhySOadwTn810vHOZDc6B8TZY_u_4_iy_ono'
         coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
@@ -4109,7 +4109,7 @@ def test_direct_mode_cbor_mgpk():
                            kind=Kinds.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIcpDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn))
+        coeIcpDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeIcpDig = coeIcpDig.encode("utf-8")
         assert coeIcpDig == coeK.serder.saidb
         coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
@@ -4196,7 +4196,7 @@ def test_direct_mode_cbor_mgpk():
                            kind=Kinds.cbor)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
-        valIcpDig = next(coeKevery.db.kels.getOnLastIter(keys=valpre, on=vsn), None)
+        valIcpDig = coeKevery.db.kels.getOnLast(keys=valpre, on=vsn)
         valIcpDig = valIcpDig.encode("utf-8")
         assert valIcpDig == valK.serder.saidb
         valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
@@ -4292,7 +4292,7 @@ def test_direct_mode_cbor_mgpk():
                            kind=Kinds.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeRotDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
+        coeRotDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeRotDig = coeRotDig.encode("utf-8")
         assert coeRotDig == coeK.serder.saidb
         coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
@@ -4385,7 +4385,7 @@ def test_direct_mode_cbor_mgpk():
                            kind=Kinds.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIxnDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
+        coeIxnDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeIxnDig = coeIxnDig.encode("utf-8")
         assert coeIxnDig == coeK.serder.saidb
         coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
@@ -4787,7 +4787,7 @@ def test_reload_kever(mockHelpingNowUTC):
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
         assert natHab.kever.serder.said == 'EA3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo'
-        ldig = next(natHab.db.kels.getOnLastIter(keys=natHab.pre, on=natHab.kever.sn))
+        ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
         ldig = ldig.encode("utf-8")
         assert ldig == natHab.kever.serder.saidb
         serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre, ldig))))

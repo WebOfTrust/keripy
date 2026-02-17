@@ -748,7 +748,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         rotsaid2 = rotser2.saidb
 
         db.delEvt(dgKey(hab.pre, rotsaid2))
-        db.delKes(snKey(hab.pre, 2))
+        db.kels.remOn(keys=hab.pre, on=2)
 
         with pytest.raises(MissingAnchorError):
             tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Saider(qb64b=rotsaid2), wigers=[biger])
@@ -759,7 +759,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         assert len(tibs_found) >= 1
 
         db.putEvt(dgKey(hab.pre, rotsaid2), rot2)
-        db.addKe(snKey(hab.pre, 2), rotsaid2)
+        db.kels.addOn(keys=hab.pre, on=2, val=rotsaid2)
 
         # Unescrow: processEscrowAnchorless will load bigers from tibs and call processEvent
         tvy.processEscrows()

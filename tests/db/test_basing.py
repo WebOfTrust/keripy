@@ -685,13 +685,13 @@ def test_baser():
         deserializedVals = ["z", "m", "x", "a"]
 
         assert db.kels.getOn(keys=key) == []
-        assert next(db.kels.getOnLastIter(keys=key), None) == None
+        assert db.kels.getOnLast(keys=key)== None
         assert db.kels.cntOnAll(keys=key) == 0
         assert db.kels.remOn(key) == False
         assert db.kels.putOn(keys=key, vals=vals) == True
         assert db.kels.getOn(keys=key) == deserializedVals  # preserved insertion order
         assert db.kels.cntOnAll(keys=key) == len(vals) == 4
-        assert next(db.kels.getOnLastIter(keys=key)).encode("utf-8") == vals[-1]
+        assert db.kels.getOnLast(keys=key) == deserializedVals[-1]
         assert db.kels.putOn(keys=key, vals=[b'a']) == False   # duplicate
         assert db.kels.getOn(keys=key) == deserializedVals  #  no change
         assert db.kels.addOn(keys=key, val=b'a') == False   # duplicate
@@ -1244,7 +1244,7 @@ def test_clean_baser():
         assert natHab.kever.fn == 6
         natsaid = 'EA3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo'
         assert natHab.kever.serder.said == natsaid
-        ldig = next(natHab.db.kels.getOnLastIter(keys=natHab.pre, on=natHab.kever.sn), None)
+        ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
         ldig = ldig.encode("utf-8")
         assert ldig == natHab.kever.serder.saidb
         serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
@@ -1257,7 +1257,7 @@ def test_clean_baser():
         # test reopenDB with reuse  (because temp)
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
-            ldig = next(natHab.db.kels.getOnLastIter(keys=natHab.pre, on=natHab.kever.sn), None)
+            ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
             ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
             serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
@@ -1310,7 +1310,7 @@ def test_clean_baser():
         # see if database is back where it belongs
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
-            ldig = next(natHab.db.kels.getOnLastIter(keys=natHab.pre, on=natHab.kever.sn), None)
+            ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
             ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
             serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))

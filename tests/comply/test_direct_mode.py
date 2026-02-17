@@ -117,7 +117,7 @@ def test_direct_mode_with_manager():
 
         # sign controller's event not receipt
         # look up event to sign from validator's kever for coe
-        rawIpcDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn))
+        rawIpcDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeIcpDig = rawIpcDig.encode("utf-8")
         assert coeIcpDig == coeK.serder.saidb
         coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
@@ -189,7 +189,7 @@ def test_direct_mode_with_manager():
                            said=valK.serder.said, )
         # sign validator's event not receipt
         # look up event to sign from controller's kever for validator
-        valIcpDig = next(coeKevery.db.kels.getOnLastIter(keys=valpre, on=vsn), None)
+        valIcpDig = coeKevery.db.kels.getOnLast(keys=valpre, on=vsn)
         valIcpDig = valIcpDig.encode("utf-8")
         assert valIcpDig == valK.serder.saidb
         valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
@@ -255,7 +255,7 @@ def test_direct_mode_with_manager():
                            said=coeK.serder.said)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
-        coeRotDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
+        coeRotDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeRotDig = coeRotDig.encode("utf-8")
         assert coeRotDig == coeK.serder.saidb
         coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
@@ -319,7 +319,7 @@ def test_direct_mode_with_manager():
                            said=coeK.serder.said)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
-        coeIxnDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
+        coeIxnDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
         coeIxnDig = coeIxnDig.encode("utf-8")
         assert coeIxnDig == coeK.serder.saidb
         coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))

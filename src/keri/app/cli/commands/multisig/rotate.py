@@ -147,7 +147,7 @@ class GroupMultisigRotate(doing.DoDoer):
                     if mid not in self.hby.kevers:
                         raise kering.ConfigurationError(f"unknown signing member {mid}")
 
-                    dig = next(self.hby.db.kels.getOnLastIter(keys=mid, on=int(sn)), None)
+                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
                     if dig is None:
                         raise kering.ConfigurationError(f"non-existant event {sn} for signing member {mid}")
 
@@ -179,7 +179,7 @@ class GroupMultisigRotate(doing.DoDoer):
                     if mid not in self.hby.kevers:
                         raise kering.ConfigurationError(f"unknown rotation member {mid}")
 
-                    dig = next(self.hby.db.kels.getOnLastIter(keys=mid, on=int(sn)), None)
+                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
                     if dig is None:
                         raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
                     dig = dig.encode("utf-8")

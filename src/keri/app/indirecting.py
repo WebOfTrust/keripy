@@ -1125,10 +1125,10 @@ class ReceiptEnd(doing.DoDoer):
             raise falcon.HTTPBadRequest(description="either 'sn' or 'said' query param is required")
 
         if sn is not None:
-            last = next(self.hab.db.kels.getOnLastIter(keys=preb, on=sn), None)
-        if last is None:
-            raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({last}) not found")
-        said = last.encode("utf-8")
+            said = self.hab.db.kels.getOnLast(keys=preb, on=sn)
+        if said is None:
+            raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({said}) not found")
+        said = said.encode("utf-8")
         said = bytes(said)
         dgkey = dbing.dgKey(preb, said)  # get message
         if not (raw := self.hab.db.getEvt(key=dgkey)):
@@ -1243,10 +1243,10 @@ class QueryEnd:
             sn = req.get_param_as_int("sn")
             if sn is not None: ## query for event with seq-num >= sn
                 preb = pre.encode("utf-8")
-                dig = next(self.hab.db.kels.getOnLastIter(keys=preb, on=sn), None)
+                dig = self.hab.db.kels.getOnLast(keys=preb, on=sn)
                 if dig is None:
                     raise falcon.HTTPBadRequest(description=f"non-existant event at seq-num {sn}")
-
+                dig = dig.encode("utf-8")
                 for dig in self.hab.db.kels.getOnIterAll(keys=pre, on=sn):
                     try:
                         msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig)

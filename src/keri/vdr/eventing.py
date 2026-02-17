@@ -1333,11 +1333,11 @@ class Tever:
         if seqner is None or saider is None:
             return False
 
-        last = next(self.db.kels.getOnLastIter(keys=self.pre, on=seqner.sn), None)
-        if last is None:
+        dig = self.db.kels.getOnLast(keys=self.pre, on=seqner.sn)
+        if not dig:
             return False
         else:
-            dig = last.encode("utf-8")
+            dig = dig.encode("utf-8")
 
         # retrieve event by dig
         raw = self.db.getEvt(key=dgKey(pre=self.pre, dig=dig))

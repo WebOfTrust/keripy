@@ -1909,7 +1909,7 @@ class Baser(dbing.LMDBer):
         if prefixer.transferable:
             # receipted event and receipter in database so get receipter est evt
             # retrieve dig of last event at sn of est evt of receipter.
-            sdig = next(self.kels.getOnLastIter(keys=prefixer.qb64b, on=sn), None)
+            sdig = self.kels.getOnLast(keys=prefixer.qb64b, on=sn)
             if sdig is None:
                 # receipter's est event not yet in receipters's KEL
                 raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
