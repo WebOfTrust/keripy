@@ -422,14 +422,14 @@ def fetchTsgs(db, saider, snh=None):
     sigers = []
     old = None  # empty keys
     for keys, siger in db.getItemIter(keys=(saider.qb64, "")):
-        triple = keys[1:]
-        if triple != old:  # new tsg
-            if snh is not None and triple[1] > snh:  # only lower sn
+        trituple = keys[1:]
+        if trituple != old:  # new tsg
+            if snh is not None and trituple[1] > snh:  # only lower sn
                 break
             if sigers:  # append tsg made for old and sigers
                 tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
                 sigers = []
-            old = triple
+            old = trituple
         sigers.append(siger)
     if sigers and old:
         tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
