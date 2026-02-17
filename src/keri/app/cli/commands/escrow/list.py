@@ -4,38 +4,40 @@ KERI
 keri.kli.commands.escrow module
 
 """
+
 import argparse
 import json
 
 from hio.base import doing
 
 from keri import help
+from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
 from keri.core import eventing
-from keri.app.cli.common import existing
 from keri.db import dbing
 from keri.kering import ConfigurationError
 from keri.vdr import viring
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Views events in escrow state.', 
-                                 parents=[Parsery.keystore()])
-parser.set_defaults(handler=lambda args: handler(args)) 
+parser = argparse.ArgumentParser(
+    description="Views events in escrow state.", parents=[Parsery.keystore()]
+)
+parser.set_defaults(handler=lambda args: handler(args))
 
-parser.add_argument("--escrow", "-e", help="show values for one specific escrow", default=None)
+parser.add_argument(
+    "--escrow", "-e", help="show values for one specific escrow", default=None
+)
 
 
 def handler(args):
-    """ Command line escrow handler
-
-    """
+    """Command line escrow handler"""
     kwa = dict(args=args)
     return [doing.doify(escrows, **kwa)]
 
 
 def escrows(tymth, tock=0.0, **opts):
-    _ = (yield tock)
+    _ = yield tock
 
     args = opts["args"]
     name = args.name
@@ -50,7 +52,7 @@ def escrows(tymth, tock=0.0, **opts):
             escrows = dict()
             if (not escrow) or escrow == "out-of-order-events":
                 oots = list()
-                key = ekey = b''  # both start same. when not same means escrows found
+                key = ekey = b""  # both start same. when not same means escrows found
                 while True:
                     for pre, sn, edig in hby.db.ooes.getOnItemIterAll(keys=key):
                         try:
@@ -58,7 +60,9 @@ def escrows(tymth, tock=0.0, **opts):
                         except ValueError as e:
                             raise e
 
-                    if ekey == key:  # still same so no escrows found on last while iteration
+                    if (
+                        ekey == key
+                    ):  # still same so no escrows found on last while iteration
                         break
                     key = ekey  # setup next while iteration, with key after ekey
 
@@ -66,17 +70,21 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "partially-witnessed-events":
                 pwes = list()
-                key = ekey = b''  # both start same. when not same means escrows found
+                key = ekey = b""  # both start same. when not same means escrows found
                 while True:  # break when done
                     for ekey, edig in hby.db.getPweItemIter(key=key):
-                        pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
+                        pre, sn = dbing.splitSnKey(
+                            ekey
+                        )  # get pre and sn from escrow item
 
                         try:
                             pwes.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
                             raise e
 
-                    if ekey == key:  # still same so no escrows found on last while iteration
+                    if (
+                        ekey == key
+                    ):  # still same so no escrows found on last while iteration
                         break
                     key = ekey  # setup next while iteration, with key after ekey
 
@@ -84,7 +92,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "partially-signed-events":
                 pses = list()
-                key = ekey = b''  # both start same. when not same means escrows found
+                key = ekey = b""  # both start same. when not same means escrows found
                 while True:  # break when done
                     for pre, sn, edig in hby.db.pses.getOnItemIterAll(keys=key):
                         try:
@@ -92,7 +100,9 @@ def escrows(tymth, tock=0.0, **opts):
                         except ValueError as e:
                             raise e
 
-                    if ekey == key:  # still same so no escrows found on last while iteration
+                    if (
+                        ekey == key
+                    ):  # still same so no escrows found on last while iteration
                         break
                     key = ekey  # setup next while iteration, with key after ekey
 
@@ -100,19 +110,26 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "likely-duplicitous-events":
                 ldes = list()
-                key = ekey = b''  # both start same. when not same means escrows found
+                key = b""  # start key for iteration
                 while True:  # break when done
-                    for ekey, edig in hby.db.getLdeItemIter(key=key):
-                        pre, sn = dbing.splitSnKey(ekey)  # get pre and sn from escrow item
+                    found = False
+                    for pre, sn, edig in hby.db.ldes.getOnItemIter(keys=key):
+                        # pre and sn are already unpacked by Suber
+                        edig = edig.encode(
+                            "utf-8"
+                        )  # Suber returns str, loadEvent expects bytes
+                        found = True
 
                         try:
                             ldes.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
                             raise e
 
-                    if ekey == key:  # still same so no escrows found on last while iteration
+                        # Update key for next iteration (after current pre.sn)
+                        key = dbing.snKey(pre, sn)
+
+                    if not found:  # no more escrows found
                         break
-                    key = ekey  # setup next while iteration, with key after ekey
 
                 escrows["likely-duplicitous-events"] = ldes
 
@@ -142,10 +159,12 @@ def escrows(tymth, tock=0.0, **opts):
 
             print(json.dumps(escrows, indent=2))
 
-            if not(escrow) or escrow == 'tel-partial-witness-escrow':
+            if not (escrow) or escrow == "tel-partial-witness-escrow":
                 for (regk, snq), (prefixer, seqner, saider) in reger.tpwe.getItemIter():
                     pass
 
-    except ConfigurationError as e:
-        print(f"identifier prefix for {name} does not exist, incept must be run first", )
+    except ConfigurationError:
+        print(
+            f"identifier prefix for {name} does not exist, incept must be run first",
+        )
         return -1

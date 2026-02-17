@@ -45,7 +45,7 @@ from . import serdering
 
 from ..db import basing, dbing, subing
 from ..db.basing import KeyStateRecord, StateEERecord, OobiRecord
-from ..db.dbing import dgKey, snKey, fnKey, splitSnKey, splitKey
+from ..db.dbing import dgKey, snKey, splitSnKey, splitKey
 
 
 logger = help.ogler.getLogger()
@@ -3279,9 +3279,7 @@ class Kever:
         Found delegation may not be superseding so do not repair .aess unless
         delegate was already accepted.
         """
-        dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key of delegate
-
-        if (duple := self.db.aess.get(keys=dgkey)):  # delegation source couple at delegate
+        if (duple := self.db.aess.get(keys=(serder.preb, serder.saidb))):  # delegation source couple at delegate
             seqner, saider = duple
             deldig = saider.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
@@ -3290,7 +3288,7 @@ class Kever:
                 if original:  # should not happen aes database broken
                     # repair by deleting aes and returning None so it escrows
                     # and then next time around find below with repair it
-                    self.db.aess.rem(keys=dgkey)  # delete aes so next time repairs it
+                    self.db.aess.rem(keys=(serder.preb, serder.saidb))  # delete aes so next time repairs it
                 # superseding may not have happened yet so let it escrow
                 return None
             ddgkey = dgKey(pre=delpre, dig=deldig)  # database key of delegation
@@ -3333,7 +3331,7 @@ class Kever:
                 # delegation event was accepted in delegator's kel.
                 sner = coring.Number(num=dserder.sn, code=coring.NumDex.Huge)
                 saider = coring.Saider(qb64b=dserder.saidb)
-                self.db.aess.pin(keys=dgkey, val=(sner, saider))  # authorizer (delegator/issuer) event seal
+                self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(sner, saider))  # authorizer (delegator/issuer) event seal
 
             return dserder
 
@@ -3397,7 +3395,7 @@ class Kever:
         # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
         if (self.delpre and not serder.ilk == Ilks.ixn and not self.locallyOwned()
             and not self.locallyWitnessed(wits=wits) and seqner and saider):
-            self.db.aess.pin(keys=dgkey, val=(coring.Number(num=seqner.sn, code=coring.NumDex.Huge), saider))  # authorizer (delegator/issuer) event seal
+            self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(coring.Number(num=seqner.sn, code=coring.NumDex.Huge), saider))  # authorizer (delegator/issuer) event seal
 
         #if seqner and saider:
             #couple = seqner.qb64b + saider.qb64b
@@ -3414,7 +3412,7 @@ class Kever:
 
         pre = self.prefixer.qb64
         if first:  # append event dig to first seen database in order
-            fn = self.db.appendFe(serder.preb, serder.saidb)
+            fn = self.db.fels.appendOn(keys=serder.preb, val=serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
                 if self.cues is not None:  # cue to notice BadCloneFN
                     self.cues.push(dict(kin="noticeBadCloneFN", serder=serder,
@@ -4402,7 +4400,7 @@ class Kevery:
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
         if firner:
-            ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
+            ldig = self.db.fels.getOn(keys=pre, on=firner.sn)
         else:
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
@@ -4411,7 +4409,8 @@ class Kevery:
             self.escrowUReceipt(serder, cigars, said=serder.said)  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
-        ldig = bytes(ldig).decode("utf-8")  # verify digs match
+        if isinstance(ldig, bytes):
+            ldig = ldig.decode("utf-8")  # normalize to str for compare
         # retrieve event by dig assumes if ldig is not None that event exists at ldig
 
         if not serder.compare(said=ldig):  # mismatch events problem with replay
@@ -4485,7 +4484,7 @@ class Kevery:
         sn = serder.sn
 
         if firner:  # retrieve last event by fn ordinal
-            ldig = self.db.getFe(key=fnKey(pre=pre, fn=firner.sn))
+            ldig = self.db.fels.getOn(keys=pre, on=firner.sn)
         else:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
@@ -5365,7 +5364,7 @@ class Kevery:
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
-        self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.ldes.addOn(keys=serder.preb, on=serder.sn, val=serder.saidb)
         # log duplicitous
         logger.debug("Kevery process: escrowed likely duplicitous event=\n%s\n", serder.pretty())
 
@@ -6562,7 +6561,7 @@ class Kevery:
                 wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
                 # parse the event if we have a delegate seal
-                if (duple := self.db.aess.get(keys=dgKey(pre.encode("utf-8"), edig))) is not None:
+                if (duple := self.db.aess.get(keys=(pre.encode("utf-8"), edig))) is not None:
                     seqner, saider = duple
 
                     # process event
@@ -7013,10 +7012,12 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, edig in self.db.getLdeItemIter(key=key):
+            for pre, sn, edig in self.db.ldes.getOnItemIter(keys=key):
                 try:
-                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
-                    dgkey = dgKey(pre, bytes(edig))
+                    # pre and sn are already unpacked
+                    ekey = snKey(pre, sn)
+                    edig = edig.encode("utf-8")  # convert to bytes for legacy compatibility
+                    dgkey = dgKey(pre, edig)
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local source so raise ValidationError which unescrows below
                         msg = f"DUP Missing escrowed event source at dig = {bytes(edig)}"
@@ -7083,7 +7084,7 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than likely duplicitous so remove from escrow
-                    self.db.delLde(snKey(pre, sn), edig)  # removes one escrow at key val
+                    self.db.ldes.remOn(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.trace("Kevery: DUP other unescrow error: %s\n", ex.args[0])
                         logger.exception("Kevery: DUP other unescrow error: %s\n", ex.args[0])
@@ -7092,7 +7093,7 @@ class Kevery:
                     # We don't remove all escrows at pre,sn because some might be
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
-                    self.db.delLde(snKey(pre, sn), edig)  # removes one escrow at key val
+                    self.db.ldes.remOn(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                     logger.info("Kevery DUP unescrow succeeded in valid event: event=%s",
                                 eserder.said)
                     logger.debug("event=\n%s\n", eserder.pretty())
@@ -7161,7 +7162,7 @@ def loadEvent(db, preb, dig):
     event["witness_signatures"] = dwigs
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
-    if (duple := db.aess.get(keys=dgkey)) is not None:
+    if (duple := db.aess.get(keys=(preb, dig))) is not None:
         seqner, saider = duple
         event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
 
