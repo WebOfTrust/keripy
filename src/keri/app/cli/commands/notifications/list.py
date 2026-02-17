@@ -15,7 +15,7 @@ from keri.app.cli.common.parsing import Parsery
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Display notifications for an identifier', 
+parser = argparse.ArgumentParser(description='Display notifications for an identifier',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
@@ -72,7 +72,7 @@ class NotesDoer(doing.DoDoer):
 
         print("Waiting for notifications...")
 
-        while self.notifier.noter.notes.cntAll() == 0:
+        while self.notifier.noter.notes.cnt() == 0:
             yield self.tock
 
         for keys, notice in self.notifier.noter.notes.getItemIter():

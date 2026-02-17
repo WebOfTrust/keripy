@@ -450,8 +450,8 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEGe5uFh3t0JglSPQtJJoxCV1RlFoTBept1BPRk3o6hgh'
         assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
-        assert reg.getTibs(dgkey) == []
         assert reg.twes.getOn(keys=regk, on=0) == []
+        assert reg.tibs.get(keys=(regk, vcp.said)) == []
 
         # try to rotate a backerless registry
         vrt = eventing.rotate(regk, dig=vcp.said)
@@ -551,9 +551,9 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
             b'wSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV"],"n":"0AAUiJMii_rPXXCiLTEEaDT7"}')
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEDD2vrz4Eg3iLOOlZw5-d3ioZ1q703IC0M0LJP_3v-PT'
         assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
-        assert [bytes(tib) for tib in reg.getTibs(dgkey)] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
-                                                              b'QLbASSQLAZcC']
         assert reg.twes.getOn(keys=regk,on=0) == []
+        assert [tib.qb64b for tib in reg.tibs.get(keys=(regk, vcp.said))] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+                                                                    b'QLbASSQLAZcC']
 
         debSecret = 'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ'
 
@@ -710,6 +710,68 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         assert tev.prefixer.qb64 == vcp.pre
         assert tev.sn == 0
 
+
+def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCoringRandomNonce):
+    """Escrow a bis event with backer sigs (tibs non-empty), then unescrow so processEscrowAnchorless uses tibs.get."""
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
+        valSecret = 'ABjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
+        valSigner = Signer(qb64=valSecret, transferable=False)
+        valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
+        valpre = valPrefixer.qb64
+
+        hby, hab = buildHab(db, kpr)
+
+        vcp = eventing.incept(hab.pre,
+                              baks=[valpre],
+                              toad=1,
+                              cnfg=[],
+                              code=MtrDex.Blake3_256)
+        regk = vcp.pre
+
+        rseal1 = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
+        rot1 = hab.rotate(data=[rseal1._asdict()])
+        rotser1 = serdering.SerderKERI(raw=rot1)
+        seqner1 = Seqner(sn=int(rotser1.ked["s"], 16))
+        saider1 = Saider(qb64=rotser1.said)
+
+        tvy = Tevery(reger=reg, db=db)
+        tvy.processEvent(serder=vcp, seqner=seqner1, saider=saider1,
+                        wigers=[valSigner.sign(ser=vcp.raw, index=0)])
+        assert regk in tvy.tevers
+
+        # Use a distinct credential id so no TEL events exist for it (vcSn returns None, sno=0).
+        vcdig = "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
+        bis = eventing.backerIssue(vcdig=vcdig, regk=regk, regsn=2, regd=vcp.said)
+        biger = valSigner.sign(ser=bis.raw, index=0)
+
+        rseal2 = keventing.SealEvent(i=bis.ked["i"], s=bis.ked["s"], d=bis.said)
+        rot2 = hab.rotate(data=[rseal2._asdict()])
+        rotser2 = serdering.SerderKERI(raw=rot2)
+        rotsaid2 = rotser2.saidb
+
+        db.delEvt(dgKey(hab.pre, rotsaid2))
+        db.delKes(snKey(hab.pre, 2))
+
+        with pytest.raises(MissingAnchorError):
+            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Saider(qb64b=rotsaid2), wigers=[biger])
+
+        vci = vcdig.encode("utf-8") if isinstance(vcdig, str) else vcdig
+        bis_saidb = bis.saidb if hasattr(bis.saidb, '__len__') else bis.said.encode("utf-8")
+        tibs_found = list(reg.tibs.get(keys=(vci, bis_saidb)))
+        assert len(tibs_found) >= 1
+
+        db.putEvt(dgKey(hab.pre, rotsaid2), rot2)
+        db.addKe(snKey(hab.pre, 2), rotsaid2)
+
+        # Unescrow: processEscrowAnchorless will load bigers from tibs and call processEvent
+        tvy.processEscrows()
+
+        assert regk in tvy.tevers
+        tev = tvy.tevers[regk]
+        assert tev.sn == 0
+        # If unescrow succeeded, bis is in TEL and reprocessing raises duplicitous
+        with pytest.raises(LikelyDuplicitousError):
+            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Saider(qb64b=rotsaid2), wigers=[biger])
 
 
 if __name__ == "__main__":

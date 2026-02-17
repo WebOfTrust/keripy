@@ -188,8 +188,9 @@ class Reger(dbing.LMDBer):
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
-        .tibs is named sub DB of indexed backer signatures of event
-            Backers always have nontransferable indetifier prefixes.
+        .tibs is named sub DB implemented as CesrDupSuber with klas=indexing.Siger
+            for indexed backer signatures of event.
+            Backers always have nontransferable identifier prefixes.
             The index is the offset of the backer into the backer list
             of the anchored management event wrt the receipted event.
             dgKey
@@ -299,7 +300,7 @@ class Reger(dbing.LMDBer):
         self.tvts = self.env.open_db(key=b'tvts.')
         self.tels = self.env.open_db(key=b'tels.')
         self.ancs = self.env.open_db(key=b'ancs.')
-        self.tibs = self.env.open_db(key=b'tibs.', dupsort=True)
+        self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
         self.baks = self.env.open_db(key=b'baks.', dupsort=True)
         self.oots = subing.OnIoDupSuber(db=self, subkey='oots')
         self.twes = subing.OnIoDupSuber(db=self, subkey='twes')
@@ -544,11 +545,11 @@ class Reger(dbing.LMDBer):
         msg.extend(raw)
 
         # add indexed backer signatures to attachments
-        if tibs := self.getTibs(key=dgkey):
+        if tibs := self.tibs.get(keys=(pre, dig)):
             atc.extend(core.Counter(core.Codens.WitnessIdxSigs, count=len(tibs),
                                     version=kering.Vrsn_1_0).qb64b)
             for tib in tibs:
-                atc.extend(tib)
+                atc.extend(tib.qb64b)
 
         # add authorizer (delegator/issure) source seal event couple to attachments
         couple = self.getAnc(dgkey)
@@ -705,62 +706,6 @@ class Reger(dbing.LMDBer):
 
         return self.cntOnAll(db=self.tels, key=pre, on=fn)
 
-    def getTibs(self, key):
-        """
-        Use dgKey()
-        Return list of indexed witness signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.tibs, key)
-
-    def getTibsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of indexed witness signatures at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.tibs, key)
-
-    def putTibs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes indexed witness signatures vals to key
-        Adds to existing signatures at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.tibs, key, vals)
-
-    def addTib(self, key, val):
-        """
-        Use dgKey()
-        Add indexed witness signature val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.tibs, key, val)
-
-    def cntTibs(self, key):
-        """
-        Use dgKey()
-        Return count of indexed witness signatures at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.tibs, key)
-
-    def delTibs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.tibs, key, val)
-
-
     def putAnc(self, key, val):
         """
         Use dgKey()
@@ -844,7 +789,7 @@ class Reger(dbing.LMDBer):
         Return count of backer prefixes at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.baks, key)
+        return self.cntIoDups(self.baks, key)
 
 
     def delBaks(self, key):

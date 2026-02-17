@@ -375,12 +375,11 @@ class Komer(KomerBase):
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
         """
-        return(self.db.delTopVal(db=self.sdb, top=self._tokey(keys)))
+        return(self.db.delTop(db=self.sdb, top=self._tokey(keys)))
 
 
-    def cntAll(self):
-        """
-        Return iterator over the all the items in subdb
+    def cnt(self):
+        """Count all items in db
 
         Returns:
             iterator: of tuples of keys tuple and val dataclass instance for
@@ -391,7 +390,7 @@ class Komer(KomerBase):
                with attributes x and y then returns
                (("a","b"), dataclass(x=1,y=2))
         """
-        return self.db.cnt(db=self.sdb)
+        return self.db.cntAll(db=self.sdb)
 
 
 class IoSetKomer(KomerBase):
@@ -496,9 +495,9 @@ class IoSetKomer(KomerBase):
 
         """
         key = self._tokey(keys)
-        self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
+        self.db.delIoSet(db=self.sdb, key=key)  # delete all values
         vals = [self.serializer(val) for val in vals]
-        return (self.db.setIoSetVals(db=self.sdb,
+        return (self.db.pinIoSetVals(db=self.sdb,
                                      key=key,
                                      vals=vals,
                                      sep=self.sep))
@@ -517,7 +516,7 @@ class IoSetKomer(KomerBase):
 
         """
         return [self.deserializer(val) for val in
-                    self.db.getIoSetValsIter(db=self.sdb,
+                    self.db.getIoSetIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              sep=self.sep)]
 
@@ -534,7 +533,7 @@ class IoSetKomer(KomerBase):
                           None if no entry at keys
 
         """
-        val = self.db.getIoSetValLast(db=self.sdb, key=self._tokey(keys))
+        val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
         if val is not None:
             val = self.deserializer(val)
         return val
@@ -553,21 +552,25 @@ class IoSetKomer(KomerBase):
             vals (Iterator):  str values. Raises StopIteration when done
 
         """
-        for val in self.db.getIoSetValsIter(db=self.sdb,
+        for val in self.db.getIoSetIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             sep=self.sep):
             yield self.deserializer(val)
 
 
 
-    def cnt(self, keys: Union[str, Iterable]):
-        """
-        Return count of effective dup values at key made from keys, zero otherwise
+    def cnt(self, keys: Union[str, Iterable] = ""):
+        """Count of effective dup values at key made from keys. If keys is empty
+        then returns count of all entries in db
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (tuple): of key strs to be combined in order to form key. If
+                empty then returns coutn of all entries in db.
         """
-        return (self.db.cntIoSetVals(db=self.sdb,
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
+
+        return (self.db.cntIoSet(db=self.sdb,
                                      key=self._tokey(keys),
                                      sep=self.sep))
 
@@ -592,24 +595,9 @@ class IoSetKomer(KomerBase):
                                        val=val,
                                        sep=self.sep)
         else:
-            return self.db.delIoSetVals(db=self.sdb,
+            return self.db.delIoSet(db=self.sdb,
                                        key=self._tokey(keys),
                                        sep=self.sep)
-
-    #def remIokey(self, iokeys: str | bytes | memoryview | Iterable):
-        #"""
-        #Removes entries at iokeys
-
-        #Parameters:
-            #iokeys (str | bytes | memoryview | Iterable): of key str or
-                    #tuple of key strs to be combined in order to form key
-
-        #Returns:
-           #result (bool): True if key exists so delete successful. False otherwise
-
-        #"""
-        #return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
-
 
 
     def getItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
