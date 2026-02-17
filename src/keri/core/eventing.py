@@ -3415,9 +3415,6 @@ class Kever:
         pre = self.prefixer.qb64
         if first:  # append event dig to first seen database in order
             fn = self.db.appendFe(serder.preb, serder.saidb)
-            # print("APPENDING EVENT: ", )
-            # print("serder.preb: ",serder.preb )
-            # print("serder.saidb: ", serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
                 if self.cues is not None:  # cue to notice BadCloneFN
                     self.cues.push(dict(kin="noticeBadCloneFN", serder=serder,
