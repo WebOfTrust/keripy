@@ -1198,12 +1198,12 @@ class Baser(dbing.LMDBer):
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         # TODO: clean
-        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Diger)
 
         # Watcher watched SAID database for successfully saved watched AIDs for a watcher
         # maps key=(cid, aid, oid) to val=said of rpy message
         # TODO: clean
-        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Saider)
+        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Diger)
 
         # config loaded oobis to be processed asynchronously, keyed by oobi URL
         # TODO: clean
@@ -1316,7 +1316,7 @@ class Baser(dbing.LMDBer):
         # completed group delegated AIDs
         # TODO: clean
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
-                                     klas=coring.Saider)
+                                     klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
         # TODO: clean
