@@ -1061,8 +1061,8 @@ def test_on_iodup_suber():
 
         assert oidsuber.cntOn(keys="z", on=0) == 2
         assert oidsuber.cntOn(keys="z", on=1) == 2
-        assert oidsuber.getLastOn(keys="z", on=0) == x
-        assert oidsuber.getLastOn(keys="z", on=1) == z
+        assert oidsuber.getOnLast(keys="z", on=0) == x
+        assert oidsuber.getOnLast(keys="z", on=1) == z
 
         assert [val for val in oidsuber.getOnIter(keys="z", on=0)] == [w, x]
         assert [val for val in oidsuber.getOnIter(keys="z", on=1)] == [y, z]

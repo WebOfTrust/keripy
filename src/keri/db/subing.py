@@ -2591,7 +2591,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             yield (self._des(val))
 
 
-    def getLastOn(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
+    def getOnLast(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
         """
         Gets last val inserted at key made from keys in insertion order using
         hidden ordinal proem.
