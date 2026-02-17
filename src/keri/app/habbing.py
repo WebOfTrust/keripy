@@ -2047,7 +2047,7 @@ class BaseHab:
         for sig in self.db.getSigsIter(key):
             sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-        duple = self.db.aess.get(keys=key)
+        duple = self.db.aess.get(keys=(self.pre, dig))
 
         return serder, sigs, duple
 
