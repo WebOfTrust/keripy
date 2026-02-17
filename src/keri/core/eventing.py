@@ -7166,9 +7166,9 @@ def loadEvent(db, preb, dig):
         receipts["transferable"] = trans
 
     # add nontrans receipts couples
-    if coups := db.rcts.get(keys=dgkey):
+    if duple := db.rcts.get(keys=dgkey):
         nontrans = []
-        for prefixer, cigar in coups:
+        for prefixer, cigar in duple:
             nontrans.append(dict(prefix=prefixer.qb64, signature=cigar.qb64))
         receipts["nontransferable"] = nontrans
 
