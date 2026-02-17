@@ -196,7 +196,7 @@ class DicterSuber(subing.Suber):
         Returns:
             count of all items
         """
-        return self.db.cnt(db=self.sdb)
+        return self.db.cntAll(db=self.sdb)
 
 
 class Noter(dbing.LMDBer):
