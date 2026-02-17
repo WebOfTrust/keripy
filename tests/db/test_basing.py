@@ -1904,7 +1904,7 @@ def test_clear_escrows():
         assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is not None
 
         db.eoobi.pin(keys=('url',), val=OobiRecord())
-        assert db.eoobi.cntAll() == 1
+        assert db.eoobi.cnt() == 1
 
         serder = Serder(raw=b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG8WAmM29ZBdoXbnb87yiPxQw4Y7gcQjqZS74vBAKsRm","i":"DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","a":[]}')
         db.dpub.put(keys=(pre, 'said'), val=serder)
@@ -1940,7 +1940,7 @@ def test_clear_escrows():
         assert db.qnfs.cntAll() == 0
         assert db.pdes.cntAll() == 0
         assert db.rpes.cntAll() == 0
-        assert db.eoobi.cntAll() == 0
+        assert db.eoobi.cnt() == 0
         assert db.gpwe.cntAll() == 0
         assert db.gdee.cntAll() == 0
         assert db.dpwe.cntAll() == 0
