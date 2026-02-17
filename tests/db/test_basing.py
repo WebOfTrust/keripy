@@ -754,7 +754,7 @@ def test_baser():
         
         # core insertion
         assert db.pses.getOn(keys=key) == []
-        assert db.pses.getLast(key) == None
+        assert db.pses.getOnLast(keys=pre, on=sn) == None
         assert db.pses.cntOnAll(keys=key) == 0
         assert db.pses.remOn(keys=key) == False
         
@@ -820,13 +820,13 @@ def test_baser():
         assert db.pses.putOn(keys=pre, on=sn, vals=vals) == True
         assert db.pses.getOn(keys=pre, on=sn) == deserialized_vals
         assert list(db.pses.getOnIter(keys=pre, on=sn)) == deserialized_vals
-        assert db.pses.getLast(key) == deserialized_vals[-1]
+        assert db.pses.getOnLast(keys=pre, on=sn) == deserialized_vals[-1]
         assert db.pses.cntOnAll(keys=pre, on=sn) == len(vals) == 4
 
         # retrieval on empty list
         assert db.pses.getOn(keys=b'X') == []  
         assert list(db.pses.getIter(b'X')) == []
-        assert db.pses.getLast(b'X') == None
+        assert db.pses.getOnLast(keys=b'X') == None
         assert db.pses.cntOnAll(keys=b'X') == 0
         items = db.pses.getItemIter(keys=b'X')
         assert list(items) == []
@@ -846,10 +846,10 @@ def test_baser():
         assert db.pses.getOn(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
 
         # retrieval afterd deletion of specific val
-        assert db.pses.getLast(key) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert db.pses.getOnLast(keys=pre, on=sn) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
         assert db.pses.remOn(keys=pre, on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
         assert db.pses.getOn(keys=pre, on=sn) == ['z', 'm', 'x']
-        assert db.pses.getLast(key) == 'x'
+        assert db.pses.getOnLast(keys=pre, on=sn) == 'x'
         assert db.pses.cntOnAll(keys=pre, on=sn) == 3
         
         # clean up
@@ -1280,13 +1280,13 @@ def test_baser():
         assert db.ooes.putOn(keys=pre,on=sn, vals=vals) == True
         assert db.ooes.getOn(keys=pre,on=sn) == deserialized_vals
         assert list(db.ooes.getOnIterAll(pre,on=sn)) == deserialized_vals
-        assert db.ooes.getLast(key) == deserialized_vals[-1]
+        assert db.ooes.getOnLast(keys=pre, on=sn) == deserialized_vals[-1]
         assert db.ooes.cntOnAll(pre,on=sn) == len(vals) == 4
 
         # retrieval on empty list
         assert db.ooes.getOn(keys=b'X') == []  
         assert list(db.ooes.getOnIterAll(b'X')) == []
-        assert db.ooes.getLast(b'X') == None
+        assert db.ooes.getOnLast(keys=b'X') == None
         assert db.ooes.cntOnAll(b'X') == 0
         items = db.ooes.getOnItemIterAll(keys=b'X')
         assert list(items) == []
@@ -1306,10 +1306,10 @@ def test_baser():
         assert db.ooes.getOn(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
 
         # retrieval afterd deletion of specific val
-        assert db.ooes.getLast(key) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert db.ooes.getOnLast(keys=pre, on=sn) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
         assert db.ooes.remOn(keys=pre,on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
         assert db.ooes.getOn(keys=pre,on=sn,) == ['z', 'm', 'x']
-        assert db.ooes.getLast(key) == 'x'
+        assert db.ooes.getOnLast(keys=pre, on=sn) == 'x'
         assert db.ooes.cntOnAll(pre,on=sn) == 3
         
         # clean up

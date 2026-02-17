@@ -2027,7 +2027,7 @@ class BaseHab:
         key = dbing.snKey(self.pre, sn)
         dig = self.db.getKeLast(key)
         if dig is None and allowPartiallySigned:
-            vals = self.db.pses.getLast(key)
+            vals = self.db.pses.getOnLast(keys=self.pre, on=sn)
             dig = vals.encode("utf-8") if vals else None
 
         if dig is None:
