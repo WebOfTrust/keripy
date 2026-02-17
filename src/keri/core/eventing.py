@@ -3373,7 +3373,7 @@ class Kever:
         if wits:
             self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
 
-        self.db.evts.put(keys=dgkey, val=serder)  # idempotent (maybe already excrowed)
+        self.db.evts.put(keys=(serder.pre, serder.said), val=serder)  # idempotent (maybe already excrowed)
         # update event source
 
         # delegation for authorized delegated or issued event
@@ -3455,7 +3455,7 @@ class Kever:
 
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
@@ -3497,7 +3497,7 @@ class Kever:
 
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         self.db.delegables.add(snKey(serder.preb, serder.sn), serder.saidb)
@@ -3532,7 +3532,7 @@ class Kever:
         if seqner and saider:
             self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
 
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         # update event source
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
@@ -3576,7 +3576,7 @@ class Kever:
         if seqner and saider:
             self.db.udes.put(keys=dgkey, val=(seqner, saider))  # idempotent
 
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         # update event source
         if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
@@ -3640,7 +3640,7 @@ class Kever:
                          f"partially delegated/authorized event said="
                          f"{serder.said}.")
 
-        self.db.evts.put(keys=dgkey, val=serder)  # idempotent
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)  # idempotent
 
         # update event source local or remote
         if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
@@ -4218,8 +4218,8 @@ class Kevery:
         if ldig is not None:  # verify digs match
             ldig = bytes(ldig).decode("utf-8")
             # retrieve event by dig assumes if ldig is not None that event exists at ldig
-            dgkey = dgKey(pre=pre, dig=ldig)
-            lserder = self.db.evts.get(keys=dgkey)  # retrieve receipted event at dig
+            dgkey = dgKey(serder.preb, serder.saidb)
+            lserder = self.db.evts.get(keys=(serder.preb, serder.saidb))  # retrieve receipted event at dig
             # assumes db ensures that lserder must not be none
             if not lserder.compare(said=ked["d"]):  # stale receipt at sn discard
                 raise ValidationError("Stale receipt at sn = {} for rct = {}."
@@ -5238,11 +5238,11 @@ class Kevery:
             # otherwise don't change
         else:  # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkey, val=esr)
+            self.db.esrs.put(keys=(serder.preb, serder.saidb), val=esr)
 
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
@@ -5282,7 +5282,7 @@ class Kevery:
 
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
@@ -5307,7 +5307,7 @@ class Kevery:
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(prefixer.qb64b, serder.saidb), val=serder)
         self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
 
         for cigar in cigars:
@@ -5342,7 +5342,7 @@ class Kevery:
 
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.db.evts.put(keys=dgkey, val=serder)
+        self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
         # log duplicitous
         logger.debug("Kevery process: escrowed likely duplicitous event=\n%s\n", serder.pretty())

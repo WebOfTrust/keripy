@@ -95,8 +95,7 @@ def test_counselor():
         (seqner, saider) = val[0]
         assert seqner.sn == 1
         assert saider.qb64b == b'EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_EVb'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        srdr = hby1.db.evts.get(keys=key)
+        srdr = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
         assert srdr is not None and srdr.raw == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQz'
                               b'phoM_EVb","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"1","p":"EN'
                               b'uUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","kt":"2","k":["DEbwF934m5TjdQbC1'
@@ -149,8 +148,7 @@ def test_counselor():
         (seqner, saider) = val[0]
         assert seqner.sn == 2
         assert saider.qb64b == b'EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dEGc'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        srdr = hby1.db.evts.get(keys=key)
+        srdr = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
         assert srdr is not None and srdr.raw == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8j'
                               b'ylx2dEGc","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"2","p":"EF'
                               b'WaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_EVb","kt":"2","k":["DK-j3FspSlqvjM0v9'
@@ -204,8 +202,7 @@ def test_counselor():
         (seqner, saider) = val[0]
         assert seqner.sn == 3
         assert saider.qb64b == b'EEQVk2x7-t_fnYNoOzeZppvIKkEbVRDDVf1oxGj_hnXw'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        evt = hby1.db.evts.get(keys=key)
+        evt = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
         assert evt is not None and evt.raw == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvIKkEbVRDDVf1o'
                               b'xGj_hnXw","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"3","p":"EA'
                               b'FmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dEGc","kt":"2","k":["DE_7Y-c-xZXLb7Tcl'
@@ -386,8 +383,7 @@ def test_the_seven():
         (seqner, saider) = val[0]
         assert seqner.sn == 1
         assert saider.qb64b == b'EIr_IqnpArv44v0lBmv-yzFRXtiKYzN1tH7wLb6KGdsb'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        srdr = hby1.db.evts.get(keys=key)
+        srdr = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
 
         raw = (b'{"v":"KERI10JSON000310_","t":"rot","d":"EIr_IqnpArv44v0lBmv-yzFRXtiKYzN1tH7w'
                b'Lb6KGdsb","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"1","p":"EL'
@@ -526,8 +522,7 @@ def test_the_seven():
         (seqner, saider) = val[0]
         assert seqner.sn == 3
         assert saider.qb64b == b'EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAuLM8BnqxV'
-        key = dbing.dgKey(ghab4.pre, saider.qb64b)  # digest key
-        srdr = hby4.db.evts.get(keys=key)
+        srdr = hby4.db.evts.get(keys=(ghab4.pre, saider.qb64b))
 
         raw = (b'{"v":"KERI10JSON00023c_","t":"rot","d":"EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAu'
                b'LM8BnqxV","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"3","p":"EH'
@@ -604,7 +599,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
                                   smids=smids, rmids=rmids, **inits)
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
-        eserder = hab1.db.evts.get(keys=dgkey)
+        eserder = hab1.db.evts.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8")))
         sigs = bytearray()
         sigs.extend(bytes(hab1.db.getSigs(dgkey)[0]))
         sigs.extend(bytes(hab2.db.getSigs(dgkey)[0]))

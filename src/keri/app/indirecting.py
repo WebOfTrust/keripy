@@ -1133,7 +1133,7 @@ class ReceiptEnd(doing.DoDoer):
 
         said = bytes(said)
         dgkey = dbing.dgKey(preb, said)  # get message
-        if not (serder := self.hab.db.evts.get(keys=dgkey)):
+        if not (serder := self.hab.db.evts.get(keys=(preb, said))):
             raise falcon.HTTPNotFound(description="Missing event for dig={}.".format(said))
         if serder.sn > 0:
             wits = [wit.qb64 for wit in self.hab.kvy.fetchWitnessState(pre, serder.sn)]

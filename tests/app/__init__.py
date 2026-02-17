@@ -48,7 +48,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
                                   smids=smids, rmids=rmids, **inits)
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
-        eserder = hab1.db.evts.get(keys=dgkey)
+        eserder = hab1.db.evts.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8")))
         eraw = eserder.raw if eserder else b''
         sigs = bytearray()
         sigs.extend(bytes(hab1.db.getSigs(dgkey)[0]))

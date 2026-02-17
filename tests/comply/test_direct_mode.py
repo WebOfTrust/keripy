@@ -190,7 +190,7 @@ def test_direct_mode_with_manager():
         # look up event to sign from controller's kever for validator
         valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.serder.saidb
-        s = coeKevery.db.evts.get(keys=dgKey(pre=valpre, dig=valIcpDig))
+        s = coeKevery.db.evts.get(keys=(valpre, valIcpDig))
         sigers = coeMgr.sign(ser=s.raw, verfers=coeVerfers)  # return Siger if index
         # create receipt message
         cmsg = messagize(reserder, sigers=sigers, seal=seal)
@@ -255,7 +255,7 @@ def test_direct_mode_with_manager():
         # look up event to sign from validator's kever for controller
         coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.serder.saidb
-        s = valKevery.db.evts.get(keys=dgKey(pre=coepre, dig=coeRotDig))
+        s = valKevery.db.evts.get(keys=(coepre, coeRotDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
         # validator create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
@@ -318,7 +318,7 @@ def test_direct_mode_with_manager():
         # look up event to sign from validator's kever for controller
         coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIxnDig == coeK.serder.saidb
-        s = valKevery.db.evts.get(keys=dgKey(pre=coepre, dig=coeIxnDig))
+        s = valKevery.db.evts.get(keys=(coepre, coeIxnDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
         # create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
