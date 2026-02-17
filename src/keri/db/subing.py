@@ -581,8 +581,35 @@ class OnSuberBase(SuberBase):
                                      sep=self.sep.encode()))
 
 
+    def cntOn(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """Counts all entries with same key over all all on >= on.
+        If key not in db then count is 0
+
+        Returns
+            cnt (int): count of of all exposed on tail keyed vals with same
+                onkey prefix but different on in onkey in db starting at ordinal
+                number on where key is formed with onKey(key,on). Count at
+                each onkey includes duplicates if any.
+
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): top keys as prefix to be
+                combined with serialized exposed on tail and sep to form top key
+                When keys is empty then counts whole database including
+                duplicates if any.
+            on (int): ordinal number used with onKey(key,on) to form key.
+        """
+        if not keys:
+            return 0
+
+        return (self.db.cntOnAll(db=self.sdb,
+                                     key=self._tokey(keys),
+                                     on=on,
+                                     sep=self.sep.encode()))
+
     def cntOnAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
-        """Counts all entries with same key ovall all on >= on
+        """Counts all entries with same key over all all on >= on. When keys is
+        empty then counts for on for all keys in whole database.
 
         Returns
             cnt (int): count of of all exposed on tail keyed vals with same

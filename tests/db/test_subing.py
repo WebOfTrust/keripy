@@ -247,6 +247,11 @@ def test_on_suber():
         assert onsuber.cntOnAll(keys=("a",)) == 4
         assert onsuber.cntOnAll(keys=("a",), on=2) == 2
         assert onsuber.cntOnAll(keys=("a",), on=4) == 0
+        assert onsuber.cntOnAll() == 4
+        assert onsuber.cntOn() == 0
+        assert onsuber.cntOn(keys='a') == 4
+        assert onsuber.cntOn(keys=("a",), on=2) == 2
+        assert onsuber.cntOn(keys=("a",), on=4) == 0
 
         items = [(keys, val) for keys, val in onsuber.getItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
@@ -346,6 +351,11 @@ def test_on_suber():
         assert not onsuber.remOn(keys='a', on=3)
 
         assert onsuber.cntOnAll(keys=("a",)) == 2
+        assert onsuber.cntOnAll() == 6
+        assert onsuber.cntOn() == 0
+        assert onsuber.cntOn(keys='a') == 2
+        assert onsuber.cntOn(keys=("a",), on=2) == 1
+        assert onsuber.cntOn(keys=("a",), on=4) == 0
 
         items = [item for item in onsuber.getOnItemIterAll(keys='a')]
         assert items == [(('a',), 0, 'Blue dog'),
@@ -1058,6 +1068,7 @@ def test_on_iodup_suber():
         assert [val for val in oidsuber.getOnIter(keys="z", on=1)] == [y, z]
 
         assert oidsuber.cntOnAll(keys=("z",)) == 4
+        assert oidsuber.cntOnAll() == 4
 
         items = [item for item in oidsuber.getOnItemIterAll(keys='z')]
         assert items == [(('z',), 0, 'Blue dog'),
@@ -1083,6 +1094,7 @@ def test_on_iodup_suber():
         assert oidsuber.cntOnAll(keys=("a",)) == 4
         assert oidsuber.cntOnAll(keys=("a",), on=2) == 2
         assert oidsuber.cntOnAll(keys=("a",), on=4) == 0
+        assert oidsuber.cntOnAll() == 4
 
         items = [(keys, val) for keys, val in oidsuber.getItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
@@ -1695,6 +1707,7 @@ def test_ioset_suber():
         assert iosuber.put(keys=keys1, vals=vals1)
 
         assert iosuber.cntAll() == 6
+        assert iosuber.cnt(keys="") == 6
 
         assert iosuber.cnt(keys=keys0) == 3
         assert iosuber.cnt(keys=keys1) == 3
@@ -1819,6 +1832,7 @@ def test_ioset_suber():
         assert iosuber.rem(keys=keys0)
         assert iosuber.rem(keys=keys1)
         assert iosuber.cntAll() == 0
+        assert iosuber.cnt() == 0
 
         # more tests
         assert iosuber.put(keys=keys0, vals=[sal, sue])
