@@ -6657,8 +6657,7 @@ class Kevery:
 
                     #  get nontrans endorsements
                     cigars = []
-                    cigs = self.db.rcts.get(keys=dgkey)
-                    for prefixer, cigar in cigs:
+                    for prefixer, cigar in self.db.rcts.getIter(keys=dgkey):
                         cigars.append(cigar)
 
                     source = coring.Prefixer(qb64b=pre)
