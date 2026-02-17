@@ -1128,7 +1128,7 @@ def test_baser():
         assert db.ldes.rem(keys=key) == True
         assert db.ldes.get(keys=key) == []
 
-        # Setup Tests for getOnItemIter with proper OnIoDupSuber API
+        # Setup Tests for getOnItemIterAll with proper OnIoDupSuber API
         # Use addOn with explicit ordinal instead of snKey
         aVals = [b"z", b"m", b"x"]
         bVals = [b"o", b"r", b"z"]
@@ -1144,8 +1144,8 @@ def test_baser():
         for val in dVals:
             assert db.ldes.addOn(keys=b'A', on=7, val=val) == True
 
-        # Test getOnItemIter - iterate all items for prefix b'A'
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A')]
+        # Test getOnItemIterAll - iterate all items for prefix b'A'
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A')]
         assert items  # not empty
         # item is (keys, on, val)
         vals = [val for pre, sn, val in items]
@@ -1153,7 +1153,7 @@ def test_baser():
         assert vals == [v.decode("utf-8") for v in allVals]
 
         # Iterate starting from specific ordinal (sn=1)
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=1)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=1)]
         assert items
         pre, sn, val = items[0]
         assert sn == 1
@@ -1164,7 +1164,7 @@ def test_baser():
         assert vals == [v.decode("utf-8") for v in aVals]
 
         # bVals at sn=2
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=2)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=2)]
         vals = [val for p, s, val in items if s == 2]
         assert vals == [v.decode("utf-8") for v in bVals]
         # Remove bVals using remOn
@@ -1173,7 +1173,7 @@ def test_baser():
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
         # cVals at sn=4
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=4)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=4)]
         vals = [val for p, s, val in items if s == 4]
         assert vals == [v.decode("utf-8") for v in cVals]
         for p, s, val in items:
@@ -1181,7 +1181,7 @@ def test_baser():
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
         # dVals at sn=7
-        items = [item for item in db.ldes.getOnItemIter(keys=b'A', on=7)]
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=7)]
         vals = [val for p, s, val in items if s == 7]
         assert vals == [v.decode("utf-8") for v in dVals]
         for p, s, val in items:
@@ -1434,7 +1434,7 @@ def test_fetchkeldel():
             assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         allvals = vals0 + vals1 + vals2
-        vals = [val.encode("utf-8") for keys, on, val in db.dels.getOnItemIter(keys=preb)]
+        vals = [val.encode("utf-8") for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)
@@ -1903,7 +1903,7 @@ def test_clear_escrows():
         assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is not None
 
         db.eoobi.pin(keys=('url',), val=OobiRecord())
-        assert db.eoobi.cntAll() == 1
+        assert db.eoobi.cnt() == 1
 
         serder = Serder(raw=b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG8WAmM29ZBdoXbnb87yiPxQw4Y7gcQjqZS74vBAKsRm","i":"DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","a":[]}')
         db.dpub.put(keys=(pre, 'said'), val=serder)
@@ -1935,22 +1935,24 @@ def test_clear_escrows():
         assert db.getPwes(key) == []
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
+
         assert db.ldes.get(keys=key) == []
-        assert db.qnfs.cntAll() == 0
-        assert db.pdes.cntAll() == 0
-        assert db.rpes.cntAll() == 0
-        assert db.eoobi.cntAll() == 0
-        assert db.gpwe.cntAll() == 0
-        assert db.gdee.cntAll() == 0
-        assert db.dpwe.cntAll() == 0
-        assert db.gpse.cntAll() == 0
-        assert db.epse.cntAll() == 0
-        assert db.dune.cntAll() == 0
-        assert db.misfits.cntAll() == 0
-        assert db.delegables.cntAll() == 0
-        assert db.udes.cntAll() == 0
-        assert db.epsd.cntAll() == 0
-        assert db.dpub.cntAll() == 0
+        assert db.qnfs.cnt() == 0
+        assert db.pdes.cnt() == 0
+        assert db.rpes.cnt() == 0
+        assert db.eoobi.cnt() == 0
+        assert db.gpwe.cnt() == 0
+        assert db.gdee.cnt() == 0
+        assert db.dpwe.cnt() == 0
+        assert db.gpse.cnt() == 0
+        assert db.epse.cnt() == 0
+        assert db.dune.cnt() == 0
+        assert db.misfits.cnt() == 0
+        assert db.delegables.cnt() == 0
+        assert db.udes.cnt() == 0
+        assert db.epsd.cnt() == 0
+        assert db.dpub.cnt() == 0
+
 
 if __name__ == "__main__":
     test_baser()
