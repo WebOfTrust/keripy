@@ -1138,10 +1138,10 @@ class BaseHab:
         if (dig := self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))) is None:
             raise kering.ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
-        if (raw := self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))) is None:
+        if (serder := self.db.evts.get(keys=(self.pre, bytes(dig)))) is None:
             raise kering.ConfigurationError("Missing inception event for "
                                             "Habitat pre={}.".format(self.pre))
-        return serdering.SerderKERI(raw=bytes(raw))
+        return serder
 
     @property
     def kevers(self):
@@ -1572,7 +1572,8 @@ class BaseHab:
                                            "".format(pre, sn))
         dig = bytes(dig)
         key = dbing.dgKey(pre, dig)  # digest key
-        msg.extend(self.db.getEvt(key))
+        serder = self.db.evts.get(keys=(pre, dig))
+        msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
                            version=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in self.db.getSigsIter(key):
@@ -2034,8 +2035,7 @@ class BaseHab:
                                            "".format(self.pre, sn))
         dig = bytes(dig)
         key = dbing.dgKey(self.pre, dig)  # digest key
-        msg = self.db.getEvt(key)
-        serder = serdering.SerderKERI(raw=bytes(msg))
+        serder = self.db.evts.get(keys=(self.pre, dig))
 
         sigs = []
         for sig in self.db.getSigsIter(key):

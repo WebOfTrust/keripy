@@ -1340,13 +1340,8 @@ class Tever:
             dig = bytes(dig)
 
         # retrieve event by dig
-        raw = self.db.getEvt(key=dgKey(pre=self.pre, dig=dig))
-        if not raw:
+        if not (eserder := self.db.evts.get(keys=(self.pre, dig))):
             return False
-        else:
-            raw = bytes(raw)
-
-        eserder = serdering.SerderKERI(raw=raw)  # deserialize event raw
 
         if eserder.said != saider.qb64:
             return False
