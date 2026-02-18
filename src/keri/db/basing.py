@@ -610,7 +610,8 @@ class Baser(dbing.LMDBer):
         kevers (dict): Kever instances indexed by identifier prefix qb64
         prefixes (OrderedSet): local prefixes corresponding to habitats for this db
 
-        .evts is named sub DB whose values are serialized key events
+        .evts is named subDB instance of SerderSuber whose values are serialized
+            key events
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
@@ -1007,7 +1008,7 @@ class Baser(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.evts = self.env.open_db(key=b'evts.')
+        self.evts = subing.SerderSuber(db=self, subkey='evts.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.kels = subing.OnIoDupSuber(db=self, subkey='kels.')
         self.dtss = self.env.open_db(key=b'dtss.')
@@ -1666,9 +1667,9 @@ class Baser(dbing.LMDBer):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
         dgkey = dbing.dgKey(pre, dig)  # get message
-        if not (raw := self.getEvt(key=dgkey)):
+        if not (serder := self.evts.get(keys=(pre, dig))):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(raw)
+        msg.extend(serder.raw)
 
         # add indexed signatures to attachments
         if not (sigs := self.getSigs(key=dgkey)):
@@ -1763,8 +1764,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-        for evt in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
@@ -1801,8 +1801,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
@@ -1831,8 +1830,7 @@ class Baser(dbing.LMDBer):
         # create generic Seal namedtuple class using keys from provided seal dict
         Seal = namedtuple('Seal', list(seal))  # matching type
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == Seal._fields:  # same type of seal
                     eseal = Seal(**eseal)  #convert to namedtuple
@@ -1916,9 +1914,8 @@ class Baser(dbing.LMDBer):
                                              "".format(sn, pre))
             sdig = sdig.encode("utf-8 ")
             # retrieve last event itself of receipter est evt from sdig
-            sraw = self.getEvt(key=dbing.dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = serdering.SerderKERI(raw=bytes(sraw))
+            sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
+            # assumes db ensures that sserder must not be none because sdig was in KE
             if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
                 raise kering.ValidationError("Bad proof sig group at sn = {}"
                                              " for ksn = {}."
@@ -1932,43 +1929,6 @@ class Baser(dbing.LMDBer):
             tholder = coring.Tholder(sith="1")
 
         return tholder, verfers
-
-    def putEvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.evts, key, val)
-
-    def setEvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.evts, key, val)
-
-    def getEvt(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.evts, key)
-
-
-    def delEvt(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.evts, key)
-
 
     def getEvtPreIter(self, pre, sn=0):
         """
@@ -1986,14 +1946,13 @@ class Baser(dbing.LMDBer):
 
         for dig in self.kels.getOnIterAll(keys=pre, sn=sn):
             try:
-                dgkey = dbing.dgKey(pre, dig)  # get message
-                if not (raw := self.getEvt(key=dgkey)):
+                if not (serder := self.evts.get(keys=(pre, dig))):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
 
-            yield raw  # event message
+            yield serder  # event as Serder
 
 
     def getEvtLastPreIter(self, pre, sn=0):
@@ -2013,14 +1972,13 @@ class Baser(dbing.LMDBer):
         for dig in self.kels.getOnLastIter(keys=pre, on=sn):
             try:
 
-                dgkey = dbing.dgKey(pre, dig)  # get message
-                if not (raw := self.getEvt(key=dgkey)):
+                if not (serder := self.evts.get(keys=(pre, dig) )):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
 
-            yield raw  # event message
+            yield serder  # event as Serder
 
 
     def putDts(self, key, val):

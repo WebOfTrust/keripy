@@ -47,7 +47,7 @@ def test_baser():
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
-    assert isinstance(baser.evts, lmdb._Database)
+    assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, lmdb._Database)
     assert isinstance(baser.rcts, lmdb._Database)
@@ -77,7 +77,7 @@ def test_baser():
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
-    assert isinstance(baser.evts, lmdb._Database)
+    assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, lmdb._Database)
     assert isinstance(baser.rcts, lmdb._Database)
@@ -104,7 +104,7 @@ def test_baser():
         assert baser.env.path() == baser.path
         assert os.path.exists(baser.path)
 
-        assert isinstance(baser.evts, lmdb._Database)
+        assert isinstance(baser.evts, subing.SerderSuber)
         assert isinstance(baser.sigs, lmdb._Database)
         assert isinstance(baser.dtss, lmdb._Database)
         assert isinstance(baser.rcts, lmdb._Database)
@@ -120,17 +120,18 @@ def test_baser():
     preb = 'DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
-    vs = versify(kind=Kinds.json, size=20)
-    assert vs == 'KERI10JSON000014_'
-
-    ked = dict(vs=vs, pre=preb.decode("utf-8"),
-               sn="{:x}".format(sn),
-               ilk="rot",
-               dig=digb.decode("utf-8"))
+    # Build minimal rot event (KERI field names: i, s, d, p, t, etc.)
+    ked = dict(v=versify(kind=Kinds.json, size=0), t="rot", d=digb.decode("utf-8"),
+               i=preb.decode("utf-8"), s="{:x}".format(sn), p=preb.decode("utf-8"),
+               kt="0", k=[], nt="0", n=[], bt="0", br=[], ba=[], a=[])
     skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                     b'c","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"'
-                     b'}')
+    while True:
+        ked["v"] = versify(kind=Kinds.json, size=len(skedb))
+        next_skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        if len(next_skedb) == len(skedb):
+            skedb = next_skedb
+            break
+        skedb = next_skedb
 
     sig0b = 'ABz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
     sig1b = 'AA_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
@@ -151,16 +152,17 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        #  test .evts sub db methods
-        assert db.getEvt(key) == None
-        assert db.delEvt(key) == False
-        assert db.putEvt(key, val=skedb) == True
-        assert db.getEvt(key) == skedb
-        assert db.putEvt(key, val=skedb) == False
-        assert db.setEvt(key, val=skedb) == True
-        assert db.getEvt(key) == skedb
-        assert db.delEvt(key) == True
-        assert db.getEvt(key) == None
+        #  test .evts sub db methods (verify=False for minimal test event)
+        sked = serdering.SerderKERI(raw=skedb, verify=False)
+        assert db.evts.get(keys=(preb, digb)) is None
+        assert db.evts.rem(keys=(preb, digb)) is False
+        assert db.evts.put(keys=(preb, digb), val=sked) is True
+        assert db.evts.get(keys=(preb, digb)).raw == skedb
+        assert db.evts.put(keys=(preb, digb), val=sked) is False
+        assert db.evts.pin(keys=(preb, digb), val=sked) is True
+        assert db.evts.get(keys=(preb, digb)).raw == skedb
+        assert db.evts.rem(keys=(preb, digb)) is True
+        assert db.evts.get(keys=(preb, digb)) is None
 
         # test eventsourcerecords .srcs
         record = basing.EventSourceRecord()
@@ -1090,12 +1092,12 @@ def test_baser():
         assert db.dels.getOn(keys=keys, on=on) == []
         result = db.dels.getOn(keys=keys, on=on)
         assert (result[-1] if result else None) == None
-        assert db.dels.cntOn(keys=(keys,), on=on) == 0
+        assert len(db.dels.getOn(keys=keys, on=on)) == 0
         assert db.dels.remOn(keys=keys, on=on) == False
         for val in vals:
             db.dels.addOn(keys=keys, on=on, val=val)
         assert db.dels.getOn(keys=keys, on=on) == vals  # preserved insertion order
-        assert db.dels.cntOn(keys=(keys,), on=on) == len(vals) == 4
+        assert len(db.dels.getOn(keys=keys, on=on)) == len(vals) == 4
         result = db.dels.getOn(keys=keys, on=on)
         assert result[-1] == vals[-1]
         assert db.dels.addOn(keys=keys, on=on, val='a') == False   # duplicate
@@ -1126,7 +1128,7 @@ def test_baser():
         assert db.ldes.rem(keys=key) == True
         assert db.ldes.get(keys=key) == []
 
-        # Setup Tests for getOnItemIterAll with proper OnIoDupSuber API
+        # Setup Tests for getOnItemIter with proper OnIoDupSuber API
         # Use addOn with explicit ordinal instead of snKey
         aVals = [b"z", b"m", b"x"]
         bVals = [b"o", b"r", b"z"]
@@ -1247,7 +1249,7 @@ def test_clean_baser():
         ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
         ldig = ldig.encode("utf-8")
         assert ldig == natHab.kever.serder.saidb
-        serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+        serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
         assert serder.said == natHab.kever.serder.said
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
@@ -1260,7 +1262,7 @@ def test_clean_baser():
             ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
             ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
-            serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] <= 96 #68
 
@@ -1282,7 +1284,7 @@ def test_clean_baser():
 
             assert fn == 7
             # verify garbage event in database
-            assert natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
+            assert natHab.db.evts.get(keys=(natHab.pre, badsrdr.said))
             assert natHab.db.fels.getOn(keys=natHab.pre, on=7)
 
 
@@ -1313,12 +1315,12 @@ def test_clean_baser():
             ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
             ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
-            serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] >= 18
 
             # confirm bad event missing from database
-            assert not natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
+            assert not natHab.db.evts.get(keys=(natHab.pre, badsrdr.said))
             assert not natHab.db.fels.getOn(keys=natHab.pre, on=7)
             state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
             assert state.s == '6'
@@ -1426,7 +1428,8 @@ def test_fetchkeldel():
             assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         allvals = vals0 + vals1 + vals2
-        vals = [val.encode("utf-8") for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
+        vals = [(val.encode("utf-8") if isinstance(val, str) else bytes(val))
+            for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)
@@ -1690,9 +1693,8 @@ def test_dbdict():
                                eevt=eevt,
                                )
 
-        dgkey = eventing.dgKey(pre=pre, dig=serder.said)
-        db.putEvt(key=dgkey, val=serder.raw)
-        assert db.getEvt(key=dgkey) is not None
+        db.evts.put(keys=(pre, serder.said), val=serder)
+        assert db.evts.get(keys=(pre, serder.said)) is not None
 
         db.states.pin(keys=pre, val=state)  # put state in database
         dbstate = db.states.get(keys=pre)
@@ -1927,24 +1929,22 @@ def test_clear_escrows():
         assert db.getPwes(key) == []
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
-
         assert db.ldes.get(keys=key) == []
-        assert db.qnfs.cnt() == 0
-        assert db.pdes.cnt() == 0
-        assert db.rpes.cnt() == 0
+        assert db.qnfs.cntAll() == 0
+        assert db.pdes.cntAll() == 0
+        assert db.rpes.cntAll() == 0
         assert db.eoobi.cnt() == 0
-        assert db.gpwe.cnt() == 0
-        assert db.gdee.cnt() == 0
-        assert db.dpwe.cnt() == 0
-        assert db.gpse.cnt() == 0
-        assert db.epse.cnt() == 0
-        assert db.dune.cnt() == 0
-        assert db.misfits.cnt() == 0
-        assert db.delegables.cnt() == 0
-        assert db.udes.cnt() == 0
-        assert db.epsd.cnt() == 0
-        assert db.dpub.cnt() == 0
-
+        assert db.gpwe.cntAll() == 0
+        assert db.gdee.cntAll() == 0
+        assert db.dpwe.cntAll() == 0
+        assert db.gpse.cntAll() == 0
+        assert db.epse.cntAll() == 0
+        assert db.dune.cntAll() == 0
+        assert db.misfits.cntAll() == 0
+        assert db.delegables.cntAll() == 0
+        assert db.udes.cntAll() == 0
+        assert db.epsd.cntAll() == 0
+        assert db.dpub.cntAll() == 0
 
 if __name__ == "__main__":
     test_baser()
