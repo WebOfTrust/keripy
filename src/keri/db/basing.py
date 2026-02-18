@@ -610,7 +610,8 @@ class Baser(dbing.LMDBer):
         kevers (dict): Kever instances indexed by identifier prefix qb64
         prefixes (OrderedSet): local prefixes corresponding to habitats for this db
 
-        .evts is named sub DB whose values are serialized key events
+        .evts is named subDB instance of SerderSuber whose values are serialized
+            key events
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
@@ -1010,7 +1011,7 @@ class Baser(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.evts = self.env.open_db(key=b'evts.')
+        self.evts = subing.SerderSuber(db=self, subkey='evts.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.dtss = self.env.open_db(key=b'dtss.')
@@ -1199,12 +1200,12 @@ class Baser(dbing.LMDBer):
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         # TODO: clean
-        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Diger)
 
         # Watcher watched SAID database for successfully saved watched AIDs for a watcher
         # maps key=(cid, aid, oid) to val=said of rpy message
         # TODO: clean
-        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Saider)
+        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Diger)
 
         # config loaded oobis to be processed asynchronously, keyed by oobi URL
         # TODO: clean
@@ -1317,11 +1318,11 @@ class Baser(dbing.LMDBer):
         # completed group delegated AIDs
         # TODO: clean
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
-                                     klas=coring.Saider)
+                                     klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
         # TODO: clean
-        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Saider)
+        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to group multisig participants AIDs
         # TODO: clean
@@ -1423,9 +1424,11 @@ class Baser(dbing.LMDBer):
         for (pre, snh), rdigerWigerTuple in self.uwes.getItemIter():
             self.uwes.rem(keys=(pre, snh))
 
-        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
-                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune, self.ldes]:
-            count = escrow.cntAll()
+        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes,
+                       self.udes, self.rpes, self.ldes, self.epsd, self.eoobi,
+                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse,
+                       self.epse, self.dune]:
+            count = escrow.cnt()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
 
@@ -1667,9 +1670,9 @@ class Baser(dbing.LMDBer):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
         dgkey = dbing.dgKey(pre, dig)  # get message
-        if not (raw := self.getEvt(key=dgkey)):
+        if not (serder := self.evts.get(keys=(pre, dig))):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(raw)
+        msg.extend(serder.raw)
 
         # add indexed signatures to attachments
         if not (sigs := self.getSigs(key=dgkey)):
@@ -1764,8 +1767,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-        for evt in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
@@ -1802,8 +1804,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
@@ -1832,8 +1833,7 @@ class Baser(dbing.LMDBer):
         # create generic Seal namedtuple class using keys from provided seal dict
         Seal = namedtuple('Seal', list(seal))  # matching type
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == Seal._fields:  # same type of seal
                     eseal = Seal(**eseal)  #convert to namedtuple
@@ -1915,9 +1915,8 @@ class Baser(dbing.LMDBer):
                 raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
             # retrieve last event itself of receipter est evt from sdig
-            sraw = self.getEvt(key=dbing.dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = serdering.SerderKERI(raw=bytes(sraw))
+            sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
+            # assumes db ensures that sserder must not be none because sdig was in KE
             if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
                 raise kering.ValidationError("Bad proof sig group at sn = {}"
                                              " for ksn = {}."
@@ -1931,43 +1930,6 @@ class Baser(dbing.LMDBer):
             tholder = coring.Tholder(sith="1")
 
         return tholder, verfers
-
-    def putEvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.evts, key, val)
-
-    def setEvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.evts, key, val)
-
-    def getEvt(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.evts, key)
-
-
-    def delEvt(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.evts, key)
-
 
     def getEvtPreIter(self, pre, sn=0):
         """
@@ -1985,14 +1947,13 @@ class Baser(dbing.LMDBer):
 
         for dig in self.getKelIter(pre, sn=sn):
             try:
-                dgkey = dbing.dgKey(pre, dig)  # get message
-                if not (raw := self.getEvt(key=dgkey)):
+                if not (serder := self.evts.get(keys=(pre, dig))):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
 
-            yield raw  # event message
+            yield serder  # event as Serder
 
 
     def getEvtLastPreIter(self, pre, sn=0):
@@ -2012,14 +1973,13 @@ class Baser(dbing.LMDBer):
         for dig in self.getKelLastIter(pre, sn=sn):
             try:
 
-                dgkey = dbing.dgKey(pre, dig)  # get message
-                if not (raw := self.getEvt(key=dgkey)):
+                if not (serder := self.evts.get(keys=(pre, dig) )):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
 
-            yield raw  # event message
+            yield serder  # event as Serder
 
 
     def putDts(self, key, val):
@@ -2246,7 +2206,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt triplets at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.ures, key)
+        return self.cntIoDups(self.ures, key)
 
     def delUres(self, key):
         """
@@ -2400,7 +2360,7 @@ class Baser(dbing.LMDBer):
         Return count of receipt quinlets at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.vres, key)
+        return self.cntIoDups(self.vres, key)
 
     def delVres(self, key):
         """
@@ -2466,7 +2426,7 @@ class Baser(dbing.LMDBer):
         Return count of dup key event dig val at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.kels, key)
+        return self.cntIoDups(self.kels, key)
 
     def delKes(self, key):
         """
@@ -2618,7 +2578,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.pses, key)
+        return self.cntIoDups(self.pses, key)
 
     def delPses(self, key):
         """
@@ -2719,7 +2679,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.pwes, key)
+        return self.cntIoDups(self.pwes, key)
 
     def delPwes(self, key):
         """
@@ -2798,7 +2758,7 @@ class Baser(dbing.LMDBer):
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.ooes, key)
+        return self.cntIoDups(self.ooes, key)
 
     def delOoes(self, key):
         """
@@ -2820,6 +2780,164 @@ class Baser(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoDupVal(self.ooes, key, val)
+
+
+#<<<<<<< HEAD
+    #def putDes(self, key, vals):
+        #"""
+        #Use snKey()
+        #Write each duplicitous event entry dig from list of bytes vals to key
+        #Adds to existing event indexes at key if any
+        #Returns True If at least one of vals is added as dup, False otherwise
+        #Duplicates are inserted in insertion order.
+        #"""
+        #return self.putIoDupVals(self.dels, key, vals)
+
+    #def addDe(self, key, val):
+        #"""
+        #Use snKey()
+        #Add duplicate event index val bytes as dup to key in db
+        #Adds to existing event indexes at key if any
+        #Returns True if written else False if dup val already exists
+        #Duplicates are inserted in insertion order.
+        #"""
+        #return self.addIoDupVal(self.dels, key, val)
+
+    #def getDes(self, key):
+        #"""
+        #Use snKey()
+        #Return list of duplicitous event dig vals at key
+        #Returns empty list if no entry at key
+        #Duplicates are retrieved in insertion order.
+        #"""
+        #return self.getIoDupVals(self.dels, key)
+
+    #def getDeLast(self, key):
+        #"""
+        #Use snKey()
+        #Return last inserted dup value of duplicitous event dig vals at key
+        #Returns None if no entry at key
+
+        #Duplicates are retrieved in insertion order.
+        #"""
+        #return self.getIoDupValLast(self.dels, key)
+
+    #def cntDes(self, key):
+        #"""
+        #Use snKey()
+        #Return count of dup event dig vals at key
+        #Returns zero if no entry at key
+        #"""
+        #return self.cntIoDups(self.dels, key)
+
+    #def delDes(self, key):
+        #"""
+        #Use snKey()
+        #Deletes all values at key.
+        #Returns True If key exists in database Else False
+        #"""
+        #return self.delIoDupVals(self.dels, key)
+
+    #def getDelItemIter(self, pre):
+        #"""
+        #Returns iterator of all dup vals  in insertion order for any entries
+        #with same prefix across all sequence numbers including gaps.
+        #Assumes that key is combination of prefix and sequence number given
+        #by .snKey().
+
+        #Raises StopIteration Error when empty.
+        #Duplicates are retrieved in insertion order.
+
+        #Parameters:
+            #db is opened named sub db with dupsort=True
+            #pre is bytes of itdentifier prefix prepended to sn in key
+                #within sub db's keyspace
+        #"""
+        #if hasattr(pre, "encode"):
+            #pre = pre.encode("utf-8")  # convert str to bytes
+        #return self.getTopIoDupItemIter(self.dels, pre)
+        ##return self.getOnIoDupValsAnyPreIter(self.dels, pre)
+
+    #def putLdes(self, key, vals):
+        #"""
+        #Use snKey()
+        #Write each likely duplicitous event entry dig from list of bytes vals to key
+        #Adds to existing event indexes at key if any
+        #Returns True If at least one of vals is added as dup, False otherwise
+        #Duplicates are inserted in insertion order.
+        #"""
+        #return self.putIoDupVals(self.ldes, key, vals)
+
+    #def addLde(self, key, val):
+        #"""
+        #Use snKey()
+        #Add likely duplicitous escrow val bytes as dup to key in db
+        #Adds to existing event indexes at key if any
+        #Returns True if written else False if dup val already exists
+        #Duplicates are inserted in insertion order.
+        #"""
+        #return self.addIoDupVal(self.ldes, key, val)
+
+    #def getLdes(self, key):
+        #"""
+        #Use snKey()
+        #Return list of likely duplicitous event dig vals at key
+        #Returns empty list if no entry at key
+        #Duplicates are retrieved in insertion order.
+        #"""
+        #return self.getIoDupVals(self.ldes, key)
+
+    #def getLdeLast(self, key):
+        #"""
+        #Use snKey()
+        #Return last inserted dup val of likely duplicitous event dig vals at key
+        #Returns None if no entry at key
+        #Duplicates are retrieved in insertion order.
+        #"""
+        #return self.getIoDupValLast(self.ldes, key)
+
+    #def getLdeItemIter(self, key=b''):
+        #"""
+        #Use sgKey()
+        #Return iterator of likely duplicitous escrowed event dig items at next key after key.
+        #Items is (key, val) where proem has already been stripped from val
+        #If key is b'' empty then returns dup items at first key.
+        #If skip is False and key is not b'' empty then returns dup items at key
+        #Raises StopIteration Error when empty
+        #Duplicates are retrieved in insertion order.
+        #"""
+        #return self.getTopIoDupItemIter(self.ldes, key)
+        ##return self.getIoDupItemsNextIter(self.ldes, key, skip)
+
+    #def cntLdes(self, key):
+        #"""
+        #Use snKey()
+        #Return count of dup event dig at key
+        #Returns zero if no entry at key
+        #"""
+        #return self.cntIoDups(self.ldes, key)
+
+    #def delLdes(self, key):
+        #"""
+        #Use snKey()
+        #Deletes all values at key.
+        #Returns True If key exists in database Else False
+        #"""
+        #return self.delIoDupVals(self.ldes, key)
+
+    #def delLde(self, key, val):
+        #"""
+        #Use snKey()
+        #Deletes dup val at key in db.
+        #Returns True If dup at  exists in db Else False
+
+        #Parameters:
+            #db is opened named sub db with dupsort=True
+            #key is bytes of key within sub db's keyspace
+            #val is dup val (does not include insertion ordering proem)
+        #"""
+        #return self.delIoDupVal(self.ldes, key, val)
+
 
 
 class BaserDoer(doing.Doer):

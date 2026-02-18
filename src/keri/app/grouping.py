@@ -533,14 +533,13 @@ def getEscrowedEvent(db, pre, sn):
 
     dig = bytes(dig)
     key = dbing.dgKey(pre, dig)  # digest key
-    msg = db.getEvt(key)
-    serder = serdering.SerderKERI(raw=bytes(msg))
+    serder = db.evts.get(keys=(pre, dig))
 
     sigs = []
     for sig in db.getSigsIter(key):
         sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-    duple = db.aess.get(keys=key)
+    duple = db.aess.get(keys=(pre, dig))
 
     msg = bytearray()
     msg.extend(serder.raw)
