@@ -147,12 +147,15 @@ def test_direct_mode_with_manager():
         # check if validator's Kever in controller's .kevers
         assert valpre in coeKevery.kevers
         #  check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    sigers[0].qb64b)
+        print("RESULT: ", result)
+        val_prefixer, est_num, est_diger, sig = result[0]
+
+        assert val_prefixer.qb64 == valKever.prefixer.qb64
+        assert est_num.num == valKever.sn
+        assert est_diger.qb64 == valKever.serder.said
+        assert sig.qb64b == sigers[0].qb64b 
 
 
         # create receipt to escrow use invalid digest and sequence number so not in controller's db
@@ -168,13 +171,15 @@ def test_direct_mode_with_manager():
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
         #  check if receipt quadruple in escrow database
-        result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vres.get(keys=snKey(pre=coeKever.prefixer.qb64,
                                                    sn=10))
-        assert bytes(result[0]) == (fake.encode("utf-8") +
-                                    valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    sigers[0].qb64b)
+        ev_diger, val_prefixer, est_num, est_diger, sig = result[0]
+
+        assert ev_diger.qb64 == fake
+        assert val_prefixer.qb64 == valKever.prefixer.qb64
+        assert est_num.num == valKever.sn
+        assert est_diger.qb64 == valKever.serder.said
+        assert sig.qb64b == sigers[0].qb64b 
 
         # Send receipt from controller to validator
         # create receipt of validator's inception
@@ -205,12 +210,14 @@ def test_direct_mode_with_manager():
         # valKevery.process(ims=cmsg)  # controller process validator's inception and receipt
 
         #  check if receipt quadruple from controller in validator's receipt database
-        result = valKevery.db.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
+        result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
                                                 dig=valKever.serder.said))
-        assert bytes(result[0]) == (coeKever.prefixer.qb64b +
-                                    Seqner(sn=coeKever.sn).qb64b +
-                                    coeKever.serder.saidb +
-                                    sigers[0].qb64b)
+        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        
+        assert rct_prefixer.qb64 == coeKever.prefixer.qb64
+        assert rct_num.num == coeKever.sn
+        assert rct_est_diger.qb64 == coeKever.serder.said
+        assert rct_siger.qb64b == sigers[0].qb64b 
 
         # Controller Event 1 Rotation Transferable
         csn += 1
@@ -272,12 +279,14 @@ def test_direct_mode_with_manager():
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         # check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    sigers[0].qb64b)
+        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        
+        assert rct_prefixer.qb64 == valKever.prefixer.qb64
+        assert rct_num.num == valKever.sn
+        assert rct_est_diger.qb64 == valKever.serder.said
+        assert rct_siger.qb64b == sigers[0].qb64b 
 
         # Next Event 2 Controller Interaction
         csn += 1  # do not increment esn
@@ -336,12 +345,14 @@ def test_direct_mode_with_manager():
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         #  check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    sigers[0].qb64b)
+        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        
+        assert rct_prefixer.qb64 == valKever.prefixer.qb64
+        assert rct_num.num == valKever.sn
+        assert rct_est_diger.qb64 == valKever.serder.said
+        assert rct_siger.qb64b == sigers[0].qb64b 
 
 
         #  verify final controller event state

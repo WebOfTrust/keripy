@@ -52,8 +52,9 @@ def test_baser():
     assert isinstance(baser.dtss, lmdb._Database)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
-    assert isinstance(baser.ooes, lmdb._Database)
-    assert isinstance(baser.pses, lmdb._Database)
+    assert isinstance(baser.kels, lmdb._Database)
+    assert isinstance(baser.ooes, subing.IoDupSuber)
+    assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
     assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
@@ -82,8 +83,8 @@ def test_baser():
     assert isinstance(baser.dtss, lmdb._Database)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
-    assert isinstance(baser.ooes, lmdb._Database)
-    assert isinstance(baser.pses, lmdb._Database)
+    assert isinstance(baser.ooes, subing.IoDupSuber)
+    assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
     assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
@@ -109,8 +110,8 @@ def test_baser():
         assert isinstance(baser.dtss, lmdb._Database)
         assert isinstance(baser.rcts, lmdb._Database)
         assert isinstance(baser.ures, lmdb._Database)
-        assert isinstance(baser.ooes, lmdb._Database)
-        assert isinstance(baser.pses, lmdb._Database)
+        assert isinstance(baser.ooes, subing.IoDupSuber)
+        assert isinstance(baser.pses, subing.IoDupSuber)
         assert isinstance(baser.dels, subing.OnIoDupSuber)
         assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
@@ -556,42 +557,61 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
+        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        n1 = core.Number(num=1)
+        e1 = coring.Diger(ser=b"est1")    # digest of est event
+        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
-        assert db.getVrcs(key) == []
-        assert db.cntVrcs(key) == 0
-        assert db.delVrcs(key) == False
+        cesrVal = (p1, n1, e1, s1)
+        cesrVal = [cesrVal]
+        
+        assert db.vrcs.get(key) == []
+        assert db.vrcs.cnt(key) == 0
+        assert db.vrcs.rem(key) == False
 
-        # dup vals are lexocographic
-        assert db.putVrcs(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntVrcs(key) == 4
-        assert db.putVrcs(key, vals=[b'a']) == True   # duplicate
-        assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
-        assert db.addVrc(key, b'a') == False   # duplicate
-        assert db.addVrc(key, b'b') == True
-        assert db.getVrcs(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getVrcsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert db.delVrcs(key) == True
-        assert db.getVrcs(key) == []
-        vals = [b"z", b"m", b"x", b"a"]
-        assert db.putVrcs(key, vals) == True
-        for val in vals:
-            assert db.delVrcs(key, val) == True
-        assert db.getVrcs(key) == []
-        assert db.putVrcs(key, vals) == True
-        for val in db.getVrcsIter(key):
-            assert db.delVrcs(key, val) == True
-        assert db.getVrcs(key) == []
+        assert db.vrcs.put(key, cesrVal) is True
 
-        assert db.putVrcs(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
-        assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert db.putVrcs(key, vals=[valb + vdigb + vsig1b]) == True
-        assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert db.delVrcs(key) == True
-        assert db.putVrcs(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
-        assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert db.delVrcs(key) == True
-        assert db.getVrcs(key) == []
+        stored = db.vrcs.get(key)
+        assert len(stored) == 1
+        sp1, sn1, se1, ss1 = stored[0]
+        items = list(db.vrcs.getIter(key))
+
+        assert sp1.qb64 == p1.qb64
+        assert sn1.num == n1.num
+        assert se1.qb64 == e1.qb64
+        assert ss1.raw == s1.raw
+
+        # # dup vals are lexocographic
+        # assert db.vrcs.put(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        # assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
+        # assert db.cntVrcs(key) == 4
+        # assert db.vrcs.put(key, vals=[b'a']) == True   # duplicate
+        # assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
+        # assert db.addVrc(key, b'a') == False   # duplicate
+        # assert db.addVrc(key, b'b') == True
+        # assert db.getVrcs(key) == [b'a', b'b', b'm', b'x', b'z']
+        # assert [val for val in db.getVrcsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        # assert db.delVrcs(key) == True
+        # assert db.getVrcs(key) == []
+        # vals = [b"z", b"m", b"x", b"a"]
+        # assert db.vrcs.put(key, vals) == True
+        # for val in vals:
+        #     assert db.delVrcs(key, val) == True
+        # assert db.getVrcs(key) == []
+        # assert db.vrcs.put(key, vals) == True
+        # for val in db.getVrcsIter(key):
+        #     assert db.delVrcs(key, val) == True
+        # assert db.getVrcs(key) == []
+
+        # assert db.vrcs.put(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
+        # assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        # assert db.vrcs.put(key, vals=[valb + vdigb + vsig1b]) == True
+        # assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        # assert db.delVrcs(key) == True
+        # assert db.vrcs.put(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
+        # assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        # assert db.delVrcs(key) == True
+        # assert db.getVrcs(key) == []
 
 
         # Unverified Validator (transferable) Receipt Escrows
@@ -599,85 +619,108 @@ def test_baser():
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert db.getVres(key) == []
-        assert db.getVreLast(key) == None
-        assert db.cntVres(key) == 0
-        assert db.delVres(key) == False
-        assert db.putVres(key, vals) == True
-        assert db.getVres(key) == vals  # preserved insertion order
-        assert db.cntVres(key) == len(vals) == 4
-        assert db.getVreLast(key) == vals[-1]
-        assert db.putVres(key, vals=[b'a']) == False   # duplicate
-        assert db.getVres(key) == vals  #  no change
-        assert db.addVre(key, b'a') == False   # duplicate
-        assert db.addVre(key, b'b') == True
-        assert db.getVres(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in db.getVresIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delVres(key) == True
-        assert db.getVres(key) == []
+        d1 = coring.Diger(ser=b"event1")  # digest of event
+        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        n1 = core.Number(num=1)
+        e1 = coring.Diger(ser=b"est1")    # digest of est event
+        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
-        # Setup Tests for getPsesNext and getPsesNextIter
-        aKey = snKey(pre=b'A', sn=1)
-        aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
-        bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
-        cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
-        dVals = [b"k", b"b"]
+        cesrVal = (d1, p1, n1, e1, s1)
+        cesrVal = [cesrVal]
+        
+        assert db.vres.get(key) == []
+        assert db.vres.getLast(keys=key) == None
+        assert db.vres.cnt(key) == 0
+        assert db.vres.rem(key) == False
 
-        assert db.putVres(key=aKey, vals=aVals)
-        assert db.putVres(key=bKey, vals=bVals)
-        assert db.putVres(key=cKey, vals=cVals)
-        assert db.putVres(key=dKey, vals=dVals)
+        assert db.vres.put(keys=key, vals=cesrVal) is True
+
+        stored = db.vres.get(key)
+        assert len(stored) == 1
+        sd1, sp1, sn1, se1, ss1 = stored[0]
+
+        assert sd1.qb64 == d1.qb64
+        assert sp1.qb64 == p1.qb64
+        assert sn1.num == n1.num
+        assert se1.qb64 == e1.qb64
+        assert ss1.raw == s1.raw
 
 
-        # Test getVreItemsNextIter(key=b"")
-        #  get dups at first key in database
-        # aVals
-        items = [item for item in db.getVreItemIter()]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals + bVals + cVals + dVals
+        # assert db.putVres(key, vals) == True
+        # assert db.vres.get(key) == vals  # preserved insertion order
+        # assert db.cntVres(key) == len(vals) == 4
+        # assert db.getVreLast(key) == vals[-1]
+        # assert db.putVres(key, vals=[b'a']) == False   # duplicate
+        # assert db.vres.get(key) == vals  #  no change
+        # assert db.addVre(key, b'a') == False   # duplicate
+        # assert db.addVre(key, b'b') == True
+        # assert db.vres.get(key) == [b"z", b"m", b"x", b"a", b"b"]
+        # assert [val for val in db.vres.getIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
+        # assert db.delVres(key) == True
+        # assert db.vres.get(key) == []
 
-        items = [item for item in db.getVreItemIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        # # Setup Tests for getVresNext and getVresNextIter
+        # aKey = snKey(pre=b'A', sn=1)
+        # aVals = [b"z", b"m", b"x"]
+        # bKey = snKey(pre=b'A', sn=2)
+        # bVals = [b"o", b"r", b"z"]
+        # cKey = snKey(pre=b'A', sn=4)
+        # cVals = [b"h", b"n"]
+        # dKey = snKey(pre=b'A', sn=7)
+        # dVals = [b"k", b"b"]
 
-        # bVals
-        items = [item for item in db.getVreItemIter(key=bKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.delVre(ikey, val) == True
+        # assert db.putVres(key=aKey, vals=aVals)
+        # assert db.putVres(key=bKey, vals=bVals)
+        # assert db.putVres(key=cKey, vals=cVals)
+        # assert db.putVres(key=dKey, vals=dVals)
 
-        # cVals
-        items = [item for item in db.getVreItemIter(key=cKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.delVre(ikey, val) == True
 
-        # dVals
-        items = [item for item in db.getVreItemIter(key=dKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.delVre(ikey, val) == True
+        # # Test getVreItemsNextIter(key=b"")
+        # #  get dups at first key in database
+        # # aVals
+        # items = [item for item in db.getVreItemIter()]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == aKey
+        # vals = [val for  key, val in items]
+        # assert vals == aVals + bVals + cVals + dVals
+
+        # items = [item for item in db.getVreItemIter(key=aKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == aKey
+        # vals = [val for  key, val in items]
+        # assert vals == aVals
+
+        # # bVals
+        # items = [item for item in db.getVreItemIter(key=bKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == bKey
+        # vals = [val for key, val in items]
+        # assert vals == bVals
+        # for key, val in items:
+        #     assert db.delVre(ikey, val) == True
+
+        # # cVals
+        # items = [item for item in db.getVreItemIter(key=cKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == cKey
+        # vals = [val for key, val in items]
+        # assert vals == cVals
+        # for key, val in items:
+        #     assert db.delVre(ikey, val) == True
+
+        # # dVals
+        # items = [item for item in db.getVreItemIter(key=dKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == dKey
+        # vals = [val for key, val in items]
+        # assert vals == dVals
+        # for key, val in items:
+        #     assert db.delVre(ikey, val) == True
 
 
 
@@ -704,90 +747,252 @@ def test_baser():
 
         # Partially Signed Escrow Events
         # test .pses insertion order dup methods.  dup vals are insertion order
-        key = b'A'
+        pre = b'A'
+        sn = 0
+        key = snKey(pre, sn)
         vals = [b"z", b"m", b"x", b"a"]
+        deserialized_vals = [db.pses._des(val) for val in vals] # deserialize for assertion
+        
+        # core insertion
+        assert db.pses.getOn(keys=key) == []
+        assert db.pses.getOnLast(keys=pre, on=sn) == None
+        assert db.pses.cntOnAll(keys=key) == 0
+        assert db.pses.remOn(keys=key) == False
+        
+        # initial insertion
+        assert db.pses.putOn(keys=key, vals=vals) == True
+        assert db.pses.getOn(keys=key) == deserialized_vals    #sanity check
 
-        assert db.getPses(key) == []
-        assert db.getPseLast(key) == None
-        assert db.cntPses(key) == 0
-        assert db.delPses(key) == False
-        assert db.putPses(key, vals) == True
-        assert db.getPses(key) == vals  # preserved insertion order
-        assert db.cntPses(key) == len(vals) == 4
-        assert db.getPseLast(key) == vals[-1]
-        assert db.putPses(key, vals=[b'a']) == False   # duplicate
-        assert db.getPses(key) == vals  #  no change
-        assert db.addPse(key, b'a') == False   # duplicate
-        assert db.addPse(key, b'b') == True
-        assert db.getPses(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in db.getPsesIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delPses(key) == True
-        assert db.getPses(key) == []
+        # duplication insertion behavior
+        assert db.pses.putOn(keys=key, vals=[b'd', b'k']) == True
+        assert db.pses.putOn(keys=key, vals=[b'd']) == False  # duplicate
+        assert db.pses.putOn(keys=key, vals=[b'k']) == False  # duplicate
+        assert db.pses.putOn(keys=key, vals=[b'k',b'd',b'k']) == False   
+        assert db.pses.addOn(keys=key, val=b'd') == False  # duplicate
+        assert db.pses.addOn(keys=key, val=b'k') == False  
+        assert db.pses.getOn(keys=key) == deserialized_vals + ['d', 'k']
+
+        # mixed insertion behavior
+        assert db.pses.putOn(keys=key, vals=[b'k', b'c']) == True  # True because 'c' is new
+        assert db.pses.getOn(keys=key) == deserialized_vals + ['d', 'k', 'c']
+
+        # insertion after deletion
+        assert db.pses.remOn(keys=key, val=b'd') == True   # remove a specific val
+        assert db.pses.getOn(keys=key) == deserialized_vals + ['k', 'c']   # d removed
+        assert db.pses.addOn(keys=key, val=b'd') == True   # add d back
+        assert db.pses.getOn(keys=key) == deserialized_vals + ['k', 'c', 'd']   # d added back
+
+        # empty insertion
+        assert db.pses.putOn(keys=key, vals=[]) == False # no vals to add
+        assert db.pses.getOn(keys=key) == deserialized_vals + ['k', 'c', 'd'] # no change
+
+        assert db.pses.addOn(keys=key, val=b'') == True  # empty val is allowed
+        assert db.pses.getOn(key) == deserialized_vals + ['k', 'c', 'd',''] # empty val added
+        
+        # clean up
+        assert db.pses.remOn(keys=key) == True
+        assert db.pses.getOn(keys=key) == []
+
+        # different key types insertion
+        assert db.pses.putOn(keys='B', vals=[b'1', b'2']) == True   # key as str
+        assert db.pses.addOn(keys='B', val=b'3') == True   
+        assert db.pses.putOn(keys=['B'], vals=b'4') == True  # key as list
+        assert db.pses.addOn(keys=['B'], val=b'5') == True 
+        assert db.pses.putOn(keys=("B"), vals=b'6') == True # key as tuple
+        assert db.pses.addOn(keys=("B"), val=b'7') == True
+        assert db.pses.putOn(keys=memoryview(b'B'), vals=b'8') == True  # key as memoryview
+        assert db.pses.addOn(keys=memoryview(b'B'), val=b'9') == True
+        assert db.pses.getOn(keys=b'B') == ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+        # clean up
+        assert db.pses.remOn(keys=b'B') == True
+        assert db.pses.getOn(keys=b'B') == []
+
+        # edge case: add different types of vals
+        assert db.pses.putOn(keys=key, vals=[b'a','a']) == True
+        assert db.pses.getOn(keys=key) == ['a', 'a'] # both value added because _ser produces different bytes
+
+        assert db.pses.remOn(keys=key) == True
+        assert db.pses.getOn(keys=key) == []
+
+
+        # test .pses retrieval behavior methods
+        # insertion order preserved
+        assert db.pses.putOn(keys=pre, on=sn, vals=vals) == True
+        assert db.pses.getOn(keys=pre, on=sn) == deserialized_vals
+        assert list(db.pses.getOnIter(keys=pre, on=sn)) == deserialized_vals
+        assert db.pses.getOnLast(keys=pre, on=sn) == deserialized_vals[-1]
+        assert db.pses.cntOnAll(keys=pre, on=sn) == len(vals) == 4
+
+        # retrieval on empty list
+        assert db.pses.getOn(keys=b'X') == []  
+        assert list(db.pses.getIter(b'X')) == []
+        assert db.pses.getOnLast(keys=b'X') == None
+        assert db.pses.cntOnAll(keys=b'X') == 0
+        items = db.pses.getItemIter(keys=b'X')
+        assert list(items) == []
+
+        # getItemIter retrieval of (key, val) pairs in lexicographic key order
+        items = list(db.pses.getOnItemIterAll())
+        assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
+        assert db.pses.putOn(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True
+        items = list(db.pses.getItemIter(keys=key))
+        assert all(k[0] == 'A' for k, v in items)
+
+        # retrieval with different key types, A is the key used above where key = b'A'
+        assert db.pses.getOn(keys=b'A') == deserialized_vals  # key as bytes
+        assert db.pses.getOn(keys='A') == deserialized_vals  # key as str
+        assert db.pses.getOn(keys=['A']) == deserialized_vals  # key as list
+        assert db.pses.getOn(keys=('A',)) == deserialized_vals  # key as tuple
+        assert db.pses.getOn(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
+
+        # retrieval afterd deletion of specific val
+        assert db.pses.getOnLast(keys=pre, on=sn) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert db.pses.remOn(keys=pre, on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
+        assert db.pses.getOn(keys=pre, on=sn) == ['z', 'm', 'x']
+        assert db.pses.getOnLast(keys=pre, on=sn) == 'x'
+        assert db.pses.cntOnAll(keys=pre, on=sn) == 3
+        
+        # clean up
+        assert db.pses.remOn(keys=pre, on=sn) == True  
+
+
+        # test .pses pinning behavior method
+        # start clean
+        assert db.pses.getOn(keys=key) == []
+        assert db.pses.putOn(keys=key, vals=vals) == True
+        assert db.pses.getOn(keys=key) == deserialized_vals
+        assert db.pses.pinOn(keys=key, vals=[b'a', b'b', b'c']) == True
+        assert db.pses.getOn(keys=key) == ['a', 'b', 'c']  # exact overwrite
+
+        # pin with a different list
+        assert db.pses.pinOn(keys=key, vals=[b'x', b'y']) == True
+        assert db.pses.getOn(keys=key) == ['x', 'y']  # previous values removed
+
+        # pin with empty list (valid use case)
+        assert db.pses.pinOn(keys=key, vals=[]) == False  # nothing to pin
+        assert db.pses.getOn(keys=key) == []  # key cleared
+
+        # pin after normal insertion
+        assert db.pses.putOn(keys=key, vals=[b'1', b'2']) == True
+        assert db.pses.getOn(keys=key) == ['1', '2']
+        assert db.pses.pinOn(keys=key, vals=[b'Q']) == True
+        assert db.pses.getOn(keys=key) == ['Q']  # overwritten
+
+        # edge case: pin with mixed types
+        assert db.pses.pinOn(keys=key, vals=[b'A', 'A', memoryview(b'A')]) == True
+        assert db.pses.getOn(keys=key) == ['A', 'A', 'A']  
+
+        # cleanup
+        assert db.pses.remOn(keys=key) == True
+        assert db.pses.getOn(keys=key) == []
+
+
+        # test .pses deletion methods
+        # delete specific val
+        assert db.pses.putOn(keys=key, vals=vals) == True   
+        assert db.pses.remOn(keys=key, val=b'm') == True
+        assert db.pses.getOn(keys=key) == ['z', 'x', 'a']
+
+        # delete non existing val
+        assert db.pses.remOn(keys=key, val=b'y') == False
+        assert db.pses.getOn(keys=key) == ['z', 'x', 'a']
+
+        # delete all vals
+        assert db.pses.remOn(keys=key) == True
+        assert db.pses.getOn(keys=key) == []
+        assert db.pses.cntOnAll(keys=key) == 0 # all vals deleted
+
+        # delete non existing key
+        assert db.pses.remOn(keys=b'X') == False
+
+        # insert other keys to ensure only specified key is deleted
+        assert db.pses.putOn(keys=b'A', vals=[b'1']) == True
+        assert db.pses.putOn(keys=b'B', vals=[b'2']) == True
+        assert db.pses.remOn(keys=b'A') == True
+        assert db.pses.getOn(keys=b'B') == ['2']
+
+        # clean up all entries
+        for k, sn, v in list(db.pses.getOnItemIterAll()):
+            assert db.pses.remOn(keys=k, on=sn, val=v) == True
 
         # Setup Tests for getPsesNext and getPsesNextIter
-        aKey = snKey(pre=b'A', sn=1)
+        pre = b"A"
+        aSn = 1
+        aKey = snKey(pre=pre, sn=aSn)
         aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
+        bSn = 2
+        bKey = snKey(pre=pre, sn=bSn)
         bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
+        cSn = 4
+        cKey = snKey(pre=pre, sn=cSn)
         cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
+        dSn = 7
+        dKey = snKey(pre=pre, sn=dSn)
         dVals = [b"k", b"b"]
 
-        assert db.putPses(key=aKey, vals=aVals)
-        assert db.putPses(key=bKey, vals=bVals)
-        assert db.putPses(key=cKey, vals=cVals)
-        assert db.putPses(key=dKey, vals=dVals)
+        assert db.pses.putOn(keys=pre, on=1, vals=aVals)
+        assert db.pses.putOn(keys=pre, on=2, vals=bVals)
+        assert db.pses.putOn(keys=pre, on=4, vals=cVals)
+        assert db.pses.putOn(keys=pre, on=7, vals=dVals)
+
 
 
         # Test getPseItemsNextIter(key=b"")
-        #  get dups at first key in database
+        # vals are in bytes, assertion is done after serializing
+
         # aVals
-        items = [item for item in db.getPseItemIter()]
+        items = [item for item in db.pses.getItemIter()]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pses._tokey(items[0][0])
         assert  ikey == aKey
-        vals = [val for  key, val in items]
+        vals = [db.pses._ser(val) for key, val in items]
         assert vals ==  aVals + bVals + cVals + dVals
 
-
-        items = [item for item in db.getPseItemIter(key=aKey)]
+        items = [item for item in db.pses.getItemIter(keys=aKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pses._tokey(items[0][0])
         assert  ikey == aKey
-        vals = [val for  key, val in items]
+        vals = [db.pses._ser(val) for key, val in items]
         assert vals == aVals
 
-
         # bVals
-        items = [item for item in db.getPseItemIter(key=bKey)]
+        items = [item for item in db.pses.getItemIter(keys=bKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pses._tokey(items[0][0])
         assert  ikey == bKey
-        vals = [val for key, val in items]
+        vals = [db.pses._ser(val) for key, val in items]
         assert vals == bVals
         for key, val in items:
-            assert db.delPse(ikey, val) == True
+            assert db.pses.remOn(keys=pre, on=bSn, val=val) == True
 
         # cVals
-        items = [item for item in db.getPseItemIter(key=cKey)]
+        items = [item for item in db.pses.getItemIter(keys=cKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pses._tokey(items[0][0])
         assert  ikey == cKey
-        vals = [val for key, val in items]
+        vals = [db.pses._ser(val) for key, val in items]
         assert vals == cVals
         for key, val in items:
-            assert db.delPse(ikey, val) == True
+            assert db.pses.remOn(keys=pre, on=cSn, val=val) == True
 
         # dVals
-        items = [item for item in db.getPseItemIter(key=dKey)]
+        items = [item for item in db.pses.getItemIter(keys=dKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.pses._tokey(items[0][0])
         assert  ikey == dKey
-        vals = [val for key, val in items]
+        vals = [db.pses._ser(val) for key, val in items]
         assert vals == dVals
         for key, val in items:
-            assert db.delPse(ikey, val) == True
+            assert db.pses.remOn(keys=pre, on=dSn, val=val) == True
+
+        # clean up all entries
+        for k, sn, v in list(db.pses.getOnItemIterAll()):
+            db.pses.remOn(keys=k)
+
+        # test _tokey and _tokeys
+        t = db.ooes._tokey(aKey)
+        assert db.ooes._tokeys(t) == ("A", "00000000000000000000000000000001")
 
 
         # Test .udes partial delegated escrow seal source couples
@@ -1001,88 +1206,252 @@ def test_baser():
             assert db.uwes.rem(ikey, val) == True
 
 
-
-        # test .ooes insertion order dup methods.  dup vals are insertion order
-        key = b'A'
+        # Ooes tests 
+        # test .ooes insertion behavior methods. 
+        pre = 'A'
+        sn = 0
+        key = snKey(pre, sn)
         vals = [b"z", b"m", b"x", b"a"]
+        deserialized_vals = [db.ooes._des(val) for val in vals] # deserialize for assertion
+        
+        # core insertion
+        assert db.ooes.getOn(keys=key) == []
+        assert db.ooes.cntOnAll(key) == 0
+        assert db.ooes.remOn(key) == False
+        
+        # initial insertion
+        assert db.ooes.putOn(keys=key, vals=vals) == True
+        assert db.ooes.getOn(key) == deserialized_vals    #sanity check
 
-        assert db.getOoes(key) == []
-        assert db.getOoeLast(key) == None
-        assert db.cntOoes(key) == 0
-        assert db.delOoes(key) == False
-        assert db.putOoes(key, vals) == True
-        assert db.getOoes(key) == vals  # preserved insertion order
-        assert db.cntOoes(key) == len(vals) == 4
-        assert db.getOoeLast(key) == vals[-1]
-        assert db.putOoes(key, vals=[b'a']) == False   # duplicate
-        assert db.getOoes(key) == vals  #  no change
-        assert db.addOoe(key, b'a') == False   # duplicate
-        assert db.addOoe(key, b'b') == True
-        assert db.getOoes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delOoes(key) == True
-        assert db.getOoes(key) == []
+        # duplication insertion behavior
+        assert db.ooes.putOn(keys=key,vals=[b'd', b'k']) == True
+        assert db.ooes.putOn(keys=key,vals=[b'd']) == False  # duplicate
+        assert db.ooes.putOn(keys=key,vals=[b'k']) == False  # duplicate
+        assert db.ooes.putOn(keys=key,vals=[b'k',b'd',b'k']) == False   
+        assert db.ooes.addOn(keys=key, val=b'd') == False  # duplicate
+        assert db.ooes.addOn(keys=key, val=b'k') == False  
+        assert db.ooes.getOn(keys=key) == deserialized_vals + ['d', 'k']
+
+        # mixed insertion behavior
+        assert db.ooes.putOn(keys=key,vals=[b'k', b'c']) == True  # True because 'c' is new
+        assert db.ooes.getOn(keys=key) == deserialized_vals + ['d', 'k', 'c']
+
+        # insertion after deletion
+        assert db.ooes.remOn(keys=key, val=b'd') == True   # remove a specific val
+        assert db.ooes.getOn(keys=key) == deserialized_vals + ['k', 'c']   # d removed
+        assert db.ooes.addOn(keys=key,val=b'd') == True   # add d back
+        assert db.ooes.getOn(keys=key) == deserialized_vals + ['k', 'c', 'd']   # d added back
+
+        # empty insertion
+        assert db.ooes.putOn(keys=key, vals=[]) == False # no vals to add
+        assert db.ooes.getOn(keys=key) == deserialized_vals + ['k', 'c', 'd'] # no change
+
+        assert db.ooes.addOn(keys=key, val=b'') == True  # empty val is allowed
+        assert db.ooes.getOn(keys=key) == deserialized_vals + ['k', 'c', 'd',''] # empty val added
+        
+        # clean up
+        assert db.ooes.remOn(key) == True
+        assert db.ooes.getOn(keys=key) == []
+
+        # different key types insertion
+        assert db.ooes.putOn(keys='B', vals=[b'1', b'2']) == True   # key as str
+        assert db.ooes.addOn(keys='B', val=b'3') == True   
+        assert db.ooes.putOn(['B'], vals=b'4') == True  # key as list
+        assert db.ooes.addOn(keys=['B'], val=b'5') == True 
+        assert db.ooes.putOn(("B"), vals=b'6') == True # key as tuple
+        assert db.ooes.addOn(keys=("B"), val=b'7') == True
+        assert db.ooes.putOn(memoryview(b'B'),vals= b'8') == True  # key as memoryview
+        assert db.ooes.addOn(keys=memoryview(b'B'), val=b'9') == True
+        assert db.ooes.getOn(keys=b'B') == ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+        # clean up
+        assert db.ooes.remOn(b'B') == True
+        assert db.ooes.getOn(keys=b'B') == []
+
+        # edge case: add different types of vals
+        assert db.ooes.putOn(key,vals=[b'a','a']) == True
+        assert db.ooes.getOn(keys=key) == ['a', 'a'] # both value added because _ser produces different bytes
+
+        assert db.ooes.remOn(key) == True
+        assert db.ooes.getOn(keys=key) == []
+    
+        
+        # test .ooes retrieval behavior methods
+        # insertion order preserved
+        assert db.ooes.putOn(keys=pre,on=sn, vals=vals) == True
+        assert db.ooes.getOn(keys=pre,on=sn) == deserialized_vals
+        assert list(db.ooes.getOnIterAll(pre,on=sn)) == deserialized_vals
+        assert db.ooes.getOnLast(keys=pre, on=sn) == deserialized_vals[-1]
+        assert db.ooes.cntOnAll(pre,on=sn) == len(vals) == 4
+
+        # retrieval on empty list
+        assert db.ooes.getOn(keys=b'X') == []  
+        assert list(db.ooes.getOnIterAll(b'X')) == []
+        assert db.ooes.getOnLast(keys=b'X') == None
+        assert db.ooes.cntOnAll(b'X') == 0
+        items = db.ooes.getOnItemIterAll(keys=b'X')
+        assert list(items) == []
+
+        # getItemIter retrieval of (key, val) pairs in lexicographic key order
+        items = list(db.ooes.getOnItemIterAll())
+        assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
+        assert db.ooes.putOn(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True
+        items = list(db.ooes.getOnItemIterAll(keys=key))
+        assert all(k[0] == 'A' for k, sn, v in items)
+
+        # retrieval with different key types, A is the key used above where key = b'A'
+        assert db.ooes.getOn(keys=b'A') == deserialized_vals  # key as bytes
+        assert db.ooes.getOn(keys='A') == deserialized_vals  # key as str
+        assert db.ooes.getOn(keys=['A']) == deserialized_vals  # key as list
+        assert db.ooes.getOn(keys=('A',)) == deserialized_vals  # key as tuple
+        assert db.ooes.getOn(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
+
+        # retrieval afterd deletion of specific val
+        assert db.ooes.getOnLast(keys=pre, on=sn) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert db.ooes.remOn(keys=pre,on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
+        assert db.ooes.getOn(keys=pre,on=sn,) == ['z', 'm', 'x']
+        assert db.ooes.getOnLast(keys=pre, on=sn) == 'x'
+        assert db.ooes.cntOnAll(pre,on=sn) == 3
+        
+        # clean up
+        assert db.ooes.remOn(pre,on=sn) == True  
+
+
+        # test .ooes pinning behavior method
+        # start clean
+        assert db.ooes.getOn(keys=key) == []
+        assert db.ooes.putOn(keys=key, vals=vals) == True
+        assert db.ooes.getOn(keys=key) == deserialized_vals
+        assert db.ooes.pinOn(keys=key, vals=[b'a', b'b', b'c']) == True
+        assert db.ooes.getOn(keys=key) == ['a', 'b', 'c']  # exact overwrite
+
+        # pin with a different list
+        assert db.ooes.pinOn(keys=key, vals=[b'x', b'y']) == True
+        assert db.ooes.getOn(keys=key) == ['x', 'y']  # previous values removed
+
+        # pin with empty list (valid use case)
+        assert db.ooes.pinOn(keys=key, vals=[]) == False  # nothing to pin
+        assert db.ooes.getOn(keys=key) == []  # key cleared
+
+        # pin after normal insertion
+        assert db.ooes.putOn(keys=key, vals=[b'1', b'2']) == True
+        assert db.ooes.getOn(keys=key) == ['1', '2']
+        assert db.ooes.pinOn(keys=key, vals=[b'Q']) == True
+        assert db.ooes.getOn(keys=key) == ['Q']  # overwritten
+
+        # edge case: pin with mixed types
+        assert db.ooes.pinOn(keys=key, vals=[b'A', 'A', memoryview(b'A')]) == True
+        assert db.ooes.getOn(keys=key) == ['A', 'A', 'A']  
+
+        # cleanup
+        assert db.ooes.remOn(key) == True
+        assert db.ooes.getOn(keys=key) == []
+
+
+        # test .ooes deletion methods
+        # delete specific val
+        assert db.ooes.putOn(key, vals=vals) == True   
+        assert db.ooes.remOn(key, val=b'm') == True
+        assert db.ooes.getOn(keys=key) == ['z', 'x', 'a']
+
+        # delete non existing val
+        assert db.ooes.remOn(key, val=b'y') == False
+        assert db.ooes.getOn(keys=key) == ['z', 'x', 'a']
+
+        # delete all vals
+        assert db.ooes.remOn(key) == True
+        assert db.ooes.getOn(keys=key) == []
+        assert db.ooes.cntOnAll(key) == 0 # all vals deleted
+
+        # delete non existing key
+        assert db.ooes.remOn(b'X') == False
+
+        # insert other keys to ensure only specified key is deleted
+        assert db.ooes.putOn(b'A', vals=[b'1']) == True
+        assert db.ooes.putOn(b'B', vals=[b'2']) == True
+        assert db.ooes.remOn(b'A') == True
+        assert db.ooes.getOn(keys=b'B') == ['2']
+
+        # clean up all entries
+        for k, sn, v in list(db.ooes.getOnItemIterAll()):
+            assert db.ooes.remOn(keys=k, on=sn, val=v) == True
+
 
         # Setup Tests for getOoeItemsNext and getOoeItemsNextIter
-        aKey = snKey(pre=b'A', sn=1)
+        # vals are in bytes, assertion is done after serializing
+        pre = b"A"
+        aSn = 1
+        aKey = snKey(pre=pre, sn=aSn)
         aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
+        bSn = 2
+        bKey = snKey(pre=pre, sn=bSn)
         bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
+        cSn = 4
+        cKey = snKey(pre=pre, sn=cSn)
         cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
+        dSn = 7
+        dKey = snKey(pre=pre, sn=dSn)
         dVals = [b"k", b"b"]
 
-        assert db.putOoes(key=aKey, vals=aVals)
-        assert db.putOoes(key=bKey, vals=bVals)
-        assert db.putOoes(key=cKey, vals=cVals)
-        assert db.putOoes(key=dKey, vals=dVals)
+        assert db.ooes.putOn(keys=pre, on=1, vals=aVals)
+        assert db.ooes.putOn(keys=pre, on=2, vals=bVals)
+        assert db.ooes.putOn(keys=pre, on=4, vals=cVals)
+        assert db.ooes.putOn(keys=pre, on=7, vals=dVals)
 
         # Test getOoeItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.getOoeItemIter()]
+
+        items = [item for item in db.ooes.getItemIter()]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.ooes._tokey(items[0][0])
         assert  ikey == aKey
-        vals = [val for  key, val in items]
+        vals = [db.ooes._ser(val) for  key, val in items]
         assert vals ==  aVals + bVals + cVals + dVals
 
-        items = [item for item in db.getOoeItemIter(key=aKey)]
+        items = [item for item in db.ooes.getItemIter(keys=aKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.ooes._tokey(items[0][0])
         assert  ikey == aKey
-        vals = [val for  key, val in items]
+        vals = [db.ooes._ser(val) for  key, val in items]
         assert vals == aVals
 
         # bVals
-        items = [item for item in db.getOoeItemIter(key=bKey)]
+        items = [item for item in db.ooes.getItemIter(keys=bKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.ooes._tokey(items[0][0])
         assert  ikey == bKey
-        vals = [val for key, val in items]
+        vals = [db.ooes._ser(val) for key, val in items]
         assert vals == bVals
         for key, val in items:
-            assert db.delOoe(ikey, val) == True
+            assert db.ooes.remOn(pre, bSn, val) == True
 
         # cVals
-        items = [item for item in db.getOoeItemIter(key=cKey)]
+        items = [item for item in db.ooes.getItemIter(keys=cKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.ooes._tokey(items[0][0])
         assert  ikey == cKey
-        vals = [val for key, val in items]
+        vals = [db.ooes._ser(val) for key, val in items]
         assert vals == cVals
         for key, val in items:
-            assert db.delOoe(ikey, val) == True
+            assert db.ooes.remOn(pre, cSn, val) == True
 
         # dVals
-        items = [item for item in db.getOoeItemIter(key=dKey)]
+        items = [item for item in db.ooes.getItemIter(keys=dKey)]
         assert items  # not empty
-        ikey = items[0][0]
+        ikey = db.ooes._tokey(items[0][0])
         assert  ikey == dKey
-        vals = [val for key, val in items]
+        vals = [db.ooes._ser(val) for key, val in items]
         assert vals == dVals
-        for key, val in items:
-            assert db.delOoe(ikey, val) == True
+
+        # clean up all entries
+        for k, sn, v in list(db.pses.getOnItemIterAll()):
+            db.ooes.remOn(keys=k)
+        
+        # test _tokey and _tokeys
+        t = db.ooes._tokey(aKey)
+        assert db.ooes._tokeys(t) == ("A", "00000000000000000000000000000001")
+
 
         # test .dels insertion order dup methods.  dup vals are insertion order
         keys = b'A'
@@ -1855,12 +2224,19 @@ def test_clear_escrows():
     with openDB() as db:
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
+        d1 = coring.Diger(ser=b"event1")                     # event digest
+        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        n1 = core.Number(num=1)
+        e1 = coring.Diger(ser=b"est1")                       # est event digest
+        s1 = core.Siger(raw=b"\x00" * 64)                    # fake sig
+        vres_vals = [(d1, p1, n1, e1, s1)]
 
         db.putUres(key, vals)
-        db.putVres(key, vals)
-        db.putPses(key, vals)
+        db.vres.put(keys=key, vals=vres_vals)
+        db.pses.putOn(keys=key, vals=vals)
         db.putPwes(key, vals)
-        db.putOoes(key, vals)
+        for v in vals:
+            db.ooes.addOn(keys=key, on=0, val=v)
         # putLdes was list based, db.ldes.put is iterable based
         db.ldes.put(keys=key, vals=vals)
 
@@ -1924,11 +2300,11 @@ def test_clear_escrows():
         db.clearEscrows()
 
         assert db.getUres(key) == []
-        assert db.getVres(key) == []
-        assert db.getPses(key) == []
+        assert db.vres.get(key) == []
+        assert db.pses.getOn(keys=key) == []
         assert db.getPwes(key) == []
         assert db.uwes.get(key) == []
-        assert db.getOoes(key) == []
+        assert db.ooes.getOn(keys=key) == []
         assert db.ldes.get(keys=key) == []
         assert db.qnfs.cntAll() == 0
         assert db.pdes.cntAll() == 0
