@@ -939,7 +939,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         assert db.ooes.getOn(keys=pre, on=1) == [ixndig]
 
         # missing EVT → OOES must remove entry
-        db.delEvt(dgkey)
+        assert db.evts.rem(keys=(pre, ixndig)) == True
         kvy.processEscrowOutOfOrders()
         assert db.ooes.getOn(keys=pre, on=1) == []  # cleaned up
 

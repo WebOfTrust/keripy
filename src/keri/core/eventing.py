@@ -5621,29 +5621,36 @@ class Kevery:
                     msg = f"OOO Missing escrowed event source at dig = {edig}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
+                
+                 # check date if expired then remove escrow.
+                dtb = self.db.getDts(dgkey)
+                if dtb is None:  # othewise is a datetime as bytes
+                    # no date time so raise ValidationError which unescrows below
+                    msg = f"OOO Missing escrowed event datetime at dig = {bytes(edig)}"
+                    logger.trace("Kevery unescrow error: %s", msg)
+                    raise ValidationError(msg)
 
-                    # get the escrowed event using edig
-                    if (eserder := self.db.evts.get(keys=(pre, bytes(edig)))) is None:
-                        # no event so raise ValidationError which unescrows below
-                        msg = f"OOO Missing escrowed event at dig = {bytes(edig)}"
-                        logger.trace("Kevery unescrow error: %s", msg)
-                        raise ValidationError(msg)
+                # do date math here and discard if stale nowIso8601() bytes
+                dtnow = helping.nowUTC()
+                dte = helping.fromIso8601(bytes(dtb))
+                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    msg = f"OOO Stale event escrow at dig = {bytes(edig)}"
+                    logger.trace("Kevery unescrow error: %s", msg)
+                    raise ValidationError(msg)
 
-                    #  get sigs and attach
-                    sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
-                    if not sigs:  # otherwise its a list of sigs
-                        # no sigs so raise ValidationError which unescrows below
-                        msg = f"OOO Missing escrowed event sigs at dig = {bytes(edig)}"
-                        logger.trace("Kevery unescrow error: %s", msg)
-                        raise ValidationError(msg)
-
-                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
+                # get the escrowed event using edig
+                if (eserder := self.db.evts.get(keys=(pre, bytes(edig)))) is None:
+                    # no event so raise ValidationError which unescrows below
+                    msg = f"OOO Missing escrowed event at dig = {bytes(edig)}"
+                    logger.trace("Kevery unescrow error: %s", msg)
+                    raise ValidationError(msg)
 
                 #  get sigs and attach
-                sigs = self.db.getSigs(dgKey(pre, edig))
+                sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
                 if not sigs:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
-                    msg = f"OOO Missing escrowed event sigs at dig = {edig}"
+                    msg = f"OOO Missing escrowed event sigs at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
