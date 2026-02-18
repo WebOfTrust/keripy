@@ -688,12 +688,13 @@ class Baser(dbing.LMDBer):
             through the misfit escrow and get promoted to local source.
 
 
-        .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
-            the datetime when the event was first escrosed and then later first
-            seen by log. Used for escrows timeouts and extended validation.
+        .dtss is named sub DB instance of CesrSuber for datetime stamps
+            of the datetime when the event was first escrowed and then later
+            first seen by log. Used for escrow timeouts and extended validation.
+            subkey 'dtss.'
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
-            Value is ISO 8601 datetime stamp bytes
+            Value is Dater instance
 
         .aess is named sub DB instance of CatCesrSuber for authorizing event
             source seal couples that map digest of key event to seal source
@@ -1028,7 +1029,7 @@ class Baser(dbing.LMDBer):
         self.evts = subing.SerderSuber(db=self, subkey='evts.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
-        self.dtss = self.env.open_db(key=b'dtss.')
+        self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
                                         klas=(coring.Number, coring.Saider))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
@@ -1735,12 +1736,12 @@ class Baser(dbing.LMDBer):
                 atc.extend(coup)
 
         # add first seen replay couple to attachments
-        if not (dts := self.getDts(key=dgkey)):
+        if not (dater := self.dtss.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
         atc.extend(core.Counter(code=core.Codens.FirstSeenReplayCouples,
                                 count=1, version=kering.Vrsn_1_0).qb64b)
         atc.extend(core.Number(num=fn, code=core.NumDex.Huge).qb64b)  # may not need to be Huge
-        atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
+        atc.extend(dater.qb64b)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
@@ -2006,40 +2007,7 @@ class Baser(dbing.LMDBer):
             yield serder  # event as Serder
 
 
-    def putDts(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event datetime stamp val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Returns False if key already exists
-        """
-        return self.putVal(self.dtss, key, val)
 
-    def setDts(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event datetime stamp val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.dtss, key, val)
-
-    def getDts(self, key):
-        """
-        Use dgKey()
-        Return datetime stamp at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.dtss, key)
-
-    def delDts(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.dtss, key)
 
     def getSigs(self, key):
         """
