@@ -52,7 +52,7 @@ def test_baser():
     assert isinstance(baser.dtss, lmdb._Database)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
-    assert isinstance(baser.kels, lmdb._Database)
+    assert isinstance(baser.kels, subing.OnIoDupSuber)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)

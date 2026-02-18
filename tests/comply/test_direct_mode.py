@@ -149,7 +149,6 @@ def test_direct_mode_with_manager():
         #  check if receipt quadruple from validator in receipt database
         result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        print("RESULT: ", result)
         val_prefixer, est_num, est_diger, sig = result[0]
 
         assert val_prefixer.qb64 == valKever.prefixer.qb64

@@ -4295,7 +4295,7 @@ class Kevery:
 
                 # receipted event in db so attempt to get receipter est evt
                 # retrieve dig of last event at sn of est evt of receiptor.
-                sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=sseqner.sn)
+                sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=snumber.sn)
                 if sdig is None:
                     # receiptor's est event not yet in receiptors's KEL
                     # so need cue to discover est evt KEL for receipter from watcher etc
@@ -4492,7 +4492,7 @@ class Kevery:
                                           "".format(ked["s"]))
 
                 # retrieve dig of last event at sn of receipter.
-                sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=sseqner.sn)
+                sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=snumber.sn)
                 if sdig is None:
                     # receipter's est event not yet in receipter's KEL
                     # receipter's seal event not in receipter's KEL
@@ -6860,7 +6860,7 @@ class Kevery:
 
                     # get receipter's last est event
                     # retrieve dig of last event at sn of receipter.
-                    sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=sseqner.sn)
+                    sdig = self.db.kels.getOnLast(keys=sprefixer.qb64b, on=snumber.sn)
                     if sdig is None:
                         # no event so keep in escrow
                         msg = f"VRE Missing receipted evt at pre={pre} sn={sn:x}"
@@ -6909,6 +6909,7 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
+                    print("EXCEPTION: ", ex)
                     self.db.vres.rem(keys=snKey(pre, sn), val=equinlet)  # removes one escrow at key val
                     if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                         logger.debug("Kevery: VRE other error on unescrow: %s\n", ex.args[0])
