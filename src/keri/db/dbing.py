@@ -736,9 +736,6 @@ class LMDBer(filing.Filer):
         than previous latest on at key.
         Uses onKey(key, on) for entries.
 
-        Works with either dupsort==True or False since always creates new full
-        key.
-
         Append val to end of db entries with same key but with on incremented by
         1 relative to last preexisting entry at key.
 
@@ -840,7 +837,7 @@ class LMDBer(filing.Filer):
     # used in OnSuberBase
     def cntOnAll(self, db, key=b'', on=0, *, sep=b'.'):
         """Counts all ordinal tail keyed values with same key starting at ordinal
-        tail on for on >=0
+        tail on for on >=0. When key empty then count whole database.
 
         Returns (int): count of of all ordinal keyed vals with key
         but different on tail in db starting at ordinal number on of key for
@@ -862,8 +859,8 @@ class LMDBer(filing.Filer):
             cursor = txn.cursor()
             if key:  # not empty
                 onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
-            else:
-                onkey = key
+            else:  # empty
+                onkey = key # empty means count whole db
             count = 0
             if not cursor.set_range(onkey):  #  moves to val at key >= key
                 return count  # no values end of db
@@ -1276,7 +1273,8 @@ class LMDBer(filing.Filer):
 
     def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
         """Count all set values with the same apparent effective key starting at
-        insertion offset ion.
+        insertion offset ion. Count is zero if key not in db.
+
         Uses hidden ordinal key suffix for insertion ordering.
             The suffix is suffixed and unsuffixed transparently.
 
@@ -1462,15 +1460,16 @@ class LMDBer(filing.Filer):
 
 
     def appendOnIoSetVal(self, db, key, val, *, sep=b'.'):
-        """Appends val in order after last previous key that matches effective
-        key made from key and on in db where full key has onkey and ordinal suffix.
+        """Appends val in order after last member of ioset of last onkey in db
+        where onkey = key +sep + on and full key = key +sep+ on +sep+ ion.
+        The onkey of the appended entry is one greater than last prior on for
+        key in db.
 
-        Returns ordinal number in, on, of appended entry. Appended on is 1 greater
-        than previous latest on at key.
-        Uses onKey(pre, on) for entries.
+        Returns ordinal number on of appended entry.
+        Uses onKey(key, on) for entries.
 
-        Append val to end of db entries with same pre but with on incremented by
-        1 relative to last preexisting entry at pre.
+        Starts at onkey = key + MaxOn and then walks backwards to find last
+        prior entry at key. Then increments on and appends
 
         Returns:
             on (int): ordinal number of newly appended val
@@ -1480,8 +1479,42 @@ class LMDBer(filing.Filer):
             key (bytes): key within sub db's keyspace plus trailing part on
             val (bytes): serialized value to append
             sep (bytes): separator character for split
+
         """
-        return (self.appendOnVal(db=db, key=key, val=val, sep=sep))
+            # set key with fn at max and then walk backwards to find last entry at pre
+    # if any otherwise zeroth entry at pre
+    onkey = onKey(key, MaxON, sep=sep)
+    with self.env.begin(db=db, write=True, buffers=True) as txn:
+        on = 0  # unless other cases match then zeroth entry at pre
+        cursor = txn.cursor()
+        if not cursor.set_range(onkey):  # max is past end of database
+            #  so either empty database or last is earlier pre or
+            #  last is last entry  at same pre
+            if cursor.last():  # not empty db. last entry earlier than max
+                onkey = cursor.key()
+                ckey, cn = splitOnKey(onkey, sep=sep)
+                if ckey == key:  # last is last entry for same pre
+                    on = cn + 1  # increment
+        else:  # not past end so not empty either later pre or max entry at pre
+            onkey = cursor.key()
+            ckey, cn = splitOnKey(onkey, sep=sep)
+            if ckey == key:  # last entry for pre is already at max
+                raise ValueError(f"Number part {cn=} for key part {ckey=}"
+                                     f"exceeds maximum size.")
+            else:  # later pre so backup one entry
+                # either no entry before last or earlier pre with entry
+                if cursor.prev():  # prev entry, maybe same or earlier pre
+                    onkey = cursor.key()
+                    ckey, cn = splitOnKey(onkey, sep=sep)
+                    if ckey == key:  # last entry at pre
+                        on = cn + 1  # increment
+
+        onkey = onKey(key, on, sep=sep)
+
+        if not cursor.put(onkey, val, overwrite=False):
+            raise  ValueError(f"Failed appending {val=} at {key=}.")
+        return on
+
 
 
     def getOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
@@ -1635,8 +1668,10 @@ class LMDBer(filing.Filer):
 
 
     def cntOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
-        """Count all set values at onkey made from key + on starting at ion offset
-        within set.
+        """Count all set values at onkey made from onkey = key + on starting at
+        ion offset within set at onkey.
+        Count = 0 if key not in db.
+
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is appended and stripped transparently.
 
@@ -1646,11 +1681,59 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): base key
-            on (int): ordinal number at which to add to key form effective key
+            on (int|None): ordinal number at which to add to key form effective key
             ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
         return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+    def cntOnIoSetAll(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Count all set values at onkey made from onkey = key + on starting at
+        ion offset within set at onkey.
+        Count = 0 if key not in db.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+            count (int): count values in set at effective onkey
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): base key
+            on (int|None): ordinal number at which to add to key form effective key
+            ion (int): starting ordinal value, default 0
+            sep (bytes): separator character for split
+        """
+        return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+
+        if not key or on is None:  # iterate all on for all key starting at key
+            for onkey, val in self.getIoSetLastItemIterAll(db=db,
+                                                               key=key,
+                                                               sep=sep):
+                key, on = splitOnKey(onkey, sep=sep)
+                yield (key, on, val)
+            return
+
+        # start all on for all key starting at on of key
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            onkey = onkey(key, on, sep=sep)
+            cursor = txn.cursor()
+            while cursor.set_range(onkey):  # move to val at key >= onkey if any
+                ciokey, cval = cursor.item()  # get ciokey, cval at cursor
+                conkey, cion = unsuffix(ciokey, sep=sep)
+                # nested transactions with nested cursors supported in lmdb
+                # get last of current conkey
+                liokey, lval = self.getIoSetLastItem(db=db, key=conkey, sep=sep)
+                lonkey, lion = unsuffix(liokey, sep=sep)  # last at lonkey
+                lkey, lon = splitOnKey(lonkey, sep=sep)
+                yield (lkey, lon, lval)
+                onkey = onKey(lkey, lon + 1, sep=sep) # increment to next on
+                # now try at next on or if no next on then set_range will jump to
+                # first on of next key
+            return  # done raises StopIteration
+
 
 
     def getTopOnIoSetItemIter(self, db, top=b'', *, sep=b'.'):

@@ -2896,11 +2896,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         """
         if not isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
-        return self.db.putOnIoDupVals(db=self.sdb,
-                                      key=self._tokey(keys),
-                                      on=on,
-                                      vals=tuple(self._ser(val) for val in vals),
-                                      sep=self.sep.encode())
+        return self.db.putOnIoSetVals(db=self.sdb, key=self._tokey(keys), on=on,
+                               vals=tuple(self._ser(val) for val in vals),
+                               sep=self.sep.encode())
 
 
     def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
