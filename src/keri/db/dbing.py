@@ -1481,39 +1481,39 @@ class LMDBer(filing.Filer):
             sep (bytes): separator character for split
 
         """
-            # set key with fn at max and then walk backwards to find last entry at pre
-    # if any otherwise zeroth entry at pre
-    onkey = onKey(key, MaxON, sep=sep)
-    with self.env.begin(db=db, write=True, buffers=True) as txn:
-        on = 0  # unless other cases match then zeroth entry at pre
-        cursor = txn.cursor()
-        if not cursor.set_range(onkey):  # max is past end of database
-            #  so either empty database or last is earlier pre or
-            #  last is last entry  at same pre
-            if cursor.last():  # not empty db. last entry earlier than max
-                onkey = cursor.key()
-                ckey, cn = splitOnKey(onkey, sep=sep)
-                if ckey == key:  # last is last entry for same pre
-                    on = cn + 1  # increment
-        else:  # not past end so not empty either later pre or max entry at pre
-            onkey = cursor.key()
-            ckey, cn = splitOnKey(onkey, sep=sep)
-            if ckey == key:  # last entry for pre is already at max
-                raise ValueError(f"Number part {cn=} for key part {ckey=}"
-                                     f"exceeds maximum size.")
-            else:  # later pre so backup one entry
-                # either no entry before last or earlier pre with entry
-                if cursor.prev():  # prev entry, maybe same or earlier pre
+        # set key with fn at max and then walk backwards to find last entry at pre
+        # if any otherwise zeroth entry at pre
+        onkey = onKey(key, MaxON, sep=sep)
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            on = 0  # unless other cases match then zeroth entry at pre
+            cursor = txn.cursor()
+            if not cursor.set_range(onkey):  # max is past end of database
+                #  so either empty database or last is earlier pre or
+                #  last is last entry  at same pre
+                if cursor.last():  # not empty db. last entry earlier than max
                     onkey = cursor.key()
                     ckey, cn = splitOnKey(onkey, sep=sep)
-                    if ckey == key:  # last entry at pre
+                    if ckey == key:  # last is last entry for same pre
                         on = cn + 1  # increment
+            else:  # not past end so not empty either later pre or max entry at pre
+                onkey = cursor.key()
+                ckey, cn = splitOnKey(onkey, sep=sep)
+                if ckey == key:  # last entry for pre is already at max
+                    raise ValueError(f"Number part {cn=} for key part {ckey=}"
+                                         f"exceeds maximum size.")
+                else:  # later pre so backup one entry
+                    # either no entry before last or earlier pre with entry
+                    if cursor.prev():  # prev entry, maybe same or earlier pre
+                        onkey = cursor.key()
+                        ckey, cn = splitOnKey(onkey, sep=sep)
+                        if ckey == key:  # last entry at pre
+                            on = cn + 1  # increment
 
-        onkey = onKey(key, on, sep=sep)
+            onkey = onKey(key, on, sep=sep)
 
-        if not cursor.put(onkey, val, overwrite=False):
-            raise  ValueError(f"Failed appending {val=} at {key=}.")
-        return on
+            if not cursor.put(onkey, val, overwrite=False):
+                raise  ValueError(f"Failed appending {val=} at {key=}.")
+            return on
 
 
 
@@ -1668,9 +1668,9 @@ class LMDBer(filing.Filer):
 
 
     def cntOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
-        """Count all set values at onkey made from onkey = key + on starting at
+        """Count set values at onkey made from onkey = key + on starting at
         ion offset within set at onkey.
-        Count = 0 if key not in db.
+        Count = 0 if onkey not in db.
 
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is appended and stripped transparently.
@@ -1687,16 +1687,21 @@ class LMDBer(filing.Filer):
         """
         return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
 
-    def cntOnIoSetAll(self, db, key, *, on=0, ion=0, sep=b'.'):
-        """Count all set values at onkey made from onkey = key + on starting at
-        ion offset within set at onkey.
-        Count = 0 if key not in db.
+
+    def cntOnIoSetAll(self, db, key, *, on=None, sep=b'.'):
+        """Count all entries in db with matching onkey = key + sep + on
+        starting at on for all on >= on. Count includes all set members at each
+        onkey.
+        When on = None then count all set members at all on for key
+        When key is empty then count all on for all key i.e. whole db
 
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is appended and stripped transparently.
 
         Returns:
-            count (int): count values in set at effective onkey
+            count (int): count of set members for onkey for on >= on. When on is
+                         None then count of all on for key. When key is empty
+                         then count of all on for all key for whole db.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
