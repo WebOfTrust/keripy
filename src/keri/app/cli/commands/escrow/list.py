@@ -110,26 +110,14 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "likely-duplicitous-events":
                 ldes = list()
-                key = b""  # start key for iteration
-                while True:  # break when done
-                    found = False
-                    for pre, sn, edig in hby.db.ldes.getOnItemIterAll(keys=key):
-                        # pre and sn are already unpacked by Suber
-                        edig = edig.encode(
-                            "utf-8"
-                        )  # Suber returns str, loadEvent expects bytes
-                        found = True
+                for (pre,), sn, edig in hby.db.ldes.getOnItemIterAll(keys=b""):
+                    if hasattr(edig, "encode"):
+                        edig = edig.encode("utf-8")  # Suber returns str, loadEvent expects bytes
 
-                        try:
-                            ldes.append(eventing.loadEvent(hby.db, pre, edig))
-                        except ValueError as e:
-                            raise e
-
-                        # Update key for next iteration (after current pre.sn)
-                        key = dbing.snKey(pre, sn)
-
-                    if not found:  # no more escrows found
-                        break
+                    try:
+                        ldes.append(eventing.loadEvent(hby.db, pre, edig))
+                    except ValueError as e:
+                        raise e
 
                 escrows["likely-duplicitous-events"] = ldes
 

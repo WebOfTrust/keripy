@@ -405,7 +405,7 @@ def test_tever_escrow(mockCoringRandomNonce):
 
         anc = reg.getAnc(dgkey)
         assert bytes(anc) == b'0AAAAAAAAAAAAAAAAAAAAAABEErlKvdXWTpOg9s5AasfABIk17o_EaM2uAuGe-c_LEbc'
-        assert reg.getTel(snKey(pre=regk, sn=0)) is None
+        assert reg.tels.get(keys=snKey(pre=regk, sn=0)) is None
         dig = reg.getTwe(snKey(pre=regk, sn=0))
         assert bytes(dig) ==b'EBkUjPBzZuFeSTP-Quuz0Exr6jdUNd8VDa5hoNvnS1Jo'
 
@@ -447,7 +447,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEGe5uFh3t0JglSPQtJJoxCV1RlFoTBept1BPRk3o6hgh'
-        assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
+        assert reg.tels.get(keys=snKey(pre=regk, sn=0)).encode("utf-8") == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
         assert reg.tibs.get(keys=(regk, vcp.said)) == []
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
@@ -548,9 +548,9 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
             b'8VCMGHB475dgKWCxO3qX4HlvW_4_lsrVZ9Q","s":"0","c":[],"bt":"1","b":["BPmRWtx8n'
             b'wSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV"],"n":"0AAUiJMii_rPXXCiLTEEaDT7"}')
         assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAABEDD2vrz4Eg3iLOOlZw5-d3ioZ1q703IC0M0LJP_3v-PT'
-        assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
+        assert reg.tels.get(keys=snKey(pre=regk, sn=0)).encode("utf-8") == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
         assert [tib.qb64b for tib in reg.tibs.get(keys=(regk, vcp.said))] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
-                                                                    b'QLbASSQLAZcC']
+                                           b'QLbASSQLAZcC']
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
         debSecret = 'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ'
