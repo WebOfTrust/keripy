@@ -1113,7 +1113,7 @@ class Tever:
         # have to compare with VC issuance serder
         vci = vcpre
 
-        dig = self.reger.getTel(snKey(pre=vci, sn=sn - 1))
+        dig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn - 1))
         ievt = self.reger.tvts.get(keys=(vci, dig))
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
@@ -1170,14 +1170,14 @@ class Tever:
             status (Serder): transaction event state notification message
         """
         digs = []
-        for _, _, dig in self.reger.getTelItemPreIter(pre=vci.encode("utf-8")):
+        for _, _, dig in self.reger.tels.getOnItemIterAll(keys=vci.encode("utf-8")):
             digs.append(dig)
 
         if len(digs) == 0:
             return None
 
         vcsn = len(digs) - 1
-        vcdig = bytes(digs[-1])
+        vcdig = digs[-1].encode("utf-8")
 
         dgkey = dbing.dgKey(vci, vcdig)  # get message
         raw = self.reger.tvts.get(keys=dgkey)
@@ -1220,7 +1220,7 @@ class Tever:
             int: current TEL sequence number of credential or None if not found
 
         """
-        cnt = self.reger.cntTels(vci)
+        cnt = self.reger.tels.cntOnAll(keys=vci)
 
         return None if cnt == 0 else cnt - 1
 
@@ -1253,7 +1253,7 @@ class Tever:
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
         self.reger.tvts.put(keys=key, val=serder.raw)
-        self.reger.putTel(snKey(pre, sn), dig)
+        self.reger.tels.put(keys=snKey(pre, sn), val=dig)
         logger.info("Tever: Added to TEL valid %s event %s said=%s reg=%.8s iss=%.8s",
                     serder.ilk, pre.decode(), serder.said, self.regk, self.pre)
         logger.debug("TEL Event Body=\n%s\n", serder.pretty())
@@ -1792,7 +1792,7 @@ class Tevery:
         if not accepted:
             raise kering.UnverifiedReplyError(f"Unverified registry txn state reply.")
 
-        ldig = self.reger.getTel(key=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -1803,7 +1803,7 @@ class Tevery:
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(rsr))
 
         tsaider = coring.Saider(qb64=rsr.d)
-        ldig = bytes(ldig)
+        ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(regk, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
@@ -1932,7 +1932,7 @@ class Tevery:
         if not accepted:
             raise kering.UnverifiedReplyError(f"Unverified credential state reply.")
 
-        ldig = self.reger.getTel(key=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -1943,7 +1943,7 @@ class Tevery:
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(vsr))
 
         tsaider = coring.Saider(qb64=vsr.d)
-        ldig = bytes(ldig)
+        ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(vci, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE

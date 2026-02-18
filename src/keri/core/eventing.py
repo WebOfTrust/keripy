@@ -6966,11 +6966,12 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for pre, sn, edig in self.db.ldes.getOnItemIterAll(keys=key):
+            for (pre,), sn, edig in self.db.ldes.getOnItemIterAll(keys=key):
                 try:
                     # pre and sn are already unpacked
                     ekey = snKey(pre, sn)
-                    edig = edig.encode("utf-8")  # convert to bytes for legacy compatibility
+                    if hasattr(edig, "encode"):
+                        edig = edig.encode("utf-8")  # convert to bytes for legacy compatibility
                     dgkey = dgKey(pre, edig)
                     if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                         # no local source so raise ValidationError which unescrows below
