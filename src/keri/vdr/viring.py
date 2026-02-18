@@ -270,12 +270,9 @@ class Reger(dbing.LMDBer):
         """
 
         self.registries = oset()
-        if "db" in kwa:
-            self._tevers = rbdict()
-            self._tevers.reger = self  # assign db for read thorugh cache of kevers
-            self._tevers.db = kwa["db"]
-        else:
-            self._tevers = dict()
+        self._tevers = rbdict()
+        self._tevers.reger = self  # assign db for read through cache of tevers
+        self._tevers.db = kwa.get("db", self)
 
         super(Reger, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
@@ -559,10 +556,12 @@ class Reger(dbing.LMDBer):
         couple = self.ancs.get(keys=dgkey)
         if couple is not None:
             number, diger = couple
+            seqner = coring.Seqner(sn=number.sn)
+            saider = coring.Saider(qb64=diger.qb64)
             atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
                                     version=kering.Vrsn_1_0).qb64b)
-            atc.extend(number.qb64b)
-            atc.extend(diger.qb64b)
+            atc.extend(seqner.qb64b)
+            atc.extend(saider.qb64b)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
