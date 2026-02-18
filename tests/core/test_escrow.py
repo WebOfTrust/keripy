@@ -103,7 +103,7 @@ def test_partial_signed_escrow():
         assert len(sigs) == 2
 
         # get DTS set by escrow date time stamp on event
-        edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        edater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
 
         time.sleep(0.001)
         # verify Kevery process partials escrow now unescrows correctly given
@@ -118,9 +118,9 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0
 
         # get DTS set by first seen event acceptance date time stamp
-        adtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        adater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
         # ensure accept time is later than escrow time, default timedelta is zero
-        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
+        assert (adater.datetime - edater.datetime) > datetime.timedelta()
 
         # send duplicate message with all three sigs
         msg = bytearray(srdr.raw)
@@ -137,8 +137,8 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted
-        pdtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
-        assert pdtsb == adtsb
+        pdater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert pdater.dts == adater.dts
 
         # get first seen
         fsdig = kvy.db.fels.getOn(keys=pre, on=0)
@@ -222,7 +222,7 @@ def test_partial_signed_escrow():
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
         # get DTS set by escrow date time stamp on event
-        edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        edater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
 
         time.sleep(0.001)
         # Process partials but now escrow not stale
@@ -233,9 +233,9 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0  # escrow gone
 
         # get DTS set by first seen event acceptance date time stamp
-        adtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        adater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
         # ensure accept time is later than escrow time, default timedelta is zero
-        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
+        assert (adater.datetime - edater.datetime) > datetime.timedelta()
 
         # send duplicate message but add last sig
         msg = bytearray(srdr.raw)
@@ -250,8 +250,8 @@ def test_partial_signed_escrow():
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted
-        pdtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
-        assert pdtsb == adtsb
+        pdater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
+        assert pdater.dts == adater.dts
 
         # get first seen
         fsdig = kvy.db.fels.getOn(keys=pre, on=1)
@@ -333,7 +333,7 @@ def test_partial_signed_escrow():
         assert kvr.serder.said != srdr.said  # key state not updated
 
         # get DTS set by escrow date time stamp on event
-        edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        edater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
 
         time.sleep(0.001)
         # process escrow
@@ -341,9 +341,9 @@ def test_partial_signed_escrow():
         assert kvr.serder.said == srdr.said  # key state updated
 
         # get DTS set by first seen event acceptance date time stamp
-        adtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
+        adater = kvy.db.dtss.get(keys=dbing.dgKey(pre, srdr.saidb))
         # ensure accept time is later than escrow time, default timedelta is zero
-        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
+        assert (adater.datetime - edater.datetime) > datetime.timedelta()
 
         # get first seen
         fsdig = kvy.db.fels.getOn(keys=pre, on=3)
@@ -930,7 +930,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         dgkey = dbing.dgKey(pre, ixndig)
 
         # missing DTS → OOES must remove entry
-        db.delDts(dgkey)
+        db.dtss.rem(keys=dgkey)
         kvy.processEscrowOutOfOrders()
         assert db.ooes.getOn(keys=pre, on=1) == []  # cleaned up
 
