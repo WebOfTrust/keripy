@@ -685,7 +685,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
     """
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    print()
+    # print()
     seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
             b'\xc9\xbd\x04\x9d\x85)~\x93')
 
@@ -1165,7 +1165,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
-    print(f'evnt {serder1.raw}')
+    # print(f'evnt {serder1.raw}')
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -3670,17 +3670,18 @@ def test_direct_mode():
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
         #  check if receipt quadruple from val in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
-        assert bytes(result[0]) == (b'EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vn'
-                                    b'Nodz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3h'
-                                    b'SVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodzAAD'
-                                    b'-iI61odpZQjzm0fN9ZATjHx-KjQ9W3-CIlvho'
-                                    b'wwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
+
+        # receipter is the validator
+        assert rctPrefixer.qb64 == valKever.prefixer.qb64
+        # sequence number of validator’s est event
+        assert rctNum.num == valKever.sn
+        # digest of validator’s est event
+        assert rctDiger.qb64 == valKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
         # create receipt to escrow use invalid dig and sn so not in coe's db
         fake = reserder.said  # some other dig
@@ -3707,13 +3708,15 @@ def test_direct_mode():
         parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadruple in escrow database
-        result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vres.get(keys=snKey(pre=coeKever.prefixer.qb64,
                                                 sn=10))
-        assert bytes(result[0]) == (fake.encode("utf-8") +
-                                    valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
+        ev_diger, val_prefixer, est_num, est_diger, sig = result[0]
+
+        assert ev_diger.qb64 == fake
+        assert val_prefixer.qb64 == valKever.prefixer.qb64
+        assert est_num.num == valKever.sn
+        assert est_diger.qb64 == valKever.serder.said
+        assert sig.qb64b == siger.qb64b
 
         # Send receipt from coe to val
         # create receipt of val's inception
@@ -3758,17 +3761,18 @@ def test_direct_mode():
         # valKevery.process(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from coe in val's receipt database
-        result = valKevery.db.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
+        result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
                                                 dig=valKever.serder.said))
-        assert bytes(result[0]) == (coeKever.prefixer.qb64b +
-                                    Seqner(sn=coeKever.sn).qb64b +
-                                    coeKever.serder.saidb +
-                                    siger.qb64b)
-        assert bytes(result[0]) == (b'EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0'
-                                    b'IlL0AAAAAAAAAAAAAAAAAAAAAAAEJe_sKQb'
-                                    b'1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlLAACRm'
-                                    b'y9_dCMi45BSI89fGeM_ktOTWQctSGrVsZtQ'
-                                    b'Mm1RtJZY31xaNoEN-GJ0c5UrNbNuSyT-wkeit0AeYsPWLEYG')
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
+
+        # receipter is the controller
+        assert rctPrefixer.qb64 == coeKever.prefixer.qb64
+        # sequence number of controller’s est event
+        assert rctNum.num == coeKever.sn
+        # digest of controller’s est event
+        assert rctDiger.qb64 == coeKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
         # Coe Event 1 RotationTransferable
         csn += 1
@@ -3852,18 +3856,18 @@ def test_direct_mode():
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from val in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
 
-        assert bytes(result[0]) == (b'EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnN'
-                                    b'odz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3h'
-                                    b'SVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodzAAANS'
-                                    b'IICz13kvy4hk2bvTCr2b2uePn4uTf4_nwdo'
-                                    b'lkI77Voqsm5QFtF6z6sjJK7_oTLY36k2VigSExx0UgGQV7YL')
+        # receipter is the validator
+        assert rctPrefixer.qb64 == valKever.prefixer.qb64
+        # sequence number of validator’s est event
+        assert rctNum.num == valKever.sn
+        # digest of validator’s est event
+        assert rctDiger.qb64 == valKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
 
         # Next Event 2 Coe Interaction
@@ -3940,18 +3944,18 @@ def test_direct_mode():
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from val in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
 
-        assert bytes(result[0]) == (b'EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNo'
-                                    b'dz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3h'
-                                    b'SVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodzAABP_'
-                                    b'iABSPKxN2_pcedeIu1qb9rIj5nLaGaiPOW2'
-                                    b'BFSUQQ7CSL9IW1s9_wVAxv2idySMjiGuLOZk8qI2thqMZ3ED')
+        # receipter is the validator
+        assert rctPrefixer.qb64 == valKever.prefixer.qb64
+        # sequence number of validator’s est event
+        assert rctNum.num == valKever.sn
+        # digest of validator’s est event
+        assert rctDiger.qb64 == valKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
         #  verify final coe event state
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
@@ -4136,17 +4140,18 @@ def test_direct_mode_cbor_mgpk():
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
         #  check if receipt quadruple from val in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
-        assert bytes(result[0]) == (b'EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdq'
-                                    b'MZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4v'
-                                    b'OeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZXAADk5'
-                                    b'5HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5w'
-                                    b'GNQT3cJ7LrFYTE-Xjt72WVu2cbKjVLf9GAIGixpzh11tlCUD')
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
+
+        # receipter is the validator
+        assert rctPrefixer.qb64 == valKever.prefixer.qb64
+        # sequence number of validator’s est event
+        assert rctNum.num == valKever.sn
+        # digest of validator’s est event
+        assert rctDiger.qb64 == valKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
         # create receipt to escrow use invalid dig so not in coe's db
         fake = reserder.said  # some other dig
@@ -4169,13 +4174,15 @@ def test_direct_mode_cbor_mgpk():
         parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vres.get(keys=snKey(pre=coeKever.prefixer.qb64,
                                                 sn=10))
-        assert bytes(result[0]) == (fake.encode("utf-8") +
-                                    valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
+        ev_diger, val_prefixer, est_num, est_diger, sig = result[0]
+
+        assert ev_diger.qb64 == fake
+        assert val_prefixer.qb64 == valKever.prefixer.qb64
+        assert est_num.num == valKever.sn
+        assert est_diger.qb64 == valKever.serder.said
+        assert sig.qb64b == siger.qb64b
 
         # Send receipt from coe to val
         # create receipt of val's inception
@@ -4220,17 +4227,18 @@ def test_direct_mode_cbor_mgpk():
         # valKevery.process(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from coe in val's receipt database
-        result = valKevery.db.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
+        result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
                                                 dig=valKever.serder.said))
-        assert bytes(result[0]) == (coeKever.prefixer.qb64b +
-                                    Seqner(sn=coeKever.sn).qb64b +
-                                    coeKever.serder.saidb +
-                                    siger.qb64b)
-        assert bytes(result[0]) == (b'EDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5'
-                                    b'mK-0AAAAAAAAAAAAAAAAAAAAAAAEDTOWE_o'
-                                    b'HAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-AABZt'
-                                    b'KLctVcqHwMjVhYwdwQphN0HqilToRc-fE1Y'
-                                    b'DDWlxXWa7Q-GAzpFBLYYdfCLuruDzDC0tEG3wSGDDj-GKfgB')
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
+
+        # receipter is the controller
+        assert rctPrefixer.qb64 == coeKever.prefixer.qb64
+        # sequence number of controller est event
+        assert rctNum.num == coeKever.sn
+        # digest of controller's est event
+        assert rctDiger.qb64 == coeKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
         # Coe RotationTransferable
         csn += 1
@@ -4314,19 +4322,18 @@ def test_direct_mode_cbor_mgpk():
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
 
-        assert bytes(result[0])  == (b'EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nV'
-                                     b'dqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4v'
-                                     b'OeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZXAABg'
-                                     b'Kgla6y-DWqKIuSzV5iqPacG_ckEQOO7w2osm'
-                                     b'n1YYxTIq0aVELDNwXt1mnqWJw73-UVekqTtrU1jWgekCx0cF')
-
+        # receipter is the validator
+        assert rctPrefixer.qb64 == valKever.prefixer.qb64
+        # sequence number of validator’s est event
+        assert rctNum.num == valKever.sn
+        # digest of validator’s est event
+        assert rctDiger.qb64 == valKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
         # Next Event Coe Interaction
         csn += 1  # do not increment esn
@@ -4406,18 +4413,18 @@ def test_direct_mode_cbor_mgpk():
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
-        result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.saidb +
-                                    siger.qb64b)
+        rctPrefixer, rctNum, rctDiger, rctSiger = result[0]
 
-        assert bytes(result[0]) == (b'EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nV'
-                                     b'dqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4v'
-                                     b'OeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZXAADx'
-                                     b'JgKTEqP-yWJrKuEB9X8ZBkozW_t0v1alMYou'
-                                     b'OPQn6Fp2IT_ZSwWmk26Bxj5PPB4qiJmJ7LwbfQvJZLxgMUQC')
+        # receipter is the validator
+        assert rctPrefixer.qb64 == valKever.prefixer.qb64
+        # sequence number of validator’s est event
+        assert rctNum.num == valKever.sn
+        # digest of validator’s est event
+        assert rctDiger.qb64 == valKever.serder.said
+        # signature matches what was produced
+        assert rctSiger.qb64b == siger.qb64b
 
         #  verify final coe event state
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
