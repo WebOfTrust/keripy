@@ -20,7 +20,7 @@ from keri.core.coring import (Diger, MtrDex, Matter,
                               Cigar,
                               Seqner, Verfer, Prefixer, DigDex)
 from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
-from keri.core.eventing import Kever, Kevery
+from keri.core.eventing import Kever, Kevery, UnverifiedReceiptError
 from keri.core.eventing import (SealDigest, SealRoot, SealBack,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
 from keri.core.eventing import (TraitDex, LastEstLoc, Kinds, versify,
@@ -3497,6 +3497,36 @@ def test_receipt():
     """ Done Test """
 
 
+def test_process_attached_receipt_couples_firner_missing_fels():
+    """
+    When processAttachedReceiptCouples is called with firner set (clone replay mode)
+    but the db has no fels entry at firner.sn, it must escrow and raise
+    UnverifiedReceiptError. This explicitly tests the fels.getOn(keys=pre, on=firner.sn)
+    path in receipt processing.
+    """
+    salter = core.Salter(raw=b'firner_missing_fels_test_seed_0123456789')
+    signer = salter.signers(count=1, path="ctl", temp=True)[0]
+    valSigner = salter.signers(count=1, path="val", transferable=False, temp=True)[0]
+
+    serder = incept(keys=[signer.verfer.qb64], ndigs=[coring.Diger(ser=signer.verfer.qb64b).qb64])
+    valCigar = valSigner.sign(ser=serder.raw)
+
+    with openDB(name="firner_test") as db:
+        kvy = Kevery(db=db)
+        # DB is empty: no event, no fels entry at (pre, 0). Call with firner so
+        # processAttachedReceiptCouples uses fels.getOn(keys=pre, on=0) -> None.
+        with pytest.raises(UnverifiedReceiptError) as exc_info:
+            kvy.processAttachedReceiptCouples(serder, [valCigar], firner=Seqner(sn=0))
+        assert "Unverified receipt=" in str(exc_info.value)
+        # Receipt must be escrowed (addUre via escrowUReceipt)
+        sn = int(serder.sn, 16) if isinstance(serder.sn, str) else int(serder.sn)
+        ures = db.getUres(key=snKey(pre=serder.preb, sn=sn))
+        assert len(ures) == 1
+        assert bytes(ures[0]).startswith(serder.said.encode("utf-8"))
+
+    """ Done Test """
+
+
 def test_direct_mode():
     """
     Test direct mode with transferable validator event receipts
@@ -3614,12 +3644,12 @@ def test_direct_mode():
         # look up event to sign from val's kever for coe
         coeIcpDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIcpDig == coeK.serder.saidb == b'EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL'
-        coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
-        assert coeIcpRaw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFG'
+        s = valKevery.db.evts.get(keys=(coepre, coeIcpDig))
+        assert s.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFG'
                         b'n1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL","s":"0","kt":"1'
                         b'","k":["DC8kCMHKrYZewclvG9vj1R1nSspiRwPi-ByqRwFuyq4i"],"nt":"1","n":["EBPlMw'
                         b'LJ5rSKWCaZq4bczEHLQvYX3P7cILmBzy0Pp4O4"],"bt":"0","b":[],"c":[],"a":[]}')
-        siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         assert siger.qb64 == ('AAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5K'
                               'nQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
         rmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
@@ -3661,7 +3691,7 @@ def test_direct_mode():
                            sn=10,
                            said=fake)
         # sign event not receipt
-        siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
 
         # create message
         vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
@@ -3703,14 +3733,14 @@ def test_direct_mode():
         # look up event to sign from coe's kever for val
         valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.serder.saidb == b'EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz'
-        valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
-        assert valIcpRaw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25H'
+        s = coeKevery.db.evts.get(keys=(valpre, valIcpDig))
+        assert s.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25H'
                         b'o9vnNodz","i":"EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz","s":"0","kt":"1'
                         b'","k":["BF5b1hKlY38RoAhR7G8CExP4qjHFvbHx25Drp5Jj2j4p"],"nt":"1","n":["ECoxJf'
                         b'QH0GUrlDKoC3U-neGY1CJib7VyZGh6QhdJtWoT"],"bt":"0","b":[],"c":[],"a":[]}')
 
 
-        siger = coeSigners[vesn].sign(ser=valIcpRaw, index=0)  # return Siger if index
+        siger = coeSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         assert siger.qb64 == ('AACRmy9_dCMi45BSI89fGeM_ktOTWQctSGrVsZtQMm1RtJZY'
                               '31xaNoEN-GJ0c5UrNbNuSyT-wkeit0AeYsPWLEYG')
         # create receipt message
@@ -3797,14 +3827,14 @@ def test_direct_mode():
         # look up event to sign from val's kever for coe
         coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.serder.saidb == b'EKlC013XEpwYuCQ84aVnEAqzNurjAJDN6ayK-9NxggAr'
-        coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
-        assert coeRotRaw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EKlC013XEpwYuCQ84aVnEAqzNurjAJDN6ayK'
+        s = valKevery.db.evts.get(keys=(coepre, coeRotDig))
+        assert s.raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EKlC013XEpwYuCQ84aVnEAqzNurjAJDN6ayK'
                              b'-9NxggAr","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL","s":"1","p":"EJ'
                              b'e_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL","kt":"1","k":["DIR7b_v2seXd-1PMM'
                              b'Qn2j4atO2B1YiRQwKUQNgKBLUSV"],"nt":"1","n":["ED9O5NCpb7MABWrOY82keABUCkUrljK'
                              b'Bds1mHStvG3RR"],"bt":"0","br":[],"ba":[],"a":[]}')
 
-        siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         assert siger.qb64 == ('AAANSIICz13kvy4hk2bvTCr2b2uePn4uTf4_nwdolkI77Voq'
                               'sm5QFtF6z6sjJK7_oTLY36k2VigSExx0UgGQV7YL')
         # val create receipt message
@@ -3888,11 +3918,11 @@ def test_direct_mode():
         # look up event to sign from val's kever for coe
         coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIxnDig == coeK.serder.saidb == b'EG3O9AV3lhySOadwTn810vHOZDc6B8TZY_u_4_iy_ono'
-        coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
-        assert coeIxnRaw == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG3O9AV3lhySOadwTn810vHOZDc6B8TZY_u_'
+        s = valKevery.db.evts.get(keys=(coepre, coeIxnDig))
+        assert s.raw == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG3O9AV3lhySOadwTn810vHOZDc6B8TZY_u_'
                              b'4_iy_ono","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL","s":"2","p":"EK'
                              b'lC013XEpwYuCQ84aVnEAqzNurjAJDN6ayK-9NxggAr","a":[]}')
-        siger = valSigners[vesn].sign(ser=coeIxnRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         assert siger.qb64 == ('AABP_iABSPKxN2_pcedeIu1qb9rIj5nLaGaiPOW2BFSUQQ7C'
                               'SL9IW1s9_wVAxv2idySMjiGuLOZk8qI2thqMZ3ED')
         # create receipt message
@@ -4080,13 +4110,13 @@ def test_direct_mode_cbor_mgpk():
         # look up event to sign from val's kever for coe
         coeIcpDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIcpDig == coeK.serder.saidb
-        coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
-        assert coeIcpRaw == (b'\xadavqKERI10CBOR0000f9_atcicpadx,EDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5'
+        s = valKevery.db.evts.get(keys=(coepre, coeIcpDig))
+        assert s.raw == (b'\xadavqKERI10CBOR0000f9_atcicpadx,EDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5'
                              b'mK-aix,EDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-asa0bkta1ak\x81x,DC8kCMH'
                              b'KrYZewclvG9vj1R1nSspiRwPi-ByqRwFuyq4ibnta1an\x81x,EBPlMwLJ5rSKWCaZq4bczEHLQ'
                              b'vYX3P7cILmBzy0Pp4O4bbta0ab\x80ac\x80aa\x80')
 
-        siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # process own Val receipt in Val's Kevery so have copy in own log
         rmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
         assert rmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EDTOWE_oHAO7j'
@@ -4128,7 +4158,7 @@ def test_direct_mode_cbor_mgpk():
                            said=fake,
                            kind=Kinds.mgpk)
         # sign event not receipt
-        siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
 
         # create message
         vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
@@ -4166,14 +4196,14 @@ def test_direct_mode_cbor_mgpk():
         # look up event to sign from coe's kever for val
         valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.serder.saidb
-        valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
-        assert valIcpRaw == (b'\x8d\xa1v\xb1KERI10MGPK0000f9_\xa1t\xa3icp\xa1d\xd9,EFBYcX4vOeL7Y5pz0iQ5y'
+        s = coeKevery.db.evts.get(keys=(valpre, valIcpDig))
+        assert s.raw == (b'\x8d\xa1v\xb1KERI10MGPK0000f9_\xa1t\xa3icp\xa1d\xd9,EFBYcX4vOeL7Y5pz0iQ5y'
                             b'Cfxd19R1dgA_r9i1nVdqMZX\xa1i\xd9,EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdq'
                             b'MZX\xa1s\xa10\xa2kt\xa11\xa1k\x91\xd9,BF5b1hKlY38RoAhR7G8CExP4qjHFvbHx25D'
                             b'rp5Jj2j4p\xa2nt\xa11\xa1n\x91\xd9,ECoxJfQH0GUrlDKoC3U-neGY1CJib7VyZGh6QhdJt'
                             b'WoT\xa2bt\xa10\xa1b\x90\xa1c\x90\xa1a\x90')
 
-        siger = coeSigners[vesn].sign(ser=valIcpRaw, index=0)  # return Siger if index
+        siger = coeSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # create receipt message
         cmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
         assert cmsg == (b'\xa5avqKERI10CBOR00007f_atcrctadx,EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
@@ -4261,14 +4291,14 @@ def test_direct_mode_cbor_mgpk():
         # look up event to sign from val's kever for coe
         coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.serder.saidb
-        coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
-        assert coeRotRaw == (b'\xaeavqKERI10CBOR00012b_atcrotadx,EN4m9YLkeBgWVIvwmj45_qdnBBBY61NVZbwOe__MA'
+        s = valKevery.db.evts.get(keys=(coepre, coeRotDig))
+        assert s.raw == (b'\xaeavqKERI10CBOR00012b_atcrotadx,EN4m9YLkeBgWVIvwmj45_qdnBBBY61NVZbwOe__MA'
                              b'sYMaix,EDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-asa1apx,EDTOWE_oHAO7j6rhU'
                              b'MGfQ_kX8GJbpaAhO-luqqsp5mK-bkta1ak\x81x,DIR7b_v2seXd-1PMMQn2j4atO2B1YiRQwKU'
                              b'QNgKBLUSVbnta1an\x81x,ED9O5NCpb7MABWrOY82keABUCkUrljKBds1mHStvG3RRbbta0'
                              b'bbr\x80bba\x80aa\x80')
 
-        siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # create receipt message
         vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
         assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EN4m9YLkeBgWV'
@@ -4353,14 +4383,14 @@ def test_direct_mode_cbor_mgpk():
         # look up event to sign from val's kever for coe
         coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIxnDig == coeK.serder.saidb
-        coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
-        assert coeIxnRaw == (b'\xa7avqKERI10CBOR0000b2_atcixnadx,EEobyRfni6TAn'
+        s = valKevery.db.evts.get(keys=(coepre, coeIxnDig))
+        assert s.raw == (b'\xa7avqKERI10CBOR0000b2_atcixnadx,EEobyRfni6TAn'
                               b'EROE5yL9sC6lhKEbpbmXyeqSZ1Qj'
                               b'AKMaix,EDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp'
                               b'5mK-asa2apx,EN4m9YLkeBgWVIvwm'
                               b'j45_qdnBBBY61NVZbwOe__MAsYMaa\x80')
 
-        siger = valSigners[vesn].sign(ser=coeIxnRaw, index=0)  # return Siger if index
+        siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # create receipt message
         vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
         assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EEobyRfni6TAn'
@@ -4754,7 +4784,7 @@ def test_reload_kever(mockHelpingNowUTC):
         assert natHab.kever.serder.said == 'EA3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
-        serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre, ldig))))
+        serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
         assert serder.said == natHab.kever.serder.said
         nstate = natHab.kever.state()
 
