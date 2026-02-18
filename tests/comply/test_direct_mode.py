@@ -120,11 +120,11 @@ def test_direct_mode_with_manager():
         rawIpcDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn))
         coeIcpDig = rawIpcDig.encode("utf-8")
         assert coeIcpDig == coeK.serder.saidb
-        coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
+        s = valKevery.db.evts.get(keys=(coepre, coeIcpDig))
 
         #counter = Counter(CtrDex.ControllerIdxSigs)
         #assert counter.qb64 == '-AAB'
-        sigers = valMgr.sign(ser=coeIcpRaw, verfers=valVerfers)  # return Siger if index
+        sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
 
         # attach signatures
         rmsg = messagize(reserder, sigers=sigers, seal=seal)
@@ -161,7 +161,7 @@ def test_direct_mode_with_manager():
                            sn=10,
                            said=fake)
         # sign event not receipt
-        sigers = valMgr.sign(ser=coeIcpRaw, verfers=valVerfers)  # return Siger if index
+        sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
         # create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
@@ -192,8 +192,8 @@ def test_direct_mode_with_manager():
         valIcpDig = next(coeKevery.db.kels.getOnLastIter(keys=valpre, on=vsn), None)
         valIcpDig = valIcpDig.encode("utf-8")
         assert valIcpDig == valK.serder.saidb
-        valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
-        sigers = coeMgr.sign(ser=valIcpRaw, verfers=coeVerfers)  # return Siger if index
+        s = coeKevery.db.evts.get(keys=(valpre, valIcpDig))
+        sigers = coeMgr.sign(ser=s.raw, verfers=coeVerfers)  # return Siger if index
         # create receipt message
         cmsg = messagize(reserder, sigers=sigers, seal=seal)
         # controller process own receipt in own Kevery so have copy in own log
@@ -258,8 +258,8 @@ def test_direct_mode_with_manager():
         coeRotDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
         coeRotDig = coeRotDig.encode("utf-8")
         assert coeRotDig == coeK.serder.saidb
-        coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
-        sigers = valMgr.sign(ser=coeRotRaw, verfers=valVerfers)
+        s = valKevery.db.evts.get(keys=(coepre, coeRotDig))
+        sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
         # validator create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
@@ -322,8 +322,8 @@ def test_direct_mode_with_manager():
         coeIxnDig = next(valKevery.db.kels.getOnLastIter(keys=coepre, on=csn), None)
         coeIxnDig = coeIxnDig.encode("utf-8")
         assert coeIxnDig == coeK.serder.saidb
-        coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
-        sigers = valMgr.sign(ser=coeIxnRaw, verfers=valVerfers)
+        s = valKevery.db.evts.get(keys=(coepre, coeIxnDig))
+        sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
         # create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
 

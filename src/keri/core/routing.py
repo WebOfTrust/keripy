@@ -348,9 +348,8 @@ class Revery:
                 continue
             sdig = last.encode("utf-8") # get the sdig from last and convert it from str to bytes
             # retrieve last event itself of signer given sdig
-            sraw = self.db.getEvt(key=dbing.dgKey(pre=spre, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = serdering.SerderKERI(raw=bytes(sraw))
+            sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
+            # assumes db ensures that sserder must not be none because sdig was in KE
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
                 raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
                                              f"{seqner.sn} for reply = {serder.ked}.")
