@@ -270,12 +270,9 @@ class Reger(dbing.LMDBer):
         """
 
         self.registries = oset()
-        if "db" in kwa:
-            self._tevers = rbdict()
-            self._tevers.reger = self  # assign db for read thorugh cache of kevers
-            self._tevers.db = kwa["db"]
-        else:
-            self._tevers = dict()
+        self._tevers = rbdict()
+        self._tevers.reger = self  # assign db for read through cache of tevers
+        self._tevers.db = kwa.get("db", self)
 
         super(Reger, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
@@ -302,7 +299,8 @@ class Reger(dbing.LMDBer):
 
         self.tvts = subing.Suber(db=self, subkey='tvts.')
         self.tels = subing.OnSuber(db=self, subkey='tels.')
-        self.ancs = self.env.open_db(key=b'ancs.')
+        self.ancs = subing.CatCesrSuber(db=self, subkey='ancs.',
+                        klas=(coring.Number, coring.Diger))
         self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
         self.baks = self.env.open_db(key=b'baks.', dupsort=True)
         self.oots = self.env.open_db(key=b'oots.')
@@ -555,11 +553,15 @@ class Reger(dbing.LMDBer):
                 atc.extend(tib.qb64b)
 
         # add authorizer (delegator/issure) source seal event couple to attachments
-        couple = self.getAnc(dgkey)
+        couple = self.ancs.get(keys=dgkey)
         if couple is not None:
+            number, diger = couple
+            seqner = coring.Seqner(sn=number.sn)
+            saider = coring.Saider(qb64=diger.qb64)
             atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
                                     version=kering.Vrsn_1_0).qb64b)
-            atc.extend(couple)
+            atc.extend(seqner.qb64b)
+            atc.extend(saider.qb64b)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
@@ -729,42 +731,6 @@ class Reger(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.oots, key)
-
-
-    def putAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.ancs, key, val)
-
-    def setAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.ancs, key, val)
-
-    def getAnc(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.ancs, key)
-
-    def delAnc(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.ancs, key)
 
 
     def putBaks(self, key, vals):
