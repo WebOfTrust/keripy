@@ -1094,12 +1094,12 @@ def test_baser():
         assert db.dels.getOn(keys=keys, on=on) == []
         result = db.dels.getOn(keys=keys, on=on)
         assert (result[-1] if result else None) == None
-        assert db.dels.cntOn(keys=(keys,), on=on) == 0
+        assert len(db.dels.getOn(keys=keys, on=on)) == 0
         assert db.dels.remOn(keys=keys, on=on) == False
         for val in vals:
             db.dels.addOn(keys=keys, on=on, val=val)
         assert db.dels.getOn(keys=keys, on=on) == vals  # preserved insertion order
-        assert db.dels.cntOn(keys=(keys,), on=on) == len(vals) == 4
+        assert len(db.dels.getOn(keys=keys, on=on)) == len(vals) == 4
         result = db.dels.getOn(keys=keys, on=on)
         assert result[-1] == vals[-1]
         assert db.dels.addOn(keys=keys, on=on, val='a') == False   # duplicate
@@ -1130,7 +1130,7 @@ def test_baser():
         assert db.ldes.rem(keys=key) == True
         assert db.ldes.get(keys=key) == []
 
-        # Setup Tests for getOnItemIterAll with proper OnIoDupSuber API
+        # Setup Tests for getOnItemIter with proper OnIoDupSuber API
         # Use addOn with explicit ordinal instead of snKey
         aVals = [b"z", b"m", b"x"]
         bVals = [b"o", b"r", b"z"]
@@ -1436,7 +1436,8 @@ def test_fetchkeldel():
             assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         allvals = vals0 + vals1 + vals2
-        vals = [val.encode("utf-8") for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
+        vals = [(val.encode("utf-8") if isinstance(val, str) else bytes(val))
+            for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)
@@ -1936,24 +1937,22 @@ def test_clear_escrows():
         assert db.getPwes(key) == []
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
-
         assert db.ldes.get(keys=key) == []
-        assert db.qnfs.cnt() == 0
-        assert db.pdes.cnt() == 0
-        assert db.rpes.cnt() == 0
+        assert db.qnfs.cntAll() == 0
+        assert db.pdes.cntAll() == 0
+        assert db.rpes.cntAll() == 0
         assert db.eoobi.cnt() == 0
-        assert db.gpwe.cnt() == 0
-        assert db.gdee.cnt() == 0
-        assert db.dpwe.cnt() == 0
-        assert db.gpse.cnt() == 0
-        assert db.epse.cnt() == 0
-        assert db.dune.cnt() == 0
-        assert db.misfits.cnt() == 0
-        assert db.delegables.cnt() == 0
-        assert db.udes.cnt() == 0
-        assert db.epsd.cnt() == 0
-        assert db.dpub.cnt() == 0
-
+        assert db.gpwe.cntAll() == 0
+        assert db.gdee.cntAll() == 0
+        assert db.dpwe.cntAll() == 0
+        assert db.gpse.cntAll() == 0
+        assert db.epse.cntAll() == 0
+        assert db.dune.cntAll() == 0
+        assert db.misfits.cntAll() == 0
+        assert db.delegables.cntAll() == 0
+        assert db.udes.cntAll() == 0
+        assert db.epsd.cntAll() == 0
+        assert db.dpub.cntAll() == 0
 
 if __name__ == "__main__":
     test_baser()
