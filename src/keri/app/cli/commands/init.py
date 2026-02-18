@@ -30,7 +30,7 @@ def handler(args):
     return [init]
 
 
-parser = argparse.ArgumentParser(description='Create a database and keystore', 
+parser = argparse.ArgumentParser(description='Create a database and keystore',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=handler)
 
@@ -112,14 +112,14 @@ class InitDoer(doing.DoDoer):
         if hby.mgr.aeid:
             print("\taeid:", hby.mgr.aeid)
 
-        oc = hby.db.oobis.cntAll()
+        oc = hby.db.oobis.cnt()
         if oc:
             print(f"\nLoading {oc} OOBIs...")
 
             obi = keri.app.oobiing.Oobiery(hby=hby)
             self.extend(obi.doers)
 
-            while oc > hby.db.roobi.cntAll():
+            while oc > hby.db.roobi.cnt():
                 yield 0.25
 
             for (oobi,), obr in hby.db.roobi.getItemIter():

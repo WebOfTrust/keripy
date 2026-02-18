@@ -13,6 +13,7 @@ import lmdb
 
 from keri.core import indexing
 from keri.core.coring import Diger, versify, Kinds
+from keri.db import subing
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger
 
@@ -32,7 +33,7 @@ def test_issuer():
     assert issuer.env.path() == issuer.path
     assert os.path.exists(issuer.path)
 
-    assert isinstance(issuer.tvts, lmdb._Database)
+    assert isinstance(issuer.tvts, subing.Suber)
 
     issuer.close(clear=True)
     assert not os.path.exists(issuer.path)
@@ -59,7 +60,7 @@ def test_issuer():
     assert not os.path.exists(issuer.path)
     assert not issuer.opened
 
-    assert isinstance(issuer.tvts, lmdb._Database)
+    assert isinstance(issuer.tvts, subing.Suber)
 
     with openLMDB(cls=Reger) as issuer:
         assert isinstance(issuer, Reger)
@@ -71,7 +72,7 @@ def test_issuer():
         assert issuer.env.path() == issuer.path
         assert os.path.exists(issuer.path)
 
-        assert isinstance(issuer.tvts, lmdb._Database)
+        assert isinstance(issuer.tvts, subing.Suber)
 
     assert not os.path.exists(issuer.path)
 
@@ -95,15 +96,15 @@ def test_issuer():
     with openLMDB(cls=Reger) as issuer:
         key = dgKey(regk, vdig.qb64b)
 
-        assert issuer.getTvt(key) is None
-        assert issuer.delTvt(key) is False
-        assert issuer.putTvt(key, val=vcpb) is True
-        assert issuer.getTvt(key) == vcpb
-        assert issuer.putTvt(key, val=vcpb) is False
-        assert issuer.setTvt(key, val=vcpb) is True
-        assert issuer.getTvt(key) == vcpb
-        assert issuer.delTvt(key) is True
-        assert issuer.getTvt(key) is None
+        assert issuer.tvts.get(keys=key) is None
+        assert issuer.tvts.rem(keys=key) is False
+        assert issuer.tvts.put(keys=key, val=vcpb) is True
+        assert issuer.tvts.get(keys=key) == vcpb.decode("utf-8")
+        assert issuer.tvts.put(keys=key, val=vcpb) is False
+        assert issuer.tvts.pin(keys=key, val=vcpb) is True
+        assert issuer.tvts.get(keys=key) == vcpb.decode("utf-8")
+        assert issuer.tvts.rem(keys=key) is True
+        assert issuer.tvts.get(keys=key) is None
 
         telKey = snKey(regk, sn)
         assert issuer.getTel(telKey) is None
@@ -200,15 +201,15 @@ def test_issuer():
         idig = Diger(ser=issb)
 
         key = dgKey(vcdig, idig.qb64b)
-        assert issuer.getTvt(key) is None
-        assert issuer.delTvt(key) is False
-        assert issuer.putTvt(key, val=issb) is True
-        assert issuer.getTvt(key) == issb
-        assert issuer.putTvt(key, val=issb) is False
-        assert issuer.setTvt(key, val=issb) is True
-        assert issuer.getTvt(key) == issb
-        assert issuer.delTvt(key) is True
-        assert issuer.getTvt(key) is None
+        assert issuer.tvts.get(keys=key) is None
+        assert issuer.tvts.rem(keys=key) is False
+        assert issuer.tvts.put(keys=key, val=issb) is True
+        assert issuer.tvts.get(keys=key) == issb.decode("utf-8")
+        assert issuer.tvts.put(keys=key, val=issb) is False
+        assert issuer.tvts.pin(keys=key, val=issb) is True
+        assert issuer.tvts.get(keys=key) == issb.decode("utf-8")
+        assert issuer.tvts.rem(keys=key) is True
+        assert issuer.tvts.get(keys=key) is None
 
         telKey = snKey(vcdig, sn)
         assert issuer.getTel(telKey) is None
@@ -304,21 +305,21 @@ def test_clone():
     with openLMDB(cls=Reger) as issuer:
         dgkey = dgKey(regk, vdig.qb64b)
         snkey = snKey(regk, sn)
-        assert issuer.putTvt(dgkey, val=vcpb) is True
+        assert issuer.tvts.put(keys=dgkey, val=vcpb) is True
         assert issuer.putTel(snkey, val=vdig.qb64b)
         assert issuer.putAnc(dgkey, val=anc01) is True
         assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[indexing.Siger(qb64b=tib01)]) is True
 
         dgkey = dgKey(regk, r1dig.qb64b)
         snkey = snKey(regk, sn + 1)
-        assert issuer.putTvt(dgkey, val=rot1b) is True
+        assert issuer.tvts.put(keys=dgkey, val=rot1b) is True
         assert issuer.putTel(snkey, val=r1dig.qb64b)
         assert issuer.putAnc(dgkey, val=anc02) is True
         assert issuer.tibs.pin(keys=(regk, r1dig.qb64b), vals=[indexing.Siger(qb64b=tib02)]) is True
 
         dgkey = dgKey(regk, r2dig.qb64b)
         snkey = snKey(regk, sn + 2)
-        assert issuer.putTvt(dgkey, val=rot2b) is True
+        assert issuer.tvts.put(keys=dgkey, val=rot2b) is True
         assert issuer.putTel(snkey, val=r2dig.qb64b)
         assert issuer.putAnc(dgkey, val=anc03) is True
         assert issuer.tibs.pin(keys=(regk, r2dig.qb64b), vals=[indexing.Siger(qb64b=tib03)]) is True

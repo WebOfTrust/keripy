@@ -300,7 +300,7 @@ class Reger(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.tvts = self.env.open_db(key=b'tvts.')
+        self.tvts = subing.Suber(db=self, subkey='tvts.')
         self.tels = self.env.open_db(key=b'tels.')
         self.ancs = self.env.open_db(key=b'ancs.')
         self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
@@ -543,9 +543,9 @@ class Reger(dbing.LMDBer):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
         dgkey = dbing.dgKey(pre, dig)  # get message
-        if not (raw := self.getTvt(key=dgkey)):
+        if not (raw := self.tvts.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(raw)
+        msg.extend(raw.encode("utf-8"))
 
         # add indexed backer signatures to attachments
         if tibs := self.tibs.get(keys=(pre, dig)):
@@ -607,41 +607,6 @@ class Reger(dbing.LMDBer):
             sources.extend(self.sources(db, screder))
 
         return sources
-
-    def putTvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.tvts, key, val)
-
-    def setTvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.tvts, key, val)
-
-    def getTvt(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.tvts, key)
-
-    def delTvt(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.tvts, key)
 
     def putTel(self, key, val):
         """
@@ -915,7 +880,7 @@ class Reger(dbing.LMDBer):
         Return count of backer prefixes at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.baks, key)
+        return self.cntIoDups(self.baks, key)
 
 
     def delBaks(self, key):

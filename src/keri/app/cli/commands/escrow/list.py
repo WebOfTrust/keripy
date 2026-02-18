@@ -117,7 +117,7 @@ def escrows(tymth, tock=0.0, **opts):
                 key = b""  # start key for iteration
                 while True:  # break when done
                     found = False
-                    for pre, sn, edig in hby.db.ldes.getOnItemIter(keys=key):
+                    for pre, sn, edig in hby.db.ldes.getOnItemIterAll(keys=key):
                         # pre and sn are already unpacked by Suber
                         edig = edig.encode(
                             "utf-8"
