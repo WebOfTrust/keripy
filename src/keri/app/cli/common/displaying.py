@@ -24,10 +24,7 @@ def printIdentifier(hby, pre, label="Identifier"):
     if hab.accepted:
         kever = hab.kever
         ser = kever.serder
-        dgkey = dbing.dgKey(ser.preb, ser.saidb)
-        wigs = hab.db.wigs.get(dgkey)
-        seal = hab.db.aess.get(keys=dbing.dgKey(ser.preb, kever.lastEst.d))
-        wigs = hab.db.getWigs(dgkey)
+        wigs = hab.db.wigs.get(keys=(ser.preb, kever.lastEst.d))
         seal = hab.db.aess.get(keys=(ser.preb, kever.lastEst.d))
 
         print(f"Alias: \t{hab.name}")
@@ -85,10 +82,7 @@ def printExternal(hby, pre, label="Identifier"):
 
     kever = hby.kevers[pre]
     ser = kever.serder
-    dgkey = dbing.dgKey(ser.preb, ser.saidb)
-    wigs = hby.db.wigs.get(dgkey)
-    anchor = hby.db.aess.get(keys=dbing.dgKey(ser.preb, kever.lastEst.d))
-    wigs = hby.db.getWigs(dgkey)
+    wigs = hby.db.wigs.get(keys=(ser.preb, kever.lastEst.d))
     anchor = hby.db.aess.get(keys=(ser.preb, kever.lastEst.d))
 
     print("{}: {}".format(label, pre))
