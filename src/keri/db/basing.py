@@ -767,6 +767,30 @@ class Baser(dbing.LMDBer):
             Used by Kevery to track events that have at least one verified signature
             but cannot yet be fully validated due to missing signatures or dependent
             events. Values are stored in insertion order.
+        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
+            transferable‑validator receipt quadruples. 
+            Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
+            representing a validator’s transferable receipt, including the validator’s 
+            AID, its latest establishment‑event sequence number, digest, and its indexed 
+            signature over the event. Values are preserved in insertion order 
+            and represent fully validated receipts that have been moved out of escrow.
+            
+
+        .vres is a named subDB instance of CatCesrIoSetSuber that maps
+            an event’s (prefix, sequence number) snKey to a set of escrowed
+            transferable‑receipt quintuples. Each value is a typed CESR tuple
+            (Diger, Prefixer, Number, Diger, Siger) representing a validator’s
+            receipt escrow. Used by Kevery to hold
+            unverified transferable receipts until they can be validated and moved
+            into the verified‑receipt store. Values are stored in insertion order.
+
+
+        .pses is a named subDB instance of OnIoDupSuber stores partially‑signed
+            escrows under composite keys of the form "<pre><sep><on>", where pre
+            is the identifier prefix and on is the event’s sequence number.
+            Used by Kevery to track events that have at least one verified signature
+            but cannot yet be fully validated due to missing signatures or dependent
+            events. Values are stored in insertion order.
 
         .pwes is named sub DB of partially witnessed key event escrowes
             that each map pre + sequence number to serialized event digest.
