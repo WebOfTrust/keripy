@@ -69,7 +69,7 @@ def rollback(tymth, tock=0.0, **opts):
             hby.db.wits.rem(keys=(serder.preb, serder.saidb))
             hby.db.delWigs(dgkey)
             hby.db.delSigs(dgkey)  # idempotent
-            hby.db.delDts(dgkey)  # idempotent do not change dts if already
+            hby.db.dtss.rem(keys=dgkey)  # idempotent
             hby.db.delKes(dbing.snKey(serder.preb, serder.sn))
 
             seqner = coring.Number(num=serder.sn - 1)
