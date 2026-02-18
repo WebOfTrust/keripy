@@ -141,8 +141,8 @@ def test_partial_signed_escrow():
         assert pdtsb == adtsb
 
         # get first seen
-        fsdig = kvy.db.getFe(dbing.fnKey(pre, 0))
-        assert fsdig == srdr.saidb
+        fsdig = kvy.db.fels.getOn(keys=pre, on=0)
+        assert fsdig == srdr.saidb.decode("utf-8")
 
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
@@ -254,8 +254,8 @@ def test_partial_signed_escrow():
         assert pdtsb == adtsb
 
         # get first seen
-        fsdig = kvy.db.getFe(dbing.fnKey(pre, 1))
-        assert fsdig == srdr.saidb
+        fsdig = kvy.db.fels.getOn(keys=pre, on=1)
+        assert fsdig == srdr.saidb.decode("utf-8")
 
         # Create rotation event
         # get current keys as verfers and next digests as digers
@@ -346,8 +346,8 @@ def test_partial_signed_escrow():
         assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
         # get first seen
-        fsdig = kvy.db.getFe(dbing.fnKey(pre, 3))
-        assert fsdig == srdr.saidb
+        fsdig = kvy.db.fels.getOn(keys=pre, on=3)
+        assert fsdig == srdr.saidb.decode("utf-8")
 
     assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
@@ -514,8 +514,11 @@ def test_missing_delegator_escrow():
         bobDelK = bobKvy.kevers[delPre]  # delK in bobs kevery
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
-        assert couple == seqner.qb64b + bobSrdr.saidb
+        result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rseqner, rsaider = result
+        assert rseqner.qb64b == seqner.qb64b
+        assert rsaider.qb64b == bobSrdr.saidb
 
         # apply Del's inception msg to Del's Kevery
         # Because locallyOwned by delegate event does not validate delegation
@@ -524,7 +527,7 @@ def test_missing_delegator_escrow():
         assert delPre in delKvy.kevers
         delK = delKvy.kevers[delPre]
         # no AES entry for del's own delegated event when locallyOwned
-        assert not delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+        assert not delKvy.db.aess.get(keys=(delPre, delSrdr.said))
 
         # apply Del's delegated inception event message to wats's Kevery as remote
         # because the attachment includes valid source seal but wat does not
@@ -559,8 +562,11 @@ def test_missing_delegator_escrow():
         watDelK = watKvy.kevers[delPre]  # delK in wats kevery
         assert watDelK.delegated
         assert watDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        couple = watKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
-        assert couple == seqner.qb64b + bobSrdr.saidb
+        result = watKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rseqner, rsaider = result
+        assert rseqner.qb64b == seqner.qb64b
+        assert rsaider.qb64b == bobSrdr.saidb
 
 
         # Setup Del rotation event
@@ -628,21 +634,27 @@ def test_missing_delegator_escrow():
         psr.parse(ims=bytearray(delRotMsg), kvy=delKvy, local=True)
         assert delK.delegated
         assert delK.serder.said == delSrdr.said
-        assert not delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+        assert not delKvy.db.aess.get(keys=(delPre, delSrdr.said))
 
         # apply Del's delegated Rotation event message to bob's Kevery
         psr.parse(ims=bytearray(delRotMsg), kvy=bobKvy, local=True)
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
-        assert couple == seqner.qb64b + bobSrdr.saidb
+        result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rseqner, rsaider = result
+        assert rseqner.qb64b == seqner.qb64b
+        assert rsaider.qb64b == bobSrdr.saidb
 
         # apply Del's delegated Rotation event message to wats's Kevery
         psr.parse(ims=bytearray(delRotMsg), kvy=watKvy, local=True)
         assert watDelK.delegated
         assert watDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        couple = watKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
-        assert couple == seqner.qb64b + bobSrdr.saidb
+        result = watKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rseqner, rsaider = result
+        assert rseqner.qb64b == seqner.qb64b
+        assert rsaider.qb64b == bobSrdr.saidb
 
 
 

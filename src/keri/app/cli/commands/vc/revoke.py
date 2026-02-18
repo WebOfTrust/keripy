@@ -8,7 +8,7 @@ import argparse
 from hio.base import doing
 
 from keri import kering
-from keri.app import indirecting, habbing, grouping, forwarding, connecting, notifying
+from keri.app import indirecting, habbing, grouping, forwarding, organizing, notifying
 from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
 from keri.app.habbing import GroupHab
@@ -48,7 +48,7 @@ class RevokeDoer(doing.DoDoer):
         self.registryName = registryName
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.counselor = grouping.Counselor(hby=self.hby)

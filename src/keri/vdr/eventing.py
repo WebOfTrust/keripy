@@ -755,11 +755,10 @@ class Tever:
         self.noBackers = True if TraitDex.NoBackers in ked["c"] else False
         self.estOnly = True if TraitDex.EstOnly in ked["c"] else False
 
-        if (raw := self.reger.getTvt(key=dgKey(pre=self.prefixer.qb64,
-                                               dig=ked['d']))) is None:
+        if (raw := self.reger.tvts.get(keys=(self.prefixer.qb64, ked['d']))) is None:
             raise kering.MissingEntryError("Corresponding event for state={} not found."
                                            "".format(ked))
-        self.serder = serdering.SerderKERI(raw=bytes(raw))
+        self.serder = serdering.SerderKERI(raw=raw.encode("utf-8"))
 
     def state(self):  #state(self, kind=Serials.json)
         """ Returns RegStateRecord of state notice of given Registry Event Log
@@ -1115,12 +1114,11 @@ class Tever:
         vci = vcpre
 
         dig = self.reger.getTel(snKey(pre=vci, sn=sn - 1))
-        ievt = self.reger.getTvt(dgKey(pre=vci, dig=dig))
+        ievt = self.reger.tvts.get(keys=(vci, dig))
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
 
-        ievt = bytes(ievt)
-        iserder = serdering.SerderKERI(raw=ievt)
+        iserder = serdering.SerderKERI(raw=ievt.encode("utf-8"))
         if not iserder.compare(said=ked["p"]):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
                                   " = {} for evt = {}.".format(ked["p"],
@@ -1182,8 +1180,8 @@ class Tever:
         vcdig = bytes(digs[-1])
 
         dgkey = dbing.dgKey(vci, vcdig)  # get message
-        raw = self.reger.getTvt(key=dgkey)
-        serder = serdering.SerderKERI(raw=bytes(raw))
+        raw = self.reger.tvts.get(keys=dgkey)
+        serder = serdering.SerderKERI(raw=raw.encode("utf-8"))
 
         if self.noBackers:
             vcilk = Ilks.iss if len(digs) == 1 else Ilks.rev
@@ -1246,12 +1244,12 @@ class Tever:
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
         if bigers:
-            self.reger.putTibs(key, [biger.qb64b for biger in bigers])
+            self.reger.tibs.pin(keys=key, vals=bigers)
         if baks:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
-        self.reger.putTvt(key, serder.raw)
+        self.reger.tvts.put(keys=key, val=serder.raw)
         self.reger.putTel(snKey(pre, sn), dig)
         logger.info("Tever: Added to TEL valid %s event %s said=%s reg=%.8s iss=%.8s",
                     serder.ilk, pre.decode(), serder.said, self.regk, self.pre)
@@ -1340,13 +1338,8 @@ class Tever:
             dig = bytes(dig)
 
         # retrieve event by dig
-        raw = self.db.getEvt(key=dgKey(pre=self.pre, dig=dig))
-        if not raw:
+        if not (eserder := self.db.evts.get(keys=(self.pre, dig))):
             return False
-        else:
-            raw = bytes(raw)
-
-        eserder = serdering.SerderKERI(raw=raw)  # deserialize event raw
 
         if eserder.said != saider.qb64:
             return False
@@ -1379,8 +1372,9 @@ class Tever:
         dgkey = dgKey(serder.preb, serder.saidb)
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(dgkey, sealet)
-        self.reger.putTibs(dgkey, [biger.qb64b for biger in bigers])
-        self.reger.putTvt(dgkey, serder.raw)
+        if bigers:
+            self.reger.tibs.pin(keys=dgkey, vals=bigers)
+        self.reger.tvts.put(keys=dgkey, val=serder.raw)
         self.reger.putTwe(snKey(serder.preb, serder.sn), serder.saidb)
         logger.debug("Tever state: Escrowed partially witnessed "
                      "event = %s", serder.ked)
@@ -1404,11 +1398,11 @@ class Tever:
             sealet = seqner.qb64b + saider.qb64b
             self.reger.putAnc(key, sealet)
         if bigers:
-            self.reger.putTibs(key, [biger.qb64b for biger in bigers])
+            self.reger.tibs.pin(keys=key, vals=bigers)
         if baks:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
-        self.reger.putTvt(key, serder.raw)
+        self.reger.tvts.put(keys=key, val=serder.raw)
         logger.debug("Tever state: Escrowed anchorless event "
                      "event = %s", serder.ked)
         return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
@@ -1435,11 +1429,11 @@ class Tever:
 
         # load backer list and toad (via event) for specific event in registry from seal in event
         dgkey = dgKey(regi, regd)
-        revt = self.reger.getTvt(dgkey)
+        revt = self.reger.tvts.get(keys=dgkey)
         if revt is None:
             raise ValidationError("have to escrow this somewhere")
 
-        rserder = serdering.SerderKERI(raw=bytes(revt))
+        rserder = serdering.SerderKERI(raw=revt.encode("utf-8"))
         # the backer threshold at this event in mgmt TEL
         rtoad = rserder.ked["bt"]
 
@@ -1806,9 +1800,9 @@ class Tevery:
         tsaider = coring.Saider(qb64=rsr.d)
         ldig = bytes(ldig)
         # retrieve last event itself of signer given sdig
-        sraw = self.reger.getTvt(key=dgKey(pre=regk, dig=ldig))
+        sraw = self.reger.tvts.get(keys=(regk, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = serdering.SerderKERI(raw=bytes(sraw))
+        sserder = serdering.SerderKERI(raw=sraw.encode("utf-8"))
 
         if sserder.said != tsaider.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch keystate at sn = {} with db."
@@ -1946,9 +1940,9 @@ class Tevery:
         tsaider = coring.Saider(qb64=vsr.d)
         ldig = bytes(ldig)
         # retrieve last event itself of signer given sdig
-        sraw = self.reger.getTvt(key=dgKey(pre=vci, dig=ldig))
+        sraw = self.reger.tvts.get(keys=(vci, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = serdering.SerderKERI(raw=bytes(sraw))
+        sserder = serdering.SerderKERI(raw=sraw.encode("utf-8"))
 
         if sn < sserder.sn:
             raise ValidationError("Stale txn state at sn = {} with db."
@@ -2001,7 +1995,7 @@ class Tevery:
 
         """
         key = dgKey(serder.preb, serder.saidb)
-        self.reger.putTvt(key, serder.raw)
+        self.reger.tvts.put(keys=key, val=serder.raw)
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
         self.reger.putOot(snKey(serder.preb, serder.sn), serder.saidb)
@@ -2047,18 +2041,16 @@ class Tevery:
                 #sn = int(snb, 16)
                 pre, sn = splitSnKey(key)
                 dgkey = dgKey(pre, digb)
-                traw = self.reger.getTvt(dgkey)
+                traw = self.reger.tvts.get(keys=dgkey)
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
                     msg = f"OOO Missing escrowed event at dig = {bytes(digb).decode()}"
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
-                tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
+                tserder = serdering.SerderKERI(raw=traw.encode("utf-8"))  # escrowed event
 
-                bigers = None
-                if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
+                bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:
@@ -2110,18 +2102,16 @@ class Tevery:
             #sn = int(snb, 16)
             try:
                 dgkey = dgKey(pre, digb)
-                traw = self.reger.getTvt(dgkey)
+                traw = self.reger.tvts.get(keys=dgkey)
                 if traw is None:
                     # no event so raise ValidationError which unescrows below
                     msg = f"ANC Missing escrowed event at dig = {bytes(digb).decode()}"
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
-                tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
+                tserder = serdering.SerderKERI(raw=traw.encode("utf-8"))  # escrowed event
 
-                bigers = None
-                if tibs := self.reger.getTibs(key=dgkey):
-                    bigers = [indexing.Siger(qb64b=tib) for tib in tibs]
+                bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
                 couple = self.reger.getAnc(dgkey)
                 if couple is None:

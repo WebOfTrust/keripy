@@ -12,7 +12,7 @@ from hio.base import doing
 from hio.help import Hict
 
 from keri import help
-from keri.app import httping, connecting
+from keri.app import httping, organizing
 from keri.app.agenting import httpClient
 from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
@@ -53,7 +53,7 @@ class AuthDoer(doing.DoDoer):
     def __init__(self, name, alias, base, bran, witness, urlOnly):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.org = connecting.Organizer(hby=self.hby)
+        self.org = organizing.Organizer(hby=self.hby)
         self.urlOnly = urlOnly
 
         if witness in self.hby.kevers:

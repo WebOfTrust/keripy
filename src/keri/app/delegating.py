@@ -82,23 +82,23 @@ class Anchorer(doing.DoDoer):
         self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn, auths=self.auths))
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
-    def complete(self, prefixer, seqner, saider=None):
+    def complete(self, prefixer, seqner, diger=None):
         """ Check for completed delegation for the specific delegation event
 
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
             seqner (Seqner): sequence number of event to check
-            saider (Saider): optional digest of event to verify
+            diger (Diger): optional digest of event to verify
 
         Returns:
             bool: True if delegation protocol is complete, False otherwise
         """
-        csaider = self.hby.db.cdel.get(keys=(prefixer.qb64, seqner.qb64))
-        if not csaider:
+        cdiger = self.hby.db.cdel.get(keys=(prefixer.qb64, seqner.qb64))
+        if not cdiger:
             return False
         else:
-            if saider and (csaider.qb64 != saider.qb64):
-                raise kering.ValidationError(f"invalid delegation protocol escrowed event {csaider.qb64}-{saider.qb64}")
+            if diger and (cdiger.qb64 != diger.qb64):
+                raise kering.ValidationError(f"invalid delegation protocol escrowed event {cdiger.qb64}-{diger.qb64}")
 
         return True
 
@@ -144,10 +144,10 @@ class Anchorer(doing.DoDoer):
 
             seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
             if dserder := self.hby.db.fetchLastSealingEventByEventSeal(dkever.prefixer.qb64, seal=seal):
-                seqner = coring.Seqner(sn=dserder.sn)
-                couple = seqner.qb64b + dserder.saidb
-                dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
-                self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                sner = coring.Number(num=dserder.sn, code=coring.NumDex.Huge)
+                saider = coring.Saider(qb64b=dserder.saidb)
+                self.hby.db.aess.pin(keys=(kever.prefixer.qb64b, kever.serder.saidb),
+                                     val=(sner, saider))  # authorizer event seal (delegator/issuer)
 
                 # Move to escrow waiting for witness receipts
                 logger.info(f"Delegation approval received, {serder.pre} confirmed, publishing to my witnesses")
@@ -232,7 +232,7 @@ class Anchorer(doing.DoDoer):
             del self.publishers[pre]
 
             self.hby.db.dpub.rem(keys=(pre, said))
-            self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Saider(qb64=serder.said))
+            self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Diger(qb64=serder.said))
 
     def publishDelegator(self, pre):
         """Publish the delegation event to my witnesses."""

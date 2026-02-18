@@ -57,11 +57,14 @@ def test_anchorer(seeder):
 
         palHab = palHby.habByName("pal")
         delHab = delHby.habByName("del")
-        # Get the key of the seal we will create when delegation is anchored
-        dgkey = dbing.dgKey(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)
         # Get the value of the seal created when delegation is anchored
-        couple = coring.Seqner(sn=palHab.kever.sn).qb64b + palHab.kever.serder.saidb
-        assert bytes(delHby.db.getAes(dgkey)) == couple
+        seqner = coring.Seqner(sn=palHab.kever.sn)
+        saider = coring.Saider(qb64b=palHab.kever.serder.saidb)
+        couple = seqner.qb64b + saider.qb64b
+        result = delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb))
+        assert result is not None
+        rseqner, rsaider = result
+        assert rseqner.qb64b + rsaider.qb64b == couple
 
 
 def anchorer_test_do(tymth=None, tock=0.0, **opts):
@@ -105,8 +108,6 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
         yield tock
     witDoer.cues.popleft()
 
-    # Get the key of the seal we will create when delegation is anchored
-    dgkey = dbing.dgKey(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)
     # Get the value of the seal created when delegation is anchored
     couple = coring.Seqner(sn=palHab.kever.sn).qb64b + palHab.kever.serder.saidb
 
@@ -115,7 +116,14 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
-    while delHby.db.getAes(dgkey) != couple:
+    seqner = coring.Seqner(sn=palHab.kever.sn)
+    saider = coring.Saider(qb64b=palHab.kever.serder.saidb)
+    couple = seqner.qb64b + saider.qb64b
+
+    while result := delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)):
+        rseqner, rsaider = result
+        if rseqner.qb64b + rsaider.qb64b == couple:
+            break
         yield tock
 
 

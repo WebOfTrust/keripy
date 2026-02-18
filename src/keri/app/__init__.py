@@ -5,3 +5,5 @@ KERI
 keri.app package
 
 """
+
+from .organizing import Organizer, IdentifierOrganizer

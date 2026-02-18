@@ -197,10 +197,10 @@ class Counselor(doing.DoDoer):
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
                 if serder := self.hby.db.fetchLastSealingEventByEventSeal(kever.delpre,
                                                                           seal=anchor):
-                    aseq = coring.Seqner(sn=serder.sn)
-                    couple = aseq.qb64b + serder.saidb
-                    dgkey = dbing.dgKey(pre, saider.qb64b)
-                    self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                    sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
+                    asaider = coring.Saider(qb64b=serder.saidb)
+                    self.hby.db.aess.pin(keys=(pre, saider.qb64b),
+                                         val=(sner, asaider))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 
@@ -534,14 +534,13 @@ def getEscrowedEvent(db, pre, sn):
 
     dig = bytes(dig)
     key = dbing.dgKey(pre, dig)  # digest key
-    msg = db.getEvt(key)
-    serder = serdering.SerderKERI(raw=bytes(msg))
+    serder = db.evts.get(keys=(pre, dig))
 
     sigs = []
     for sig in db.getSigsIter(key):
         sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-    couple = db.getAes(key)
+    duple = db.aess.get(keys=(pre, dig))
 
     msg = bytearray()
     msg.extend(serder.raw)
@@ -550,10 +549,11 @@ def getEscrowedEvent(db, pre, sn):
     for sig in sigs:
         msg.extend(sig.qb64b)  # attach sig
 
-    if couple is not None:
+    if duple is not None:
+        seqner, saider = duple
         msg.extend(core.Counter(core.Codens.SealSourceCouples,
                                 count=1, version=kering.Vrsn_1_0).qb64b)
-        msg.extend(couple)
+        msg.extend(seqner.qb64b + saider.qb64b)
 
     return msg
 

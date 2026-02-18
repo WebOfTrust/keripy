@@ -10,7 +10,7 @@ import sys
 from hio.base import doing
 
 from keri import help
-from keri.app import connecting
+from keri.app import organizing
 from keri.app.cli.common import existing
 from keri.app.cli.common.parsing import Parsery
 from keri.kering import ConfigurationError
@@ -44,7 +44,7 @@ def replace(tymth, tock=0.0, **opts):
 
     try:
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            org = connecting.Organizer(hby=hby)
+            org = organizing.Organizer(hby=hby)
 
             if prefix not in hby.kevers:
                 print(f"{prefix} is not a known identifier, oobi must be resolved first")

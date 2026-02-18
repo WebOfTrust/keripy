@@ -47,7 +47,7 @@ def test_baser():
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
-    assert isinstance(baser.evts, lmdb._Database)
+    assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, lmdb._Database)
     assert isinstance(baser.rcts, lmdb._Database)
@@ -55,8 +55,8 @@ def test_baser():
     assert isinstance(baser.kels, lmdb._Database)
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
-    assert isinstance(baser.dels, lmdb._Database)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.dels, subing.OnIoDupSuber)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -78,7 +78,7 @@ def test_baser():
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
-    assert isinstance(baser.evts, lmdb._Database)
+    assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, lmdb._Database)
     assert isinstance(baser.rcts, lmdb._Database)
@@ -86,8 +86,8 @@ def test_baser():
     assert isinstance(baser.kels, lmdb._Database)
     assert isinstance(baser.ooes, lmdb._Database)
     assert isinstance(baser.pses, lmdb._Database)
-    assert isinstance(baser.dels, lmdb._Database)
-    assert isinstance(baser.ldes, lmdb._Database)
+    assert isinstance(baser.dels, subing.OnIoDupSuber)
+    assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -106,7 +106,7 @@ def test_baser():
         assert baser.env.path() == baser.path
         assert os.path.exists(baser.path)
 
-        assert isinstance(baser.evts, lmdb._Database)
+        assert isinstance(baser.evts, subing.SerderSuber)
         assert isinstance(baser.sigs, lmdb._Database)
         assert isinstance(baser.dtss, lmdb._Database)
         assert isinstance(baser.rcts, lmdb._Database)
@@ -114,8 +114,8 @@ def test_baser():
         assert isinstance(baser.kels, lmdb._Database)
         assert isinstance(baser.ooes, lmdb._Database)
         assert isinstance(baser.pses, lmdb._Database)
-        assert isinstance(baser.dels, lmdb._Database)
-        assert isinstance(baser.ldes, lmdb._Database)
+        assert isinstance(baser.dels, subing.OnIoDupSuber)
+        assert isinstance(baser.ldes, subing.OnIoDupSuber)
 
 
     assert not os.path.exists(baser.path)
@@ -123,17 +123,18 @@ def test_baser():
     preb = 'DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
-    vs = versify(kind=Kinds.json, size=20)
-    assert vs == 'KERI10JSON000014_'
-
-    ked = dict(vs=vs, pre=preb.decode("utf-8"),
-               sn="{:x}".format(sn),
-               ilk="rot",
-               dig=digb.decode("utf-8"))
+    # Build minimal rot event (KERI field names: i, s, d, p, t, etc.)
+    ked = dict(v=versify(kind=Kinds.json, size=0), t="rot", d=digb.decode("utf-8"),
+               i=preb.decode("utf-8"), s="{:x}".format(sn), p=preb.decode("utf-8"),
+               kt="0", k=[], nt="0", n=[], bt="0", br=[], ba=[], a=[])
     skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                     b'c","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"'
-                     b'}')
+    while True:
+        ked["v"] = versify(kind=Kinds.json, size=len(skedb))
+        next_skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        if len(next_skedb) == len(skedb):
+            skedb = next_skedb
+            break
+        skedb = next_skedb
 
     sig0b = 'ABz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
     sig1b = 'AA_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
@@ -154,16 +155,17 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        #  test .evts sub db methods
-        assert db.getEvt(key) == None
-        assert db.delEvt(key) == False
-        assert db.putEvt(key, val=skedb) == True
-        assert db.getEvt(key) == skedb
-        assert db.putEvt(key, val=skedb) == False
-        assert db.setEvt(key, val=skedb) == True
-        assert db.getEvt(key) == skedb
-        assert db.delEvt(key) == True
-        assert db.getEvt(key) == None
+        #  test .evts sub db methods (verify=False for minimal test event)
+        sked = serdering.SerderKERI(raw=skedb, verify=False)
+        assert db.evts.get(keys=(preb, digb)) is None
+        assert db.evts.rem(keys=(preb, digb)) is False
+        assert db.evts.put(keys=(preb, digb), val=sked) is True
+        assert db.evts.get(keys=(preb, digb)).raw == skedb
+        assert db.evts.put(keys=(preb, digb), val=sked) is False
+        assert db.evts.pin(keys=(preb, digb), val=sked) is True
+        assert db.evts.get(keys=(preb, digb)).raw == skedb
+        assert db.evts.rem(keys=(preb, digb)) is True
+        assert db.evts.get(keys=(preb, digb)) is None
 
         # test eventsourcerecords .srcs
         record = basing.EventSourceRecord()
@@ -188,16 +190,6 @@ def test_baser():
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
         preC = b'EIDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
-        keyA0 = onKey(preA, 0)
-
-        keyB0 = onKey(preB, 0)
-        keyB1 = onKey(preB, 1)
-        keyB2 = onKey(preB, 2)
-        keyB3 = onKey(preB, 3)
-        keyB4 = onKey(preB, 4)
-
-        keyC0 = onKey(preC, 0)
-
         digA = b'EA73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
         digU = b'EB73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
         digV = b'EC4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
@@ -207,89 +199,102 @@ def test_baser():
 
         digC = b'EG5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
 
-        assert db.getFe(keyA0) == None
-        assert db.delFe(keyA0) == False
-        assert db.putFe(keyA0, val=digA) == True
-        assert db.getFe(keyA0) == digA
-        assert db.putFe(keyA0, val=digA) == False
-        assert db.setFe(keyA0, val=digA) == True
-        assert db.getFe(keyA0) == digA
-        assert db.delFe(keyA0) == True
-        assert db.getFe(keyA0) == None
+        assert db.fels.getOn(keys=preA, on=0) is None
+        assert db.fels.remOn(keys=preA, on=0) == False
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        assert db.fels.getOn(keys=preA, on=0) == digA.decode("utf-8")
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == False
+        assert db.fels.pinOn(keys=preA, on=0, val=digA) == True
+        assert db.fels.getOn(keys=preA, on=0) == digA.decode("utf-8")
+        assert db.fels.remOn(keys=preA, on=0) == True
+        assert db.fels.getOn(keys=preA, on=0) is None
 
-        #  test appendFe
+        # test appendOn
         # empty database
-        assert db.getFe(keyB0) == None
-        on = db.appendFe(preB, digU)
+        assert db.fels.getOn(keys=preB, on=0) is None
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
-        assert db.delFe(keyB0) == True
-        assert db.getFe(keyB0) == None
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
+        assert db.fels.remOn(keys=preB, on=0) == True
+        assert db.fels.getOn(keys=preB, on=0) is None
 
         # earlier pre in database only
-        assert db.putFe(keyA0, val=digA) == True
-        on = db.appendFe(preB, digU)
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
-        assert db.delFe(keyB0) == True
-        assert db.getFe(keyB0) == None
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
+        assert db.fels.remOn(keys=preB, on=0) == True
+        assert db.fels.getOn(keys=preB, on=0) is None
 
         # earlier and later pre in db but not same pre
-        assert db.getFe(keyA0) == digA
-        assert db.putFe(keyC0, val=digC) == True
-        on = db.appendFe(preB, digU)
+        assert db.fels.getOn(keys=preA, on=0) == digA.decode("utf-8")
+        assert db.fels.putOn(keys=preC, on=0, val=digC) == True
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
-        assert db.delFe(keyB0) == True
-        assert db.getFe(keyB0) == None
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
+        assert db.fels.remOn(keys=preB, on=0) == True
+        assert db.fels.getOn(keys=preB, on=0) is None
 
         # later pre only
-        assert db.delFe(keyA0) == True
-        assert db.getFe(keyA0) == None
-        assert db.getFe(keyC0) == digC
-        on = db.appendFe(preB, digU)
+        assert db.fels.remOn(keys=preA, on=0) == True
+        assert db.fels.getOn(keys=preA, on=0) is None
+        assert db.fels.getOn(keys=preC, on=0) == digC.decode("utf-8")
+        on = db.fels.appendOn(keys=preB, val=digU)
         assert on == 0
-        assert db.getFe(keyB0) == digU
+        assert db.fels.getOn(keys=preB, on=0) == digU.decode("utf-8")
 
         # earlier pre and later pre and earlier entry for same pre
-        assert db.putFe(keyA0, val=digA) == True
-        on = db.appendFe(preB, digV)
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        on = db.fels.appendOn(keys=preB, val=digV)
         assert on == 1
-        assert db.getFe(keyB1) == digV
+        assert db.fels.getOn(keys=preB, on=1) == digV.decode("utf-8")
 
         # earlier entry for same pre but only same pre
-        assert db.delFe(keyA0) == True
-        assert db.getFe(keyA0) == None
-        assert db.delFe(keyC0) == True
-        assert db.getFe(keyC0) == None
+        assert db.fels.remOn(keys=preA, on=0) == True
+        assert db.fels.getOn(keys=preA, on=0) is None
+        assert db.fels.remOn(keys=preC, on=0) == True
+        assert db.fels.getOn(keys=preC, on=0) is None
         # another value for preB
-        on = db.appendFe(preB, digW)
+        on = db.fels.appendOn(keys=preB, val=digW)
         assert on == 2
-        assert db.getFe(keyB2) == digW
+        assert db.fels.getOn(keys=preB, on=2) == digW.decode("utf-8")
         # yet another value for preB
-        on = db.appendFe(preB, digX)
+        on = db.fels.appendOn(keys=preB, val=digX)
         assert on == 3
-        assert db.getFe(keyB3) == digX
+        assert db.fels.getOn(keys=preB, on=3) == digX.decode("utf-8")
         # yet another value for preB
-        on = db.appendFe(preB, digY )
+        on = db.fels.appendOn(keys=preB, val=digY)
         assert on == 4
-        assert db.getFe(keyB4) == digY
+        assert db.fels.getOn(keys=preB, on=4) == digY.decode("utf-8")
 
         # replay preB events in database
-        items = [item for item in db.getFelItemPreIter(preB)]
-        assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW), (preB, 3, digX), (preB, 4, digY)]
+        _pre = lambda k: k[0].encode() if isinstance(k[0], str) else k[0]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB)]
+        assert items == [(preB, 0, digU.decode("utf-8")), (preB, 1, digV.decode("utf-8")), (preB, 2, digW.decode("utf-8")), (preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 3
-        items = [item for item in db.getFelItemPreIter(preB, fn=3)]
-        assert items == [(preB, 3, digX), (preB, 4, digY)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB, on=3)]
+        assert items == [(preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 5
-        items = [item for item in db.getFelItemPreIter(preB, fn=5)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
-        assert db.putFe(keyA0, val=digA) == True
-        assert db.putFe(keyC0, val=digC) == True
+        assert db.fels.putOn(keys=preA, on=0, val=digA) == True
+        assert db.fels.putOn(keys=preC, on=0, val=digC) == True
+
+        # replay all pres in first-seen order (keys=b'', on=0)
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=b'', on=0)]
+        assert items == [
+            (preA, 0, digA.decode("utf-8")),
+            (preB, 0, digU.decode("utf-8")),
+            (preB, 1, digV.decode("utf-8")),
+            (preB, 2, digW.decode("utf-8")),
+            (preB, 3, digX.decode("utf-8")),
+            (preB, 4, digY.decode("utf-8")),
+            (preC, 0, digC.decode("utf-8")),
+        ]
 
         # Test .dtss datetime stamps
         key = dgKey(preb, digb)
@@ -311,27 +316,40 @@ def test_baser():
         assert db.getDts(key) == None
 
         # Test .aess authorizing event source seal couples
-        key = dgKey(preb, digb)
-        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
-
         # test .aess sub db methods
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
-        val1 = ssnu1 + sdig1
-        val2 = ssnu2 + sdig2
+        number1 = coring.Number(qb64b=ssnu1)
+        saider1 = coring.Saider(qb64b=sdig1)
+        number2 = coring.Number(qb64b=ssnu2)
+        saider2 = coring.Saider(qb64b=sdig2)
+        val1 = (number1, saider1)
+        val2 = (number2, saider2)
 
-        assert db.getAes(key) == None
-        assert db.delAes(key) == False
-        assert db.putAes(key, val1) == True
-        assert db.getAes(key) == val1
-        assert db.putAes(key, val2) == False
-        assert db.getAes(key) == val1
-        assert db.setAes(key, val2) == True
-        assert db.getAes(key) == val2
-        assert db.delAes(key) == True
-        assert db.getAes(key) == None
+        assert db.aess.get(keys=(preb, digb)) == None
+        assert db.aess.rem(keys=(preb, digb)) == False
+        assert db.aess.put(keys=(preb, digb), val=val1) == True
+        result = db.aess.get(keys=(preb, digb))
+        assert result is not None
+        rnumber1, rsaider1 = result
+        assert rnumber1.qb64b == number1.qb64b
+        assert rsaider1.qb64b == saider1.qb64b
+        assert db.aess.put(keys=(preb, digb), val=val2) == False
+        result = db.aess.get(keys=(preb, digb))
+        assert result is not None
+        rnumber1, rsaider1 = result
+        assert rnumber1.qb64b == number1.qb64b
+        assert rsaider1.qb64b == saider1.qb64b
+        assert db.aess.pin(keys=(preb, digb), val=val2) == True
+        result = db.aess.get(keys=(preb, digb))
+        assert result is not None
+        rnumber2, rsaider2 = result
+        assert rnumber2.qb64b == number2.qb64b
+        assert rsaider2.qb64b == saider2.qb64b
+        assert db.aess.rem(keys=(preb, digb)) == True
+        assert db.aess.get(keys=(preb, digb)) == None
 
         # test .sigs sub db methods
         key = dgKey(preb, digb)
@@ -1148,108 +1166,132 @@ def test_baser():
             assert db.delOoe(ikey, val) == True
 
         # test .dels insertion order dup methods.  dup vals are insertion order
-        key = b'A'
-        vals = [b"z", b"m", b"x", b"a"]
+        keys = b'A'
+        on = 0
+        vals = ["z", "m", "x", "a"]
 
-        assert db.getDes(key) == []
-        assert db.getDeLast(key) == None
-        assert db.cntDes(key) == 0
-        assert db.delDes(key) == False
-        assert db.putDes(key, vals) == True
-        assert db.getDes(key) == vals  # preserved insertion order
-        assert db.cntDes(key) == len(vals) == 4
-        assert db.getDeLast(key) == vals[-1]
-        assert db.putDes(key, vals=[b'a']) == False   # duplicate
-        assert db.getDes(key) == vals  #  no change
-        assert db.addDe(key, b'a') == False   # duplicate
-        assert db.addDe(key, b'b') == True
-        assert db.getDes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delDes(key) == True
-        assert db.getDes(key) == []
+        assert db.dels.getOn(keys=keys, on=on) == []
+        result = db.dels.getOn(keys=keys, on=on)
+        assert (result[-1] if result else None) == None
+        assert len(db.dels.getOn(keys=keys, on=on)) == 0
+        assert db.dels.remOn(keys=keys, on=on) == False
+        for val in vals:
+            db.dels.addOn(keys=keys, on=on, val=val)
+        assert db.dels.getOn(keys=keys, on=on) == vals  # preserved insertion order
+        assert len(db.dels.getOn(keys=keys, on=on)) == len(vals) == 4
+        result = db.dels.getOn(keys=keys, on=on)
+        assert result[-1] == vals[-1]
+        assert db.dels.addOn(keys=keys, on=on, val='a') == False   # duplicate
+        assert db.dels.getOn(keys=keys, on=on) == vals  #  no change
+        assert db.dels.addOn(keys=keys, on=on, val='a') == False   # duplicate
+        assert db.dels.addOn(keys=keys, on=on, val='b') == True
+        assert db.dels.getOn(keys=keys, on=on) == ["z", "m", "x", "a", "b"]
+        assert db.dels.remOn(keys=keys, on=on) == True
+        assert db.dels.getOn(keys=keys, on=on) == []
 
         # test .ldes insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert db.getLdes(key) == []
-        assert db.getLdeLast(key) == None
-        assert db.cntLdes(key) == 0
-        assert db.delLdes(key) == False
-        assert db.putLdes(key, vals) == True
-        assert db.getLdes(key) == vals  # preserved insertion order
-        assert db.cntLdes(key) == len(vals) == 4
-        assert db.getLdeLast(key) == vals[-1]
-        assert db.putLdes(key, vals=[b'a']) == False   # duplicate
-        assert db.getLdes(key) == vals  #  no change
-        assert db.delLdes(key) == True
-        assert db.getLdes(key) == []
+        assert db.ldes.get(keys=key) == []
+        assert db.ldes.getLast(keys=key) == None
+        assert db.ldes.cnt(keys=key) == 0
+        assert db.ldes.rem(keys=key) == False
+        # put is not fully compatible with putLdes because putLdes took list of vals
+        # and IoDupSuber.put takes iterable of vals.
+        assert db.ldes.put(keys=key, vals=vals) == True
+        # OnIoDupSuber decodes bytes to utf-8 strings
+        assert db.ldes.get(keys=key) == [v.decode("utf-8") for v in vals]
+        assert db.ldes.cnt(keys=key) == len(vals) == 4
+        assert db.ldes.getLast(keys=key) == vals[-1].decode("utf-8")
+        assert db.ldes.put(keys=key, vals=[b'a']) == False   # duplicate
+        assert db.ldes.get(keys=key) == [v.decode("utf-8") for v in vals] #  no change
+        assert db.ldes.rem(keys=key) == True
+        assert db.ldes.get(keys=key) == []
 
-        # Setup Tests for getLdeItemsNext and getLdeItemsNextIter
-        aKey = snKey(pre=b'A', sn=1)
+        # Setup Tests for getOnItemIter with proper OnIoDupSuber API
+        # Use addOn with explicit ordinal instead of snKey
         aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
         bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
         cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
         dVals = [b"k", b"b"]
 
-        assert db.putLdes(key=aKey, vals=aVals)
-        assert db.putLdes(key=bKey, vals=bVals)
-        assert db.putLdes(key=cKey, vals=cVals)
-        assert db.putLdes(key=dKey, vals=dVals)
+        for val in aVals:
+            assert db.ldes.addOn(keys=b'A', on=1, val=val) == True
+        for val in bVals:
+            assert db.ldes.addOn(keys=b'A', on=2, val=val) == True
+        for val in cVals:
+            assert db.ldes.addOn(keys=b'A', on=4, val=val) == True
+        for val in dVals:
+            assert db.ldes.addOn(keys=b'A', on=7, val=val) == True
 
-
-        # Test getLdeItemsNextIter(key=b"")
-        #  get dups at first key in database
-        # aVals
-        items = [item for item in db.getLdeItemIter()]
+        # Test getOnItemIterAll - iterate all items for prefix b'A'
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A')]
         assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals ==  aVals + bVals + cVals + dVals
+        # item is (keys, on, val)
+        vals = [val for pre, sn, val in items]
+        allVals = aVals + bVals + cVals + dVals
+        assert vals == [v.decode("utf-8") for v in allVals]
 
-        items = [item for item in db.getLdeItemIter(key=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        # Iterate starting from specific ordinal (sn=1)
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=1)]
+        assert items
+        pre, sn, val = items[0]
+        assert sn == 1
+        assert val == aVals[0].decode("utf-8")
 
-        # bVals
-        items = [item for item in db.getLdeItemIter(key=bKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        # Verify vals at sn=1
+        vals = [val for p, s, val in items if s == 1]
+        assert vals == [v.decode("utf-8") for v in aVals]
 
-        # cVals
-        items = [item for item in db.getLdeItemIter(key=cKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        # bVals at sn=2
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=2)]
+        vals = [val for p, s, val in items if s == 2]
+        assert vals == [v.decode("utf-8") for v in bVals]
+        # Remove bVals using remOn
+        for p, s, val in items:
+            if s == 2:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
-        # dVals
-        items = [item for item in db.getLdeItemIter(key=dKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.delLde(ikey, val) == True
+        # cVals at sn=4
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=4)]
+        vals = [val for p, s, val in items if s == 4]
+        assert vals == [v.decode("utf-8") for v in cVals]
+        for p, s, val in items:
+            if s == 4:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
+
+        # dVals at sn=7
+        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=7)]
+        vals = [val for p, s, val in items if s == 7]
+        assert vals == [v.decode("utf-8") for v in dVals]
+        for p, s, val in items:
+            if s == 7:
+                assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
+
 
     assert not os.path.exists(db.path)
 
     """ End Test """
+
+
+def test_baser_clone_all_pre_iter():
+    """
+    Test cloneAllPreIter yields first-seen event messages for all identifier
+    prefixes in the database (fels getOnItemIterAll(keys=b'', on=0) path).
+    """
+    with habbing.openHby(name="test", base="test", temp=True) as hby:
+        hab1 = hby.makeHab(name="alice", isith="1", icount=1)
+        hab2 = hby.makeHab(name="bob", isith="1", icount=1)
+        # Single shared db now has fels (and evts, sigs) for both identifiers
+        msgs = list(hby.db.cloneAllPreIter())
+        assert len(msgs) >= 2
+        pres = set()
+        for msg in msgs:
+            serder = serdering.SerderKERI(raw=bytes(msg))
+            pres.add(serder.pre)
+        assert hab1.pre in pres
+        assert hab2.pre in pres
 
 
 def test_clean_baser():
@@ -1287,7 +1329,7 @@ def test_clean_baser():
         assert natHab.kever.serder.said == natsaid
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
-        serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+        serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
         assert serder.said == natHab.kever.serder.said
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
@@ -1299,7 +1341,7 @@ def test_clean_baser():
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.saidb
-            serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] <= 96 #68
 
@@ -1321,8 +1363,8 @@ def test_clean_baser():
 
             assert fn == 7
             # verify garbage event in database
-            assert natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
-            assert natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+            assert natHab.db.evts.get(keys=(natHab.pre, badsrdr.said))
+            assert natHab.db.fels.getOn(keys=natHab.pre, on=7)
 
 
         # test openDB copy db with clean
@@ -1351,13 +1393,13 @@ def test_clean_baser():
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.saidb
-            serder = serdering.SerderKERI(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] >= 18
 
             # confirm bad event missing from database
-            assert not natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
-            assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+            assert not natHab.db.evts.get(keys=(natHab.pre, badsrdr.said))
+            assert not natHab.db.fels.getOn(keys=natHab.pre, on=7)
             state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
             assert state.s == '6'
             assert state.f == '6'
@@ -1460,22 +1502,21 @@ def test_fetchkeldel():
         assert key == (b'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw.'
                        b'00000000000000000000000000000001')
         vals0 = [skedb]
-        assert db.addDe(key, vals0[0]) == True
+        assert db.dels.addOn(keys=preb, on=sn, val=vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals1:
-            assert db.addDe(key, val) == True
+            assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 3  # skip make gap in SN
-        key = snKey(preb, sn)
         for val in vals2:
-            assert db.addDe(key, val) == True
+            assert db.dels.addOn(keys=preb, on=sn, val=val) == True
 
         allvals = vals0 + vals1 + vals2
-        vals = [bytes(val) for key, val in db.getDelItemIter(preb)]
+        vals = [(val.encode("utf-8") if isinstance(val, str) else bytes(val))
+            for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)
@@ -1739,9 +1780,8 @@ def test_dbdict():
                                eevt=eevt,
                                )
 
-        dgkey = eventing.dgKey(pre=pre, dig=serder.said)
-        db.putEvt(key=dgkey, val=serder.raw)
-        assert db.getEvt(key=dgkey) is not None
+        db.evts.put(keys=(pre, serder.said), val=serder)
+        assert db.evts.get(keys=(pre, serder.said)) is not None
 
         db.states.pin(keys=pre, val=state)  # put state in database
         dbstate = db.states.get(keys=pre)
@@ -1914,7 +1954,8 @@ def test_clear_escrows():
         db.putPses(key, vals)
         db.putPwes(key, vals)
         db.putOoes(key, vals)
-        db.putLdes(key, vals)
+        # putLdes was list based, db.ldes.put is iterable based
+        db.ldes.put(keys=key, vals=vals)
 
         pre = b'k'
         snh = b'snh'
@@ -1949,7 +1990,7 @@ def test_clear_escrows():
         assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is not None
 
         db.eoobi.pin(keys=('url',), val=OobiRecord())
-        assert db.eoobi.cntAll() == 1
+        assert db.eoobi.cnt() == 1
 
         serder = Serder(raw=b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG8WAmM29ZBdoXbnb87yiPxQw4Y7gcQjqZS74vBAKsRm","i":"DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","a":[]}')
         db.dpub.put(keys=(pre, 'said'), val=serder)
@@ -1981,11 +2022,11 @@ def test_clear_escrows():
         assert db.getPwes(key) == []
         assert db.uwes.get(key) == []
         assert db.getOoes(key) == []
-        assert db.getLdes(key) == []
+        assert db.ldes.get(keys=key) == []
         assert db.qnfs.cntAll() == 0
         assert db.pdes.cntAll() == 0
         assert db.rpes.cntAll() == 0
-        assert db.eoobi.cntAll() == 0
+        assert db.eoobi.cnt() == 0
         assert db.gpwe.cntAll() == 0
         assert db.gdee.cntAll() == 0
         assert db.dpwe.cntAll() == 0
