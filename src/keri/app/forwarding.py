@@ -536,9 +536,10 @@ def introduce(hab, wit):
     dgkey = dbing.dgKey(wit, iserder.said)
     found = False
     if witPrefixer.transferable:  # find if have rct from other pre for own icp
-        for quadruple in hab.db.getVrcsIter(dgkey):
-            if bytes(quadruple).decode("utf-8").startswith(hab.pre):
-                found = True  # yes so don't send own inception
+        for sprefixer, snum, sdiger, siger in hab.db.vrcs.getIter(dgkey):
+            # Receipt is from this hab if the prefix matches
+            if sprefixer.qb64 == hab.pre:
+                found = True
     else:  # find if already rcts of own icp
         for couple in hab.db.getRctsIter(dgkey):
             if bytes(couple).decode("utf-8").startswith(hab.pre):

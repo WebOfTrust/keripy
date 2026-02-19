@@ -267,8 +267,9 @@ class BaseRegistry:
             saider (Saider): SAID of the anchoring KEL event
         """
         key = dgKey(pre, regd)
-        sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(key, sealet)
+        number = coring.Number(num=seqner.sn)
+        diger = coring.Diger(qb64=saider.qb64)
+        self.reger.ancs.put(keys=key, val=(number, diger))
 
 
 class Registry(BaseRegistry):
@@ -378,7 +379,7 @@ class Registry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential revocation event
         """
         vci = said
-        vcser = self.reger.getTel(snKey(pre=vci, sn=0))
+        vcser = self.reger.tels.get(keys=snKey(pre=vci, sn=0))
         if vcser is None:
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
@@ -477,7 +478,7 @@ class SignifyRegistry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential revocation event
         """
         vci = said
-        vcser = self.reger.getTel(snKey(pre=vci, sn=0))
+        vcser = self.reger.tels.get(keys=snKey(pre=vci, sn=0))
         if vcser is None:
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
@@ -771,8 +772,9 @@ class Registrar(doing.DoDoer):
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
-            sealet = seqner.qb64b + saider.qb64b
-            self.rgy.reger.putAnc(key, sealet)
+            number = coring.Number(num=seqner.sn)
+            diger = coring.Diger(qb64=saider.qb64)
+            self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
             self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
@@ -785,7 +787,7 @@ class Registrar(doing.DoDoer):
         """
         for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
             rseq = coring.Seqner(qb64=snq)
-            dig = self.rgy.reger.getTel(key=snKey(pre=regk, sn=rseq.sn))
+            dig = self.rgy.reger.tels.get(keys=snKey(pre=regk, sn=rseq.sn))
             if dig is None:
                 continue
 
