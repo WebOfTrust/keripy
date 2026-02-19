@@ -99,7 +99,7 @@ def migrate(db):
 
         for (said,), _ in rgy.saved.getItemIter():
             snkey = dbing.snKey(said, 0)
-            dig = rgy.getTel(key=snkey)
+            dig = rgy.tels.get(keys=snkey)
 
             prefixer = coring.Prefixer(qb64=said)
             seqner = coring.Seqner(sn=0)
@@ -137,11 +137,9 @@ def migrateKeys(db):
                                     klas=(coring.Prefixer, coring.Seqner))
 
     for pre, fn, dig in db.getFelItemAllPreIter():
-        dgkey = dbing.dgKey(pre, dig)  # get message
-        if not (raw := db.getEvt(key=dgkey)):
+        if (serder := db.evts.get(keys=(pre, dig))) is None:
             logger.info(f"Migrate keys: missing event for dig={dig}, skipped.")
             continue
-        serder = serdering.SerderKERI(raw=bytes(raw))
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
         verfers = serder.verfers or []
         for verfer in verfers:

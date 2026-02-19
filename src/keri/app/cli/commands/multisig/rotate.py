@@ -147,14 +147,11 @@ class GroupMultisigRotate(doing.DoDoer):
                     if mid not in self.hby.kevers:
                         raise kering.ConfigurationError(f"unknown signing member {mid}")
 
-                    dig = next(self.hby.db.kels.getOnLastIter(keys=mid, on=int(sn)), None)
+                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
                     if dig is None:
                         raise kering.ConfigurationError(f"non-existant event {sn} for signing member {mid}")
-
-                    dig = last.encode("utf-8")  # convert it from str to bytes because we're calling bytes(dig)
-                    evt = self.hby.db.getEvt(dbing.dgKey(mid, bytes(dig)))
-                    serder = serdering.SerderKERI(raw=bytes(evt))
-                    if not serder.estive:
+                    dig = dig.encode("utf-8")  # convert it from str to bytes because we're calling bytes(dig)
+                    if (serder := self.hby.db.evts.get(keys=(mid, bytes(dig)))) is None or not serder.estive:
                         raise kering.ConfigurationError(f"invalid event {sn} for signing member {mid}")
 
                     merfers.append(serder.verfers[0])
@@ -179,13 +176,11 @@ class GroupMultisigRotate(doing.DoDoer):
                     if mid not in self.hby.kevers:
                         raise kering.ConfigurationError(f"unknown rotation member {mid}")
 
-                    dig = next(self.hby.db.kels.getOnLastIter(keys=mid, on=int(sn)), None)
+                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
                     if dig is None:
                         raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
                     dig = dig.encode("utf-8")
-                    evt = self.hby.db.getEvt(dbing.dgKey(mid, bytes(dig)))
-                    serder = serdering.SerderKERI(raw=bytes(evt))
-                    if not serder.estive:
+                    if (serder := self.hby.db.evts.get(keys=dbing.dgKey(mid, bytes(dig)))) is None or not serder.estive:
                         raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
 
                     migers.append(serder.ndigers[0])

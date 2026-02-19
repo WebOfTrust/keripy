@@ -130,9 +130,9 @@ class Counselor(doing.DoDoer):
 
         """
         for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
-            last = next(self.hby.db.kels.getOnLastIter(keys=pre, on=seqner.sn), None)
-            if last:
-                sdig = last.encode("utf-8")
+            sdig = self.hby.db.kels.getOnLast(keys=pre, on=seqner.sn)
+            if sdig:
+                sdig = sdig.encode("utf-8")
                 self.hby.db.gpse.rem(keys=(pre,))
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
@@ -199,7 +199,7 @@ class Counselor(doing.DoDoer):
                                                                           seal=anchor):
                     sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
                     asaider = coring.Saider(qb64b=serder.saidb)
-                    self.hby.db.aess.pin(keys=dbing.dgKey(pre, saider.qb64b),
+                    self.hby.db.aess.pin(keys=(pre, saider.qb64b),
                                          val=(sner, asaider))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
@@ -527,20 +527,19 @@ def multisigExn(ghab, exn):
 
 
 def getEscrowedEvent(db, pre, sn):
-    key = snKey(pre, sn)
-    dig = db.getPseLast(key)
+    vals = db.pses.getOnLast(keys=pre, on=sn)
+    dig = vals if vals else None
     if dig is None:
-        last = next(db.kels.getOnLastIter(keys=pre, on=sn))
-        dig = last.encode("utf-8")
+        dig = db.kels.getOnLast(keys=pre, on=sn)
+    dig = dig.encode("utf-8")
     key = dbing.dgKey(pre, dig)  # digest key
-    msg = db.getEvt(key)
-    serder = serdering.SerderKERI(raw=bytes(msg))
+    serder = db.evts.get(keys=(pre, dig))
 
     sigs = []
     for sig in db.getSigsIter(key):
         sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-    duple = db.aess.get(keys=key)
+    duple = db.aess.get(keys=(pre, dig))
 
     msg = bytearray()
     msg.extend(serder.raw)

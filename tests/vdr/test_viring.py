@@ -11,7 +11,9 @@ import tempfile
 
 import lmdb
 
-from keri.core.coring import Diger, versify, Kinds
+from keri.core import indexing
+from keri.core.coring import Diger, Number, Saider, Seqner, versify, Kinds
+from keri.db import subing
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger
 
@@ -31,7 +33,7 @@ def test_issuer():
     assert issuer.env.path() == issuer.path
     assert os.path.exists(issuer.path)
 
-    assert isinstance(issuer.tvts, lmdb._Database)
+    assert isinstance(issuer.tvts, subing.Suber)
 
     issuer.close(clear=True)
     assert not os.path.exists(issuer.path)
@@ -58,7 +60,7 @@ def test_issuer():
     assert not os.path.exists(issuer.path)
     assert not issuer.opened
 
-    assert isinstance(issuer.tvts, lmdb._Database)
+    assert isinstance(issuer.tvts, subing.Suber)
 
     with openLMDB(cls=Reger) as issuer:
         assert isinstance(issuer, Reger)
@@ -70,7 +72,7 @@ def test_issuer():
         assert issuer.env.path() == issuer.path
         assert os.path.exists(issuer.path)
 
-        assert isinstance(issuer.tvts, lmdb._Database)
+        assert isinstance(issuer.tvts, subing.Suber)
 
     assert not os.path.exists(issuer.path)
 
@@ -94,59 +96,58 @@ def test_issuer():
     with openLMDB(cls=Reger) as issuer:
         key = dgKey(regk, vdig.qb64b)
 
-        assert issuer.getTvt(key) is None
-        assert issuer.delTvt(key) is False
-        assert issuer.putTvt(key, val=vcpb) is True
-        assert issuer.getTvt(key) == vcpb
-        assert issuer.putTvt(key, val=vcpb) is False
-        assert issuer.setTvt(key, val=vcpb) is True
-        assert issuer.getTvt(key) == vcpb
-        assert issuer.delTvt(key) is True
-        assert issuer.getTvt(key) is None
+        assert issuer.tvts.get(keys=key) is None
+        assert issuer.tvts.rem(keys=key) is False
+        assert issuer.tvts.put(keys=key, val=vcpb) is True
+        assert issuer.tvts.get(keys=key) == vcpb.decode("utf-8")
+        assert issuer.tvts.put(keys=key, val=vcpb) is False
+        assert issuer.tvts.pin(keys=key, val=vcpb) is True
+        assert issuer.tvts.get(keys=key) == vcpb.decode("utf-8")
+        assert issuer.tvts.rem(keys=key) is True
+        assert issuer.tvts.get(keys=key) is None
 
         telKey = snKey(regk, sn)
-        assert issuer.getTel(telKey) is None
-        assert issuer.delTel(telKey) is False
-        assert issuer.putTel(telKey, val=vdig.qb64b)
-        assert issuer.getTel(telKey) == vdig.qb64b
-        assert issuer.putTel(telKey, val=vdig.qb64b) is False
-        assert issuer.setTel(telKey, val=vdig.qb64b) is True
-        assert issuer.getTel(telKey) == vdig.qb64b
-        assert issuer.delTel(telKey) is True
-        assert issuer.getTel(telKey) is None
+        assert issuer.tels.get(keys=telKey) is None
+        assert issuer.tels.rem(keys=telKey) is False
+        assert issuer.tels.put(keys=telKey, val=vdig.qb64b)
+        assert issuer.tels.get(keys=telKey) == vdig.qb64
+        assert issuer.tels.put(keys=telKey, val=vdig.qb64b) is False
+        assert issuer.tels.pin(keys=telKey, val=vdig.qb64b) is True
+        assert issuer.tels.get(keys=telKey) == vdig.qb64
+        assert issuer.tels.rem(keys=telKey) is True
+        assert issuer.tels.get(keys=telKey) is None
 
-        # not sure how these are generated in the first place
-        coupl01 = ("BPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4AAfiKvopJ0O2afOmxb5A6JtdY7Wkl_1uNx1Z8xQkg_"
-                   "gMzf-vTfEHDylFdgn2e_u_ppaFajIdvEvONX6dcSYzlfBQ").encode("utf-8")
-        coupl02 = ("BW1gbapuOJ4TJKwLfKZs5cXEIs9k8EtBqxR1psVxnD7IABrSkjrgPGXdhBiOy6LUZpiqtsHkKHhfLGj_LhT1n6"
-                   "EqCIdDjrihzrdM1bm0ZNJDwbDGXoeeZujd7ZYsOsBPzRCw").encode("utf-8")
-        coupl03 = ("BklrMm7GlYzNrPQunLJHFn_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDiP"
-                   "jioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA").encode("utf-8")
-        coups = [coupl01, coupl02, coupl03]
+        # Tibs store Siger instances; use valid Siger bytes and distinct indices
+        valid_tib_bytes = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+                          b'QLbASSQLAZcC')
+        s0 = indexing.Siger(qb64b=valid_tib_bytes)
+        s1 = indexing.Siger(raw=s0.raw, code=s0.code, index=1)
+        s2 = indexing.Siger(raw=s0.raw, code=s0.code, index=2)
+        sigers = [s0, s1, s2]
 
         key = dgKey(regk, vdig.qb64b)
-        assert issuer.getTibs(key) == []
-        assert issuer.cntTibs(key) == 0
-        assert issuer.delTibs(key) is False
-        assert issuer.putTibs(key, vals=[coupl01]) is True
-        assert issuer.getTibs(key) == [coupl01]
-        assert issuer.cntTibs(key) == 1
-        assert issuer.putTibs(key, vals=[coupl01]) is True  # add duplicate
-        assert issuer.cntTibs(key) == 1
-        assert issuer.addTib(key, coupl01) is False
-        assert issuer.addTib(key, coupl02) is True
-        assert issuer.cntTibs(key) == 2
-        assert issuer.putTibs(key, vals=[coupl02, coupl03]) is True
-        assert issuer.cntTibs(key) == 3
-        assert issuer.delTibs(key) is True
-        assert issuer.getTibs(key) == []
-        for c in coups:
-            assert issuer.addTib(key, c) is True
-        assert issuer.cntTibs(key) == 3
-        assert issuer.getTibs(key) == [coupl01, coupl02, coupl03]
-        for c in issuer.getTibsIter(key):
-            assert issuer.delTibs(key, c) is True
-        assert issuer.getTibs(key) == []
+        assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 0
+        assert issuer.tibs.rem(keys=(regk, vdig.qb64b)) is False
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[s0]) is True
+        assert [s.qb64b for s in issuer.tibs.get(keys=key)] == [s0.qb64b]
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 1
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[s0]) is True  # add duplicate
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 1
+        assert issuer.tibs.add(keys=(regk, vdig.qb64b), val=s0) is False
+        assert issuer.tibs.add(keys=(regk, vdig.qb64b), val=s1) is True
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 2
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[s1, s2]) is True
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 2
+        assert issuer.tibs.rem(keys=(regk, vdig.qb64b)) is True
+        assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
+        for sig in sigers:
+            assert issuer.tibs.add(keys=(regk, vdig.qb64b), val=sig) is True
+        assert issuer.tibs.cnt(keys=(regk, vdig.qb64b)) == 3
+        assert set(s.qb64b for s in issuer.tibs.get(keys=(regk, vdig.qb64b))) == {s0.qb64b, s1.qb64b, s2.qb64b}
+        for c in issuer.tibs.getIter(keys=(regk, vdig.qb64b)):
+            assert issuer.tibs.rem(keys=(regk, vdig.qb64b), val=c) is True
+        assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
 
         assert issuer.twes.getOn(keys=regk, on=sn) == []
         assert issuer.twes.remOn(keys=regk, on=sn) is False
@@ -169,19 +170,21 @@ def test_issuer():
         assert issuer.oots.remOn(keys=regk, on=sn) is True
         assert issuer.oots.getOn(keys=regk, on=sn) == []
 
-        anc01 = ("0AAAAAAAAAAAAAAAAAAAAABA"
-                 "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4").encode("utf-8")
-
         key = dgKey(regk, vdig.qb64b)
-        assert issuer.getAnc(key) is None
-        assert issuer.delAnc(key) is False
-        assert issuer.putAnc(key, val=anc01)
-        assert issuer.getAnc(key) == anc01
-        assert issuer.putAnc(key, val=anc01) is False
-        assert issuer.setAnc(key, val=anc01) is True
-        assert issuer.getAnc(key) == anc01
-        assert issuer.delAnc(key) is True
-        assert issuer.getAnc(key) is None
+        number = Number(num=0)
+        diger = Diger(qb64=vdig.qb64)
+        anc_couple = number.qb64b + diger.qb64b
+        assert issuer.ancs.get(keys=key) is None
+        assert issuer.ancs.rem(keys=key) is False
+        assert issuer.ancs.put(keys=key, val=(number, diger))
+        rnum, rdig = issuer.ancs.get(keys=key)
+        assert rnum.qb64b + rdig.qb64b == anc_couple
+        assert issuer.ancs.put(keys=key, val=(number, diger)) is False
+        assert issuer.ancs.pin(keys=key, val=(number, diger)) is True
+        rnum, rdig = issuer.ancs.get(keys=key)
+        assert rnum.qb64b + rdig.qb64b == anc_couple
+        assert issuer.ancs.rem(keys=key) is True
+        assert issuer.ancs.get(keys=key) is None
 
         #  test with verifiable credential issuance (iss) event
         vcdig = b'EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
@@ -199,26 +202,26 @@ def test_issuer():
         idig = Diger(ser=issb)
 
         key = dgKey(vcdig, idig.qb64b)
-        assert issuer.getTvt(key) is None
-        assert issuer.delTvt(key) is False
-        assert issuer.putTvt(key, val=issb) is True
-        assert issuer.getTvt(key) == issb
-        assert issuer.putTvt(key, val=issb) is False
-        assert issuer.setTvt(key, val=issb) is True
-        assert issuer.getTvt(key) == issb
-        assert issuer.delTvt(key) is True
-        assert issuer.getTvt(key) is None
+        assert issuer.tvts.get(keys=key) is None
+        assert issuer.tvts.rem(keys=key) is False
+        assert issuer.tvts.put(keys=key, val=issb) is True
+        assert issuer.tvts.get(keys=key) == issb.decode("utf-8")
+        assert issuer.tvts.put(keys=key, val=issb) is False
+        assert issuer.tvts.pin(keys=key, val=issb) is True
+        assert issuer.tvts.get(keys=key) == issb.decode("utf-8")
+        assert issuer.tvts.rem(keys=key) is True
+        assert issuer.tvts.get(keys=key) is None
 
         telKey = snKey(vcdig, sn)
-        assert issuer.getTel(telKey) is None
-        assert issuer.delTel(telKey) is False
-        assert issuer.putTel(telKey, val=idig.qb64b)
-        assert issuer.getTel(telKey) == idig.qb64b
-        assert issuer.putTel(telKey, val=idig.qb64b) is False
-        assert issuer.setTel(telKey, val=idig.qb64b) is True
-        assert issuer.getTel(telKey) == idig.qb64b
-        assert issuer.delTel(telKey) is True
-        assert issuer.getTel(telKey) is None
+        assert issuer.tels.get(keys=telKey) is None
+        assert issuer.tels.rem(keys=telKey) is False
+        assert issuer.tels.put(keys=telKey, val=idig.qb64b)
+        assert issuer.tels.get(keys=telKey) == idig.qb64
+        assert issuer.tels.put(keys=telKey, val=idig.qb64b) is False
+        assert issuer.tels.pin(keys=telKey, val=idig.qb64b) is True
+        assert issuer.tels.get(keys=telKey) == idig.qb64
+        assert issuer.tels.rem(keys=telKey) is True
+        assert issuer.tels.get(keys=telKey) is None
 
         rev = dict(v=vs, i=vcdig.decode("utf-8"),
                    s="{:x}".format(sn + 1),
@@ -228,13 +231,13 @@ def test_issuer():
         assert revb == b'{"v":"KERI10JSON000014_","i":"EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc","s":"1","t":"rev"}'
         rdig = Diger(raw=revb)
 
-        assert issuer.putTel(snKey(vcdig, sn), val=idig.qb64b) is True
-        assert issuer.putTel(snKey(vcdig, sn + 1), val=rdig.qb64b) is True
-        assert issuer.putTel(snKey(vcdig, sn + 2), val=idig.qb64b) is True
-        assert issuer.putTel(snKey(vcdig, sn + 3), val=rdig.qb64b) is True
+        assert issuer.tels.put(keys=snKey(vcdig, sn), val=idig.qb64b) is True
+        assert issuer.tels.put(keys=snKey(vcdig, sn + 1), val=rdig.qb64b) is True
+        assert issuer.tels.put(keys=snKey(vcdig, sn + 2), val=idig.qb64b) is True
+        assert issuer.tels.put(keys=snKey(vcdig, sn + 3), val=rdig.qb64b) is True
 
-        result = [(sn, dig) for _, sn, dig in issuer.getTelItemPreIter(vcdig)]
-        assert result == [(0, idig.qb64b), (1, rdig.qb64b), (2, idig.qb64b), (3, rdig.qb64b)]
+        result = [(sn, dig) for _, sn, dig in issuer.tels.getOnItemIterAll(keys=vcdig)]
+        assert result == [(0, idig.qb64), (1, rdig.qb64), (2, idig.qb64), (3, rdig.qb64)]
 
         bak1 = b'BA1Q98kT0HRn9R62lY-LufjjKdbCeL1mqu9arTgOmbqI'
         bak2 = b'DAEpNJeSJjxo6oAxkNE8eCOJg2HRPstqkeHWBAvN9XNU'
@@ -277,71 +280,80 @@ def test_clone():
 
     vcpb = json.dumps(vcp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     vdig = Diger(ser=vcpb)
-    anc01 = "0AAAAAAAAAAAAAAAAAAAAABAEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4".encode("utf-8")
-    tib01 = ("BPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4AAfiKvopJ0O2afOmxb5A6JtdY7Wkl_1uNx1Z8xQkg_"
-             "gMzf-vTfEHDylFdgn2e_u_ppaFajIdvEvONX6dcSYzlfBQ").encode("utf-8")
+    number01 = Number(num=0)
+    diger01 = Diger(qb64=vdig.qb64)
+    anc01_couple = (Seqner(sn=number01.sn).qb64b +
+                    Saider(qb64=diger01.qb64).qb64b)
+    # Valid Siger bytes (tibs must be Siger for CesrDupSuber)
+    tib01 = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+             b'QLbASSQLAZcC')
+    tib02 = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+             b'QLbASSQLAZcC')
+    tib03 = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+             b'QLbASSQLAZcC')
 
     rot1 = dict(v=vs, i=regk.decode("utf-8"),
                 s="{:x}".format(sn + 1), ba=[rarb2.decode("utf-8")],
                 t="rot")
     rot1b = json.dumps(rot1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     r1dig = Diger(ser=rot1b)
-    anc02 = "0AAAAAAAAAAAAAAAAAAAAABBEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4".encode("utf-8")
-    tib02 = ("BW1gbapuOJ4TJKwLfKZs5cXEIs9k8EtBqxR1psVxnD7IABrSkjrgPGXdhBiOy6LUZpiqtsHkKHhfLGj_LhT1n6"
-             "EqCIdDjrihzrdM1bm0ZNJDwbDGXoeeZujd7ZYsOsBPzRCw").encode("utf-8")
+    number02 = Number(num=1)
+    diger02 = Diger(qb64=r1dig.qb64)
+    anc02_couple = (Seqner(sn=number02.sn).qb64b +
+                    Saider(qb64=diger02.qb64).qb64b)
 
     rot2 = dict(v=vs, i=regk.decode("utf-8"),
                 s="{:x}".format(sn + 2), br=[rarb.decode("utf-8")],
                 t="rot")
     rot2b = json.dumps(rot2, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     r2dig = Diger(ser=rot2b)
-    anc03 = "0AAAAAAAAAAAAAAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4".encode("utf-8")
-    tib03 = ("BklrMm7GlYzNrPQunLJHFn_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDiP"
-             "jioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA").encode("utf-8")
+    number03 = Number(num=2)
+    diger03 = Diger(qb64=r2dig.qb64)
+    anc03_couple = (Seqner(sn=number03.sn).qb64b +
+                    Saider(qb64=diger03.qb64).qb64b)
 
     with openLMDB(cls=Reger) as issuer:
         dgkey = dgKey(regk, vdig.qb64b)
         snkey = snKey(regk, sn)
-        assert issuer.putTvt(dgkey, val=vcpb) is True
-        assert issuer.putTel(snkey, val=vdig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc01) is True
-        assert issuer.putTibs(dgkey, vals=[tib01]) is True
+        assert issuer.tvts.put(keys=dgkey, val=vcpb) is True
+        assert issuer.tels.put(keys=snkey, val=vdig.qb64b)
+        assert issuer.ancs.put(keys=dgkey, val=(number01, diger01)) is True
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[indexing.Siger(qb64b=tib01)]) is True
 
         dgkey = dgKey(regk, r1dig.qb64b)
         snkey = snKey(regk, sn + 1)
-        assert issuer.putTvt(dgkey, val=rot1b) is True
-        assert issuer.putTel(snkey, val=r1dig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc02) is True
-        assert issuer.putTibs(dgkey, vals=[tib02]) is True
+        assert issuer.tvts.put(keys=dgkey, val=rot1b) is True
+        assert issuer.tels.put(keys=snkey, val=r1dig.qb64b)
+        assert issuer.ancs.put(keys=dgkey, val=(number02, diger02)) is True
+        assert issuer.tibs.pin(keys=(regk, r1dig.qb64b), vals=[indexing.Siger(qb64b=tib02)]) is True
 
         dgkey = dgKey(regk, r2dig.qb64b)
         snkey = snKey(regk, sn + 2)
-        assert issuer.putTvt(dgkey, val=rot2b) is True
-        assert issuer.putTel(snkey, val=r2dig.qb64b)
-        assert issuer.putAnc(dgkey, val=anc03) is True
-        assert issuer.putTibs(dgkey, vals=[tib03]) is True
+        assert issuer.tvts.put(keys=dgkey, val=rot2b) is True
+        assert issuer.tels.put(keys=snkey, val=r2dig.qb64b)
+        assert issuer.ancs.put(keys=dgkey, val=(number03, diger03)) is True
+        assert issuer.tibs.pin(keys=(regk, r2dig.qb64b), vals=[indexing.Siger(qb64b=tib03)]) is True
 
         msgs = bytearray()  # outgoing messages
         for msg in issuer.clonePreIter(regk):
             msgs.extend(msg)
 
-        assert msgs == (b'{"v":"KERI10JSON000014_","i":"EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEU'
-          b'k-ODnif3O0","s":"0","b":["BAjzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL'
-          b'3WADbA"],"t":"vcp"}-VA0-BABBPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1Rht'
-          b'uiavIy4AAfiKvopJ0O2afOmxb5A6JtdY7Wkl_1uNx1Z8xQkg_gMzf-vTfEHDylFd'
-          b'gn2e_u_ppaFajIdvEvONX6dcSYzlfBQ-GAB0AAAAAAAAAAAAAAAAAAAAABAEzpq0'
-          b'6UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_",'
-          b'"i":"EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0","s":"1","ba":'
-          b'["BBVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4"],"t":"rot"}-VA0-'
-          b'BABBW1gbapuOJ4TJKwLfKZs5cXEIs9k8EtBqxR1psVxnD7IABrSkjrgPGXdhBiOy'
-          b'6LUZpiqtsHkKHhfLGj_LhT1n6EqCIdDjrihzrdM1bm0ZNJDwbDGXoeeZujd7ZYsO'
-          b'sBPzRCw-GAB0AAAAAAAAAAAAAAAAAAAAABBEzpq06UecHwzy-K9FpNoRxCJp2wIG'
-          b'M9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_","i":"EAWdT7a7fZwRz0jiZ0D'
-          b'JxZEM3vsNbLDPEUk-ODnif3O0","s":"2","br":["BAjzaUuRMwh1ivT5BQrqNh'
-          b'bvx82lB-ofrHVHjL3WADbA"],"t":"rot"}-VA0-BABBklrMm7GlYzNrPQunLJHF'
-          b'n_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDi'
-          b'PjioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA-GAB0AAAAAAAAAAAA'
-          b'AAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4')
+        valid_tib = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
+                     b'QLbASSQLAZcC')
+        out = bytes(msgs)
+
+        # Verify ordering of replayed events
+        assert out.find(vcpb) != -1
+        assert out.find(rot1b) != -1
+        assert out.find(rot2b) != -1
+        assert out.find(vcpb) < out.find(rot1b) < out.find(rot2b)
+
+        # Verify each event includes one indexed signature and one anchor couple
+        assert out.count(valid_tib) == 3
+        assert out.count(anc01_couple) == 1
+        assert out.count(anc02_couple) == 1
+        assert out.count(anc03_couple) == 1
+        assert out.find(anc01_couple) < out.find(anc02_couple) < out.find(anc03_couple)
 
 
 if __name__ == "__main__":

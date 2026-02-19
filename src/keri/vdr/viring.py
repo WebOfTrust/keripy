@@ -188,13 +188,14 @@ class Reger(dbing.LMDBer):
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
-        .tibs is named sub DB of indexed backer signatures of event
-            Backers always have nontransferable indetifier prefixes.
+        .tibs is named sub DB implemented as CesrDupSuber with klas=indexing.Siger
+            for indexed backer signatures of event.
+            Backers always have nontransferable identifier prefixes.
             The index is the offset of the backer into the backer list
             of the anchored management event wrt the receipted event.
             dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+            DB is keyed by identifier prefix plus digest of serialized event.
+            Multiple values per key in lexicographic order.
         .oots is named subDB instance of OnIoDupSuber for of out of order escrowed event tables
             that a composite key of the form <pre><sep><on> to serialized event digests.
             Values are digests used to lookup event in .tvts sub DB
@@ -266,12 +267,9 @@ class Reger(dbing.LMDBer):
         """
 
         self.registries = oset()
-        if "db" in kwa:
-            self._tevers = rbdict()
-            self._tevers.reger = self  # assign db for read thorugh cache of kevers
-            self._tevers.db = kwa["db"]
-        else:
-            self._tevers = dict()
+        self._tevers = rbdict()
+        self._tevers.reger = self  # assign db for read through cache of tevers
+        self._tevers.db = kwa.get("db", self)
 
         super(Reger, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
@@ -296,10 +294,11 @@ class Reger(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.tvts = self.env.open_db(key=b'tvts.')
-        self.tels = self.env.open_db(key=b'tels.')
-        self.ancs = self.env.open_db(key=b'ancs.')
-        self.tibs = self.env.open_db(key=b'tibs.', dupsort=True)
+        self.tvts = subing.Suber(db=self, subkey='tvts.')
+        self.tels = subing.OnSuber(db=self, subkey='tels.')
+        self.ancs = subing.CatCesrSuber(db=self, subkey='ancs.',
+                        klas=(coring.Number, coring.Diger))
+        self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
         self.baks = self.env.open_db(key=b'baks.', dupsort=True)
         self.oots = subing.OnIoDupSuber(db=self, subkey='oots')
         self.twes = subing.OnIoDupSuber(db=self, subkey='twes')
@@ -526,36 +525,40 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for _, fn, dig in self.getTelItemPreIter(pre, fn=fn):
+        for _, fn, dig in self.tels.getOnItemIterAll(keys=pre, on=fn):
             msg = self.cloneTvt(pre, dig)
             yield msg
 
     def cloneTvtAt(self, pre, sn=0):
         snkey = dbing.snKey(pre, sn)
-        dig = self.getTel(key=snkey)
+        dig = self.tels.get(keys=snkey)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
         dgkey = dbing.dgKey(pre, dig)  # get message
-        if not (raw := self.getTvt(key=dgkey)):
+        if not (raw := self.tvts.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(raw)
+        msg.extend(raw.encode("utf-8"))
 
         # add indexed backer signatures to attachments
-        if tibs := self.getTibs(key=dgkey):
+        if tibs := self.tibs.get(keys=(pre, dig)):
             atc.extend(core.Counter(core.Codens.WitnessIdxSigs, count=len(tibs),
                                     version=kering.Vrsn_1_0).qb64b)
             for tib in tibs:
-                atc.extend(tib)
+                atc.extend(tib.qb64b)
 
         # add authorizer (delegator/issure) source seal event couple to attachments
-        couple = self.getAnc(dgkey)
+        couple = self.ancs.get(keys=dgkey)
         if couple is not None:
+            number, diger = couple
+            seqner = coring.Seqner(sn=number.sn)
+            saider = coring.Saider(qb64=diger.qb64)
             atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
                                     version=kering.Vrsn_1_0).qb64b)
-            atc.extend(couple)
+            atc.extend(seqner.qb64b)
+            atc.extend(saider.qb64b)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
@@ -604,197 +607,6 @@ class Reger(dbing.LMDBer):
 
         return sources
 
-    def putTvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.tvts, key, val)
-
-    def setTvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.tvts, key, val)
-
-    def getTvt(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.tvts, key)
-
-    def delTvt(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.tvts, key)
-
-    def putTel(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.tels, key, val)
-
-    def setTel(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.tels, key, val)
-
-    def getTel(self, key):
-        """
-        Use snKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.tels, key)
-
-    def delTel(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.tels, key)
-
-    def getTelItemPreIter(self, pre, fn=0):
-        """
-        Returns iterator of all (fn, dig) duples in first seen order for all events
-        with same prefix, pre, in database. Items are sorted by fnKey(pre, fn)
-        where fn is first seen order number int.
-        Returns a First Seen Event Log TEL.
-        Returned items are duples of (fn, dig): Where fn is first seen order
-        number int and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
-        """
-        return self.getOnItemIterAll(db=self.tels, key=pre, on=fn)
-
-    def cntTels(self, pre, fn=0):
-        """
-        Returns count of all (fn, dig)  for all events
-        with same prefix, pre, in database.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-
-        return self.cntOnAll(db=self.tels, key=pre, on=fn)
-
-    def getTibs(self, key):
-        """
-        Use dgKey()
-        Return list of indexed witness signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.tibs, key)
-
-    def getTibsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of indexed witness signatures at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.tibs, key)
-
-    def putTibs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes indexed witness signatures vals to key
-        Adds to existing signatures at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.tibs, key, vals)
-
-    def addTib(self, key, val):
-        """
-        Use dgKey()
-        Add indexed witness signature val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.tibs, key, val)
-
-    def cntTibs(self, key):
-        """
-        Use dgKey()
-        Return count of indexed witness signatures at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.tibs, key)
-
-    def delTibs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.tibs, key, val)
-
-
-    def putAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.ancs, key, val)
-
-    def setAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.ancs, key, val)
-
-    def getAnc(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.ancs, key)
-
-    def delAnc(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.ancs, key)
 
 
     def putBaks(self, key, vals):
@@ -844,7 +656,7 @@ class Reger(dbing.LMDBer):
         Return count of backer prefixes at key
         Returns zero if no entry at key
         """
-        return self.cntIoDupVals(self.baks, key)
+        return self.cntIoDups(self.baks, key)
 
 
     def delBaks(self, key):

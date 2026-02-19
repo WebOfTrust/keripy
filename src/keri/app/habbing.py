@@ -1135,14 +1135,14 @@ class BaseHab:
         """
         Return serder of inception event
         """
-        if (last := next(self.db.kels.getOnLastIter(keys=self.pre, on=0), None)) is None:
+        if (dig := self.db.kels.getOnLast(keys=self.pre, on=0)) is None:
             raise kering.ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
-        dig = last.encode("utf-8")
-        if (raw := self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))) is None:
+        dig = dig.encode("utf-8")
+        if (serder := self.db.evts.get(keys=(self.pre, bytes(dig)))) is None:
             raise kering.ConfigurationError("Missing inception event for "
                                             "Habitat pre={}.".format(self.pre))
-        return serdering.SerderKERI(raw=bytes(raw))
+        return serder
 
     @property
     def kevers(self):
@@ -1567,14 +1567,15 @@ class BaseHab:
             return None
 
         msg = bytearray()
-        last = next(self.db.kels.getOnLastIter(keys=pre, on=sn), None)
-        if last is None:
+        dig = self.db.kels.getOnLast(keys=pre, on=sn)
+        if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(pre, sn))
-        dig = last.encode("utf-8")
+        dig = dig.encode("utf-8")
         dig = bytes(dig)
         key = dbing.dgKey(pre, dig)  # digest key
-        msg.extend(self.db.getEvt(key))
+        serder = self.db.evts.get(keys=(pre, dig))
+        msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
                            version=kering.Vrsn_1_0).qb64b)  # attach cnt
         for sig in self.db.getSigsIter(key):
@@ -2026,28 +2027,23 @@ class BaseHab:
             sn (int): is int sequence number of event
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
-        key = dbing.snKey(self.pre, sn)
-        # Consume the generator 
-        last = next(self.db.kels.getOnLastIter(keys=self.pre, on=sn), None)
-        if last is None:
-            dig = None
-        else:
-            dig = last  # get the value from the generator
+        dig = self.db.kels.getOnLast(keys=self.pre, on=sn)
+        dig = dig.encode("utf-8") if dig else None
         if dig is None and allowPartiallySigned:
-            dig = self.db.getPseLast(key)
+            vals = self.db.pses.getOnLast(keys=self.pre, on=sn)
+            dig = vals.encode("utf-8") if vals else None
 
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
         key = dbing.dgKey(self.pre, dig)  # digest key
-        msg = self.db.getEvt(key)
-        serder = serdering.SerderKERI(raw=bytes(msg))
+        serder = self.db.evts.get(keys=(self.pre, dig))
 
         sigs = []
         for sig in self.db.getSigsIter(key):
             sigs.append(indexing.Siger(qb64b=bytes(sig)))
 
-        duple = self.db.aess.get(keys=key)
+        duple = self.db.aess.get(keys=(self.pre, dig))
 
         return serder, sigs, duple
 
@@ -2129,9 +2125,9 @@ class BaseHab:
                     dgkey = dbing.dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
-                        for quadruple in self.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True  # yes so don't send own inception
+                        for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
+                            if sprefixer.qb64 == cuedKed["i"]:
+                                found = True
                     else:  # find if already rcts of own icp
                         for couple in self.db.getRctsIter(dgkey):
                             if bytes(couple).decode("utf-8").startswith(cuedKed["i"]):
