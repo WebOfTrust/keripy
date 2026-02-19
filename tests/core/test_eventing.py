@@ -3313,9 +3313,12 @@ def test_receipt():
         #  coe process the escrow receipt from val
         parsing.Parser(version=Vrsn_1_0).parse(ims=res, kvy=coeKevery)
         #  check if in escrow database
-        result = coeKevery.db.getUres(key=snKey(pre=coeKever.prefixer.qb64,
-                                                sn=2))
-        assert bytes(result[0]) == fake.encode("utf-8") + valPrefixer.qb64b + valCigar.qb64b
+        result = coeKevery.db.ures.get(keys=(coeKever.prefixer.qb64, coring.Seqner(sn=2).qb64))
+        rsaider, sprefixer, cigar = result[0]
+
+        assert rsaider.qb64b == fake.encode("utf-8")
+        assert sprefixer.qb64b == valPrefixer.qb64b
+        assert cigar.qb64b == valCigar.qb64b
 
         # create invalid receipt stale use valid sn so in database but invalid dig
         # so bad receipt
