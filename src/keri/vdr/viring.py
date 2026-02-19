@@ -270,12 +270,9 @@ class Reger(dbing.LMDBer):
         """
 
         self.registries = oset()
-        if "db" in kwa:
-            self._tevers = rbdict()
-            self._tevers.reger = self  # assign db for read thorugh cache of kevers
-            self._tevers.db = kwa["db"]
-        else:
-            self._tevers = dict()
+        self._tevers = rbdict()
+        self._tevers.reger = self  # assign db for read through cache of tevers
+        self._tevers.db = kwa.get("db", self)
 
         super(Reger, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
@@ -301,8 +298,9 @@ class Reger(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.tvts = subing.Suber(db=self, subkey='tvts.')
-        self.tels = self.env.open_db(key=b'tels.')
-        self.ancs = self.env.open_db(key=b'ancs.')
+        self.tels = subing.OnSuber(db=self, subkey='tels.')
+        self.ancs = subing.CatCesrSuber(db=self, subkey='ancs.',
+                        klas=(coring.Number, coring.Diger))
         self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
         self.baks = self.env.open_db(key=b'baks.', dupsort=True)
         self.oots = self.env.open_db(key=b'oots.')
@@ -530,13 +528,13 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for _, fn, dig in self.getTelItemPreIter(pre, fn=fn):
+        for _, fn, dig in self.tels.getOnItemIterAll(keys=pre, on=fn):
             msg = self.cloneTvt(pre, dig)
             yield msg
 
     def cloneTvtAt(self, pre, sn=0):
         snkey = dbing.snKey(pre, sn)
-        dig = self.getTel(key=snkey)
+        dig = self.tels.get(keys=snkey)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):
@@ -555,11 +553,15 @@ class Reger(dbing.LMDBer):
                 atc.extend(tib.qb64b)
 
         # add authorizer (delegator/issure) source seal event couple to attachments
-        couple = self.getAnc(dgkey)
+        couple = self.ancs.get(keys=dgkey)
         if couple is not None:
+            number, diger = couple
+            seqner = coring.Seqner(sn=number.sn)
+            saider = coring.Saider(qb64=diger.qb64)
             atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
                                     version=kering.Vrsn_1_0).qb64b)
-            atc.extend(couple)
+            atc.extend(seqner.qb64b)
+            atc.extend(saider.qb64b)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
@@ -607,72 +609,6 @@ class Reger(dbing.LMDBer):
             sources.extend(self.sources(db, screder))
 
         return sources
-
-    def putTel(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.tels, key, val)
-
-    def setTel(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.tels, key, val)
-
-    def getTel(self, key):
-        """
-        Use snKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.tels, key)
-
-    def delTel(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.tels, key)
-
-    def getTelItemPreIter(self, pre, fn=0):
-        """
-        Returns iterator of all (fn, dig) duples in first seen order for all events
-        with same prefix, pre, in database. Items are sorted by fnKey(pre, fn)
-        where fn is first seen order number int.
-        Returns a First Seen Event Log TEL.
-        Returned items are duples of (fn, dig): Where fn is first seen order
-        number int and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
-        """
-        return self.getOnItemIterAll(db=self.tels, key=pre, on=fn)
-
-    def cntTels(self, pre, fn=0):
-        """
-        Returns count of all (fn, dig)  for all events
-        with same prefix, pre, in database.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-
-        return self.cntOnAll(db=self.tels, key=pre, on=fn)
 
     def putTwe(self, key, val):
         """
@@ -795,42 +731,6 @@ class Reger(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.oots, key)
-
-
-    def putAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.ancs, key, val)
-
-    def setAnc(self, key, val):
-        """
-        Use dgKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.ancs, key, val)
-
-    def getAnc(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.ancs, key)
-
-    def delAnc(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.ancs, key)
 
 
     def putBaks(self, key, vals):
