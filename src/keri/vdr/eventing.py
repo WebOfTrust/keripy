@@ -1379,7 +1379,7 @@ class Tever:
         if bigers:
             self.reger.tibs.pin(keys=dgkey, vals=bigers)
         self.reger.tvts.put(keys=dgkey, val=serder.raw)
-        self.reger.putTwe(snKey(serder.preb, serder.sn), serder.saidb)
+        self.reger.twes.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed partially witnessed "
                      "event = %s", serder.ked)
 
@@ -1410,7 +1410,7 @@ class Tever:
         self.reger.tvts.put(keys=key, val=serder.raw)
         logger.debug("Tever state: Escrowed anchorless event "
                      "event = %s", serder.ked)
-        return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
+        return self.reger.taes.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
 
     def getBackerState(self, ked):
         """ Calculate and return the current list of backers for event dict
@@ -2004,7 +2004,7 @@ class Tevery:
         number = coring.Number(num=seqner.sn)
         diger = coring.Diger(qb64=saider.qb64)
         self.reger.ancs.put(keys=key, val=(number, diger))
-        self.reger.putOot(snKey(serder.preb, serder.sn), serder.saidb)
+        self.reger.oots.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed our of order TEL event "
                      "event = %s", serder.ked)
 
@@ -2042,10 +2042,10 @@ class Tevery:
            5. Remove event digest from oots if processed successfully or a non-out-of-order event occurs.
 
         """
-        for key, digb in self.reger.getOotItemIter(): # (pre, snb, digb) in self.reger.getOotItemIter()
+        for pre, sn, digb in self.reger.oots.getOnItemIterAll(): # (pre, snb, digb) in self.reger.getOotItemIter()
+            pre = pre[0]
             try:
                 #sn = int(snb, 16)
-                pre, sn = splitSnKey(key)
                 dgkey = dgKey(pre, digb)
                 traw = self.reger.tvts.get(keys=dgkey)
                 if traw is None:
@@ -2077,7 +2077,7 @@ class Tevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.reger.delOot(snKey(pre, sn))  # removes one escrow at key val
+                self.reger.oots.remOn(keys=pre, on=sn)  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Tevery OOO unescrowed: %s", ex.args[0])
                 else:
@@ -2087,7 +2087,7 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.reger.delOot(snKey(pre, sn))  # removes from escrow
+                self.reger.oots.remOn(keys=pre, on=sn)  # removes from escrow
                 logger.info("Tevery OOO unescrow succeeded in valid event: said=%s", tserder.said)
                 logger.debug("Event=\n%s\n", tserder.pretty())
 
@@ -2103,9 +2103,8 @@ class Tevery:
            6. Remove event digest from oots if processed successfully or a non-anchorless event occurs.
 
         """
-        for key, digb in self.reger.getTaeItemIter():  #(pre, snb, digb) in self.reger.getTaeItemIter()
-            pre, sn = splitSnKey(key)
-            #sn = int(snb, 16)
+        for pre, sn, digb in self.reger.taes.getOnItemIterAll():
+            pre = pre[0]
             try:
                 dgkey = dgKey(pre, digb)
                 traw = self.reger.tvts.get(keys=dgkey)
@@ -2139,7 +2138,7 @@ class Tevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.reger.delTae(snKey(pre, sn))  # removes one escrow at key val
+                self.reger.taes.remOn(keys=pre, on=sn)  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Tevery ANC unescrowed: %s", ex.args[0])
                 else:
@@ -2149,6 +2148,6 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.reger.delTae(snKey(pre, sn))  # removes from escrow
+                self.reger.taes.remOn(keys=pre, on=sn)  # removes from escrow
                 logger.info("Tevery ANC unescrow succeeded in valid event: said=%s", tserder.said)
                 logger.debug("event=\n%s\n", tserder.pretty())
