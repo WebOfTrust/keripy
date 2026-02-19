@@ -775,10 +775,10 @@ class Tever:
             cnfg.append(TraitDex.NoBackers)
 
         dgkey = dbing.dgKey(self.regk, self.serder.said)
-        couple = self.reger.getAnc(dgkey)
-        ancb = bytearray(couple)
-        seqner = coring.Seqner(qb64b=ancb, strip=True)
-        diger = coring.Diger(qb64b=ancb, strip=True)
+        couple = self.reger.ancs.get(keys=dgkey)
+        if couple is None:
+            raise kering.MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
+        number, diger = couple
 
         return (state(pre=self.pre,
                       said=self.serder.said,
@@ -1113,7 +1113,7 @@ class Tever:
         # have to compare with VC issuance serder
         vci = vcpre
 
-        dig = self.reger.getTel(snKey(pre=vci, sn=sn - 1))
+        dig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn - 1))
         ievt = self.reger.tvts.get(keys=(vci, dig))
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
@@ -1170,14 +1170,14 @@ class Tever:
             status (Serder): transaction event state notification message
         """
         digs = []
-        for _, _, dig in self.reger.getTelItemPreIter(pre=vci.encode("utf-8")):
+        for _, _, dig in self.reger.tels.getOnItemIterAll(keys=vci.encode("utf-8")):
             digs.append(dig)
 
         if len(digs) == 0:
             return None
 
         vcsn = len(digs) - 1
-        vcdig = bytes(digs[-1])
+        vcdig = digs[-1].encode("utf-8")
 
         dgkey = dbing.dgKey(vci, vcdig)  # get message
         raw = self.reger.tvts.get(keys=dgkey)
@@ -1191,10 +1191,12 @@ class Tever:
             ra = serder.ked["ra"]
 
         dgkey = dbing.dgKey(vci, vcdig)
-        couple = self.reger.getAnc(dgkey)
-        ancb = bytearray(couple)
-        seqner = coring.Seqner(qb64b=ancb, strip=True)
-        saider = coring.Saider(qb64b=ancb, strip=True)
+        couple = self.reger.ancs.get(keys=dgkey)
+        if couple is None:
+            raise kering.MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
+        number, diger = couple
+        seqner = coring.Seqner(sn=number.num)
+        saider = coring.Saider(qb64=diger.qb64)
 
         return vcstate(vcpre=vci,
                        said=vcdig.decode("utf-8"),
@@ -1218,7 +1220,7 @@ class Tever:
             int: current TEL sequence number of credential or None if not found
 
         """
-        cnt = self.reger.cntTels(vci)
+        cnt = self.reger.tels.cntOnAll(keys=vci)
 
         return None if cnt == 0 else cnt - 1
 
@@ -1241,8 +1243,9 @@ class Tever:
 
         dig = serder.saidb
         key = dgKey(pre, dig)
-        sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(key, sealet)
+        number = coring.Number(num=seqner.sn)
+        diger = coring.Diger(qb64=saider.qb64)
+        self.reger.ancs.put(keys=key, val=(number, diger))
         if bigers:
             self.reger.tibs.pin(keys=key, vals=bigers)
         if baks:
@@ -1250,7 +1253,7 @@ class Tever:
             self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
         self.reger.tvts.put(keys=key, val=serder.raw)
-        self.reger.putTel(snKey(pre, sn), dig)
+        self.reger.tels.put(keys=snKey(pre, sn), val=dig)
         logger.info("Tever: Added to TEL valid %s event %s said=%s reg=%.8s iss=%.8s",
                     serder.ilk, pre.decode(), serder.said, self.regk, self.pre)
         logger.debug("TEL Event Body=\n%s\n", serder.pretty())
@@ -1332,11 +1335,11 @@ class Tever:
         if seqner is None or saider is None:
             return False
 
-        dig = self.db.getKeLast(key=snKey(pre=self.pre, sn=seqner.sn))
+        dig = self.db.kels.getOnLast(keys=self.pre, on=seqner.sn)
         if not dig:
             return False
         else:
-            dig = bytes(dig)
+            dig = dig.encode("utf-8")
 
         # retrieve event by dig
         if not (eserder := self.db.evts.get(keys=(self.pre, dig))):
@@ -1371,8 +1374,9 @@ class Tever:
 
         """
         dgkey = dgKey(serder.preb, serder.saidb)
-        sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(dgkey, sealet)
+        number = coring.Number(num=seqner.sn)
+        diger = coring.Diger(qb64=saider.qb64)
+        self.reger.ancs.put(keys=dgkey, val=(number, diger))
         if bigers:
             self.reger.tibs.pin(keys=dgkey, vals=bigers)
         self.reger.tvts.put(keys=dgkey, val=serder.raw)
@@ -1396,8 +1400,9 @@ class Tever:
         """
         key = dgKey(serder.preb, serder.saidb)
         if seqner and saider:
-            sealet = seqner.qb64b + saider.qb64b
-            self.reger.putAnc(key, sealet)
+            number = coring.Number(num=seqner.sn)
+            diger = coring.Diger(qb64=saider.qb64)
+            self.reger.ancs.put(keys=key, val=(number, diger))
         if bigers:
             self.reger.tibs.pin(keys=key, vals=bigers)
         if baks:
@@ -1789,7 +1794,7 @@ class Tevery:
         if not accepted:
             raise kering.UnverifiedReplyError(f"Unverified registry txn state reply.")
 
-        ldig = self.reger.getTel(key=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -1800,7 +1805,7 @@ class Tevery:
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(rsr))
 
         tsaider = coring.Saider(qb64=rsr.d)
-        ldig = bytes(ldig)
+        ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(regk, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
@@ -1929,7 +1934,7 @@ class Tevery:
         if not accepted:
             raise kering.UnverifiedReplyError(f"Unverified credential state reply.")
 
-        ldig = self.reger.getTel(key=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -1940,7 +1945,7 @@ class Tevery:
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(vsr))
 
         tsaider = coring.Saider(qb64=vsr.d)
-        ldig = bytes(ldig)
+        ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(vci, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
@@ -1998,8 +2003,9 @@ class Tevery:
         """
         key = dgKey(serder.preb, serder.saidb)
         self.reger.tvts.put(keys=key, val=serder.raw)
-        sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(key, sealet)
+        number = coring.Number(num=seqner.sn)
+        diger = coring.Diger(qb64=saider.qb64)
+        self.reger.ancs.put(keys=key, val=(number, diger))
         self.reger.putOot(snKey(serder.preb, serder.sn), serder.saidb)
         logger.debug("Tever state: Escrowed our of order TEL event "
                      "event = %s", serder.ked)
@@ -2054,14 +2060,14 @@ class Tevery:
 
                 bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
-                couple = self.reger.getAnc(dgkey)
+                couple = self.reger.ancs.get(keys=dgkey)
                 if couple is None:
                     msg = f"OOO Missing escrowed anchor at dig = {bytes(digb).decode()}"
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
-                ancb = bytearray(couple)
-                seqner = coring.Seqner(qb64b=ancb, strip=True)
-                saider = coring.Saider(qb64b=ancb, strip=True)
+                number, diger = couple
+                seqner = coring.Seqner(sn=number.num)
+                saider = coring.Saider(qb64=diger.qb64)
 
                 self.processEvent(serder=tserder, seqner=seqner, saider=saider, wigers=bigers)
 
@@ -2115,14 +2121,14 @@ class Tevery:
 
                 bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
-                couple = self.reger.getAnc(dgkey)
+                couple = self.reger.ancs.get(keys=dgkey)
                 if couple is None:
                     msg = f"ANC Missing escrowed anchor at dig = {bytes(digb).decode()}"
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise MissingAnchorError(msg)
-                ancb = bytearray(couple)
-                seqner = coring.Seqner(qb64b=ancb, strip=True)
-                saider = coring.Saider(qb64b=ancb, strip=True)
+                number, diger = couple
+                seqner = coring.Seqner(sn=number.num)
+                saider = coring.Saider(qb64=diger.qb64)
 
                 self.processEvent(serder=tserder, seqner=seqner, saider=saider, wigers=bigers)
 

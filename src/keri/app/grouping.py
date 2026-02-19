@@ -130,9 +130,9 @@ class Counselor(doing.DoDoer):
 
         """
         for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
-            snkey = dbing.snKey(pre, seqner.sn)
-            sdig = self.hby.db.getKeLast(key=snkey)
+            sdig = self.hby.db.kels.getOnLast(keys=pre, on=seqner.sn)
             if sdig:
+                sdig = sdig.encode("utf-8")
                 self.hby.db.gpse.rem(keys=(pre,))
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
@@ -527,12 +527,11 @@ def multisigExn(ghab, exn):
 
 
 def getEscrowedEvent(db, pre, sn):
-    key = snKey(pre, sn)
-    dig = db.getPseLast(key)
+    vals = db.pses.getOnLast(keys=pre, on=sn)
+    dig = vals if vals else None
     if dig is None:
-        dig = db.getKeLast(key)
-
-    dig = bytes(dig)
+        dig = db.kels.getOnLast(keys=pre, on=sn)
+    dig = dig.encode("utf-8")
     key = dbing.dgKey(pre, dig)  # digest key
     serder = db.evts.get(keys=(pre, dig))
 
