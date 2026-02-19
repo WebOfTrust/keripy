@@ -7097,12 +7097,12 @@ def loadEvent(db, preb, dig):
     event["witnesses"] = [wit.qb64 for wit in wits]
 
     # add indexed witness signatures to attachments
-    dwigs = []
-    if wigs := db.wigs.get(keys=dgkey):
-        for w in wigs:
-            sig = w
-            dwigs.append(dict(index=sig.index, signature=sig.qb64))
-    event["witness_signatures"] = dwigs
+    dwigers = []
+    if wigers := db.wigs.get(keys=(preb, dig)):
+        for wiger in wigers:
+            sig = wiger
+            dwigers.append(dict(index=sig.index, signature=sig.qb64))
+    event["witness_signatures"] = dwigers
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
     if (duple := db.aess.get(keys=(preb, dig))) is not None:

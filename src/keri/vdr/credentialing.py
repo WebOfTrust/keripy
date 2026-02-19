@@ -732,12 +732,12 @@ class Registrar(doing.DoDoer):
         """
         for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
-            dgkey = dbing.dgKey(prefixer.qb64b, saider.qb64)
+            # dgkey = dbing.dgKey(prefixer.qb64b, saider.qb64)
 
             # Load all the witness receipts we have so far
-            wigs = self.hby.db.wigs.get(dgkey)
+            wigers = self.hby.db.wigs.get(keys=(prefixer.qb64b, saider.qb64))
             if kever.wits:
-                if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
+                if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                     hab = self.hby.habs[prefixer.qb64]
                     witnessed = False
                     for cue in self.receiptor.cues:

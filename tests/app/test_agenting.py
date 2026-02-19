@@ -72,11 +72,10 @@ class ReceiptDoer(doing.DoDoer):
 
         kev = palHab.kever
         ser = kev.serder
-        dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
         while True:
-            wilWigs = self.wilHab.db.wigs.get(dgkey)
-            wanWigs = self.wanHab.db.wigs.get(dgkey)
+            wilWigs = self.wilHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+            wanWigs = self.wanHab.db.wigs.get(keys=(ser.preb, ser.saidb))
             if len(wilWigs) == 2 and len(wanWigs) == 2:
                 break
             yield self.tock
@@ -95,12 +94,11 @@ class ReceiptDoer(doing.DoDoer):
 
         kev = palHab.kever
         ser = kev.serder
-        dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
         while True:
-            wilWigs = self.wilHab.db.wigs.get(dgkey)
-            wanWigs = self.wanHab.db.wigs.get(dgkey)
-            wesWigs = self.wesHab.db.wigs.get(dgkey)
+            wilWigs = self.wilHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+            wanWigs = self.wanHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+            wesWigs = self.wesHab.db.wigs.get(keys=(ser.preb, ser.saidb))
             if len(wilWigs) == 3 and len(wanWigs) == 3 and len(wesWigs) == 3:
                 break
             yield self.tock
@@ -191,31 +189,28 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         doist.recur()
 
         while True:
-            wigs = []
+            wigers = []
             for hab in [palHab, qinHab]:
                 kev = hab.kever
                 ser = kev.serder
-                dgkey = dbing.dgKey(ser.preb, ser.saidb)
-                wigs.extend(wanHab.db.wigs.get(dgkey))
-                wigs.extend(wilHab.db.wigs.get(dgkey))
-                wigs.extend(wesHab.db.wigs.get(dgkey))
+                wigers.extend(wanHab.db.wigs.get(keys=(ser.preb, ser.saidb)))
+                wigers.extend(wilHab.db.wigs.get(keys=(ser.preb, ser.saidb)))
+                wigers.extend(wesHab.db.wigs.get(keys=(ser.preb, ser.saidb)))
 
-            if len(wigs) == 18:
+            if len(wigers) == 18:
                 break
 
             doist.recur()
 
         kev = qinHab.kever
         ser = kev.serder
-        dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
-        wigs = wanHab.db.wigs.get(dgkey)
-        assert len(wigs) == 3
-        wigs = wilHab.db.wigs.get(dgkey)
-        assert len(wigs) == 3
-        wigs = wesHab.db.wigs.get(dgkey)
-        assert len(wigs) == 3
-
+        wigers = wanHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 3
+        wigers = wilHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 3
+        wigers = wesHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 3
 
         qinWitq = agenting.WitnessInquisitor(hby=qinHby)
         stamp = nowIso8601()

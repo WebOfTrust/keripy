@@ -355,8 +355,6 @@ class WitnessReceiptor(doing.DoDoer):
                 msg = hab.makeOwnEvent(sn=sn)
                 ser = serdering.SerderKERI(raw=msg)
 
-                dgkey = dbing.dgKey(ser.preb, ser.saidb)
-
                 witers = []
                 for wit in wits:
                     auth = self.auths[wit] if wit in self.auths else None
@@ -365,9 +363,9 @@ class WitnessReceiptor(doing.DoDoer):
                     self.extend([witer])
 
                 # Check to see if we already have all the receipts we need for this event
-                wigs = hab.db.wigs.get(dgkey)
-                completed = len(wigs) == len(wits)
-                if len(wigs) != len(wits):  # We have all the receipts, skip
+                wigers = hab.db.wigs.get(keys=(ser.preb, ser.saidb))
+                completed = len(wigers) == len(wits)
+                if len(wigers) != len(wits):  # We have all the receipts, skip
                     for idx, witer in enumerate(witers):
                         wit = wits[idx]
 
@@ -383,8 +381,8 @@ class WitnessReceiptor(doing.DoDoer):
                         _ = (yield self.tock)
 
                     while True:
-                        wigs = hab.db.wigs.get(dgkey)
-                        if len(wigs) == len(wits):
+                        wigers = hab.db.wigs.get(keys=(ser.preb, ser.saidb))
+                        if len(wigers) == len(wits):
                             break
                         _ = yield self.tock
 
@@ -394,7 +392,7 @@ class WitnessReceiptor(doing.DoDoer):
                     continue
 
                 # generate all rct msgs to send to all witnesses
-                awigers = [indexing.Siger(qb64b=wig.qb64b) for wig in wigs]
+                awigers = wigers
 
                 # make sure all witnesses have fully receipted KERL and know about each other
                 for witer in witers:
