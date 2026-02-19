@@ -792,11 +792,11 @@ class Baser(dbing.LMDBer):
             but cannot yet be fully validated due to missing signatures or dependent
             events. Values are stored in insertion order.
 
-        .pwes is named sub DB of partially witnessed key event escrowes
-            that each map pre + sequence number to serialized event digest.
+        .pwes is named subDB instance of OnIoDupSuber for partially witnessed 
+            key event escrows that each map under a composite 
+            keys of the form "<pre><sep><on>" to serialized event digest.
             these are for escrows of events with verified signatures but not
-            yet verified witness reciepts.
-            snKey
+            yet verified witness receipts.
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
@@ -1041,7 +1041,7 @@ class Baser(dbing.LMDBer):
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
                                             klas=(coring.Diger, coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
-        self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
+        self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
@@ -1435,8 +1435,10 @@ class Baser(dbing.LMDBer):
             self.vres.rem(keys=k)
         for (pre, on, dig) in self.pses.getOnItemIterAll():
             self.pses.remOn(keys=pre, on=on, val=dig)
-        for (k, _) in self.getPweItemIter():
-            self.delPwes(key=k)
+        for (pre, sn, dig) in self.pwes.getOnItemIterAll():
+            pre = pre[0]
+            dig = dig.encode("utf-8")
+            self.pwes.remOn(keys=pre, on=sn, val=dig)
         for (pre, on, dig) in self.ooes.getOnItemIterAll():
             self.ooes.remOn(keys=pre, on=on, val=dig)
         for (pre, said), edig in self.qnfs.getItemIter():
@@ -2419,33 +2421,7 @@ class Baser(dbing.LMDBer):
         #"""
         #return self.getTopIoDupItemIter(self.pwes, key)
 
-    def cntPwes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig vals at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDups(self.pwes, key)
 
-    def delPwes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key in db.
-        Returns True If key  exists in db Else False
-        """
-        return self.delIoDupVals(self.pwes, key)    
-
-    def delPwe(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.pwes, key, val)
 
 
 class BaserDoer(doing.Doer):
