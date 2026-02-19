@@ -3039,7 +3039,6 @@ class Kever:
             ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
             # get the dig of the delegating event. Using getKeLast ensures delegating
             #  event has not already been superceded
-            key = snKey(pre=delpre, sn=ssn)  # database key
             # get dig of last delegating event purported at sn
             raw = self.db.kels.getOnLast(keys=delpre, on=ssn)  # last means not disputed or superseded
             if raw is None:  # no delegatint event yet. no index at key pre, sn
@@ -3062,9 +3061,8 @@ class Kever:
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
-            raw = raw.encode("utf-8")
+            ddig = raw.encode("utf-8")
             # get the latest delegating event candidate from dig given by pre,sn index
-            ddig = bytes(raw)
             if (dserder := self.db.evts.get(keys=(delpre, ddig))) is None:   # drop event should never happen unless database is broken
                 msg = (f"Missing delegation from {delpre} at event dig = {ddig} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
@@ -4469,7 +4467,7 @@ class Kevery:
             ldig = self.db.fels.getOn(keys=pre, on=firner.sn)
         else:
             # Only accept receipt if for last seen version of receipted event at sn
-            ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+            ldig = self.db.kels.getOnLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
 
         for sprefixer, snumber, saider, siger in trqs:  # iterate over each trq
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
@@ -4484,8 +4482,8 @@ class Kevery:
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both receipted event and receipter in database so retreive
-                # if isinstance(ldig, memoryview):
-                #     ldig = bytes(ldig).decode("utf-8")        # Shouldn't need this part since its always a string
+                if isinstance(ldig, memoryview):
+                    ldig = bytes(ldig).decode("utf-8")
 
                 if not serder.compare(said=ldig):  # mismatch events problem with replay
                     raise ValidationError("Mismatch replay event at sn = {} with db."
@@ -5198,7 +5196,6 @@ class Kevery:
 
             # retrieve event by dig
             dig = dig.encode("utf-8")
-            dig = bytes(dig)
             if not (serder := self.db.evts.get(keys=(pre, dig))):
                 return None
 
@@ -6383,7 +6380,7 @@ class Kevery:
                             msg = f"URE Missing receipted evt at pre={pre} sn={sn:x}"
                             logger.trace("Kevery unescrow error: %s", msg)
                             raise UnverifiedReceiptError(msg)
-
+                        dig = dig.encode("utf-8")
                         # get receipted event using pre and edig
                         if (serder := self.db.evts.get(keys=(pre, dig))) is None:
                             # receipted event superseded so remove from escrow
@@ -6909,7 +6906,6 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
-                    print("EXCEPTION: ", ex)
                     self.db.vres.rem(keys=snKey(pre, sn), val=equinlet)  # removes one escrow at key val
                     if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                         logger.debug("Kevery: VRE other error on unescrow: %s\n", ex.args[0])

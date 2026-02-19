@@ -531,7 +531,7 @@ def getEscrowedEvent(db, pre, sn):
     dig = vals if vals else None
     if dig is None:
         dig = db.kels.getOnLast(keys=pre, on=sn)
-        dig = dig.encode("utf-8")
+    dig = dig.encode("utf-8")
     key = dbing.dgKey(pre, dig)  # digest key
     serder = db.evts.get(keys=(pre, dig))
 

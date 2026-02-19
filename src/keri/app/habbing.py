@@ -2027,9 +2027,8 @@ class BaseHab:
             sn (int): is int sequence number of event
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
-        key = dbing.snKey(self.pre, sn)
-        # Consume the generator 
         dig = self.db.kels.getOnLast(keys=self.pre, on=sn)
+        dig = dig.encode("utf-8") if dig else None
         if dig is None and allowPartiallySigned:
             vals = self.db.pses.getOnLast(keys=self.pre, on=sn)
             dig = vals.encode("utf-8") if vals else None

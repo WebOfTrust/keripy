@@ -117,8 +117,8 @@ def test_direct_mode_with_manager():
 
         # sign controller's event not receipt
         # look up event to sign from validator's kever for coe
-        rawIpcDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
-        coeIcpDig = rawIpcDig.encode("utf-8")
+        rawIcpDig = valKevery.db.kels.getOnLast(keys=coepre, on=csn)
+        coeIcpDig = rawIcpDig.encode("utf-8")
         assert coeIcpDig == coeK.serder.saidb
         s = valKevery.db.evts.get(keys=(coepre, coeIcpDig))
 
