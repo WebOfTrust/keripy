@@ -303,7 +303,6 @@ class Reger(dbing.LMDBer):
                         klas=(coring.Number, coring.Diger))
         self.baks = subing.IoDupSuber(db=self, subkey='baks.')
         self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
-        self.baks = self.env.open_db(key=b'baks.', dupsort=True)
         self.oots = self.env.open_db(key=b'oots.')
         self.twes = self.env.open_db(key=b'twes.')
         self.taes = self.env.open_db(key=b'taes.')
