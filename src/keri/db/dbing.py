@@ -2170,7 +2170,7 @@ class LMDBer(filing.Filer):
             key (bytes): within sub db's keyspace
             val (bytes): value to be written unless empty
         """
-        return self.putIoDupVals(db, key, [val if val else []])
+        return self.putIoDupVals(db, key, [val] if val is not None else [b''])
 
 
     def getIoDupVals(self, db, key):
