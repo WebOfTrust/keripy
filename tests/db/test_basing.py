@@ -52,7 +52,7 @@ def test_baser():
     assert isinstance(baser.dtss, subing.CesrSuber)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
-    assert isinstance(baser.kels, lmdb._Database)
+    assert isinstance(baser.kels, subing.OnIoDupSuber)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -83,7 +83,6 @@ def test_baser():
     assert isinstance(baser.dtss, subing.CesrSuber)
     assert isinstance(baser.rcts, lmdb._Database)
     assert isinstance(baser.ures, lmdb._Database)
-    assert isinstance(baser.kels, lmdb._Database)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -111,7 +110,6 @@ def test_baser():
         assert isinstance(baser.dtss, subing.CesrSuber)
         assert isinstance(baser.rcts, lmdb._Database)
         assert isinstance(baser.ures, lmdb._Database)
-        assert isinstance(baser.kels, lmdb._Database)
         assert isinstance(baser.ooes, subing.IoDupSuber)
         assert isinstance(baser.pses, subing.IoDupSuber)
         assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -770,22 +768,23 @@ def test_baser():
         # test .kels insertion order dup methods.  dup vals are insertion order
         key = snKey(preb, 0)
         vals = [b"z", b"m", b"x", b"a"]
+        deserializedVals = ["z", "m", "x", "a"]
 
-        assert db.getKes(key) == []
-        assert db.getKeLast(key) == None
-        assert db.cntKes(key) == 0
-        assert db.delKes(key) == False
-        assert db.putKes(key, vals) == True
-        assert db.getKes(key) == vals  # preserved insertion order
-        assert db.cntKes(key) == len(vals) == 4
-        assert db.getKeLast(key) == vals[-1]
-        assert db.putKes(key, vals=[b'a']) == False   # duplicate
-        assert db.getKes(key) == vals  #  no change
-        assert db.addKe(key, b'a') == False   # duplicate
-        assert db.addKe(key, b'b') == True
-        assert db.getKes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delKes(key) == True
-        assert db.getKes(key) == []
+        assert db.kels.getOn(keys=key) == []
+        assert db.kels.getOnLast(keys=key)== None
+        assert db.kels.cntOnAll(keys=key) == 0
+        assert db.kels.remOn(key) == False
+        assert db.kels.putOn(keys=key, vals=vals) == True
+        assert db.kels.getOn(keys=key) == deserializedVals  # preserved insertion order
+        assert db.kels.cntOnAll(keys=key) == len(vals) == 4
+        assert db.kels.getOnLast(keys=key) == deserializedVals[-1]
+        assert db.kels.putOn(keys=key, vals=[b'a']) == False   # duplicate
+        assert db.kels.getOn(keys=key) == deserializedVals  #  no change
+        assert db.kels.addOn(keys=key, val=b'a') == False   # duplicate
+        assert db.kels.addOn(keys=key, val=b'b') == True
+        assert db.kels.getOn(keys=key) == deserializedVals + ['b']
+        assert db.kels.remOn(key) == True
+        assert db.kels.getOn(keys=key) == []
 
         # Partially Signed Escrow Events
         # test .pses insertion order dup methods.  dup vals are insertion order
@@ -1662,7 +1661,8 @@ def test_clean_baser():
         assert natHab.kever.fn == 6
         natsaid = 'EA3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo'
         assert natHab.kever.serder.said == natsaid
-        ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+        ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
+        ldig = ldig.encode("utf-8")
         assert ldig == natHab.kever.serder.saidb
         serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
         assert serder.said == natHab.kever.serder.said
@@ -1674,7 +1674,8 @@ def test_clean_baser():
         # test reopenDB with reuse  (because temp)
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
-            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
+            ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
@@ -1726,7 +1727,8 @@ def test_clean_baser():
         # see if database is back where it belongs
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
-            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
+            ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
@@ -1782,51 +1784,42 @@ def test_fetchkeldel():
     with openDB() as db:
         # test getKelIter
         sn = 0
-        key = snKey(preb, sn)
-        assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'00000000000000000000000000000000')
         vals0 = [skedb]
-        assert db.addKe(key, vals0[0]) == True
+        assert db.kels.addOn(keys=preb, on=sn, val=vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals1:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals2:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
-        vals = [bytes(val) for val in db.getKelIter(preb)]
-        allvals = vals0 + vals1 + vals2
+        vals = list(db.kels.getOnIterAll(keys=preb))
+        allvals = [v.decode("utf-8") for v in (vals0 + vals1 + vals2)]
         assert vals == allvals
 
         # test getKelEstIter
         preb = 'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x'.encode("utf-8")
         sn = 0
-        key = snKey(preb, sn)
-        assert key == (b'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x.'
-                       b'00000000000000000000000000000000')
+
         vals0 = [skedb]
-        assert db.addKe(key, vals0[0]) == True
+        assert db.kels.addOn(keys=preb, on=sn, val=vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals1:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals2:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
-        vals = [bytes(val) for val in db.getKelLastIter(preb)]
-        lastvals = [vals0[-1], vals1[-1], vals2[-1]]
+        vals = list(db.kels.getOnLastIter(keys=preb))
+        lastvals = [v.decode("utf-8") for v in (vals0[-1], vals1[-1], vals2[-1])]
         assert vals == lastvals
 
 
