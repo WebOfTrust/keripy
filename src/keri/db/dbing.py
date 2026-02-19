@@ -1630,7 +1630,7 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): base key
             on (int): ordinal number at which to add to key form effective key
-            ion (int): starting ordinal value, default 0
+            ion (int): starting insertion ordinal value, default 0
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
@@ -1657,7 +1657,7 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): base key
             on (int): ordinal number at which to add to key form effective key
-            ion (int): starting ordinal value, default 0
+            ion (int): starting insertion ordinal value, default 0
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
@@ -1895,9 +1895,8 @@ class LMDBer(filing.Filer):
         """Iterates over top branch of all insertion ordered set values where
         each key startwith top. Assumes each effective onkey = key + sep + on
         where on is ordinal and each full key = onkey + sep + ion where ion is
-        hidden insertion ordering ordinal suffic for each set at onkey.
-
-        Insertion ordering suffix
+        hidden insertion ordering ordinal suffix for each set at onkey.
+        Items are triples of (keys, on, val)
 
         Returns:
             items (Iterator[(str, int, memoryview)]): iterator of triples (key, on, val)
@@ -1945,7 +1944,10 @@ class LMDBer(filing.Filer):
         Raises StopIteration Error when done.
 
         Returns:
-            items (Iterator[(key, on, val)]): triples of key, on, val
+            items (Iterator[(key, int, bytes)]): iterator of triples
+                (key, on, val)
+                where key forms base key, on is int, and val is entry value at
+                with insertion ordering suffix removed from effective key.
 
         Parameters:
             db (subdb): named sub db in lmdb
@@ -2194,7 +2196,7 @@ class LMDBer(filing.Filer):
         When key is empty then retrieves whole db in backwards order
         When on is None then retrieves all on for key <= key
         Returned items are triples of (key, on, val)
-        Raises StopIteration Error when done.
+        Raises StopIterationError when done.
 
         Backwards means decreasing numerical value of ion, for each on and
         decreasing numerical value on for each key and decreasing lexocographic
@@ -2202,6 +2204,7 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator[(bytes, int, memoryview)]): triples of (key, on, val)
+                in backwards order
 
         Parameters:
             db (subdb): named sub db in lmdb
@@ -2252,7 +2255,7 @@ class LMDBer(filing.Filer):
         When key is empty then retrieves whole db in backwards order
         When on is None then retrieves all on for key <= key
         Returned items are triples of (key, on, val)
-        Raises StopIteration Error when done.
+        Raises StopIterationError when done.
 
         Backwards means decreasing numerical value of ion, for each on and
         decreasing numerical value on for each key and decreasing lexocographic

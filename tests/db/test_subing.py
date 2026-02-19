@@ -2178,6 +2178,21 @@ def test_cesr_ioset_suber():
     assert not db.opened
 
 
+def test_on_ioset_suber():
+    """
+    Test OnIoSetSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        oissuber = subing.OnIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(oissuber, subing.OnIoSetSuber)
+        assert not oissuber.sdb.flags()["dupsort"]
+
+
 def test_serder_suber():
     """
     Test SerderSuber LMDBer sub database class
@@ -3746,6 +3761,7 @@ if __name__ == "__main__":
     test_cat_cesr_ioset_suber()
     test_cesr_dup_suber()
     test_cat_cesr_dup_suber()
+    test_on_ioset_suber()
     test_serder_suber()
     test_serder_ioset_suber()
     test_schemer_suber()
