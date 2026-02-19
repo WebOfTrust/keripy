@@ -22,24 +22,24 @@ function isSuccess() {
     fi
 }
 
-# Test scripts
-# printf "\n************************************\n"
-# printf "Running demo-script.sh"
-# printf "\n************************************\n"
-# "${script_dir}/basic/demo-script.sh"
-# isSuccess
+Test scripts
+printf "\n************************************\n"
+printf "Running demo-script.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/demo-script.sh"
+isSuccess
 
-# printf "\n************************************\n"
-# printf "Running demo-witness-script.sh"
-# printf "\n************************************\n"
-# "${script_dir}/basic/demo-witness-script.sh"
-# isSuccess
+printf "\n************************************\n"
+printf "Running demo-witness-script.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/demo-witness-script.sh"
+isSuccess
 
-# printf "\n************************************\n"
-# printf "Running demo-witness-async-script.sh"
-# printf "\n************************************\n"
-# "${script_dir}/basic/demo-witness-async-script.sh"
-# isSuccess
+printf "\n************************************\n"
+printf "Running demo-witness-async-script.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/demo-witness-async-script.sh"
+isSuccess
 
 printf "\n************************************\n"
 printf "Running delegate.sh"
