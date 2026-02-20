@@ -2129,8 +2129,8 @@ class BaseHab:
                             if sprefixer.qb64 == cuedKed["i"]:
                                 found = True
                     else:  # find if already rcts of own icp
-                        for couple in self.db.getRctsIter(dgkey):
-                            if bytes(couple).decode("utf-8").startswith(cuedKed["i"]):
+                        for prefixer, cigar in self.db.rcts.getIter(dgkey):
+                            if prefixer.qb64.startswith(cuedKed["i"]):
                                 found = True  # yes so don't send own inception
 
                     if not found:  # no receipt from remote so send own inception

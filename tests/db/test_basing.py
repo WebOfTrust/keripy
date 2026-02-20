@@ -50,7 +50,7 @@ def test_baser():
     assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, subing.CesrSuber)
-    assert isinstance(baser.rcts, lmdb._Database)
+    assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
     assert isinstance(baser.ures, lmdb._Database)
     assert isinstance(baser.kels, subing.OnIoDupSuber)
     assert isinstance(baser.ooes, subing.IoDupSuber)
@@ -81,7 +81,7 @@ def test_baser():
     assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, subing.CesrSuber)
-    assert isinstance(baser.rcts, lmdb._Database)
+    assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
     assert isinstance(baser.ures, lmdb._Database)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
@@ -108,7 +108,7 @@ def test_baser():
         assert isinstance(baser.evts, subing.SerderSuber)
         assert isinstance(baser.sigs, lmdb._Database)
         assert isinstance(baser.dtss, subing.CesrSuber)
-        assert isinstance(baser.rcts, lmdb._Database)
+        assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
         assert isinstance(baser.ures, lmdb._Database)
         assert isinstance(baser.ooes, subing.IoDupSuber)
         assert isinstance(baser.pses, subing.IoDupSuber)
@@ -433,41 +433,85 @@ def test_baser():
         assert db.getWigs(key) == []
 
         # test .rcts sub db methods dgkey
-        assert db.getRcts(key) == []
-        assert db.cntRcts(key) == 0
-        assert db.delRcts(key) == False
-
-        # dup vals are lexocographic
-        assert db.putRcts(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getRcts(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntRcts(key) == 4
-        assert db.putRcts(key, vals=[b'a']) == True   # duplicate
-        assert db.getRcts(key) == [b'a', b'm', b'x', b'z']
-        assert db.addRct(key, b'a') == False   # duplicate
-        assert db.addRct(key, b'b') == True
-        assert db.getRcts(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getRctsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert db.delRcts(key) == True
-        assert db.getRcts(key) == []
-        vals = [b"z", b"m", b"x", b"a"]
-        assert db.putRcts(key, vals) == True
-        for val in vals:
-            assert db.delRcts(key, val) == True
-        assert db.getRcts(key) == []
-        assert db.putRcts(key, vals) == True
-        for val in db.getRctsIter(key):
-            assert db.delRcts(key, val) == True
-        assert db.getRcts(key) == []
-
-        assert db.putRcts(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
-        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert db.putRcts(key, vals=[wit1b + wsig1b]) == True
-        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert db.delRcts(key) == True
-        assert db.putRcts(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
-        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  # lex order
-        assert db.delRcts(key) == True
-        assert db.getRcts(key) == []
+   
+        # Create test prefixes and cigars
+        wit0 = coring.Prefixer(qb64=wit0b.decode('utf-8'))  # Convert from qb64 string
+        wit1 = coring.Prefixer(qb64=wit1b.decode('utf-8'))
+        
+        # Create cigars (non-indexed signatures)
+        cigar0 = coring.Cigar(qb64=wsig0b.decode('utf-8'))
+        cigar1 = coring.Cigar(qb64=wsig1b.decode('utf-8'))
+        
+        # Test with CESR tuples (insertion order)
+        assert db.rcts.put(key, vals=[(wit0, cigar0), (wit1, cigar1)]) == True
+        result = db.rcts.get(key)
+        assert len(result) == 2
+        # Check insertion order: wit0 inserted first, wit1 second
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+        
+        # Test duplicate (should not add)
+        assert db.rcts.put(key, vals=[(wit0, cigar0)]) == False
+        result = db.rcts.get(key)
+        assert len(result) == 2
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+        
+        # Test adding new item
+        wit2 = coring.Prefixer(qb64='BNewTestPrefix000000000000000000000000000000')
+        cigar2 = coring.Cigar(qb64='BNewTestSignature00000000000000000000000000000000000000000000000000000000000000000000000')
+        assert db.rcts.add(key, (wit2, cigar2)) == True
+        result = db.rcts.get(key)
+        assert len(result) == 3
+        # Insertion order: wit0, wit1, wit2
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+        assert result[2][0].qb64 == wit2.qb64
+        assert result[2][1].qb64 == cigar2.qb64
+        
+        # Test duplicate add returns False
+        assert db.rcts.add(key, (wit0, cigar0)) == False
+        
+        # Test getIter maintains insertion order
+        iter_result = [val for val in db.rcts.getIter(key)]
+        assert len(iter_result) == 3
+        assert iter_result[0][0].qb64 == wit0.qb64
+        assert iter_result[0][1].qb64 == cigar0.qb64
+        assert iter_result[1][0].qb64 == wit1.qb64
+        assert iter_result[1][1].qb64 == cigar1.qb64
+        assert iter_result[2][0].qb64 == wit2.qb64
+        assert iter_result[2][1].qb64 == cigar2.qb64
+        
+        # Test removal
+        assert db.rcts.rem(key) == True
+        assert db.rcts.get(key) == []
+        
+        # Test insertion order preserved when inserting in different order
+        vals = [(wit1, cigar1), (wit0, cigar0)]
+        assert db.rcts.put(key, vals) == True
+        result = db.rcts.get(key)
+        assert len(result) == 2
+        # Should maintain insertion order: wit1 first, wit0 second
+        assert result[0][0].qb64 == wit1.qb64
+        assert result[0][1].qb64 == cigar1.qb64
+        assert result[1][0].qb64 == wit0.qb64
+        assert result[1][1].qb64 == cigar0.qb64
+        
+        # Test individual removal
+        assert db.rcts.rem(key, (wit1, cigar1)) == True
+        result = db.rcts.get(key)
+        assert len(result) == 1
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        
+        assert db.rcts.rem(key) == True
+        assert db.rcts.get(key) == []
 
         # Unverified Receipt Escrows
         # test .ures insertion order dup methods.  dup vals are insertion order
