@@ -863,7 +863,11 @@ class CesrSuberBase(SuberBase):
 
     """
 
-    def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
+    def __init__(self,
+                 *pa,
+                 klas: Type[coring.Matter] = coring.Matter,
+                 strict: bool = False,
+                 **kwa):
         """
         Inherited Parameters:
             db (dbing.LMDBer): base db
@@ -878,19 +882,33 @@ class CesrSuberBase(SuberBase):
         Parameters:
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
                 Indexer or Counter or any ducktyped class of Matter
+            strict (bool): True means enforce val in ._ser matches .klas
+                           False means do not enforce. Default False
 
         """
         super(CesrSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
+        self.strict = bool(strict)
 
 
-    def _ser(self, val: coring.Matter):
+    def _ser(self, val: coring.Matter | bytes | bytearray | memoryview | str):
         """
         Serialize value to bytes to store in db
         Parameters:
             val (coring.Matter): instance Matter ducktype with .qb64b attribute
         """
-        return val.qb64b
+        if hasattr(val, "qb64b"):
+            if self.strict and not isinstance(val, self.klas):
+                raise TypeError(f"Expected {self.klas}, got {type(val)}.")
+            raw = val.qb64b
+        elif isinstance(val, str):
+            raw = val.encode("utf-8")
+        elif isinstance(val, (bytes, bytearray, memoryview)):
+            raw = bytes(val)
+        else:
+            raise TypeError(f"Unsupported CESR value type: {type(val)}.")
+
+        return self.klas(qb64b=raw).qb64b if self.strict else raw
 
 
     def _des(self, val: memoryview | bytes):
@@ -976,7 +994,11 @@ class CatCesrSuberBase(CesrSuberBase):
                 , each of to Type[coring.Matter etc]
     """
 
-    def __init__(self, *pa, klas: Iterable|Type[coring.Matter]|None = None, **kwa):
+    def __init__(self,
+                 *pa,
+                 klas: Iterable | Type[coring.Matter] | None = None,
+                 strict: bool = False,
+                 **kwa):
         """
         Inherited Parameters:
             db (dbing.LMDBer): base db
@@ -993,16 +1015,22 @@ class CatCesrSuberBase(CesrSuberBase):
                     reference to subclass of Matter or Indexer or Counter or
                     any ducktyped class of Matter
                     None is replaced with default Matter
+            strict (bool): True means enforce val in ._ser matches .klas
+                           False means do not enforce. Default False
 
         """
         if klas is None:
             klas = (coring.Matter, )  # set default to tuple of single Matter
         if not isNonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
-        super(CatCesrSuberBase, self).__init__(*pa, klas=klas, **kwa)
+        super(CatCesrSuberBase, self).__init__(*pa,
+                                               klas=klas,
+                                               strict=strict,
+                                               **kwa)
 
 
-    def _ser(self, val: Union[Iterable, coring.Matter]):
+    def _ser(self,
+             val: Union[Iterable, coring.Matter, bytes, bytearray, memoryview, str]):
         """
         Serialize val to bytes to store in db
         Concatenates .qb64b of each instance in val and returns val bytes
@@ -1016,7 +1044,40 @@ class CatCesrSuberBase(CesrSuberBase):
         """
         if not isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
-        return (b''.join(obj.qb64b for obj in val))
+
+        vals = tuple(val) if self.strict else val
+        if self.strict and len(vals) != len(self.klas):
+            raise ValueError(f"Expected {len(self.klas)} values, got {len(vals)}.")
+
+        out = []
+        if self.strict:
+            for klas, item in zip(self.klas, vals):
+                if hasattr(item, "qb64b"):
+                    if not isinstance(item, klas):
+                        raise TypeError(f"Expected {klas}, got {type(item)}.")
+                    raw = item.qb64b
+                elif isinstance(item, str):
+                    raw = item.encode("utf-8")
+                elif isinstance(item, (bytes, bytearray, memoryview)):
+                    raw = bytes(item)
+                else:
+                    raise TypeError(f"Unsupported CESR value type: {type(item)}.")
+
+                out.append(klas(qb64b=raw).qb64b)
+        else:
+            for item in val:
+                if hasattr(item, "qb64b"):
+                    raw = item.qb64b
+                elif isinstance(item, str):
+                    raw = item.encode("utf-8")
+                elif isinstance(item, (bytes, bytearray, memoryview)):
+                    raw = bytes(item)
+                else:
+                    raise TypeError(f"Unsupported CESR value type: {type(item)}.")
+
+                out.append(raw)
+
+        return b''.join(out)
 
     def _des(self, val: memoryview | bytes | bytearray):
         """
