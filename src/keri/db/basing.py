@@ -1029,7 +1029,7 @@ class Baser(dbing.LMDBer):
         self.kels = subing.OnIoDupSuber(db=self, subkey='kels.')
         self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
-                                        klas=(coring.Number, coring.Saider))
+                                        klas=(coring.Number, coring.Diger))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
@@ -1042,7 +1042,7 @@ class Baser(dbing.LMDBer):
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
-                                        klas=(coring.Seqner, coring.Saider))
+                                        klas=(coring.Seqner, coring.Diger))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
@@ -1711,10 +1711,10 @@ class Baser(dbing.LMDBer):
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
-            seqner, saider = duple
+            seqner, diger = duple
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
                                     count=1, version=kering.Vrsn_1_0).qb64b)
-            atc.extend(seqner.qb64b + saider.qb64b)
+            atc.extend(seqner.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements

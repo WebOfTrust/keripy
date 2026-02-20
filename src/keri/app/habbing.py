@@ -2070,10 +2070,10 @@ class BaseHab:
             msg.extend(sig.qb64b)  # attach sig
 
         if duple is not None:
-            seqner, saider = duple
+            seqner, diger = duple
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
                                version=kering.Vrsn_1_0).qb64b)
-            msg.extend(seqner.qb64b + saider.qb64b)
+            msg.extend(seqner.qb64b + diger.qb64b)
 
         return msg
 

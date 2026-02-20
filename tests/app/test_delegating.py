@@ -63,8 +63,8 @@ def test_anchorer(seeder):
         couple = seqner.qb64b + saider.qb64b
         result = delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b + rsaider.qb64b == couple
+        rseqner, rdiger = result
+        assert rseqner.qb64b + rdiger.qb64b == couple
 
 
 def anchorer_test_do(tymth=None, tock=0.0, **opts):
@@ -121,8 +121,8 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     couple = seqner.qb64b + saider.qb64b
 
     while result := delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)):
-        rseqner, rsaider = result
-        if rseqner.qb64b + rsaider.qb64b == couple:
+        rseqner, rdiger = result
+        if rseqner.qb64b + rdiger.qb64b == couple:
             break
         yield tock
 
