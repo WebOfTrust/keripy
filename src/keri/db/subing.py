@@ -893,9 +893,17 @@ class CesrSuberBase(SuberBase):
 
     def _ser(self, val: coring.Matter | bytes | bytearray | memoryview | str):
         """
-        Serialize value to bytes to store in db
+        Serialize value to bytes to store in db.
+
         Parameters:
-            val (coring.Matter): instance Matter ducktype with .qb64b attribute
+            val (coring.Matter | bytes | bytearray | memoryview | str):
+                CESR object with .qb64b or already serialized qb64/qb64b material.
+
+        Returns:
+            bytes: serialized qb64b bytes suitable for db storage.
+
+        Raises:
+            TypeError: unsupported value type or wrong instance class when strict.
         """
         if hasattr(val, "qb64b"):
             if self.strict and not isinstance(val, self.klas):
@@ -1032,14 +1040,19 @@ class CatCesrSuberBase(CesrSuberBase):
     def _ser(self,
              val: Union[Iterable, coring.Matter, bytes, bytearray, memoryview, str]):
         """
-        Serialize val to bytes to store in db
-        Concatenates .qb64b of each instance in val and returns val bytes
-
-        Returns:
-           cat (bytes): concatenation of .qb64b of each object instance in vals
+        Serialize val tuple/iterable to concatenated bytes for db storage.
 
         Parameters:
-           val (Union[Iterable, coring.Matter]): of subclass instances.
+           val (Union[Iterable, coring.Matter, bytes, bytearray, memoryview, str]):
+               iterable of CESR objects and/or serialized qb64/qb64b material.
+               Non-iterables are wrapped as a one-item tuple.
+
+        Returns:
+           bytes: concatenation of serialized qb64b values in order.
+
+        Raises:
+           ValueError: when strict and tuple arity does not match .klas.
+           TypeError: unsupported value type or wrong slot class when strict.
 
         """
         if not isNonStringIterable(val):  # not iterable
