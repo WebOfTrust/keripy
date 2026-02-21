@@ -9,7 +9,7 @@ from keri.app import habbing, keeping
 from keri.core import Signer
 from keri.core import coring, serdering
 from keri.core import eventing as keventing
-from keri.core.coring import versify, Kinds, Ilks, MtrDex, Prefixer, Seqner, Saider
+from keri.core.coring import versify, Kinds, Ilks, MtrDex, Prefixer, Seqner, Saider, Diger
 from keri.db import basing
 from keri.db.dbing import snKey, dgKey
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \
@@ -392,10 +392,10 @@ def test_tever_escrow(mockCoringRandomNonce):
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        rdiger = Diger(qb64=rotser.said)
 
         with pytest.raises(MissingWitnessSignatureError):
-            Tever(serder=vcp, seqner=seqner, saider=saider, db=db, reger=reg)
+            Tever(serder=vcp, seqner=seqner, saider=rdiger, db=db, reger=reg)
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         vcp = reg.tvts.get(keys=dgkey)
@@ -406,7 +406,7 @@ def test_tever_escrow(mockCoringRandomNonce):
 
         number, diger = reg.ancs.get(keys=dgkey)
         assert number.num == seqner.sn
-        assert diger.qb64 == saider.qb64
+        assert diger.qb64 == rdiger.qb64
         assert reg.tels.get(keys=snKey(pre=regk, sn=0)) is None
         dig = reg.twes.getOn(keys=regk, on=0)
         dig = dig[0].encode("utf-8")
@@ -434,9 +434,9 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        rdiger = Diger(qb64=rotser.said)
 
-        tev = Tever(serder=vcp, seqner=seqner, saider=saider, db=db, reger=reg)
+        tev = Tever(serder=vcp, seqner=seqner, saider=rdiger, db=db, reger=reg)
 
         assert tev.prefixer.qb64 == vcp.pre
         assert tev.sn == 0
@@ -451,7 +451,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         number, diger = reg.ancs.get(keys=dgkey)
         assert number.num == seqner.sn
-        assert diger.qb64 == saider.qb64
+        assert diger.qb64 == rdiger.qb64
         assert reg.tels.get(keys=snKey(pre=regk, sn=0)).encode("utf-8") == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
         assert reg.tibs.get(keys=(regk, vcp.said)) == []
         assert reg.twes.getOn(keys=regk, on=0) == []
@@ -463,11 +463,11 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        diger = Diger(qb64=rotser.said)
 
         # should raise validation err because rotation is not supported
         with pytest.raises(ValidationError):
-            tev.update(serder=vrt, seqner=seqner, saider=saider)
+            tev.update(serder=vrt, seqner=seqner, saider=diger)
 
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
 
@@ -479,9 +479,9 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        rdiger = Diger(qb64=rotser.said)
 
-        tev.update(iss, seqner=seqner, saider=saider)
+        tev.update(iss, seqner=seqner, saider=rdiger)
 
         vci = vcdig
         dgkey = dgKey(pre=vci, dig=iss.said)
@@ -492,7 +492,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
             b'0+00:00"}')
         number, diger = reg.ancs.get(keys=dgkey)
         assert number.num == seqner.sn
-        assert diger.qb64 == saider.qb64
+        assert diger.qb64 == rdiger.qb64
 
         # revoke vc with no backers
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
@@ -503,9 +503,9 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        diger = Diger(qb64=rotser.said)
 
-        tev.update(rev, seqner=seqner, saider=saider)
+        tev.update(rev, seqner=seqner, saider=diger)
         dgkey = dgKey(pre=vci, dig=rev.said)
         assert reg.tvts.get(keys=dgkey).encode("utf-8") == (
             b'{"v":"KERI10JSON000120_","t":"rev","d":"EEXxqWHCGw1XAkzEX_32xyRSboJDIwCKZUA9'
@@ -544,9 +544,9 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        rdiger = Diger(qb64=rotser.said)
 
-        tev = Tever(serder=vcp, seqner=seqner, saider=saider, bigers=[valCigar], db=db, reger=reg)
+        tev = Tever(serder=vcp, seqner=seqner, saider=rdiger, bigers=[valCigar], db=db, reger=reg)
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         assert reg.tvts.get(keys=dgkey).encode("utf-8") == (
@@ -556,7 +556,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
             b'wSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV"],"n":"0AAUiJMii_rPXXCiLTEEaDT7"}')
         number, diger = reg.ancs.get(keys=dgkey)
         assert number.num == seqner.sn
-        assert diger.qb64 == saider.qb64
+        assert diger.qb64 == rdiger.qb64
         assert reg.tels.get(keys=snKey(pre=regk, sn=0)).encode("utf-8") == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
         assert [tib.qb64b for tib in reg.tibs.get(keys=(regk, vcp.said))] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
                                            b'QLbASSQLAZcC']
@@ -580,9 +580,9 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        diger = Diger(qb64=rotser.said)
 
-        tev.update(serder=vrt, seqner=seqner, saider=saider, bigers=[valCigar, debCigar])
+        tev.update(serder=vrt, seqner=seqner, saider=diger, bigers=[valCigar, debCigar])
 
         assert tev.baks == ['BPmRWtx8nwSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV',
                             'BJLT5kDB54CewL9oqnWdPBC5vxZV30u3i6o9HVcWMhZd']
@@ -599,9 +599,9 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        diger = Diger(qb64=rotser.said)
 
-        tev.update(bis, seqner=seqner, saider=saider, bigers=[valCigar, debCigar])
+        tev.update(bis, seqner=seqner, saider=diger, bigers=[valCigar, debCigar])
 
         vci = vcdig
         dgkey = dgKey(pre=vci, dig=bis.said)
@@ -631,11 +631,11 @@ def test_tevery():
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        diger = Diger(qb64=rotser.said)
 
         tvy = Tevery(reger=reg, db=db)
 
-        tvy.processEvent(serder=vcp, seqner=seqner, saider=saider)
+        tvy.processEvent(serder=vcp, seqner=seqner, saider=diger)
 
         assert regk in tvy.tevers
         tev = tvy.tevers[regk]
@@ -644,7 +644,7 @@ def test_tevery():
 
         # send vcp again, get error
         with pytest.raises(LikelyDuplicitousError):
-            tvy.processEvent(serder=vcp, seqner=seqner, saider=saider)
+            tvy.processEvent(serder=vcp, seqner=seqner, saider=diger)
 
         # process issue vc event
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
@@ -657,9 +657,9 @@ def test_tevery():
         rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        diger = Diger(qb64=rotser.said)
 
-        tvy.processEvent(serder=iss, seqner=seqner, saider=saider)
+        tvy.processEvent(serder=iss, seqner=seqner, saider=diger)
         status = tev.vcState(vcdig.decode("utf-8"))
         assert status.et == Ilks.iss
         assert status.s == '0'
@@ -673,9 +673,9 @@ def test_tevery():
         rotser = serdering.SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
-        saider = Saider(qb64=rotser.said)
+        diger = Diger(qb64=rotser.said)
 
-        tvy.processEvent(serder=rev, seqner=seqner, saider=saider)
+        tvy.processEvent(serder=rev, seqner=seqner, saider=diger)
         status = tev.vcState(vcdig.decode("utf-8"))
         assert status.et == Ilks.rev
         assert status.s == '1'
@@ -739,10 +739,10 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         rot1 = hab.rotate(data=[rseal1._asdict()])
         rotser1 = serdering.SerderKERI(raw=rot1)
         seqner1 = Seqner(sn=int(rotser1.ked["s"], 16))
-        saider1 = Saider(qb64=rotser1.said)
+        diger1 = Diger(qb64=rotser1.said)
 
         tvy = Tevery(reger=reg, db=db)
-        tvy.processEvent(serder=vcp, seqner=seqner1, saider=saider1,
+        tvy.processEvent(serder=vcp, seqner=seqner1, saider=diger1,
                         wigers=[valSigner.sign(ser=vcp.raw, index=0)])
         assert regk in tvy.tevers
 
@@ -760,7 +760,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         db.evts.rem(keys=(hab.pre, rotsaid2))
 
         with pytest.raises(MissingAnchorError):
-            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Saider(qb64b=rotsaid2), wigers=[biger])
+            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Diger(qb64b=rotsaid2), wigers=[biger])
 
         vci = vcdig.encode("utf-8") if isinstance(vcdig, str) else vcdig
         bis_saidb = bis.saidb if hasattr(bis.saidb, '__len__') else bis.said.encode("utf-8")
@@ -778,7 +778,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         assert tev.sn == 0
         # If unescrow succeeded, bis is in TEL and reprocessing raises duplicitous
         with pytest.raises(LikelyDuplicitousError):
-            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Saider(qb64b=rotsaid2), wigers=[biger])
+            tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Diger(qb64b=rotsaid2), wigers=[biger])
 
 
 if __name__ == "__main__":

@@ -59,10 +59,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         assert issuer.regk in regery.reger.tevers
 
@@ -74,20 +75,22 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         rev = issuer.revoke(said=creder.said)
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
                          regd=rev.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr:
@@ -98,10 +101,11 @@ def test_issuer(mockHelpingNowUTC):
             rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
             hab.interact(data=[rseal])
             seqner = coring.Seqner(sn=hab.kever.sn)
+            diger = coring.Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=issuer.regk,
                              regd=issuer.regd,
                              seqner=seqner,
-                             saider=coring.Saider(qb64=hab.kever.serder.said))
+                             saider=diger)
             regery.processEscrows()
             assert issuer.regk in regery.reger.tevers
 
@@ -115,10 +119,11 @@ def test_issuer(mockHelpingNowUTC):
             rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
             hab.interact(data=[rseal])
             seqner = coring.Seqner(sn=hab.kever.sn)
+            diger = coring.Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=issuer.regk,
                              regd=issuer.regd,
                              seqner=seqner,
-                             saider=coring.Saider(qb64=hab.kever.serder.said))
+                             saider=diger)
             regery.processEscrows()
             assert issuer.regk in regery.reger.tevers
 
@@ -128,10 +133,11 @@ def test_issuer(mockHelpingNowUTC):
             rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
             hab.interact(data=[rseal])
             seqner = coring.Seqner(sn=hab.kever.sn)
+            diger = coring.Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=iss.pre,
                              regd=iss.said,
                              seqner=seqner,
-                             saider=coring.Saider(qb64=hab.kever.serder.said))
+                             saider=diger)
             regery.processEscrows()
             state = issuer.tever.vcState(vci=creder.said)
             assert state.et == coring.Ilks.iss
@@ -140,10 +146,11 @@ def test_issuer(mockHelpingNowUTC):
             rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
             hab.interact(data=[rseal])
             seqner = coring.Seqner(sn=hab.kever.sn)
+            diger = coring.Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=rev.pre,
                              regd=rev.said,
                              seqner=seqner,
-                             saider=coring.Saider(qb64=hab.kever.serder.said))
+                             saider=diger)
             regery.processEscrows()
             state = issuer.tever.vcState(vci=creder.said)
             assert state.et == coring.Ilks.rev
@@ -158,10 +165,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         assert issuer.regk in regery.reger.tevers
 
@@ -170,10 +178,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
         assert state.et == coring.Ilks.bis
@@ -184,10 +193,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(rot.pre, rseq.snh, rot.said)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rot.pre,
                          regd=rot.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.state()
         assert state.et == coring.Ilks.vrt
@@ -196,10 +206,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
                          regd=rev.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
         assert state.et == coring.Ilks.brv
@@ -213,10 +224,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         assert issuer.regk in regery.reger.tevers
 
@@ -225,10 +237,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
         assert state.et == coring.Ilks.iss
@@ -237,10 +250,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
                          regd=rev.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
         assert state.et == coring.Ilks.rev
@@ -258,10 +272,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.rotate(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         assert issuer.regk in regery.reger.tevers
 
@@ -271,10 +286,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(rot.pre, rseq.snh, rot.said)._asdict()
         hab.rotate(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rot.pre,
                          regd=rot.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.state()
         assert state.et == coring.Ilks.vrt
@@ -284,10 +300,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         hab.rotate(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
         assert state.et == coring.Ilks.bis
@@ -298,10 +315,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(rot.pre, rseq.snh, rot.said)._asdict()
         hab.rotate(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rot.pre,
                          regd=rot.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.state()
         assert state.et == coring.Ilks.vrt
@@ -310,10 +328,11 @@ def test_issuer(mockHelpingNowUTC):
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
         hab.rotate(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
+        diger = coring.Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
                          regd=rev.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
         assert state.et == coring.Ilks.brv

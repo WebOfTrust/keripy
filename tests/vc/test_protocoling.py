@@ -50,7 +50,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=sidHab.kever.serder.said))
+                         saider=coring.Diger(qb64=sidHab.kever.serder.said))
         sidRgy.processEscrows()
 
         sidExc = exchanging.Exchanger(hby=sidHby, handlers=[])
@@ -85,7 +85,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=sidHab.kever.serder.said))
+                         saider=coring.Diger(qb64=sidHab.kever.serder.said))
         sidRgy.processEscrows()
 
         msg = creder.raw

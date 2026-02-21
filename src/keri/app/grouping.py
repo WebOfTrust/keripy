@@ -198,9 +198,9 @@ class Counselor(doing.DoDoer):
                 if serder := self.hby.db.fetchLastSealingEventByEventSeal(kever.delpre,
                                                                           seal=anchor):
                     sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
-                    asaider = coring.Saider(qb64b=serder.saidb)
+                    adiger = coring.Diger(qb64b=serder.saidb)
                     self.hby.db.aess.pin(keys=(pre, saider.qb64b),
-                                         val=(sner, asaider))  # authorizer event seal (delegator/issuer)
+                                         val=(sner, adiger))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 
@@ -549,10 +549,10 @@ def getEscrowedEvent(db, pre, sn):
         msg.extend(sig.qb64b)  # attach sig
 
     if duple is not None:
-        seqner, saider = duple
+        seqner, diger = duple
         msg.extend(core.Counter(core.Codens.SealSourceCouples,
                                 count=1, version=kering.Vrsn_1_0).qb64b)
-        msg.extend(seqner.qb64b + saider.qb64b)
+        msg.extend(seqner.qb64b + diger.qb64b)
 
     return msg
 

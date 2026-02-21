@@ -88,7 +88,7 @@ def test_counselor():
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -141,7 +141,7 @@ def test_counselor():
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -195,7 +195,7 @@ def test_counselor():
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -376,7 +376,7 @@ def test_the_seven():
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -438,7 +438,7 @@ def test_the_seven():
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -515,7 +515,7 @@ def test_the_seven():
                            toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor4.start(ghab=ghab4, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor4.start(ghab=ghab4, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby4.db.gpse.get(keys=(ghab4.pre,))

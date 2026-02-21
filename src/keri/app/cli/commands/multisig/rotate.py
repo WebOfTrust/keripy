@@ -215,7 +215,7 @@ class GroupMultisigRotate(doing.DoDoer):
                               serder=exn,
                               attachment=bytearray(ims))
 
-        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         while True:
             saider = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))

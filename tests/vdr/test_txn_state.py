@@ -28,10 +28,11 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
+        diger = coring.Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+                         saider=coring.Diger(qb64=bobHab.kever.serder.said))
         regery.processEscrows()
 
         assert issuer.regk == 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'
@@ -107,10 +108,11 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
+        diger = coring.Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         assert issuer.regk == 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'
@@ -205,10 +207,11 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
+        diger = coring.Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         assert issuer.regk == 'EH3hN33719ybSg21Kboy-V2jafwvQSHnY1HUGzzBqqk6'
@@ -329,10 +332,11 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
+        diger = coring.Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         assert issuer.regk == 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'
@@ -417,10 +421,11 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
+        diger = coring.Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         assert issuer.regk == 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'
@@ -444,10 +449,11 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
+        diger = coring.Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         tever = issuer.tevers[issuer.regk]
@@ -542,10 +548,11 @@ def test_tever_reload(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIs
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
+        diger = coring.Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+                         saider=diger)
         regery.processEscrows()
 
         assert issuer.regk == 'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ'

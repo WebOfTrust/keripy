@@ -310,8 +310,8 @@ class JoinDoer(doing.DoDoer):
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
-            saider = coring.Saider(qb64b=serder.saidb)
-            yield from self.startCounselor(ghab, prefixer, seqner, saider)
+            diger = coring.Diger(qb64b=serder.saidb)
+            yield from self.startCounselor(ghab, prefixer, seqner, diger)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
@@ -444,7 +444,7 @@ class JoinDoer(doing.DoDoer):
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
 
-            yield from self.startCounselor(ghab, prefixer, seqner, coring.Saider(qb64=serder.said))
+            yield from self.startCounselor(ghab, prefixer, seqner, coring.Diger(qb64=serder.said))
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
