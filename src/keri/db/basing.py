@@ -700,7 +700,7 @@ class Baser(dbing.LMDBer):
             subkey "aess."
             dgKey
             DB is keyed by identifier prefix plus digest of key event
-            Value is (Number, Saider) tuple; first component serialized as
+            Value is (Number, Diger) tuple; first component serialized as
             Huge (fixed 24-char), used to lookup authorizer's source event
             in .kels sub DB.
             Only one value per DB key is allowed.
@@ -816,7 +816,7 @@ class Baser(dbing.LMDBer):
             of delegating source event in which seal of delegated event appears.
             dgKey
             Values are serialized instances of CatCesrSuber as couples
-            (Seqner.qb64b, Saider.qb64b) used to lookup source event in delegator's
+            (Seqner.qb64b, Diger.qb64b) used to lookup source event in delegator's
             KEL.
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
