@@ -50,6 +50,7 @@ import platform
 import shutil
 import stat
 import tempfile
+from abc import ABC, abstractmethod
 from collections import abc
 from contextlib import contextmanager
 from typing import Union
@@ -256,6 +257,397 @@ def clearDatabaserDir(path):
         shutil.rmtree(path)
 
 
+class DatabaseError(Exception):
+    """Base exception for database backend errors."""
+
+
+class BadKeySizeError(DatabaseError):
+    """Key is empty, too large, or wrong size for the backend."""
+
+
+class Dber(ABC):
+    """Abstract base class for database backends.
+
+    Defines the interface that all database backends must implement.
+    The database has a 3-level partitioning hierarchy:
+      1. Environment (name + base) - top partition
+      2. Sub-database (subkey like 'sigs.', 'evts.') - sub-partition
+      3. Record key (dgKey, snKey, etc.) - individual records
+
+    Attributes:
+        name (str): unique path component used in partition identity
+        base (str): another unique path component for partition identity
+        temp (bool): True means temporary database, cleared on close
+        opened (bool): True means database is open and ready
+    """
+
+    def reopen(self, **kwa):
+        """Open or reopen the database.
+        Default implementation chains to super() for MRO compatibility
+        (e.g., Filer.reopen for path setup in LMDBer).
+        Subclasses that don't need MRO chaining can override freely.
+        """
+        sup = super()
+        if hasattr(sup, 'reopen'):
+            return sup.reopen(**kwa)
+        return True
+
+    def close(self, clear=False):
+        """Close the database. If clear, remove all data.
+        Default implementation chains to super() for MRO compatibility.
+        """
+        sup = super()
+        if hasattr(sup, 'close'):
+            return sup.close(clear=clear)
+        return None
+
+    @abstractmethod
+    def open_sub(self, subkey, dupsort=False):
+        """Create or open a named sub-database partition.
+
+        Parameters:
+            subkey (str): sub-database name (e.g. 'sigs.', 'evts.')
+            dupsort (bool): True means enable duplicate values at each key
+
+        Returns:
+            Opaque sub-database handle for use with storage methods.
+        """
+
+    # Universal methods
+    @abstractmethod
+    def delTop(self, db, top=b''):
+        """Delete all values in branch of db given top key."""
+
+    @abstractmethod
+    def cntAll(self, db):
+        """Return count of all entries in db."""
+
+    @abstractmethod
+    def getTopItemIter(self, db, top=b''):
+        """Iterate over branch of db given by top key.
+        Yields (key, val) tuples."""
+
+    # Val family - single value per key (dupsort==False)
+    @abstractmethod
+    def putVal(self, db, key, val):
+        """Write val at key. Does not overwrite. Returns True if written."""
+
+    @abstractmethod
+    def setVal(self, db, key, val):
+        """Write val at key. Overwrites existing. Returns True if written."""
+
+    @abstractmethod
+    def getVal(self, db, key):
+        """Return val at key or None."""
+
+    @abstractmethod
+    def delVal(self, db, key):
+        """Delete val at key. Returns True if existed."""
+
+    # OnVal family - ordinal-keyed values
+    @abstractmethod
+    def putOnVal(self, db, key, on=0, val=b'', *, sep=b'.'):
+        """Write val at onkey (key+sep+on). Does not overwrite."""
+
+    @abstractmethod
+    def setOnVal(self, db, key, on=0, val=b'', *, sep=b'.'):
+        """Write val at onkey. Overwrites existing."""
+
+    @abstractmethod
+    def appendOnVal(self, db, key, val, *, sep=b'.'):
+        """Append val after last on at key. Returns on of appended entry."""
+
+    @abstractmethod
+    def getOnVal(self, db, key, on=0, *, sep=b'.'):
+        """Get val at onkey."""
+
+    @abstractmethod
+    def delOnVal(self, db, key, on=0, *, sep=b'.'):
+        """Delete val at onkey."""
+
+    @abstractmethod
+    def cntOnAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Count all ordinal-keyed values at key starting at on."""
+
+    @abstractmethod
+    def getOnIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterator of vals over all ordinal-keyed entries."""
+
+    @abstractmethod
+    def getOnItemIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterator of (key, on, val) triples over ordinal-keyed entries."""
+
+    # IoSet family - insertion-ordered sets (dupsort==False with hidden suffix)
+    @abstractmethod
+    def putIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """Add vals to insertion-ordered set at key."""
+
+    @abstractmethod
+    def pinIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """Erase and replace all vals at key."""
+
+    @abstractmethod
+    def addIoSetVal(self, db, key, val, *, sep=b'.'):
+        """Add val to set if not already present."""
+
+    @abstractmethod
+    def getIoSet(self, db, key, *, ion=0, sep=b'.'):
+        """Get list of set values at key."""
+
+    @abstractmethod
+    def getIoSetIter(self, db, key, *, ion=0, sep=b'.'):
+        """Get iterator over set values at key."""
+
+    @abstractmethod
+    def getIoSetLast(self, db, key, *, sep=b'.'):
+        """Get last added value at key or None."""
+
+    @abstractmethod
+    def getIoSetLastItem(self, db, key, *, sep=b'.'):
+        """Get last added (key, val) at key or empty tuple."""
+
+    @abstractmethod
+    def delIoSet(self, db, key, *, sep=b'.'):
+        """Delete all set values at key."""
+
+    @abstractmethod
+    def delIoSetVal(self, db, key, val, *, sep=b'.'):
+        """Delete specific val from set at key."""
+
+    @abstractmethod
+    def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
+        """Count values in set at key."""
+
+    @abstractmethod
+    def getTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
+        """Iterate (key, val) over top branch with hidden suffixes stripped."""
+
+    @abstractmethod
+    def getIoSetLastItemIterAll(self, db, key=b'', *, sep=b'.'):
+        """Iterate last (key, val) at each effective key."""
+
+    def getIoSetLastIterAll(self, db, key=b'', *, sep=b'.'):
+        """Iterate last val at each effective key. Default implementation."""
+        for key, val in self.getIoSetLastItemIterAll(db=db, key=key, sep=sep):
+            yield val
+
+    # Vals/Dup family - multiple values per key (dupsort==True)
+    @abstractmethod
+    def putVals(self, db, key, vals):
+        """Write each val in vals as dup at key."""
+
+    @abstractmethod
+    def addVal(self, db, key, val):
+        """Add val as dup at key if not already present."""
+
+    @abstractmethod
+    def getVals(self, db, key):
+        """Return list of dup values at key in lexicographic order."""
+
+    @abstractmethod
+    def getValsIter(self, db, key):
+        """Return iterator of dup values at key."""
+
+    @abstractmethod
+    def getValLast(self, db, key):
+        """Return last dup value at key in lexicographic order."""
+
+    @abstractmethod
+    def cntVals(self, db, key):
+        """Return count of dup values at key."""
+
+    @abstractmethod
+    def delVals(self, db, key, val=b''):
+        """Delete all dups at key, or specific dup if val provided."""
+
+    # IoDup family - insertion-ordered duplicates (dupsort==True with proem)
+    @abstractmethod
+    def putIoDupVals(self, db, key, vals):
+        """Write vals as insertion-ordered dups at key."""
+
+    @abstractmethod
+    def addIoDupVal(self, db, key, val):
+        """Add val as insertion-ordered dup at key."""
+
+    @abstractmethod
+    def getIoDupVals(self, db, key):
+        """Get list of dup values at key in insertion order."""
+
+    @abstractmethod
+    def getIoDupValsIter(self, db, key):
+        """Get iterator of dup values at key in insertion order."""
+
+    @abstractmethod
+    def getIoDupValLast(self, db, key):
+        """Get last insertion-ordered dup value at key."""
+
+    @abstractmethod
+    def delIoDupVals(self, db, key):
+        """Delete all dup values at key."""
+
+    @abstractmethod
+    def delIoDupVal(self, db, key, val):
+        """Delete specific dup val at key."""
+
+    @abstractmethod
+    def cntIoDups(self, db, key):
+        """Count insertion-ordered dup values at key."""
+
+    @abstractmethod
+    def getTopIoDupItemIter(self, db, top=b''):
+        """Iterate (key, val) over top branch with proems stripped."""
+
+    # OnIoSet composite methods - default implementations that delegate to
+    # IoSet methods with onKey-constructed keys. Subclasses need not override.
+
+    def putOnIoSetVals(self, db, key, *, on=0, vals=None, sep=b'.'):
+        """Write vals to IoSet at onkey = key + sep + on."""
+        return self.putIoSetVals(db=db, key=onKey(key, on, sep=sep), vals=vals, sep=sep)
+
+    def addOnIoSetVal(self, db, key, *, on=0, val=b'', sep=b'.'):
+        """Add val to IoSet at onkey."""
+        return self.addIoSetVal(db=db, key=onKey(key, on, sep=sep), val=val, sep=sep)
+
+    def appendOnIoSetVal(self, db, key, val, *, sep=b'.'):
+        """Append val after last on at key."""
+        return self.appendOnVal(db=db, key=key, val=val, sep=sep)
+
+    def getOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Get IoSet at onkey."""
+        return self.getIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+    def getOnIoSetIter(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Get IoSet iterator at onkey."""
+        return self.getIoSetIter(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+    def getOnIoSetLastItem(self, db, key, on=0, *, sep=b'.'):
+        """Get last item of IoSet at onkey."""
+        if last := self.getIoSetLastItem(db=db,
+                                         key=onKey(key, on, sep=sep),
+                                         sep=sep):
+            onkey, val = last
+            key, on = splitOnKey(onkey, sep=sep)
+            return (key, on, val)
+        return ()
+
+    def getOnIoSetLast(self, db, key, on=0, *, sep=b'.'):
+        """Get last val of IoSet at onkey."""
+        return self.getIoSetLast(db=db, key=onKey(key, on, sep=sep), sep=sep)
+
+    def delOnIoSet(self, db, key, *, on=0, sep=b'.'):
+        """Delete all IoSet vals at onkey."""
+        return self.delIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
+
+    def delOnIoSetVal(self, db, key, *, on=0, val=b'', sep=b'.'):
+        """Delete specific val from IoSet at onkey."""
+        return self.delIoSetVal(db, key=onKey(key, on, sep=sep), val=val, sep=sep)
+
+    def cntOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Count IoSet vals at onkey."""
+        return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+    def getTopOnIoSetItemIter(self, db, top=b'', *, sep=b'.'):
+        """Iterate (key, on, val) over top branch of OnIoSet entries."""
+        for onkey, val in self.getTopIoSetItemIter(db=db, top=top):
+            key, on = splitOnKey(onkey, sep=sep)
+            yield (key, on, val)
+
+    def getOnIoSetIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate vals over all OnIoSet entries."""
+        for key, on, val in self.getOnIoSetItemIterAll(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+    def getOnIoSetLastIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate last val at each on of OnIoSet."""
+        for key, on, val in self.getIoSetLastItemIterAll(db=db,
+                                                         key=onKey(key, on, sep=sep),
+                                                         sep=sep):
+            yield (val)
+
+    def getOnIoSetValBackIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate backward over vals of OnIoSet."""
+        for key, on, val in self.getOnIoDupItemBackIter(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+    # OnIoDup composite methods - default implementations
+    def putOnIoDupVals(self, db, key, on=0, vals=b'', *, sep=b'.'):
+        """Write vals as IoDups at onkey."""
+        return self.putIoDupVals(db=db, key=onKey(key, on, sep=sep), vals=vals)
+
+    def addOnIoDupVal(self, db, key, on=0, val=b'', sep=b'.'):
+        """Add val as IoDup at onkey."""
+        onky = onKey(key, on, sep=sep)
+        return self.addIoDupVal(db, key=onky, val=val)
+
+    def getOnIoDupVals(self, db, key, on=0, sep=b'.'):
+        """Get IoDup vals at onkey."""
+        return self.getIoDupVals(db=db, key=onKey(key, on, sep=sep))
+
+    def getOnIoDupValsIter(self, db, key, on=0, sep=b'.'):
+        """Get iterator of IoDup vals at onkey."""
+        return self.getIoDupValsIter(db=db, key=onKey(key, on, sep=sep))
+
+    def getOnIoDupLast(self, db, key, on: int = 0, *, sep=b'.'):
+        """Get last IoDup val at onkey."""
+        return self.getIoDupValLast(db=db, key=onKey(key, on, sep=sep))
+
+    def getOnIoDupLastValIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate last IoDup val at each onkey."""
+        for key, on, val in self.getOnIoDupLastItemIter(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+    def delOnIoDups(self, db, key, on=0, sep=b'.'):
+        """Delete all IoDups at onkey."""
+        return self.delIoDupVals(db, key=onKey(key, on, sep=sep))
+
+    def delOnIoDupVal(self, db, key, on=0, val=b'', sep=b'.'):
+        """Delete specific IoDup val at onkey."""
+        return self.delIoDupVal(db, key=onKey(key, on, sep=sep), val=val)
+
+    def cntOnIoDups(self, db, key, on=0, sep=b'.'):
+        """Count IoDups at onkey."""
+        return self.cntIoDups(db=db, key=onKey(key, on, sep=sep))
+
+    def getOnIoDupValBackIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate backward over IoDup vals."""
+        for key, on, val in self.getOnIoDupItemBackIter(db=db, key=key, on=on, sep=sep):
+            yield (val)
+
+    # These methods use backend-specific cursor operations and must be
+    # overridden by each backend.
+    @abstractmethod
+    def appendOnIoDupVal(self, db, key, val, *, sep=b'.'):
+        """Append val as IoDup after last on at key."""
+
+    @abstractmethod
+    def getOnIoDupLastItemIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate (key, on, val) of last IoDup at each onkey."""
+
+    @abstractmethod
+    def getOnIoDupItemIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate (key, on, val) over all IoDup entries."""
+
+    @abstractmethod
+    def getOnIoDupIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate vals over all IoDup entries."""
+
+    @abstractmethod
+    def getOnIoSetItemBackIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate backward (key, on, val) over OnIoSet."""
+
+    @abstractmethod
+    def getOnIoDupItemBackIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterate backward (key, on, val) over OnIoDup."""
+
+    @abstractmethod
+    def getOnIoSetItemIterAll(self, db, key=b'', on=None, *, sep=b'.'):
+        """Iterate (key, on, val) over all items of OnIoSet."""
+
+    @abstractmethod
+    def getOnIoSetLastItemIterAll(self, db, key=b'', on=None, *, sep=b'.'):
+        """Iterate last (key, on, val) at each on of OnIoSet."""
+
+
 @contextmanager
 def openLMDB(*, cls=None, name="test", temp=True, **kwa):
     """
@@ -292,7 +684,7 @@ def openLMDB(*, cls=None, name="test", temp=True, **kwa):
             lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
 
 
-class LMDBer(filing.Filer):
+class LMDBer(Dber, filing.Filer):
     """
     LBDBer base class for LMDB manager instances.
     Creates a specific instance of an LMDB database directory and environment.
@@ -427,6 +819,18 @@ class LMDBer(filing.Filer):
             self.version = keri.__version__
 
         return self.opened
+
+    def open_sub(self, subkey, dupsort=False):
+        """Open a named sub-database within the LMDB environment.
+
+        Parameters:
+            subkey (str): sub-database name
+            dupsort (bool): True means enable duplicate values at each key
+
+        Returns:
+            lmdb._Database: handle to the opened sub-database
+        """
+        return self.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
 
     @property
     def version(self):

@@ -12,7 +12,6 @@ from collections.abc import Iterable
 
 import cbor2
 import msgpack
-import lmdb
 
 
 from . import dbing
@@ -34,8 +33,8 @@ class KomerBase:
     Use an instance of one of the subclasses instead.
 
     Attributes:
-        db (dbing.LMDBer): instance of LMDB database manager class
-        sdb (lmdb._Database): instance of named sub db lmdb for this Komer
+        db (dbing.Dber): instance of database manager class
+        sdb: opaque sub-database handle
         schema (Type[dataclass]): class reference of dataclass subclass
         kind (str): serialization/deserialization type from coring.Serials
         serializer (types.MethodType): serializer method
@@ -44,7 +43,7 @@ class KomerBase:
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: dbing.LMDBer, *,
+    def __init__(self, db: dbing.Dber, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
                  kind: str = coring.Kinds.json,
@@ -53,9 +52,9 @@ class KomerBase:
                  **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
+            db (dbing.Dber): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str):  sub database key
             kind (str): serialization/deserialization type
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -65,7 +64,7 @@ class KomerBase:
         """
         super(KomerBase, self).__init__()
         self.db = db
-        self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
+        self.sdb = self.db.open_sub(subkey=subkey, dupsort=dupsort)
         self.schema = schema
         self.kind = kind
         self.serializer = self._serializer(kind)
@@ -262,16 +261,16 @@ class Komer(KomerBase):
     Keyspace Object Mapper factory class.
     """
     def __init__(self,
-                 db: dbing.LMDBer, *,
+                 db: dbing.Dber, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
                  kind: str = coring.Kinds.json,
                  **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
+            db (dbing.Dber): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str):  sub database key
             kind (str): serialization/deserialization type
         """
         super(Komer, self).__init__(db=db, subkey=subkey, schema=schema,
@@ -412,8 +411,8 @@ class IoSetKomer(KomerBase):
     of the set elements.
 
     Attributes:
-        db (dbing.LMDBer): instance of LMDB database manager class
-        sdb (lmdb._Database): instance of named sub db lmdb for this Komer
+        db (dbing.Dber): instance of database manager class
+        sdb: opaque sub-database handle
         schema (Type[dataclass]): class reference of dataclass subclass
         kind (str): serialization/deserialization type from coring.Serials
         serializer (types.MethodType): serializer method
@@ -421,16 +420,16 @@ class IoSetKomer(KomerBase):
         sep (str): separator for combining keys tuple of strs into key bytes
     """
     def __init__(self,
-             db: dbing.LMDBer, *,
+             db: dbing.Dber, *,
              subkey: str = 'recs.',
              schema: Type[dataclass],  # class not instance
              kind: str = coring.Kinds.json,
              **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
+            db (dbing.Dber): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str):  sub database key
             kind (str): serialization/deserialization type
         """
         super(IoSetKomer, self).__init__(db=db, subkey=subkey, schema=schema,
@@ -643,16 +642,16 @@ class DupKomer(KomerBase):
     This is a limitation of dupsort==True sub dbs in LMDB
     """
     def __init__(self,
-             db: dbing.LMDBer, *,
+             db: dbing.Dber, *,
              subkey: str = 'recs.',
              schema: Type[dataclass],  # class not instance
              kind: str = coring.Kinds.json,
              **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
+            db (dbing.Dber): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str):  sub database key
             kind (str): serialization/deserialization type
         """
         super(DupKomer, self).__init__(db=db, subkey=subkey, schema=schema,
