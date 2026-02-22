@@ -113,15 +113,15 @@ class SuberBase():
     Do not instantiate but use a subclass
 
     Attributes:
-        db (dbing.LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (dbing.Dber): base database
+        sdb: opaque sub-database handle
         sep (str): separator for combining keys tuple of strs into key bytes
         verify (bool): True means reverify when ._des from db when applicable
                        False means do not reverify. Default False
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: dbing.LMDBer, *,
+    def __init__(self, db: dbing.Dber, *,
                        subkey: str='docs.',
                        dupsort: bool=False,
                        sep: str=None,
@@ -129,8 +129,8 @@ class SuberBase():
                        **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (dbing.Dber): base db
+            subkey (str):  sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
                                each key
@@ -141,7 +141,7 @@ class SuberBase():
         """
         super(SuberBase, self).__init__()  # for multi inheritance
         self.db = db
-        self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
+        self.sdb = self.db.open_sub(subkey=subkey, dupsort=dupsort)
         self.sep = sep if sep is not None else self.Sep
         self.verify = True if verify else False
 

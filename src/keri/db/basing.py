@@ -29,7 +29,6 @@ import json
 
 import cbor2 as cbor
 import msgpack
-import lmdb
 import semver
 from ordered_set import OrderedSet as oset
 
@@ -1030,10 +1029,10 @@ class Baser(dbing.LMDBer):
         self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
                                         klas=(coring.Number, coring.Saider))
-        self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
-        self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
-        self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
-        self.ures = self.env.open_db(key=b'ures.', dupsort=True)
+        self.sigs = self.open_sub(subkey='sigs.', dupsort=True)
+        self.wigs = self.open_sub(subkey='wigs.', dupsort=True)
+        self.rcts = self.open_sub(subkey='rcts.', dupsort=True)
+        self.ures = self.open_sub(subkey='ures.', dupsort=True)
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
                                             klas=(coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
@@ -1044,9 +1043,6 @@ class Baser(dbing.LMDBer):
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
-        self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
-        self.dels = self.env.open_db(key=b'dels.', dupsort=True)
-        self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
@@ -1303,7 +1299,7 @@ class Baser(dbing.LMDBer):
 
         # Chunked image data for contact information for remote identifiers
         # TODO: clean
-        self.imgs = self.env.open_db(key=b'imgs.')
+        self.imgs = self.open_sub(subkey='imgs.')
 
         # Field values for identifier information for local identifiers. Keyed by prefix/field
         # TODO: clean
@@ -1321,7 +1317,7 @@ class Baser(dbing.LMDBer):
 
         # Chunked image data for identifier information for local identifiers
         # TODO: clean
-        self.iimgs = self.env.open_db(key=b'iimgs.')
+        self.iimgs = self.open_sub(subkey='iimgs.')
 
         # Delegation escrow dbs #
         # delegated partial witness escrow
@@ -1622,7 +1618,7 @@ class Baser(dbing.LMDBer):
                              "".format(copy.path, self.path))
 
         with reopenDB(db=self, reuse=True):  # make sure can reopen
-            if not isinstance(self.env, lmdb.Environment):
+            if not self.opened:
                 raise ValueError("Error cloning, unable to reopen."
                                  "".format(self.path))
 
