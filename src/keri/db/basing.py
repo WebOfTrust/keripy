@@ -710,14 +710,15 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .wigs is named sub DB of indexed witness signatures of event that may
+        .wigs is a CesrIoSetSuber of indexed witness signatures of event that may
             come directly or derived from a witness receipt message.
             Witnesses always have nontransferable identifier prefixes.
             The index is the offset of the witness into the witness list
             of the most recent establishment event wrt the receipted event.
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+            Stores Siger objects using CesrIoSetSuber
+            More than one Siger value per DB key is allowed
 
         .rcts is CatCesrIoSetSuber for event receipt couplets from nontransferable
             signers.
@@ -1030,7 +1031,7 @@ class Baser(dbing.LMDBer):
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
                                         klas=(coring.Number, coring.Saider))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
-        self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
+        self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=indexing.Siger)
         self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
@@ -1703,11 +1704,11 @@ class Baser(dbing.LMDBer):
             atc.extend(sig)
 
         # add indexed witness signatures to attachments
-        if wigs := self.getWigs(key=dgkey):
+        if wigers := self.wigs.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.WitnessIdxSigs,
-                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                atc.extend(wig)
+                                    count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                atc.extend(wiger.qb64b)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
@@ -1909,14 +1910,12 @@ class Baser(dbing.LMDBer):
         """
         # Verify fully receipted, because this witness may have persisted before all receipts
         # have been gathered if this ius a witness for serder.pre
-        dgkey = dbing.dgKey(serder.preb, serder.saidb)
-
         # get unique verified wigers and windices lists from wigers list
-        wigs = self.getWigs(key=dgkey)
+        wigers = self.wigs.get(keys=(serder.preb, serder.saidb))
         kever = self.kevers[serder.pre]
         toad = kever.toader.num
 
-        return not len(wigs) < toad
+        return not len(wigers) < toad
 
     def resolveVerifiers(self, pre=None, sn=0, dig=None):
         """
@@ -2064,61 +2063,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.sigs, key, val)
-
-    def getWigs(self, key):
-        """
-        Use dgKey()
-        Return list of indexed witness signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.wigs, key)
-
-    def getWigsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of indexed witness signatures at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.wigs, key)
-
-    def putWigs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes indexed witness signatures vals to key
-        Adds to existing signatures at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.wigs, key, vals)
-
-    def addWig(self, key, val):
-        """
-        Use dgKey()
-        Add indexed witness signature val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.wigs, key, val)
-
-    def cntWigs(self, key):
-        """
-        Use dgKey()
-        Return count of indexed witness signatures at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.wigs, key)
-
-    def delWigs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.wigs, key, val)
 
     def putUres(self, key, vals):
         """

@@ -1129,7 +1129,6 @@ class ReceiptEnd(doing.DoDoer):
         if said is None:
             raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({said}) not found")
         said = said.encode("utf-8")
-        dgkey = dbing.dgKey(preb, said)  # get message
         if not (serder := self.hab.db.evts.get(keys=(preb, said))):
             raise falcon.HTTPNotFound(description="Missing event for dig={}.".format(said))
         if serder.sn > 0:
@@ -1144,11 +1143,11 @@ class ReceiptEnd(doing.DoDoer):
                                    sn=sn,
                                    said=said.decode("utf-8"))
         rct = bytearray(rserder.raw)
-        if wigs := self.hab.db.getWigs(key=dgkey):
-            rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigs),
+        if wigers := self.hab.db.wigs.get(keys=(preb, said)):
+            rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
                                version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                rct.extend(wig)
+            for wiger in wigers:
+                rct.extend(wiger.qb64b)
 
         rep.set_header('Content-Type', "application/json+cesr")
         rep.status = falcon.HTTP_200
