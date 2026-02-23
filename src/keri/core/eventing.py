@@ -4251,8 +4251,7 @@ class Kevery:
                         wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                         self.db.addWig(key=dgkey, val=wiger.qb64b)  # write to db
                     else:  # not witness rect write receipt couple to database .rcts
-                        couple = cigar.verfer.qb64b + cigar.qb64b
-                        self.db.addRct(key=dgkey, val=couple)
+                        self.db.rcts.add(keys=dgkey, val=(cigar.verfer, cigar))
 
             wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
             for wiger in wigers:
@@ -4425,8 +4424,7 @@ class Kevery:
                     wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                     self.db.addWig(key=dgKey(pre, ldig), val=wiger.qb64b)
                 else:  # write receipt couple to database
-                    couple = cigar.verfer.qb64b + cigar.qb64b
-                    self.db.addRct(key=dgKey(pre, ldig), val=couple)
+                    self.db.rcts.add(keys=dgKey(pre, ldig), val=(cigar.verfer, cigar))
 
 
     def processAttachedReceiptQuadruples(self, serder, trqs, *, firner=None,
@@ -5305,7 +5303,7 @@ class Kevery:
         self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
 
         for cigar in cigars:
-            self.db.addRct(key=dgkey, val=cigar.verfer.qb64b + cigar.qb64b)
+            self.db.rcts.add(keys=dgkey, val=(cigar.verfer, cigar))
 
         # log escrowed
         logger.trace("Kevery: escrowed query not found event = %s", serder.said)
@@ -6415,8 +6413,7 @@ class Kevery:
                             wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                             self.db.addWig(key=dgKey(pre, serder.said), val=wiger.qb64b)
                         else:  # write receipt couple to database
-                            couple = cigar.verfer.qb64b + cigar.qb64b
-                            self.db.addRct(key=dgKey(pre, serder.said), val=couple)
+                            self.db.rcts.add(keys=dgKey(pre, serder.said), val=(cigar.verfer, cigar))
 
 
                 except UnverifiedReceiptError as ex:
@@ -6626,9 +6623,7 @@ class Kevery:
 
                     #  get nontrans endorsements
                     cigars = []
-                    cigs = self.db.getRcts(dgkey)  # list of wigs
-                    for cig in cigs:
-                        (_, cigar) = deReceiptCouple(cig)
+                    for prefixer, cigar in self.db.rcts.getIter(keys=dgkey):
                         cigars.append(cigar)
 
                     source = coring.Prefixer(qb64b=pre)
@@ -7127,11 +7122,9 @@ def loadEvent(db, preb, dig):
         receipts["transferable"] = trans
 
     # add nontrans receipts couples
-    if coups := db.getRcts(key=dgkey):
+    if duple := db.rcts.get(keys=dgkey):
         nontrans = []
-        for coup in coups:
-            raw = bytearray(coup)
-            (prefixer, cigar) = deReceiptCouple(raw, strip=True)
+        for prefixer, cigar in duple:
             nontrans.append(dict(prefix=prefixer.qb64, signature=cigar.qb64))
         receipts["nontransferable"] = nontrans
 
