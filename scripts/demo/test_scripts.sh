@@ -22,7 +22,7 @@ function isSuccess() {
     fi
 }
 
-Test scripts
+# Test scripts
 printf "\n************************************\n"
 printf "Running demo-script.sh"
 printf "\n************************************\n"
