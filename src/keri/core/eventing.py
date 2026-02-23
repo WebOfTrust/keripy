@@ -4424,7 +4424,7 @@ class Kevery:
                     wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                     self.db.wigs.add(keys=(pre, ldig), val=wiger)
                 else:  # write receipt couple to database
-                    self.db.rcts.add(keys=dgKey(pre, ldig), val=(cigar.verfer, cigar))
+                    self.db.rcts.add(keys=(pre, ldig), val=(cigar.verfer, cigar))
 
 
     def processAttachedReceiptQuadruples(self, serder, trqs, *, firner=None,
@@ -5303,7 +5303,7 @@ class Kevery:
         self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
 
         for cigar in cigars:
-            self.db.rcts.add(keys=dgkey, val=(cigar.verfer, cigar))
+            self.db.rcts.add(keys=(prefixer.qb64, serder.said), val=(cigar.verfer, cigar))
 
         # log escrowed
         logger.trace("Kevery: escrowed query not found event = %s", serder.said)
@@ -6417,7 +6417,7 @@ class Kevery:
                         self.db.wigs.add(keys=(pre, serder.said), val=wiger)
                     else:  # write receipt couple to database
                         couple = cigar.verfer.qb64b + cigar.qb64b
-                        self.db.rcts.add(keys=dgKey(pre, serder.said), val=(cigar.verfer, cigar))
+                        self.db.rcts.add(keys=(pre, serder.said), val=(cigar.verfer, cigar))
 
             except UnverifiedReceiptError as ex:
                 # still waiting on missing prior event to validate
@@ -6618,7 +6618,7 @@ class Kevery:
 
                     #  get nontrans endorsements
                     cigars = []
-                    for prefixer, cigar in self.db.rcts.getIter(keys=dgkey):
+                    for prefixer, cigar in self.db.rcts.getIter(keys=(pre.encode("utf-8"), edig.encode("utf-8"))):
                         cigars.append(cigar)
 
                     source = coring.Prefixer(qb64b=pre)
