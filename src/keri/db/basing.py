@@ -616,11 +616,9 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .kels is named sub DB of key event logs as indices that map sequence numbers
-            to serialized key event digests.
+        .kels is a named subDB instance of OnIoDupSuber for key event logs as indices that map a composite
+            key of the form "<pre><sep><on>" to serialized key event digests.
             Actual serialized key events are stored in .evts by SAID digest
-            Uses sequence number or sn.
-            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
@@ -722,16 +720,15 @@ class Baser(dbing.LMDBer):
             Stores Siger objects using CesrIoSetSuber
             More than one Siger value per DB key is allowed
 
-        .rcts is named sub DB of event receipt couplets from nontransferable
+        .rcts is CatCesrIoSetSuber for event receipt couplets from nontransferable
             signers.
             These are endorsements from nontrasferable signers who are not witnesses
             May be watchers or other
-            Each couple is concatenation of fully qualified items.
-            These are: non-transferale prefix plus non-indexed event signature
-            by that prefix.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+            Each entry is a duple of CESR objects: Prefixer and Cigar
+            DB is keyed by dgKey: identifier prefix plus digest of serialized event
+            Multiple values per key are stored as an ordered set (duplicates ignored,
+            insertion order preserved)
+
 
         .ures is named sub DB of unverified event receipt escrowed triples from
             non-transferable signers. Each triple is concatenation of fully
@@ -1029,13 +1026,14 @@ class Baser(dbing.LMDBer):
 
         self.evts = subing.SerderSuber(db=self, subkey='evts.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
-        self.kels = self.env.open_db(key=b'kels.', dupsort=True)
+        self.kels = subing.OnIoDupSuber(db=self, subkey='kels.')
         self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
                                         klas=(coring.Number, coring.Saider))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=indexing.Siger)
-        self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
+        self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
+                                             klas=(coring.Prefixer, coring.Cigar))
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
                                             klas=(coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
@@ -1732,11 +1730,12 @@ class Baser(dbing.LMDBer):
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
-        if coups := self.getRcts(key=dgkey):
+        if coups := self.rcts.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.NonTransReceiptCouples,
                                     count=len(coups), version=kering.Vrsn_1_0).qb64b)
-            for coup in coups:
-                atc.extend(coup)
+            for prefixer, cigar in coups:
+                atc.extend(prefixer.qb64b)
+                atc.extend(cigar.qb64b)
 
         # add first seen replay couple to attachments
         if not (dater := self.dtss.get(keys=dgkey)):
@@ -1934,12 +1933,12 @@ class Baser(dbing.LMDBer):
         if prefixer.transferable:
             # receipted event and receipter in database so get receipter est evt
             # retrieve dig of last event at sn of est evt of receipter.
-            sdig = self.getKeLast(key=dbing.snKey(pre=prefixer.qb64b,
-                                                  sn=sn))
+            sdig = self.kels.getOnLast(keys=prefixer.qb64b, on=sn)
             if sdig is None:
                 # receipter's est event not yet in receipters's KEL
                 raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
+            sdig = sdig.encode("utf-8 ")
             # retrieve last event itself of receipter est evt from sdig
             sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
@@ -1971,7 +1970,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.getKelIter(pre, sn=sn):
+        for dig in self.kels.getOnIterAll(keys=pre, on=sn):
             try:
                 if not (serder := self.evts.get(keys=(pre, dig))):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
@@ -1996,7 +1995,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.getKelLastIter(pre, sn=sn):
+        for dig in self.kels.getOnLastIter(keys=pre, on=sn):
             try:
 
                 if not (serder := self.evts.get(keys=(pre, dig) )):
@@ -2064,66 +2063,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.sigs, key, val)
-
-    def putRcts(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes receipt couplets vals to key
-        Couple is pre+cig (non indexed signature)
-        Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.rcts, key, vals)
-
-    def addRct(self, key, val):
-        """
-        Use dgKey()
-        Add receipt couple val bytes as dup to key in db
-        Couple is pre+cig (non indexed signature)
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.rcts, key, val)
-
-    def getRcts(self, key):
-        """
-        Use dgKey()
-        Return list of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.rcts, key)
-
-    def getRctsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.rcts, key)
-
-    def cntRcts(self, key):
-        """
-        Use dgKey()
-        Return count of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.rcts, key)
-
-    def delRcts(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.rcts, key, val)
 
     def putUres(self, key, vals):
         """
@@ -2232,125 +2171,7 @@ class Baser(dbing.LMDBer):
         """
         return self.putIoDupVals(self.kels, key, vals)
 
-    def addKe(self, key, val):
-        """
-        Use snKey()
-        Add key event val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.kels, key, val)
 
-    def getKes(self, key):
-        """
-        Use snKey()
-        Return list of key event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.kels, key)
-
-    def getKeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup key event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.kels, key)
-
-    def cntKes(self, key):
-        """
-        Use snKey()
-        Return count of dup key event dig val at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDups(self.kels, key)
-
-    def delKes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.kels, key)
-
-
-    def getKelIter(self, pre, sn=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps. Stops if
-        encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int): initial sequence number to begin at
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-
-        return (self.getOnIoDupIterAll(self.kels, pre, on=sn))
-
-        #return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
-
-
-    def getKelBackIter(self, pre, sn=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps in decreasing
-        order starting with first sequence number sn. Stops if encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int):
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupValBackIter(self.kels, pre, sn)
-
-
-    def getKelLastIter(self, pre, sn=0):
-        """
-        Returns iterator of last one of dup vals at each key in insertion order
-        for all entries with same prefix across all sequence numbers without gaps.
-        Stops if encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int); sequence number to being iteration
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupLastValIter(self.kels, pre, on=sn)
-        
 
     def putPwes(self, key, vals):
         """

@@ -196,26 +196,23 @@ class Reger(dbing.LMDBer):
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event.
             Multiple values per key in lexicographic order.
-        .oots is named sub DB of out of order escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
+        .oots is named subDB instance of OnIoDupSuber for of out of order escrowed event tables
+            that a composite key of the form <pre><sep><on> to serialized event digests.
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             Only one value per DB key is allowed
-        .baks is named sub DB of ordered list of backers at given point in
-            management TEL.
+        .baks is named subDB instance of IoDupSuber which represents an 
+            ordered list of backers at given point in management TEL.
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
-        .twes is named sub DB of partially witnessed escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
+        .twes is named subDB instance of OnIoDupSuber for partially witnessed escrowed event tables
+            that map key composites of the form <pre><sep><on> to serialized event digests.
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
-        .taes is named sub DB of anchorless escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
+        .taes is named subDB instance of OnIoDupSuber for anchorless escrowed event tables that map
+            a composite key of the form <pre><sep><on> to serialized event digest.
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
@@ -301,11 +298,11 @@ class Reger(dbing.LMDBer):
         self.tels = subing.OnSuber(db=self, subkey='tels.')
         self.ancs = subing.CatCesrSuber(db=self, subkey='ancs.',
                         klas=(coring.Number, coring.Diger))
+        self.baks = subing.IoDupSuber(db=self, subkey='baks.')
         self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
-        self.baks = self.env.open_db(key=b'baks.', dupsort=True)
-        self.oots = self.env.open_db(key=b'oots.')
-        self.twes = self.env.open_db(key=b'twes.')
-        self.taes = self.env.open_db(key=b'taes.')
+        self.oots = subing.OnIoDupSuber(db=self, subkey='oots')
+        self.twes = subing.OnIoDupSuber(db=self, subkey='twes')
+        self.taes = subing.OnIoDupSuber(db=self, subkey='taes')
         self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=coring.Dater)
 
         # Registry state made of RegStateRecord.
@@ -609,200 +606,6 @@ class Reger(dbing.LMDBer):
             sources.extend(self.sources(db, screder))
 
         return sources
-
-    def putTwe(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.twes, key, val)
-
-    def setTwe(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.twes, key, val)
-
-    def getTwe(self, key):
-        """
-        Use snKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.twes, key)
-
-    def delTwe(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.twes, key)
-
-    def putTae(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.taes, key, val)
-
-    def setTae(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.taes, key, val)
-
-    def getTae(self, key):
-        """
-        Use snKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.taes, key)
-
-    def getTaeItemIter(self):
-        """
-        Return iterator of all items in .taes
-
-        """
-        return self.getTopItemIter(self.taes)
-
-
-    def delTae(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.taes, key)
-
-
-    def putOot(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.oots, key, val)
-
-    def setOot(self, key, val):
-        """
-        Use snKey()
-        Write serialized VC bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.oots, key, val)
-
-    def getOot(self, key):
-        """
-        Use snKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.oots, key)
-
-    def getOotItemIter(self):
-        """
-        Return iterator of all items in .taes
-
-        """
-        return self.getTopItemIter(self.oots)
-
-
-    def delOot(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.oots, key)
-
-
-    def putBaks(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes prefixes to key
-        Adds to existing backers at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.baks, key, vals)
-
-
-    def addBak(self, key, val):
-        """
-        Use dgKey()
-        Add prefix val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.baks, key, val)
-
-
-    def getBaks(self, key):
-        """
-        Use dgKey()
-        Return list of backer prefixes at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.baks, key)
-
-
-    def getBaksIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of backer prefixes at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.baks, key)
-
-    def cntBaks(self, key):
-        """
-        Use dgKey()
-        Return count of backer prefixes at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDups(self.baks, key)
-
-
-    def delBaks(self, key):
-        """
-        Use dgKey()
-        Deletes all values at key in db.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.baks, key)
-
-
-    def delBak(self, key, val):
-        """
-        Use dgKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.baks, key, val)
 
 
 def buildProof(prefixer, seqner, diger, sigers):
