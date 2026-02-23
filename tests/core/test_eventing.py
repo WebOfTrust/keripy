@@ -3314,9 +3314,12 @@ def test_receipt():
         #  coe process the escrow receipt from val
         parsing.Parser(version=Vrsn_1_0).parse(ims=res, kvy=coeKevery)
         #  check if in escrow database
-        result = coeKevery.db.getUres(key=snKey(pre=coeKever.prefixer.qb64,
-                                                sn=2))
-        assert bytes(result[0]) == fake.encode("utf-8") + valPrefixer.qb64b + valCigar.qb64b
+        result = coeKevery.db.ures.get(keys=(coeKever.prefixer.qb64, coring.Seqner(sn=2).qb64))
+        rsaider, sprefixer, cigar = result[0]
+
+        assert rsaider.qb64b == fake.encode("utf-8")
+        assert sprefixer.qb64b == valPrefixer.qb64b
+        assert cigar.qb64b == valCigar.qb64b
 
         # create invalid receipt stale use valid sn so in database but invalid dig
         # so bad receipt
@@ -3516,9 +3519,12 @@ def test_process_attached_receipt_couples_firner_missing_fels():
         assert "Unverified receipt=" in str(exc_info.value)
         # Receipt must be escrowed (addUre via escrowUReceipt)
         sn = int(serder.sn, 16) if isinstance(serder.sn, str) else int(serder.sn)
-        ures = db.getUres(key=snKey(pre=serder.preb, sn=sn))
+        ures = db.ures.get(keys=(serder.pre, coring.Seqner(sn=sn).qb64))
         assert len(ures) == 1
-        assert bytes(ures[0]).startswith(serder.said.encode("utf-8"))
+        diger, prefixer, cigar = ures[0]
+        assert diger.qb64 == serder.said
+        assert prefixer.qb64 == valSigner.verfer.qb64
+        assert cigar.qb64 == valCigar.qb64
 
     """ Done Test """
 
