@@ -149,27 +149,26 @@ def test_issuer():
             assert issuer.tibs.rem(keys=(regk, vdig.qb64b), val=c) is True
         assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
 
-        tweKey = snKey(regk, sn)
-        assert issuer.getTwe(tweKey) is None
-        assert issuer.delTwe(tweKey) is False
-        assert issuer.putTwe(tweKey, val=vdig.qb64b)
-        assert issuer.getTwe(tweKey) == vdig.qb64b
-        assert issuer.putTwe(tweKey, val=vdig.qb64b) is False
-        assert issuer.setTwe(tweKey, val=vdig.qb64b) is True
-        assert issuer.getTwe(tweKey) == vdig.qb64b
-        assert issuer.delTwe(tweKey) is True
-        assert issuer.getTwe(tweKey) is None
+        assert issuer.twes.getOn(keys=regk, on=sn) == []
+        assert issuer.twes.remOn(keys=regk, on=sn) is False
+        assert issuer.twes.putOn(keys=regk, on=sn, vals=vdig.qb64b)
+        assert issuer.twes.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.twes.putOn(keys=regk, on=sn, vals=vdig.qb64b) is False
+        assert issuer.twes.pinOn(keys=regk, on=sn, vals=vdig.qb64b) is True
+        assert issuer.twes.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.twes.remOn(keys=regk, on=sn) is True
+        assert issuer.twes.getOn(keys=regk, on=sn) == []
 
         ooKey = snKey(regk, sn)
-        assert issuer.getOot(ooKey) is None
-        assert issuer.delOot(ooKey) is False
-        assert issuer.putOot(ooKey, val=vdig.qb64b)
-        assert issuer.getOot(ooKey) == vdig.qb64b
-        assert issuer.putOot(ooKey, val=vdig.qb64b) is False
-        assert issuer.setOot(ooKey, val=vdig.qb64b) is True
-        assert issuer.getOot(ooKey) == vdig.qb64b
-        assert issuer.delOot(ooKey) is True
-        assert issuer.getOot(ooKey) is None
+        assert issuer.oots.getOn(keys=regk, on=sn) == []
+        assert issuer.oots.remOn(keys=regk, on=sn) is False
+        assert issuer.oots.putOn(keys=regk, on=sn, vals=vdig.qb64b)
+        assert issuer.oots.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.oots.putOn(keys=regk, on=sn, vals=vdig.qb64b) is False
+        assert issuer.oots.pinOn(keys=regk, on=sn, vals=vdig.qb64b) is True
+        assert issuer.oots.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.oots.remOn(keys=regk, on=sn) is True
+        assert issuer.oots.getOn(keys=regk, on=sn) == []
 
         key = dgKey(regk, vdig.qb64b)
         number = Number(num=0)
@@ -246,22 +245,22 @@ def test_issuer():
         bak4 = b'BBeAn9JkFuEOOwDhfkhnxtGsRQkMh2AH1oGB9QHAvl1U'
         bak5 = b'BChy5f2BIJbAYdgoy00OcOEZwEyxCGCUDlzbGkbz1RAI'
         baks = [bak1, bak2, bak3, bak4]
-
+        deserializedBaks = [bak.decode("utf-8") for bak in baks]
         # test .baks insertion order dup methods.  dup vals are insertion order
-        assert issuer.getBaks(key) == []
-        assert issuer.cntBaks(key) == 0
-        assert issuer.delBaks(key) is False
-        assert issuer.putBaks(key, baks) is True
-        assert issuer.getBaks(key) == baks
-        assert issuer.cntBaks(key) == len(baks) == 4
-        assert issuer.putBaks(key, vals=[bak1]) is False
-        assert issuer.getBaks(key) == baks
-        assert issuer.addBak(key, bak1) is False
-        assert issuer.addBak(key, bak5) is True
-        assert issuer.getBaks(key) == [bak1, bak2, bak3, bak4, bak5]
-        assert [val for val in issuer.getBaksIter(key)] == [bak1, bak2, bak3, bak4, bak5]
-        assert issuer.delBaks(key) is True
-        assert issuer.getBaks(key) == []
+        assert issuer.baks.get(key) == []
+        assert issuer.baks.cnt(key) == 0
+        assert issuer.baks.rem(key) is False
+        assert issuer.baks.put(key, baks) is True
+        assert issuer.baks.get(key) == deserializedBaks
+        assert issuer.baks.cnt(key) == len(baks) == 4
+        assert issuer.baks.put(key, vals=[bak1]) is False
+        assert issuer.baks.get(key) == deserializedBaks
+        assert issuer.baks.add(key, bak1) is False
+        assert issuer.baks.add(key, bak5) is True
+        assert issuer.baks.get(key) == deserializedBaks + [bak5.decode("utf-8")]
+        assert [val for val in issuer.baks.getIter(key)] == deserializedBaks + [bak5.decode("utf-8")]
+        assert issuer.baks.rem(key) is True
+        assert issuer.baks.get(key) == []
 
     """End Test"""
 

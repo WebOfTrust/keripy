@@ -1125,14 +1125,10 @@ class ReceiptEnd(doing.DoDoer):
             raise falcon.HTTPBadRequest(description="either 'sn' or 'said' query param is required")
 
         if sn is not None:
-            said = self.hab.db.getKeLast(key=dbing.snKey(pre=preb,
-                                                         sn=sn))
-
+            said = self.hab.db.kels.getOnLast(keys=preb, on=sn)
         if said is None:
             raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({said}) not found")
-
-        said = bytes(said)
-        dgkey = dbing.dgKey(preb, said)  # get message
+        said = said.encode("utf-8")
         if not (serder := self.hab.db.evts.get(keys=(preb, said))):
             raise falcon.HTTPNotFound(description="Missing event for dig={}.".format(said))
         if serder.sn > 0:
@@ -1147,11 +1143,11 @@ class ReceiptEnd(doing.DoDoer):
                                    sn=sn,
                                    said=said.decode("utf-8"))
         rct = bytearray(rserder.raw)
-        if wigs := self.hab.db.getWigs(key=dgkey):
-            rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigs),
+        if wigers := self.hab.db.wigs.get(keys=(preb, said)):
+            rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
                                version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                rct.extend(wig)
+            for wiger in wigers:
+                rct.extend(wiger.qb64b)
 
         rep.set_header('Content-Type', "application/json+cesr")
         rep.status = falcon.HTTP_200
@@ -1242,14 +1238,12 @@ class QueryEnd:
 
             sn = req.get_param_as_int("sn")
             if sn is not None: ## query for event with seq-num >= sn
-                preb = pre.encode("utf-8")
-                dig = self.hab.db.getKeLast(key=dbing.snKey(pre=preb,
-                                                         sn=sn))
+                dig = self.hab.db.kels.getOnLast(keys=pre, on=sn)
                 if dig is None:
                     raise falcon.HTTPBadRequest(description=f"non-existant event at seq-num {sn}")
-
-                for dig in self.hab.db.getKelIter(pre, sn=sn):
+                for dig in self.hab.db.kels.getOnIterAll(keys=pre, on=sn):
                     try:
+                        dig = dig.encode("utf-8")
                         msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig)
                     except Exception:
                         continue  # skip this event

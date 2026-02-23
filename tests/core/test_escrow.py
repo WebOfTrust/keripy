@@ -1234,26 +1234,28 @@ def test_unverified_receipt_escrow():
         assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=1).qb64))) == 0
         assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=2).qb64))) == 0
 
-        # verify receipts from db which changes order if wit1 < wit2
-        receipts = kvy.db.getRcts(dbing.dgKey(pre, icpdig))
+        # verify receipts from db in insertion order
+        receipts = kvy.db.rcts.get(keys=dbing.dgKey(pre, icpdig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
-        assert rctPrefixer.qb64 == wit1pre
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
-        assert rctPrefixer.qb64 == wit0pre
-        receipts = kvy.db.getRcts(dbing.dgKey(pre, ixndig))
+        # receipts[0] should be wit0 (inserted first), receipts[1] should be wit1 (inserted second)
+        rctPrefixer0, rctCigar0 = receipts[0]
+        assert rctPrefixer0.qb64 == wit0pre
+        rctPrefixer1, rctCigar1 = receipts[1]
+        assert rctPrefixer1.qb64 == wit1pre
+        
+        receipts = kvy.db.rcts.get(keys=dbing.dgKey(pre, ixndig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
-        assert rctPrefixer.qb64 == wit1pre
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
-        assert rctPrefixer.qb64 == wit0pre
-        receipts = kvy.db.getRcts(dbing.dgKey(pre, rotdig))
+        rctPrefixer0, rctCigar0 = receipts[0]
+        assert rctPrefixer0.qb64 == wit0pre
+        rctPrefixer1, rctCigar1 = receipts[1]
+        assert rctPrefixer1.qb64 == wit1pre
+        
+        receipts = kvy.db.rcts.get(keys=dbing.dgKey(pre, rotdig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
-        assert rctPrefixer.qb64 == wit1pre
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
-        assert rctPrefixer.qb64 == wit0pre
-
+        rctPrefixer0, rctCigar0 = receipts[0]
+        assert rctPrefixer0.qb64 == wit0pre
+        rctPrefixer1, rctCigar1 = receipts[1]
+        assert rctPrefixer1.qb64 == wit1pre
 
     assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)

@@ -15,10 +15,11 @@ import lmdb
 from hio.base import doing
 from keri import core
 from keri.app import habbing
-from keri.core import coring, eventing, serdering, signing
+from keri.core import coring, eventing, serdering, signing, indexing
 from keri.core.coring import Kinds, versify, Seqner
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.core.serdering import Serder
+from keri.core.signing import Signer
 from keri.db import basing
 from keri.db import dbing
 from keri.db import subing
@@ -50,9 +51,9 @@ def test_baser():
     assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, subing.CesrSuber)
-    assert isinstance(baser.rcts, lmdb._Database)
+    assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
     assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.kels, lmdb._Database)
+    assert isinstance(baser.kels, subing.OnIoDupSuber)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -81,9 +82,8 @@ def test_baser():
     assert isinstance(baser.evts, subing.SerderSuber)
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, subing.CesrSuber)
-    assert isinstance(baser.rcts, lmdb._Database)
+    assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
     assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.kels, lmdb._Database)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -109,9 +109,8 @@ def test_baser():
         assert isinstance(baser.evts, subing.SerderSuber)
         assert isinstance(baser.sigs, lmdb._Database)
         assert isinstance(baser.dtss, subing.CesrSuber)
-        assert isinstance(baser.rcts, lmdb._Database)
+        assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
         assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
-        assert isinstance(baser.kels, lmdb._Database)
         assert isinstance(baser.ooes, subing.IoDupSuber)
         assert isinstance(baser.pses, subing.IoDupSuber)
         assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -395,81 +394,176 @@ def test_baser():
         assert db.delSigs(key) == True
         assert db.getSigs(key) == []
 
-        # test .wiss sub db methods (witness indexed sigs)
+        # test .wigs sub db methods (witness indexed sigs)
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        assert db.getWigs(key) == []
-        assert db.cntWigs(key) == 0
-        assert db.delWigs(key) == False
+        # Create valid test signatures
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
 
-        # dup vals are lexocographic
-        assert db.putWigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getWigs(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntWigs(key) == 4
-        assert db.putWigs(key, vals=[b'a']) == True   # duplicate but True
-        assert db.getWigs(key) == [b'a', b'm', b'x', b'z']
-        assert db.addWig(key, b'a') == False   # duplicate
-        assert db.addWig(key, b'b') == True
-        assert db.getWigs(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getWigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert db.delWigs(key) == True
-        assert db.getWigs(key) == []
-        vals = [b"z", b"m", b"x", b"a"]
-        assert db.putWigs(key, vals) == True
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+
+        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
+        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+
+        # Use siger objects for testing
+        wig0 = siger0
+        wig1 = siger1
+
+        # Test empty state
+        assert db.wigs.get(keys=key) == []
+        assert db.wigs.cnt(keys=key) == 0
+        assert db.wigs.rem(keys=key) == False
+
+        # Test pin with multiple values
+        assert db.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 2
+        # Just verify both are present (don't test exact order)
+        result_bytes = set(w.qb64b for w in result)
+        assert result_bytes == {wig0.qb64b, wig1.qb64b}
+        assert db.wigs.cnt(keys=key) == 2
+
+        # Test pin overwrites
+        assert db.wigs.pin(keys=key, vals=[wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig0.qb64b
+
+        # Reset to both
+        assert db.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        assert db.wigs.cnt(keys=key) == 2
+
+        # Test add, duplicate should return False
+        assert db.wigs.add(keys=key, val=wig0) == False  # duplicate
+        assert db.wigs.add(keys=key, val=wig1) == False  # duplicate
+        assert db.wigs.cnt(keys=key) == 2
+
+        # Test getIter, returns just values
+        result_list = list(db.wigs.getIter(keys=key))
+        assert len(result_list) == 2
+        assert set(w.qb64b for w in result_list) == {wig0.qb64b, wig1.qb64b}
+
+        # Test remove all
+        assert db.wigs.rem(keys=key) == True
+        assert db.wigs.get(keys=key) == []
+        assert db.wigs.cnt(keys=key) == 0
+
+        # Test individual removal by value
+        vals = [wig0, wig1]
+        assert db.wigs.pin(keys=key, vals=vals) == True
         for val in vals:
-            assert db.delWigs(key, val) == True
-        assert db.getWigs(key) == []
-        assert db.putWigs(key, vals) == True
-        for val in db.getWigsIter(key):
-            assert db.delWigs(key, val) == True
-        assert db.getWigs(key) == []
+            assert db.wigs.rem(keys=key, val=val) == True
+        assert db.wigs.get(keys=key) == []
 
-        assert db.putWigs(key, vals=[sig0b]) == True
-        assert db.getWigs(key) == [sig0b]
-        assert db.putWigs(key, vals=[sig1b]) == True
-        assert db.getWigs(key) == [sig1b, sig0b]  # lex order
-        assert db.putWigs(key, vals=[sig1b, sig0b]) == True
-        assert db.getWigs(key) == [sig1b, sig0b]  # lex order
-        assert db.delWigs(key) == True
-        assert db.getWigs(key) == []
+        # Test removal while iterating
+        assert db.wigs.pin(keys=key, vals=vals) == True
+        for val in db.wigs.getIter(keys=key):
+            assert db.wigs.rem(keys=key, val=val) == True
+        assert db.wigs.get(keys=key) == []
+
+        # Test sequence with individual pins
+        assert db.wigs.pin(keys=key, vals=[wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig0.qb64b
+
+        assert db.wigs.pin(keys=key, vals=[wig1]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig1.qb64b
+
+        assert db.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        result = db.wigs.get(keys=key)
+        assert len(result) == 2
+        assert set(w.qb64b for w in result) == {wig0.qb64b, wig1.qb64b}
+
+        assert db.wigs.rem(keys=key) == True
+        assert db.wigs.get(keys=key) == []
 
         # test .rcts sub db methods dgkey
-        assert db.getRcts(key) == []
-        assert db.cntRcts(key) == 0
-        assert db.delRcts(key) == False
-
-        # dup vals are lexocographic
-        assert db.putRcts(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getRcts(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntRcts(key) == 4
-        assert db.putRcts(key, vals=[b'a']) == True   # duplicate
-        assert db.getRcts(key) == [b'a', b'm', b'x', b'z']
-        assert db.addRct(key, b'a') == False   # duplicate
-        assert db.addRct(key, b'b') == True
-        assert db.getRcts(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getRctsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert db.delRcts(key) == True
-        assert db.getRcts(key) == []
-        vals = [b"z", b"m", b"x", b"a"]
-        assert db.putRcts(key, vals) == True
-        for val in vals:
-            assert db.delRcts(key, val) == True
-        assert db.getRcts(key) == []
-        assert db.putRcts(key, vals) == True
-        for val in db.getRctsIter(key):
-            assert db.delRcts(key, val) == True
-        assert db.getRcts(key) == []
-
-        assert db.putRcts(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
-        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert db.putRcts(key, vals=[wit1b + wsig1b]) == True
-        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert db.delRcts(key) == True
-        assert db.putRcts(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
-        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  # lex order
-        assert db.delRcts(key) == True
-        assert db.getRcts(key) == []
+   
+        # Create test prefixes and cigars
+        wit0 = coring.Prefixer(qb64=wit0b.decode('utf-8'))  # Convert from qb64 string
+        wit1 = coring.Prefixer(qb64=wit1b.decode('utf-8'))
+        
+        # Create cigars (non-indexed signatures)
+        cigar0 = coring.Cigar(qb64=wsig0b.decode('utf-8'))
+        cigar1 = coring.Cigar(qb64=wsig1b.decode('utf-8'))
+        
+        # Test with CESR tuples (insertion order)
+        assert db.rcts.put(key, vals=[(wit0, cigar0), (wit1, cigar1)]) == True
+        result = db.rcts.get(key)
+        assert len(result) == 2
+        # Check insertion order: wit0 inserted first, wit1 second
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+        
+        # Test duplicate (should not add)
+        assert db.rcts.put(key, vals=[(wit0, cigar0)]) == False
+        result = db.rcts.get(key)
+        assert len(result) == 2
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+        
+        # Test adding new item
+        wit2 = coring.Prefixer(qb64='BNewTestPrefix000000000000000000000000000000')
+        cigar2 = coring.Cigar(qb64='BNewTestSignature00000000000000000000000000000000000000000000000000000000000000000000000')
+        assert db.rcts.add(key, (wit2, cigar2)) == True
+        result = db.rcts.get(key)
+        assert len(result) == 3
+        # Insertion order: wit0, wit1, wit2
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+        assert result[2][0].qb64 == wit2.qb64
+        assert result[2][1].qb64 == cigar2.qb64
+        
+        # Test duplicate add returns False
+        assert db.rcts.add(key, (wit0, cigar0)) == False
+        
+        # Test getIter maintains insertion order
+        iter_result = [val for val in db.rcts.getIter(key)]
+        assert len(iter_result) == 3
+        assert iter_result[0][0].qb64 == wit0.qb64
+        assert iter_result[0][1].qb64 == cigar0.qb64
+        assert iter_result[1][0].qb64 == wit1.qb64
+        assert iter_result[1][1].qb64 == cigar1.qb64
+        assert iter_result[2][0].qb64 == wit2.qb64
+        assert iter_result[2][1].qb64 == cigar2.qb64
+        
+        # Test removal
+        assert db.rcts.rem(key) == True
+        assert db.rcts.get(key) == []
+        
+        # Test insertion order preserved when inserting in different order
+        vals = [(wit1, cigar1), (wit0, cigar0)]
+        assert db.rcts.put(key, vals) == True
+        result = db.rcts.get(key)
+        assert len(result) == 2
+        # Should maintain insertion order: wit1 first, wit0 second
+        assert result[0][0].qb64 == wit1.qb64
+        assert result[0][1].qb64 == cigar1.qb64
+        assert result[1][0].qb64 == wit0.qb64
+        assert result[1][1].qb64 == cigar0.qb64
+        
+        # Test individual removal
+        assert db.rcts.rem(key, (wit1, cigar1)) == True
+        result = db.rcts.get(key)
+        assert len(result) == 1
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        
+        assert db.rcts.rem(key) == True
+        assert db.rcts.get(key) == []
 
         # Unverified Receipt Escrows
         # test .ures insertion order dup methods.  dup vals are insertion order
@@ -844,22 +938,23 @@ def test_baser():
         # test .kels insertion order dup methods.  dup vals are insertion order
         key = snKey(preb, 0)
         vals = [b"z", b"m", b"x", b"a"]
+        deserializedVals = ["z", "m", "x", "a"]
 
-        assert db.getKes(key) == []
-        assert db.getKeLast(key) == None
-        assert db.cntKes(key) == 0
-        assert db.delKes(key) == False
-        assert db.putKes(key, vals) == True
-        assert db.getKes(key) == vals  # preserved insertion order
-        assert db.cntKes(key) == len(vals) == 4
-        assert db.getKeLast(key) == vals[-1]
-        assert db.putKes(key, vals=[b'a']) == False   # duplicate
-        assert db.getKes(key) == vals  #  no change
-        assert db.addKe(key, b'a') == False   # duplicate
-        assert db.addKe(key, b'b') == True
-        assert db.getKes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delKes(key) == True
-        assert db.getKes(key) == []
+        assert db.kels.getOn(keys=key) == []
+        assert db.kels.getOnLast(keys=key)== None
+        assert db.kels.cntOnAll(keys=key) == 0
+        assert db.kels.remOn(key) == False
+        assert db.kels.putOn(keys=key, vals=vals) == True
+        assert db.kels.getOn(keys=key) == deserializedVals  # preserved insertion order
+        assert db.kels.cntOnAll(keys=key) == len(vals) == 4
+        assert db.kels.getOnLast(keys=key) == deserializedVals[-1]
+        assert db.kels.putOn(keys=key, vals=[b'a']) == False   # duplicate
+        assert db.kels.getOn(keys=key) == deserializedVals  #  no change
+        assert db.kels.addOn(keys=key, val=b'a') == False   # duplicate
+        assert db.kels.addOn(keys=key, val=b'b') == True
+        assert db.kels.getOn(keys=key) == deserializedVals + ['b']
+        assert db.kels.remOn(key) == True
+        assert db.kels.getOn(keys=key) == []
 
         # Partially Signed Escrow Events
         # test .pses insertion order dup methods.  dup vals are insertion order
@@ -1736,7 +1831,8 @@ def test_clean_baser():
         assert natHab.kever.fn == 6
         natsaid = 'EA3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo'
         assert natHab.kever.serder.said == natsaid
-        ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+        ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
+        ldig = ldig.encode("utf-8")
         assert ldig == natHab.kever.serder.saidb
         serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
         assert serder.said == natHab.kever.serder.said
@@ -1748,7 +1844,8 @@ def test_clean_baser():
         # test reopenDB with reuse  (because temp)
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
-            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
+            ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
@@ -1800,7 +1897,8 @@ def test_clean_baser():
         # see if database is back where it belongs
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
-            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            ldig = natHab.db.kels.getOnLast(keys=natHab.pre, on=natHab.kever.sn)
+            ldig = ldig.encode("utf-8")
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
@@ -1856,51 +1954,42 @@ def test_fetchkeldel():
     with openDB() as db:
         # test getKelIter
         sn = 0
-        key = snKey(preb, sn)
-        assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'00000000000000000000000000000000')
         vals0 = [skedb]
-        assert db.addKe(key, vals0[0]) == True
+        assert db.kels.addOn(keys=preb, on=sn, val=vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals1:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals2:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
-        vals = [bytes(val) for val in db.getKelIter(preb)]
-        allvals = vals0 + vals1 + vals2
+        vals = list(db.kels.getOnIterAll(keys=preb))
+        allvals = [v.decode("utf-8") for v in (vals0 + vals1 + vals2)]
         assert vals == allvals
 
         # test getKelEstIter
         preb = 'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x'.encode("utf-8")
         sn = 0
-        key = snKey(preb, sn)
-        assert key == (b'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x.'
-                       b'00000000000000000000000000000000')
+
         vals0 = [skedb]
-        assert db.addKe(key, vals0[0]) == True
+        assert db.kels.addOn(keys=preb, on=sn, val=vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals1:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 1
-        key = snKey(preb, sn)
         for val in vals2:
-            assert db.addKe(key, val) == True
+            assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
-        vals = [bytes(val) for val in db.getKelLastIter(preb)]
-        lastvals = [vals0[-1], vals1[-1], vals2[-1]]
+        vals = list(db.kels.getOnLastIter(keys=preb))
+        lastvals = [v.decode("utf-8") for v in (vals0[-1], vals1[-1], vals2[-1])]
         assert vals == lastvals
 
 

@@ -220,7 +220,7 @@ def test_kevery():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
+        db_digs = [val for val in kever.db.kels.getOnIterAll(keys=pre)]
         assert db_digs == event_digs
 
         kevery = Kevery(db=vallgr)
@@ -238,7 +238,7 @@ def test_kevery():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelIter(pre)]
+        db_digs = [val for val in kevery.db.kels.getOnIterAll(keys=pre)]
         assert db_digs == event_digs
 
     assert not os.path.exists(kevery.db.path)
@@ -400,9 +400,8 @@ def test_stale_event_receipts():
 
         # Validate that bam has 2 receipts in DB for event 1
         ser = serdering.SerderKERI(raw=rot0)
-        dgkey = dbing.dgKey(ser.preb, ser.saidb)
-        wigs = bamHby.db.getWigs(dgkey)
-        assert len(wigs) == 2
+        wigers = bamHby.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 2
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
         rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2)
@@ -427,8 +426,8 @@ def test_stale_event_receipts():
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         # Validate that bam has 3 receipts in DB for event 1
-        wigs = bamHby.db.getWigs(dgkey)
-        assert len(wigs) == 3
+        wigers = bamHby.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 3
 
         """ Done Test """
 

@@ -52,25 +52,25 @@ def rollback(tymth, tock=0.0, **opts):
                                              f"{hab.kever.ilk}")
 
             serder = hab.kever.serder
-            dgkey = dbing.dgKey(hab.pre, serder.saidb)
-            wigs = hby.db.getWigs(dgkey)
+            wigers = hby.db.wigs.get(hab.pre, serder.saidb)
 
-            if len(wigs) > 0:
+            if len(wigers) > 0:
                 raise kering.ValidationError(f"top event at sequence number {hab.kever.sn} has been published to "
-                                             f"{len(wigs)} witnesses, unable to rollback.")
+                                             f"{len(wigers)} witnesses, unable to rollback.")
 
             ked = hby.db.states.getDict(keys=serder.pre)
-            pdig = hby.db.getKeLast(dbing.snKey(serder.preb, serder.sn - 1))
+            pdig = hby.db.kels.getOnLast(keys=serder.preb, on=serder.sn - 1)
+            pdig = pdig.encode("utf-8")
 
             pserder = hby.db.evts.get(keys=(serder.preb, bytes(pdig)))
 
             dgkey = dbing.dgKey(serder.preb, serder.saidb)
+            hby.db.wigers.rem(keys=(serder.preb, serder.saidb))
             hby.db.evts.rem(keys=(serder.preb, serder.saidb))
             hby.db.wits.rem(keys=(serder.preb, serder.saidb))
-            hby.db.delWigs(dgkey)
             hby.db.delSigs(dgkey)  # idempotent
             hby.db.dtss.rem(keys=dgkey)  # idempotent
-            hby.db.delKes(dbing.snKey(serder.preb, serder.sn))
+            hby.db.kels.remOn(keys=serder.preb, on=serder.sn)
 
             seqner = coring.Number(num=serder.sn - 1)
             fner = coring.Number(numh=ked['f'])

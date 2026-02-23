@@ -1135,9 +1135,10 @@ class BaseHab:
         """
         Return serder of inception event
         """
-        if (dig := self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))) is None:
+        if (dig := self.db.kels.getOnLast(keys=self.pre, on=0)) is None:
             raise kering.ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
+        dig = dig.encode("utf-8")
         if (serder := self.db.evts.get(keys=(self.pre, bytes(dig)))) is None:
             raise kering.ConfigurationError("Missing inception event for "
                                             "Habitat pre={}.".format(self.pre))
@@ -1566,10 +1567,11 @@ class BaseHab:
             return None
 
         msg = bytearray()
-        dig = self.db.getKeLast(dbing.snKey(pre, sn))
+        dig = self.db.kels.getOnLast(keys=pre, on=sn)
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(pre, sn))
+        dig = dig.encode("utf-8")
         dig = bytes(dig)
         key = dbing.dgKey(pre, dig)  # digest key
         serder = self.db.evts.get(keys=(pre, dig))
@@ -2025,8 +2027,8 @@ class BaseHab:
             sn (int): is int sequence number of event
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
-        key = dbing.snKey(self.pre, sn)
-        dig = self.db.getKeLast(key)
+        dig = self.db.kels.getOnLast(keys=self.pre, on=sn)
+        dig = dig.encode("utf-8") if dig else None
         if dig is None and allowPartiallySigned:
             vals = self.db.pses.getOnLast(keys=self.pre, on=sn)
             dig = vals.encode("utf-8") if vals else None
@@ -2034,7 +2036,6 @@ class BaseHab:
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
-        dig = bytes(dig)
         key = dbing.dgKey(self.pre, dig)  # digest key
         serder = self.db.evts.get(keys=(self.pre, dig))
 
@@ -2128,8 +2129,8 @@ class BaseHab:
                             if sprefixer.qb64 == cuedKed["i"]:
                                 found = True
                     else:  # find if already rcts of own icp
-                        for couple in self.db.getRctsIter(dgkey):
-                            if bytes(couple).decode("utf-8").startswith(cuedKed["i"]):
+                        for prefixer, cigar in self.db.rcts.getIter(dgkey):
+                            if prefixer.qb64.startswith(cuedKed["i"]):
                                 found = True  # yes so don't send own inception
 
                     if not found:  # no receipt from remote so send own inception

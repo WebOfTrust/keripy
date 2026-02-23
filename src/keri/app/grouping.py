@@ -130,9 +130,9 @@ class Counselor(doing.DoDoer):
 
         """
         for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
-            snkey = dbing.snKey(pre, seqner.sn)
-            sdig = self.hby.db.getKeLast(key=snkey)
+            sdig = self.hby.db.kels.getOnLast(keys=pre, on=seqner.sn)
             if sdig:
+                sdig = sdig.encode("utf-8")
                 self.hby.db.gpse.rem(keys=(pre,))
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
@@ -218,14 +218,13 @@ class Counselor(doing.DoDoer):
         """
         for (pre,), (seqner, saider) in self.hby.db.gpwe.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
-            dgkey = dbing.dgKey(pre, saider.qb64)
 
             # Load all the witness receipts we have so far
-            wigs = self.hby.db.getWigs(dgkey)
+            wigers = self.hby.db.wigs.get(keys=(pre, saider.qb64))
             ghab = self.hby.habs[pre]
             keys = [verfer.qb64 for verfer in kever.verfers]
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
-            if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
+            if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                 if witer and len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:
@@ -530,9 +529,8 @@ def getEscrowedEvent(db, pre, sn):
     vals = db.pses.getOnLast(keys=pre, on=sn)
     dig = vals if vals else None
     if dig is None:
-        dig = db.getKeLast(key)
-
-    dig = bytes(dig)
+        dig = db.kels.getOnLast(keys=pre, on=sn)
+    dig = dig.encode("utf-8")
     key = dbing.dgKey(pre, dig)  # digest key
     serder = db.evts.get(keys=(pre, dig))
 
