@@ -2155,6 +2155,79 @@ class LMDBer(filing.Filer):
                 yield (ckey, con, cval)
 
 
+    def getOnAllIoSetLastItemBackIter(self, db, key=b"", on=None, *, sep=b'.'):
+        """Iterates backwards over last set items for all on <= on for key.
+        When on is None iterates backwards over last set items for all on for key
+        When key is empty then iterates backwards over last set items for whole db
+
+        Returned items are triples of (key, on, val)
+
+        Raises StopIterationError when done or when key empty or None
+
+        Backwards means decreasing numerical value of ion, for each on and
+        decreasing numerical value on for each key and decreasing lexocographic
+        order of each key.
+
+        Returns:
+            items (Iterator[(bytes, int, memoryview)]): triples of (key, on, val)
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): base key. When empty then whole db
+            on (int|None): ordinal number at which to initiate retrieval
+                           when on is None then all on starting at greatest
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.last():  # position cursor at last entry of set of last key
+                return  # empty database so raise StopIteration
+
+            if key:  # not empty so attempt to position at starting key not last
+                if on is None:  # have to find last on
+                    on = MaxON
+                    onkey = onKey(key, on, sep=sep)  # set to max on
+                    iokey = suffix(onkey, ion=MaxON, sep=sep)  # set to max ion
+                else:  # use provided on, 0 is earliest
+                    onkey = onKey(key, on, sep=sep)  # start replay at this enty
+                    iokey = suffix(onkey, ion=MaxON, sep=sep)  # set to max ion
+
+                if not cursor.set_range(iokey):  # key is last key so maxon to big
+                    cursor.last()  # so find greatest on
+
+                ciokey = cursor.key()
+                conkey, cion = unsuffix(ciokey, sep=sep)
+                ckey, con = splitOnKey(conkey, sep=sep)
+                if not ckey == key or not con <= on:  # cursor at next onkey
+                    cursor.prev()
+                    ciokey = cursor.key()
+                    conkey, cion = unsuffix(ciokey, sep=sep)
+                    ckey, con = splitOnKey(conkey, sep=sep)
+                # else greatest is max  or key not in db
+                if not ckey == key:  # key not in db
+                    return
+
+            last = True
+            # cursor should now be correctly positioned at last item
+            for ciokey, cval in cursor.iterprev(): # iterate backwards
+                conkey, cion = unsuffix(ciokey, sep=sep)
+                ckey, con = splitOnKey(conkey, sep=sep)
+                if last:
+                    yield (ckey, con, cval)
+                    lon = con
+                    lkey = ckey
+                    last = False
+                    continue
+
+                #if ckey == lkey and con <
+
+                if key and ckey != key:
+                    return
+
     #  End OnIoSet  (do we need to replay last backwards as well)
 
 
