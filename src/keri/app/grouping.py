@@ -530,11 +530,8 @@ def getEscrowedEvent(db, pre, sn):
     if dig is None:
         dig = db.kels.getOnLast(keys=pre, on=sn)
     dig = dig.encode("utf-8")
-    key = dbing.dgKey(pre, dig)  # digest key
     serder = db.evts.get(keys=(pre, dig))
-
-    sigers = db.sigs.get(keys=key)
-
+    sigers = db.sigs.get(keys=(pre, dig))
     duple = db.aess.get(keys=(pre, dig))
 
     msg = bytearray()
