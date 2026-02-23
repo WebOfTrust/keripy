@@ -600,15 +600,15 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
         eserder = hab1.db.evts.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8")))
-        sigs = bytearray()
-        sigs.extend(bytes(hab1.db.getSigs(dgkey)[0]))
-        sigs.extend(bytes(hab2.db.getSigs(dgkey)[0]))
-        sigs.extend(bytes(hab3.db.getSigs(dgkey)[0]))
+        sigers = bytearray()
+        for hab in [hab1, hab2, hab3]:
+            for siger in hab.db.sigs.get(keys=dgkey):
+                sigers.extend(siger.qb64b)
 
         evt = bytearray(eserder.raw)
         evt.extend(core.Counter(core.Codens.ControllerIdxSigs,
                                 count=3, version=kering.Vrsn_1_0).qb64b)  # attach cnt
-        evt.extend(sigs)
+        evt.extend(sigers)
 
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev3, local=True)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev2, local=True)
