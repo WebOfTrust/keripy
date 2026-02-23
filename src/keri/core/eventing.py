@@ -5400,12 +5400,12 @@ class Kevery:
         for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
-            triple = (
+            tritruple = (
                 coring.Diger(qb64=said),
                 coring.Prefixer(qb64=cigar.verfer.qb64),
                 cigar
             )
-            self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=triple) # should be snKey
+            self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=tritruple) # should be snKey
         # log escrowed
         logger.debug("Kevery process: escrowed unverified receipt of pre= %s "
                      " sn=%x dig=%s", serder.pre, serder.sn, said)
@@ -6308,7 +6308,7 @@ class Kevery:
         This allows FIFO processing of escrows for events with same prefix and
         sn but different digest.
 
-        Uses  .db.ures.add(self, key, val) which is IOVal with dups.
+        Uses  .db.ures.add(diger,prefixer,cigar)
 
         Value is triple
 
@@ -6416,7 +6416,6 @@ class Kevery:
                         wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                         self.db.wigs.add(keys=(pre, serder.said), val=wiger)
                     else:  # write receipt couple to database
-                        couple = cigar.verfer.qb64b + cigar.qb64b
                         self.db.rcts.add(keys=(pre, serder.said), val=(cigar.verfer, cigar))
 
             except UnverifiedReceiptError as ex:
