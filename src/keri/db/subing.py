@@ -1494,6 +1494,33 @@ class IoSetSuber(SuberBase):
             yield (self._tokeys(key), self._des(val))
 
 
+class B64IoSetSuber(B64SuberBase, IoSetSuber):
+    """Subclass of B64SuberBase and IoSetSuber that serializes and deserializes
+    values as .sep joined strings of Base64 components in insertion order using
+    hidden ion suffix in keyspace. Using IoSet removes 511 byte limitation of
+    duplicates (dupsort=True).
+
+    Assumes dupsort==False
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator for combining keys tuple of strs into key bytes
+                   for db key and also used to convert val iterator to val bytes
+                   Must not be Base64 character.
+                   default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(B64IoSetSuber, self).__init__(*pa, **kwa)
+
 
 class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     """
@@ -2481,7 +2508,7 @@ class B64IoDupSuber(B64SuberBase, IoDupSuber):
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
-                               each key. Set to False
+                               each key. Set to True
             sep (str): separator for combining keys tuple of strs into key bytes
                    for db key and also used to convert val iterator to val bytes
                    Must not be Base64 character.
@@ -2885,7 +2912,7 @@ class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
-                               each key. Set to False
+                               each key. Set to True
             sep (str): separator for combining keys tuple of strs into key bytes
                    for db key and also used to convert val iterator to val bytes
                    Must not be Base64 character.
@@ -3524,3 +3551,37 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
+class B64OnIoSetSuber(B64SuberBase, OnIoSetSuber):
+    """Subclass of B64SuberBase and OnIoSetSuber that serializes and deserializes
+    values as .sep joined strings of Base64 components in insertion order using
+    hidden ion suffix in keyspace. Using IoSet removes 511 byte limitation of
+    duplicates (dupsort=True). The last keyspece element before the hidden
+    insertion ordering suffix is an ordinal (hence On). This allows entries
+    at a key prefix to be stored monotonically as per sequence numbering.
+
+    Insertion order within each set is maintained by automagically suffixing
+    and unsuffixing the insertion ordering suffix.
+
+    OnIoSetSuber adds the convenience methods from OnSuberBase to OnIoSetSuber
+    for those cases where the keyspace has a trailing ordinal part.
+
+    Assumes dupsort==False
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Inherited Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key. Set to False
+            sep (str): separator for combining keys tuple of strs into key bytes
+                   for db key and also used to convert val iterator to val bytes
+                   Must not be Base64 character.
+                   default is self.Sep == '.'
+            verify (bool): True means reverify when ._des from db when applicable
+                           False means do not reverify. Default False
+        """
+        super(B64OnIoSetSuber, self).__init__(*pa, **kwa)

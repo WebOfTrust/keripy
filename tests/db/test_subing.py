@@ -1372,6 +1372,7 @@ def test_on_iodup_suber():
     assert not os.path.exists(db.path)
     assert not db.opened
 
+
 def test_b64_oniodup_suber():
     """
     Test B64OnIoDupSuber LMDBer sub database class
@@ -2013,6 +2014,268 @@ def test_ioset_suber():
     assert not db.opened
 
 
+def test_b64_ioset_suber():
+    """
+    Test B64IoSetSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        # Test Single klas
+        iobuber = subing.B64IoSetSuber(db=db, subkey='bags.')
+        assert isinstance(iobuber, subing.B64IoSetSuber)
+        assert not iobuber.sdb.flags()["dupsort"]
+        assert iobuber.sep == '.'
+        assert not help.Reb64.match(iobuber.sep.encode())
+
+        # val as joined iterator
+        vals0 = ("alpha", "beta")
+        vals1 = ("gamma", )
+
+        keys0 = ("cat", "dog")  # keys as tuple
+        keys1 = "{}.{}".format("bird", "fish")  # keys as string not tuple
+
+        assert iobuber.put(keys=keys0, vals=(vals0,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0]
+
+        assert iobuber.rem(keys0)
+        assert not iobuber.get(keys=keys0)
+
+        assert iobuber.put(keys=keys0, vals=(vals0,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0]
+
+        assert iobuber.put(keys=keys0, vals=(vals1,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0, vals1]
+
+        assert iobuber.pin(keys=keys0, vals=(vals1,))
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals1]
+
+        assert iobuber.rem(keys0)
+        assert not iobuber.get(keys=keys0)
+
+        # test with vals as non Iterable on put but Iterable on get
+        assert iobuber.put(keys=keys0, vals=["gamma"])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals1]
+
+        assert iobuber.rem(keys0)
+
+        # test val as already joined string since has non Base64
+        with pytest.raises(ValueError):
+            assert iobuber.put(keys=keys0, vals=["alpha.beta"])
+
+        # test bytes for val
+        assert iobuber.put(keys=keys0, vals=[(b"alpha", b"beta")])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [vals0]
+        assert iobuber.rem(keys0)
+
+        # test with keys1
+        assert iobuber.put(keys=keys1, vals=[vals1])
+        actuals = iobuber.get(keys=keys1)
+        assert actuals == [vals1]
+
+        assert iobuber.rem(keys1)
+        assert not iobuber.get(keys=keys1)
+
+        # test missing entry at keys
+        badkey = "badkey"
+        assert not iobuber.get(badkey)
+
+        # test iteritems
+        assert iobuber.put(keys0, [vals0])
+        assert iobuber.put(keys1, [vals1])
+
+        items = [ items for items in iobuber.getItemIter()]
+        assert items == [(('bird', 'fish'), ('gamma',)), (('cat', 'dog'), ('alpha', 'beta'))]
+
+        keys3 = ("b","1")
+        keys4 = ("b","2")
+        keys5 = ("c","1")
+        keys6 = ("c","2")
+
+        iobuber.put(keys=keys3, vals=[vals0])
+        iobuber.put(keys=keys4, vals=[vals1])
+        iobuber.put(keys=keys5, vals=[vals0])
+        iobuber.put(keys=keys6, vals=[vals1])
+
+        topkeys = ("b","")  # last element empty to force trailing separator
+        items = [items for items in  iobuber.getItemIter(keys=topkeys)]
+        assert items == [(('b', '1'), ('alpha', 'beta')),
+                         (('b', '2'), ('gamma',))]
+
+        assert iobuber.rem(keys0)
+        assert iobuber.rem(keys1)
+        assert iobuber.rem(keys3)
+        assert iobuber.rem(keys4)
+        assert iobuber.rem(keys5)
+        assert iobuber.rem(keys6)
+
+
+        # iodup testing
+        # singular values B64
+        sue = "Hello"
+        sal = "Toodles"
+        sam = "Bye"
+
+        keys0 = ("test_key", "0001")
+        keys1 = ("test_key", "0002")
+
+        assert iobuber.put(keys=keys0, vals=[sal, sue])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [(sal,), (sue,)]  # insertion order not lexicographic
+        assert iobuber.cnt(keys0) == 2
+        actual = iobuber.getLast(keys=keys0)
+        assert actual == (sue,)
+
+        assert iobuber.rem(keys0)
+        actuals = iobuber.get(keys=keys0)
+        assert not actuals
+        assert actuals == []
+        assert iobuber.cnt(keys0) == 0
+
+        assert iobuber.put(keys=keys0, vals=[sue, sal])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [(sue,), (sal, )]  # insertion order
+        actual = iobuber.getLast(keys=keys0)
+        assert actual == (sal,)
+
+
+        assert iobuber.add(keys=keys0, val=sam)
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [(sue,), (sal,), (sam,)]   # insertion order
+
+
+        sue = ("Hello",)
+        sal = ("Toodles",)
+        sam = ("Bye",)
+        zoe = ('later', 'alligator')
+        zia = ('soon', 'baboon')
+
+        assert iobuber.pin(keys=keys0, vals=[zoe, zia])
+        actuals = iobuber.get(keys=keys0)
+        assert actuals == [zoe, zia]  # insertion order
+
+        assert iobuber.put(keys=keys1, vals=[sal, sue, sam])
+        actuals = iobuber.get(keys=keys1)
+        assert actuals == [sal, sue, sam]
+
+        for i, val in enumerate(iobuber.getIter(keys=keys1)):
+            assert val == actuals[i]
+
+        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        assert items == [(('test_key', '0001'), ('later', 'alligator')),
+                         (('test_key', '0001'), ('soon', 'baboon')),
+                         (('test_key', '0002'), ('Toodles',)),
+                         (('test_key', '0002'), ('Hello',)),
+                         (('test_key', '0002'), ('Bye',))]
+
+        items = list(iobuber.getFullItemIter())
+        assert items ==  \
+        [
+            (('test_key', '0001', '00000000000000000000000000000000'),('later', 'alligator')),
+           (('test_key', '0001', '00000000000000000000000000000001'), ('soon', 'baboon')),
+           (('test_key', '0002', '00000000000000000000000000000000'), ('Toodles',)),
+           (('test_key', '0002', '00000000000000000000000000000001'), ('Hello',)),
+           (('test_key', '0002', '00000000000000000000000000000002'), ('Bye',))
+        ]
+
+        items = [(keys, val) for keys,  val in iobuber.getItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), ('Toodles',)),
+                         (('test_key', '0002'), ('Hello',)),
+                         (('test_key', '0002'), ('Bye',))]
+
+        items = [(keys, val) for keys,  val in  iobuber.getItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), ('later', 'alligator')),
+                         (('test_key', '0001'), ('soon', 'baboon'))]
+
+        # Test with top keys
+        assert iobuber.put(keys=("test", "pop"), vals=[sal, sue, sam])
+        topkeys = ("test", "")
+        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=topkeys)]
+        assert items == [(('test', 'pop'), ('Toodles',)),
+                         (('test', 'pop'), ('Hello',)),
+                         (('test', 'pop'), ('Bye',))]
+
+        # test with top parameter
+        keys = ("test", )
+        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=keys, topive=True)]
+        assert items == [(('test', 'pop'), ('Toodles',)),
+                         (('test', 'pop'), ('Hello',)),
+                         (('test', 'pop'), ('Bye',))]
+
+        # IoItems
+        items = list(iobuber.getFullItemIter(keys=topkeys))
+        assert items == \
+        [
+            (('test', 'pop', '00000000000000000000000000000000'), ('Toodles',)),
+            (('test', 'pop', '00000000000000000000000000000001'), ('Hello',)),
+            (('test', 'pop', '00000000000000000000000000000002'), ('Bye',))
+        ]
+                   # test remove with a specific val
+        assert iobuber.rem(keys=("test_key", "0002"), val=sue)
+        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        assert items ==[(('test', 'pop'), ('Toodles',)),
+                        (('test', 'pop'), ('Hello',)),
+                        (('test', 'pop'), ('Bye',)),
+                        (('test_key', '0001'), ('later', 'alligator')),
+                        (('test_key', '0001'), ('soon', 'baboon')),
+                        (('test_key', '0002'), ('Toodles',)),
+                        (('test_key', '0002'), ('Bye',))]
+
+
+        assert iobuber.trim(keys=("test", ""))
+        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        assert items == [(('test_key', '0001'), ('later', 'alligator')),
+                         (('test_key', '0001'), ('soon', 'baboon')),
+                         (('test_key', '0002'), ('Toodles',)),
+                         (('test_key', '0002'), ('Bye',))]
+
+
+        assert iobuber.cnt(keys=keys0) == 2
+        assert iobuber.cnt(keys=keys1) == 2
+
+        # test with keys as string not tuple
+        keys2 = "keystr"
+        bob = ("go", "figure")
+        assert iobuber.put(keys=keys2, vals=[bob])
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bob]
+        assert iobuber.cnt(keys2) == 1
+        assert iobuber.rem(keys2)
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == []
+        assert iobuber.cnt(keys2) == 0
+
+        assert iobuber.put(keys=keys2, vals=[bob])
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bob]
+
+        bil = ("Go", "away")
+        assert iobuber.pin(keys=keys2, vals=[bil])
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bil]
+
+        assert iobuber.add(keys=keys2, val=bob)
+        actuals = iobuber.get(keys=keys2)
+        assert actuals == [bil, bob]
+
+        # Test trim
+        assert iobuber.trim()  # default trims whole database
+        assert iobuber.put(keys=keys1, vals=[bob, bil])
+        assert iobuber.get(keys=keys1) == [bob, bil]
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+    """Done Test"""
 
 def test_cesr_ioset_suber():
     """
@@ -2639,6 +2902,348 @@ def test_on_ioset_suber():
 
         """Done Test"""
 
+
+def test_b64_onioset_suber():
+    """
+    Test B64OnIoSetSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        oisbuber = subing.B64OnIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(oisbuber, subing.B64OnIoSetSuber)
+        assert not oisbuber.sdb.flags()["dupsort"]
+
+        k = "a"
+        j = "b"
+
+        w = ("Blue", "dog")
+        x = ("Green", "tree")
+        y = "Red"
+        z = ("White",)
+
+        # test addOn remOn
+        assert oisbuber.addOn(keys=k, on=0, val=w)
+        assert oisbuber.getOn(keys=k, on=0) == [w, ]
+        assert oisbuber.getOn(keys=k, on=0) == [('Blue', 'dog'),]
+        assert oisbuber.addOn(keys=k, on=0, val=x)
+        assert oisbuber.getOn(keys=k, on=0) == [w, x]
+        assert oisbuber.getOn(keys=k, on=0) == [('Blue', 'dog'), ('Green', 'tree')]
+        assert oisbuber.addOn(keys=k, on=1, val=y)
+        assert oisbuber.getOn(keys=k, on=1) == [(y,), ]
+        assert oisbuber.getOn(keys=k, on=1) == [('Red',),]
+        assert oisbuber.addOn(keys=k, on=1, val=z)
+        assert oisbuber.getOn(keys=k, on=1) == [(y,), z]
+        assert oisbuber.getOn(keys=k, on=1) == [('Red',), ('White',)]
+
+        assert oisbuber.getOn(keys=k, on=0) == [w, x]
+
+        assert oisbuber.cntOnAll(keys=(k,)) == 4
+
+        items = [item for item in oisbuber.getOnAllItemIter(keys=k)]
+        assert items == [(('a',), 0, ('Blue', 'dog')),
+                            (('a',), 0, ('Green', 'tree')),
+                            (('a',), 1, ('Red',)),
+                            (('a',), 1, ('White',))]
+
+        assert oisbuber.remOn(keys=k, on=0, val=w)
+        assert oisbuber.remOn(keys=k, on=1)
+        items = [item for item in oisbuber.getOnAllItemIter(keys=k)]
+        assert items == [(('a',), 0, ('Green', 'tree'))]
+
+        assert oisbuber.remOn(keys=k, on=0, val=x)
+        assert oisbuber.cntOnAll() == 0
+        assert oisbuber.cntOnAll(keys=k) == 0
+        assert oisbuber.cntOnAll(keys=(k,)) == 0
+
+        # test append
+        assert 0 == oisbuber.appendOn(keys=(j,), vals=(w, ))
+        assert 1 == oisbuber.appendOn(keys=(j,), vals=(x, ))
+        assert 2 == oisbuber.appendOn(keys=(j,), vals=(y, ))
+        assert 3 == oisbuber.appendOn(keys=(j,), vals=(z, ))
+
+        assert oisbuber.cntOnAll() == 4
+        assert oisbuber.cntOnAll(keys=j) == 4
+        assert oisbuber.cntOnAll(keys=(j,)) == 4
+        assert oisbuber.cntOnAll(keys=(j,), on=2) == 2
+        assert oisbuber.cntOnAll(keys=(j,), on=4) == 0
+
+        items = [(keys, on, val) for keys, on, val in oisbuber.getOnItemIter()]
+        assert items == \
+        [
+            (('b',), 0, ('Blue', 'dog')),
+            (('b',), 1, ('Green', 'tree')),
+            (('b',), 2, ('Red',)),
+            (('b',), 3, ('White',))
+        ]
+
+        # test getOnAllIter
+        vals = [val for val in oisbuber.getOnAllIter(keys=j)]
+        assert vals == [w, x, (y,), z]
+
+        vals = [val for val in oisbuber.getOnAllIter(keys=j, on=2)]
+        assert vals == [(y,), z]
+
+        # test getOnAllItemIter
+        items = [item for item in oisbuber.getOnAllItemIter(keys=j)]
+        assert items == [(('b',), 0, ('Blue', 'dog')),
+                            (('b',), 1, ('Green', 'tree')),
+                            (('b',), 2, ('Red',)),
+                            (('b',), 3, ('White',))]
+
+
+        items = [item for item in oisbuber.getOnAllItemIter(keys=j, on=2)]
+        assert items == [(('b',), 2, ('Red',)), (('b',), 3, ('White',))]
+
+        # test add (add a value already in db)
+        assert oisbuber.addOn(keys=k, on=0, val=w)
+        assert not oisbuber.addOn(keys=k, on=0, val=w)
+        assert oisbuber.addOn(keys=k, on=1, val=x)
+        assert not oisbuber.addOn(keys=k, on=1, val=x)
+        assert oisbuber.addOn(keys="ac",on=0, val=z)
+        assert not oisbuber.addOn(keys="ac",on=0, val=z)
+        assert oisbuber.addOn(keys="bc", on=0, val=y)
+        assert not oisbuber.addOn(keys="bc", on=0, val=y)
+        assert oisbuber.addOn(keys="bc",on=1, val=z)
+        assert not oisbuber.addOn(keys="bc",on=1, val=z)
+
+        # test getOnAllItemIter
+        items = [item for item in oisbuber.getOnAllItemIter(keys=k)]
+        assert items == \
+        [
+            (('a',), 0, ('Blue', 'dog')),
+            (('a',), 1, ('Green', 'tree'))
+        ]
+
+        assert oisbuber.cntOnAll(keys=k) == 2
+        assert oisbuber.cntOnAll(keys=(k,)) == 2
+        assert oisbuber.cntOnAll(keys=("bc",), on=2) == 0
+        assert oisbuber.cntOnAll(keys="") == 9
+
+        items = [(keys, on, val) for keys, on, val in oisbuber.getOnItemIter()]
+        assert items == \
+        [
+            (('a',), 0, ('Blue', 'dog')),
+            (('a',), 1, ('Green', 'tree')),
+            (('ac',), 0, ('White',)),
+            (('b',), 0, ('Blue', 'dog')),
+            (('b',), 1, ('Green', 'tree')),
+            (('b',), 2, ('Red',)),
+            (('b',), 3, ('White',)),
+            (('bc',), 0, ('Red',)),
+            (('bc',), 1, ('White',))
+        ]
+
+        items = [(keys, val) for keys, val in oisbuber.getFullItemIter()]
+        assert items == \
+        [
+            (('a', '00000000000000000000000000000000', '00000000000000000000000000000000'), ('Blue', 'dog')),
+            (('a', '00000000000000000000000000000001', '00000000000000000000000000000000'), ('Green', 'tree')),
+            (('ac', '00000000000000000000000000000000', '00000000000000000000000000000000'), ('White',)),
+            (('b', '00000000000000000000000000000000', '00000000000000000000000000000000'), ('Blue', 'dog')),
+            (('b', '00000000000000000000000000000001', '00000000000000000000000000000000'), ('Green', 'tree')),
+            (('b', '00000000000000000000000000000002', '00000000000000000000000000000000'), ('Red',)),
+            (('b', '00000000000000000000000000000003', '00000000000000000000000000000000'), ('White',)),
+            (('bc', '00000000000000000000000000000000', '00000000000000000000000000000000'), ('Red',)),
+            (('bc', '00000000000000000000000000000001', '00000000000000000000000000000000'), ('White',))]
+
+        # test getOnAllItemIter   getOnIterAll
+        items = [item for item in oisbuber.getOnAllItemIter(keys=k)]
+        assert items == [(('a',), 0, ('Blue', 'dog')), (('a',), 1, ('Green', 'tree'))]
+
+        vals = [val for val in oisbuber.getOnAllIter(keys=k)]
+        assert vals == [('Blue', 'dog'), ('Green', 'tree')]
+
+        vals = [val for val in oisbuber.getOnAllIter(keys=(k, ))]
+        assert vals == [('Blue', 'dog'), ('Green', 'tree')]
+
+        items = [item for item in oisbuber.getOnAllItemIter(keys=(k, ))]
+        assert items == [(('a',), 0, ('Blue', 'dog')),
+                         (('a',), 1, ('Green', 'tree'))]
+
+        items = [item for item in oisbuber.getOnAllItemIter(keys=(k, ""))]
+        assert items == []
+
+        vals = [val for val in oisbuber.getOnAllIter(keys=(k, ""))]
+        assert vals == []
+
+        items = [item for item in oisbuber.getOnAllItemIter(keys='')]
+        assert items == \
+        [
+            (('a',), 0, ('Blue', 'dog')),
+            (('a',), 1, ('Green', 'tree')),
+            (('ac',), 0, ('White',)),
+            (('b',), 0, ('Blue', 'dog')),
+            (('b',), 1, ('Green', 'tree')),
+            (('b',), 2, ('Red',)),
+            (('b',), 3, ('White',)),
+            (('bc',), 0, ('Red',)),
+            (('bc',), 1, ('White',))
+        ]
+
+        vals = [val for val in oisbuber.getOnAllIter(keys='')]
+        assert vals == \
+        [
+            ('Blue', 'dog'),
+            ('Green', 'tree'),
+            ('White',),
+            ('Blue', 'dog'),
+            ('Green', 'tree'),
+            ('Red',),
+            ('White',),
+            ('Red',),
+            ('White',)
+        ]
+
+
+        # test with sets ordinal
+        assert oisbuber.addOn(keys=j, on=0, val=z)
+        assert oisbuber.addOn(keys=j, on=1, val=y)
+        assert oisbuber.addOn(keys=j, on=2, val=x)
+        assert oisbuber.addOn(keys=j, on=3, val=w)
+
+        assert oisbuber.cntOnAll(keys=j) == 8
+        assert oisbuber.cntOnAll(keys=j, on=2) == 4
+        assert oisbuber.cntOnAll(keys=j, on=4) == 0
+
+        items = [(keys, on, val) for keys, on, val in oisbuber.getOnItemIter(keys=j)]
+        assert items == \
+        [
+            (('b',), 0, ('Blue', 'dog')),
+            (('b',), 0, ('White',)),
+            (('b',), 1, ('Green', 'tree')),
+            (('b',), 1, ('Red',)),
+            (('b',), 2, ('Red',)),
+            (('b',), 2, ('Green', 'tree')),
+            (('b',), 3, ('White',)),
+            (('b',), 3, ('Blue', 'dog')),
+            (('bc',), 0, ('Red',)),
+            (('bc',), 1, ('White',))
+        ]
+
+        # test getOnAllItemIter getOnIterAll getOnItemBackIter getOnBackIter
+        items = [item for item in oisbuber.getOnAllItemIter(keys=j)]
+        assert items == [(('b',), 0, ('Blue', 'dog')),
+                            (('b',), 0, ('White',)),
+                            (('b',), 1, ('Green', 'tree')),
+                            (('b',), 1, ('Red',)),
+                            (('b',), 2, ('Red',)),
+                            (('b',), 2, ('Green', 'tree')),
+                            (('b',), 3, ('White',)),
+                            (('b',), 3, ('Blue', 'dog'))]
+
+        vals = [val for val in oisbuber.getOnAllIter(keys=j)]
+        assert vals == [('Blue', 'dog'),
+                        ('White',),
+                        ('Green', 'tree'),
+                        ('Red',),
+                        ('Red',),
+                        ('Green', 'tree'),
+                        ('White',),
+                        ('Blue', 'dog')]
+
+        items = [item for item in oisbuber.getOnAllItemIter(keys=j, on=2)]
+        assert items ==[(('b',), 2, ('Red',)),
+                        (('b',), 2, ('Green', 'tree')),
+                        (('b',), 3, ('White',)),
+                        (('b',), 3, ('Blue', 'dog'))]
+
+
+        vals = [val for val in oisbuber.getOnAllIter(keys=j, on=2)]
+        assert vals == [('Red',), ('Green', 'tree'), ('White',), ('Blue', 'dog')]
+
+        items = [item for item in oisbuber.getOnAllItemBackIter(keys=j, on=4)]
+        assert items == [(('b',), 3, ('Blue', 'dog')),
+                        (('b',), 3, ('White',)),
+                        (('b',), 2, ('Green', 'tree')),
+                        (('b',), 2, ('Red',)),
+                        (('b',), 1, ('Red',)),
+                        (('b',), 1, ('Green', 'tree')),
+                        (('b',), 0, ('White',)),
+                        (('b',), 0, ('Blue', 'dog'))]
+
+
+        vals = [val for val in oisbuber.getOnAllBackIter(keys=j, on=4)]
+        assert vals == [('Blue', 'dog'),
+                        ('White',),
+                        ('Green', 'tree'),
+                        ('Red',),
+                        ('Red',),
+                        ('Green', 'tree'),
+                        ('White',),
+                        ('Blue', 'dog')]
+
+
+        items = [item for item in oisbuber.getOnAllItemBackIter(keys=j, on=1)]
+        assert items ==[(('b',), 1, ('Red',)),
+                        (('b',), 1, ('Green', 'tree')),
+                        (('b',), 0, ('White',)),
+                        (('b',), 0, ('Blue', 'dog'))]
+
+        vals = [val for val in oisbuber.getOnAllBackIter(keys=j, on=1)]
+        assert vals == [('Red',), ('Green', 'tree'), ('White',), ('Blue', 'dog')]
+
+        # test append with duplicates
+        assert 4 == oisbuber.appendOn(keys=j, vals=(x, ))
+        assert oisbuber.cntOnAll(keys=j) == 9
+
+        # test remove
+        assert oisbuber.remOn(keys=j, on=1)
+        assert not oisbuber.remOn(keys=j, on=1)
+        assert oisbuber.remOn(keys=j, on=3)
+        assert not oisbuber.remOn(keys=j, on=3)
+
+        assert oisbuber.cntOnAll(keys=j) == 5
+
+        items = [item for item in oisbuber.getOnAllItemIter(keys=j)]
+        assert items == [(('b',), 0, ('Blue', 'dog')),
+                        (('b',), 0, ('White',)),
+                        (('b',), 2, ('Red',)),
+                        (('b',), 2, ('Green', 'tree')),
+                        (('b',), 4, ('Green', 'tree'))]
+
+        vals = [val for val in oisbuber.getOnAllIter(keys=j)]
+        assert vals == [('Blue', 'dog'),
+                        ('White',),
+                        ('Red',),
+                        ('Green', 'tree'),
+                        ('Green', 'tree')]
+
+        # test putOn and pinOn
+        o = ("moon", "beam")
+        p = ("sun", "spot")
+        q = [("moon", "beam"), ]
+        r = ("stars", )
+        s = ("moon", )
+        t = ("sun",)
+        u = (("sun", "spot"), "sun")
+        v = ("moon", ("stars", ))
+
+
+        assert oisbuber.putOn(keys='d', on=0, vals=q)
+        assert oisbuber.getOn(keys='d', on=0) == [("moon", "beam"), ]
+        assert oisbuber.getOn(keys='d', on=0) == q
+        assert not oisbuber.putOn(keys='d', on=0, vals=q)
+        assert oisbuber.putOn(keys='d', on=0, vals=r)
+        assert oisbuber.putOn(keys='d', on=0, vals=s)
+        assert oisbuber.putOn(keys='d', on=0, vals=t)
+        assert oisbuber.getOn(keys='d', on=0) == [('moon', 'beam'), ('stars',), ('moon',), ('sun',)]
+        assert oisbuber.getOn(keys='d', on=0) == [o, r, s, t]
+        assert not oisbuber.putOn(keys='d', on=0, vals=(o, r, s, t))
+        assert oisbuber.pinOn(keys='d', on=0, vals=u)
+        assert oisbuber.getOn(keys='d', on=0) == [('sun', 'spot'), ('sun',)]
+        assert oisbuber.getOn(keys='d', on=0) == [p, t]
+        assert oisbuber.putOn(keys='d', on=0, vals=v)
+        assert oisbuber.getOn(keys='d', on=0) == [('sun', 'spot'), ('sun',), ('moon',), ('stars',)]
+        assert oisbuber.getOn(keys='d', on=0) == [p, t, s, r]
+        assert oisbuber.remOn(keys='d', on=0)
+        assert oisbuber.getOn(keys='d', on=0) == []
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
 
 
 def test_serder_suber():
@@ -4202,6 +4807,9 @@ if __name__ == "__main__":
     test_on_iodup_suber()
     test_b64_oniodup_suber()
     test_ioset_suber()
+    test_b64_ioset_suber()
+    test_on_ioset_suber()
+    test_b64_onioset_suber()
     test_cat_cesr_suber()
     test_cesr_suber()
     test_cesr_on_suber()
@@ -4209,7 +4817,6 @@ if __name__ == "__main__":
     test_cat_cesr_ioset_suber()
     test_cesr_dup_suber()
     test_cat_cesr_dup_suber()
-    test_on_ioset_suber()
     test_serder_suber()
     test_serder_ioset_suber()
     test_schemer_suber()

@@ -1909,12 +1909,10 @@ class LMDBer(filing.Filer):
         if not key:
             return self.cntAll(db)
 
-        if on is None:
-            return self.cntTop(db=db, top=key)
-            #return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
-
         # count all on >= on for key
         with self.env.begin(db=db, write=True, buffers=True) as txn:
+            if on is None:
+                on = 0
             count = 0
             onkey = onKey(key, on, sep=sep)
             cursor = txn.cursor()
