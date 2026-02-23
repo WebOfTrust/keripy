@@ -2860,8 +2860,6 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             yield (self._des(val))
 
 
-
-
 class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
     """
     Subclass of B64SuberBase and OnIoDupSuber that serializes and deserializes
@@ -3417,7 +3415,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         order of each key.
 
         Returns:
-            items (Iterator[(tuple, int, str)]): triples of (keys, on, val)
+            item (Iterator[(tuple, int, str)]): triples of (keys, on, val)
                 in backwards order
 
         Parameters:
@@ -3458,6 +3456,68 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             sep (bytes): separator character for split
         """
         for keys, on, val in (self.db.getOnAllIoSetItemBackIter(db=self.sdb,
+                                                        key=self._tokey(keys),
+                                                        on=on,
+                                                        sep=self.sep.encode())):
+            yield (self._des(val))
+
+
+    def getOnAllLastItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
+                                on: int|None=None):
+        """Iterates backwards over last set items for all on <= on at key.
+        When on is None iterates backwards over last set items for all on at key.
+        When key empty then iterates backwards over whole db for last set items.
+
+        Returned items are triples of (key, on, val)
+
+        Raises StopIterationError when done or when key empty or None
+
+        Backwards means decreasing numerical value of ion, for each on and
+        decreasing numerical value on for each key and decreasing lexocographic
+        order of each key.
+
+        Returns:
+            lastitem (Iterator[(tuple, int, str)]): triples of (keys, on, val)
+                in backwards order
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): keys as prefix to be
+                combined with serialized on suffix and sep to form onkey
+                keys empty means whole db
+
+            on (int|None): ordinal number used with onKey(pre,on) to form key.
+                           None means iterate over all on for key
+            sep (bytes): separator character for split
+        """
+        for keys, on, val in (self.db.getOnAllIoSetLastItemBackIter(db=self.sdb,
+                                                        key=self._tokey(keys),
+                                                        on=on,
+                                                        sep=self.sep.encode())):
+            yield (self._tokeys(keys), on, self._des(val))
+
+
+    def getOnAllLastBackIter(self, keys: str|bytes|memoryview|Iterable = "",
+                            on: int|None=None):
+        """Iterates backwards over last set values for all on <= on at key.
+        When on is None iterates backwards over last set values for all on at key.
+        When key empty then iterates backwards over whole db for last set values.
+
+        Backwards means decreasing numerical value of ion, for each on and
+        decreasing numerical value on for each key and decreasing lexocographic
+        order of each key.
+
+        Raises StopIterationError when done or when key empty or None
+
+        Returns
+            lastval (Iterator[str]):  deserialized vals in backwards order
+
+        Parameters:
+            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+                combined with serialized on tail and sep to form onkey
+            on (int|None): ordinal number used with onKey(pre,on) to form key.
+            sep (bytes): separator character for split
+        """
+        for keys, on, val in (self.db.getOnAllIoSetLastItemBackIter(db=self.sdb,
                                                         key=self._tokey(keys),
                                                         on=on,
                                                         sep=self.sep.encode())):

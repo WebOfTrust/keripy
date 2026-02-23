@@ -2530,7 +2530,7 @@ def test_on_ioset_suber():
         ['w', 'u', 't']
 
 
-        # Test back iter   getOnAllLastItemIter
+        # Test back iter
         # whole db
         assert [item for item in niosuber.getOnAllItemBackIter()] == \
         [
@@ -2595,7 +2595,47 @@ def test_on_ioset_suber():
         ['w','x','y','z','l','j','k']
 
 
-        # Test last back iter   getOnAllLastItemIter
+        # Test last back iter
+        # whole db
+        assert [item for item in niosuber.getOnAllLastItemBackIter()] == \
+        [
+            (('E', 'F'), 4, 't'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 0, 'l'),
+            (('C', 'D'), 0, 'f'),
+            (('B', 'C'), 0, 'd'),
+            (('A', 'B'), 0, 'a')
+        ]
+
+        assert [val for val in niosuber.getOnAllLastBackIter()] == \
+        ['t', 'u', 'w', 'y', 'l', 'f', 'd', 'a']
+
+        # keys3  all on
+        assert [item for item in niosuber.getOnAllLastItemBackIter(keys3)] == \
+        [
+            (('E', 'F'), 4, 't'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 0, 'l')
+        ]
+
+        assert [val for val in niosuber.getOnAllLastBackIter(keys3)] == \
+        ['t', 'u', 'w', 'y', 'l']
+
+        # keys3  on <= 2
+        assert [item for item in niosuber.getOnAllLastItemBackIter(keys3, on=2)] == \
+        [
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 0, 'l')
+        ]
+
+        assert [val for val in niosuber.getOnAllLastBackIter(keys3, on=2)] == \
+        ['w', 'y', 'l']
+
 
         """Done Test"""
 
