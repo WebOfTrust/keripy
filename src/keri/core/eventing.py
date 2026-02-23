@@ -4250,7 +4250,7 @@ class Kevery:
                         # create witness indexed signature
                         wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                         self.db.wigs.add(keys=dgkey, val=wiger)  # write to db
-                    else:  # not witness rect write receipt couple to database .rcts
+                    else:  # not witness rect write receipt to database
                         self.db.rcts.add(keys=dgkey, val=(cigar.verfer, cigar))
 
             wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
@@ -4423,7 +4423,7 @@ class Kevery:
                     # create witness indexed signature and write to db
                     wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                     self.db.wigs.add(keys=(pre, ldig), val=wiger)
-                else:  # write receipt couple to database
+                else:  # write receipt to database
                     self.db.rcts.add(keys=(pre, ldig), val=(cigar.verfer, cigar))
 
 
@@ -5400,12 +5400,12 @@ class Kevery:
         for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
-            tritruple = (
+            trituple = (
                 coring.Diger(qb64=said),
                 coring.Prefixer(qb64=cigar.verfer.qb64),
                 cigar
             )
-            self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=tritruple) # should be snKey
+            self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=trituple)
         # log escrowed
         logger.debug("Kevery process: escrowed unverified receipt of pre= %s "
                      " sn=%x dig=%s", serder.pre, serder.sn, said)
@@ -6415,7 +6415,7 @@ class Kevery:
                         # create witness indexed signature and write to db
                         wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                         self.db.wigs.add(keys=(pre, serder.said), val=wiger)
-                    else:  # write receipt couple to database
+                    else:  # write receipt to database
                         self.db.rcts.add(keys=(pre, serder.said), val=(cigar.verfer, cigar))
 
             except UnverifiedReceiptError as ex:
