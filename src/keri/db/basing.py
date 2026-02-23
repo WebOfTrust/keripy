@@ -1912,7 +1912,7 @@ class Baser(dbing.LMDBer):
         # Verify fully receipted, because this witness may have persisted before all receipts
         # have been gathered if this ius a witness for serder.pre
         # get unique verified wigers and windices lists from wigers list
-        wigers = self.wigs.get(keys=dbing.dgKey(serder.preb, serder.saidb))
+        wigers = self.wigs.get(keys=(serder.preb, serder.saidb))
         kever = self.kevers[serder.pre]
         toad = kever.toader.num
 

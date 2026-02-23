@@ -383,7 +383,7 @@ def test_delegation_supersede():
         serder = wopHab.kevers[topHab.pre].serder
         # generate witness receipt and process
         receipt = wopHab.witness(serder=serder)  # now has fully witnessd controller icp
-        count = wopHab.db.wigs.cnt(dbing.dgKey(topHab.pre, serder.said))
+        count = wopHab.db.wigs.cnt(keys=(topHab.pre, serder.said))
         assert count >= 1
 
         assert receipt == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
@@ -395,7 +395,7 @@ def test_delegation_supersede():
 
         # process receipt as local since own witness receipt.
         topHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
-        count = topHab.db.wigs.cnt(dbing.dgKey(topHab.pre, serder.said))
+        count = topHab.db.wigs.cnt(keys=(topHab.pre, serder.said))
         assert count >= 1
 
         # Create witness wid and delegated controller mid
@@ -428,14 +428,14 @@ def test_delegation_supersede():
         serder = widHab.kevers[midHab.pre].serder
         # generate witness receipt and process
         receipt = widHab.witness(serder=serder)  # now has fully witnessed controller icp
-        count = widHab.db.wigs.cnt(dbing.dgKey(midHab.pre, serder.said))
+        count = widHab.db.wigs.cnt(keys=(midHab.pre, serder.said))
         assert count >= 1
 
         # add test fail process as remote since own witness
 
         # top process wop receipt as local since own witness receipt.
         midHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
-        count = midHab.db.wigs.cnt(dbing.dgKey(midHab.pre, serder.said))
+        count = midHab.db.wigs.cnt(keys=(midHab.pre, serder.said))
         assert count >= 1
 
         # Create witness wot and controller bot
@@ -468,14 +468,14 @@ def test_delegation_supersede():
         serder = wotHab.kevers[botHab.pre].serder
         # generate witness receipt and process
         receipt = wotHab.witness(serder=serder)  # now has fully witnessed controller icp
-        count = wotHab.db.wigs.cnt(dbing.dgKey(botHab.pre, serder.said))
+        count = wotHab.db.wigs.cnt(keys=(botHab.pre, serder.said))
         assert count >= 1
 
         # add test fail process as remote since own witness
 
         # top process wop receipt as local since own witness receipt.
         botHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
-        count = botHab.db.wigs.cnt(dbing.dgKey(botHab.pre, serder.said))
+        count = botHab.db.wigs.cnt(keys=(botHab.pre, serder.said))
         assert count >= 1
 
     # This needs to be fixedup to actually test delegating superseding recovery

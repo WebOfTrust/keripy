@@ -1132,7 +1132,6 @@ class ReceiptEnd(doing.DoDoer):
             raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({said}) not found")
 
         said = bytes(said)
-        dgkey = dbing.dgKey(preb, said)  # get message
         if not (serder := self.hab.db.evts.get(keys=(preb, said))):
             raise falcon.HTTPNotFound(description="Missing event for dig={}.".format(said))
         if serder.sn > 0:
@@ -1147,7 +1146,7 @@ class ReceiptEnd(doing.DoDoer):
                                    sn=sn,
                                    said=said.decode("utf-8"))
         rct = bytearray(rserder.raw)
-        if wigers := self.hab.db.wigs.get(keys=dgkey):
+        if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
                                version=kering.Vrsn_1_0).qb64b)
             for wiger in wigers:

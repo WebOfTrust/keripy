@@ -4426,7 +4426,7 @@ class Kevery:
                     index = wits.index(rpre)
                     # create witness indexed signature and write to db
                     wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
-                    self.db.wigs.add(keys=dgKey(pre, ldig), val=wiger)
+                    self.db.wigs.add(keys=(pre, ldig), val=wiger)
                 else:  # write receipt couple to database
                     couple = cigar.verfer.qb64b + cigar.qb64b
                     self.db.addRct(key=dgKey(pre, ldig), val=couple)
@@ -5142,7 +5142,7 @@ class Kevery:
             kever = self.kevers[pre]
 
             # get list of witness signatures to ensure we are presenting a fully witnessed event
-            wigers = self.db.wigs.get(dgKey(pre, kever.serder.saidb))
+            wigers = self.db.wigs.get(keys=(pre, kever.serder.saidb))
             
 
             if len(wigers) < kever.toader.num:
@@ -5657,7 +5657,7 @@ class Kevery:
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
 
                 #  get wigers
-                wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
+                wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, local=esr.local)
 
                 # If process does NOT validate event with sigs, becasue it is
@@ -5777,7 +5777,7 @@ class Kevery:
                     msg = f"PSE Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
-                wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
+                wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
                 if not wigers:  # empty list wigs witness sigs not wits
                     # wigs maybe empty  if not wits or if wits while waiting
                     # for first witness signature
@@ -5945,7 +5945,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get witness signatures (wigs not wits)
-                wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
+                wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
 
                 if not wigers:  # empty list
                     # wigs maybe empty if not wits or if wits while waiting
@@ -6413,7 +6413,7 @@ class Kevery:
                             index = wits.index(rpre)
                             # create witness indexed signature and write to db
                             wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
-                            self.db.wigs.add(keys=dgKey(pre, serder.said), val=wiger)
+                            self.db.wigs.add(keys=(pre, serder.said), val=wiger)
                         else:  # write receipt couple to database
                             couple = cigar.verfer.qb64b + cigar.qb64b
                             self.db.addRct(key=dgKey(pre, serder.said), val=couple)
@@ -6515,7 +6515,7 @@ class Kevery:
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
 
                 #  get wigers
-                wigers = self.db.wigs.get(dgKey(pre, bytes(edig)))
+                wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
 
                 # parse the event if we have a delegate seal
                 if (duple := self.db.aess.get(keys=(pre.encode("utf-8"), edig))) is not None:
@@ -6754,7 +6754,7 @@ class Kevery:
                 msg = f"PWE Bad escrowed witness receipt wig at pre={pre} sn={sn:x}."
                 logger.trace("Kevery unescrow error: %s", msg)
                 raise ValidationError(msg)
-            self.db.wigs.add(keys=dgKey(pre, serder.said), val=wiger)
+            self.db.wigs.add(keys=(pre, serder.said), val=wiger)
             # processEscrowPartialWigs removes from this .Pwes escrow
             # when fully witnessed using self.db.pwes.remOn(pre, sn, dig)
 
