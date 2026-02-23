@@ -3,22 +3,22 @@
 keri.core.routing module
 
 """
+
 import datetime
 import logging
 import re
 
 from hio.help import decking
 
-from . import eventing, coring, serdering
 from .. import help, kering
-from ..db import dbing
 from ..help import helping
+from . import coring, eventing
 
 logger = help.ogler.getLogger()
 
 
 class Router:
-    """ Reply message router
+    """Reply message router
 
     Reply message router that accepts registration of route `r` handlers and dispatches
     reply messages to the appropriate handler.
@@ -28,7 +28,7 @@ class Router:
     defaultResourceFunc = "processReply"
 
     def __init__(self, routes=None):
-        """ Initialized instance with optiona list of existing routes
+        """Initialized instance with optiona list of existing routes
 
         Parameters:
             routes (list): preregistered routes for this router
@@ -37,7 +37,7 @@ class Router:
         self.routes = routes if routes is not None else list()
 
     def addRoute(self, routeTemplate, resource, suffix=None):
-        """ Add a route between a route template and a resource
+        """Add a route between a route template and a resource
 
 
         Parameters:
@@ -50,7 +50,9 @@ class Router:
         """
 
         fields, regex = compile_uri_template(routeTemplate)
-        self.routes.append(Route(regex=regex, fields=fields, resource=resource, suffix=suffix))
+        self.routes.append(
+            Route(regex=regex, fields=fields, resource=resource, suffix=suffix)
+        )
 
     def dispatch(self, serder, saider, cigars, tsgs):
         """
@@ -69,7 +71,9 @@ class Router:
         r = ked["r"]
         route, match = self._find(route=r)
         if route is None:
-            raise kering.ValidationError(f"No resource is registered to handle route {r}")
+            raise kering.ValidationError(
+                f"No resource is registered to handle route {r}"
+            )
 
         fname = self.defaultResourceFunc
         if route.suffix is not None:
@@ -84,7 +88,7 @@ class Router:
         fn(serder=serder, saider=saider, route=r, cigars=cigars, tsgs=tsgs, **kwargs)
 
     def _find(self, route):
-        """ Linear seach thru added routes, returning the first one that matchs
+        """Linear seach thru added routes, returning the first one that matchs
 
         Searches through the registered routes until a regex in one of the routes matches
         the provided route and returns the Route object along with the re.Match object.
@@ -103,9 +107,10 @@ class Router:
 
         return None, None
 
-    def processRouteNotFound(self, *, serder, saider, route,
-                             cigars=None, tsgs=None, **kwargs):
-        """ Default handler for processing reply message with an unregistered route
+    def processRouteNotFound(
+        self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs
+    ):
+        """Default handler for processing reply message with an unregistered route
 
         Parameters:
             serder (Serder): reply event message
@@ -117,14 +122,14 @@ class Router:
 
         """
 
-        raise kering.ConfigurationError(f"Resource registered for route {route} in {coring.Ilks.rpy}"
-                                        f"does not contain the correct processReply method")
+        raise kering.ConfigurationError(
+            f"Resource registered for route {route} in {coring.Ilks.rpy}"
+            f"does not contain the correct processReply method"
+        )
 
 
 class Revery:
-    """ Reply message event processor
-
-    """
+    """Reply message event processor"""
 
     TimeoutRPE = 3600  # seconds to timeout reply message escrows
 
@@ -152,41 +157,41 @@ class Revery:
 
     def processReply(self, serder, cigars=None, tsgs=None, **kwa):
         """
-         Process one reply message with either attached nontrans signing couples
-         in cigars or attached trans indexed sig groups in tsgs. Process logic
-         is route dependent and dispatched by route.
+        Process one reply message with either attached nontrans signing couples
+        in cigars or attached trans indexed sig groups in tsgs. Process logic
+        is route dependent and dispatched by route.
 
-         Parameters:
-             serder (Serder): instance of reply message
-             cigars (list): of Cigar instances that contain nontrans signing couple
-                           signature in .raw and public key in .verfer
-             tsgs (list): tuples (quadruples) of form
-                 (prefixer, seqner, diger, [sigers]) where:
-                 prefixer is pre of trans endorser
-                 seqner is sequence number of trans endorser's est evt for keys for sigs
-                 diger is digest of trans endorser's est evt for keys for sigs
-                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
+        Parameters:
+            serder (Serder): instance of reply message
+            cigars (list): of Cigar instances that contain nontrans signing couple
+                          signature in .raw and public key in .verfer
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where:
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-         BADA (Best Available Data Acceptance) model for each reply message.
-         Latest-Seen-Signed Pairwise comparison of new update reply compared to
-         old already accepted reply from same source for same route (same data).
-         Accept new reply (update) if new reply is later than old reply where:
-             1) Later means date-time-stamp of new is greater than old
-         If non-trans signer then also (AND)
-             2) Later means sn (sequence number) of last (if forked) Est evt that
-                provides keys for signature(s) of new is greater than or equal to
-                sn of last Est evt that provides keys for signature(s) of new.
+        BADA (Best Available Data Acceptance) model for each reply message.
+        Latest-Seen-Signed Pairwise comparison of new update reply compared to
+        old already accepted reply from same source for same route (same data).
+        Accept new reply (update) if new reply is later than old reply where:
+            1) Later means date-time-stamp of new is greater than old
+        If non-trans signer then also (AND)
+            2) Later means sn (sequence number) of last (if forked) Est evt that
+               provides keys for signature(s) of new is greater than or equal to
+               sn of last Est evt that provides keys for signature(s) of new.
 
-         If nontrans and last Est Evt is not yet accepted then escrow.
-         If nontrans and partially signed then escrow.
+        If nontrans and last Est Evt is not yet accepted then escrow.
+        If nontrans and partially signed then escrow.
 
-         Escrow process logic is route dependent and is dispatched by route,
-         i.e. route is address of buffer with route specific handler of escrow.
+        Escrow process logic is route dependent and is dispatched by route,
+        i.e. route is address of buffer with route specific handler of escrow.
         """
-        #for k in eventing.RPY_LABELS:
-            #if k not in serder.ked:
-                #raise kering.ValidationError(f"Missing element={k} from {coring.Ilks.rpy}"
-                                             #f" msg={serder.ked}.")
+        # for k in eventing.RPY_LABELS:
+        # if k not in serder.ked:
+        # raise kering.ValidationError(f"Missing element={k} from {coring.Ilks.rpy}"
+        # f" msg={serder.ked}.")
         # verify said of reply via Serder (handles protocol/ilk-specific multi-SAID logic)
         if not serder.verify():
             raise kering.ValidationError(f"Invalid said for reply msg={serder.ked}.")
@@ -194,9 +199,10 @@ class Revery:
         saider = coring.Diger(qb64=serder.said)
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
 
-    def acceptReply(self, serder, saider, route, aid, osaider=None,
-                    cigars=None, tsgs=None):
-        """ Applies Best Available Data Acceptance policy to reply and signatures
+    def acceptReply(
+        self, serder, saider, route, aid, osaider=None, cigars=None, tsgs=None
+    ):
+        """Applies Best Available Data Acceptance policy to reply and signatures
 
         Returns:
             bool: True is successfully accepted. False otherwise
@@ -257,36 +263,51 @@ class Revery:
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
-                logger.info("Revery: skipped invalid transferable verfers "
-                            "on reply said = %s", serder.said)
+                logger.info(
+                    "Revery: skipped invalid transferable verfers on reply said = %s",
+                    serder.said,
+                )
                 continue  # skip invalid transferable
 
             if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own cig
                 if not self.local:  # own cig when not local so ignore
-                    logger.info("Revery: skipped own attachment for AID %s"
-                               " on non-local reply at route = %s", aid, serder.ked['r'])
+                    logger.info(
+                        "Revery: skipped own attachment for AID %s"
+                        " on non-local reply at route = %s",
+                        aid,
+                        serder.ked["r"],
+                    )
                     logger.debug("Reply Body=\n%s\n", serder.pretty())
 
                     continue  # skip own cig attachment on non-local reply msg
 
             if aid != cigar.verfer.qb64:  # cig not by aid
-                logger.info("Revery: skipped cig not from aid="
-                            "%s on reply at route %s", aid, serder.ked['r'])
+                logger.info(
+                    "Revery: skipped cig not from aid=%s on reply at route %s",
+                    aid,
+                    serder.ked["r"],
+                )
                 logger.debug("Reply Body=\n%s\n", serder.pretty())
                 continue  # skip invalid cig's verfer is not aid
 
             if odater:  # get old compare datetimes to see if later
                 if dater.datetime <= odater.datetime:
-                    logger.trace("Revery: skipped stale update from "
-                                 "%s of reply at route= %s", aid, serder.ked['r'])
+                    logger.trace(
+                        "Revery: skipped stale update from %s of reply at route= %s",
+                        aid,
+                        serder.ked["r"],
+                    )
                     logger.trace("Reply Body=\n%s\n", serder.pretty())
                     continue  # skip if not later
                     # raise ValidationError(f"Stale update of {route} from {aid} "
                     # f"via {Ilks.rpy}={serder.ked}.")
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
-                logger.info("Revery: skipped non-verifying cig from "
-                            "%s on reply at route = %s", cigar.verfer.qb64, serder.ked['r'])
+                logger.info(
+                    "Revery: skipped non-verifying cig from %s on reply at route = %s",
+                    cigar.verfer.qb64,
+                    serder.ked["r"],
+                )
                 logger.debug("Reply Body=\n%s\n", serder.pretty())
                 continue  # skip if cig not verify
 
@@ -299,15 +320,20 @@ class Revery:
         for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
             if not self.lax and prefixer.qb64 in self.prefixes:  # own sig
                 if not self.local:  # own sig when not local so ignore
-                    logger.debug("Revery: skipped own attachment "
-                                 "on nonlocal reply said=%s", serder.said)
+                    logger.debug(
+                        "Revery: skipped own attachment on nonlocal reply said=%s",
+                        serder.said,
+                    )
                     logger.debug("event=\n%s\n", serder.pretty())
                     continue  # skip own sig attachment on non-local reply msg
 
             spre = prefixer.qb64
             if aid != spre:  # sig not by aid
-                logger.info("Revery: skipped signature not from aid="
-                            "%s on reply said=%s", aid, serder.said)
+                logger.info(
+                    "Revery: skipped signature not from aid=%s on reply said=%s",
+                    aid,
+                    serder.said,
+                )
                 logger.debug(f"event=\n{serder.pretty()}\n")
                 continue  # skip invalid signature is not from aid
 
@@ -316,17 +342,26 @@ class Revery:
                     _, osqr, _, _ = otsgs[0]  # zeroth should be authoritative
 
                     if seqner.sn < osqr.sn:  # sn earlier
-                        logger.info("Revery: skipped stale key state sig "
-                                    "from %s sn=%s<%s on reply said=%s",
-                                    aid, seqner.sn, osqr.sn, serder.said)
+                        logger.info(
+                            "Revery: skipped stale key state sig "
+                            "from %s sn=%s<%s on reply said=%s",
+                            aid,
+                            seqner.sn,
+                            osqr.sn,
+                            serder.said,
+                        )
                         logger.debug("event=\n%s\n", serder.pretty())
                         continue  # skip if sn earlier
 
                     if seqner.sn == osqr.sn:  # sn same so check datetime
                         if odater:
                             if dater.datetime <= odater.datetime:
-                                logger.info("Revery: skipped stale key state sig datetime "
-                                            "from %s on reply said=%s", aid, serder.said)
+                                logger.info(
+                                    "Revery: skipped stale key state sig datetime "
+                                    "from %s on reply said=%s",
+                                    aid,
+                                    serder.said,
+                                )
                                 logger.debug("event=\n%s\n", serder.pretty())
                                 continue  # skip if not later
 
@@ -335,61 +370,101 @@ class Revery:
             if sdig is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
-                logger.info("Revery: escrowing without key state for signer"
-                            " on reply said=%s", serder.said)
-                self.escrowReply(serder=serder, saider=saider, dater=dater,
-                                 route=route, prefixer=prefixer, seqner=seqner,
-                                 ssaider=ssaider, sigers=sigers)
+                logger.info(
+                    "Revery: escrowing without key state for signer on reply said=%s",
+                    serder.said,
+                )
+                self.escrowReply(
+                    serder=serder,
+                    saider=saider,
+                    dater=dater,
+                    route=route,
+                    prefixer=prefixer,
+                    seqner=seqner,
+                    ssaider=ssaider,
+                    sigers=sigers,
+                )
                 self.cues.append(dict(kin="query", q=dict(pre=spre)))
                 continue
-            sdig = sdig.encode("utf-8") 
+            sdig = sdig.encode("utf-8")
             # retrieve last event itself of signer given sdig
             sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
-                raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
-                                             f"{seqner.sn} for reply = {serder.ked}.")
+                raise kering.ValidationError(
+                    f"Bad trans indexed sig group at sn = "
+                    f"{seqner.sn} for reply = {serder.ked}."
+                )
             # verify sigs
             if not (sverfers := sserder.verfers):
-                raise kering.ValidationError(f"Invalid reply from signer={spre}, no "
-                                             f"keys at signer's est. event sn={seqner.sn}.")
+                raise kering.ValidationError(
+                    f"Invalid reply from signer={spre}, no "
+                    f"keys at signer's est. event sn={seqner.sn}."
+                )
 
             # fetch any escrowed sigs, extract just the siger from each quad
             # want sn in numerical order so use hex
             quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
             sigers.extend(esigers)
-            sigers, valid = eventing.validateSigs(serder=serder,
-                                                  sigers=sigers,
-                                                  verfers=sverfers,
-                                                  tholder=sserder.tholder)
+            sigers, valid = eventing.validateSigs(
+                serder=serder, sigers=sigers, verfers=sverfers, tholder=sserder.tholder
+            )
             # no error so at least one verified siger
 
             if valid:  # meet threshold so save
                 # All constraints satisfied so update
-                self.updateReply(serder=serder, saider=saider, dater=dater,
-                                 prefixer=prefixer, seqner=seqner, diger=ssaider,
-                                 sigers=sigers)
+                self.updateReply(
+                    serder=serder,
+                    saider=saider,
+                    dater=dater,
+                    prefixer=prefixer,
+                    seqner=seqner,
+                    diger=ssaider,
+                    sigers=sigers,
+                )
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # remove stale signatures .ssgs for this saider
                 # this ensures that zeroth tsg is authoritative
-                for prr, snr, dgr, _ in eventing.fetchTsgs(db=self.db.ssgs, saider=saider, snh=seqner.snh):
-                    if ((snr.sn < seqner.sn) or
-                            (snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64)):
-                        self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
+                for prr, snr, dgr, _ in eventing.fetchTsgs(
+                    db=self.db.ssgs, saider=saider, snh=seqner.snh
+                ):
+                    if (snr.sn < seqner.sn) or (
+                        snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64
+                    ):
+                        self.db.ssgs.trim(
+                            keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, "")
+                        )
 
                 accepted = True
 
             else:  # not meet threshold so escrow
-                self.escrowReply(serder=serder, saider=saider, dater=dater,
-                                 route=route, prefixer=prefixer, seqner=seqner,
-                                 ssaider=ssaider, sigers=sigers)
+                self.escrowReply(
+                    serder=serder,
+                    saider=saider,
+                    dater=dater,
+                    route=route,
+                    prefixer=prefixer,
+                    seqner=seqner,
+                    ssaider=ssaider,
+                    sigers=sigers,
+                )
 
         return accepted
 
-    def updateReply(self, *, serder, saider, dater, cigar=None, prefixer=None,
-                    seqner=None, diger=None, sigers=None):
-        """ Update Reply SAD in database
+    def updateReply(
+        self,
+        *,
+        serder,
+        saider,
+        dater,
+        cigar=None,
+        prefixer=None,
+        seqner=None,
+        diger=None,
+        sigers=None,
+    ):
+        """Update Reply SAD in database
 
         Update Reply SAD in database given by by serder and associated databases
         for attached cig couple or sig quadruple.
@@ -417,7 +492,7 @@ class Revery:
             self.db.ssgs.put(keys=quadkeys, vals=sigers)
 
     def removeReply(self, saider):
-        """ Remove Reply SAD artifacts given by saider.
+        """Remove Reply SAD artifacts given by saider.
 
         Parameters:
             saider (Diger): instance from said in serder (SAD)
@@ -431,9 +506,10 @@ class Revery:
             self.db.rpys.rem(keys=keys)
             self.db.sdts.rem(keys=keys)
 
-    def escrowReply(self, *, serder, saider, dater, route, prefixer, seqner,
-                    ssaider, sigers):
-        """ Escrow reply by route
+    def escrowReply(
+        self, *, serder, saider, dater, route, prefixer, seqner, ssaider, sigers
+    ):
+        """Escrow reply by route
 
         Parameters:
             serder (Serder): instance of reply msg (SAD)
@@ -456,7 +532,7 @@ class Revery:
         self.db.rpes.put(keys=(route,), vals=[saider])
 
     def processEscrowReply(self):
-        """ Process escrows for reply messages.
+        """Process escrows for reply messages.
 
         Escrows are keyed by reply route and val is reply said
 
@@ -473,17 +549,24 @@ class Revery:
                 serder = self.db.rpys.get(keys=keys)
                 try:
                     if not (dater and serder and tsgs):
-                        raise ValueError(f"Missing escrow artifacts at said={diger.qb64}"
-                                         f"for route={route}.")
+                        raise ValueError(
+                            f"Missing escrow artifacts at said={diger.qb64}"
+                            f"for route={route}."
+                        )
 
                     # do date math for stale escrow
-                    if ((helping.nowUTC() - dater.datetime) >
-                            datetime.timedelta(seconds=self.TimeoutRPE)):
+                    if (helping.nowUTC() - dater.datetime) > datetime.timedelta(
+                        seconds=self.TimeoutRPE
+                    ):
                         # escrow stale so raise ValidationError which unescrows below
-                        logger.info("Revery unescrow error: Stale reply escrow "
-                                    " at route = %s", route)
+                        logger.info(
+                            "Revery unescrow error: Stale reply escrow  at route = %s",
+                            route,
+                        )
 
-                        raise kering.ValidationError(f"Stale reply escrow at route = {route}.")
+                        raise kering.ValidationError(
+                            f"Stale reply escrow at route = {route}."
+                        )
 
                     self.processReply(serder=serder, tsgs=tsgs)
 
@@ -493,16 +576,20 @@ class Revery:
                         logger.trace("Revery unescrow attempt failed: %s\n", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.db.rpes.rem(keys=(route, ), val=diger)  # remove escrow only
+                    self.db.rpes.rem(keys=(route,), val=diger)  # remove escrow only
                     self.removeReply(diger)  # remove escrow reply artifacts
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Revery unescrowed due to error: %s", ex.args[0])
+                        logger.exception(
+                            "Revery unescrowed due to error: %s", ex.args[0]
+                        )
                     else:
                         logger.error("Revery unescrowed due to error: %s", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.db.rpes.rem(keys=(route, ), val=diger)  # remove escrow only
-                    logger.info("Revery unescrow succeeded for reply said=%s", serder.said)
+                    self.db.rpes.rem(keys=(route,), val=diger)  # remove escrow only
+                    logger.info(
+                        "Revery unescrow succeeded for reply said=%s", serder.said
+                    )
                     logger.debug("event=\n%s\n", serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
@@ -515,7 +602,7 @@ class Revery:
 
 
 class Route:
-    """ Route class for registration of reply message handlers
+    """Route class for registration of reply message handlers
 
     This class represents a registered route internally to the Revery.
     the properties are created by using the Falcon compile route utility method
@@ -529,7 +616,7 @@ class Route:
     """
 
     def __init__(self, regex, fields, resource, suffix=None):
-        """ Initialize instance of route
+        """Initialize instance of route
 
         Parameters:
             regex(re): compiled url template regex
@@ -577,27 +664,27 @@ def compile_uri_template(template):
     """
 
     if not isinstance(template, str):
-        raise TypeError('uri_template is not a string')
+        raise TypeError("uri_template is not a string")
 
-    if not template.startswith('/'):
+    if not template.startswith("/"):
         raise ValueError("uri_template must start with '/'")
 
-    if '//' in template:
+    if "//" in template:
         raise ValueError("uri_template may not contain '//'")
 
-    if template != '/' and template.endswith('/'):
+    if template != "/" and template.endswith("/"):
         template = template[:-1]
 
     # template names should be able to start with A-Za-z
     # but also contain 0-9_ in the remaining portion
-    expression_pattern = r'{([a-zA-Z]\w*)}'
+    expression_pattern = r"{([a-zA-Z]\w*)}"
 
     # Get a list of field names
     fields = set(re.findall(expression_pattern, template))
 
     # Convert Level 1 var patterns to equivalent named regex groups
-    escaped = re.sub(r'[\.\(\)\[\]\?\*\+\^\|]', r'\\\g<0>', template)
-    pattern = re.sub(expression_pattern, r'(?P<\1>[^/]+)', escaped)
-    pattern = r'\A' + pattern + r'\Z'
+    escaped = re.sub(r"[\.\(\)\[\]\?\*\+\^\|]", r"\\\g<0>", template)
+    pattern = re.sub(expression_pattern, r"(?P<\1>[^/]+)", escaped)
+    pattern = r"\A" + pattern + r"\Z"
 
     return fields, re.compile(pattern, re.IGNORECASE)
