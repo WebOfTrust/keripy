@@ -3291,9 +3291,10 @@ def test_receipt():
         parsing.Parser(version=Vrsn_1_0).parse(ims=res, kvy=coeKevery)
         # coeKevery.process(ims=res)  #  coe process the receipt from val
         #  check if in receipt database
-        result = coeKevery.db.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
-        assert bytes(result[0]) == valPrefixer.qb64b + valCigar.qb64b
+        result = coeKevery.db.rcts.get(keys=(coeKever.prefixer.qb64,coeKever.serder.said))
+        prefixer, cigar = result[0]
+        assert prefixer.qb64b == valPrefixer.qb64b
+        assert cigar.qb64b == valCigar.qb64b
         assert len(result) == 1
 
         # create invalid receipt to escrow use invalid dig and sn so not in db
@@ -3335,12 +3336,10 @@ def test_receipt():
         parsing.Parser(version=Vrsn_1_0).parseOne(ims=res, kvy=coeKevery)
         # coeKevery.processOne(ims=res)  #  coe process the escrow receipt from val
         # no new receipt at valid dig
-        result = coeKevery.db.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
+        result = coeKevery.db.rcts.get(keys=(coeKever.prefixer.qb64,coeKever.serder.said))
         assert len(result) == 1
         # no new receipt at invalid dig
-        result = coeKevery.db.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=fake))
+        result = coeKevery.db.rcts.get(keys=(coeKever.prefixer.qb64,fake))
         assert not result
 
         # Next Event Rotation Transferable

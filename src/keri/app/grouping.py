@@ -218,14 +218,13 @@ class Counselor(doing.DoDoer):
         """
         for (pre,), (seqner, saider) in self.hby.db.gpwe.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
-            dgkey = dbing.dgKey(pre, saider.qb64)
 
             # Load all the witness receipts we have so far
-            wigs = self.hby.db.getWigs(dgkey)
+            wigers = self.hby.db.wigs.get(keys=(pre, saider.qb64))
             ghab = self.hby.habs[pre]
             keys = [verfer.qb64 for verfer in kever.verfers]
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
-            if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
+            if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                 if witer and len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:
