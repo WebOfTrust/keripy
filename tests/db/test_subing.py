@@ -321,7 +321,9 @@ def test_on_suber():
                         (('b', '00000000000000000000000000000001'), 'Green tree'),
                         (('bc', '00000000000000000000000000000000'), 'Red apple')]
 
-        items = [(keys, on, val) for keys, on, val in onsuber.getOnItemIter()]
+        assert onsuber.getOnItemIter == onsuber.getOnTopItemIter
+
+        items = [(keys, on, val) for keys, on, val in onsuber.getOnTopItemIter()]
         assert items == [(('a',), 0, 'Blue dog'),
                         (('a',), 1, 'Green tree'),
                         (('a',), 2, 'Red apple'),
@@ -332,7 +334,7 @@ def test_on_suber():
                         (('bc',), 0, 'Red apple')]
 
 
-        items = [(keys, on, val) for keys, on, val in onsuber.getOnItemIter(keys="b")]  # top
+        items = [(keys, on, val) for keys, on, val in onsuber.getOnTopItemIter(keys="b")]  # top
         assert items == [(('b',), 0, 'Blue dog'),
                          (('b',), 1, 'Green tree'),
                          (('bc',), 0, 'Red apple')]
@@ -2450,6 +2452,7 @@ def test_on_ioset_suber():
         assert [val for val in niosuber.getOnAllIter(keys3, on=2)] == \
         ['x', 'w', 'v', 'u', 't']
 
+        assert niosuber.getOnItemIter == niosuber.getOnTopItemIter
 
         assert [item for item in niosuber.getOnTopItemIter()] == \
         [
@@ -2590,6 +2593,9 @@ def test_on_ioset_suber():
 
         assert [val for val in niosuber.getOnAllBackIter(keys3, on=2)] == \
         ['w','x','y','z','l','j','k']
+
+
+        # Test last back iter   getOnAllLastItemIter
 
         """Done Test"""
 

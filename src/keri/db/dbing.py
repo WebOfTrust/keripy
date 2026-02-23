@@ -2159,14 +2159,15 @@ class LMDBer(filing.Filer):
         """Iterates backwards over last set items for all on <= on for key.
         When on is None iterates backwards over last set items for all on for key
         When key is empty then iterates backwards over last set items for whole db
+        starting at last item in db
 
         Returned items are triples of (key, on, val)
 
         Raises StopIterationError when done or when key empty or None
 
-        Backwards means decreasing numerical value of ion, for each on and
-        decreasing numerical value on for each key and decreasing lexocographic
-        order of each key.
+        Backwards means decreasing numerical value of each ion, for each on and
+        decreasing numerical value of each on for each key and decreasing lexocographic
+        value of each key.
 
         Returns:
             items (Iterator[(bytes, int, memoryview)]): triples of (key, on, val)
@@ -2184,8 +2185,6 @@ class LMDBer(filing.Filer):
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            if not cursor.last():  # position cursor at last entry of set of last key
-                return  # empty database so raise StopIteration
 
             if key:  # not empty so attempt to position at starting key not last
                 if on is None:  # have to find last on
@@ -2199,36 +2198,52 @@ class LMDBer(filing.Filer):
                 if not cursor.set_range(iokey):  # key is last key so maxon to big
                     cursor.last()  # so find greatest on
 
-                ciokey = cursor.key()
+                ciokey, cval= cursor.item()
                 conkey, cion = unsuffix(ciokey, sep=sep)
                 ckey, con = splitOnKey(conkey, sep=sep)
                 if not ckey == key or not con <= on:  # cursor at next onkey
                     cursor.prev()
-                    ciokey = cursor.key()
+                    ciokey, cval= cursor.item()
                     conkey, cion = unsuffix(ciokey, sep=sep)
                     ckey, con = splitOnKey(conkey, sep=sep)
                 # else greatest is max  or key not in db
                 if not ckey == key:  # key not in db
                     return
+            else:  # no key so start at end of db
+                if not cursor.last():  # position cursor at last entry in db
+                    return  # empty database so raise StopIteration
+                ciokey, cval = cursor.item()
+                conkey, cion = unsuffix(ciokey, sep=sep)
+                ckey, con = splitOnKey(conkey, sep=sep)
 
-            last = True
-            # cursor should now be correctly positioned at last item
+            # cursor should now be correctly positioned, either at:
+            # last set entry of on of key when key and on
+            # last set entry of last on of key when key and on None
+            # last set entry in db of last on of last key when not key
+            yield(ckey, con, cval)  # yield last
+            lkey = ckey  # last key
+            lon = con    # last on
+            if not cursor.prev():  # no earlier entries
+                return
+
             for ciokey, cval in cursor.iterprev(): # iterate backwards
                 conkey, cion = unsuffix(ciokey, sep=sep)
                 ckey, con = splitOnKey(conkey, sep=sep)
-                if last:
-                    yield (ckey, con, cval)
-                    lon = con
-                    lkey = ckey
-                    last = False
-                    continue
-
-                #if ckey == lkey and con <
-
-                if key and ckey != key:
+                if key and ckey != key:  # done iterating over key
                     return
 
-    #  End OnIoSet  (do we need to replay last backwards as well)
+                if ckey != lkey:  # found new last of next lower key
+                    yield (ckey, con, cval)
+                    lkey = ckey
+                    lon = con
+
+                elif con != lon: # found last of next lower on for same lkey
+                    yield (ckey, con, cval)
+                    lkey = ckey
+                    lon = con
+
+
+    #  End OnIoSet support methods
 
 
     # For subdbs that support duplicates at each key (dupsort==True)

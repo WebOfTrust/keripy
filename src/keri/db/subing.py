@@ -631,7 +631,7 @@ class OnSuberBase(SuberBase):
                                      sep=self.sep.encode()))
 
 
-    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable=""):
+    def getOnTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
         """Iterates over top branch of all entries where each top key startwith
         key made from keys.
         Assumes every effective key in db has trailing on element,
@@ -656,6 +656,8 @@ class OnSuberBase(SuberBase):
                                                         top=self._tokey(keys),
                                                         sep=self.sep.encode())):
             yield (self._tokeys(key), on, self._des(val))
+
+    getOnItemIter = getOnTopItemIter  # alias for shadow super class method
 
 
     def getAllOnItemIter(self, keys: str|bytes|memoryview|Iterable,
@@ -2744,6 +2746,10 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        on=on, sep=self.sep.encode()))
 
 
+    # ToDo XXXX: make getOnTopItemIter to mirrow for OnSuber and OnIoSetSuber
+    # getOnItemIter = getOnTopItemIter  # alias to shadow super class method
+
+
     def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns:
@@ -3284,6 +3290,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                                         top=self._tokey(keys),
                                                         sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
+
+    getOnItemIter = getOnTopItemIter  # alias to shadow super class method
 
 
     def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="",
