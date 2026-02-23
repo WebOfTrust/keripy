@@ -6406,6 +6406,13 @@ class Kevery:
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
+                    # Check if kever exists before accessing it
+                    if serder.pre not in self.kevers:
+                        # event exists in database but kever not ready yet, keep in escrow
+                        msg = f"URE Kever not ready for receipted evt at pre={pre} sn={sn:x}"
+                        logger.trace("Kevery unescrow error: %s", msg)
+                        raise UnverifiedReceiptError(msg)
+
                     # get current wits from kever state assuming not stale
                     # receipt. Need function here to compute wits for actual
                     # state at pre, sn. XXXX
@@ -6421,36 +6428,6 @@ class Kevery:
                     else:  # write receipt couple to database
                         couple = cigar.verfer.qb64b + cigar.qb64b
                         self.db.addRct(key=dgKey(pre, serder.said), val=couple)
-
-            except UnverifiedReceiptError as ex:
-                # still waiting on missing prior event to validate
-                # only happens if we process above
-                if logger.isEnabledFor(logging.TRACE):  # adds exception data
-                    logger.trace("Kevery: UNT other error on unescrow: %s\n", ex.args[0])
-                    logger.exception("Kevery: UNT other error on unescrow: %s\n", ex.args[0])
-
-                # Check if kever exists before accessing it
-                if serder.pre not in self.kevers:
-                    # event exists in database but kever not ready yet, keep in escrow
-                    msg = f"URE Kever not ready for receipted evt at pre={pre} sn={sn:x}"
-                    logger.trace("Kevery unescrow error: %s", msg)
-                    raise UnverifiedReceiptError(msg)
-
-                # get current wits from kever state assuming not stale
-                # receipt. Need function here to compute wits for actual
-                # state at pre, sn. XXXX
-                wits = self.kevers[serder.pre].wits
-                rpre = cigar.verfer.qb64  # prefix of receiptor
-                if rpre in wits:  # its a witness receipt
-                    # this only works for extra receipts that come in later
-                    # after event is out of .Pwes escrow
-                    index = wits.index(rpre)
-                    # create witness indexed signature and write to db
-                    wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
-                    self.db.addWig(key=dgKey(pre, serder.said), val=wiger.qb64b)
-                else:  # write receipt couple to database
-                    couple = cigar.verfer.qb64b + cigar.qb64b
-                    self.db.addRct(key=dgKey(pre, serder.said), val=couple)
 
             except UnverifiedReceiptError as ex:
                 # still waiting on missing prior event to validate

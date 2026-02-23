@@ -3520,9 +3520,12 @@ def test_process_attached_receipt_couples_firner_missing_fels():
         assert "Unverified receipt=" in str(exc_info.value)
         # Receipt must be escrowed (addUre via escrowUReceipt)
         sn = int(serder.sn, 16) if isinstance(serder.sn, str) else int(serder.sn)
-        ures = db.getUres(key=snKey(pre=serder.preb, sn=sn))
+        ures = db.ures.get(keys=(serder.pre, coring.Seqner(sn=sn).qb64))
         assert len(ures) == 1
-        assert bytes(ures[0]).startswith(serder.said.encode("utf-8"))
+        diger, prefixer, cigar = ures[0]
+        assert diger.qb64 == serder.said
+        assert prefixer.qb64 == valSigner.verfer.qb64
+        assert cigar.qb64 == valCigar.qb64
 
     """ Done Test """
 
