@@ -215,11 +215,10 @@ class GroupMultisigRotate(doing.DoDoer):
                               serder=exn,
                               attachment=bytearray(ims))
 
-        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
-
+        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, diger=coring.Diger(qb64=rserder.said))
         while True:
-            saider = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))
-            if saider is not None:
+            diger = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))
+            if diger is not None:
                 break
 
             yield self.tock
