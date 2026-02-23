@@ -432,7 +432,7 @@ def test_baser():
         assert db.delWigs(key) == True
         assert db.getWigs(key) == []
 
-        # test .rcts sub db methods dgkey
+        # test .rcts
    
         # Create test prefixes and cigars
         wit0 = coring.Prefixer(qb64=wit0b.decode('utf-8'))  # Convert from qb64 string
