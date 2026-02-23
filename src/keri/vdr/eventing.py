@@ -1678,7 +1678,7 @@ class Tevery:
         router.addRoute("/tsn/registry/{aid}", self, suffix="RegistryTxnState")
         router.addRoute("/tsn/credential/{aid}", self, suffix="CredentialTxnState")
 
-    def processReplyRegistryTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+    def processReplyRegistryTxnState(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """ Process one reply message for key state = /tsn/registry
 
          Process one reply message for key state = /tsn/registry
@@ -1751,7 +1751,7 @@ class Tevery:
         sn = int(rsr.s, 16)
 
         if pre not in self.kevers:
-            if self.reger.txnsb.escrowStateNotice(typ="registry-mae", pre=regk, aid=aid, serder=serder, saider=saider,
+            if self.reger.txnsb.escrowStateNotice(typ="registry-mae", pre=regk, aid=aid, serder=serder, diger=diger,
                                                   dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="query", q=dict(pre=pre)))
 
@@ -1788,7 +1788,7 @@ class Tevery:
         osaider = self.reger.txnsb.current(keys=keys)  # get old said if any
 
         # BADA Logic
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
@@ -1798,27 +1798,27 @@ class Tevery:
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
-            if self.reger.txnsb.escrowStateNotice(typ="registry-ooo", pre=regk, aid=aid, serder=serder, saider=saider,
+            if self.reger.txnsb.escrowStateNotice(typ="registry-ooo", pre=regk, aid=aid, serder=serder, diger=diger,
                                                   dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
 
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(rsr))
 
-        tsaider = coring.Saider(qb64=rsr.d)
+        tdiger = coring.Diger(qb64=rsr.d)
         ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(regk, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
         sserder = serdering.SerderKERI(raw=sraw.encode("utf-8"))
 
-        if sserder.said != tsaider.qb64:  # mismatch events problem with replay
+        if sserder.said != tdiger.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch keystate at sn = {} with db."
                                   "".format(rsr.s))
 
-        self.reger.txnsb.updateReply(aid=aid, serder=serder, saider=tsaider, dater=dater)
+        self.reger.txnsb.updateReply(aid=aid, serder=serder, diger=tdiger, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", record=rsr))
 
-    def processReplyCredentialTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+    def processReplyCredentialTxnState(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """ Process one reply message for key state = /tsn/registry
 
          Process one reply message for key state = /tsn/registry
@@ -1889,7 +1889,7 @@ class Tevery:
 
         if regk not in self.tevers or self.tevers[regk].sn < regsn:
             if self.reger.txnsb.escrowStateNotice(typ="credential-mre", pre=vci, aid=aid, serder=serder,
-                                                  saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
+                                                  diger=diger, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
 
             raise kering.MissingRegistryError("Failure verify event = {} ".format(serder.ked))
@@ -1899,7 +1899,7 @@ class Tevery:
 
         if pre not in self.kevers:
             if self.reger.txnsb.escrowStateNotice(typ="credential-mae", pre=vci, aid=aid, serder=serder,
-                                                  saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
+                                                  diger=diger, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="query", q=dict(pre=aid)))
 
             raise kering.MissingAnchorError("Failure verify event = {} ".format(serder.ked))
@@ -1928,7 +1928,7 @@ class Tevery:
         osaider = self.reger.txnsb.current(keys=keys)  # get old said if any
 
         # BADA Logic
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
@@ -1939,12 +1939,12 @@ class Tevery:
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
             if self.reger.txnsb.escrowStateNotice(typ="credential-ooo", pre=vci, aid=aid, serder=serder,
-                                                  saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
+                                                  diger=diger, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vci)))
 
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(vsr))
 
-        tsaider = coring.Saider(qb64=vsr.d)
+        tdiger = coring.Diger(qb64=vsr.d)
         ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(vci, ldig))
@@ -1955,11 +1955,11 @@ class Tevery:
             raise ValidationError("Stale txn state at sn = {} with db."
                                   "".format(vsr.s))
 
-        if sserder.said != tsaider.qb64:  # mismatch events problem with replay
+        if sserder.said != tdiger.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch txn state at sn = {} with db."
                                   "".format(vsr.s))
 
-        self.reger.txnsb.updateReply(aid=aid, serder=serder, saider=tsaider, dater=dater)
+        self.reger.txnsb.updateReply(aid=aid, serder=serder, diger=tdiger, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", record=vsr))
 
     @staticmethod
@@ -2067,9 +2067,8 @@ class Tevery:
                     raise ValidationError(msg)
                 number, diger = couple
                 seqner = coring.Seqner(sn=number.num)
-                saider = coring.Saider(qb64=diger.qb64)
 
-                self.processEvent(serder=tserder, seqner=seqner, saider=saider, wigers=bigers)
+                self.processEvent(serder=tserder, seqner=seqner, saider=diger, wigers=bigers)
 
             except OutOfOrderError as ex:
                 # still waiting on missing prior event to validate
@@ -2127,9 +2126,8 @@ class Tevery:
                     raise MissingAnchorError(msg)
                 number, diger = couple
                 seqner = coring.Seqner(sn=number.num)
-                saider = coring.Saider(qb64=diger.qb64)
 
-                self.processEvent(serder=tserder, seqner=seqner, saider=saider, wigers=bigers)
+                self.processEvent(serder=tserder, seqner=seqner, saider=diger, wigers=bigers)
 
             except MissingAnchorError as ex:
                 # still waiting on missing prior event to validate
