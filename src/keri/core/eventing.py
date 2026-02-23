@@ -4576,7 +4576,7 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -4673,7 +4673,7 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -4775,7 +4775,7 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -4888,8 +4888,7 @@ class Kevery:
             if not sserder.compare(said=diger.qb64b):  # mismatch events problem with replay
                 raise ValidationError(f"Mismatch keystate at sn = {int(ksr.s,16)} with db.")
 
-        kdiger = coring.Diger(qb64=diger.qb64)
-        self.updateKeyState(aid=aid, ksr=ksr, saider=kdiger, dater=dater)
+        self.updateKeyState(aid=aid, ksr=ksr, saider=diger, dater=dater)
         self.cues.push(dict(kin="keyStateSaved", ksn=asdict(ksr)))
 
 
@@ -4899,7 +4898,7 @@ class Kevery:
 
         Parameters:
             keys (tuple): of key strs for databases (cid, role, eid)
-            saider (Saider): instance from said in reply serder (SAD)
+            saider (Diger): instance from said in reply serder (SAD)
             allowed (bool): True allow eid to be endpoint provided
                           False otherwise
         """
@@ -4918,7 +4917,7 @@ class Kevery:
 
         Parameters:
             keys (tuple): of key strs for databases (eid, scheme)
-            saider (Saider): instance from said in reply serder (SAD)
+            saider (Diger): instance from said in reply serder (SAD)
             url (str): endpoint url
         """
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
@@ -4939,7 +4938,7 @@ class Kevery:
         Parameters:
             aid (str): identifier of key state
             ksr (KeyStateRecord): converted from key state notice dict in reply msg
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
         """
         keys = (saider.qb64,)
@@ -4970,7 +4969,7 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -5042,7 +5041,7 @@ class Kevery:
 
         Parameters:
             keys (tuple): of key strs for databases (eid, scheme)
-            saider (Saider): instance from said in reply serder (SAD)
+            saider (Diger): instance from said in reply serder (SAD)
             enabled (bool): True means add observed to watcher, False means remove (cut)
         """
         self.db.wwas.pin(keys=keys, val=saider)  # overwrite

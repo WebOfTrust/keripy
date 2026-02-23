@@ -1115,13 +1115,12 @@ class Baser(dbing.LMDBer):
                                           klas=coring.Saider)
 
         # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
-        # maps key=cid.role.eid to val=said of end reply
-        # TODO: clean
-        self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
+        # maps key=cid.role.eid to val=diger of end reply
+        self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Diger)
 
         # auth AuthN/AuthZ by endpoint provider at eid of location at scheme url
-        # maps key=cid.role.eid to val=said of end reply
-        self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Saider)
+        # maps key=cid.role.eid to val=diger of end reply
+        self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Diger)
 
         # service endpoint identifier (eid) auths keyed by controller cid.role.eid
         # data extracted from reply /end/role/add or /end/role/cut
