@@ -5958,7 +5958,7 @@ class Kevery:
                     # "dig = {}.".format(bytes(edig)))
 
                 # process event
-                sigers = self.db.sigs.get(keys=(pre,bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
 
                 # seal source (delegator issuer if any)
                 delseqner = delsaider = None
@@ -6992,7 +6992,7 @@ class Kevery:
                         raise ValidationError(msg)
 
                     #  get sigs and attach
-                    sigers = self.db.sigs.get(keys=dgKey(pre, bytes(edig)))
+                    sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
                     if not sigers:  # otherwise its a list of sigs
                         # no sigs so raise ValidationError which unescrows below
                         msg = f"DUP Missing escrowed evt sigs at dig = {bytes(edig)}"
@@ -7094,8 +7094,7 @@ def loadEvent(db, preb, dig):
     dwigers = []
     if wigers := db.wigs.get(keys=(preb, dig)):
         for wiger in wigers:
-            sig = wiger
-            dwigers.append(dict(index=sig.index, signature=sig.qb64))
+            dwigers.append(dict(index=wiger.index, signature=wiger.qb64))
     event["witness_signatures"] = dwigers
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
