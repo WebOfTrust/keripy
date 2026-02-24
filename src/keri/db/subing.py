@@ -562,7 +562,7 @@ class OnSuberBase(SuberBase):
 
 
 
-    def remOn(self, keys: str | bytes | memoryview, on: int=0):
+    def remOn(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """
         Returns
             result (bool): True if onkey made from key+sep+serialized on is
@@ -571,7 +571,7 @@ class OnSuberBase(SuberBase):
                            False otherwise
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+            keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
             on (int): ordinal number used with onKey(key ,on) to form key.
         """
@@ -581,7 +581,7 @@ class OnSuberBase(SuberBase):
                                      sep=self.sep.encode()))
 
 
-    def cntOn(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def cntOn(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Counts all entries with same key over all all on >= on.
         If key not in db then count is 0
 
@@ -607,7 +607,7 @@ class OnSuberBase(SuberBase):
                                      on=on,
                                      sep=self.sep.encode()))
 
-    def cntOnAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def cntOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Counts all entries with same key over all all on >= on. When keys is
         empty then counts for on for all keys in whole database.
 
@@ -660,10 +660,9 @@ class OnSuberBase(SuberBase):
     getOnItemIter = getOnTopItemIter  # alias for shadow super class method
 
 
-    def getAllOnItemIter(self, keys: str|bytes|memoryview|Iterable,
-                               on: int|None=None):
+    def getAllOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """Iterates over all entries in db with key and all on >= on.
-        When on=None then gets all on.
+        When on==0 default then gets all on.
 
         If keys empty then returns empty iterator.
 
@@ -674,9 +673,9 @@ class OnSuberBase(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|iterator): keys as prefix to be
                 combined with serialized on exposed on tail and sep to form actual key
-            on (int|None): ordinal number used with onKey(pre,on) to form key at at
+            on (int): ordinal number used with onKey(pre,on) to form key at at
                            which to initiate retrieval.
-                           When on is None then all on for key
+                           When on==0 then all on for key
             sep (bytes): separator character for split
         """
         for keys, on, val in (self.db.getOnItemIterAll(db=self.sdb,
@@ -707,14 +706,7 @@ class OnSuberBase(SuberBase):
             yield (self._des(val))
 
 
-        #for val in (self.db.getOnIterAll(db=self.sdb,
-                        #key=self._tokey(keys), on=on, sep=self.sep.encode())):
-            #yield (self._des(val))
-
-
-
-
-    def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """
         Returns:
             items (Iterator[(key, on, val)]): triples of key, on, val with same
@@ -752,8 +744,6 @@ class OnSuberBase(SuberBase):
         for val in (self.db.getOnIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
-
-
 
 
 class OnSuber(OnSuberBase, Suber):
@@ -2175,26 +2165,25 @@ class DupSuber(SuberBase):
 
 
     def rem(self, keys: str | bytes | memoryview | Iterable,
-            val: str | bytes | memoryview = b''):
+            val: str|bytes|memoryview|None=None):
         """Removes entry at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            val (Union[str, bytes]):  instance of dup val at key to delete
-                              if val is None then remove all values at key
+            val (str|bytes|memoryview|None):  instance of dup val at key to delete
+                              if val is None, default, then remove all values at key
 
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
 
         """
-        if val:
+        if val is None:
             return (self.db.delVals(db=self.sdb,
+                                key=self._tokey(keys)))
+
+        return (self.db.delVals(db=self.sdb,
                                     key=self._tokey(keys),
                                     val=self._ser(val)))
-        else:
-            return (self.db.delVals(db=self.sdb,
-                                    key=self._tokey(keys)))
-
 
 
 class CesrDupSuber(CesrSuberBase, DupSuber):
@@ -2404,31 +2393,31 @@ class IoDupSuber(DupSuber):
         return (self._des(val) if val is not None else val)
 
 
-    def rem(self, keys: str | bytes | memoryview | Iterable,
-                   val: str | bytes | memoryview = ''):
-        """
-        Removes entry at key made from keys and dup val that matches val if any,
-        notwithstanding hidden ordinal proem. Otherwise deletes all dup values
-        at key if any.
+    def rem(self, keys: str|bytes|memoryview|Iterable,
+                   val: str|bytes|memoryview|None=None):
+        """Removes entry at key made from keys and dup val that matches val if any,
+        notwithstanding hidden ordinal proem.
+        If val is None, default removes all dup values at key if any.
 
         Parameters:
             keys (str | bytes | memoryview | Iterable): of key parts to be
                 combined in order to form key
-            val (str):  value at key to delete. Subclass ._ser method may
-                        accept different value types
-                        if val is empty then remove all values at key
+            val (str|bytes|memoryview|None):  value at key to delete.
+                        Subclass ._ser method may accept different value types
+                        if val is None then remove all values at key
 
         Returns:
            result (bool): True if key with dup val exists so rem successful.
                            False otherwise
 
         """
-        if val:
-            return self.db.delIoDupVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=self._ser(val))
-        else:
+        if val is None:
             return self.db.delIoDupVals(db=self.sdb, key=self._tokey(keys))
+
+        return self.db.delIoDupVal(db=self.sdb,
+                                   key=self._tokey(keys),
+                                   val=self._ser(val))
+
 
 
     def cnt(self, keys: str|bytes|memoryview|Iterable = ""):
@@ -3138,7 +3127,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
-    def getOnLastItem(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
+    def getOnLastItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """Gets last item inserted at key made from keys in insertion order using
         hidden ordinal proem.
 
@@ -3163,7 +3152,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
 
-    def getOnLast(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
+    def getOnLast(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """Gets last val inserted at key made from keys in insertion order using
         hidden ordinal proem.
 
@@ -3188,12 +3177,12 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
     def remOn(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
-                    val: str|bytes|memoryview=''):
+                    val: str|bytes|memoryview|None=None):
         """Removes entry in set with val if any at key made and on in insertion order
         using hidden ordinal suffix.
-        When val is not empty and matches a value in the set at the effective key
+        When val matches a value in the set at the effective key
         then only that value is removed.
-        When val is empty then removes all values from set effectively deleting
+        When val is None then removes all values from set effectively deleting
         entry at onkey = keys + sep + on if any in db.
 
         Returns:
@@ -3205,29 +3194,21 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 combined with serialized on tail and sep to form onkey
 
             on (int): ordinal number used with onKey(pre,on) to form key.
-            val (str):  value at key to remove. Subclass ._ser method may
-                        accept different value types
-                        if val is empty then remove all values at key
-
-
-
+            val (str|bytes|memoryview|None):  value at key to remove.
+                Subclass ._ser method may accept different value types
+                if val is None then remove all values at key
         """
-        if val:
-            return self.db.remOnIoSetVal(db=self.sdb,
+        return self.db.remOnIoSetVal(db=self.sdb,
                                         key=self._tokey(keys),
                                         on=on,
-                                        val=self._ser(val),
+                                        val=self._ser(val) if val is not None else val,
                                         sep=self.sep.encode())
-        else:
-            return self.db.delOnIoSet(db=self.sdb,
-                                      key=self._tokey(keys),
-                                      on=on,
-                                      sep=self.sep.encode())
 
 
-    def remOnAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=None):
+
+    def remOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Removes all entries for all sets for all on >= on at key.
-        When on is None then removes all entries for all sets for all on at key.
+        When on i==0, default, then removes all entries for all sets for all on at key.
         When key is empty then removes whole db.
 
         Returns:
@@ -3239,7 +3220,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 combined with serialized on tail and sep to form onkey.
                 When key is empty then remove all entries in whole db
 
-            on (int|None): base key. None means all on for key
+            on (int): base key. None means all on for key
         """
         return self.db.remOnAllIoSet(db=self.sdb,
                                       key=self._tokey(keys),
@@ -3267,9 +3248,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                      sep=self.sep.encode()))
 
 
-    def cntOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=None):
+    def cntOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Counts all set entries for all on >= on at key.
-        When on = None then count all set members for all on for key
+        When on == 0, default, then count all set members for all on for key
         When key is empty then count all on for all key i.e. whole db
 
         Returns:
@@ -3319,10 +3300,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     getOnItemIter = getOnTopItemIter  # alias to shadow super class method
 
 
-    def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="",
-                         on: int|None=None):
+    def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over all items of each set for all on >= on for key.
-        When on is None Iterates over alls items of each set for all on for key.
+        When on ==0, default Iterates over alls items of each set for all on for key.
         When key is empty then iterates over all items in whole db
 
         Items are triples of (keys, on, val)
@@ -3337,7 +3317,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             keys (str|bytes|memoryview|Iterable): creates onkey = key + sep + on
                 for all on >= on at key
                 If keys is empty then gets all items in database.
-            on (int|None): ordinal number used with onKey(pre,on) to form key.
+            on (int): ordinal number used with onKey(pre,on) to form key.
                 When on is None then iterates all on at key,
 
         """
@@ -3348,10 +3328,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllIter(self, keys: str|bytes|memoryview|Iterable="",
-                           on: int|None=None):
+    def getOnAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over alls values of each set for all on >= on for key.
-        When on is None Iterates over alls items of each set for all on for key.
+        When on ==0, default, Iterates over alls items of each set for all on for key.
         When key is empty then iterates over all items in whole db
 
         Items are triples of (keys, on, val)
@@ -3363,8 +3342,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 combined with serialized on tail and sep to form onkey
                 When keys is empty then retrieves whole database including all
                 set values at each effective key.
-            on (int|None): ordinal number used with onKey(pre,on) to form key.
-                When on is None then iterates over all items of all sets for all on
+            on (int): ordinal number used with onKey(pre,on) to form key.
+                When on ==0 then iterates over all items of all sets for all on
                 for all key >= key.
             sep (bytes): separator character for split
         """
@@ -3376,7 +3355,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def getOnAllLastItemIter(self, keys: str|bytes|memoryview|Iterable="",
-                                   on: int|None=None):
+                                   on: int=0):
         """Iterates over last items of each set for all on >= on at key.
         When on is None iterates over last items of each set for all on at key.
         When key is empty iterates over last items of all sets at all keys in db.
@@ -3401,10 +3380,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllLastIter(self, keys: str|bytes|memoryview|Iterable="",
-                            on: int|None=None):
+    def getOnAllLastIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over last value of each set for all on >= on at key
-        When on is None iterates over last value of each set for all on at key
+        When on ==0, default, iterates over last value of each set for all on at key
         When key is empty iterates over last value of each set of all on for
         all keys, i.e. whole db.
 
@@ -3416,7 +3394,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 combined with serialized on tail and sep to form key
                 When keys is empty then retrieves whole database including all
                 set values
-            on (int|None): ordinal number used with onKey(pre,on) to form key.
+            on (int): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
         for keys, on, val in (self.db.getOnAllIoSetLastItemIter(db=self.sdb,

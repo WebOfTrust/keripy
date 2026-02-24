@@ -1443,8 +1443,7 @@ def test_lmdber():
         getOnIoSetIter
         getOnIoSetLastItem
 
-        delOnIoSet
-        delOnIoSetVal
+        remOnIoSetVal
 
         cntOnIoSet
 
@@ -1481,7 +1480,6 @@ def test_lmdber():
         assert [val for val in dber.getOnIoSetIter(db, key0)] == []
         assert dber.getOnIoSetLastItem(db, key0) == ()
         assert dber.cntOnIoSet(db, key0) == 0
-        assert dber.delOnIoSet(db, key0) == False
         assert dber.remOnIoSetVal(db, key0) == False
 
         # fill up db
@@ -1503,7 +1501,7 @@ def test_lmdber():
         assert list(dber.getOnIoSetIter(db, key3)) == [b"ok"]  # did not delete
         assert not dber.pinOnIoSetVals(db, key0, vals=[]) # vals=empty
         assert list(dber.getOnIoSetIter(db, key3)) == [b"ok"]  # did not delete
-        assert dber.delOnIoSet(db, key3)
+        assert dber.remOnIoSetVal(db, key3)
         assert list(dber.getOnIoSetIter(db, key3)) == []  # nothing there
 
         assert dber.cntOnIoSet(db, key=b"") == 0  # on=0 default
@@ -1587,7 +1585,7 @@ def test_lmdber():
             assert dber.addOnIoSetVal(db, key3, on=0, val=val)
 
         assert list(dber.getOnIoSetIter(db, key3, on=0)) == vals3
-        assert dber.delOnIoSet(db, key3, on=0)
+        assert dber.remOnIoSetVal(db, key3, on=0)
         assert list(dber.getOnIoSetIter(db, key3, on=0)) == []
 
         # test appendOnIoSet
@@ -1994,10 +1992,10 @@ def test_lmdber():
         assert dber.cntOnAllIoSet(db, key3, on=2) == 2
         assert dber.cntOnAllIoSet(db, key3, on=4) == 0
 
-        # test delOnIoSet
-        assert dber.delOnIoSet(db, key4, on=0)
+        # test remOnIoSet
+        assert dber.remOnIoSetVal(db, key4, on=0)
         assert list(dber.getOnIoSetIter(db, key4, on=0)) == []
-        assert dber.delOnIoSet(db, key4, on=1)
+        assert dber.remOnIoSetVal(db, key4, on=1)
         assert list(dber.getOnIoSetIter(db, key4, on=1)) == []
 
         # test with delOnIoSetAll
