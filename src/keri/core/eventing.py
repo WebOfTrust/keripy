@@ -3499,7 +3499,7 @@ class Kever:
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
-            self.db.wigs.put(keys=dgkey, vals=wigers)
+            self.db.wigs.put(keys=(serder.preb, serder.saidb), vals=wigers)
         self.db.delegables.add(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.debug("Kever: escrowed delegable event =\n%s\n", serder.pretty())
