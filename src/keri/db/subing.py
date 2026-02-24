@@ -891,32 +891,22 @@ class CesrSuberBase(SuberBase):
         self.strict = bool(strict)
 
 
-    def _ser(self, val: coring.Matter | bytes | bytearray | memoryview | str):
+    def _ser(self, val: coring.Matter):
         """
-        Serialize value to bytes to store in db.
+        Serialize value to bytes to store in db
 
         Parameters:
-            val (coring.Matter | bytes | bytearray | memoryview | str):
-                CESR object with .qb64b or already serialized qb64/qb64b material.
+            val (coring.Matter): instance Matter ducktype with .qb64b attribute
 
         Returns:
             bytes: serialized qb64b bytes suitable for db storage.
 
         Raises:
-            TypeError: unsupported value type or wrong instance class when strict.
+            TypeError: wrong instance class when strict.
         """
-        if hasattr(val, "qb64b"):
-            if self.strict and not isinstance(val, self.klas):
-                raise TypeError(f"Expected {self.klas}, got {type(val)}.")
-            raw = val.qb64b
-        elif isinstance(val, str):
-            raw = val.encode("utf-8")
-        elif isinstance(val, (bytes, bytearray, memoryview)):
-            raw = bytes(val)
-        else:
-            raise TypeError(f"Unsupported CESR value type: {type(val)}.")
-
-        return self.klas(qb64b=raw).qb64b if self.strict else raw
+        if self.strict and not isinstance(val, self.klas):
+            raise TypeError(f"Expected {self.klas}, got {type(val)}.")
+        return val.qb64b
 
 
     def _des(self, val: memoryview | bytes):
@@ -1038,13 +1028,12 @@ class CatCesrSuberBase(CesrSuberBase):
 
 
     def _ser(self,
-             val: Union[Iterable, coring.Matter, bytes, bytearray, memoryview, str]):
+             val: Union[Iterable, coring.Matter]):
         """
         Serialize val tuple/iterable to concatenated bytes for db storage.
 
         Parameters:
-           val (Union[Iterable, coring.Matter, bytes, bytearray, memoryview, str]):
-               iterable of CESR objects and/or serialized qb64/qb64b material.
+           val (Union[Iterable, coring.Matter]): of subclass instances.
                Non-iterables are wrapped as a one-item tuple.
 
         Returns:
@@ -1052,45 +1041,21 @@ class CatCesrSuberBase(CesrSuberBase):
 
         Raises:
            ValueError: when strict and tuple arity does not match .klas.
-           TypeError: unsupported value type or wrong slot class when strict.
+           TypeError: wrong slot class when strict.
 
         """
         if not isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
 
         vals = tuple(val) if self.strict else val
-        if self.strict and len(vals) != len(self.klas):
-            raise ValueError(f"Expected {len(self.klas)} values, got {len(vals)}.")
-
-        out = []
         if self.strict:
+            if len(vals) != len(self.klas):
+                raise ValueError(f"Expected {len(self.klas)} values, got {len(vals)}.")
             for klas, item in zip(self.klas, vals):
-                if hasattr(item, "qb64b"):
-                    if not isinstance(item, klas):
-                        raise TypeError(f"Expected {klas}, got {type(item)}.")
-                    raw = item.qb64b
-                elif isinstance(item, str):
-                    raw = item.encode("utf-8")
-                elif isinstance(item, (bytes, bytearray, memoryview)):
-                    raw = bytes(item)
-                else:
-                    raise TypeError(f"Unsupported CESR value type: {type(item)}.")
+                if not isinstance(item, klas):
+                    raise TypeError(f"Expected {klas}, got {type(item)}.")
 
-                out.append(klas(qb64b=raw).qb64b)
-        else:
-            for item in val:
-                if hasattr(item, "qb64b"):
-                    raw = item.qb64b
-                elif isinstance(item, str):
-                    raw = item.encode("utf-8")
-                elif isinstance(item, (bytes, bytearray, memoryview)):
-                    raw = bytes(item)
-                else:
-                    raise TypeError(f"Unsupported CESR value type: {type(item)}.")
-
-                out.append(raw)
-
-        return b''.join(out)
+        return b''.join(obj.qb64b for obj in vals)
 
     def _des(self, val: memoryview | bytes | bytearray):
         """

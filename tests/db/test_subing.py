@@ -2620,9 +2620,9 @@ def test_cesr_suber():
     """Done Test"""
 
 
-def test_cesr_suber_strict_serialized_inputs():
+def test_cesr_suber_strict_subclass_enforcement():
     """
-    Test CesrSuber strict mode with serialized qb64/qb64b inputs
+    Test CesrSuber strict mode enforces subclass checks in _ser
     """
     with dbing.openLMDB() as db:
         sdb = subing.CesrSuber(db=db, subkey='bags.', klas=coring.Diger, strict=True)
@@ -2630,24 +2630,24 @@ def test_cesr_suber_strict_serialized_inputs():
         assert sdb.strict is True
 
         diger = coring.Diger(ser=b"strict cesr")
-        keys0 = ("alpha", "dog")
-        keys1 = ("beta", "cat")
+        keys = ("alpha", "dog")
 
-        assert sdb.put(keys=keys0, val=diger.qb64b)
-        actual = sdb.get(keys=keys0)
-        assert isinstance(actual, coring.Diger)
-        assert actual.qb64 == diger.qb64
-
-        assert sdb.put(keys=keys1, val=diger.qb64)
-        actual = sdb.get(keys=keys1)
+        assert sdb.put(keys=keys, val=diger)
+        actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Diger)
         assert actual.qb64 == diger.qb64
 
         wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         with pytest.raises(TypeError):
-            sdb.pin(keys=keys0, val=wrong)
+            sdb.pin(keys=keys, val=wrong)
 
-        actual = sdb.get(keys=keys0)
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=diger.qb64b)
+
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=diger.qb64)
+
+        actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Diger)
         assert actual.qb64 == diger.qb64
 
@@ -2900,9 +2900,9 @@ def test_cat_cesr_suber():
     """Done Test"""
 
 
-def test_cat_cesr_suber_strict_serialized_inputs():
+def test_cat_cesr_suber_strict_subclass_enforcement():
     """
-    Test CatCesrSuber strict mode with serialized tuple inputs
+    Test CatCesrSuber strict mode enforces ordered subclass checks in _ser
     """
     with dbing.openLMDB() as db:
         klases = (coring.Seqner, coring.Saider)
@@ -2914,7 +2914,7 @@ def test_cat_cesr_suber_strict_serialized_inputs():
         saider = coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')
         keys = ("alpha", "dog")
 
-        assert sdb.put(keys=keys, val=(seqner.qb64b, saider.qb64))
+        assert sdb.put(keys=keys, val=(seqner, saider))
         actuals = sdb.get(keys=keys)
         assert isinstance(actuals[0], coring.Seqner)
         assert isinstance(actuals[1], coring.Saider)
@@ -2922,7 +2922,7 @@ def test_cat_cesr_suber_strict_serialized_inputs():
         assert actuals[1].qb64 == saider.qb64
 
         with pytest.raises(ValueError):
-            sdb.pin(keys=keys, val=(seqner.qb64b, ))
+            sdb.pin(keys=keys, val=(seqner, ))
 
         actuals = sdb.get(keys=keys)
         assert actuals[0].qb64 == seqner.qb64
@@ -2931,6 +2931,9 @@ def test_cat_cesr_suber_strict_serialized_inputs():
         wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         with pytest.raises(TypeError):
             sdb.pin(keys=keys, val=(wrong, saider))
+
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=(seqner.qb64b, saider.qb64))
 
         actuals = sdb.get(keys=keys)
         assert actuals[0].qb64 == seqner.qb64
@@ -3847,9 +3850,9 @@ if __name__ == "__main__":
     test_b64_oniodup_suber()
     test_ioset_suber()
     test_cat_cesr_suber()
-    test_cat_cesr_suber_strict_serialized_inputs()
+    test_cat_cesr_suber_strict_subclass_enforcement()
     test_cesr_suber()
-    test_cesr_suber_strict_serialized_inputs()
+    test_cesr_suber_strict_subclass_enforcement()
     test_cesr_on_suber()
     test_cesr_ioset_suber()
     test_cat_cesr_ioset_suber()
