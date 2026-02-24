@@ -31,6 +31,7 @@ from ..help import helping
 from ..peer import exchanging
 from ..vdr import verifying, viring
 from ..vdr.eventing import Tevery
+from ..metric import EscrowEnd
 
 logger = help.ogler.getLogger()
 
@@ -90,6 +91,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/receipts", receiptEnd)
     queryEnd = QueryEnd(hab=hab)
     app.add_route("/query", queryEnd)
+    metricsEnd = EscrowEnd(hby=hby, reger=reger)
+    app.add_route("/metrics", metricsEnd)
 
     server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
     if not server.reopen():

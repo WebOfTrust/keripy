@@ -18,6 +18,8 @@ from hio.help import decking
 from keri import kering
 from keri import core
 from keri.app import indirecting, storing, habbing, agenting
+from keri.metric import EscrowEnd
+from keri.vdr import viring
 
 
 def test_mailbox_iter():
@@ -291,9 +293,49 @@ def test_createHttpServer(monkeypatch):
     assert isinstance(server.servant, MockServerTls)
 
 
+def test_metrics_end():
+    """Test MetricsEnd returns Prometheus format metrics"""
+    with habbing.openHby(name="test", salt=core.Salter(raw=b'0123456789abcdef').qb64, temp=True) as hby:
+        reger = viring.Reger(name=hby.name, db=hby.db, temp=True)
+
+        app = falcon.App()
+        metricsEnd = EscrowEnd(hby=hby, reger=reger)
+        app.add_route("/metrics", metricsEnd)
+
+        client = testing.TestClient(app)
+
+        # Test GET /metrics
+        res = client.simulate_get("/metrics")
+        assert res.status_code == 200
+        assert "text/plain" in res.headers['Content-Type']
+
+        # Verify Prometheus format
+        body = res.text
+        assert "# HELP keri_escrow_count" in body
+        assert "# TYPE keri_escrow_count gauge" in body
+
+        # Verify KEL escrow metrics present
+        assert 'keri_escrow_count{type="out_of_order_events",layer="kel"}' in body
+        assert 'keri_escrow_count{type="partially_witnessed_events",layer="kel"}' in body
+        assert 'keri_escrow_count{type="unverified_receipts",layer="kel"}' in body
+
+        # Verify TEL escrow metrics present
+        assert 'keri_escrow_count{type="out_of_order",layer="tel"}' in body
+        assert 'keri_escrow_count{type="missing_registry",layer="tel"}' in body
+
+        # Verify registry escrow metrics present
+        assert 'keri_escrow_count{type="registry_missing_anchor",layer="registry"}' in body
+
+        # All counts should be 0 for empty db
+        lines = [l for l in body.split('\n') if l and not l.startswith('#')]
+        for line in lines:
+            assert line.endswith(' 0'), f"Expected count 0, got: {line}"
+
+        reger.close()
 
 
 if __name__ == "__main__":
     test_mailbox_iter()
     test_qrymailbox_iter()
     test_wit_query_ends()
+    test_metrics_end()
