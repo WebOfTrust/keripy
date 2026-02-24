@@ -368,7 +368,7 @@ def test_lmdber():
         assert dber.putOnVal(db, preA, 0, val=digA) == True
         assert dber.getOnVal(db, preA, 0) == digA
         assert dber.putOnVal(db, preA, 0, val=digA) == False
-        assert dber.setOnVal(db, preA, 0, val=digA) == True
+        assert dber.pinOnVal(db, preA, 0, val=digA) == True
         assert dber.getOnVal(db, preA, 0) == digA
         assert dber.delOnVal(db, preA, 0) == True
         assert dber.getOnVal(db, preA, 0) == None

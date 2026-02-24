@@ -699,7 +699,7 @@ class LMDBer(filing.Filer):
     # ordinal number serialized as 32 hex bytes
 
     # used in OnSuberBase
-    def putOnVal(self, db, key,  on=0, val=b'', *, sep=b'.'):
+    def putOnVal(self, db, key,  on=0, val=None, *, sep=b'.'):
         """Write serialized bytes val to location at onkey consisting of
         key + sep + serialized on in db.
         Does not overwrite.
@@ -712,14 +712,14 @@ class LMDBer(filing.Filer):
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which write
-            val (bytes): to be written at onkey
+            val (bytes|None): to be written at onkey
+                              When None returns False
             sep (bytes): separator character for split
         """
+        if val is None:
+            return False
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            if key:  # not empty
-                onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
-            else:
-                onkey = key
+            onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
             try:
                 return (txn.put(onkey, val, overwrite=False))
             except lmdb.BadValsizeError as ex:
@@ -727,7 +727,7 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
     # used in OnSuberBase
-    def setOnVal(self, db, key, on=0, val=b'',  *, sep=b'.'):
+    def pinOnVal(self, db, key, on=0, val=None,  *, sep=b'.'):
         """
         Write serialized bytes val to location at onkey consisting of
         key + sep + serialized on in db.
@@ -741,9 +741,11 @@ class LMDBer(filing.Filer):
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which write
-            val (bytes): to be written at onkey
+            val (bytes|None): to be written at onkey. when None returns False
             sep (bytes): separator character for split
         """
+        if val is None:
+            return False
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             if key:  # not empty
                 onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
@@ -777,10 +779,13 @@ class LMDBer(filing.Filer):
             val (bytes): serialized value to append
             sep (bytes): separator character for split
         """
-        # set key with fn at max and then walk backwards to find last entry at key
+        # set key with on at max and then walk backwards to find last entry at key
         # if any otherwise zeroth entry at key
-        onkey = onKey(key, MaxON, sep=sep)
+        if not key or val is None:
+            raise ValueError(f"Bad append parameter: {key=} or {val=}")
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
+            onkey = onKey(key, MaxON, sep=sep)
             on = 0  # unless other cases match then zeroth entry at key
             cursor = txn.cursor()
             if not cursor.set_range(onkey):  # max is past end of database
@@ -1553,7 +1558,8 @@ class LMDBer(filing.Filer):
         """
         if not key:
             return False
-        return self.putIoSetVals(db=db, key=onKey(key, on, sep=sep), vals=vals, sep=sep)
+        return self.putIoSetVals(db=db, key=onKey(key, on, sep=sep),
+                                        vals=vals, sep=sep)
 
 
     def pinOnIoSetVals(self, db, key, *, on=0, vals=None, sep=b'.'):
