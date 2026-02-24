@@ -894,6 +894,7 @@ class CesrSuberBase(SuberBase):
     def _ser(self, val: coring.Matter):
         """
         Serialize value to bytes to store in db
+        When strict is True, val must match .klas or TypeError is raised.
 
         Parameters:
             val (coring.Matter): instance Matter ducktype with .qb64b attribute
@@ -1027,10 +1028,12 @@ class CatCesrSuberBase(CesrSuberBase):
                                                **kwa)
 
 
-    def _ser(self,
-             val: Union[Iterable, coring.Matter]):
+    def _ser(self, val: Union[Iterable, coring.Matter]):
         """
-        Serialize val tuple/iterable to concatenated bytes for db storage.
+        Serialize val to bytes to store in db
+        Concatenates .qb64b of each instance in val and returns val bytes
+        When strict is True, val arity and ordered slot types must match .klas
+        or ValueError/TypeError is raised.
 
         Parameters:
            val (Union[Iterable, coring.Matter]): of subclass instances.
