@@ -181,7 +181,7 @@ def deReceiptCouple(data, strip=False):
 
 def deSourceCouple(data, strip=False):
     """
-    Returns tuple of (number, saider) from concatenated bytes or bytearray
+    Returns tuple of (number, diger) from concatenated bytes or bytearray
     of data couple made up of qb64 or qb64b versions of snu+dig where:
        snu is sn of delegator/issuer source event
        dig is digest of delegator/issuer source event
@@ -201,8 +201,8 @@ def deSourceCouple(data, strip=False):
     number = Number(qb64b=data, strip=strip)
     if not strip:
         data = data[len(number.qb64b):]
-    saider = Saider(qb64b=data, strip=strip)
-    return (number, saider)
+    diger = Diger(qb64b=data, strip=strip)
+    return (number, diger)
 
 
 def deReceiptTriple(data, strip=False):
@@ -226,14 +226,14 @@ def deReceiptTriple(data, strip=False):
     if hasattr(data, "encode"):
         data = data.encode("utf-8")  # convert to bytes
 
-    saider = Saider(qb64b=data, strip=strip)
+    diger = Diger(qb64b=data, strip=strip)
     if not strip:
-        data = data[len(saider.qb64b):]
+        data = data[len(diger.qb64b):]
     prefixer = Prefixer(qb64b=data, strip=strip)
     if not strip:
         data = data[len(prefixer.qb64b):]
     cigar = Cigar(qb64b=data, strip=strip)
-    return (saider, prefixer, cigar)
+    return (diger, prefixer, cigar)
 
 
 def deTransReceiptQuadruple(data, strip=False):
@@ -260,12 +260,12 @@ def deTransReceiptQuadruple(data, strip=False):
     number = Number(qb64b=data, strip=strip)
     if not strip:
         data = data[len(number.qb64b):]
-    saider = Saider(qb64b=data, strip=strip)
+    diger = Diger(qb64b=data, strip=strip)
     if not strip:
-        data = data[len(saider.qb64b):]
+        data = data[len(diger.qb64b):]
     siger = Siger(qb64b=data, strip=strip)
 
-    return (prefixer, number, saider, siger)
+    return (prefixer, number, diger, siger)
 
 
 def deTransReceiptQuintuple(data, strip=False):
@@ -288,21 +288,21 @@ def deTransReceiptQuintuple(data, strip=False):
         data = data.encode("utf-8")  # convert to bytes
     if isinstance(data, tuple) and len(data) == 5:
         return data  # already typed CESR objects
-    esaider = Saider(qb64b=data, strip=strip)  # diger of receipted event
+    ediger = Diger(qb64b=data, strip=strip)  # diger of receipted event
     if not strip:
-        data = data[len(esaider.qb64b):]
+        data = data[len(ediger.qb64b):]
     sprefixer = Prefixer(qb64b=data, strip=strip)  # prefixer of recipter
     if not strip:
         data = data[len(sprefixer.qb64b):]
     snumber = Number(qb64b=data, strip=strip)  # seqnumber of receipting event
     if not strip:
         data = data[len(snumber.qb64b):]
-    ssaider = Saider(qb64b=data, strip=strip)  # diger of receipting event
+    sdiger = Diger(qb64b=data, strip=strip)  # diger of receipting event
     if not strip:
-        data = data[len(ssaider.qb64b):]
+        data = data[len(sdiger.qb64b):]
     siger = Siger(qb64b=data, strip=strip)  # indexed siger of event
 
-    return esaider, sprefixer, snumber, ssaider, siger
+    return ediger, sprefixer, snumber, sdiger, siger
 
 
 
@@ -423,14 +423,14 @@ def fetchTsgs(db, saider, snh=None):
     sigers = []
     old = None  # empty keys
     for keys, siger in db.getItemIter(keys=(saider.qb64, "")):
-        triple = keys[1:]
-        if triple != old:  # new tsg
-            if snh is not None and triple[1] > snh:  # only lower sn
+        trituple = keys[1:]
+        if trituple != old:  # new tsg
+            if snh is not None and trituple[1] > snh:  # only lower sn
                 break
             if sigers:  # append tsg made for old and sigers
                 tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
                 sigers = []
-            old = triple
+            old = trituple
         sigers.append(siger)
     if sigers and old:
         tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
@@ -1704,7 +1704,7 @@ class Kever:
     DoNotDelegate = False
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
-                 db=None, estOnly=None, delseqner=None, delsaider=None, firner=None,
+                 db=None, estOnly=None, delseqner=None, deldiger=None, firner=None,
                  dater=None, cues=None, eager=False, local=True, check=False):
         """
         Create incepting kever and state from inception serder
@@ -1722,7 +1722,7 @@ class Kever:
                             False all events allowed.
             delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsaider (Saider | None): instance of of delegating event SAID.
+            deldiger (Diger | None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner (Seqner | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -1777,7 +1777,7 @@ class Kever:
 
         # Validates signers, delegation if any, and witnessing when applicable
         # If does not validate then escrows as needed and raises ValidationError
-        sigers, wigers, delpre, delseqner, delsaider = self.valSigsWigsDel(
+        sigers, wigers, delpre, delseqner, deldiger = self.valSigsWigsDel(
                                                         serder=serder,
                                                         sigers=sigers,
                                                         verfers=serder.verfers,
@@ -1786,7 +1786,7 @@ class Kever:
                                                         toader=self.toader,
                                                         wits=self.wits,
                                                         delseqner=delseqner,
-                                                        delsaider=delsaider,
+                                                        deldiger=deldiger,
                                                         eager=eager,
                                                         local=local)
 
@@ -1800,7 +1800,7 @@ class Kever:
         fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 wits=wits,
                                 first=True if not check else False,
-                                seqner=delseqner, saider=delsaider,
+                                seqner=delseqner, diger=deldiger,
                                 firner=firner, dater=dater, local=local)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fner = Number(num=fn)
@@ -2137,7 +2137,7 @@ class Kever:
             self.doNotDelegate = True
 
 
-    def update(self, serder, sigers, wigers=None, delseqner=None, delsaider=None,
+    def update(self, serder, sigers, wigers=None, delseqner=None, deldiger=None,
                firner=None, dater=None, eager=False, local=True, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
@@ -2153,7 +2153,7 @@ class Kever:
                 event. Index is offset into wits list from latest est event
             delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsaider (Saider | None): instance of of delegating event said.
+            deldiger (Diger | None): instance of of delegating event said.
                 If this event is not delegated then diger is ignored
             firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -2204,7 +2204,7 @@ class Kever:
             # Validates signers, delegation if any, and witnessing when applicable
             # returned sigers and wigers are verified signatures
             # If does not validate then escrows as needed and raises ValidationError
-            sigers, wigers, delpre, delseqner, delsaider = self.valSigsWigsDel(
+            sigers, wigers, delpre, delseqner, deldiger = self.valSigsWigsDel(
                                                         serder=serder,
                                                         sigers=sigers,
                                                         verfers=serder.verfers,
@@ -2213,7 +2213,7 @@ class Kever:
                                                         toader=toader,
                                                         wits=wits,
                                                         delseqner=delseqner,
-                                                        delsaider=delsaider,
+                                                        deldiger=deldiger,
                                                         eager=eager,
                                                         local=local)
 
@@ -2224,7 +2224,7 @@ class Kever:
             fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                     wits=wits,
                                     first=True if not check else False,
-                                    seqner=delseqner, saider=delsaider,
+                                    seqner=delseqner, diger=deldiger,
                                     firner=firner, dater=dater, local=local)
 
             # nxt and signatures verify so update state
@@ -2457,7 +2457,7 @@ class Kever:
 
     def valSigsWigsDel(self, serder, sigers, verfers, tholder,
                                 wigers, toader, wits, *,
-                                delseqner=None, delsaider=None, eager=False,
+                                delseqner=None, deldiger=None, eager=False,
                                 local=True):
         """
         Returns triple (sigers, wigers, delegator) where:
@@ -2485,7 +2485,7 @@ class Kever:
                 derive werfers for wigers
             delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsaider (Saider | None): instance of of delegating event said.
+            deldiger (Diger | None): instance of of delegating event said.
                 If this event is not delegated then saider is ignored
             eager (bool): True means try harder to find validate events by
                             walking KELs. Enables only being eager
@@ -2549,7 +2549,7 @@ class Kever:
                             self.locallyWitnessed(wits=wits) or
                             self.locallyDelegated(pre=delpre))):
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               seqner=delseqner, saider=delsaider, local=local)
+                               seqner=delseqner, saider=deldiger, local=local)
             raise MisfitEventSourceError(f"Nonlocal source for locally owned or"
                                          f"locally witnessed or locally delegated"
                                          f"event={serder.ked}, local aids="
@@ -2565,7 +2565,7 @@ class Kever:
         pre = self.prefixer.qb64
         if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               seqner=delseqner, saider=delsaider, local=local)
+                               seqner=delseqner, saider=deldiger, local=local)
             msg = (f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying sith = {tholder.sith} "
                    f"on sigs {[siger.qb64 for siger in sigers]} "
                    f"for evt = {serder.said}")
@@ -2580,7 +2580,7 @@ class Kever:
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   seqner=delseqner, saider=delsaider,local=local)
+                                   seqner=delseqner, saider=deldiger,local=local)
                 msg = (
                     f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying prior nsith = {self.ntholder.sith} "
                     f"with exposed sigs {[siger.qb64 for siger in sigers]} "
@@ -2611,7 +2611,7 @@ class Kever:
 
                 if len(windices) < toader.num:  # not fully witnessed yet
                     if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
-                                          seqner=delseqner, saider=delsaider,
+                                          seqner=delseqner, saider=deldiger,
                                           local=local):
                         # cue to query for witness receipts
                         self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.snh)))
@@ -2624,7 +2624,7 @@ class Kever:
 
 
         # Delegator approves delegation by attaching valid source
-        # seal and reprocessing event which shows up here as delseqner, delsaider.
+        # seal and reprocessing event which shows up here as delseqner, deldiger.
         # Won't get to here if not local and locallyDelegated(delpre) misfit
         # checks above will send nonlocal sourced delegable event to
         # misfit escrow first. Mistfit escrow must first promote to local and
@@ -2634,11 +2634,11 @@ class Kever:
 
         if (serder.ilk in (Ilks.dip, Ilks.drt) and self.locallyDelegated(delpre)
                 and not self.locallyOwned()):  # local delegator of delegated event
-            if delseqner is None or delsaider is None: # missing delegation seal
+            if delseqner is None or deldiger is None: # missing delegation seal
                 # so escrow delegable. So local delegator can approve OOB.
                 # and create delegator event with valid event seal of this
                 # delegated event and then reprocess event with attached source
-                # seal to delegating event, i.e. delseqner, delsaider.
+                # seal to delegating event, i.e. delseqner, deldiger.
                 self.escrowDelegableEvent(serder=serder, sigers=sigers,
                                           wigers=wigers, local=local)
                 msg = f"Missing approval for delegation by {delpre} of event = {serder.said}"
@@ -2649,17 +2649,17 @@ class Kever:
         # validateDelegation returns (None, None) when delegation validation
         # does not apply. Raises ValidationError if validation applies but
         # does not validate.
-        delseqner, delsaider = self.validateDelegation(serder,
+        delseqner, deldiger = self.validateDelegation(serder,
                                                         sigers=sigers,
                                                         wigers=wigers,
                                                         wits=wits,
                                                         delpre=delpre,
                                                         delseqner=delseqner,
-                                                        delsaider=delsaider,
+                                                        deldiger=deldiger,
                                                         eager=eager,
                                                         local=local)
 
-        return (sigers, wigers, delpre, delseqner, delsaider)
+        return (sigers, wigers, delpre, delseqner, deldiger)
 
 
 
@@ -2712,7 +2712,7 @@ class Kever:
 
 
     def validateDelegation(self, serder, sigers, wigers, wits, delpre, *,
-                    delseqner=None, delsaider=None, eager=False, local=True):
+                    delseqner=None, deldiger=None, eager=False, local=True):
         """
         Returns delegator's qb64 identifier prefix if validation successful.
         Assumes that local vs remote source checks have been applied before
@@ -2743,7 +2743,7 @@ class Kever:
             delpre (str): qb64 prefix of delegator
             delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            delsaider (Saider | None): instance of of delegating event digest.
+            deldiger (Diger | None): instance of of delegating event digest.
                 If this event is not delegated ignored
                 local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -2980,7 +2980,7 @@ class Kever:
 
         """
         if not delpre: # not delegable delpre is None if ilk is not dip or drt
-            return (None, None)  # non-delegated so delseqner delsaider must be None
+            return (None, None)  # non-delegated so delseqner deldiger must be None
 
         # if we are the delegatee, accept the event without requiring the
         # delegator validation via an anchored delegation seal or by requiring
@@ -2991,7 +2991,7 @@ class Kever:
         # delegator's KEL.  Witness cue in Kevery will then generate receipt
         if (self.locallyOwned() or self.locallyMembered() or
                 self.locallyWitnessed(wits=wits)):
-            return (None, None) # not validated so delseqner delsaider must be None
+            return (None, None) # not validated so delseqner deldiger must be None
 
         if self.kevers is None or delpre not in self.kevers:  # missing delegator KEL
             # ToDo XXXX cue a trigger to get the KEL of the delegator. This may
@@ -2999,7 +2999,7 @@ class Kever:
             # The processPDEvent should also cue a trigger to get KEL
             # of delegator if still missing when processing escrow later.
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               seqner=delseqner, saider=delsaider, local=local)
+                               seqner=delseqner, saider=deldiger, local=local)
             msg = f"Missing KEL of delegator {delpre} of evt {serder.sn} {serder.ilk} {serder.said}"
             logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3015,25 +3015,25 @@ class Kever:
             raise ValidationError(msg)
 
         dserder = None  # no delegation event yet
-        if delseqner is None or delsaider is None: # missing delegation seal ref
+        if delseqner is None or deldiger is None: # missing delegation seal ref
             if eager:  # walk kel here to find
                 seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
                 dserder = self.db.fetchLastSealingEventByEventSeal(pre=delpre,
                                                                      seal=seal)
                 if dserder is not None:  # found seal in dserder
                     delseqner = coring.Seqner(sn=dserder.sn)  # replace with found
-                    delsaider = coring.Saider(qb64=dserder.said)  # replace with found
+                    deldiger = coring.Diger(qb64=dserder.said)  # replace with found
 
             if not dserder: # just escrow and try later
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   seqner=delseqner, saider=delsaider, local=local)
+                                   seqner=delseqner, saider=deldiger, local=local)
                 msg = (f"No delegation seal for delegator {delpre} on evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
 
-        if delseqner and delsaider and not dserder:  # given couple not found
+        if delseqner and deldiger and not dserder:  # given couple not found
             # ToDo XXXX need to replace Seqners with Numbers
             # Get delegating event from delseqner and delpre
             ssn = Number(num=delseqner.sn).validate(inceptive=False).sn
@@ -3047,7 +3047,7 @@ class Kever:
                 # delegator
                 self.cues.push(dict(kin="query", q=dict(pre=delpre,
                                                                   sn=delseqner.snh,
-                                                                  dig=delsaider.qb64)))
+                                                                  dig=deldiger.qb64)))
                 #  escrow event here
                 inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
                 sn = Number(num=serder.sn).validate(inceptive=inceptive).sn
@@ -3055,8 +3055,8 @@ class Kever:
                 # must check for locallyOwned(delpre) first and escrowDelegable.
                 # otherwise escrowPDEvent
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   seqner=delseqner, saider=delsaider, local=local)
-                msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
+                                   seqner=delseqner, saider=deldiger, local=local)
+                msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3087,9 +3087,9 @@ class Kever:
             if not found:  # nullify and escrow to try harder later
                 # worst case assume source seal was malicious so nullify it and
                 # attempt to repair by escrowing and eager search later
-                delseqner = delsaider = None  # nullify
+                delseqner = deldiger = None  # nullify
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                           seqner=delseqner, saider=delsaider, local=local)
+                                           seqner=delseqner, saider=deldiger, local=local)
                 msg = (f"No delegation seal for delegator {delpre} of evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
@@ -3101,12 +3101,12 @@ class Kever:
             ## repair source seal to match last event at sn in source seal.
             ## Original delegating event in seal may have been disputed or
             ## superseded, but if latest matches then we want to repair
-            #if not dserder.compare(said=delsaider.qb64):  # drop event
+            #if not dserder.compare(said=deldiger.qb64):  # drop event
                 #raise ValidationError(f"Invalid delegation from {delpre} at event"
                                       #f" dig={ddig} for evt={serder.ked}.")
 
             delseqner = Seqner(snh=dserder.snh)  # replace with found
-            delsaider = Saider(qb64=dserder.said)  # replace with found
+            deldiger = Diger(qb64=dserder.said)  # replace with found
 
         # Since found valid anchoring seal so can confirm delegation successful
         # unless its one of the superseding conditions.
@@ -3122,7 +3122,7 @@ class Kever:
             (serder.sner.num == self.sner.num and  # superseding event at same sn and
                 self.ilk == Ilks.ixn and  # superseded is interaction and
                 serder.ilk == Ilks.drt)):  # superseding is rotation
-                    return (delseqner, delsaider) # indicates delegation valid
+                    return (delseqner, deldiger) # indicates delegation valid
 
         # get to here means drt rotation superseding another drt rotation
         # Kever.logEvent saves authorizer (delegator) seal source couple in
@@ -3135,8 +3135,8 @@ class Kever:
         if not (bosso := self.fetchDelegatingEvent(delpre, serfo, original=True,
                                                    eager=eager)):
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                seqner=delseqner, saider=delsaider, local=local)
-            msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
+                                seqner=delseqner, saider=deldiger, local=local)
+            msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                    f"{serder.sn} {serder.ilk} {serder.said}")
             logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3152,7 +3152,7 @@ class Kever:
                 (bossn.Ilk == Ilks.drt and  # superseding  delegation is rotation and
                  bosso.Ilk == Ilks.ixn) ): # superseded delegation is interaction
                     # valid superseding delegation up chain so tail link valid
-                    return (delseqner, delsaider)  # tail event's delegation source
+                    return (delseqner, deldiger)  # tail event's delegation source
 
             if bossn.said == bosso.said: # same delegating event
                 nseals = [SealEvent(**seal) for seal in bossn.seals
@@ -3169,7 +3169,7 @@ class Kever:
                 if nindex > oindex:  # superseding delegation seal is later
                     # assumes index can't be None
                     # valid superseding delegation up chain so tail link valid
-                    return (delseqner, delsaider)  # tail event's delegation source
+                    return (delseqner, deldiger)  # tail event's delegation source
 
                 else:  # not superseded
                     # ToDo: XXXX may want to cue up business logic for delegator
@@ -3186,8 +3186,8 @@ class Kever:
                                                        original=False,
                                                        eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                seqner=delseqner, saider=delsaider, local=local)
-                msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
+                                seqner=delseqner, saider=deldiger, local=local)
+                msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3197,8 +3197,8 @@ class Kever:
                                                        original=True,
                                                        eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                seqner=delseqner, saider=delsaider, local=local)
-                msg = (f"No delegating event from {delpre} at {delsaider.qb64} for evt "
+                                seqner=delseqner, saider=deldiger, local=local)
+                msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3272,8 +3272,8 @@ class Kever:
         delegate was already accepted.
         """
         if (duple := self.db.aess.get(keys=(serder.preb, serder.saidb))):  # delegation source couple at delegate
-            seqner, saider = duple
-            deldig = saider.qb64  # dig of delegating event
+            seqner, diger = duple
+            deldig = diger.qb64  # dig of delegating event
             # extra careful double check that .aes is valid by getting
             #  fner = first seen Number instance index
             if not self.db.fons.get(keys=(delpre, deldig)):  # Not first seen yet?
@@ -3320,8 +3320,8 @@ class Kever:
                 # seal couple of delegation. This is safe becaause we confirmed
                 # delegation event was accepted in delegator's kel.
                 sner = coring.Number(num=dserder.sn, code=coring.NumDex.Huge)
-                saider = coring.Saider(qb64b=dserder.saidb)
-                self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(sner, saider))  # authorizer (delegator/issuer) event seal
+                diger = coring.Diger(qb64b=dserder.saidb)
+                self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(sner, diger))  # authorizer (delegator/issuer) event seal
 
             return dserder
 
@@ -3331,7 +3331,7 @@ class Kever:
 
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
-                 seqner=None, saider=None, firner=None, dater=None, local=True):
+                 seqner=None, diger=None, firner=None, dater=None, local=True):
         """
         Update associated logs for verified event.
         Update is idempotent. Logs will not write dup at key if already exists.
@@ -3346,7 +3346,7 @@ class Kever:
                     signatures beyond the threshold provided for first seen
             seqner is Seqner instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider is Saider instance of of delegating event said.
+            diger is Diger instance of of delegating event said.
                 If this event is not delegated then diger is ignored
             firner is optional Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -3377,15 +3377,15 @@ class Kever:
         # update event source
 
         # delegation for authorized delegated or issued event
-        # when seqner and saider are provided they are only assured to be valid
+        # when seqner and diger are provided they are only assured to be valid
         # kever for event if kel is delegated and not locallyOwned
         # and not locallyWitnessed as the validateDelegation is short circuited
         # for non delegated kels, local controllers, and local witnesses.
         # These checks prevent ddos via malicious source seal attachments.
         # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
         if (self.delpre and not serder.ilk == Ilks.ixn and not self.locallyOwned()
-            and not self.locallyWitnessed(wits=wits) and seqner and saider):
-            self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(coring.Number(num=seqner.sn, code=coring.NumDex.Huge), saider))  # authorizer (delegator/issuer) event seal
+            and not self.locallyWitnessed(wits=wits) and seqner and diger):
+            self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(coring.Number(num=seqner.sn, code=coring.NumDex.Huge), diger))  # authorizer (delegator/issuer) event seal
 
         #if seqner and saider:
             #couple = seqner.qb64b + saider.qb64b
@@ -3499,7 +3499,7 @@ class Kever:
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
-            self.db.wigs.put(keys=dgkey, vals=wigers)
+            self.db.wigs.put(keys=(serder.preb, serder.saidb), vals=wigers)
         self.db.delegables.add(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.debug("Kever: escrowed delegable event =\n%s\n", serder.pretty())
@@ -3958,7 +3958,7 @@ class Kevery:
 
 
     def processEvent(self, serder, sigers, *, wigers=None,
-                     delseqner=None, delsaider=None,
+                     delseqner=None, deldiger=None,
                      firner=None, dater=None, eager=False, local=None, **kwa):
         """
         Process one event serder with attached indexd signatures sigers
@@ -3970,7 +3970,7 @@ class Kevery:
                 otherwise None
             delseqner (Seqner|None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsaider (Saider|None): instance of of delegating event SAID.
+            deldiger (Diger|None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner (Seqner|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -4018,7 +4018,7 @@ class Kevery:
                               wigers=wigers,
                               db=self.db,
                               delseqner=delseqner,
-                              delsaider=delsaider,
+                              deldiger=deldiger,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
@@ -4052,7 +4052,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   seqner=delseqner, saider=delsaider, wigers=wigers, local=local)
+                                   seqner=delseqner, saider=deldiger, wigers=wigers, local=local)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -4096,7 +4096,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       seqner=delseqner, saider=delsaider, wigers=wigers, local=local)
+                                       seqner=delseqner, saider=deldiger, wigers=wigers, local=local)
                     msg = f"Out-of-order event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
                     logger.debug(msg)
                     logger.debug("Out-of-order event body=\n%s\n", serder.pretty())
@@ -4112,7 +4112,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 delseqner=delseqner, delsaider=delsaider,
+                                 delseqner=delseqner, deldiger=deldiger,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  eager=eager, local=local, check=self.check)
@@ -4250,7 +4250,7 @@ class Kevery:
                         # create witness indexed signature
                         wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                         self.db.wigs.add(keys=dgkey, val=wiger)  # write to db
-                    else:  # not witness rect write receipt couple to database .rcts
+                    else:  # not witness rect write receipt to database
                         self.db.rcts.add(keys=dgkey, val=(cigar.verfer, cigar))
 
             wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
@@ -4423,7 +4423,7 @@ class Kevery:
                     # create witness indexed signature and write to db
                     wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                     self.db.wigs.add(keys=(pre, ldig), val=wiger)
-                else:  # write receipt couple to database
+                else:  # write receipt to database
                     self.db.rcts.add(keys=(pre, ldig), val=(cigar.verfer, cigar))
 
 
@@ -4888,8 +4888,8 @@ class Kevery:
             if not sserder.compare(said=diger.qb64b):  # mismatch events problem with replay
                 raise ValidationError(f"Mismatch keystate at sn = {int(ksr.s,16)} with db.")
 
-        ksaider = coring.Saider(qb64=diger.qb64)
-        self.updateKeyState(aid=aid, ksr=ksr, saider=ksaider, dater=dater)
+        kdiger = coring.Diger(qb64=diger.qb64)
+        self.updateKeyState(aid=aid, ksr=ksr, saider=kdiger, dater=dater)
         self.cues.push(dict(kin="keyStateSaved", ksn=asdict(ksr)))
 
 
@@ -5400,8 +5400,12 @@ class Kevery:
         for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
-            triple = said.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-            self.db.addUre(key=snKey(serder.preb, serder.sn), val=triple)  # should be snKey
+            trituple = (
+                coring.Diger(qb64=said),
+                coring.Prefixer(qb64=cigar.verfer.qb64),
+                cigar
+            )
+            self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=trituple)
         # log escrowed
         logger.debug("Kevery process: escrowed unverified receipt of pre= %s "
                      " sn=%x dig=%s", serder.pre, serder.sn, said)
@@ -5782,9 +5786,9 @@ class Kevery:
                                  "dig = %s", bytes(edig))
 
                 # seal source (delegator issuer if any)
-                delseqner = delsaider = None
+                delseqner = deldiger = None
                 if (couple := self.db.udes.get(keys=dgkey)):
-                    delseqner, delsaider = couple
+                    delseqner, deldiger = couple
 
                 #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                     #if eserder.pre in self.kevers:
@@ -5802,7 +5806,7 @@ class Kevery:
                 # process event
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delseqner, delsaider=delsaider,
+                                  delseqner=delseqner, deldiger=deldiger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate sigs or delegation seal (when delegated),
@@ -5957,9 +5961,9 @@ class Kevery:
                 sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
 
                 # seal source (delegator issuer if any)
-                delseqner = delsaider = None
+                delseqner = deldiger = None
                 if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
-                    delseqner, delsaider = couple
+                    delseqner, deldiger = couple
 
                 #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                     #if eserder.pre in self.kevers:
@@ -5975,7 +5979,7 @@ class Kevery:
                         #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delseqner, delsaider=delsaider,
+                                  delseqner=delseqner, deldiger=deldiger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate wigs then process will attempt
@@ -6113,9 +6117,9 @@ class Kevery:
                 # seal source (delegator issuer if any)
                 # If delegator KEL not available should also cue a trigger to
                 # get it if still missing when processing escrow.
-                delseqner = delsaider = None
+                delseqner = deldiger = None
                 if (couple := self.db.udes.get(keys=(epre, edig))):
-                    delseqner, delsaider = couple  # provided
+                    delseqner, deldiger = couple  # provided
 
                 #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,): # walk kel to find
                     #if eserder.pre in self.kevers:
@@ -6130,7 +6134,7 @@ class Kevery:
                         #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delseqner, delsaider=delsaider,
+                                  delseqner=delseqner, deldiger=deldiger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate delegation then process will attempt
@@ -6304,7 +6308,7 @@ class Kevery:
         This allows FIFO processing of escrows for events with same prefix and
         sn but different digest.
 
-        Uses  .db.addUre(self, key, val) which is IOVal with dups.
+        Uses  .db.ures.add(diger,prefixer,cigar)
 
         Value is triple
 
@@ -6314,7 +6318,7 @@ class Kevery:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-                self.db.addUre(key=snKey(pre, sn), val=triple)  # should be snKey
+                self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=triple)  # should be snKey
             where:
                 dig is dig in receipt of receipted event
                 cigars is list of cigars instances for receipted event
@@ -6330,114 +6334,112 @@ class Kevery:
                         verify sigs via cigars
                         If successful then remove from escrow table
         """
+        
+        for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getItemIter():
+            sn = coring.Seqner(qb64=sn).sn
+            try:
+                cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
 
-        ims = bytearray()
-        key = ekey = b''  # both start same. when not same means escrows found
-        while True:  # break when done
-            for ekey, etriplet in self.db.getUreItemIter(key=key):
-                try:
-                    pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
-                    rsaider, sprefixer, cigar = deReceiptTriple(etriplet)
-                    cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
+                # check date if expired then remove escrow.
+                dater = self.db.dtss.get(keys=dgKey(pre, bytes(rsaider.qb64b)))
+                if dater is None:  # no datetime stored
+                    # no date time so raise ValidationError which unescrows below
+                    msg = f"URE Missing escrowed event datetime at dig = {rsaider.qb64b}"
+                    logger.trace("Kevery unescrow error: %s", msg)
+                    raise ValidationError(msg)
 
-                    # check date if expired then remove escrow.
-                    dater = self.db.dtss.get(keys=dgKey(pre, bytes(rsaider.qb64b)))
-                    if dater is None:  # no datetime stored
-                        # no date time so raise ValidationError which unescrows below
-                        msg = f"URE Missing escrowed event datetime at dig = {rsaider.qb64b}"
+                # do date math here and discard if stale
+                dtnow = helping.nowUTC()
+                dte = dater.datetime
+                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutURE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    msg = f"URE Stale event escrow at dig = {rsaider.qb64b}"
+                    logger.trace("Kevery unescrow error: %s", msg)
+                    raise ValidationError(msg)
+
+                # Is receipt for unverified witnessed event in .Pwes escrow
+                # if found then try else clause will remove from escrow
+                found = self._processEscrowFindUnver(pre=pre,
+                                                        sn=sn,
+                                                        rsaider=rsaider,
+                                                        cigar=cigar)
+
+                if not found:  # no partial witness escrow of event found
+                    # so process as escrow of receipt for accept event
+                    # not two stage witnessed event escrow
+                    # get dig of receipted accepted event in kel using lastEvt
+                    # at pre and sn
+
+                    dig = self.db.kels.getOnLast(keys=pre, on=sn)
+                    if dig is None:  # no receipted event so keep in escrow
+                        msg = f"URE Missing receipted evt at pre={pre} sn={sn:x}"
+                        logger.trace("Kevery unescrow error: %s", msg)
+                        raise UnverifiedReceiptError(msg)
+                    dig = dig.encode("utf-8")
+                    # get receipted event using pre and edig
+                    if (serder := self.db.evts.get(keys=(pre, dig))) is None:
+                        # receipted event superseded so remove from escrow
+                        msg = f"URE Invalid receipted event reference at pre={pre} sn={sn:x}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
-                    # do date math here and discard if stale
-                    dtnow = helping.nowUTC()
-                    dte = dater.datetime
-                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutURE):
-                        # escrow stale so raise ValidationError which unescrows below
-                        msg = f"URE Stale event escrow at dig = {rsaider.qb64b}"
+                    #  compare digs
+                    if rsaider.qb64b != serder.saidb:
+                        msg = f"URE Bad escrowed receipt dig at pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
-                    # Is receipt for unverified witnessed event in .Pwes escrow
-                    # if found then try else clause will remove from escrow
-                    found = self._processEscrowFindUnver(pre=pre,
-                                                         sn=sn,
-                                                         rsaider=rsaider,
-                                                         cigar=cigar)
+                    #  verify sig verfer key is prefixer from triple
+                    if not cigar.verfer.verify(cigar.raw, serder.raw):
+                        # no sigs so raise ValidationError which unescrows below
+                        msg = f"URE Bad escrowed receipt sig at pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
+                        logger.trace("Kevery unescrow error: %s", msg)
+                        raise ValidationError(msg)
 
-                    if not found:  # no partial witness escrow of event found
-                        # so process as escrow of receipt for accept event
-                        # not two stage witnessed event escrow
-                        # get dig of receipted accepted event in kel using lastEvt
-                        # at pre and sn
+                    # Check if kever exists before accessing it
+                    if serder.pre not in self.kevers:
+                        # event exists in database but kever not ready yet, keep in escrow
+                        msg = f"URE Kever not ready for receipted evt at pre={pre} sn={sn:x}"
+                        logger.trace("Kevery unescrow error: %s", msg)
+                        raise UnverifiedReceiptError(msg)
 
-                        dig = self.db.kels.getOnLast(keys=pre, on=sn)
-                        if dig is None:  # no receipted event so keep in escrow
-                            msg = f"URE Missing receipted evt at pre={pre} sn={sn:x}"
-                            logger.trace("Kevery unescrow error: %s", msg)
-                            raise UnverifiedReceiptError(msg)
-                        dig = dig.encode("utf-8")
-                        # get receipted event using pre and edig
-                        if (serder := self.db.evts.get(keys=(pre, dig))) is None:
-                            # receipted event superseded so remove from escrow
-                            msg = f"URE Invalid receipted event reference at pre={pre} sn={sn:x}"
-                            logger.trace("Kevery unescrow error: %s", msg)
-                            raise ValidationError(msg)
+                    # get current wits from kever state assuming not stale
+                    # receipt. Need function here to compute wits for actual
+                    # state at pre, sn. XXXX
+                    wits = self.kevers[serder.pre].wits
+                    rpre = cigar.verfer.qb64  # prefix of receiptor
+                    if rpre in wits:  # its a witness receipt
+                        # this only works for extra receipts that come in later
+                        # after event is out of .Pwes escrow
+                        index = wits.index(rpre)
+                        # create witness indexed signature and write to db
+                        wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
+                        self.db.wigs.add(keys=(pre, serder.said), val=wiger)
+                    else:  # write receipt to database
+                        self.db.rcts.add(keys=(pre, serder.said), val=(cigar.verfer, cigar))
 
-                        #  compare digs
-                        if rsaider.qb64b != serder.saidb:
-                            msg = f"URE Bad escrowed receipt dig at pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
-                            logger.trace("Kevery unescrow error: %s", msg)
-                            raise ValidationError(msg)
+            except UnverifiedReceiptError as ex:
+                # still waiting on missing prior event to validate
+                # only happens if we process above
+                if logger.isEnabledFor(logging.TRACE):  # adds exception data
+                    logger.trace("Kevery: UNT other error on unescrow: %s\n", ex.args[0])
+                    logger.exception("Kevery: UNT other error on unescrow: %s\n", ex.args[0])
 
-                        #  verify sig verfer key is prefixer from triple
-                        if not cigar.verfer.verify(cigar.raw, serder.raw):
-                            # no sigs so raise ValidationError which unescrows below
-                            msg = f"URE Bad escrowed receipt sig at pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
-                            logger.trace("Kevery unescrow error: %s", msg)
-                            raise ValidationError(msg)
+            except Exception as ex:  # log diagnostics errors etc
+                # error other than out of order so remove from OO escrow
+                self.db.ures.rem(keys=(pre, coring.Seqner(sn=sn).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
+                if logger.isEnabledFor(logging.DEBUG):  # adds exception data
+                    logger.exception("Kevery URE unescrowed: %s", ex.args[0])
+                else:
+                    logger.error("Kevery URE unescrowed: %s", ex.args[0])
 
-                        # get current wits from kever state assuming not stale
-                        # receipt. Need function here to compute wits for actual
-                        # state at pre, sn. XXXX
-                        wits = self.kevers[serder.pre].wits
-                        rpre = cigar.verfer.qb64  # prefix of receiptor
-                        if rpre in wits:  # its a witness receipt
-                            # this only works for extra receipts that come in later
-                            # after event is out of .Pwes escrow
-                            index = wits.index(rpre)
-                            # create witness indexed signature and write to db
-                            wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
-                            self.db.wigs.add(keys=(pre, serder.said), val=wiger)
-                        else:  # write receipt couple to database
-                            self.db.rcts.add(keys=(pre, serder.said), val=(cigar.verfer, cigar))
-
-
-                except UnverifiedReceiptError as ex:
-                    # still waiting on missing prior event to validate
-                    # only happens if we process above
-                    if logger.isEnabledFor(logging.TRACE):  # adds exception data
-                        logger.trace("Kevery: UNT other error on unescrow: %s\n", ex.args[0])
-                        logger.exception("Kevery: UNT other error on unescrow: %s\n", ex.args[0])
-
-                except Exception as ex:  # log diagnostics errors etc
-                    # error other than out of order so remove from OO escrow
-                    self.db.delUre(snKey(pre, sn), etriplet)  # removes one escrow at key val
-                    if logger.isEnabledFor(logging.DEBUG):  # adds exception data
-                        logger.exception("Kevery URE unescrowed: %s", ex.args[0])
-                    else:
-                        logger.error("Kevery URE unescrowed: %s", ex.args[0])
-
-                else:  # unescrow succeeded, remove from escrow
-                    # We don't remove all escrows at pre,sn because some might be
-                    # duplicitous so we process remaining escrows in spite of found
-                    # valid event escrow.
-                    self.db.delUre(snKey(pre, sn), etriplet)  # removes one escrow at key val
-                    logger.info("Kevery URE unescrow succeeded for event pre=%s "
-                                "sn=%s", pre, sn)
-
-            if ekey == key:  # still same so no escrows found on last while iteration
-                break
-            key = ekey  # setup next while iteration, with key after ekey
+            else:  # unescrow succeeded, remove from escrow
+                # We don't remove all escrows at pre,sn because some might be
+                # duplicitous so we process remaining escrows in spite of found
+                # valid event escrow.
+                self.db.ures.rem(keys=(pre, coring.Seqner(sn=sn).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
+                logger.info("Kevery URE unescrow succeeded for event pre=%s "
+                            "sn=%s", pre, sn)
 
 
     def processEscrowDelegables(self):
@@ -6512,11 +6514,11 @@ class Kevery:
 
                 # parse the event if we have a delegate seal
                 if (duple := self.db.aess.get(keys=(pre.encode("utf-8"), edig))) is not None:
-                    seqner, saider = duple
+                    seqner, diger = duple
 
                     # process event
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=seqner,
-                                      delsaider=saider, local=esr.local)
+                                      deldiger=diger, local=esr.local)
                 else:
                     raise MissingDelegableApprovalError("No delegation seal found for event.")
 
@@ -6692,6 +6694,9 @@ class Kevery:
 
             elif serder.ked['t'] in (Ilks.rot, Ilks.drt):  # rotation compute from state
                 # calculate wits from rotation and kever key state.
+                if serder.pre not in self.kevers:
+                    # kever not ready yet, can't process rotation witness receipts
+                    return False  # not found, caller should keep in escro
                 wits = self.kevers[serder.pre].wits  # get wits from key state
                 cuts = serder.ked['br']
                 adds = serder.ked['ba']
@@ -7096,8 +7101,8 @@ def loadEvent(db, preb, dig):
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
     if (duple := db.aess.get(keys=(preb, dig))) is not None:
-        seqner, saider = duple
-        event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
+        seqner, diger = duple
+        event["source_seal"] = dict(sequence=seqner.sn, said=diger.qb64)
 
     receipts = dict()
     # add trans receipts quadruples

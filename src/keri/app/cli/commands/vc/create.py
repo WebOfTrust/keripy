@@ -232,7 +232,7 @@ class CredentialIssuer(doing.DoDoer):
 
         acdc = signing.serialize(self.creder, coring.Prefixer(qb64=iserder.pre),
                                  core.Number(num=iserder.sn, code=core.NumDex.Huge),
-                                 coring.Saider(qb64=iserder.said))
+                                 coring.Diger(qb64=iserder.said))
 
         if isinstance(self.hab, habbing.GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)

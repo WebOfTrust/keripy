@@ -52,7 +52,7 @@ def test_baser():
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, subing.CesrSuber)
     assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.ures, lmdb._Database)
+    assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
     assert isinstance(baser.kels, subing.OnIoDupSuber)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
@@ -83,7 +83,7 @@ def test_baser():
     assert isinstance(baser.sigs, lmdb._Database)
     assert isinstance(baser.dtss, subing.CesrSuber)
     assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.ures, lmdb._Database)
+    assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
     assert isinstance(baser.ooes, subing.IoDupSuber)
     assert isinstance(baser.pses, subing.IoDupSuber)
     assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -110,7 +110,7 @@ def test_baser():
         assert isinstance(baser.sigs, lmdb._Database)
         assert isinstance(baser.dtss, subing.CesrSuber)
         assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
-        assert isinstance(baser.ures, lmdb._Database)
+        assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
         assert isinstance(baser.ooes, subing.IoDupSuber)
         assert isinstance(baser.pses, subing.IoDupSuber)
         assert isinstance(baser.dels, subing.OnIoDupSuber)
@@ -325,9 +325,9 @@ def test_baser():
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         number1 = coring.Number(qb64b=ssnu1)
-        saider1 = coring.Saider(qb64b=sdig1)
+        saider1 = coring.Diger(qb64b=sdig1)
         number2 = coring.Number(qb64b=ssnu2)
-        saider2 = coring.Saider(qb64b=sdig2)
+        saider2 = coring.Diger(qb64b=sdig2)
         val1 = (number1, saider1)
         val2 = (number2, saider2)
 
@@ -567,90 +567,164 @@ def test_baser():
 
         # Unverified Receipt Escrows
         # test .ures insertion order dup methods.  dup vals are insertion order
-        key = b'A'
-        vals = [b"z", b"m", b"x", b"a"]
 
-        assert db.getUres(key) == []
-        assert db.getUreLast(key) == None
-        assert db.cntUres(key) == 0
-        assert db.delUres(key) == False
-        assert db.putUres(key, vals) == True
-        assert db.getUres(key) == vals  # preserved insertion order
-        assert db.cntUres(key) == len(vals) == 4
-        assert db.getUreLast(key) == vals[-1]
-        assert db.putUres(key, vals=[b'a']) == False   # duplicate
-        assert db.getUres(key) == vals  #  no change
-        assert db.addUre(key, b'a') == False   # duplicate
-        assert db.addUre(key, b'b') == True
-        assert db.getUres(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in db.getUresIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
-        assert db.delUres(key) == True
-        assert db.getUres(key) == []
+        # Setup CESR test values
+        diger0 = coring.Diger(ser=b"event0")
+        diger1 = coring.Diger(ser=b"event1")
+        diger2 = coring.Diger(ser=b"event2")
+        diger3 = coring.Diger(ser=b"event3")
+        diger4 = coring.Diger(ser=b"event4")
 
-        # Setup Tests for getUreItemsNext and getUreItemsNextIter
-        aKey = snKey(pre=b'A', sn=1)
-        aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
-        bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
-        cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
-        dVals = [b"k", b"b"]
+        pre0 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
-        assert db.putUres(key=aKey, vals=aVals)
-        assert db.putUres(key=bKey, vals=bVals)
-        assert db.putUres(key=cKey, vals=cVals)
-        assert db.putUres(key=dKey, vals=dVals)
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'abcdef0123456789abcdef0123456789')
+        signer2 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+        signer3 = signing.Signer(transferable=False, seed=b'0011223344556677889900112233445566')
+        signer4 = signing.Signer(transferable=False, seed=b'ffeeddccbbaa99887766554433221100')
 
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+        cigar2 = signer2.sign(ser=test_data)
+        cigar3 = signer3.sign(ser=test_data)
+        cigar4 = signer4.sign(ser=test_data)
 
-        # Test getUreItemsNextIter(key=b"")
-        #  get dups at first key in database
-        # aVals
-        items = [item for item in db.getUreItemIter()]
+        pre1 = coring.Prefixer(qb64=signer0.verfer.qb64)
+        pre2 = coring.Prefixer(qb64=signer1.verfer.qb64)
+        pre3 = coring.Prefixer(qb64=signer2.verfer.qb64)
+        pre4 = coring.Prefixer(qb64=signer3.verfer.qb64)
+
+        key = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=0).qb64)
+
+        cesrVal = (diger0, pre0, cigar0)
+        cesrVals = [cesrVal]
+
+        assert db.ures.get(key) == []
+        assert db.ures.getLast(keys=key) is None
+        assert db.ures.cnt(key) == 0
+        assert db.ures.rem(key) == False
+
+        assert db.ures.put(keys=key, vals=cesrVals) == True
+        stored = db.ures.get(key)
+        assert len(stored) == 1
+        diger_s, pre_s, cigar_s = stored[0]
+        assert diger_s.qb64 == diger0.qb64
+        assert pre_s.qb64 == pre0.qb64
+        assert cigar_s.qb64b == cigar0.qb64b
+
+        result = db.ures.getLast(keys=key)
+        assert result is not None
+        diger_l, pre_l, cigar_l = result
+        assert diger_l.qb64 == diger0.qb64
+        assert pre_l.qb64 == pre0.qb64
+        assert cigar_l.qb64b == cigar0.qb64b
+
+        assert db.ures.put(keys=key, vals=[(diger0, pre0, cigar0)]) == False  # duplicate, no change
+        result = db.ures.get(key)
+        assert len(result) == 1
+        d, p, c = result[0]
+        assert d.qb64 == diger0.qb64
+        assert p.qb64 == pre0.qb64
+        assert c.qb64b == cigar0.qb64b
+
+        assert db.ures.add(key, (diger0, pre0, cigar0)) == False   # duplicate
+        assert db.ures.add(key, (diger1, pre1, cigar1)) == True
+
+        result = db.ures.get(key)
+        assert len(result) == 2
+        d0, p0, c0 = result[0]
+        assert d0.qb64 == diger0.qb64
+        assert p0.qb64 == pre0.qb64
+        assert c0.qb64b == cigar0.qb64b
+        d1, p1, c1 = result[1]
+        assert d1.qb64 == diger1.qb64
+        assert p1.qb64 == pre1.qb64
+        assert c1.qb64b == cigar1.qb64b
+
+        result_iter = [val for val in db.ures.getIter(key)]
+        assert len(result_iter) == 2
+        d0, p0, c0 = result_iter[0]
+        assert d0.qb64 == diger0.qb64
+        assert p0.qb64 == pre0.qb64
+        assert c0.qb64b == cigar0.qb64b
+        d1, p1, c1 = result_iter[1]
+        assert d1.qb64 == diger1.qb64
+        assert p1.qb64 == pre1.qb64
+        assert c1.qb64b == cigar1.qb64b
+
+        assert db.ures.rem(key) == True
+        assert db.ures.get(key) == []
+
+        # Setup multi-key tests for getItemIter
+        aKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=1).qb64)
+        aVals = [(diger0, pre0, cigar0), (diger1, pre1, cigar1), (diger2, pre2, cigar2)]
+        bKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=2).qb64)
+        bVals = [(diger1, pre1, cigar1), (diger2, pre2, cigar2), (diger3, pre3, cigar3)]
+        cKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=4).qb64)
+        cVals = [(diger2, pre2, cigar2), (diger3, pre3, cigar3)]
+        dKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=7).qb64)
+        dVals = [(diger3, pre3, cigar3), (diger4, pre4, cigar4)]
+
+        assert db.ures.put(keys=aKey, vals=aVals)
+        assert db.ures.put(keys=bKey, vals=bVals)
+        assert db.ures.put(keys=cKey, vals=cVals)
+        assert db.ures.put(keys=dKey, vals=dVals)
+
+        # Test getItemIter with no key
+        items = [(keys, val) for keys, val in db.ures.getItemIter()]
         assert items  # not empty
         ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [bytes(val) for  key, val in items]
-        assert vals == aVals + bVals + cVals + dVals
+        assert ikey == aKey
+        # Verify total count
+        assert len(items) == len(aVals) + len(bVals) + len(cVals) + len(dVals)
 
-
-        items = [item for item in db.getUreItemIter(key=aKey)]
+        # aVals — iterate at aKey only
+        items = [(keys, val) for keys, val in db.ures.getItemIter(keys=aKey)]
         assert items  # not empty
         ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
+        assert ikey == aKey
+        assert len(items) == len(aVals)  # only aKey items
 
-        # bVals
-        items = [item for item in db.getUreItemIter(key=bKey)]
+        # bVals — iterate at bKey, remove each
+        items = [(keys, val) for keys, val in db.ures.getItemIter(keys=bKey)]
         assert items  # not empty
         ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.delUre(ikey, val) == True
+        assert ikey == bKey
+        assert len(items) == len(bVals)  # only bKey items
+        for ikeys, val in db.ures.getItemIter(keys=bKey):
+            assert db.ures.rem(bKey, val) == True
 
-        # cVals
-        items = [item for item in db.getUreItemIter(key=cKey)]
+        # cVals — iterate at cKey, remove each
+        items = [(keys, val) for keys, val in db.ures.getItemIter(keys=cKey)]
         assert items  # not empty
         ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.delUre(ikey, val) == True
+        assert ikey == cKey
+        assert len(items) == len(cVals)  # only cKey items
+        for ikeys, val in db.ures.getItemIter(keys=cKey):
+            assert db.ures.rem(cKey, val) == True
 
-        # dVals
-        items = [item for item in db.getUreItemIter(key=dKey)]
+        # dVals — iterate at dKey, remove each
+        items = [(keys, val) for keys, val in db.ures.getItemIter(keys=dKey)]
         assert items  # not empty
         ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.delUre(ikey, val) == True
+        assert ikey == dKey
+        assert len(items) == len(dVals)
+        for ikeys, val in db.ures.getItemIter(keys=dKey):
+            assert db.ures.rem(dKey, val) == True
 
+        # aVals should still be intact, others removed
+        result_a = db.ures.get(aKey)
+        assert len(result_a) == len(aVals)
+        for i, (d_expected, p_expected, c_expected) in enumerate(aVals):
+            d, p, c = result_a[i]
+            assert d.qb64 == d_expected.qb64
+            assert p.qb64 == p_expected.qb64
+            assert c.qb64b == c_expected.qb64b
+
+        assert db.ures.get(bKey) == []
+        assert db.ures.get(cKey) == []
+        assert db.ures.get(dKey) == []
 
         # Validator (transferable) Receipts
         # test .vrcs sub db methods dgkey
@@ -1142,16 +1216,16 @@ def test_baser():
 
         # test .udes CatCesrSuber sub db methods
         assert isinstance(db.udes, subing.CatCesrSuber)
-        assert db.udes.klas == (coring.Seqner, coring.Saider)
+        assert db.udes.klas == (coring.Seqner, coring.Diger)
 
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         val1 = ssnu1 + sdig1
-        tuple1 = (coring.Seqner(qb64b=ssnu1), coring.Saider(qb64b=sdig1))
+        tuple1 = (coring.Seqner(qb64b=ssnu1), coring.Diger(qb64b=sdig1))
         val2 = ssnu2 + sdig2
-        tuple2 = (coring.Seqner(qb64b=ssnu2), coring.Saider(qb64b=sdig2))
+        tuple2 = (coring.Seqner(qb64b=ssnu2), coring.Diger(qb64b=sdig2))
 
 
         assert db.udes.get(keys=key) == None
@@ -2371,10 +2445,10 @@ def test_clear_escrows():
         n1 = core.Number(num=1)
         e1 = coring.Diger(ser=b"est1")                       # est event digest
         s1 = core.Siger(raw=b"\x00" * 64)                    # fake sig
-        vres_vals = [(d1, p1, n1, e1, s1)]
+        res_vals = [(d1, p1, n1, e1, s1)]
 
-        db.putUres(key, vals)
-        db.vres.put(keys=key, vals=vres_vals)
+        db.ures.put(keys=key, vals=res_vals)
+        db.vres.put(keys=key, vals=res_vals)
         db.pses.putOn(keys=key, vals=vals)
         for v in vals:
             db.pwes.addOn(keys=key, on=0, val=v)
@@ -2405,7 +2479,7 @@ def test_clear_escrows():
         udesKey = dgKey('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8"),
                     'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8"))
         db.udes.put(keys=udesKey, val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
-                                   coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
+                                   coring.Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
         assert db.udes.get(keys=udesKey) is not None
 
         saider = coring.Saider(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -2442,7 +2516,7 @@ def test_clear_escrows():
 
         db.clearEscrows()
 
-        assert db.getUres(key) == []
+        assert db.ures.get(key) == []
         assert db.vres.get(key) == []
         assert db.pses.getOn(keys=key) == []
         assert db.pwes.getOn(key) == []
