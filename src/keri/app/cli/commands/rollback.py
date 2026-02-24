@@ -65,7 +65,7 @@ def rollback(tymth, tock=0.0, **opts):
             pserder = hby.db.evts.get(keys=(serder.preb, bytes(pdig)))
 
             dgkey = dbing.dgKey(serder.preb, serder.saidb)
-            hby.db.wigs.rem(keys=(serder.preb, serder.saidb))
+            hby.db.wigers.rem(keys=(serder.preb, serder.saidb))
             hby.db.evts.rem(keys=(serder.preb, serder.saidb))
             hby.db.wits.rem(keys=(serder.preb, serder.saidb))
             hby.db.sigs.rem(keys=(serder.preb, serder.saidb))  # idempotent

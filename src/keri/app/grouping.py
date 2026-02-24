@@ -137,7 +137,7 @@ class Counselor(doing.DoDoer):
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
                 keys = [verfer.qb64 for verfer in kever.verfers]
-                sigers = self.hby.db.sigs.get(keys=(pre, bytes(sdig)))
+                sigers = self.hby.db.sigs.get(keys=(pre, sdig))
                 if not sigers:  # otherwise its a list of sigs
                     continue
 

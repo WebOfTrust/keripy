@@ -47,12 +47,11 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3,
                                   smids=smids, rmids=rmids, **inits)
 
-        dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
         eserder = hab1.db.evts.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8")))
         eraw = eserder.raw if eserder else b''
         sigers = bytearray()
         for hab in [hab1, hab2, hab3]:
-            for siger in hab.db.sigs.get(keys=dgkey):
+            for siger in hab.db.sigs.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))):
                 sigers.extend(siger.qb64b)
         evt = bytearray(eraw)
         evt.extend(core.Counter(code=core.Codens.ControllerIdxSigs,

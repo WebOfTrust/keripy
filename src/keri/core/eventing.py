@@ -5644,7 +5644,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get sigs and attach
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, edig))
                 if not sigers:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"OOO Missing escrowed event sigs at dig = {bytes(edig)}"
@@ -5652,7 +5652,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 # process event
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, edig))
 
                 #  get wigers
                 wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
@@ -5769,7 +5769,7 @@ class Kevery:
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
                 #  get sigs and attach
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, edig))
                 if not sigers:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"PSE Missing escrowed evt sigs at dig = {bytes(edig)}"
@@ -5804,7 +5804,7 @@ class Kevery:
                         #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 # process event
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, edig))
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
                                   delseqner=delseqner, delsaider=delsaider,
                                   eager=True, local=esr.local)
@@ -5935,7 +5935,7 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get sigs
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))  # list of sigs
+                sigers = self.db.sigs.get(keys=(pre, edig))  # list of sigs
                 if not sigers:  # empty list
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"PWE Missing escrowed evt sigs at dig = {bytes(edig)}"
@@ -5958,7 +5958,7 @@ class Kevery:
                     # "dig = {}.".format(bytes(edig)))
 
                 # process event
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, edig))
 
                 # seal source (delegator issuer if any)
                 delseqner = delsaider = None
@@ -6096,7 +6096,7 @@ class Kevery:
 
                 # get witness signatures (wigs not wits) assumes wont be in this
                 # escrow if wigs not needed because no wits
-                wigers = self.db.wigs.get(dgkey)  # list of wigs if any
+                wigers = self.db.wigs.get(keys=dgkey)  # list of wigs if any
                 # may want to checks wits and wigs here. We are assuming that
                 # never get to this escrow if wits and not wigs
                 #if wits and not wigers:  # non empty wits but empty wigs
@@ -6500,14 +6500,14 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get sigs and attach
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, edig))
                 if not sigers:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"DEL Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
-                sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                sigers = self.db.sigs.get(keys=(pre, edig))
 
                 #  get wigers
                 wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
@@ -6602,7 +6602,7 @@ class Kevery:
                         raise ValidationError(msg)
 
                     #  get sigs and attach
-                    sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                    sigers = self.db.sigs.get(keys=(pre, edig))
                     if not sigers:  # otherwise its a list of sigs
                         # no sigs so raise ValidationError which unescrows below
                         msg = f"QNF Missing escrowed evt sigs at dig = {bytes(edig).decode()}"
@@ -6610,7 +6610,7 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # process event
-                    sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                    sigers = self.db.sigs.get(keys=(pre, edig))
 
                     # ToDo XXXX get trans endorsements
                     # getVrcs
@@ -6992,14 +6992,14 @@ class Kevery:
                         raise ValidationError(msg)
 
                     #  get sigs and attach
-                    sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                    sigers = self.db.sigs.get(keys=(pre, edig))
                     if not sigers:  # otherwise its a list of sigs
                         # no sigs so raise ValidationError which unescrows below
                         msg = f"DUP Missing escrowed evt sigs at dig = {bytes(edig)}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
-                    sigers = self.db.sigs.get(keys=(pre, bytes(edig)))
+                    sigers = self.db.sigs.get(keys=(pre, edig))
                     self.processEvent(serder=eserder, sigers=sigers, local=esr.local)
 
                     # If process does NOT validate event with sigs, becasue it is
