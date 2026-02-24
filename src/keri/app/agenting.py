@@ -14,7 +14,7 @@ from hio.help import decking, Hict
 
 from socket import gaierror
 
-from . import httping, forwarding
+from . import httping, forwarding, tocking
 from .. import help
 from .. import kering
 from .. import core
@@ -277,11 +277,11 @@ class WitnessReceiptor(doing.DoDoer):
 
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-    def receiptDo(self, tymth=None, tock=0.0, **kwa):
+    def receiptDo(self, tymth=None, tock=None, **kwa):
         """Doer loop that sends events to witnesses and propagates receipts.
-        
 
-        Asynchronously processes witness receipt requests from self.msgs queue. 
+
+        Asynchronously processes witness receipt requests from self.msgs queue.
         Sends any required delegation context, replays KEL for new witnesses,
         posts the event, waits for receipts to be stored in `hab.db`, then
         shares the full receipt set across witnesses. If `force` is false and
@@ -289,7 +289,7 @@ class WitnessReceiptor(doing.DoDoer):
         Pushes the original request to self.cues to signal completion
         """
         self.wind(tymth)
-        self.tock = tock
+        self.tock = tock if tock is not None else tocking.WitnessReceiptorTock
         _ = (yield self.tock)
 
         while True:
@@ -430,7 +430,7 @@ class WitnessInquisitor(doing.DoDoer):
 
         super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.msgDo)], **kwa)
 
-    def msgDo(self, tymth=None, tock=1.0, **opts):
+    def msgDo(self, tymth=None, tock=None, **opts):
         """
         Doer loop that sends one query to one selected endpoint.
 
@@ -439,7 +439,7 @@ class WitnessInquisitor(doing.DoDoer):
         Pushes the raw sent message to self.sent to signal completion.
         """
         self.wind(tymth)
-        self.tock = tock
+        self.tock = tock if tock is not None else tocking.WitnessInquisitorTock
         _ = (yield self.tock)
 
         while True:
@@ -541,7 +541,7 @@ class WitnessInquisitor(doing.DoDoer):
 
 class WitnessPublisher(doing.DoDoer):
     """DoDoer that publishes messages to all witnesses for an identifier.
-    
+
     Could be enhanced to have a `once` method that runs once and cleans up
     and an `all` method that runs and waits for more messages to receipt.
     """
@@ -560,13 +560,13 @@ class WitnessPublisher(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
-    def sendDo(self, tymth=None, tock=0.0, **opts):
+    def sendDo(self, tymth=None, tock=None, **opts):
         """Doer loop that sends queued messages to each witness.
-        
+
         Pushes the original request to self.cues to signal completion
         """
         self.wind(tymth)
-        self.tock = tock
+        self.tock = tock if tock is not None else tocking.WitnessPublisherTock
         _ = (yield self.tock)
 
         while True:
@@ -721,7 +721,7 @@ class TCPStreamMessenger(doing.DoDoer):
 
     def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that sends queued messages over TCP.
-        
+
         Pushes the original request to self.sent to signal completion
         """
         self.wind(tymth)
@@ -947,7 +947,7 @@ def messengerFrom(hab, pre, urls, auth=None):
 
 def streamMessengerFrom(hab, pre, urls, msg, headers=None):
     """Create a stream messenger (HTTP or TCP) for a single outbound message.
-    
+
     Parameters:
         hab (Habitat): Environment to use to look up witness URLs
         pre (str): qb64 identifier prefix of recipient to create a messanger for
