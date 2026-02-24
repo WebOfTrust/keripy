@@ -1052,9 +1052,7 @@ class CatCesrSuberBase(CesrSuberBase):
 
         vals = tuple(val) if self.strict else val
         if self.strict:
-            if len(vals) != len(self.klas):
-                raise ValueError(f"Expected {len(self.klas)} values, got {len(vals)}.")
-            for klas, item in zip(self.klas, vals):
+            for klas, item in zip(self.klas, vals, strict=self.strict):
                 if not isinstance(item, klas):
                     raise TypeError(f"Expected {klas}, got {type(item)}.")
 
