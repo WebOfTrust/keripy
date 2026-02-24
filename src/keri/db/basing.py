@@ -1195,11 +1195,11 @@ class Baser(dbing.LMDBer):
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
-        self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Saider)
+        self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
 
         # successfull signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
-        self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Saider)
+        self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Diger)
 
         # authorzied well known OOBIs
         # TODO: clean

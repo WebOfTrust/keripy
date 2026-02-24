@@ -73,8 +73,8 @@ def get(tymth, tock=0.0, **opts):
                 print("Contact not found")
                 return -1
 
-            accepted = [saider.qb64 for saider in hby.db.chas.get(keys=(pre,))]
-            received = [saider.qb64 for saider in hby.db.reps.get(keys=(pre,))]
+            accepted = [diger.qb64 for diger in hby.db.chas.get(keys=(pre,))]
+            received = [diger.qb64 for diger in hby.db.reps.get(keys=(pre,))]
             valid = set(accepted) & set(received)
 
             challenges = []

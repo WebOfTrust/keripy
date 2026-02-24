@@ -43,8 +43,8 @@ def list(tymth, tock=0.0, **opts):
             for c in org.list():
 
                 aid = c['id']
-                accepted = [saider.qb64 for saider in hby.db.chas.get(keys=(aid,))]
-                received = [saider.qb64 for saider in hby.db.reps.get(keys=(aid,))]
+                accepted = [diger.qb64 for diger in hby.db.chas.get(keys=(aid,))]
+                received = [diger.qb64 for diger in hby.db.reps.get(keys=(aid,))]
                 valid = set(accepted) & set(received)
 
                 challenges = []
