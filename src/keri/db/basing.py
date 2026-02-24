@@ -700,7 +700,7 @@ class Baser(dbing.LMDBer):
             subkey "aess."
             dgKey
             DB is keyed by identifier prefix plus digest of key event
-            Value is (Number, Saider) tuple; first component serialized as
+            Value is (Number, Diger) tuple; first component serialized as
             Huge (fixed 24-char), used to lookup authorizer's source event
             in .kels sub DB.
             Only one value per DB key is allowed.
@@ -816,7 +816,7 @@ class Baser(dbing.LMDBer):
             of delegating source event in which seal of delegated event appears.
             dgKey
             Values are serialized instances of CatCesrSuber as couples
-            (Seqner.qb64b, Saider.qb64b) used to lookup source event in delegator's
+            (Seqner.qb64b, Diger.qb64b) used to lookup source event in delegator's
             KEL.
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
@@ -1029,7 +1029,7 @@ class Baser(dbing.LMDBer):
         self.kels = subing.OnIoDupSuber(db=self, subkey='kels.')
         self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
-                                        klas=(coring.Number, coring.Saider))
+                                        klas=(coring.Number, coring.Diger))
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=indexing.Siger)
         self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
@@ -1044,7 +1044,7 @@ class Baser(dbing.LMDBer):
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
-                                        klas=(coring.Seqner, coring.Saider))
+                                        klas=(coring.Seqner, coring.Diger))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
@@ -1713,10 +1713,10 @@ class Baser(dbing.LMDBer):
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
-            seqner, saider = duple
+            seqner, diger = duple
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
                                     count=1, version=kering.Vrsn_1_0).qb64b)
-            atc.extend(seqner.qb64b + saider.qb64b)
+            atc.extend(seqner.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements

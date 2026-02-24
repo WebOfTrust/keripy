@@ -135,9 +135,9 @@ def transSeal(hab):
     kever = hab.kever
     prefixer = kever.prefixer
     seqner = coring.Seqner(sn=kever.lastEst.s)
-    saider = coring.Saider(qb64=kever.lastEst.d)
+    diger = coring.Diger(qb64=kever.lastEst.d)
 
-    return prefixer, seqner, saider, indices
+    return prefixer, seqner, diger, indices
 
 
 #class SadPathSigGroup:

@@ -47,7 +47,7 @@ def test_broker_nontrans():
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=coring.Diger(qb64=hab.kever.serder.said))
         regery.processEscrows()
         rsr = issuer.tever.state()  # registry state RegStateRecord
         rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict())
@@ -116,7 +116,7 @@ def test_broker_trans():
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Saider(qb64=hab.kever.serder.said))
+                         saider=coring.Diger(qb64=hab.kever.serder.said))
         regery.processEscrows()
         rsr = issuer.tever.state() # registry state RegStateRecord
         rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict())

@@ -325,9 +325,9 @@ def test_baser():
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         number1 = coring.Number(qb64b=ssnu1)
-        saider1 = coring.Saider(qb64b=sdig1)
+        saider1 = coring.Diger(qb64b=sdig1)
         number2 = coring.Number(qb64b=ssnu2)
-        saider2 = coring.Saider(qb64b=sdig2)
+        saider2 = coring.Diger(qb64b=sdig2)
         val1 = (number1, saider1)
         val2 = (number2, saider2)
 
@@ -1216,16 +1216,16 @@ def test_baser():
 
         # test .udes CatCesrSuber sub db methods
         assert isinstance(db.udes, subing.CatCesrSuber)
-        assert db.udes.klas == (coring.Seqner, coring.Saider)
+        assert db.udes.klas == (coring.Seqner, coring.Diger)
 
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         val1 = ssnu1 + sdig1
-        tuple1 = (coring.Seqner(qb64b=ssnu1), coring.Saider(qb64b=sdig1))
+        tuple1 = (coring.Seqner(qb64b=ssnu1), coring.Diger(qb64b=sdig1))
         val2 = ssnu2 + sdig2
-        tuple2 = (coring.Seqner(qb64b=ssnu2), coring.Saider(qb64b=sdig2))
+        tuple2 = (coring.Seqner(qb64b=ssnu2), coring.Diger(qb64b=sdig2))
 
 
         assert db.udes.get(keys=key) == None
@@ -2479,7 +2479,7 @@ def test_clear_escrows():
         udesKey = dgKey('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8"),
                     'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8"))
         db.udes.put(keys=udesKey, val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
-                                   coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
+                                   coring.Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
         assert db.udes.get(keys=udesKey) is not None
 
         saider = coring.Saider(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')

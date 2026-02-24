@@ -280,12 +280,12 @@ class Exchanger:
         for cigar in cigars:
             self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
 
-        saider = coring.Saider(qb64=serder.said)
+        diger = coring.Diger(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         for texter in essrs:
             self.hby.db.essrs.add(keys=(dig,), val=texter)
         if pdig:
-            self.hby.db.erpy.pin(keys=(pdig,), val=saider)
+            self.hby.db.erpy.pin(keys=(pdig,), val=diger)
 
         self.hby.db.exns.put(keys=(dig,), val=serder)
 
