@@ -3367,7 +3367,7 @@ class Kever:
         nowdater = coring.Dater()  # now timestamp
         self.db.dtss.put(keys=dgkey, val=nowdater)  # idempotent do not change dts if already
         if sigers:
-            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
+            self.db.sigs.put(keys=dgkey, vals=sigers)  # idempotent
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
         if wits:
@@ -3454,7 +3454,7 @@ class Kever:
             self.db.esrs.put(keys=dgkey, val=esr)
 
         self.db.dtss.put(keys=dgkey, val=coring.Dater())
-        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.sigs.put(keys=(serder.preb, serder.saidb), vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
@@ -3496,7 +3496,7 @@ class Kever:
             self.db.esrs.put(keys=dgkey, val=esr)
 
         self.db.dtss.put(keys=dgkey, val=coring.Dater())
-        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=(serder.preb, serder.saidb), vals=wigers)
@@ -3526,7 +3526,7 @@ class Kever:
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
         if sigers:
-            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
         if seqner and saider:
@@ -3570,7 +3570,7 @@ class Kever:
         self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
 
         if sigers:
-            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
         if seqner and saider:
@@ -3626,7 +3626,7 @@ class Kever:
         self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
 
         if sigers:  # idempotent
-            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:  # idempotent
             self.db.wigs.put(keys=dgkey, vals=wigers)
         if seqner and saider:  # non-idempotent pin to repair replace
@@ -5233,7 +5233,7 @@ class Kevery:
             self.db.esrs.put(keys=(serder.preb, serder.saidb), val=esr)
 
         self.db.dtss.put(keys=dgkey, val=coring.Dater())
-        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
@@ -5273,7 +5273,7 @@ class Kevery:
             self.db.esrs.put(keys=dgkey, val=esr)
 
         self.db.dtss.put(keys=dgkey, val=coring.Dater())
-        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
@@ -5298,7 +5298,7 @@ class Kevery:
         cigars = cigars if cigars is not None else []
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=coring.Dater())
-        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(prefixer.qb64b, serder.saidb), val=serder)
         self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
 
@@ -5333,7 +5333,7 @@ class Kevery:
             self.db.esrs.put(keys=dgkey, val=esr)
 
         self.db.dtss.put(keys=dgkey, val=coring.Dater())
-        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
         # log duplicitous
@@ -5586,7 +5586,7 @@ class Kevery:
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
             self.db.dtss.put(keys=dgkey, val=coring.Dater())
-            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.db.sigs.put(keys=dgkey, vals=sigers)
             self.db.evts.put(keys=(pre, serder.dig), val=serder)
             self.db.ooes.addOn(pre, sn, serder.dig)
 
@@ -5644,15 +5644,15 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get sigs and attach
-                sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
-                if not sigs:  # otherwise its a list of sigs
+                sigers = self.db.sigs.get(keys=(pre, edig))
+                if not sigers:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"OOO Missing escrowed event sigs at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
                 # process event
-                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                sigers = self.db.sigs.get(keys=(pre, edig))
 
                 #  get wigers
                 wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
@@ -5711,7 +5711,7 @@ class Kevery:
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
             .db.dtss.put(keys=dgkey, val=coring.Dater())
-            .db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.db.sigs.put(keys=dgkey, vals=sigers)
             .db.evts.put(keys=(pre, serder.digb), val=serder)
             .db.pses.addOn(pre, sn, serder.digb)
             where:
@@ -5769,8 +5769,8 @@ class Kevery:
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
                 #  get sigs and attach
-                sigs = self.db.getSigs(dgkey)
-                if not sigs:  # otherwise its a list of sigs
+                sigers = self.db.sigs.get(keys=(pre, edig))
+                if not sigers:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"PSE Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
@@ -5804,7 +5804,7 @@ class Kevery:
                         #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 # process event
-                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                sigers = self.db.sigs.get(keys=(pre, edig))
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
                                   delseqner=delseqner, deldiger=deldiger,
                                   eager=True, local=esr.local)
@@ -5935,8 +5935,8 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get sigs
-                sigs = self.db.getSigs(dgKey(pre, bytes(edig)))  # list of sigs
-                if not sigs:  # empty list
+                sigers = self.db.sigs.get(keys=(pre, edig))  # list of sigs
+                if not sigers:  # empty list
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"PWE Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.trace("Kevery unescrow error: %s", msg)
@@ -5958,7 +5958,7 @@ class Kevery:
                     # "dig = {}.".format(bytes(edig)))
 
                 # process event
-                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                sigers = self.db.sigs.get(keys=(pre, edig))
 
                 # seal source (delegator issuer if any)
                 delseqner = deldiger = None
@@ -6087,8 +6087,8 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get sigs
-                sigs = self.db.getSigs(dgkey)  # list of sigs
-                if not sigs:  # empty list
+                sigers = self.db.sigs.get(keys=dgkey)  # list of sigs
+                if not sigers:  # empty list
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"PDE Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.info("Kevery unescrow error: %s", bytes(edig))
@@ -6096,7 +6096,7 @@ class Kevery:
 
                 # get witness signatures (wigs not wits) assumes wont be in this
                 # escrow if wigs not needed because no wits
-                wigers = self.db.wigs.get(dgkey)  # list of wigs if any
+                wigers = self.db.wigs.get(keys=dgkey)  # list of wigs if any
                 # may want to checks wits and wigs here. We are assuming that
                 # never get to this escrow if wits and not wigs
                 #if wits and not wigers:  # non empty wits but empty wigs
@@ -6112,7 +6112,7 @@ class Kevery:
                                           #"dig = {}.".format(bytes(edig)))
 
                 # setup parameters to process event
-                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                sigers = self.db.sigs.get(keys=dgkey)
 
                 # seal source (delegator issuer if any)
                 # If delegator KEL not available should also cue a trigger to
@@ -6500,14 +6500,14 @@ class Kevery:
                     raise ValidationError(msg)
 
                 #  get sigs and attach
-                sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
-                if not sigs:  # otherwise its a list of sigs
+                sigers = self.db.sigs.get(keys=(pre, edig))
+                if not sigers:  # otherwise its a list of sigs
                     # no sigs so raise ValidationError which unescrows below
                     msg = f"DEL Missing escrowed evt sigs at dig = {bytes(edig)}"
                     logger.info("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
-                sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                sigers = self.db.sigs.get(keys=(pre, edig))
 
                 #  get wigers
                 wigers = self.db.wigs.get(keys=(pre, bytes(edig)))
@@ -6602,15 +6602,15 @@ class Kevery:
                         raise ValidationError(msg)
 
                     #  get sigs and attach
-                    sigs = self.db.getSigs(dgkey)
-                    if not sigs:  # otherwise its a list of sigs
+                    sigers = self.db.sigs.get(keys=(pre, edig))
+                    if not sigers:  # otherwise its a list of sigs
                         # no sigs so raise ValidationError which unescrows below
                         msg = f"QNF Missing escrowed evt sigs at dig = {bytes(edig).decode()}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
                     # process event
-                    sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                    sigers = self.db.sigs.get(keys=(pre, edig))
 
                     # ToDo XXXX get trans endorsements
                     # getVrcs
@@ -6934,7 +6934,7 @@ class Kevery:
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
             self.db.dtss.put(keys=dgkey, val=coring.Dater())
-            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.db.sigs.put(keys=dgkey, vals=sigers)
             self.db.evts.put(keys=(pre, serder.dig), val=serder)
             self.db.addLde(snKey(pre, sn), serder.digb)
             where:
@@ -6992,14 +6992,14 @@ class Kevery:
                         raise ValidationError(msg)
 
                     #  get sigs and attach
-                    sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
-                    if not sigs:  # otherwise its a list of sigs
+                    sigers = self.db.sigs.get(keys=(pre, edig))
+                    if not sigers:  # otherwise its a list of sigs
                         # no sigs so raise ValidationError which unescrows below
                         msg = f"DUP Missing escrowed evt sigs at dig = {bytes(edig)}"
                         logger.trace("Kevery unescrow error: %s", msg)
                         raise ValidationError(msg)
 
-                    sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                    sigers = self.db.sigs.get(keys=(pre, edig))
                     self.processEvent(serder=eserder, sigers=sigers, local=esr.local)
 
                     # If process does NOT validate event with sigs, becasue it is
@@ -7080,11 +7080,10 @@ def loadEvent(db, preb, dig):
         event["stored"] = True
 
     # add indexed signatures to attachments
-    sigs = db.getSigs(key=dgkey)
+    sigers = db.sigs.get(keys=dgkey)
     dsigs = []
-    for s in sigs:
-        sig = indexing.Siger(qb64b=bytes(s))
-        dsigs.append(dict(index=sig.index, signature=sig.qb64))
+    for siger in sigers:
+        dsigs.append(dict(index=siger.index, signature=siger.qb64))
     event["signatures"] = dsigs
 
     # add witness state at this event
@@ -7095,8 +7094,7 @@ def loadEvent(db, preb, dig):
     dwigers = []
     if wigers := db.wigs.get(keys=(preb, dig)):
         for wiger in wigers:
-            sig = wiger
-            dwigers.append(dict(index=sig.index, signature=sig.qb64))
+            dwigers.append(dict(index=wiger.index, signature=wiger.qb64))
     event["witness_signatures"] = dwigers
 
     # add authorizer (delegator/issuer) source seal event couple to attachments

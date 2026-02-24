@@ -1030,7 +1030,8 @@ class Baser(dbing.LMDBer):
         self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
                                         klas=(coring.Number, coring.Diger))
-        self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
+        self.sigs = subing.CesrIoSetSuber(db=self, subkey='sigs.',
+                                        klas=(indexing.Siger))
         self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=indexing.Siger)
         self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
                                              klas=(coring.Prefixer, coring.Cigar))
@@ -1697,12 +1698,12 @@ class Baser(dbing.LMDBer):
         msg.extend(serder.raw)
 
         # add indexed signatures to attachments
-        if not (sigs := self.getSigs(key=dgkey)):
+        if not (sigers := self.sigs.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
         atc.extend(core.Counter(code=core.Codens.ControllerIdxSigs,
-                                count=len(sigs), version=kering.Vrsn_1_0).qb64b)
-        for sig in sigs:
-            atc.extend(sig)
+                                count=len(sigers), version=kering.Vrsn_1_0).qb64b)
+        for siger in sigers:
+            atc.extend(siger.qb64b)
 
         # add indexed witness signatures to attachments
         if wigers := self.wigs.get(keys=dgkey):
@@ -2006,65 +2007,6 @@ class Baser(dbing.LMDBer):
                 continue  # skip this event
 
             yield serder  # event as Serder
-
-
-
-
-    def getSigs(self, key):
-        """
-        Use dgKey()
-        Return list of signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.sigs, key)
-
-    def getSigsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of signatures at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.sigs, key)
-
-    def putSigs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes signatures vals to key
-        Adds to existing signatures at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.sigs, key, vals)
-
-    def addSig(self, key, val):
-        """
-        Use dgKey()
-        Add signature val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.sigs, key, val)
-
-    def cntSigs(self, key):
-        """
-        Use dgKey()
-        Return count of signatures at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.sigs, key)
-
-    def delSigs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.sigs, key, val)
-
 
 class BaserDoer(doing.Doer):
     """
