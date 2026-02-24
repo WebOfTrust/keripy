@@ -1939,7 +1939,7 @@ class Baser(dbing.LMDBer):
                 # receipter's est event not yet in receipters's KEL
                 raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
-            sdig = sdig.encode("utf-8 ")
+            sdig = sdig.encode("utf-8")
             # retrieve last event itself of receipter est evt from sdig
             sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
@@ -2064,93 +2064,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.sigs, key, val)
-
-
-    def putKes(self, key, vals):
-        """
-        Use snKey()
-        Write each key event dig entry from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.kels, key, vals)
-
-
-
-    def putPwes(self, key, vals):
-        """
-        Use snKey()
-        Write each partial witnessed escrow event entry from list of bytes dig vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.pwes, key, vals)
-
-    def addPwe(self, key, val):
-        """
-        Use snKey()
-        Add Partial witnessed escrow dig val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.pwes, key, val)
-
-    def getPwes(self, key):
-        """
-        Use snKey()
-        Return list of witnessed signed escrowed event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.pwes, key)
-
-    def getPwesIter(self, key):
-        """
-        Use sgKey()
-        Return iterator of partial witnessed escrowed event dig vals at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.pwes, key)
-
-    def getPweLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial witnessed escrowed event dig val at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.pwes, key)
-
-    def getPweItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial witnessed escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.pwes, key)
-        #return self.getIoDupItemsNextIter(self.pwes, key, skip)
-
-    #def getPweIoDupItemIter(self, key=b''):
-        #"""
-        #Use sgKey()
-        #Return iterator of partial witnessed escrowed event dig items at next key after key.
-        #Items is (key, val) where proem has already been stripped from val
-        #If key is b'' empty then returns dup items at first key.
-        #If skip is False and key is not b'' empty then returns dup items at key
-        #Raises StopIteration Error when empty
-        #Duplicates are retrieved in insertion order.
-        #"""
-        #return self.getTopIoDupItemIter(self.pwes, key)
-
-
 
 
 class BaserDoer(doing.Doer):
