@@ -3102,6 +3102,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     def getOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets set vals list at key made from keys and on in insertion order from
         from offset ion into set using hidden ordinal suffix.
+        When key is empty then returns empty iterator
 
         Returns:
             vals (list[str]):  values if any else empty tuuple
@@ -3109,16 +3110,24 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be
                 combined in order to form key
+                When key is empty then returns empty iterator
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
 
         """
-        return [self._des(val) for val in
-                                    self.db.getOnIoSetIter(db=self.sdb,
-                                                       key=self._tokey(keys),
-                                                       on=on,
-                                                       ion=ion,
-                                                       sep=self.sep.encode())]
+        return [self._des(val) for key, on, val in
+                    self.db.getOnIoSetItemIter(db=self.sdb,
+                                               key=self._tokey(keys),
+                                               on=on,
+                                               ion=ion,
+                                               sep=self.sep.encode())]
+
+        #return [self._des(val) for val in
+                                    #self.db.getOnIoSetIter(db=self.sdb,
+                                                       #key=self._tokey(keys),
+                                                       #on=on,
+                                                       #ion=ion,
+                                                       #sep=self.sep.encode())]
 
 
     def getOnIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
@@ -3134,11 +3143,11 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
         """
-        for val in (self.db.getOnIoSetIter(db=self.sdb,
-                                           key=self._tokey(keys),
-                                           on=on,
-                                           ion=ion,
-                                           sep=self.sep.encode())):
+        for key, on, val in self.db.getOnIoSetItemIter(db=self.sdb,
+                                                  key=self._tokey(keys),
+                                                  on=on,
+                                                  ion=ion,
+                                                  sep=self.sep.encode()):
             yield (self._des(val))
 
 

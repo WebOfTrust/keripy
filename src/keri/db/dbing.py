@@ -1215,23 +1215,59 @@ class LMDBer(filing.Filer):
             return vals
 
 
-    def getIoSetIter(self, db, key, *, ion=0, sep=b'.'):
-        """Get iterator over values in IoSet at effecive key
+    def getIoSetItemIter(self, db, key, *, ion=0, sep=b'.'):
+        """Get iterator over items in IoSet at effecive key.
+        When key is empty then returns empty iterator
 
         Raises StopIterationError when done.
 
         Uses hidden ordinal key suffix for insertion ordering.
-            The suffix is appended and stripped transparently.
+            The suffix is suffixed and unsuffixed transparently.
 
         Returns:
-            ioset (Iterator[memoryview]): iterator over insertion ordered set of values
-            at same apparent effective key.
-            Uses hidden ordinal key suffix for insertion ordering.
-            The suffix is appended and stripped transparently.
+            items (Iterator[memoryview]): iterator over insertion ordered set
+                                        items at same apparent effective key.
+                                        Empty iterator when key is empty
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
+            key (bytes): Apparent effective key. raises StopIterationError when
+                         key is empty
+            ion (int): starting ordinal value, default 0
+            sep (bytes): separator character for split
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            if not key:  # empty key
+                return
+            iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, val in cursor.iternext():  # get key, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey != key: #  prev entry if any was the last entry for key
+                        break  # done
+                    yield (ckey, val)  # another entry at key
+            return  # done raises StopIteration
+
+
+    def getIoSetIter(self, db, key, *, ion=0, sep=b'.'):
+        """Get iterator over values in IoSet at effecive key.
+        When key is empty then returns empty iterator
+
+        Raises StopIterationError when done.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            values (Iterator[memoryview]): iterator over insertion ordered set
+                of values at same apparent effective key.
+                Empty iterator when key is empty
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key. raises StopIterationError when
+                         key is empty
             ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
@@ -1730,6 +1766,42 @@ class LMDBer(filing.Filer):
         Assumes DB opened with dupsort=False
         """
         return self.getIoSetIter(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+
+    def getOnIoSetItemIter(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Get iterator of all set vals at onkey = key + sep + on in db starting
+        at insertion order ion within set This provides ordinal ordering of
+        keys and inserion ordering of set vals.
+        When key is empty then returns empty iterator
+
+        Returns:
+            ioset (Iterator): iterator over insertion ordered set of values
+                             at same apparent effective key made from key + on.
+                             Uses hidden ordinal key suffix for insertion ordering.
+                             The suffix is appended and stripped transparently.
+                             When key is empty then returns empty iterator
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): base key. When key is empty then returns empty iterator
+            on (int): ordinal number at which to add to key form effective key
+            ion (int): starting insertion ordinal value, default 0
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        #return self.getIoSetIter(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+        for onkey, val in self.getIoSetItemIter(db=db,
+                                         key=onKey(key, on, sep=sep),
+                                         ion=ion,
+                                         sep=sep):
+            k, o = splitOnKey(onkey, sep=sep)
+            yield (k, o, val)
 
 
     def getOnIoSetLastItem(self, db, key, on=0, *, sep=b'.'):
