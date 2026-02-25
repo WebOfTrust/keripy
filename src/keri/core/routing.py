@@ -187,7 +187,10 @@ class Revery:
             #if k not in serder.ked:
                 #raise kering.ValidationError(f"Missing element={k} from {coring.Ilks.rpy}"
                                              #f" msg={serder.ked}.")
-        serder.verify()
+        # verify said of reply via Serder (handles protocol/ilk-specific multi-SAID logic)
+        if not serder.verify():
+            raise kering.ValidationError(f"Invalid said for reply msg={serder.ked}.")
+
         saider = coring.Diger(qb64=serder.said)
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
 
