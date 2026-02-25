@@ -730,7 +730,7 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snum), (prefixer, number, saider) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
+        for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
 
             # Load all the witness receipts we have so far
@@ -748,8 +748,8 @@ class Registrar(doing.DoDoer):
                 else:
                     continue
 
-            rnum = coring.Number(num=snum, code=coring.NumDex.Huge)
-            self.rgy.reger.tpwe.rem(keys=(regk, snum))
+            rnum = coring.Number(num=snq, code=coring.NumDex.Huge)
+            self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
             self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, seqner, saider))
 
