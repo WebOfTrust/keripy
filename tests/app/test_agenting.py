@@ -16,7 +16,7 @@ from keri.db import dbing
 from keri.vdr import eventing, viring
 
 
-def test_withness_receiptor(seeder):
+def test_witness_receiptor(seeder):
     with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
             habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
             habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \

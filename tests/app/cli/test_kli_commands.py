@@ -1,3 +1,4 @@
+import json
 import os
 
 import multicommand
@@ -244,15 +245,44 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
     capesc = capsys.readouterr()
-    assert capesc.out == ('{\n'
-                          '  "out-of-order-events": [],\n'
-                          '  "partially-witnessed-events": [],\n'
-                          '  "partially-signed-events": [],\n'
-                          '  "likely-duplicitous-events": [],\n'
-                          '  "missing-registry-escrow": [],\n'
-                          '  "broken-chain-escrow": [],\n'
-                          '  "missing-schema-escrow": []\n'
-                          '}\n')
+    escrows = ("""{
+              "unverified-receipts": 0,
+              "verified-receipts": 0,
+              "out-of-order-events": [],
+              "partially-witnessed-events": [],
+              "partially-signed-events": [],
+              "likely-duplicitous-events": [],
+              "unverified-event-indexed-couples": 0,
+              "query-not-found": 0,
+              "partially-delegated-events": 0,
+              "reply": 0,
+              "failed-oobi": 0,
+              "group-partial-witness": 0,
+              "group-delegate": 0,
+              "delegated-partial-witness": 0,
+              "group-partial-signed": 0,
+              "exchange-partial-signed": 0,
+              "delegated-unanchored": 0,
+              "tel-out-of-order": 0,
+              "tel-partially-witnessed": 0,
+              "tel-anchorless": 0,
+              "missing-registry-escrow": [],
+              "broken-chain-escrow": [],
+              "missing-schema-escrow": [],
+              "tel-missing-signature": 0,
+              "tel-partial-witness-escrow": 0,
+              "tel-multisig": 0,
+              "tel-event-dissemination": 0,
+              "registry-missing-anchor": 0,
+              "registry-out-of-order": 0,
+              "credential-missing-registry": 0,
+              "credential-missing-anchor": 0,
+              "credential-out-of-order": 0
+            }
+        """)
+    assert json.loads(capesc.out) == json.loads(escrows)
+
+
 
 
 def test_incept_and_rotate_opts(helpers, capsys):

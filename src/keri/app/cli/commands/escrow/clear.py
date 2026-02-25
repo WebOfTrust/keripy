@@ -48,6 +48,7 @@ def clear(tymth, tock=0.0, **opts):
     name = args.name
     base = args.base
     bran = args.bran
+    logger.setLevel("INFO")
 
     with existing.existingHby(name=name, base=base, bran=bran) as hby:
         hby.db.clearEscrows()
