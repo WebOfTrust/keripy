@@ -3,6 +3,7 @@
 tests delegation primaily from keri.core.eventing
 
 """
+import logging
 import os
 
 from keri import help
@@ -288,8 +289,8 @@ def test_delegation_supersede():
 
     Three level delegation
     top is at top or root level with witness wop. top is not delegated
-    mid is at mid level with witness wid. mid is delegatred from top
-    bot is at bottom level with wintess wot. bot is delegated from mid
+    mid is at mid-level with witness wid. mid is delegated from top
+    bot is at bottom level with witness wot. bot is delegated from mid
 
 
     def test_load_event(mockHelpingNowUTC):
@@ -464,6 +465,7 @@ def test_delegation_supersede():
         assert count >= 1
 
     # This needs to be fixedup to actually test delegating superseding recovery
+    # TODO?
     with (basing.openDB(name="bob") as bobDB,
             keeping.openKS(name="bob") as bobKS,
             basing.openDB(name="del") as delDB,
@@ -722,6 +724,7 @@ def test_delegation_supersede():
 def test_delegables_escrow():
     gateSalt = core.Salter(raw=b'0123456789abcdef').qb64
     torSalt = core.Salter(raw=b'0123456789defabc').raw
+    logger.setLevel(logging.TRACE) # gives test coverage to trace level logging blocks
 
     with habbing.openHby(name="delegate", temp=True, salt=gateSalt) as gateHby, \
             habbing.openHab(name="delegator", temp=True, salt=torSalt) as (torHby, torHab):
@@ -773,4 +776,5 @@ def test_delegables_escrow():
 if __name__ == "__main__":
     test_delegation()
     test_delegation_supersede()
+    test_delegables_escrow()
 
