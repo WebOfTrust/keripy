@@ -144,7 +144,7 @@ def escrows(tymth, tock=0.0, **opts):
             print(json.dumps(escrows, indent=2))
 
             if not (escrow) or escrow == "tel-partial-witness-escrow":
-                for (regk, snq), (prefixer, number, saider) in reger.tpwe.getItemIter():
+                for (regk, snum), (prefixer, number, saider) in reger.tpwe.getItemIter():
                     pass
 
     except ConfigurationError:
