@@ -537,7 +537,7 @@ class Registrar(doing.DoDoer):
         """
         registry = self.rgy.regs[iserder.pre]
         hab = registry.hab
-        rseq = coring.Seqner(sn=0)
+        rnum = coring.Number(num=0, code=coring.NumDex.Huge)
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
@@ -557,13 +557,13 @@ class Registrar(doing.DoDoer):
             said = anc.said
 
             prefixer = coring.Prefixer(qb64=hab.pre)
-            seqner = coring.Seqner(sn=sn)
+            number = coring.Number(sn=sn)
             saider = coring.Saider(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+            self.counselor.start(prefixer=prefixer, seqner=number, saider=saider, ghab=hab)
 
             print("Waiting for TEL registry vcp event multisig anchoring event")
-            self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
+            self.rgy.reger.tmse.add(keys=(registry.regk, rnum.qb64, registry.regd), val=(prefixer, number, saider))
 
     def issue(self, creder, iserder, anc):
         """
@@ -580,7 +580,7 @@ class Registrar(doing.DoDoer):
         hab = registry.hab
 
         vcid = iserder.ked["i"]
-        rseq = coring.Seqner(snh=iserder.ked["s"])
+        rnum = coring.Number(num=iserder.ked["s"], code=coring.NumDex.Huge)
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
@@ -597,13 +597,13 @@ class Registrar(doing.DoDoer):
             said = anc.said
 
             prefixer = coring.Prefixer(qb64=hab.pre)
-            seqner = coring.Seqner(sn=sn)
+            number = coring.Number(sn=sn)
             saider = coring.Saider(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+            self.counselor.start(prefixer=prefixer, seqner=number, saider=saider, ghab=hab)
 
-            print(f"Waiting for TEL iss event multisig anchoring event {seqner.sn}")
-            self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
+            print(f"Waiting for TEL iss event multisig anchoring event {number.sn}")
+            self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, iserder.said), val=(prefixer, number, saider))
 
     def revoke(self, creder, rserder, anc):
         """
@@ -623,7 +623,7 @@ class Registrar(doing.DoDoer):
         hab = registry.hab
 
         vcid = rserder.ked["i"]
-        rseq = coring.Seqner(snh=rserder.ked["s"])
+        rnum = coring.Number(num=rserder.ked["s"], code=coring.NumDex.Huge)
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
@@ -640,14 +640,14 @@ class Registrar(doing.DoDoer):
             said = anc.said
 
             prefixer = coring.Prefixer(qb64=hab.pre)
-            seqner = coring.Seqner(sn=sn)
+            number = coring.Number(sn=sn)
             saider = coring.Saider(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+            self.counselor.start(prefixer=prefixer, seqner=number, saider=saider, ghab=hab)
 
-            print(f"Waiting for TEL rev event multisig anchoring event {seqner.sn}")
-            self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
-            return vcid, rseq.sn
+            print(f"Waiting for TEL rev event multisig anchoring event {number.sn}")
+            self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, rserder.said), val=(prefixer, number, saider))
+            return vcid, rnum.sn
 
     @staticmethod
     def multisigIxn(hab, rseal):
@@ -767,7 +767,7 @@ class Registrar(doing.DoDoer):
                 self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
                 continue
 
-            rseq = coring.Seqner(qb64=snq)
+            rnum = coring.Number(num=snq, code=coring.NumDex.Huge)
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
@@ -776,7 +776,7 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
-            self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
+            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, saider))
 
     def processDisseminationEscrow(self):
         """
