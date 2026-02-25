@@ -77,7 +77,7 @@ class SubmitDoer(doing.DoDoer):
 
         super(SubmitDoer, self).__init__(doers=doers)
 
-    def submitDo(self, tymth, tock=0.0):
+    def submitDo(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

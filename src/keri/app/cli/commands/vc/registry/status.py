@@ -61,7 +61,7 @@ class RegistryStatusor(doing.DoDoer):
         doers.extend([doing.doify(self.statusDo)])
         super(RegistryStatusor, self).__init__(doers=doers)
 
-    def statusDo(self, tymth, tock=0.0):
+    def statusDo(self, tymth, tock=0.0, **kwa):
         """ Process incoming messages to incept a credential registry
 
         Parameters:

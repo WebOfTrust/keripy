@@ -71,7 +71,7 @@ class RevokeDoer(doing.DoDoer):
         doers.extend([doing.doify(self.revokeDo)])
         super(RevokeDoer, self).__init__(doers=doers, **kwa)
 
-    def revokeDo(self, tymth, tock=0.0):
+    def revokeDo(self, tymth, tock=0.0, **kwa):
         """  Revoke Credential doer method
 
 

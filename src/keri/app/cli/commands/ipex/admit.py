@@ -77,7 +77,7 @@ class AdmitDoer(doing.DoDoer):
         self.toRemove = [mbx, self.witq]
         super(AdmitDoer, self).__init__(doers=self.toRemove + [doing.doify(self.admitDo)])
 
-    def admitDo(self, tymth, tock=0.0):
+    def admitDo(self, tymth, tock=0.0, **kwa):
         """ Admit credential by accepting into database and sending /ipex/admit exn message
 
         Parameters:

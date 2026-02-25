@@ -96,7 +96,7 @@ class WalletDoer(doing.DoDoer):
             self.verifier.processEscrows()
             yield self.tock
 
-    def verifierDo(self, tymth, tock=0.0):
+    def verifierDo(self, tymth, tock=0.0, **kwa):
         """ Process cues from Verifier coroutine
 
         Parameters:

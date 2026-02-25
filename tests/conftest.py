@@ -362,7 +362,7 @@ class CommandDoer(doing.DoDoer):
         self.command = command
         super(CommandDoer, self).__init__(doers=[doing.doify(self.cmdDo)], **kwa)
 
-    def cmdDo(self, tymth, tock=0.0):
+    def cmdDo(self, tymth, tock=0.0, **kwa):
         """  Execute single command from .command by parsing and executing the resulting doers """
 
         # enter context
